@@ -1146,6 +1146,7 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
     yaml_node_t      *rules       = NULL;
     yaml_node_t      *buffer_size = NULL;
     yaml_node_t      *buffers_num = NULL;
+    yaml_node_t      *trail_slash = NULL;
     const char       *name_str    = NULL;
     const char       *url_str     = NULL;
     const char       *enabled_str = NULL;
@@ -1153,6 +1154,7 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
     const char       *allow_stop_str  = NULL;
     const char       *buffer_size_str = NULL;
     const char       *buffers_num_str = NULL;
+    const char       *trail_slash_str = NULL;
     unsigned long     tmp;
 
     log_listener_conf *current_conf;
@@ -1187,6 +1189,8 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
             buffer_size = v;
         else if (strcmp(key, "buffers_num") == 0)
             buffers_num = v;
+        else if (strcmp(key, "trailing_slash") == 0)
+            trail_slash = v;
     }
 
     current = &listeners[listeners_num];
@@ -1327,6 +1331,17 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
         }
         current->buffers_num = tmp;
     }
+
+    current->trailing_slash = FALSE;
+    trail_slash_str = te_yaml_scalar_value(trail_slash);
+    if (trail_slash != NULL && trail_slash_str == NULL)
+    {
+        ERROR("%s(%s): Trailing_slash is not a scalar",
+              __FUNCTION__, name_str);
+        return -1;
+    }
+    if (te_yaml_value_is_true(trail_slash_str))
+        current->trailing_slash = TRUE;
 
     msg_buffer_init(&current->buffer);
     current->state = LISTENER_INIT;

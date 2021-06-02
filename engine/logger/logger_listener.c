@@ -122,10 +122,10 @@ listener_conf_get(const char *name)
 te_errno
 listener_init(log_listener *listener, json_t *data)
 {
-    te_errno  rc;
-    json_t   *runid;
-    json_t   *interval;
-    char     *json;
+    te_errno    rc;
+    json_t     *runid;
+    json_t     *interval;
+    char       *json;
 
     data = json_copy(data);
     if (data == NULL)
@@ -174,7 +174,9 @@ listener_init(log_listener *listener, json_t *data)
     te_string_append(&listener->buffer_out, "%s", json);
     free(json);
 
-    rc = listener_prepare_request(listener, "init", listener->buffer_out.ptr,
+    rc = listener_prepare_request(listener,
+                                  listener->trailing_slash ? "init/" : "init",
+                                  listener->buffer_out.ptr,
                                   listener->buffer_out.len);
     if (rc != 0)
     {
@@ -229,7 +231,9 @@ listener_dump(log_listener *listener)
     te_string_append(&listener->buffer_out, "]");
 
     /* Prepare HTTP request */
-    url_suffix = te_string_fmt("feed?run=%s", listener->runid);
+    url_suffix = te_string_fmt("feed%.*s?run=%s",
+                               listener->trailing_slash ? 1 : 0, "/",
+                               listener->runid);
     rc = listener_prepare_request(listener, url_suffix, listener->buffer_out.ptr,
                                   (long)listener->buffer_out.len);
     free(url_suffix);
@@ -499,7 +503,9 @@ listener_finish(log_listener *listener)
     free(data);
 
     RING("Listener %s: finishing", listener->name);
-    url_suffix = te_string_fmt("finish?run=%s", listener->runid);
+    url_suffix = te_string_fmt("finish%.*s?run=%s",
+                               listener->trailing_slash ? 1 : 0, "/",
+                               listener->runid);
     rc = listener_prepare_request(listener, url_suffix,
                                   listener->buffer_out.ptr,
                                   listener->buffer_out.len);
