@@ -433,14 +433,15 @@ listener_finish_request(log_listener *listener, CURLcode result)
             return listener_finish_request_init(listener, response_code);
         case LISTENER_TRANSFERRING:
             /* Check response code */
-            if (response_code != 200)
+            if (response_code != 200 && response_code != 204)
             {
                 ERROR("Listener %s: /feed returned %d", listener->name,
                       response_code);
                 listener_free(listener);
                 return TE_EINVAL;
             }
-            check_dump_response_body(listener);
+            if (response_code == 200)
+                check_dump_response_body(listener);
             gettimeofday(&listener->next_tv, NULL);
             /* Don't delay next dump if there are already enough messages for it */
             if (listener->buffer.total_length < listener->buffer_size)
