@@ -1345,7 +1345,6 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
 
     msg_buffer_init(&current->buffer);
     current->state = LISTENER_INIT;
-    current->last_message_id = -1;
     current->curl_handle = curl_easy_init();
     if (current->curl_handle == NULL)
     {

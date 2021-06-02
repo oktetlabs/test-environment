@@ -73,8 +73,6 @@ typedef struct log_listener {
 
     te_dbuf            buffer_in;   /**< Buffer for HTTP responses */
     te_string          buffer_out;  /**< Buffer for outgoing data */
-    int                last_message_id; /**< Sequence number of the last
-                                             sent message */
     te_bool            trailing_slash; /**< Whether to add a trailing slash to
                                             URLs (for Django compatibility) */
 } log_listener;

@@ -92,7 +92,6 @@ msg_buffer_init(msg_buffer *buf)
     TAILQ_INIT(&buf->items);
     buf->n_items = 0;
     buf->total_length = 0;
-    buf->first_id = 0;
 }
 
 /* See description in logger_bufs.h */
@@ -125,7 +124,6 @@ msg_buffer_remove_first(msg_buffer *buf)
         TAILQ_REMOVE(&buf->items, item, links);
         buf->n_items -= 1;
         buf->total_length -= item->len;
-        buf->first_id += 1;
         refcnt_buffer_free(item);
         free(item);
     }

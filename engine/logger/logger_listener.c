@@ -214,18 +214,20 @@ listener_dump(log_listener *listener)
 {
     te_errno       rc;
     refcnt_buffer *item;
+    refcnt_buffer *tmp;
     char          *url_suffix;
 
     /* Fill the out buffer. TODO: get rid of this bufferring? */
     te_string_reset(&listener->buffer_out);
     te_string_append(&listener->buffer_out, "[");
-    TAILQ_FOREACH(item, &listener->buffer.items, links)
+    TAILQ_FOREACH_SAFE(item, &listener->buffer.items, links, tmp)
     {
         te_string_append(&listener->buffer_out, "%.*s", item->len, item->buf);
-        listener->last_message_id += 1;
+        /* No need to store another copy of the message */
+        msg_buffer_remove_first(&listener->buffer);
         if (listener->buffer_out.len > listener->buffer_size)
             break;
-        if (TAILQ_NEXT(item, links) != NULL)
+        if (!TAILQ_EMPTY(&listener->buffer.items))
             te_string_append(&listener->buffer_out, ",");
     }
     te_string_append(&listener->buffer_out, "]");
@@ -389,9 +391,7 @@ listener_finish_request_init(log_listener *listener, long response_code)
 te_errno
 listener_finish_request(log_listener *listener, CURLcode result)
 {
-    long           response_code;
-    refcnt_buffer *item;
-    refcnt_buffer *tmp;
+    long response_code;
 
     if (listener->state != LISTENER_INIT_WAITING &&
         listener->state != LISTENER_TRANSFERRING &&
@@ -441,13 +441,6 @@ listener_finish_request(log_listener *listener, CURLcode result)
                 return TE_EINVAL;
             }
             check_dump_response_body(listener);
-            /* Remove the messages that have been transferred */
-            TAILQ_FOREACH_SAFE(item, &listener->buffer.items, links, tmp)
-            {
-                if (listener->buffer.first_id > listener->last_message_id)
-                    break;
-                msg_buffer_remove_first(&listener->buffer);
-            }
             gettimeofday(&listener->next_tv, NULL);
             /* Don't delay next dump if there are already enough messages for it */
             if (listener->buffer.total_length < listener->buffer_size)
