@@ -11,13 +11,92 @@
 
 #define TE_LGR_USER "Log streaming rules"
 
+#include <float.h>
 #include <jansson.h>
 
 #include "logger_stream_rules.h"
 #include "logger_api.h"
+#include "te_alloc.h"
+#include "te_raw_log.h"
+#include "te_queue.h"
 
 streaming_filter streaming_filters[LOG_MAX_FILTERS];
 size_t           streaming_filters_num;
+
+/** The number of least recently executed tests whose times should be stored */
+#define TEST_TIME_HISTORY_SIZE 20
+
+/** Data structure that represents test execution times */
+typedef struct test_run_time {
+    TAILQ_ENTRY(test_run_time) links;
+
+    int    test_id;
+    double ts_start;
+    double ts_end;
+} test_run_time;
+
+typedef TAILQ_HEAD(test_run_times, test_run_time) test_run_times;
+
+static test_run_times test_times = TAILQ_HEAD_INITIALIZER(test_times);
+static size_t         test_times_num = 0;
+
+/** Register test start time */
+static te_errno
+test_times_add_start(int test_id, double ts)
+{
+    test_run_time *times = NULL;
+
+    if (test_times_num >= TEST_TIME_HISTORY_SIZE)
+    {
+        times = TAILQ_LAST(&test_times, test_run_times);
+        TAILQ_REMOVE(&test_times, times, links);
+        TAILQ_INSERT_HEAD(&test_times, times, links);
+    }
+    else
+    {
+        times = TE_ALLOC(sizeof(*times));
+        if (times == NULL)
+            return TE_ENOMEM;
+        TAILQ_INSERT_HEAD(&test_times, times, links);
+    }
+
+    times->test_id = test_id;
+    times->ts_start = ts;
+    times->ts_end = DBL_MAX;
+
+    return 0;
+}
+
+/** Register test end time */
+static te_errno
+test_times_add_end(int test_id, double ts)
+{
+    test_run_time *first = NULL;
+
+    first = TAILQ_FIRST(&test_times);
+
+    if (first == NULL || first->test_id != test_id)
+        return TE_ENOENT;
+
+    first->ts_end = ts;
+
+    return 0;
+}
+
+/** Find test that was running at the given time */
+static test_run_time *
+test_times_get_test(double ts)
+{
+    test_run_time *item;
+
+    TAILQ_FOREACH(item, &test_times, links)
+    {
+        if (item->ts_start <= ts && ts <= item->ts_end)
+            return item;
+    }
+
+    return NULL;
+}
 
 /*************************************************************************/
 /*       Streaming handlers                                              */
@@ -82,7 +161,11 @@ static te_errno
 handler_test_progress(const log_msg_view *view, refcnt_buffer *str)
 {
     te_errno      rc;
+    int           ret;
     te_string     body = TE_STRING_INIT;
+    int           test_id;
+    const char   *node_type;
+    te_bool       start;
     json_t       *json;
     json_t       *msg;
     json_t       *type;
@@ -140,6 +223,44 @@ handler_test_progress(const log_msg_view *view, refcnt_buffer *str)
         return TE_EFAULT;
     }
 
+    ret = json_unpack_ex(msg, &err, 0, "{s:i, s?s}",
+                         "id", &test_id,
+                         "node_type", &node_type);
+    if (ret == -1)
+    {
+        ERROR("Failed to extract test ID and node type from JSON log message: "
+              "%s (line %d, column %d)",
+              err.text, err.line, err.column);
+        json_decref(json);
+        return TE_EINVAL;
+    }
+
+
+    start = strcmp(json_string_value(type), "test_start") == 0;
+    if (start)
+    {
+        if (strcmp(node_type, "test") == 0)
+        {
+            rc = test_times_add_start(test_id, json_real_value(ts));
+            if (rc != 0)
+            {
+                ERROR("Failed to record test start time: %r", rc);
+                json_decref(json);
+                return rc;
+            }
+        }
+    }
+    else
+    {
+        rc = test_times_add_end(test_id, json_real_value(ts));
+        if (rc != 0 && rc != TE_ENOENT)
+        {
+            ERROR("Failed to record test end time: %r", rc);
+            json_decref(json);
+            return rc;
+        }
+    }
+
     dump = json_dumps(msg, JSON_COMPACT);
     json_decref(json);
     if (dump == NULL)
@@ -151,9 +272,79 @@ handler_test_progress(const log_msg_view *view, refcnt_buffer *str)
     return refcnt_buffer_init(str, dump, strlen(dump));
 }
 
+/**
+ * Convert the given artifact message to JSON.
+ *
+ * Detect the test ID of the artifact relying on the test history prepared
+ * by handler_test_progress. This means that test IDs will be present in
+ * event messages only if the 'test_progress' rule is used anywhere in the
+ * configuration file.
+ *
+ * @param view              log message view
+ * @param buf               where the result should be placed
+ *
+ * @returns Status code
+ */
+static te_errno
+handler_artifact(const log_msg_view *view, refcnt_buffer *buf)
+{
+    te_errno       rc;
+    char          *dump;
+    double         ts;
+    te_string      body = TE_STRING_INIT;
+    uint32_t       test_id;
+    test_run_time *time;
+    json_t        *obj;
+
+    rc = te_raw_log_expand(view, &body);
+    if (rc != 0)
+        return rc;
+
+    ts = (double)(view->ts_sec + view->ts_usec * 0.000001);
+    test_id = view->log_id;
+    if (test_id == TE_LOG_ID_UNDEFINED)
+    {
+        RING("Artifact log ID was undefined, checking run history");
+        time = test_times_get_test(ts);
+        if (time == NULL)
+        {
+            ERROR("Failed to find test id for an artifact from %.*s",
+                  view->user_len, view->user);
+            test_id = -1;
+        }
+        else
+        {
+            test_id = time->test_id;
+        }
+    }
+
+    /*
+     * "*" instead of "?" would be better here, but it's not supported in
+     * jansson-2.10, which is currently the newest version available on
+     * CentOS/RHEL-7.x
+     */
+    obj = json_pack("{s:s, s:s#, s:i, s:f, s:s}",
+                    "type", "artifact",
+                    "entity", view->entity, (int)view->entity_len,
+                    "test_id", test_id,
+                    "ts", ts,
+                    "body", body.ptr);
+    te_string_free(&body);
+    if (obj == NULL)
+        return TE_EFAULT;
+
+    dump = json_dumps(obj, JSON_COMPACT);
+    json_decref(obj);
+    if (dump == NULL)
+        return TE_EFAULT;
+
+    return refcnt_buffer_init(buf, dump, strlen(dump));
+}
+
 static const streaming_rule rules[] = {
     {"raw", handler_raw},
     {"test_progress", handler_test_progress},
+    {"artifact", handler_artifact},
 };
 static const size_t         rules_num = sizeof(rules) / sizeof(rules[0]);
 
