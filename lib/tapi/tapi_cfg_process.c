@@ -200,3 +200,33 @@ tapi_cfg_ps_set_autorestart(const char *ta, const char *ps_name,
 
     return rc;
 }
+
+te_errno
+tapi_cfg_ps_get_autorestart(const char *ta, const char *ps_name,
+                            unsigned int *value)
+{
+    te_errno rc;
+    cfg_val_type type = CVT_INTEGER;
+
+    if (ta == NULL)
+    {
+        ERROR("%s: test agent name must not be NULL", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (ps_name == NULL)
+    {
+        ERROR("%s: process name must not be NULL", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = cfg_get_instance_fmt(&type, value,
+                              TE_CFG_TA_PS "/autorestart:", ta, ps_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot get autorestart value (process '%s', TA '%s'): %r",
+              ps_name, ta, rc);
+    }
+
+    return rc;
+}

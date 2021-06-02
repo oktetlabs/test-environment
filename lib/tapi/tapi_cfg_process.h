@@ -174,6 +174,20 @@ extern te_errno tapi_cfg_ps_set_autorestart(const char *ta,
                                             const char *ps_name,
                                             unsigned int value);
 
+/**
+ * Get autorestart timeout.
+ *
+ * @param[in]  ta       Test Agent.
+ * @param[in]  ps_name  Process.
+ * @param[out] value    Autorestart timeout in seconds. If @c 0
+ *                      the autorestart is disabled.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_ps_get_autorestart(const char *ta,
+                                            const char *ps_name,
+                                            unsigned int *value);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
