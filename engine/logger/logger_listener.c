@@ -200,6 +200,7 @@ listener_dump(log_listener *listener)
 {
     te_errno       rc;
     refcnt_buffer *item;
+    char          *url_suffix;
 
     /* Fill the out buffer. TODO: get rid of this bufferring? */
     te_string_reset(&listener->buffer_out);
@@ -216,8 +217,10 @@ listener_dump(log_listener *listener)
     te_string_append(&listener->buffer_out, "]");
 
     /* Prepare HTTP request */
-    rc = listener_prepare_request(listener, "feed", listener->buffer_out.ptr,
+    url_suffix = te_string_fmt("feed?run=%s", listener->runid);
+    rc = listener_prepare_request(listener, url_suffix, listener->buffer_out.ptr,
                                   (long)listener->buffer_out.len);
+    free(url_suffix);
     if (rc != 0)
     {
         ERROR("Listener %s: Failed to prepare /feed request: %r",
@@ -290,6 +293,82 @@ check_dump_response_body(log_listener *listener)
     json_decref(body);
 }
 
+/** Process listener's response to an init request */
+static te_errno
+listener_finish_request_init(log_listener *listener, long response_code)
+{
+    te_errno      rc;
+    int           ret;
+    json_t       *response;
+    json_t       *runid;
+    json_error_t  err;
+
+    /* Check status */
+    if (response_code != 200)
+    {
+        ERROR("Listener %s: /init returned %d", listener->name,
+              response_code);
+        listener_free(listener);
+        return TE_EINVAL;
+    }
+
+    /* Store the run ID */
+    response = json_loadb((const char *)listener->buffer_in.ptr,
+                          listener->buffer_in.len, 0, &err);
+    if (response == NULL)
+    {
+        ERROR("Listener returned malformed init JSON: "
+              "%s (line %d, column %d)",
+              err.text, err.line, err.column);
+        listener_free(listener);
+        return TE_EINVAL;
+    }
+
+    ret = json_unpack_ex(response, &err, 0, "{s:o}",
+                         "runid", &runid);
+    if (ret == -1)
+    {
+        ERROR("Failed to unpack listener init JSON: "
+              "%s (line %d, column %d)",
+              err.text, err.line, err.column);
+        listener_free(listener);
+        return TE_EINVAL;
+    }
+
+    switch (json_typeof(runid))
+    {
+        case JSON_INTEGER:
+            rc = te_snprintf(listener->runid, sizeof(listener->runid),
+                             "%lld", json_integer_value(runid));
+            if (rc != 0)
+            {
+                ERROR("Failed to convert listener run ID to string: %r", rc);
+                listener_free(listener);
+                return rc;
+            }
+            break;
+        case JSON_STRING:
+            rc = te_strlcpy(listener->runid, json_string_value(runid),
+                            sizeof(listener->runid));
+            if (rc != 0)
+            {
+                ERROR("Failed to copy listener run ID: %r", rc);
+                listener_free(listener);
+                return rc;
+            }
+            break;
+        default:
+            ERROR("Failed to save listener run ID");
+            listener_free(listener);
+            return TE_EINVAL;
+    }
+    json_decref(response);
+
+    RING("Listener %s: session initialized", listener->name);
+    listener->state = LISTENER_GATHERING;
+    return 0;
+}
+
 /* See description in logger_listener.h */
 te_errno
 listener_finish_request(log_listener *listener, CURLcode result)
@@ -335,20 +414,7 @@ listener_finish_request(log_listener *listener, CURLcode result)
     switch (listener->state)
     {
         case LISTENER_INIT_WAITING:
-            /* Check status */
-            if (response_code != 200)
-            {
-                ERROR("Listener %s: /init returned %d", listener->name,
-                      response_code);
-                listener_free(listener);
-                return TE_EINVAL;
-            }
-            else
-            {
-                RING("Listener %s: session initialized", listener->name);
-                listener->state = LISTENER_GATHERING;
-            }
-            break;
+            return listener_finish_request_init(listener, response_code);
         case LISTENER_TRANSFERRING:
             /* Check response code */
             if (response_code != 200)
@@ -389,6 +455,7 @@ listener_finish(log_listener *listener)
     double          ts;
     struct timeval  tv;
     json_t         *json;
+    char           *url_suffix;
     char           *data;
 
     if (listener->state == LISTENER_INIT)
@@ -420,9 +487,11 @@ listener_finish(log_listener *listener)
     free(data);
 
     RING("Listener %s: finishing", listener->name);
-    rc = listener_prepare_request(listener, "finish",
+    url_suffix = te_string_fmt("finish?run=%s", listener->runid);
+    rc = listener_prepare_request(listener, url_suffix,
                                   listener->buffer_out.ptr,
                                   listener->buffer_out.len);
+    free(url_suffix);
     if (rc != 0)
     {
         ERROR("Listener %s: Failed to prepare /finish request: %r",
