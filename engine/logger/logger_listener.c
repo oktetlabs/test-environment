@@ -220,7 +220,7 @@ listener_dump(log_listener *listener)
                                   (long)listener->buffer_out.len);
     if (rc != 0)
     {
-        ERROR("Listener %s: Failed to prepare /init request: %r",
+        ERROR("Listener %s: Failed to prepare /feed request: %r",
               listener->name, rc);
         listener_free(listener);
         return rc;
@@ -397,7 +397,7 @@ listener_finish(log_listener *listener)
     rc = listener_prepare_request(listener, "finish", NULL, 0);
     if (rc != 0)
     {
-        ERROR("Listener %s: Failed to prepare /init request: %r",
+        ERROR("Listener %s: Failed to prepare /finish request: %r",
               listener->name, rc);
         listener_free(listener);
         return rc;
