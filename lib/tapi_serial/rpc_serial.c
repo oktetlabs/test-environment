@@ -314,7 +314,14 @@ rpc_serial_wait_pattern(tapi_serial_handle handle, int *offset, int timeout_ms,
     rpcs = handle->rpcs;
 
     if (timeout_ms > 0)
-        handle->rpcs->timeout += timeout_ms;
+    {
+        /*
+         * Add some seconds to be sure that there would be enough time for
+         * RPC taking rounding into account
+         */
+        handle->rpcs->timeout += timeout_ms + TE_SEC2MS(10);
+    }
+
     in.sock = handle->sock;
     in.timeout = timeout_ms;
     length = vsnprintf(pattern, MAX_PATTERN_LENGTH, fmt, vlist);

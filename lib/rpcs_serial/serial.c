@@ -538,7 +538,9 @@ wait_pattern(int sock, const char *pattern, int *match_offset, int timeout_ms)
     int         bytes_read;
     struct      timeval start;
     struct      timeval end;
+    struct      timeval current_time;
     struct      timeval timeout;
+    int         new_timeout_ms;
     regmatch_t  matches[1];
     int         ret = -1;
 
@@ -550,9 +552,6 @@ wait_pattern(int sock, const char *pattern, int *match_offset, int timeout_ms)
         ERROR("Failed to get time of day: %s", strerror(errno));
         return -1;
     }
-
-    if (timeout_ms != -1 && set_sock_blocking(sock, timeout_ms) == -1)
-        return -1;
 
     if (regcomp(&regexp, pattern, REG_ICASE) != 0)
     {
@@ -569,6 +568,28 @@ wait_pattern(int sock, const char *pattern, int *match_offset, int timeout_ms)
         offset = 0;
         for (;;)
         {
+            struct timeval diff;
+
+            if (timeout_ms != -1)
+            {
+                if (gettimeofday(&current_time, NULL) != 0)
+                {
+                    ret = -1;
+                    ERROR("Failed to get time of day: %s", strerror(errno));
+                    goto restore_opts;
+                }
+                timersub(&current_time, &start, &diff);
+
+                new_timeout_ms = timeout_ms - TE_SEC2MS(diff.tv_sec) -
+                    TE_US2MS(diff.tv_usec);
+
+                if (set_sock_blocking(sock, new_timeout_ms) == -1)
+                {
+                    ret = -1;
+                    goto restore_opts;
+                }
+            }
+
             bytes_read = read(sock, &buffer[offset], 1);
             if (bytes_read == 0)
             {
@@ -592,7 +613,13 @@ wait_pattern(int sock, const char *pattern, int *match_offset, int timeout_ms)
                     {
                         struct timeval diff;
 
-                        gettimeofday(&end, NULL);
+                        if (gettimeofday(&end, NULL) != 0)
+                        {
+                            ret = -1;
+                            ERROR("Failed to get time of day: %s",
+                                  strerror(errno));
+                            goto restore_opts;
+                        }
 
                         timersub(&end, &start, &diff);
                         if (timercmp(&diff, &timeout, >=))
