@@ -2861,3 +2861,18 @@ tapi_cfg_add_new_user(const char *agent, int uid)
                                 "/agent:%s/user:%s", agent,
                                 user_name.ptr);
 }
+
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_del_user(const char *agent, int uid)
+{
+    te_string user_name = TE_STRING_INIT_STATIC(1024);
+    te_errno rc;
+
+    rc = te_string_append(&user_name, "%s%d", TE_USER_PREFIX, uid);
+    if (rc != 0)
+        return rc;
+
+    return cfg_del_instance_fmt(FALSE, "/agent:%s/user:%s", agent,
+                                user_name.ptr);
+}

@@ -1247,6 +1247,14 @@ extern te_errno tapi_cfg_alloc_net_addr_pair(struct sockaddr **addr1,
  */
 extern te_errno tapi_cfg_add_new_user(const char *agent, int uid);
 
+/**
+ * Remove a user previously added by tapi_cfg_add_new_user().
+ *
+ * @param agent       Agent on which to remove a user.
+ * @param uid         User ID.
+ */
+extern te_errno tapi_cfg_del_user(const char *agent, int uid);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
