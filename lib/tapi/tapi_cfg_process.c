@@ -97,13 +97,32 @@ tapi_cfg_ps_get_status(const char *ta, const char *ps_name, te_bool *status)
 {
     te_errno rc;
     cfg_val_type type = CVT_INTEGER;
+    int val;
 
-    rc = cfg_get_instance_fmt(&type, status, TE_CFG_TA_PS "/status:",
+    rc = cfg_get_instance_fmt(&type, &val, TE_CFG_TA_PS "/status:",
                               ta, ps_name);
     if (rc != 0)
+    {
         ERROR("Cannot get status (process '%s', TA '%s'): %r", ps_name, ta, rc);
+        return rc;
+    }
 
-    return rc;
+    switch (val)
+    {
+        case 0:
+            *status = FALSE;
+            break;
+
+        case 1:
+            *status = TRUE;
+            break;
+
+        default:
+            ERROR("Unsupported " TE_CFG_TA_PS "/status: value", ta, ps_name);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    return 0;
 }
 
 te_errno
