@@ -1377,8 +1377,17 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
     SET_CURL_OPT(CURLOPT_DEFAULT_PROTOCOL, "https");
 #endif
     SET_CURL_OPT(CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+    /* Allow GSSAPI authentication */
+    SET_CURL_OPT(CURLOPT_HTTPAUTH, CURLAUTH_NEGOTIATE);
+    /* libcurl requires some username for authentication, use a dummy */
+    SET_CURL_OPT(CURLOPT_USERNAME, ":");
+    SET_CURL_OPT(CURLOPT_GSSAPI_DELEGATION, CURLGSSAPI_DELEGATION_POLICY_FLAG);
+    /*
+     * REDIR_PROTOCOLS is checked by libcurl during authentication method
+     * probing, so HTTP and HTTPS must be enabled.
+     */
+    SET_CURL_OPT(CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
     /* Disallow HTTP redirects */
-    SET_CURL_OPT(CURLOPT_REDIR_PROTOCOLS, 0L);
     SET_CURL_OPT(CURLOPT_FOLLOWLOCATION, 0L);
     /* Disallow redirects for POST requests */
     SET_CURL_OPT(CURLOPT_POSTREDIR, 0L);
