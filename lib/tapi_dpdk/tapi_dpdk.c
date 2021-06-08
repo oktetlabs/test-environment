@@ -931,6 +931,116 @@ out:
 }
 
 te_errno
+tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs, tapi_env *env,
+                                   te_kvpair_h *opt, te_bool *opt_supported)
+{
+    int testpmd_argc;
+    char **testpmd_argv;
+    tapi_dpdk_testpmd_prep_eal prep_eal;
+
+    tapi_job_factory_t *factory = NULL;
+    tapi_dpdk_testpmd_job_t testpmd_job_s = {0};
+    tapi_dpdk_testpmd_job_t *testpmd_job = &testpmd_job_s;
+    te_string stop_testpmd_cmd = TE_STRING_INIT;
+    tapi_job_status_t status;
+    int current_wait_time_ms;
+    int max_wait_timeout_ms;
+    int wait_timeout_ms;
+    te_errno rc;
+    int i;
+
+    rc = tapi_dpdk_prepare_and_build_eal_args(rpcs, env, TESTPMD_MIN_N_CORES,
+                                              NULL, opt, testpmd_job,
+                                              &prep_eal);
+    testpmd_argc = prep_eal.testpmd_argc;
+    testpmd_argv = prep_eal.testpmd_argv;
+
+    if (rc != 0)
+        goto out;
+
+    /* Separate EAL arguments from testpmd arguments */
+    tapi_dpdk_append_argument("--", &testpmd_argc, &testpmd_argv);
+
+    append_testpmd_arguments_from_test_args(opt, &testpmd_argc,
+                                            &testpmd_argv);
+    tapi_dpdk_append_argument(NULL, &testpmd_argc, &testpmd_argv);
+
+    rc = tapi_job_factory_rpc_create(rpcs, &factory);
+    if (rc != 0)
+    {
+        ERROR("Failed to create factory for testpmd job");
+        goto out;
+    }
+
+    rc = tapi_job_simple_create(factory,
+                          &(tapi_job_simple_desc_t){
+                                .program = prep_eal.testpmd_path.ptr,
+                                .argv = (const char **)testpmd_argv,
+                                .job_loc = &testpmd_job->job,
+                                .stdin_loc = &testpmd_job->in_channel,
+                                .stdout_loc = &testpmd_job->out_channels[0],
+                                .stderr_loc = &testpmd_job->out_channels[1],
+                          });
+    if (rc != 0)
+        goto out;
+
+    testpmd_job->ta = tapi_strdup(rpcs->ta);
+    testpmd_job->port_number = prep_eal.port_number;
+
+    *opt_supported = tapi_job_start(testpmd_job->job) == 0 ? TRUE : FALSE;
+    if (*opt_supported)
+    {
+        *opt_supported = FALSE;
+        rc = te_string_append(&stop_testpmd_cmd, "\r");
+        if (rc != 0)
+        {
+            ERROR("Failed to create stop testpmd command string");
+            goto out;
+        }
+
+        wait_timeout_ms = 100;
+        max_wait_timeout_ms = 60000;
+        current_wait_time_ms = 0;
+        while (((rc = tapi_job_wait(testpmd_job->job, wait_timeout_ms,
+                                    NULL)) != 0) && (rc != TE_ECHILD))
+        {
+            current_wait_time_ms += wait_timeout_ms;
+            if (current_wait_time_ms > max_wait_timeout_ms)
+            {
+                ERROR("Job didn't terminate for too long, but it had to "
+                      "either by stop command or unsupported option");
+                rc = TE_ETIMEDOUT;
+                goto out;
+            }
+            tapi_job_send(testpmd_job->in_channel, &stop_testpmd_cmd);
+        }
+
+        rc = tapi_job_wait(testpmd_job->job, 0, &status);
+        if (rc != 0)
+        {
+            ERROR("Failed to get a status of the supposedly terminated job");
+            goto out;
+        }
+
+        if ((status.type == TAPI_JOB_STATUS_EXITED) && (status.value == 0))
+            *opt_supported = TRUE;
+    }
+
+    tapi_dpdk_testpmd_destroy(testpmd_job);
+
+out:
+    for (i = 0; i < testpmd_argc; i++)
+        free(testpmd_argv[i]);
+    free(testpmd_argv);
+    te_string_free(&(prep_eal.testpmd_path));
+    te_string_free(&stop_testpmd_cmd);
+
+    tapi_job_factory_destroy(factory);
+
+    return rc;
+}
+
+te_errno
 tapi_dpdk_testpmd_start(tapi_dpdk_testpmd_job_t *testpmd_job)
 {
     if (testpmd_job->cmdline_file != NULL)

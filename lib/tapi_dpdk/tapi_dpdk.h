@@ -76,6 +76,21 @@ extern te_errno tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs,
                                          tapi_dpdk_testpmd_job_t *testpmd_job);
 
 /**
+ * Check if option specified in @p opt is supported by test-pmd.
+ *
+ * @param rpcs                  RPC server to run test-pmd on
+ * @param env                   Test environment
+ * @param opt                   Option to check support for
+ * @param[out] opt_supported    Result
+ *
+ * @return          Status code
+ */
+extern te_errno tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs,
+                                                   tapi_env *env,
+                                                   te_kvpair_h *opt,
+                                                   te_bool *opt_supported);
+
+/**
  * Start test-pmd job
  *
  * @param testpmd_job       Handle of test-pmd job
