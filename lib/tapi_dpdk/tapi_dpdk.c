@@ -691,32 +691,35 @@ append_testpmd_nb_cores_arg(unsigned int n_fwd_cpus,
     te_string_free(&nb_cores);
 }
 
-te_errno
-tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
-                             unsigned int n_fwd_cpus,
-                             const tapi_cpu_prop_t *prop,
-                             te_kvpair_h *test_args,
-                             tapi_dpdk_testpmd_job_t *testpmd_job)
+typedef struct tapi_dpdk_testpmd_prep_eal {
+    te_string testpmd_path;
+    int testpmd_argc;
+    char **testpmd_argv;
+    unsigned int port_number;
+} tapi_dpdk_testpmd_prep_eal;
+
+static te_errno
+tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
+                                     unsigned int n_fwd_cpus,
+                                     const tapi_cpu_prop_t *prop,
+                                     te_kvpair_h *test_args,
+                                     tapi_dpdk_testpmd_job_t *testpmd_job,
+                                     tapi_dpdk_testpmd_prep_eal *prep_eal)
 {
     te_string testpmd_path = TE_STRING_INIT;
-    tapi_cpu_index_t *cpu_ids = NULL;
     int testpmd_argc = 0;
     char **testpmd_argv = NULL;
-    char *cmdline_file = NULL;
-    te_string cmdline_setup = TE_STRING_INIT;
-    te_string cmdline_start = TE_STRING_INIT;
-    char *working_dir = NULL;
-    char *tmp_dir = NULL;
-    const char *vdev_arg = NULL;
     unsigned int port_number = 0;
-    te_errno rc = 0;
+
+    tapi_cpu_index_t *cpu_ids = NULL;
+    char *working_dir = NULL;
+    const char *vdev_arg = NULL;
     /* The first CPU is reserved by testpmd for command-line processing */
     unsigned int n_cpus = n_fwd_cpus + 1;
-    unsigned int n_cpus_grabbed;
-    tapi_job_factory_t *factory = NULL;
     unsigned int service_cores_count;
+    unsigned int n_cpus_grabbed;
     int numa_node;
-    int i;
+    te_errno rc = 0;
 
     if (n_fwd_cpus == 0)
     {
@@ -760,14 +763,6 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
         goto out;
     }
 
-    rc = cfg_get_instance_fmt(NULL, &tmp_dir,
-                              "/agent:%s/tmp_dir:", rpcs->ta);
-    if (rc != 0)
-    {
-        ERROR("Failed to get temporary directory");
-        goto out;
-    }
-
     CHECK_RC(te_string_append(&testpmd_path, "%sdpdk-testpmd", working_dir));
 
     rc = tapi_dpdk_build_eal_arguments(rpcs, env, n_cpus_grabbed, cpu_ids,
@@ -783,6 +778,49 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
             goto out;
     }
 
+out:
+    prep_eal->testpmd_path = testpmd_path;
+    prep_eal->testpmd_argc = testpmd_argc;
+    prep_eal->testpmd_argv = testpmd_argv;
+    prep_eal->port_number = port_number;
+
+    free(cpu_ids);
+    free(working_dir);
+    return rc;
+}
+
+te_errno
+tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
+                             unsigned int n_fwd_cpus,
+                             const tapi_cpu_prop_t *prop,
+                             te_kvpair_h *test_args,
+                             tapi_dpdk_testpmd_job_t *testpmd_job)
+{
+    te_string testpmd_path;
+    int testpmd_argc;
+    char **testpmd_argv;
+    unsigned int port_number;
+    tapi_dpdk_testpmd_prep_eal prep_eal;
+
+    char *cmdline_file = NULL;
+    te_string cmdline_setup = TE_STRING_INIT;
+    te_string cmdline_start = TE_STRING_INIT;
+    char *tmp_dir = NULL;
+    te_errno rc = 0;
+    tapi_job_factory_t *factory = NULL;
+    int i;
+
+    rc = tapi_dpdk_prepare_and_build_eal_args(rpcs, env, n_fwd_cpus, prop,
+                                              test_args, testpmd_job,
+                                              &prep_eal);
+    testpmd_path = prep_eal.testpmd_path;
+    testpmd_argc = prep_eal.testpmd_argc;
+    testpmd_argv = prep_eal.testpmd_argv;
+    port_number = prep_eal.port_number;
+
+    if (rc != 0)
+        goto out;
+
     /* Separate EAL arguments from testpmd arguments */
     tapi_dpdk_append_argument("--", &testpmd_argc, &testpmd_argv);
     rc = adjust_testpmd_defaults(test_args, port_number, n_fwd_cpus,
@@ -790,6 +828,14 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
                                  &testpmd_argc, &testpmd_argv);
     if (rc != 0)
         goto out;
+
+    rc = cfg_get_instance_fmt(NULL, &tmp_dir,
+                              "/agent:%s/tmp_dir:", rpcs->ta);
+    if (rc != 0)
+    {
+        ERROR("Failed to get temporary directory");
+        goto out;
+    }
 
     generate_cmdline_filename(tmp_dir, &cmdline_file);
     append_testpmd_cmdline_from_args(test_args, port_number, &cmdline_setup,
@@ -874,8 +920,6 @@ out:
         te_string_free(&cmdline_setup);
         te_string_free(&cmdline_start);
     }
-    free(cpu_ids);
-    free(working_dir);
 
     for (i = 0; i < testpmd_argc; i++)
         free(testpmd_argv[i]);
