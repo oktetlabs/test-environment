@@ -79,7 +79,6 @@ tapi_bpf_build_bpf_obj_path(const char *ta, const char *bpf_prog_name)
     {
         ERROR("%s(): Failed to get /agent:%s/dir : %r",
                __FUNCTION__, ta, rc);
-        free(ta_dir);
         return NULL;
     }
 
