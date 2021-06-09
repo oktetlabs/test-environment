@@ -1378,7 +1378,13 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
 #endif
     SET_CURL_OPT(CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
     /* Allow GSSAPI authentication */
+#if defined(CURLAUTH_NEGOTIATE)
     SET_CURL_OPT(CURLOPT_HTTPAUTH, CURLAUTH_NEGOTIATE);
+#elif defined(CURLAUTH_GSSNEGOTIATE)
+    SET_CURL_OPT(CURLOPT_HTTPAUTH, CURLAUTH_GSSNEGOTIATE);
+#else
+    WARN("TE is built against libcurl that doesn't support GSSAPI auth");
+#endif
     /* libcurl requires some username for authentication, use a dummy */
     SET_CURL_OPT(CURLOPT_USERNAME, ":");
     SET_CURL_OPT(CURLOPT_GSSAPI_DELEGATION, CURLGSSAPI_DELEGATION_POLICY_FLAG);
