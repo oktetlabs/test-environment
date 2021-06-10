@@ -171,16 +171,42 @@ perf_app_create_job_from_args(tapi_job_factory_t *factory, te_vec *args,
 
 /* See description in performance_internal.h */
 te_errno
-perf_app_start(tapi_job_factory_t *factory, te_vec *args, tapi_perf_app *app)
+perf_client_create(tapi_perf_client *client, tapi_job_factory_t *factory)
 {
+    te_vec   args = TE_VEC_INIT(char *);
     te_errno rc;
-    char **arg;
+
+    client->methods->build_args(&args, &client->app.opts);
+    rc = perf_app_create_job_from_args(factory, &args, &client->app);
+
+    te_vec_deep_free(&args);
+
+    return rc;
+}
+
+/* See description in performance_internal.h */
+te_errno
+perf_server_create(tapi_perf_server *server, tapi_job_factory_t *factory)
+{
+    te_vec   args = TE_VEC_INIT(char *);
+    te_errno rc;
+
+    server->methods->build_args(&args, &server->app.opts);
+    rc = perf_app_create_job_from_args(factory, &args, &server->app);
+
+    te_vec_deep_free(&args);
+
+    return rc;
+}
+
+/* See description in performance_internal.h */
+te_errno
+perf_app_start(tapi_perf_app *app)
+{
 
     if (app->job == NULL)
     {
-        rc = perf_app_create_job_from_args(factory, args, app);
-        if (rc != 0)
-            return rc;
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
     else if (tapi_job_is_running(app->job))
     {

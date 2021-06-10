@@ -671,58 +671,6 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
 }
 
 /*
- * Start iperf3 server.
- *
- * @param server            Server context.
- * @param factory           Job factory.
- *
- * @return Status code.
- */
-static te_errno
-server_start(tapi_perf_server *server, tapi_job_factory_t *factory)
-{
-    te_vec   args = TE_VEC_INIT(char *);
-    const char *ta;
-    te_errno rc;
-
-    ta = tapi_job_factory_ta(factory);
-    ENTRY("Start iperf3 server on ta %s", ta != NULL ? ta : "<unknown>");
-
-    build_server_args(&args, &server->app.opts);
-    rc = perf_app_start(factory, &args, &server->app);
-
-    te_vec_deep_free(&args);
-
-    return rc;
-}
-
-/*
- * Start perf3 client.
- *
- * @param client            Client context.
- * @param factory           Job factory.
- *
- * @return Status code.
- */
-static te_errno
-client_start(tapi_perf_client *client, tapi_job_factory_t *factory)
-{
-    te_vec   args = TE_VEC_INIT(char *);
-    const char *ta;
-    te_errno rc;
-
-    ta = tapi_job_factory_ta(factory);
-    ENTRY("Start iperf3 client on ta %s", ta != NULL ? ta : "<unknown>");
-
-    build_client_args(&args, &client->app.opts);
-    rc = perf_app_start(factory, &args, &client->app);
-
-    te_vec_deep_free(&args);
-
-    return rc;
-}
-
-/*
  * Wait while client finishes his work.
  *
  * @param client        Client context.
@@ -783,7 +731,7 @@ client_get_report(tapi_perf_client *client, tapi_perf_report_kind kind,
  * iperf3 server specific methods.
  */
 static tapi_perf_server_methods server_methods = {
-    .start = server_start,
+    .build_args = build_server_args,
     .get_report = server_get_report
 };
 
@@ -791,7 +739,7 @@ static tapi_perf_server_methods server_methods = {
  * iperf3 client specific methods.
  */
 static tapi_perf_client_methods client_methods = {
-    .start = client_start,
+    .build_args = build_client_args,
     .wait = client_wait,
     .get_report = client_get_report
 };

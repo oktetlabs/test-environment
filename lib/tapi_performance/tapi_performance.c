@@ -103,9 +103,11 @@ tapi_perf_opts_cmp(const tapi_perf_opts *opts_a, const tapi_perf_opts *opts_b)
 
 /* See description in tapi_performance.h */
 tapi_perf_server *
-tapi_perf_server_create(tapi_perf_bench bench, const tapi_perf_opts *options)
+tapi_perf_server_create(tapi_perf_bench bench, const tapi_perf_opts *options,
+                        tapi_job_factory_t *factory)
 {
     tapi_perf_server *server = NULL;
+    te_errno rc;
 
     ENTRY("Create perf server");
 
@@ -127,6 +129,10 @@ tapi_perf_server_create(tapi_perf_bench bench, const tapi_perf_opts *options)
             break;
     }
 
+    rc = perf_server_create(server, factory);
+    if (rc != 0)
+        TEST_FAIL("Failed to create server perf tool");
+
     return server;
 }
 
@@ -146,27 +152,25 @@ tapi_perf_server_destroy(tapi_perf_server *server)
 
 /* See description in tapi_performance.h */
 te_errno
-tapi_perf_server_start_unreliable(tapi_perf_server *server, tapi_job_factory_t *factory)
+tapi_perf_server_start_unreliable(tapi_perf_server *server)
 {
     ENTRY("Start perf server unreliable");
 
-    if (server == NULL ||
-        server->methods == NULL ||
-        server->methods->start == NULL)
+    if (server == NULL)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
-    return server->methods->start(server, factory);
+    return perf_app_start(&server->app);
 }
 
 /* See description in tapi_performance.h */
 te_errno
-tapi_perf_server_start(tapi_perf_server *server, tapi_job_factory_t *factory)
+tapi_perf_server_start(tapi_perf_server *server)
 {
     te_errno rc;
 
     ENTRY("Start perf server");
 
-    rc = tapi_perf_server_start_unreliable(server, factory);
+    rc = tapi_perf_server_start_unreliable(server);
     if (rc == 0)
     {
         /*
@@ -227,9 +231,11 @@ tapi_perf_server_get_specific_report(tapi_perf_server       *server,
 
 /* See description in tapi_performance.h */
 tapi_perf_client *
-tapi_perf_client_create(tapi_perf_bench bench, const tapi_perf_opts *options)
+tapi_perf_client_create(tapi_perf_bench bench, const tapi_perf_opts *options,
+                        tapi_job_factory_t *factory)
 {
     tapi_perf_client *client = NULL;
+    te_errno rc;
 
     ENTRY("Create perf client");
 
@@ -251,6 +257,10 @@ tapi_perf_client_create(tapi_perf_bench bench, const tapi_perf_opts *options)
             break;
     }
 
+    rc = perf_client_create(client, factory);
+    if (rc != 0)
+        TEST_FAIL("Failed to create client perf tool");
+
     return client;
 }
 
@@ -270,16 +280,14 @@ tapi_perf_client_destroy(tapi_perf_client *client)
 
 /* See description in tapi_performance.h */
 te_errno
-tapi_perf_client_start(tapi_perf_client *client, tapi_job_factory_t *factory)
+tapi_perf_client_start(tapi_perf_client *client)
 {
     ENTRY("Start perf client");
 
-    if (client == NULL ||
-        client->methods == NULL ||
-        client->methods->start == NULL)
+    if (client == NULL)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
-    return client->methods->start(client, factory);
+    return perf_app_start(&client->app);
 }
 
 /* See description in tapi_performance.h */

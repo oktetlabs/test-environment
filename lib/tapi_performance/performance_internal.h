@@ -44,21 +44,38 @@ extern te_errno perf_app_create_job_from_args(tapi_job_factory_t *factory,
                                               te_vec *args, tapi_perf_app *app);
 
 /**
+ * Create server perf tool.
+ *
+ * @param server    Server context.
+ * @param factory   Job factory.
+ *
+ * @return Status code.
+ */
+extern te_errno perf_server_create(tapi_perf_server *server,
+                                   tapi_job_factory_t *factory);
+
+/**
+ * Create client perf tool.
+ *
+ * @param client    Client context.
+ * @param factory   Job factory.
+ *
+ * @return Status code.
+ */
+extern te_errno perf_client_create(tapi_perf_client *client,
+                                   tapi_job_factory_t *factory);
+
+/**
  * Start perf application. Note, @b perf_app_stop should be called to stop the
  * application.
  *
- * @param[in]    factory    Job factory.
- * @param[in]    args       List with command and its arguments to execute
- *                          (start) application.
- * @param[inout] app        Application context.
+ * @param[in] app        Application context.
  *
  * @return Status code.
  *
  * @sa perf_app_stop
  */
-extern te_errno perf_app_start(tapi_job_factory_t *factory, te_vec *args,
-                               tapi_perf_app *app);
-
+extern te_errno perf_app_start(tapi_perf_app *app);
 
 /**
  * Read data from filter to string.

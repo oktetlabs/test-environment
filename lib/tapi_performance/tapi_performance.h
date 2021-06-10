@@ -59,12 +59,14 @@
  *     // connection with client (iperf tool issue, Bug 9714)
  *     perf_opts.interval_sec = perf_opts.duration_sec;
  *
- *     perf_server = tapi_perf_server_create(TAPI_PERF_IPERF, &perf_opts);
- *     perf_client = tapi_perf_client_create(TAPI_PERF_IPERF, &perf_opts);
  *     CHECK_RC(tapi_job_factory_rpc_create(perf_server_rpcs, &server_factory));
  *     CHECK_RC(tapi_job_factory_rpc_create(perf_client_rpcs, &client_factory));
- *     CHECK_RC(tapi_perf_server_start(perf_server, server_factory));
- *     CHECK_RC(tapi_perf_client_start(perf_client, client_factory));
+ *     perf_server = tapi_perf_server_create(TAPI_PERF_IPERF, &perf_opts,
+ *                                           server_factory);
+ *     perf_client = tapi_perf_client_create(TAPI_PERF_IPERF, &perf_opts,
+ *                                           client_factory);
+ *     CHECK_RC(tapi_perf_server_start(perf_server));
+ *     CHECK_RC(tapi_perf_client_start(perf_client));
  *     CHECK_RC(tapi_perf_client_wait(perf_client, TAPI_PERF_TIMEOUT_DEFAULT));
  *     // Time is relative and goes differently on different hosts.
  *     // Sometimes we need to wait for a few moments until report is ready.
@@ -97,6 +99,7 @@
 #include "rcf_rpc.h"
 #include "te_string.h"
 #include "tapi_job.h"
+#include "te_vector.h"
 
 
 #ifdef __cplusplus
@@ -179,19 +182,16 @@ typedef struct tapi_perf_report {
 /* Forward declaration of network throughput test server tool */
 struct tapi_perf_server;
 typedef struct tapi_perf_server tapi_perf_server;
+typedef struct tapi_perf_opts tapi_perf_opts;
 
 /**
- * Start perf server.
+ * Build command string to run server tool.
  *
- * @param server            Server context.
- * @param factory           Job factory
- *
- * @return Status code.
- *
- * @sa tapi_perf_server_stop
+ * @param args          List of built commands line arguments.
+ * @param options       Tool server options.
  */
-typedef te_errno (* tapi_perf_server_method_start)(tapi_perf_server *server,
-                                                   tapi_job_factory_t *factory);
+typedef void (* tapi_perf_server_method_build_args)(te_vec *args,
+                                                 const tapi_perf_opts *options);
 
 /**
  * Get server report. The function reads client output (stdout, stderr).
@@ -210,7 +210,7 @@ typedef te_errno (* tapi_perf_server_method_get_report)(
  * Methods to operate the server network throughput test tool.
  */
 typedef struct tapi_perf_server_methods {
-    tapi_perf_server_method_start      start;
+    tapi_perf_server_method_build_args build_args;
     tapi_perf_server_method_get_report get_report;
 } tapi_perf_server_methods;
 
@@ -220,17 +220,13 @@ struct tapi_perf_client;
 typedef struct tapi_perf_client tapi_perf_client;
 
 /**
- * Start perf client.
+ * Build command string to run client tool.
  *
- * @param client            Client context.
- * @param factory           Job factory
- *
- * @return Status code.
- *
- * @sa tapi_perf_client_stop
+ * @param args          List of built commands line arguments.
+ * @param options       Tool client options.
  */
-typedef te_errno (* tapi_perf_client_method_start)(tapi_perf_client *client,
-                                                   tapi_job_factory_t *factory);
+typedef void (* tapi_perf_client_method_build_args)(te_vec *args,
+                                                 const tapi_perf_opts *options);
 
 /**
  * Wait while client finishes his work. Note, function jumps to cleanup if
@@ -265,7 +261,7 @@ typedef te_errno (* tapi_perf_client_method_get_report)(
  * Methods to operate the client network throughput test tool.
  */
 typedef struct tapi_perf_client_methods {
-    tapi_perf_client_method_start      start;
+    tapi_perf_client_method_build_args build_args;
     tapi_perf_client_method_wait       wait;
     tapi_perf_client_method_get_report get_report;
 } tapi_perf_client_methods;
@@ -346,7 +342,8 @@ extern void tapi_perf_opts_init(tapi_perf_opts *opts);
  * @sa tapi_perf_server_destroy
  */
 extern tapi_perf_server *tapi_perf_server_create(tapi_perf_bench bench,
-                                                 const tapi_perf_opts *options);
+                                                 const tapi_perf_opts *options,
+                                                 tapi_job_factory_t *factory);
 
 /**
  * Destroy server network throughput test tool proxy.
@@ -366,14 +363,12 @@ extern void tapi_perf_server_destroy(tapi_perf_server *server);
  * tapi_perf_server_start() instead.
  *
  * @param server            Server context.
- * @param factory           Job factory
  *
  * @return Status code.
  *
  * @sa tapi_perf_server_start, tapi_perf_server_stop
  */
-extern te_errno tapi_perf_server_start_unreliable(tapi_perf_server *server,
-                                                  tapi_job_factory_t *factory);
+extern te_errno tapi_perf_server_start_unreliable(tapi_perf_server *server);
 
 /**
  * Start perf server "reliably". It calls tapi_perf_server_start_unreliable()
@@ -382,14 +377,12 @@ extern te_errno tapi_perf_server_start_unreliable(tapi_perf_server *server,
  * some time.
  *
  * @param server            Server context.
- * @param factory           Job factory
  *
  * @return Status code.
  *
  * @sa tapi_perf_server_start_unreliable, tapi_perf_server_stop
  */
-extern te_errno tapi_perf_server_start(tapi_perf_server *server,
-                                       tapi_job_factory_t *factory);
+extern te_errno tapi_perf_server_start(tapi_perf_server *server);
 
 /**
  * Stop perf server.
@@ -491,7 +484,8 @@ extern te_errno tapi_perf_server_get_dump_check_report(tapi_perf_server *server,
  * @sa tapi_perf_client_destroy
  */
 extern tapi_perf_client *tapi_perf_client_create(tapi_perf_bench bench,
-                                                 const tapi_perf_opts *options);
+                                                 const tapi_perf_opts *options,
+                                                 tapi_job_factory_t *factory);
 
 /**
  * Destroy client network throughput test tool proxy.
@@ -506,14 +500,12 @@ extern void tapi_perf_client_destroy(tapi_perf_client *client);
  * Start perf client.
  *
  * @param client            Client context.
- * @param factory           Job factory
  *
  * @return Status code.
  *
  * @sa tapi_perf_client_stop
  */
-extern te_errno tapi_perf_client_start(tapi_perf_client *client,
-                                       tapi_job_factory_t *factory);
+extern te_errno tapi_perf_client_start(tapi_perf_client *client);
 
 /**
  * Stop perf client.
