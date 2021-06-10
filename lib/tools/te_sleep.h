@@ -39,6 +39,19 @@ te_sleep(unsigned int to_sleep)
 }
 
 /**
+ * Sleep specified number of milliseconds.
+ *
+ * @param to_sleep      Number of milliseconds to sleep
+ * @param why           String that describes reason to sleep here.
+ */
+static inline void
+te_motivated_msleep(unsigned int to_sleep, const char *why)
+{
+    RING("Sleeping %u milliseconds: %s", to_sleep, why);
+    (void)usleep(to_sleep * 1000);
+}
+
+/**
  * Sleep specified number of seconds.
  *
  * @param to_sleep      Number of seconds to sleep

@@ -48,6 +48,7 @@
 #include "te_stdint.h"
 #include "te_alloc.h"
 #include "te_str.h"
+#include "te_sleep.h"
 #include "logger_api.h"
 #include "conf_api.h"
 #include "te_sockaddr.h"
@@ -57,6 +58,7 @@
 #include "tapi_cfg_phy.h"
 #include "tapi_host_ns.h"
 #include "tapi_mem.h"
+#include "tapi_test_behaviour.h"
 
 /* See the description in tapi_cfg_base.h */
 te_errno
@@ -1363,6 +1365,10 @@ tapi_cfg_base_if_down_up(const char *ta, const char *ifname)
     rc = tapi_cfg_base_if_down(ta, ifname);
     if (rc != 0)
         return rc;
+
+    if (test_behaviour_storage.iface_toggle_delay_ms > 0)
+        te_motivated_msleep(test_behaviour_storage.iface_toggle_delay_ms,
+                            "wait before bringing the interface up");
 
     return tapi_cfg_base_if_up(ta, ifname);
 }

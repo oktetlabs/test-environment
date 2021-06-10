@@ -73,6 +73,7 @@ test_behaviour_get(test_behaviour *behaviour)
     GET_BEHV(prologue_sleep, test_behaviour_strtoul);
     GET_BEHV(fail_verdict, te_strtol_bool);
     GET_BEHV(use_chk_funcs, te_strtol_bool);
+    GET_BEHV(iface_toggle_delay_ms, test_behaviour_strtoul);
 
 #undef GET_BEHV
 }

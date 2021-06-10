@@ -48,6 +48,10 @@ typedef struct test_behaviour {
     te_bool use_chk_funcs; /**< If @c TRUE, in RPC calls for read(), recv(),
                                 recvfrom(), poll(), ppoll() call their
                                 __[function]_chk() variants on TA */
+
+    unsigned int iface_toggle_delay_ms; /**< How many (msec) to wait after
+                                         * downing an interface before bringing
+                                         * it up */
 } test_behaviour;
 
 /**

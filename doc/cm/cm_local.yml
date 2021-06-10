@@ -194,3 +194,5 @@
       value: "${TE_TEST_BEHAVIOUR_FAIL_VERDICT:-0}"
     - oid: "/local:/test:/behaviour:use_chk_funcs"
       value: "${TE_TEST_BEHAVIOUR_USE_CHK_FUNCS:-0}"
+    - oid: "/local:/test:/behaviour:iface_toggle_delay_ms"
+      value: "${TE_TEST_BEHAVIOUR_IFACE_TOOGLE_DELAY_MS:-0}"
