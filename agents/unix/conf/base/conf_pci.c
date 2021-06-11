@@ -1599,7 +1599,8 @@ let_generic_driver_know_pci_device(const pci_device *dev, const char *drvname)
         return rc;
     }
 
-    if (write(fd, buf.ptr, buf.len) < 0)
+    /* Do not fail if ID is already added */
+    if (write(fd, buf.ptr, buf.len) < 0 && errno != EEXIST)
         rc = TE_OS_RC(TE_TA_UNIX, errno);
     close(fd);
     te_string_free(&buf);
