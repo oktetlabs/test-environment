@@ -45,10 +45,33 @@ typedef te_errno (*clsact_setter)(struct bpf_link_info_list *, const char *,
 typedef void (*clsact_getter)(struct bpf_link_info_list *, const char *,
                               char *);
 
+/*
+ * Some old distros with kernel < 4.5 (e.g. Ubuntu 16.04) may have
+ * TC_H_MIN_INGRESS and TC_H_MIN_EGRESS undefined. Handle this case and do
+ * not fail the build.
+ */
+#if defined(TC_H_MIN_INGRESS)
 typedef enum clsact_dir {
     CONF_CLSACT_INGRESS = TC_H_MIN_INGRESS,
     CONF_CLSACT_EGRESS = TC_H_MIN_EGRESS,
 } clsact_dir;
+#else
+
+/* If TC_H_MIN_INGRESS is undefined, declare a dummy type to keep build pass. */
+typedef enum clsact_dir {
+    CONF_CLSACT_INGRESS,
+    CONF_CLSACT_EGRESS,
+} clsact_dir;
+
+/*
+ * If for some reason TC_H_CLSACT is defined, undefine it to prevent invalid
+ * values usage in conf_qdisc_clsact_bpf_set().
+ */
+#ifdef TC_H_CLSACT
+#undef TC_H_CLSACT
+#endif /* TC_H_CLSACT */
+
+#endif /* TC_H_MIN_INGRESS */
 
 /* Kind of tc qdisc discipline */
 typedef enum conf_qdisc_kind {
@@ -687,6 +710,7 @@ conf_qdisc_clsact_bpf_set(struct bpf_link_info_list *list,
     UNUSED(list);
     UNUSED(if_name);
     UNUSED(prog_name);
+    UNUSED(dir);
 
     ERROR("BPF is not supported");
     return TE_RC(TE_TA_UNIX, TE_EINVAL);
