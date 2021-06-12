@@ -131,7 +131,8 @@ perf_app_create_job(tapi_job_factory_t *factory, te_vec *args,
 
 /* See description in performance_internal.h */
 te_errno
-perf_app_start(tapi_job_factory_t *factory, te_vec *args, tapi_perf_app *app)
+perf_app_create_job_from_args(tapi_job_factory_t *factory, te_vec *args,
+                              tapi_perf_app *app)
 {
     tapi_job_t *job;
     tapi_job_channel_t *out_filter;
@@ -140,32 +141,46 @@ perf_app_start(tapi_job_factory_t *factory, te_vec *args, tapi_perf_app *app)
     te_errno rc;
     char **arg;
 
-    if (app->job == NULL)
+    TE_VEC_FOREACH(args, arg)
     {
-        TE_VEC_FOREACH(args, arg)
-        {
-            if (*arg == NULL)
-                break;  /* the last item is not an argument but terminator */
+        if (*arg == NULL)
+            break;  /* the last item is not an argument but terminator */
 
-            rc = te_string_append(&cmd, "%s ", *arg);
-            if (rc != 0)
-            {
-                te_string_free(&cmd);
-                return rc;
-            }
-        }
-
-        rc = perf_app_create_job(factory, args, &job, &out_filter, &err_filter);
+        rc = te_string_append(&cmd, "%s ", *arg);
         if (rc != 0)
         {
             te_string_free(&cmd);
             return rc;
         }
+    }
 
-        app->job  = job;
-        app->cmd  = cmd.ptr;
-        app->out_filter = out_filter;
-        app->err_filter = err_filter;
+    rc = perf_app_create_job(factory, args, &job, &out_filter, &err_filter);
+    if (rc != 0)
+    {
+        te_string_free(&cmd);
+        return rc;
+    }
+
+    app->job  = job;
+    app->cmd  = cmd.ptr;
+    app->out_filter = out_filter;
+    app->err_filter = err_filter;
+
+    return rc;
+}
+
+/* See description in performance_internal.h */
+te_errno
+perf_app_start(tapi_job_factory_t *factory, te_vec *args, tapi_perf_app *app)
+{
+    te_errno rc;
+    char **arg;
+
+    if (app->job == NULL)
+    {
+        rc = perf_app_create_job_from_args(factory, args, app);
+        if (rc != 0)
+            return rc;
     }
     else if (tapi_job_is_running(app->job))
     {

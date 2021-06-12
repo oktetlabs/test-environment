@@ -29,6 +29,21 @@ typedef struct tapi_perf_error_map {
 } tapi_perf_error_map;
 
 /**
+ * Create job for perf application with specified arguments.
+ *
+ * @param factory   Job factory.
+ * @param args      List with command and its arguments to create
+ *                  application.
+ * @param app       Application context.
+ *
+ * @return Status code.
+ *
+ * @sa perf_app_stop
+ */
+extern te_errno perf_app_create_job_from_args(tapi_job_factory_t *factory,
+                                              te_vec *args, tapi_perf_app *app);
+
+/**
  * Start perf application. Note, @b perf_app_stop should be called to stop the
  * application.
  *
