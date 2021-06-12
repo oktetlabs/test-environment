@@ -32,12 +32,13 @@ struct bpf_map SEC("maps") rxcnt = {
  * The map contents:
  * 0 - number of copies to made.
  * 1 - interface index to redirect packet to.
+ * 2 - whether to use BPF_F_INGRESS flag.
  */
 struct bpf_map SEC("maps") ctrl = {
     .type = BPF_MAP_TYPE_ARRAY,
     .key_size = sizeof(__u32),
     .value_size = sizeof(__u32),
-    .max_entries = 2,
+    .max_entries = 3,
 };
 
 /**
@@ -68,15 +69,24 @@ tc_dup(struct __sk_buff *skb)
     copies = bpf_map_lookup_elem(&ctrl, &key);
     if (copies && *copies > 0)
     {
+        __u32 *ingress;
+        __u64 flags = 0;
+
         key = 1;
         ifindex = bpf_map_lookup_elem(&ctrl, &key);
+
+        key = 2;
+        ingress = bpf_map_lookup_elem(&ctrl, &key);
 
         if (!ifindex || *ifindex == 0)
             return TC_ACT_OK;
 
+        if (ingress && *ingress != 0)
+            flags = BPF_F_INGRESS;
+
         count_pkt();
-        bpf_clone_redirect(skb, *ifindex, BPF_F_INGRESS);
         *copies -= 1;
+        bpf_clone_redirect(skb, *ifindex, flags);
     }
 
     return TC_ACT_OK;

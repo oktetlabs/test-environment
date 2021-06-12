@@ -67,10 +67,27 @@ typedef enum ct_stim_del_frame
 #define CT_BPF_DELAY_SIZE_KEY    2
 
 /**
+ * Key to access boolean map field containing flag whether to
+ * use @c BPF_F_INGRESS flag.
+ */
+#define CT_BPF_DELAY_INGRESS_KEY 3
+
+/**
  * Map for a flag, signaling about whether
  * a frame is saved now or not.
  */
 struct bpf_map SEC("maps") m_flag = {
+    .type = BPF_MAP_TYPE_ARRAY,
+    .key_size = sizeof(__u32),
+    .value_size = sizeof(__u32),
+    .max_entries = 1,
+};
+
+/**
+ * Map for a flag, signaling about whether bpf_clone_redirect() was
+ * called. It is used in egress interface case.
+ */
+struct bpf_map SEC("maps") m_cloned = {
     .type = BPF_MAP_TYPE_ARRAY,
     .key_size = sizeof(__u32),
     .value_size = sizeof(__u32),
@@ -94,12 +111,13 @@ struct bpf_map SEC("maps") pktbuf = {
  * 0 - interface index
  * 1 - number of frames to delay
  * 2 - size of a frame to delay (@ref ct_stim_del_frame)
+ * 3 - whether to use BPF_F_INGRESS flag.
  */
 struct bpf_map SEC("maps") ctrl = {
     .type = BPF_MAP_TYPE_ARRAY,
     .key_size = sizeof(__u32),
     .value_size = sizeof(__u32),
-    .max_entries = 3,
+    .max_entries = 4,
 };
 
 /**
@@ -262,10 +280,23 @@ tc_delay(struct __sk_buff *skb)
     __u32  *delay = NULL;
     __u32  *flag = NULL;
     __u32   saved_framelen = 0;
+    __u32  *cloned = NULL;
 
     ct_stim_del_frame *delay_frame_size = NULL;
 
+    cloned = bpf_map_lookup_elem(&m_cloned, &key);
     flag = bpf_map_lookup_elem(&m_flag, &key);
+
+    /*
+     * If the condition is true, we caught just cloned frame while the
+     * bpf_clone_redirect() is still executing.
+     * In such case we should pass it and exit the program immediately.
+     */
+    if (cloned != NULL && *cloned != 0)
+    {
+        printk("Caught cloned frame. Exiting.\n");
+        return TC_ACT_OK;
+    }
 
     key = CT_BPF_DELAY_NUMPKT_KEY;
     delay = bpf_map_lookup_elem(&ctrl, &key);
@@ -333,14 +364,30 @@ tc_delay(struct __sk_buff *skb)
     }
     else if (*delay == 0 && *flag != 0)
     {
+        __u32 *ingress;
+        __u64 flags = 0;
+
         /* We have saved packet, and it is time to send it. */
         printk("send delayed packet\n");
+
+        key = CT_BPF_DELAY_INGRESS_KEY;
+        ingress = bpf_map_lookup_elem(&ctrl, &key);
+
+        if (ingress && *ingress != 0)
+            flags = BPF_F_INGRESS;
 
         /*
          * Send the current frame without changes. This frame will be sent
          * before the restored one.
+         * Set 'cloned' flag to determine the case when the BPF program is
+         * called at bpf_clone_redirect() execution time (regular case for
+         * egress interface).
          */
-        bpf_clone_redirect(skb, *ifindex, BPF_F_INGRESS);
+        if (cloned != NULL)
+            *cloned = 1;
+        bpf_clone_redirect(skb, *ifindex, flags);
+        if (cloned != NULL)
+            *cloned = 0;
 
         /* Update bpf context with saved frame. */
         bpf_skb_change_tail(skb, saved_framelen, 0);
@@ -348,7 +395,7 @@ tc_delay(struct __sk_buff *skb)
         {
             /* Send the delayed frame. */
             *flag = 0;
-            return bpf_redirect(*ifindex, BPF_F_INGRESS);
+            return bpf_redirect(*ifindex, flags);
         }
         else
         {

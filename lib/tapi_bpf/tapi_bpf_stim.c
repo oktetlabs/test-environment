@@ -58,6 +58,11 @@
  * to which packet copies are sent.
  */
 #define TAPI_BPF_STIM_DUP_IFINDEX_KEY    1
+/**
+ * Key to access boolean map field containing flag whether to use
+ * @c BPF_F_INGRESS flag in @b bpf_clone_redirect().
+ */
+#define TAPI_BPF_STIM_DUP_INGRESS_KEY 2
 /**@} <!-- END tapi_bpf_stim_dup_cd --> */
 
 /**
@@ -78,25 +83,36 @@
  * Key to access map field to write size of frame to save -
  * must be a value of @ref tapi_bpf_stim_del_frame */
 #define TAPI_BPF_STIM_DELAY_SIZE_KEY    2
+
+/**
+ * Key to access boolean map field containing flag whether to use
+ * @c BPF_F_INGRESS flag in @b bpf_redirect().
+ */
+#define TAPI_BPF_STIM_DELAY_INGRESS_KEY 3
+
 /**@} <!-- END tapi_bpf_stim_delay_cd --> */
 
 /**
  * Allocate and initialize BPF context, load BPF object to kernel,
- * link BPF program to TC ingress.
+ * link BPF program to TC.
  *
  * @param handle        Congestion stimulus BPF handle.
  * @param prog_name     BPF program name.
  * @param type          Stimulus type.
+ * @param egress        Link BPF program to TC egress if @c TRUE, otherwise
+ *                      link to TC ingress.
  */
 static void
 tapi_bpf_stim_ctx_create(tapi_bpf_stim_hdl *handle, const char *prog_name,
-                         tapi_bpf_stim_type type)
+                         tapi_bpf_stim_type type, te_bool egress)
 {
 
     tapi_bpf_stim_ctx *bpf_ctx = tapi_calloc(1, sizeof(*bpf_ctx));
 
     LIST_INSERT_HEAD(&handle->bpf_ctxs, bpf_ctx, next);
 
+    bpf_ctx->link_type = egress ? TAPI_BPF_LINK_TC_EGRESS :
+                                  TAPI_BPF_LINK_TC_INGRESS;
     bpf_ctx->stim_type = type;
     bpf_ctx->bpf_path = tapi_bpf_build_bpf_obj_path(handle->ta, prog_name);
 
@@ -117,7 +133,7 @@ tapi_bpf_stim_ctx_create(tapi_bpf_stim_hdl *handle, const char *prog_name,
     CHECK_RC(tapi_bpf_map_set_writable(handle->ta, bpf_ctx->bpf_id,
                                        TAPI_BPF_STIM_CTRL_MAP_NAME));
     CHECK_RC(tapi_bpf_prog_link(handle->ta, handle->ifname, bpf_ctx->bpf_id,
-                                TAPI_BPF_LINK_TC_INGRESS, prog_name));
+                                bpf_ctx->link_type, prog_name));
 }
 
 /**
@@ -142,7 +158,8 @@ tapi_bpf_stim_ctrl_write(const char *ta, unsigned int bpfid, unsigned int key,
 /* See description in ts_congestion.h */
 void
 tapi_bpf_stim_init(rcf_rpc_server *pco, const char *ifname,
-                   unsigned int type, tapi_bpf_stim_hdl **handle)
+                   unsigned int type, te_bool egress,
+                   tapi_bpf_stim_hdl **handle)
 {
     tapi_bpf_stim_hdl *hdl = NULL;
     cfg_val_type cfg_type = CVT_INTEGER;
@@ -172,15 +189,15 @@ tapi_bpf_stim_init(rcf_rpc_server *pco, const char *ifname,
     {
         case TAPI_BPF_STIM_STIMULUS_DROP:
             tapi_bpf_stim_ctx_create(hdl, TAPI_BPF_STIM_DROP_PROG_NAME,
-                                     TAPI_BPF_STIM_STIMULUS_DROP);
+                                     TAPI_BPF_STIM_STIMULUS_DROP, egress);
             break;
         case TAPI_BPF_STIM_STIMULUS_DUPLICATE:
             tapi_bpf_stim_ctx_create(hdl, TAPI_BPF_STIM_DUP_PROG_NAME,
-                                     TAPI_BPF_STIM_STIMULUS_DUPLICATE);
+                                     TAPI_BPF_STIM_STIMULUS_DUPLICATE, egress);
             break;
         case TAPI_BPF_STIM_STIMULUS_DELAY:
             tapi_bpf_stim_ctx_create(hdl, TAPI_BPF_STIM_DELAY_PROG_NAME,
-                                     TAPI_BPF_STIM_STIMULUS_DELAY);
+                                     TAPI_BPF_STIM_STIMULUS_DELAY, egress);
             break;
         default:
             TEST_FAIL("%s(): unsupported BPF stimulus", __FUNCTION__);
@@ -197,19 +214,17 @@ tapi_bpf_stim_del(tapi_bpf_stim_hdl *handle)
     if (handle == NULL)
         return;
 
-    tapi_bpf_prog_unlink(handle->ta, handle->ifname,
-                         TAPI_BPF_LINK_TC_INGRESS);
-
-    tapi_cfg_qdisc_disable(handle->ta, handle->ifname);
-
     LIST_FOREACH_SAFE(item,
                       &handle->bpf_ctxs,
                       next, tmp)
     {
+        tapi_bpf_prog_unlink(handle->ta, handle->ifname, item->link_type);
         tapi_bpf_obj_fini(handle->ta, item->bpf_id);
         LIST_REMOVE(item, next);
         free(item);
     }
+
+    tapi_cfg_qdisc_disable(handle->ta, handle->ifname);
 
     free(handle);
 }
@@ -252,6 +267,15 @@ tapi_bpf_stim_dup(tapi_bpf_stim_hdl *handle, unsigned int num)
             if (rc != 0)
                 return rc;
 
+            if (bpf_ctx->link_type == TAPI_BPF_LINK_TC_INGRESS)
+            {
+                rc = tapi_bpf_stim_ctrl_write(handle->ta, bpf_ctx->bpf_id,
+                                              TAPI_BPF_STIM_DUP_INGRESS_KEY,
+                                              TRUE);
+                if (rc != 0)
+                    return rc;
+            }
+
             return tapi_bpf_stim_ctrl_write(handle->ta, bpf_ctx->bpf_id,
                                             TAPI_BPF_STIM_DUP_NUM_COPIES_KEY,
                                             num);
@@ -286,6 +310,15 @@ tapi_bpf_stim_delay(tapi_bpf_stim_hdl *handle, unsigned int num,
                                           frame_size);
             if (rc != 0)
                 return rc;
+
+            if (bpf_ctx->link_type == TAPI_BPF_LINK_TC_INGRESS)
+            {
+                rc = tapi_bpf_stim_ctrl_write(handle->ta, bpf_ctx->bpf_id,
+                                              TAPI_BPF_STIM_DELAY_INGRESS_KEY,
+                                              TRUE);
+                if (rc != 0)
+                    return rc;
+            }
 
             return tapi_bpf_stim_ctrl_write(handle->ta, bpf_ctx->bpf_id,
                                             TAPI_BPF_STIM_DELAY_NUMPKT_KEY,

@@ -15,6 +15,7 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "tapi_rpc.h"
+#include "tapi_bpf.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,6 +47,7 @@ typedef struct tapi_bpf_stim_ctx {
 
     unsigned int        bpf_id;
     char               *bpf_path;
+    tapi_bpf_link_point link_type;
     tapi_bpf_stim_type  stim_type;
 } tapi_bpf_stim_ctx;
 
@@ -85,19 +87,22 @@ typedef struct tapi_bpf_stim_hdl {
 
 /**
  * Load specific BPF program according to stimulus type @p type,
- * enable clsact qdisc and link the program to tc ingress attach
- * point on interface @p ifname.
+ * enable clsact qdisc and link the program to tc attach point
+ * on interface @p ifname, according to @p egress argument.
  *
  * @note The function jumps to cleanup in case of error.
  *
  * @param[in]  pco      RPC server.
  * @param[in]  ifname   Interface to link the program to.
  * @param[in]  type     Type of the stimulus.
+ * @param[in]  egress   Link stimulus BPF program to tc egress if @c TRUE,
+ *                      otherwise link to tc ingress.
  * @param[out] handle   BPF stimulus handle.
  */
 extern void tapi_bpf_stim_init(rcf_rpc_server *pco,
                                const char *ifname,
                                unsigned int type,
+                               te_bool egress,
                                tapi_bpf_stim_hdl **handle);
 
 /**
