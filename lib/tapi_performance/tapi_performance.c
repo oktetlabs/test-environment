@@ -188,12 +188,10 @@ tapi_perf_server_stop(tapi_perf_server *server)
 {
     ENTRY("Stop perf server");
 
-    if (server == NULL ||
-        server->methods == NULL ||
-        server->methods->stop == NULL)
+    if (server == NULL)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
-    return server->methods->stop(server);
+    return perf_app_stop(&server->app);
 }
 
 /* See description in tapi_performance.h */
@@ -290,12 +288,10 @@ tapi_perf_client_stop(tapi_perf_client *client)
 {
     ENTRY("Stop perf client");
 
-    if (client == NULL ||
-        client->methods == NULL ||
-        client->methods->stop == NULL)
+    if (client == NULL)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
-    return client->methods->stop(client);
+    return perf_app_stop(&client->app);
 }
 
 /* See description in tapi_performance.h */

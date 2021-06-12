@@ -499,8 +499,6 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
  * @param factory           Job factory.
  *
  * @return Status code.
- *
- * @sa server_stop
  */
 static te_errno
 server_start(tapi_perf_server *server, tapi_job_factory_t *factory)
@@ -527,8 +525,6 @@ server_start(tapi_perf_server *server, tapi_job_factory_t *factory)
  * @param factory           Job factory.
  *
  * @return Status code.
- *
- * @sa client_stop
  */
 static te_errno
 client_start(tapi_perf_client *client, tapi_job_factory_t *factory)
@@ -546,40 +542,6 @@ client_start(tapi_perf_client *client, tapi_job_factory_t *factory)
     te_vec_deep_free(&args);
 
     return rc;
-}
-
-/*
- * Stop iperf server.
- *
- * @param server            Server context.
- *
- * @return Status code.
- *
- * @sa server_start
- */
-static te_errno
-server_stop(tapi_perf_server *server)
-{
-    ENTRY("Stop iperf server");
-
-    return perf_app_stop(&server->app);
-}
-
-/*
- * Stop iperf client.
- *
- * @param client            Client context.
- *
- * @return Status code.
- *
- * @sa client_start
- */
-static te_errno
-client_stop(tapi_perf_client *client)
-{
-    ENTRY("Stop iperf client");
-
-    return perf_app_stop(&client->app);
 }
 
 /*
@@ -650,7 +612,6 @@ client_get_report(tapi_perf_client *client, tapi_perf_report_kind kind,
  */
 static tapi_perf_server_methods server_methods = {
     .start = server_start,
-    .stop = server_stop,
     .get_report = server_get_report,
 };
 
@@ -659,7 +620,6 @@ static tapi_perf_server_methods server_methods = {
  */
 static tapi_perf_client_methods client_methods = {
     .start = client_start,
-    .stop = client_stop,
     .wait = client_wait,
     .get_report = client_get_report,
 };

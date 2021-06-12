@@ -194,17 +194,6 @@ typedef te_errno (* tapi_perf_server_method_start)(tapi_perf_server *server,
                                                    tapi_job_factory_t *factory);
 
 /**
- * Stop perf server.
- *
- * @param server            Server context.
- *
- * @return Status code.
- *
- * @sa tapi_perf_server_start
- */
-typedef te_errno (* tapi_perf_server_method_stop)(tapi_perf_server *server);
-
-/**
  * Get server report. The function reads client output (stdout, stderr).
  *
  * @param[in]  server       Server context.
@@ -222,7 +211,6 @@ typedef te_errno (* tapi_perf_server_method_get_report)(
  */
 typedef struct tapi_perf_server_methods {
     tapi_perf_server_method_start      start;
-    tapi_perf_server_method_stop       stop;
     tapi_perf_server_method_get_report get_report;
 } tapi_perf_server_methods;
 
@@ -243,17 +231,6 @@ typedef struct tapi_perf_client tapi_perf_client;
  */
 typedef te_errno (* tapi_perf_client_method_start)(tapi_perf_client *client,
                                                    tapi_job_factory_t *factory);
-
-/**
- * Stop perf client.
- *
- * @param client            Client context.
- *
- * @return Status code.
- *
- * @sa tapi_perf_client_start
- */
-typedef te_errno (* tapi_perf_client_method_stop)(tapi_perf_client *client);
 
 /**
  * Wait while client finishes his work. Note, function jumps to cleanup if
@@ -289,7 +266,6 @@ typedef te_errno (* tapi_perf_client_method_get_report)(
  */
 typedef struct tapi_perf_client_methods {
     tapi_perf_client_method_start      start;
-    tapi_perf_client_method_stop       stop;
     tapi_perf_client_method_wait       wait;
     tapi_perf_client_method_get_report get_report;
 } tapi_perf_client_methods;
