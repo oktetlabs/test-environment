@@ -394,10 +394,10 @@ parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool history)
     int         rc;
     int         subst;
 
-    RING("Parsing %s", filename);
-
     if (file == NULL)
         return 0;
+
+    RING("Parsing %s", file);
 
     if ((doc = xmlParseFile(file)) == NULL)
     {
