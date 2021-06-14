@@ -57,6 +57,24 @@
          Key management: "WPA-PSK", "WPA-EAP" or "NONE"
          Name: empty
 
+    - oid: "/agent/interface/supplicant/pmf"
+      access: read_write
+      type: integer
+      d: |
+         Protected Management Frames (global): "0" - disabled (default),
+         "1" - enabled, "2" - required
+         Name: empty
+         Limit: [0;2]
+
+    - oid: "/agent/interface/supplicant/ieee80211w"
+      access: read_write
+      type: integer
+      d: |
+         Protected Management Frames (per-network): "0" - disabled (default),
+         "1" - optional, "2" - required
+         Name: empty
+         Limit: [0;2]
+
     - oid: "/agent/interface/supplicant/wep_key0"
       access: read_write
       type: string

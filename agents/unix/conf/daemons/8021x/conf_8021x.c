@@ -31,6 +31,20 @@ typedef enum {
     SP_PROTO,               /**< Protocol: "", "WPA", "WPA2", "RSN" */
     SP_KEY_MGMT,            /**< Key management: "NONE", "WPA-PSK",
                              *   "WPA-EAP" */
+    SP_PMF,                 /**< Protected Management Frames (global).
+                             * This parameter can be used to set the default
+                             * behavior for the ieee80211w parameter for RSN
+                             * networks. By default, PMF is disabled unless
+                             * enabled with the global pmf=1/2 parameter or
+                             * with the per-network ieee80211w=1/2 parameter.
+                             * With pmf=1/2, PMF is enabled/required by default,
+                             * but can be disabled with the per-network
+                             * ieee80211w parameter */
+    SP_IEEE80211W,          /**< Protected Management Frames (per-network).
+                             * 0 = disabled (default unless changed with
+                             * the global pmf parameter)
+                             * 1 = optional
+                             * 2 = required */
     SP_WEP_KEY0,            /**< WEP keys: double-quoted ASCII strings
                              *   or strings of 10/13/16 hexdigits
                              *   without quotation */
@@ -441,6 +455,8 @@ wpa_supp_write_config(FILE *f, const supplicant *supp)
     const char *s_proto = supp_get_param(supp, SP_PROTO);
     const char *s_identity = supp_get_param(supp, SP_IDENTITY);
     const char *s_key_mgmt = supp_get_param(supp, SP_KEY_MGMT);
+    const char *s_pmf = supp_get_param(supp, SP_PMF);
+    const char *s_ieee80211w = supp_get_param(supp, SP_IEEE80211W);
     const char *s_wep_key0 = supp_get_param(supp, SP_WEP_KEY0);
     const char *s_wep_key1 = supp_get_param(supp, SP_WEP_KEY1);
     const char *s_wep_key2 = supp_get_param(supp, SP_WEP_KEY2);
@@ -454,8 +470,14 @@ wpa_supp_write_config(FILE *f, const supplicant *supp)
     const char *s_bssid = supp_get_param(supp, SP_BSSID);
     const char *s_scan_ssid = supp_get_param(supp, SP_SCAN_SSID);
 
-    fprintf(f, "ctrl_interface=/var/run/wpa_supplicant\n"
-               "network={\n");
+    /* Global parameters */
+    fprintf(f, "ctrl_interface=/var/run/wpa_supplicant\n");
+
+    if (s_pmf[0] != '\0')
+        fprintf(f, "pmf=%s\n", s_pmf);
+
+    /* Per-network parameters */
+    fprintf(f, "network={\n");
 
     if (s_network[0] != '\0')
         fprintf(f, "  ssid=\"%s\"\n", s_network);
@@ -471,6 +493,9 @@ wpa_supp_write_config(FILE *f, const supplicant *supp)
 
     if (s_key_mgmt[0] != '\0')
         fprintf(f, "  key_mgmt=%s\n", s_key_mgmt);
+
+    if (s_ieee80211w[0] != '\0')
+        fprintf(f, "  ieee80211w=%s\n", s_ieee80211w);
 
     /* Writing WEP keys' settings into configuration file */
     if (s_wep_key0[0] != '\0')
@@ -932,6 +957,10 @@ DS_SUPP_PARAM_SET(ds_supp_proto_set, SP_PROTO)
 /* NEW_BROTHERS_IN_OUR_FAMILY */
 DS_SUPP_PARAM_GET(ds_supp_key_mgmt_get, SP_KEY_MGMT)
 DS_SUPP_PARAM_SET(ds_supp_key_mgmt_set, SP_KEY_MGMT)
+DS_SUPP_PARAM_GET(ds_supp_pmf_get, SP_PMF)
+DS_SUPP_PARAM_SET(ds_supp_pmf_set, SP_PMF)
+DS_SUPP_PARAM_GET(ds_supp_ieee80211w_get, SP_IEEE80211W)
+DS_SUPP_PARAM_SET(ds_supp_ieee80211w_set, SP_IEEE80211W)
 /* NODES_TO_MANAGE_WEP_KEYS */
 DS_SUPP_PARAM_GET(ds_supp_wep_key0_get, SP_WEP_KEY0)
 DS_SUPP_PARAM_SET(ds_supp_wep_key0_set, SP_WEP_KEY0)
@@ -1016,8 +1045,18 @@ RCF_PCH_CFG_NODE_RW(node_ds_supp_wep_key0, "wep_key0",
                     ds_supp_wep_key0_set);
 /* !NODES_TO_MANAGE_WEP_KEYS */
 
-RCF_PCH_CFG_NODE_RW(node_ds_supp_key_mgmt, "key_mgmt",
+RCF_PCH_CFG_NODE_RW(node_ds_supp_ieee80211w, "ieee80211w",
                     NULL, &node_ds_supp_wep_key0,
+                    ds_supp_ieee80211w_get,
+                    ds_supp_ieee80211w_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_pmf, "pmf",
+                    NULL, &node_ds_supp_ieee80211w,
+                    ds_supp_pmf_get,
+                    ds_supp_pmf_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_key_mgmt, "key_mgmt",
+                    NULL, &node_ds_supp_pmf,
                     ds_supp_key_mgmt_get,
                     ds_supp_key_mgmt_set);
 /* !NEW_BROTHERS_IN_OUR_FAMILY */
