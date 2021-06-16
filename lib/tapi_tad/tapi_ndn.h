@@ -82,6 +82,15 @@ typedef struct receive_transform {
     uint16_t                        outer_vlan_tci;
 } receive_transform;
 
+
+/** Segmentation fine-tuning configuration */
+struct tapi_ndn_gso_conf {
+        size_t payload_barrier; /**< Barrier inside super-frame payload
+                                     (i.e. without any headers) at which segment
+                                     should end and next full segment should
+                                     start. */
+};
+
 /**
  * Check ASN.1 value pointer. If it is NULL, initialize a new value of
  * specified type. All errors are logged inside the function. There is
@@ -538,15 +547,18 @@ extern te_errno tapi_ndn_pkt_demand_correct_tcp_cksum(asn_value *pkt);
  *
  * @param superframe      The superframe to undergo GSO slicing
  * @param seg_payload_len The desired length of a payload chunk
+ * @param gso_conf        Segmentation fine-tuning configuration
  * @param pkts_out        Location for the resulting packets
  * @param nb_pkts_out     Location for the number of the packets
  *
  * @return Status code.
  */
-extern te_errno tapi_ndn_superframe_gso(asn_value      *superframe,
-                                        size_t          seg_payload_len,
-                                        asn_value    ***pkts_out,
-                                        unsigned int   *nb_pkts_out);
+extern te_errno tapi_ndn_superframe_gso(
+                            asn_value                         *superframe,
+                            size_t                             seg_payload_len,
+                            const struct tapi_ndn_gso_conf    *gso_conf,
+                            asn_value                       ***pkts_out,
+                            unsigned int                      *nb_pkts_out);
 
 /**
  * Given a bunch of ASN.1 raw packets originating from some GSO

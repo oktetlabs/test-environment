@@ -2017,17 +2017,22 @@ out:
 
 /* See the description in 'tapi_ndn.h' */
 te_errno
-tapi_ndn_superframe_gso(asn_value      *superframe,
-                        size_t          seg_payload_len,
-                        asn_value    ***pkts_out,
-                        unsigned int   *nb_pkts_out)
+tapi_ndn_superframe_gso(asn_value                         *superframe,
+                        size_t                             seg_payload_len,
+                        const struct tapi_ndn_gso_conf    *gso_conf,
+                        asn_value                       ***pkts_out,
+                        unsigned int                      *nb_pkts_out)
 {
     int            superframe_payload_len;
-    unsigned int   nb_pkts = 0;
+    unsigned int   nb_pkts_allocated = 0;
+    unsigned int   nb_pkts_chopped = 0;
     asn_value     *provisional_frame = NULL;
     asn_value     *provisional_frame_payload = NULL;
     char          *payload_buf = NULL;
+    off_t          seg_start;
+    off_t          seg_end;
     size_t         payload_buf_len;
+    size_t         payload_len_remaining;
     asn_value    **pkts = NULL;
     te_errno       rc;
     unsigned int   i;
@@ -2044,11 +2049,13 @@ tapi_ndn_superframe_gso(asn_value      *superframe,
         goto out;
     }
 
-    nb_pkts = (size_t)superframe_payload_len / seg_payload_len;
-    nb_pkts += ((size_t)superframe_payload_len % seg_payload_len) ? 1 : 0;
-    nb_pkts += (nb_pkts == 0) ? 1 : 0; /* Superframe payload may have zero
-                                          length but at least one packet must
-                                          be present to contain headers */
+    nb_pkts_allocated = (size_t)superframe_payload_len / seg_payload_len;
+    nb_pkts_allocated += ((size_t)superframe_payload_len % seg_payload_len) ? 1 : 0;
+    nb_pkts_allocated += (nb_pkts_allocated == 0) ?
+                         1 : 0; /* Superframe payload may have zero
+                                   length but at least one packet must
+                                   be present to contain headers */
+    nb_pkts_allocated++; /* GSO barrier could add at most one packet */
 
     provisional_frame = asn_copy_value(superframe);
     if (provisional_frame == NULL)
@@ -2075,16 +2082,19 @@ tapi_ndn_superframe_gso(asn_value      *superframe,
     if (rc != 0)
         goto out;
 
-    pkts = TE_ALLOC(nb_pkts * sizeof(*pkts));
+    pkts = TE_ALLOC(nb_pkts_allocated * sizeof(*pkts));
     if (pkts == NULL)
     {
         rc = TE_ENOMEM;
         goto out;
     }
 
-    for (i = 0; i < nb_pkts; ++i)
-    {
-        size_t payload_len_remaining = payload_buf_len - i * seg_payload_len;
+    seg_start = 0;
+    seg_end = seg_start;
+    payload_len_remaining = payload_buf_len;
+    i = 0;
+    do {
+        nb_pkts_chopped++;
 
         pkts[i] = asn_init_value(ndn_raw_packet);
         if (pkts[i] == NULL)
@@ -2097,9 +2107,16 @@ tapi_ndn_superframe_gso(asn_value      *superframe,
         if (rc != 0)
             goto out;
 
+        seg_start = seg_end;
+        seg_end = seg_start + MIN(payload_len_remaining, seg_payload_len);
+        if (seg_start < gso_conf->payload_barrier &&
+            seg_end > gso_conf->payload_barrier)
+        {
+            seg_end = gso_conf->payload_barrier;
+        }
+
         rc = asn_write_value_field(provisional_frame_payload,
-                                   payload_buf + i * seg_payload_len,
-                                   MIN(payload_len_remaining, seg_payload_len),
+                                   payload_buf + seg_start, seg_end - seg_start,
                                    "#bytes");
         if (rc != 0)
             goto out;
@@ -2107,15 +2124,18 @@ tapi_ndn_superframe_gso(asn_value      *superframe,
         rc = asn_assign_value(pkts[i], provisional_frame);
         if (rc != 0)
             goto out;
-    }
+
+        payload_len_remaining -= (seg_end - seg_start);
+        i++;
+    } while (payload_len_remaining > 0);
 
     *pkts_out = pkts;
-    *nb_pkts_out = nb_pkts;
+    *nb_pkts_out = nb_pkts_chopped;
 
 out:
     if (rc != 0 && pkts != NULL)
     {
-        for (i = 0; i < nb_pkts; ++i)
+        for (i = 0; i < nb_pkts_allocated; ++i)
         {
             if (pkts[i] != NULL)
                 asn_free_value(pkts[i]);
@@ -2181,7 +2201,7 @@ tapi_ndn_tso_pkts_edit(asn_value    **pkts,
         if (i > 0)
         {
             seg_payload_size = asn_get_length(pkts[i - 1], "payload.#bytes");
-            if (seg_payload_size <= 0)
+            if (seg_payload_size < 0)
             {
                 rc = TE_EINVAL;
                 goto out;
