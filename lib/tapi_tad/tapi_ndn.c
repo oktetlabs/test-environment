@@ -2143,6 +2143,7 @@ tapi_ndn_tso_pkts_edit(asn_value    **pkts,
     uint8_t      superframe_flags;
     size_t       superframe_flags_size = sizeof(superframe_flags);
     int          seg_payload_size;
+    uint32_t     provisional_seqn;
     te_errno     rc = 0;
     unsigned int i;
 
@@ -2170,29 +2171,31 @@ tapi_ndn_tso_pkts_edit(asn_value    **pkts,
 
     assert(superframe_flags_size == sizeof(superframe_flags));
 
-    seg_payload_size = asn_get_length(pkts[0], "payload.#bytes");
-    if (seg_payload_size <= 0)
-    {
-        rc = TE_EINVAL;
-        goto out;
-    }
-
+    provisional_seqn = superframe_seqn;
     for (i = 0; i < nb_pkts; ++i)
     {
-        uint32_t provisional_seqn = superframe_seqn;
         uint8_t  provisional_flags = superframe_flags;
 
         assert(pkts[i] != NULL);
 
-        provisional_seqn += i * seg_payload_size;
-        rc = asn_write_value_field_fmt(pkts[i], &provisional_seqn,
-                                       sizeof(provisional_seqn),
-                                       "pdus.%d.#tcp.seqn.#plain", pdu_idx);
-        if (rc != 0)
-            goto out;
+        if (i > 0)
+        {
+            seg_payload_size = asn_get_length(pkts[i - 1], "payload.#bytes");
+            if (seg_payload_size <= 0)
+            {
+                rc = TE_EINVAL;
+                goto out;
+            }
+            provisional_seqn += seg_payload_size;
 
-        if (i != 0)
+            rc = asn_write_value_field_fmt(pkts[i], &provisional_seqn,
+                                           sizeof(provisional_seqn),
+                                           "pdus.%d.#tcp.seqn.#plain", pdu_idx);
+            if (rc != 0)
+                goto out;
+
             provisional_flags &= ~TCP_CWR_FLAG;
+        }
 
         if (i + 1 != nb_pkts)
             provisional_flags &= ~(TCP_FIN_FLAG | TCP_PSH_FLAG);
