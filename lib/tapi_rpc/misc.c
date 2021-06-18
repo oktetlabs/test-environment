@@ -3462,3 +3462,36 @@ rpc_read_fd2te_string(rcf_rpc_server *rpcs, int fd, int time2wait,
     te_string_reset(testr);
     return rpc_read_fd2te_string_append(rpcs, fd, time2wait, amount, testr);
 }
+
+/* See the description in tapi_rpc_misc.h */
+int
+rpc_remove_dir_with_files(rcf_rpc_server *rpcs, const char *path)
+{
+    tarpc_remove_dir_with_files_in  in;
+    tarpc_remove_dir_with_files_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handler", __FUNCTION__);
+        return -1;
+    }
+    if (path == NULL)
+    {
+        ERROR("%s(): NULL path to directory", __FUNCTION__);
+        return -1;
+    }
+
+    in.path.path_len = strlen(path) + 1;
+    in.path.path_val = (char *)strdup(path);
+
+    rcf_rpc_call(rpcs, "remove_dir_with_files", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(remove_dir_with_files, out.retval);
+
+    free(in.path.path_val);
+
+    TAPI_RPC_LOG(rpcs, remove_dir_with_files, "%s", "%d", path, out.retval);
+    RETVAL_ZERO_INT(remove_dir_with_files, out.retval);
+}

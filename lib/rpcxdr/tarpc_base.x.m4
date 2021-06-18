@@ -5643,6 +5643,14 @@ struct tarpc_copy_fd2fd_out {
                                      or @c -1 on error. */
 };
 
+/* remove_dir_with_files() */
+struct tarpc_remove_dir_with_files_in {
+    struct tarpc_in_arg common;
+
+    char                path<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_remove_dir_with_files_out;
 
 program tarpc
 {
@@ -6002,5 +6010,7 @@ program tarpc
         RPC_DEF(send_flooder_iomux)
 
         RPC_DEF(copy_fd2fd)
+
+        RPC_DEF(remove_dir_with_files)
     } = 1;
 } = 1;

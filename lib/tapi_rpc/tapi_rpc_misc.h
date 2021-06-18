@@ -1444,6 +1444,16 @@ extern te_errno tapi_interface_vlan_count(const char *ta, const char *if_name,
 extern void rpc_release_rpc_ptr(
         rcf_rpc_server *rpcs, rpc_ptr ptr, char *ns_string);
 
+/**
+ * Remove a directory with all files.
+ *
+ * @param rpcs      RPC server
+ * @parma path      Path of the directory to be removed
+ *
+ * @return  -1 in the case of failure or 0 on success
+ */
+extern int rpc_remove_dir_with_files(rcf_rpc_server *rpcs, const char *path);
+
 /**@} <!-- END te_lib_rpc_misc --> */
 
 #ifdef __cplusplus

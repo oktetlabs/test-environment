@@ -62,6 +62,9 @@
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
 #endif
+#ifdef HAVE_FTW_H
+#include <ftw.h>
+#endif
 
 #ifdef HAVE_LINUX_NET_TSTAMP_H
 #include <linux/net_tstamp.h>
@@ -11852,3 +11855,41 @@ int fcntl_te_wrap_syscall_dl(int fd, int cmd, ...)
     return rc;
 }
 
+/*-------------- remove_dir_with_files() ------------------------*/
+/* Maximum number of file descriptors that can be used by nftw() */
+#define FD_LIMIT 64
+
+#ifdef HAVE_FTW_H
+static int
+remove_files(const char *path, const struct stat *sbuf,
+             int type, struct FTW *ftwb)
+{
+    if(remove(path) < 0)
+    {
+        ERROR("Failed to remove %s: errno %r", path,
+              TE_OS_RC(TE_TA_UNIX, errno));
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
+remove_dir_with_files(const char *path)
+{
+    return nftw(path, remove_files, FD_LIMIT,
+                FTW_DEPTH|FTW_MOUNT|FTW_PHYS);
+}
+#endif
+
+TARPC_FUNC_STATIC(remove_dir_with_files, {},
+{
+
+#ifdef HAVE_FTW_H
+    MAKE_CALL(out->retval = func(in->path.path_val));
+#else
+    ERROR("Failed to remove %s directory: ftw header is missing",
+          in->path.path_val);
+    out->retval = -1;
+#endif
+})
