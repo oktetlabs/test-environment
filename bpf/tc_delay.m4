@@ -43,7 +43,7 @@ te_frame_size_declare(frame_size, chunk_size)
  * Key to access boolean map field containing flag whether to
  * use @c BPF_F_INGRESS flag.
  */
-#define CT_BPF_DELAY_INGRESS_KEY 3
+#define CT_BPF_DELAY_INGRESS_KEY 2
 
 /**
  * Check return value of a @p call and return if is not equal to zero.
@@ -92,14 +92,13 @@ struct bpf_map SEC("maps") pktbuf = {
  * Contents:
  * 0 - interface index
  * 1 - number of frames to delay
- * 2 - unused
- * 3 - whether to use BPF_F_INGRESS flag.
+ * 2 - whether to use BPF_F_INGRESS flag.
  */
 struct bpf_map SEC("maps") ctrl = {
     .type = BPF_MAP_TYPE_ARRAY,
     .key_size = sizeof(__u32),
     .value_size = sizeof(__u32),
-    .max_entries = 4,
+    .max_entries = 3,
 };
 
 /**

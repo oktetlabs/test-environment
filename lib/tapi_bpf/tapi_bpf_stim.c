@@ -79,16 +79,12 @@
 #define TAPI_BPF_STIM_DELAY_IFINDEX_KEY 0
 /** Key to access map field to write number of frames to delay. */
 #define TAPI_BPF_STIM_DELAY_NUMPKT_KEY  1
-/**
- * Key to access map field to write size of frame to save -
- * must be a value of @ref tapi_bpf_stim_del_frame */
-#define TAPI_BPF_STIM_DELAY_SIZE_KEY    2
 
 /**
  * Key to access boolean map field containing flag whether to use
  * @c BPF_F_INGRESS flag in @b bpf_redirect().
  */
-#define TAPI_BPF_STIM_DELAY_INGRESS_KEY 3
+#define TAPI_BPF_STIM_DELAY_INGRESS_KEY 2
 
 /**@} <!-- END tapi_bpf_stim_delay_cd --> */
 
@@ -288,8 +284,7 @@ tapi_bpf_stim_dup(tapi_bpf_stim_hdl *handle, unsigned int num)
 
 /* See description in tapi_bpf_stim.h */
 te_errno
-tapi_bpf_stim_delay(tapi_bpf_stim_hdl *handle, unsigned int num,
-                   tapi_bpf_stim_del_frame frame_size)
+tapi_bpf_stim_delay(tapi_bpf_stim_hdl *handle, unsigned int num)
 {
     tapi_bpf_stim_ctx *bpf_ctx;
 
@@ -302,12 +297,6 @@ tapi_bpf_stim_delay(tapi_bpf_stim_hdl *handle, unsigned int num,
             rc = tapi_bpf_stim_ctrl_write(handle->ta, bpf_ctx->bpf_id,
                                           TAPI_BPF_STIM_DELAY_IFINDEX_KEY,
                                           handle->ifindex);
-            if (rc != 0)
-                return rc;
-
-            rc = tapi_bpf_stim_ctrl_write(handle->ta, bpf_ctx->bpf_id,
-                                          TAPI_BPF_STIM_DELAY_SIZE_KEY,
-                                          frame_size);
             if (rc != 0)
                 return rc;
 

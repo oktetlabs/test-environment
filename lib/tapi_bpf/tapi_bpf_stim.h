@@ -31,16 +31,6 @@ typedef enum tapi_bpf_stim_type
     TAPI_BPF_STIM_STIMULUS_SLOW_START = 0x8,
 } tapi_bpf_stim_type;
 
-/**
- * Supported frame sizes that the BPF program can delay.
- * The same enum is defined in tc_delay.c.
- */
-typedef enum tapi_bpf_stim_del_frame {
-    TAPI_BPF_STIM_DELAY_FRAME_SIZE_UNSPEC,  /**< Unspecified. */
-    TAPI_BPF_STIM_DELAY_FRAME_SIZE_1514,    /**< 1514 bytes - the size
-                                                 corresponds to MTU 1500. */
-} tapi_bpf_stim_del_frame;
-
 /** Internal BPF context. */
 typedef struct tapi_bpf_stim_ctx {
     LIST_ENTRY(tapi_bpf_stim_ctx) next;
@@ -140,13 +130,11 @@ extern te_errno tapi_bpf_stim_dup(tapi_bpf_stim_hdl *handle,
  *
  * @param handle        BPF stimulus handle.
  * @param num           How much packets to wait before sending delayed packet.
- * @param frame_size    Size of frame to delay.
  *
  * @return Status code
  */
 extern te_errno tapi_bpf_stim_delay(tapi_bpf_stim_hdl *handle,
-                                    unsigned int num,
-                                    tapi_bpf_stim_del_frame frame_size);
+                                    unsigned int num);
 
 #ifdef __cplusplus
 } /* extern "C" */
