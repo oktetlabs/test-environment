@@ -2038,7 +2038,7 @@ tapi_ndn_superframe_gso(asn_value      *superframe,
     assert(nb_pkts_out != NULL);
 
     superframe_payload_len = asn_get_length(superframe, "payload.#bytes");
-    if (superframe_payload_len <= 0)
+    if (superframe_payload_len < 0)
     {
         rc = TE_EINVAL;
         goto out;
@@ -2046,6 +2046,9 @@ tapi_ndn_superframe_gso(asn_value      *superframe,
 
     nb_pkts = (size_t)superframe_payload_len / seg_payload_len;
     nb_pkts += ((size_t)superframe_payload_len % seg_payload_len) ? 1 : 0;
+    nb_pkts += (nb_pkts == 0) ? 1 : 0; /* Superframe payload may have zero
+                                          length but at least one packet must
+                                          be present to contain headers */
 
     provisional_frame = asn_copy_value(superframe);
     if (provisional_frame == NULL)
