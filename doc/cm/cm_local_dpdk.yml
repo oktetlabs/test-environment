@@ -244,3 +244,13 @@
         Name: Name of the interface (net interface or DPDK port) in
               the environment
         Value: MAC address - six groups of hex digits separated by colons
+
+    - oid: "/local/dpdk/tso_cutoff_barrier"
+      access: read_write
+      type: integer
+      d: |
+        Barrier inside super-frame payload including protocol headers
+        at which segment should end and next full segment should start.
+
+        Name: none
+        Value: Number, 0 by default
