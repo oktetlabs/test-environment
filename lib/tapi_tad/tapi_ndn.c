@@ -2253,7 +2253,7 @@ tapi_ndn_gso_pkts_ip_len_edit(asn_value          **pkts,
         assert(pkts[i] != NULL);
 
         seg_payload_len = asn_get_length(pkts[i], "payload.#bytes");
-        if (seg_payload_len <= 0)
+        if (seg_payload_len < 0)
         {
             rc = TE_EINVAL;
             goto out;
@@ -2268,7 +2268,7 @@ tapi_ndn_gso_pkts_ip_len_edit(asn_value          **pkts,
         uint16_t provisional_ip_len;
 
         seg_payload_len = asn_get_length(pkts[i], "payload.#bytes");
-        if (seg_payload_len <= 0)
+        if (seg_payload_len < 0)
         {
             rc = TE_EINVAL;
             goto out;
