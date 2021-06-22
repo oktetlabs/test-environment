@@ -99,8 +99,8 @@ tapi_cfg_ps_get_status(const char *ta, const char *ps_name, te_bool *status)
     cfg_val_type type = CVT_INTEGER;
     int val;
 
-    rc = cfg_get_instance_fmt(&type, &val, TE_CFG_TA_PS "/status:",
-                              ta, ps_name);
+    rc = cfg_get_instance_sync_fmt(&type, &val, TE_CFG_TA_PS "/status:",
+                                   ta, ps_name);
     if (rc != 0)
     {
         ERROR("Cannot get status (process '%s', TA '%s'): %r", ps_name, ta, rc);
