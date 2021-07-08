@@ -257,7 +257,12 @@ is_req_in_args(const char *req, const unsigned int n_args,
  * @param test_set      Test set of requirements
  * @param n_args        Number of arguments
  * @param args          Test iteration arguments
- * @param force         Is the force verdict or weak?
+ * @param force         Will be set to @c TRUE if the run item is
+ *                      explicitly disabled by a requirement
+ *                      like !REQ_NAME. Such a requirement should be
+ *                      either the only one or a part of top-level
+ *                      AND expression (like X&Y&!REQ_NAME&Z)
+ * @param set_force     Whether @p force should be set by this call
  */
 static te_bool
 is_reqs_expr_match(const logic_expr        *re,
@@ -265,7 +270,8 @@ is_reqs_expr_match(const logic_expr        *re,
                    const test_requirements *test_set,
                    const unsigned int       n_args,
                    const test_iter_arg     *args,
-                   te_bool                 *force)
+                   te_bool                 *force,
+                   te_bool                  set_force)
 {
     te_bool result;
 
@@ -283,9 +289,12 @@ is_reqs_expr_match(const logic_expr        *re,
         case LOGIC_EXPR_NOT:
             result = !is_reqs_expr_match(re->u.unary,
                                          ctx_set, test_set, n_args, args,
-                                         force);
-            if (!result)
+                                         force, FALSE);
+            if (!result && set_force &&
+                re->u.unary->type == LOGIC_EXPR_VALUE)
+            {
                 *force = TRUE;
+            }
             VERB("%s(): ! -> %u(%u)", __FUNCTION__, result, *force);
             break;
 
@@ -293,12 +302,13 @@ is_reqs_expr_match(const logic_expr        *re,
         {
             te_bool lhr = is_reqs_expr_match(re->u.binary.lhv,
                                              ctx_set, test_set,
-                                             n_args, args, force);
-            te_bool rhr = (lhr || !*force) ?
+                                             n_args, args, force,
+                                             set_force);
+            te_bool rhr = (lhr || (set_force && !*force)) ?
                               is_reqs_expr_match(re->u.binary.rhv,
                                                  ctx_set, test_set,
                                                  n_args, args,
-                                                 force) : FALSE;
+                                                 force, set_force) : FALSE;
 
             result = lhr && rhr;
             VERB("%s(): && -> %u(%u)", __FUNCTION__, result, *force);
@@ -308,10 +318,10 @@ is_reqs_expr_match(const logic_expr        *re,
         case LOGIC_EXPR_OR:
             result = is_reqs_expr_match(re->u.binary.lhv,
                                         ctx_set, test_set,
-                                        n_args, args, force) ||
+                                        n_args, args, force, FALSE) ||
                      is_reqs_expr_match(re->u.binary.rhv,
                                         ctx_set, test_set,
-                                        n_args, args, force);
+                                        n_args, args, force, FALSE);
             VERB("%s(): || -> %u(%u)", __FUNCTION__, result, *force);
             break;
 
@@ -556,7 +566,8 @@ tester_is_run_required(const logic_expr        *targets,
     if (targets != NULL)
     {
         result = is_reqs_expr_match(targets, sticky_reqs, reqs,
-                                    test->n_args, args, &force);
+                                    test->n_args, args, &force,
+                                    TRUE);
         if (!force)
             result = result || (test->type != RUN_ITEM_SCRIPT) ||
                      !!(flags & TESTER_INLOGUE);
