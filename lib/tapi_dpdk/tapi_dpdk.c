@@ -614,6 +614,153 @@ out:
     return rc;
 }
 
+static te_errno
+tapi_dpdk_dbells_available(tapi_job_channel_t *dbells_skip_filter, te_bool *res)
+{
+    tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
+    te_errno rc;
+
+    rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(dbells_skip_filter),
+                          TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS, &buf);
+    if (rc != 0)
+    {
+        if (rc != TE_ETIMEDOUT)
+            goto out;
+
+        *res = true;
+        rc = 0;
+        goto out;
+    }
+
+    if (buf.eos)
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    if (buf.filter == dbells_skip_filter)
+    {
+        *res = false;
+        rc = 0;
+    }
+    else
+    {
+        ERROR("Received buf from a job contains invalid filter pointer");
+        rc = TE_EINVAL;
+    }
+
+out:
+    te_string_free(&buf.data);
+    return rc;
+}
+
+static te_errno
+tapi_dpdk_stats_log_dbells(tapi_job_channel_t *dbells_filter,
+                           tapi_job_channel_t *dbells_skip_filter,
+                           const te_meas_stats_t *meas_stats_pps,
+                           const char *prefix)
+{
+    tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
+    te_meas_stats_t meas_stats_dbells = {0};
+    te_mi_logger *logger = NULL;
+    unsigned int num_datapoints;
+    te_bool dbells_available;
+    unsigned long dbells_ps;
+    unsigned long pps_mean;
+    unsigned int i;
+    te_errno rc;
+
+    rc = tapi_dpdk_dbells_available(dbells_skip_filter, &dbells_available);
+    if (rc != 0)
+        goto out;
+
+    if (!dbells_available)
+    {
+        WARN("%s doorbells statistics is unavailable", prefix);
+        rc = 0;
+        goto out;
+    }
+
+    rc = te_mi_logger_meas_create(TAPI_DPDK_TESTPMD_NAME "dbells", &logger);
+    if (rc != 0)
+    {
+        ERROR("Failed to create logger");
+        goto out;
+    }
+
+    num_datapoints = meas_stats_pps->stab_required ?
+                     meas_stats_pps->stab.correct_data.num_datapoints +
+                                                meas_stats_pps->num_zeros :
+                     meas_stats_pps->data.num_datapoints;
+
+    rc = te_meas_stats_init(&meas_stats_dbells, num_datapoints,
+                            0, 0, 0, 0, 0);
+    if (rc != 0)
+        goto out;
+
+    for (i = 0; i < num_datapoints; i++)
+    {
+        rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(dbells_filter),
+                              TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS, &buf);
+        if (rc != 0)
+            goto out;
+
+        if (buf.eos)
+            break;
+
+        if (buf.filter == dbells_filter)
+        {
+            if (meas_stats_pps->stab_required &&
+                i < meas_stats_pps->num_zeros)
+            {
+                te_string_reset(&buf.data);
+                continue;
+            }
+
+            if ((rc = te_strtoul(buf.data.ptr, 0, &dbells_ps)) != 0)
+                goto out;
+
+            if (te_meas_stats_update(&meas_stats_dbells, (double)dbells_ps) ==
+                TE_MEAS_STATS_UPDATE_NOMEM)
+            {
+                rc = TE_ENOMEM;
+                goto out;
+            }
+
+            if (buf.dropped > 0)
+                WARN("Dropped messages count: %lu", buf.dropped);
+
+            te_string_reset(&buf.data);
+        }
+        else
+        {
+            ERROR("Received buf from a job contains invalid filter pointer");
+            rc = TE_EINVAL;
+            goto out;
+        }
+    }
+
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_FREQ, NULL,
+                          TE_MI_MEAS_AGGR_MEAN, meas_stats_dbells.data.mean,
+                          TE_MI_MEAS_MULTIPLIER_PLAIN);
+
+    pps_mean = meas_stats_pps->stab_required ?
+               meas_stats_pps->stab.correct_data.mean :
+               meas_stats_pps->data.mean;
+
+    if (meas_stats_dbells.data.mean != 0)
+        te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_EPE, NULL,
+                              TE_MI_MEAS_AGGR_MEAN,
+                              (double)pps_mean / meas_stats_dbells.data.mean,
+                              TE_MI_MEAS_MULTIPLIER_PLAIN);
+
+out:
+    te_meas_stats_free(&meas_stats_dbells);
+    te_mi_logger_destroy(logger);
+    te_string_free(&buf.data);
+    return rc;
+}
+
 te_errno
 tapi_dpdk_grab_cpus(const char *ta,
                     unsigned int n_cpus_preferred,
@@ -1381,4 +1528,22 @@ te_errno
 tapi_dpdk_add_tx_dbells_display(te_kvpair_h *test_params, const char *q_num)
 {
     return tapi_dpdk_add_dbells_params(test_params, q_num, "tx");
+}
+
+te_errno
+tapi_dpdk_stats_log_rx_dbells(const tapi_dpdk_testpmd_job_t *testpmd_job,
+                              const te_meas_stats_t *meas_stats_pps)
+{
+    return tapi_dpdk_stats_log_dbells(testpmd_job->rx_dbells_filter,
+                                      testpmd_job->rx_dbells_skip_filter,
+                                      meas_stats_pps, "rx");
+}
+
+te_errno
+tapi_dpdk_stats_log_tx_dbells(const tapi_dpdk_testpmd_job_t *testpmd_job,
+                              const te_meas_stats_t *meas_stats_pps)
+{
+    return tapi_dpdk_stats_log_dbells(testpmd_job->tx_dbells_filter,
+                                      testpmd_job->tx_dbells_skip_filter,
+                                      meas_stats_pps, "tx");
 }

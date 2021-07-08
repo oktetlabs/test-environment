@@ -22,6 +22,7 @@
 #include "tapi_cfg_cpu.h"
 #include "te_kvpair.h"
 #include "te_meas_stats.h"
+#include "te_mi_log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -304,6 +305,32 @@ extern te_errno tapi_dpdk_add_rx_dbells_display(te_kvpair_h *test_params,
  */
 extern te_errno tapi_dpdk_add_tx_dbells_display(te_kvpair_h *test_params,
                                                 const char *q_num);
+
+
+/**
+ * Report Rx doorbells rate and packets per doorbell as test artifacts.
+ *
+ * @param[in] testpmd_job       Handle of running test-pmd job
+ * @param[in] meas_stats_pps    Statistics of packets per second
+ *
+ * @return Status code
+ */
+extern te_errno tapi_dpdk_stats_log_rx_dbells(
+                                    const tapi_dpdk_testpmd_job_t *testpmd_job,
+                                    const te_meas_stats_t *meas_stats_pps);
+
+/**
+ * Report Tx doorbells rate and packets per doorbell as test artifacts.
+ *
+ * @param[in] testpmd_job       Handle of running test-pmd job
+ * @param[in] meas_stats_pps    Statistics of packets per second
+ *
+ * @return Status code
+ */
+extern te_errno tapi_dpdk_stats_log_tx_dbells(
+                                    const tapi_dpdk_testpmd_job_t *testpmd_job,
+                                    const te_meas_stats_t *meas_stats_pps);
+
 
 
 #ifdef __cplusplus
