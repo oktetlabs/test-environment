@@ -873,6 +873,7 @@ tad_eth_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 typedef struct tad_eth_frame_check_data {
     tad_eth_proto_data     *proto_data;
     tad_eth_proto_pdu_data *tmpl_data;
+    te_bool                 can_handle_trailer;
 } tad_eth_frame_check_data;
 
 /**
@@ -889,7 +890,7 @@ tad_eth_frame_check(tad_pkt *pkt, void *opaque)
     size_t  len = tad_pkt_len(pkt);
     ssize_t tailer_len = (ETHER_MIN_LEN - ETHER_CRC_LEN) - len;
 
-    if (tailer_len > 0)
+    if (data->can_handle_trailer && tailer_len > 0)
     {
         tad_pkt_seg *seg = tad_pkt_alloc_seg(NULL, tailer_len, NULL);
 
@@ -1205,6 +1206,13 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
 
     cb_data.proto_data = proto_data;
     cb_data.tmpl_data = tmpl_data;
+
+    if (layer + 1 < csap->depth &&
+        csap->layers[layer + 1].proto_tag != TE_PROTO_RTE_MBUF)
+        cb_data.can_handle_trailer = FALSE;
+    else
+        cb_data.can_handle_trailer = TRUE;
+
     rc = tad_pkt_enumerate(pdus, tad_eth_frame_check, &cb_data);
     if (rc != 0)
     {
