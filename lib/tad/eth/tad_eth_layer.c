@@ -888,11 +888,11 @@ tad_eth_frame_check(tad_pkt *pkt, void *opaque)
     tad_eth_frame_check_data   *data = opaque;
 
     size_t  len = tad_pkt_len(pkt);
-    ssize_t tailer_len = (ETHER_MIN_LEN - ETHER_CRC_LEN) - len;
+    ssize_t trailer_len = (ETHER_MIN_LEN - ETHER_CRC_LEN) - len;
 
-    if (data->can_handle_trailer && tailer_len > 0)
+    if (data->can_handle_trailer && trailer_len > 0)
     {
-        tad_pkt_seg *seg = tad_pkt_alloc_seg(NULL, tailer_len, NULL);
+        tad_pkt_seg *seg = tad_pkt_alloc_seg(NULL, trailer_len, NULL);
 
         if (seg == NULL)
         {
