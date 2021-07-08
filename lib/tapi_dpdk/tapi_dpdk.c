@@ -564,6 +564,56 @@ tapi_dpdk_attach_filters(tapi_job_simple_desc_t *desc)
     return 0;
 }
 
+static te_errno
+tapi_dpdk_add_dbells_params(te_kvpair_h *test_params, const char *q_num,
+                            const char *pref)
+{
+    te_errno rc;
+    unsigned int q, qnum;
+    te_string dbells = TE_STRING_INIT;
+    const char *display_xstats_arg;
+    const char *display_xstats;
+
+    rc = te_strtoui(q_num, 0, &qnum);
+    if (rc != 0)
+        return rc;
+
+    rc = te_string_append(&dbells, "%s_dbells,", pref);
+    if (rc != 0)
+        goto out;
+
+    for (q = 0; q < qnum; q++)
+    {
+        rc = te_string_append(&dbells, "%s_q%u_dbells,", pref, q);
+        if (rc != 0)
+            goto out;
+    }
+
+    display_xstats_arg = TAPI_DPDK_TESTPMD_ARG_PREFIX "display-xstats";
+    display_xstats = te_kvpairs_get(test_params, display_xstats_arg);
+
+    rc = te_string_append(&dbells, "%s", empty_string_if_null(display_xstats));
+    if (rc != 0)
+        goto out;
+
+    if (display_xstats != NULL)
+    {
+        rc = te_kvpairs_del(test_params, display_xstats_arg);
+        if (rc != 0)
+        {
+            ERROR("Failed to remove key for display xstats argument "
+                  "that was reported as present in a list.");
+            goto out;
+        }
+    }
+
+    rc = te_kvpair_add(test_params, display_xstats_arg, dbells.ptr);
+
+out:
+    te_string_free(&dbells);
+    return rc;
+}
+
 te_errno
 tapi_dpdk_grab_cpus(const char *ta,
                     unsigned int n_cpus_preferred,
@@ -1319,4 +1369,16 @@ tapi_dpdk_attach_dbells_filter_tx(tapi_dpdk_testpmd_job_t *testpmd_job)
     };
 
     return tapi_dpdk_attach_filters(&desc);
+}
+
+te_errno
+tapi_dpdk_add_rx_dbells_display(te_kvpair_h *test_params, const char *q_num)
+{
+    return tapi_dpdk_add_dbells_params(test_params, q_num, "rx");
+}
+
+te_errno
+tapi_dpdk_add_tx_dbells_display(te_kvpair_h *test_params, const char *q_num)
+{
+    return tapi_dpdk_add_dbells_params(test_params, q_num, "tx");
 }

@@ -283,6 +283,28 @@ extern te_errno tapi_dpdk_attach_dbells_filter_rx(
 extern te_errno tapi_dpdk_attach_dbells_filter_tx(
                                         tapi_dpdk_testpmd_job_t *testpmd_job);
 
+/**
+ * Add display Rx doorbells xstats to dpdk-testpmd parameters.
+ *
+ * @param[in] test_params       kvpair storing dpdk-testpmd parameters
+ * @param[in] q_num             Number of Rx queues.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_dpdk_add_rx_dbells_display(te_kvpair_h *test_params,
+                                                const char *q_num);
+
+/**
+ * Add display Tx doorbells xstats to dpdk-testpmd parameters.
+ *
+ * @param[in] test_params       kvpair storing dpdk-testpmd parameters
+ * @param[in] q_num             Number of Tx queues.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_dpdk_add_tx_dbells_display(te_kvpair_h *test_params,
+                                                const char *q_num);
+
 
 #ifdef __cplusplus
 } /* extern "C" */
