@@ -1474,6 +1474,7 @@ tapi_dpdk_attach_dbells_filter_rx(tapi_dpdk_testpmd_job_t *testpmd_job)
     tapi_job_simple_desc_t desc = {
         .job_loc = &testpmd_job->job,
         .stdout_loc = &testpmd_job->out_channels[0],
+        .stderr_loc = &testpmd_job->out_channels[1],
         .filters = TAPI_JOB_SIMPLE_FILTERS(
             {.use_stdout = TRUE,
              .readable = TRUE,
@@ -1481,7 +1482,7 @@ tapi_dpdk_attach_dbells_filter_rx(tapi_dpdk_testpmd_job_t *testpmd_job)
              .extract = 2,
              .filter_var = &testpmd_job->rx_dbells_filter,
             },
-            {.use_stdout = TRUE,
+            {.use_stderr = TRUE,
              .readable = TRUE,
              .re = "(?m)No\\sxstat\\s'rx_dbells'",
              .extract = 0,
@@ -1499,6 +1500,7 @@ tapi_dpdk_attach_dbells_filter_tx(tapi_dpdk_testpmd_job_t *testpmd_job)
     tapi_job_simple_desc_t desc = {
         .job_loc = &testpmd_job->job,
         .stdout_loc = &testpmd_job->out_channels[0],
+        .stderr_loc = &testpmd_job->out_channels[1],
         .filters = TAPI_JOB_SIMPLE_FILTERS(
             {.use_stdout = TRUE,
              .readable = TRUE,
@@ -1506,7 +1508,7 @@ tapi_dpdk_attach_dbells_filter_tx(tapi_dpdk_testpmd_job_t *testpmd_job)
              .extract = 2,
              .filter_var = &testpmd_job->tx_dbells_filter,
             },
-            {.use_stdout = TRUE,
+            {.use_stderr = TRUE,
              .readable = TRUE,
              .re = "(?m)No\\sxstat\\s'tx_dbells'",
              .extract = 0,
