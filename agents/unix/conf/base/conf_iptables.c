@@ -42,9 +42,9 @@
 #define IPTABLES_CMD_BUF_SIZE    1024
 
 /* iptables tools */
-#define IPTABLES_TOOL           "/sbin/iptables"
-#define IPTABLES_SAVE_TOOL      "/sbin/iptables-save"
-#define IPTABLES_RESTORE_TOOL   "/sbin/iptables-restore"
+#define IPTABLES_TOOL           "PATH=/sbin:/usr/sbin iptables"
+#define IPTABLES_SAVE_TOOL      "PATH=/sbin:/usr/sbin iptables-save"
+#define IPTABLES_RESTORE_TOOL   "PATH=/sbin:/usr/sbin iptables-restore"
 
 /* iptables tool extra options */
 static char iptables_tool_options[RCF_MAX_VAL];
