@@ -31,6 +31,7 @@
 #include "tapi_sockaddr.h"
 #include "te_rpc_types.h"
 #include "tapi_rpc_socket.h"
+#include "tapi_test_behaviour.h"
 
 /*
  * It is mandatory to include signal.h before tarpc.h, since tarpc.h
@@ -53,7 +54,7 @@
  */
 #define TAPI_RPC_LOG(rpcs, func, in_format, out_format, _x...) \
 do {                                                                    \
-    if (!rpcs->silent)                                                  \
+    if (!rpcs->silent || TEST_BEHAVIOUR(log_all_rpc))                   \
     {                                                                   \
         if (RPC_IS_CALL_OK(rpcs))                                       \
         {                                                               \
@@ -87,7 +88,8 @@ do {                                                                    \
         {                                                               \
             rpcs->silent = rpcs->silent_default;                        \
             rpcs->silent_pass = rpcs->silent_pass_default;              \
-            break;                                                      \
+            if (!TEST_BEHAVIOUR(log_all_rpc))                           \
+                break;                                                  \
         }                                                               \
         LOG_MSG(rpcs->err_log ? TE_LL_ERROR : TE_LL_RING,               \
                 "RPC (%s,%s)%s%s: " #func "(" in_format ") -> "         \

@@ -31,6 +31,10 @@ typedef struct test_behaviour {
     te_bool log_test_fail_state;  /**< Log state/substate of the
                                        test on failure */
 
+    te_bool log_all_rpc; /**< If @c TRUE, all RPC calls should be logged
+                              even if @b silent or @b silent_pass is set
+                              to @c TRUE for an RPC server. */
+
     te_bool cleanup_fd_leak_check; /**< After closing FD in
                                         CLEANUP_RPC_CLOSE(), check with
                                         rpc_fstat() that FD is really

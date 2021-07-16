@@ -68,6 +68,7 @@ test_behaviour_get(test_behaviour *behaviour)
     GET_BEHV(wait_on_cleanup, te_strtol_bool);
     GET_BEHV(log_stack, te_strtol_bool);
     GET_BEHV(log_test_fail_state, te_strtol_bool);
+    GET_BEHV(log_all_rpc, te_strtol_bool);
     GET_BEHV(cleanup_fd_leak_check, te_strtol_bool);
     GET_BEHV(cleanup_fd_close_enforce_libc, te_strtol_bool);
     GET_BEHV(prologue_sleep, test_behaviour_strtoul);

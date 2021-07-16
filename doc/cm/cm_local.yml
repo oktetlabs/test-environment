@@ -184,6 +184,8 @@
       value: "${TE_TEST_BEHAVIOUR_LOG_STACK:-0}"
     - oid: "/local:/test:/behaviour:log_test_fail_state"
       value: "${TE_TEST_BEHAVIOUR_LOG_TEST_FAIL_STATE:-0}"
+    - oid: "/local:/test:/behaviour:log_all_rpc"
+      value: "${TE_TEST_BEHAVIOUR_LOG_ALL_RPC:-0}"
     - oid: "/local:/test:/behaviour:cleanup_fd_leak_check"
       value: "${TE_TEST_BEHAVIOUR_CLEANUP_FD_LEAK_CHECK:-1}"
     - oid: "/local:/test:/behaviour:cleanup_fd_close_enforce_libc"
