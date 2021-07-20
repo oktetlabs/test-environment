@@ -914,6 +914,7 @@ typedef struct tapi_dpdk_testpmd_prep_eal {
     int testpmd_argc;
     char **testpmd_argv;
     unsigned int port_number;
+    unsigned int nb_cores;
 } tapi_dpdk_testpmd_prep_eal;
 
 static te_errno
@@ -1001,6 +1002,7 @@ out:
     prep_eal->testpmd_argc = testpmd_argc;
     prep_eal->testpmd_argv = testpmd_argv;
     prep_eal->port_number = port_number;
+    prep_eal->nb_cores = n_fwd_cpus;
 
     free(cpu_ids);
     free(working_dir);
@@ -1035,6 +1037,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     testpmd_argc = prep_eal.testpmd_argc;
     testpmd_argv = prep_eal.testpmd_argv;
     port_number = prep_eal.port_number;
+    n_fwd_cpus = prep_eal.nb_cores;
 
     if (rc != 0)
         goto out;
