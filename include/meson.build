@@ -59,6 +59,7 @@ check_headers = [
     'netpacket/packet.h',
     'obstack.h',
     'pcap.h',
+    'pcre.h',
     'poll.h',
     'popt.h',
     'pthread.h',

@@ -143,6 +143,9 @@
 /* Define to 1 if you have the <pcap.h> header file. */
 #mesondefine HAVE_PCAP_H
 
+/* Define to 1 if you have the <pcre.h> header file. */
+#mesondefine HAVE_PCRE_H
+
 /* Define to 1 if you have the <poll.h> header file. */
 #mesondefine HAVE_POLL_H
 
