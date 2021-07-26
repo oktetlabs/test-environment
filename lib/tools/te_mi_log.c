@@ -162,6 +162,8 @@ static const char *meas_type_names[] = {
     [TE_MI_MEAS_RPS] = "rps",
     [TE_MI_MEAS_RTT] = "rtt",
     [TE_MI_MEAS_RETRANS] = "TCP retransmissions",
+    [TE_MI_MEAS_FREQ] = "events-per-second",
+    [TE_MI_MEAS_EPE] = "events-per-event",
 };
 
 /** Array for storing string representations of view types */
@@ -858,6 +860,12 @@ te_mi_meas_type2descr(te_mi_meas_type type)
 
         case TE_MI_MEAS_RETRANS:
             return "TCP retransmissions";
+
+        case TE_MI_MEAS_FREQ:
+            return "Events per second";
+
+        case TE_MI_MEAS_EPE:
+            return "Events per another event";
 
         default:
             return "Unknown type";
