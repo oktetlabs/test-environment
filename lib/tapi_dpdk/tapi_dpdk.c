@@ -681,7 +681,7 @@ tapi_dpdk_stats_log_dbells(tapi_job_channel_t *dbells_filter,
         goto out;
     }
 
-    rc = te_mi_logger_meas_create(TAPI_DPDK_TESTPMD_NAME "dbells", &logger);
+    rc = te_mi_logger_meas_create(TAPI_DPDK_TESTPMD_NAME, &logger);
     if (rc != 0)
     {
         ERROR("Failed to create logger");
