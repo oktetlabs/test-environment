@@ -311,6 +311,19 @@ check_dump_response_body(log_listener *listener)
     json_decref(body);
 }
 
+/* Dump the received HTTP response */
+static void
+http_response_dump(log_listener *listener)
+{
+    int resp_len;
+
+    resp_len = listener->buffer_in.len;
+    if (resp_len > LOG_MAX_LISTENER_DUMP_LEN)
+        resp_len = LOG_MAX_LISTENER_DUMP_LEN;
+
+    RING("HTTP response:\n%.*s", resp_len, listener->buffer_in.ptr);
+}
+
 /** Process listener's response to an init request */
 static te_errno
 listener_finish_request_init(log_listener *listener, long response_code)
@@ -326,6 +339,7 @@ listener_finish_request_init(log_listener *listener, long response_code)
     {
         ERROR("Listener %s: /init returned %d", listener->name,
               response_code);
+        http_response_dump(listener);
         listener_free(listener);
         return TE_EINVAL;
     }
@@ -338,6 +352,7 @@ listener_finish_request_init(log_listener *listener, long response_code)
         ERROR("Listener returned malformed init JSON: "
               "%s (line %d, column %d)",
               err.text, err.line, err.column);
+        http_response_dump(listener);
         listener_free(listener);
         return TE_EINVAL;
     }
@@ -349,6 +364,7 @@ listener_finish_request_init(log_listener *listener, long response_code)
         ERROR("Failed to unpack listener init JSON: "
               "%s (line %d, column %d)",
               err.text, err.line, err.column);
+        http_response_dump(listener);
         listener_free(listener);
         return TE_EINVAL;
     }
@@ -361,6 +377,7 @@ listener_finish_request_init(log_listener *listener, long response_code)
             if (rc != 0)
             {
                 ERROR("Failed to convert listener run ID to string: %r", rc);
+                http_response_dump(listener);
                 listener_free(listener);
                 return rc;
             }
@@ -371,12 +388,14 @@ listener_finish_request_init(log_listener *listener, long response_code)
             if (rc != 0)
             {
                 ERROR("Failed to copy listener run ID: %r", rc);
+                http_response_dump(listener);
                 listener_free(listener);
                 return rc;
             }
             break;
         default:
             ERROR("Failed to save listener run ID");
+            http_response_dump(listener);
             listener_free(listener);
             return TE_EINVAL;
     }
@@ -437,6 +456,7 @@ listener_finish_request(log_listener *listener, CURLcode result)
             {
                 ERROR("Listener %s: /feed returned %d", listener->name,
                       response_code);
+                http_response_dump(listener);
                 listener_free(listener);
                 return TE_EINVAL;
             }

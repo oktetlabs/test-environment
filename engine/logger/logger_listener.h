@@ -26,10 +26,11 @@
 extern "C" {
 #endif
 
-#define LOG_MAX_LISTENERS      10
-#define LOG_MAX_LISTENER_NAME  64
-#define LOG_MAX_LISTENER_RUNID 32
-#define LOG_MAX_LISTENER_URL   256
+#define LOG_MAX_LISTENERS           10
+#define LOG_MAX_LISTENER_NAME       64
+#define LOG_MAX_LISTENER_RUNID      32
+#define LOG_MAX_LISTENER_URL        256
+#define LOG_MAX_LISTENER_DUMP_LEN   (10 * 1024)
 
 /** Listener operation state */
 typedef enum listener_state {
