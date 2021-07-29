@@ -1056,10 +1056,11 @@ rte_mbuf_match_tx_rx_pre(struct rte_mbuf *m)
 
     switch (parse_ctx.outer_layers & RTE_PTYPE_L3_MASK)
     {
+        case RTE_PTYPE_UNKNOWN:
+            break;
         case RTE_PTYPE_L3_IPV6:
         case RTE_PTYPE_L3_IPV6_EXT:
         case RTE_PTYPE_L3_IPV6_EXT_UNKNOWN:
-        case RTE_PTYPE_UNKNOWN:
             if (m->tso_segsz == 0)
             {
                 ipv6h = rte_pktmbuf_mtod_offset(m, struct rte_ipv6_hdr *,
@@ -1116,7 +1117,6 @@ rte_mbuf_match_tx_rx_pre(struct rte_mbuf *m)
         case RTE_PTYPE_L3_IPV6:
         case RTE_PTYPE_L3_IPV6_EXT:
         case RTE_PTYPE_L3_IPV6_EXT_UNKNOWN:
-        case RTE_PTYPE_UNKNOWN:
             if (m->tso_segsz == 0)
             {
                 ipv6h = rte_pktmbuf_mtod_offset(m, struct rte_ipv6_hdr *,
@@ -1151,8 +1151,6 @@ rte_mbuf_match_tx_rx_pre(struct rte_mbuf *m)
 
     switch (parse_ctx.innermost_layers & RTE_PTYPE_L4_MASK)
     {
-        case RTE_PTYPE_UNKNOWN:
-            break;
         case RTE_PTYPE_L4_TCP:
             rc = rte_mbuf_tcp_first_pkt_get_cksum(&parse_ctx, &cksum_ctx);
             if (rc != 0)
