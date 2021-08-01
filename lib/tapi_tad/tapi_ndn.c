@@ -2347,16 +2347,16 @@ tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
 
     for (i = 0; i < nb_pkts; ++i)
     {
-        uint16_t provisional_ip_id;
+        int32_t provisional_ip_id;
 
         if (inc_mod15)
         {
-            provisional_ip_id = (superframe_ip_id & 0x8000) |
-                                ((superframe_ip_id + i) & 0x7fff);
+            provisional_ip_id = (uint16_t)((superframe_ip_id & 0x8000) |
+                                           ((superframe_ip_id + i) & 0x7fff));
         }
         else
         {
-            provisional_ip_id = superframe_ip_id + i;
+            provisional_ip_id = (uint16_t)(superframe_ip_id + i);
         }
 
         assert(pkts[i] != NULL);
