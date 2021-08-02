@@ -366,6 +366,21 @@ process_agent_unix_parms() {
     done
 }
 
+process_agent_powerctl_parms() {
+    local p
+
+    set_sniffers false
+
+     while test -n "$1" ; do
+        p="$1"
+        case "${p}" in
+            *)
+                parms="${parms}${parms:+ }\"${p}\"" ;;
+        esac
+        shift
+    done
+}
+
 make_meson_opt_array() {
     local option="$1"; shift
     local o
@@ -407,6 +422,29 @@ process_agent_unix() {
     }
 }
 
+process_agent_powerctl() {
+    local ta="$1"; shift
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local libs_var="${pfx}LIBS"
+    local ta_platform="${pfx}PLATFORM"
+    local parms=
+
+    meson_args="${meson_args} -Dagent-powerctl-name=${ta}"
+    meson_args="${meson_args} -Dagent-powerctl-platform=${!ta_platform}"
+
+    # eval is required interpret correctly parameter values with
+    # whitespaces in quotes
+    eval process_agent_powerctl_parms ${!parms_var}
+
+    eval ${parms_var}=\"\${parms}\"
+
+    test -z "${!libs_var}" || {
+        meson_args="${meson_args} -Dagent-powerctl-libs=\"$(make_meson_opt_array "${!libs_var}")\""
+        eval ${libs_var}=
+    }
+}
+
 process_agent() {
     local p="$1"; shift
     local ta="$1"; shift
@@ -422,6 +460,7 @@ process_agent() {
 
     case "${ta_src}" in
         unix)   process_agent_unix "${ta}" "${pfx}" ;;
+        powerctl|power-ctl) process_agent_powerctl "${ta}" "${pfx}" ;;
     esac
 
     process_parameters "${pfx}" "${msg}"
