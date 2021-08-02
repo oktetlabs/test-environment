@@ -160,6 +160,20 @@ extern te_errno tapi_cfg_module_add_from_ta_dir_or_fallback(const char *ta_name,
 extern te_errno tapi_cfg_module_change_finish(const char *ta_name,
                                               const char *mod_name);
 
+/**
+ * Get version of a module.
+ *
+ * @param ta_name        Name of the agent
+ * @param module_name    Name of the kernel module
+ * @param version        Where to save pointer to the version string
+ *                       (memory should be released by the caller)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_module_version_get(const char *ta_name,
+                                            const char *module_name,
+                                            char **version);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -44,6 +44,13 @@
          modinfo integration is not yet there.
          Value: path in the file system
 
+    - oid: "/agent/module/version"
+      access: read_only
+      type: string
+      d: |
+         Module version.
+         Value: string describing version
+
     - oid: "/agent/module/filename/load_dependencies"
       access: read_write
       type: integer

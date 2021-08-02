@@ -518,3 +518,12 @@ tapi_cfg_module_add_from_ta_dir_or_fallback(const char *ta_name,
     return tapi_cfg_module_add_from_ta_dir_fb(ta_name, module_name,
                                               load_dependencies, TRUE);
 }
+
+/* See description in 'tapi_cfg_modules.h' */
+te_errno
+tapi_cfg_module_version_get(const char *ta_name, const char *module_name,
+                            char **version)
+{
+    return cfg_get_instance_fmt(NULL, version, CFG_MODULE_OID_FMT
+                                "/version:", ta_name, module_name);
+}

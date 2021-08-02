@@ -112,6 +112,9 @@ static te_errno module_filename_set(unsigned int gid, const char *oid,
 static te_errno module_filename_get(unsigned int gid, const char *oid,
                                     char *value, const char *mod_name,...);
 
+static te_errno module_version_get(unsigned int gid, const char *oid,
+                                   char *value, const char *module_name);
+
 static te_errno module_unload_holders_get(unsigned int gid, const char *oid,
                                           char *value, const char *mod_name,
                                           ...);
@@ -164,8 +167,12 @@ RCF_PCH_CFG_NODE_RW(node_filename, "filename",
                     &node_filename_load_dependencies, NULL,
                     module_filename_get, module_filename_set);
 
-RCF_PCH_CFG_NODE_RW(node_module_unload_holders, "unload_holders",
+RCF_PCH_CFG_NODE_RO(node_version, "version",
                     NULL, &node_filename,
+                    module_version_get);
+
+RCF_PCH_CFG_NODE_RW(node_module_unload_holders, "unload_holders",
+                    NULL, &node_version,
                     module_unload_holders_get, module_unload_holders_set);
 
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_module_param, "parameter",
@@ -611,6 +618,48 @@ module_list(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
+}
+
+/**
+ * Get module version.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full identifier of the father instance (unused).
+ * @param value         Where to save the version string.
+ * @param module_name   Name of the module.
+ *
+ * @return Status code.
+ */
+static te_errno
+module_version_get(unsigned int gid, const char *oid, char *value,
+                   const char *module_name)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    char name[TE_MODULE_NAME_LEN];
+    te_errno rc;
+
+    if (!mod_loaded(module_name))
+    {
+        *value = '\0';
+        return 0;
+    }
+
+    rc = mod_name_underscorify(module_name, name, sizeof(name));
+    if (rc != 0)
+        return rc;
+
+    return read_sys_value(value, RCF_MAX_VAL, TRUE,
+                          SYS_MODULE "/%s/version",
+                          name);
+#else
+    UNUSED(value);
+    UNUSED(module_name);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
 }
 
 /**
