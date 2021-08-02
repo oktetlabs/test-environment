@@ -220,6 +220,7 @@ process_library_tad() {
     local parms=
     local p
     local lib_tad_protocols=
+    local without_tad=false
 
     for p in ${!parms_var} ; do
         case ${p} in
@@ -232,12 +233,17 @@ process_library_tad() {
             --without-static-libc)
                 # default, in fact --with-static-libc is not supported yet
                 ;;
+            --without-tad)
+                without_tad=true
+                ;;
             *)
                 parms="${parms}${parms:+ }${p}" ;;
         esac
     done
 
-    if test -z "${lib_tad_protocols}" ; then
+    if "${without_tad}" ; then
+        lib_tad_protocols=""
+    elif test -z "${lib_tad_protocols}" ; then
         lib_tad_protocols="${TAD_PROTOCOLS_ALL}"
     else
         # tad protocol name may contain a hyphen (rte-mbuf)

@@ -4,16 +4,6 @@ is_multi_build_library = true
 
 req_protocols = get_variable('opt-tad-protocols'.underscorify()).split()
 
-if req_protocols.length() == 0
-    c_args += [ '-DTAD_DUMMY' ]
-    sources += files('tad_ch.c')
-    # FIXME subdir_done() is a new feature of meson 0.47 and it is
-    # exactly what we need here. Right now there is no usecases for
-    # TAD dummy, if we really have, we should require the meson
-    # version or do in a different way
-    #subdir_done()
-endif
-
 build_subdirs = []
 foreach protocol : tad_protocols
     if req_protocols.contains(protocol)
@@ -49,38 +39,43 @@ if build_subdirs.contains('snmp')
     error('TAD SNMI is not supported by meson build')
 endif
 
-headers += files(
-    'tad_api.h',
-    'tad_csap_inst.h',
-    'tad_csap_support.h',
-    'tad_pkt.h',
-    'tad_poll.h',
-    'tad_recv.h',
-    'tad_recv_pkt.h',
-    'tad_reply.h',
-    'tad_send.h',
-    'tad_send_recv.h',
-    'tad_types.h',
-    'tad_utils.h',
-)
+if req_protocols.length() == 0
+    c_args += [ '-DTAD_DUMMY' ]
+    sources += files('tad_ch.c')
+else
+    headers += files(
+        'tad_api.h',
+        'tad_csap_inst.h',
+        'tad_csap_support.h',
+        'tad_pkt.h',
+        'tad_poll.h',
+        'tad_recv.h',
+        'tad_recv_pkt.h',
+        'tad_reply.h',
+        'tad_send.h',
+        'tad_send_recv.h',
+        'tad_types.h',
+        'tad_utils.h',
+    )
 
-sources += files(
-    'agent_csap.c',
-    'csap_id.c',
-    'csap_inst.c',
-    'csap_spt_db.c',
-    'tad_bps.c',
-    'tad_ch.c',
-    'tad_eth_sap.c',
-    'tad_eth_sap_dlpi.c',
-    'tad_pkt.c',
-    'tad_poll.c',
-    'tad_recv.c',
-    'tad_recv_pkt.c',
-    'tad_reply_rcf.c',
-    'tad_send.c',
-    'tad_utils.c',
-)
+    sources += files(
+        'agent_csap.c',
+        'csap_id.c',
+        'csap_inst.c',
+        'csap_spt_db.c',
+        'tad_bps.c',
+        'tad_ch.c',
+        'tad_eth_sap.c',
+        'tad_eth_sap_dlpi.c',
+        'tad_pkt.c',
+        'tad_poll.c',
+        'tad_recv.c',
+        'tad_recv_pkt.c',
+        'tad_reply_rcf.c',
+        'tad_send.c',
+        'tad_utils.c',
+    )
+endif
 
 if build_subdirs.contains('geneve') or build_subdirs.contains('gre')
     headers += files('tad_overlay_tools.h')
