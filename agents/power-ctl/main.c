@@ -349,16 +349,6 @@ rcf_ch_vwrite(struct rcf_comm_connection *handle,
 }
 
 /* See description in rcf_ch_api.h */
-void *
-rcf_ch_symbol_addr(const char *name, te_bool is_func)
-{
-    UNUSED(name);
-    UNUSED(is_func);
-
-    return NULL;
-}
-
-/* See description in rcf_ch_api.h */
 int
 rcf_ch_file(struct rcf_comm_connection *handle,
             char *cbuf, size_t buflen, size_t answer_plen,
