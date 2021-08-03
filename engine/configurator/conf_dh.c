@@ -1118,6 +1118,7 @@ cfg_dh_attach_backup(char *filename)
         if (begin_backup == NULL)
         {
             begin_backup = tmp;
+            tmp->next = NULL;
         }
         else
         {
