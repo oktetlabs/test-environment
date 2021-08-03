@@ -1191,6 +1191,10 @@ TARPC_FUNC_STATIC(rte_mbuf_match_tx_rx_pre, {},
 struct rte_mbuf_cmp_ctx {
     /* This figure corresponds to rx_burst[rx_idx] payload size. */
     size_t           m_rx_pld_size;
+    /* It's 0 for rx_idx = 0; otherwise, rx_burst[rx_idx - 1] payload size. */
+    size_t           prev_m_rx_pld_size;
+    /* Current compare start position inside the original Tx payload. */
+    size_t           m_tx_pld_cur_pos;
     /* These 4 fields hold recomputed checksums in the Rx frame. */
     uint16_t         innermost_ip_cksum;
     uint16_t         innermost_l4_cksum;
@@ -1388,12 +1392,12 @@ rte_mbuf_match_tx_rx_cmp_vlan(const struct rte_mbuf_cmp_ctx      *cmp_ctx,
  */
 static te_errno
 rte_mbuf_match_tx_rx_cmp_pld(const struct rte_mbuf_parse_ctx *parse_ctx,
-                             const struct rte_mbuf_cmp_ctx   *cmp_ctx)
+                             struct rte_mbuf_cmp_ctx         *cmp_ctx)
 {
     const struct rte_mbuf *m_tx = cmp_ctx->m_tx;
     const struct rte_mbuf *m_rx = cmp_ctx->m_rx;
     size_t                 cmp_ofst_tx = parse_ctx->header_size +
-                                         cmp_ctx->rx_idx * m_tx->tso_segsz;
+                                         cmp_ctx->m_tx_pld_cur_pos;
     size_t                 cmp_ofst_rx = parse_ctx->header_size;
     size_t                 cmp_size_rem = cmp_ctx->m_rx_pld_size;
 
@@ -1421,6 +1425,8 @@ rte_mbuf_match_tx_rx_cmp_pld(const struct rte_mbuf_parse_ctx *parse_ctx,
         cmp_ofst_tx += cmp_size_part;
         cmp_ofst_rx += cmp_size_part;
     }
+
+    cmp_ctx->m_tx_pld_cur_pos += cmp_ctx->m_rx_pld_size;
 
     return 0;
 }
@@ -1585,7 +1591,7 @@ rte_mbuf_apply_edits(const struct rte_mbuf_parse_ctx    *parse_ctx,
             tcph = rte_pktmbuf_mtod_offset(m_tx, struct rte_tcp_hdr *,
                                            parse_ctx->innermost_l4_ofst);
             tcph_sent_seq = rte_be_to_cpu_32(tcph->sent_seq);
-            tcph_sent_seq += (cmp_ctx->rx_idx != 0) ? m_tx->tso_segsz : 0;
+            tcph_sent_seq += cmp_ctx->prev_m_rx_pld_size;
             tcph->sent_seq = rte_cpu_to_be_32(tcph_sent_seq);
 
             tcph->tcp_flags = parse_ctx->tcp_flags;
@@ -1649,28 +1655,19 @@ rte_mbuf_match_tx_rx_cmp_headers(const struct rte_mbuf_parse_ctx *parse_ctx,
 }
 
 static te_errno
-rte_mbuf_match_tx_rx_cmp(const struct rte_mbuf_parse_ctx    *parse_ctx,
-                         struct rte_mbuf_cmp_ctx            *cmp_ctx,
-                         const struct tarpc_rte_mbuf_report *report)
+rte_mbuf_match_tx_rx_cmp(const struct rte_mbuf_parse_ctx *parse_ctx,
+                         struct rte_mbuf_cmp_ctx         *cmp_ctx,
+                         struct tarpc_rte_mbuf_report    *report)
 {
     const struct rte_mbuf *m_tx = cmp_ctx->m_tx;
     const struct rte_mbuf *m_rx = cmp_ctx->m_rx;
+    size_t                 m_rx_pld_size_min;
+    size_t                 m_rx_pld_size_exp;
     te_errno               rc;
 
     rc = rte_mbuf_match_tx_rx_cmp_vlan(cmp_ctx, report);
     if (rc != 0)
         return rc;
-
-    if (m_tx->tso_segsz != 0)
-    {
-        cmp_ctx->m_rx_pld_size = MIN(parse_ctx->pld_size -
-                                     cmp_ctx->rx_idx * m_tx->tso_segsz,
-                                     m_tx->tso_segsz);
-    }
-    else
-    {
-        cmp_ctx->m_rx_pld_size = parse_ctx->pld_size;
-    }
 
     if (m_rx->nb_segs != 1)
     {
@@ -1678,10 +1675,53 @@ rte_mbuf_match_tx_rx_cmp(const struct rte_mbuf_parse_ctx    *parse_ctx,
         return TE_EOPNOTSUPP;
     }
 
-    if (m_rx->pkt_len < parse_ctx->header_size + cmp_ctx->m_rx_pld_size)
+    if (m_tx->tso_segsz != 0)
     {
-        ERROR("rx_burst[%u]: insufficient data count", cmp_ctx->rx_idx);
+        m_rx_pld_size_min = (parse_ctx->pld_size != 0) ? 1 : 0;
+        m_rx_pld_size_exp = MIN(parse_ctx->pld_size - cmp_ctx->m_tx_pld_cur_pos,
+                                m_tx->tso_segsz);
+    }
+    else
+    {
+        m_rx_pld_size_min = parse_ctx->pld_size - cmp_ctx->m_tx_pld_cur_pos;
+        m_rx_pld_size_exp = parse_ctx->pld_size - cmp_ctx->m_tx_pld_cur_pos;
+    }
+
+    if (m_rx_pld_size_exp == 0)
+    {
+        ERROR("rx_burst[%u]: unexpected (excess) packet", cmp_ctx->rx_idx);
+        return TE_ETADNOTMATCH;
+    }
+
+    if (m_rx->pkt_len < parse_ctx->header_size + m_rx_pld_size_min)
+    {
+        ERROR("rx_burst[%u]: insufficient data count (%u bytes); must be%s%zu bytes",
+              cmp_ctx->rx_idx, m_rx->pkt_len,
+              (m_tx->tso_segsz != 0) ? " at least " : " ",
+              parse_ctx->header_size + m_rx_pld_size_min);
         return TE_ETADLESSDATA;
+    }
+
+    cmp_ctx->prev_m_rx_pld_size = cmp_ctx->m_rx_pld_size;
+    cmp_ctx->m_rx_pld_size = MIN(m_rx->pkt_len - parse_ctx->header_size,
+                                 m_rx_pld_size_exp);
+
+    if (cmp_ctx->m_rx_pld_size != m_rx_pld_size_exp)
+    {
+        size_t next_m_tx_data_pos = parse_ctx->header_size +
+                                    cmp_ctx->m_tx_pld_cur_pos +
+                                    cmp_ctx->m_rx_pld_size;
+
+        if (report->tso_cutoff_barrier == 0)
+        {
+            report->tso_cutoff_barrier = next_m_tx_data_pos;
+        }
+        else if (next_m_tx_data_pos % report->tso_cutoff_barrier != 0)
+        {
+            ERROR("rx_burst[%u]: inconsistent repeating TSO cutoff barrier",
+                  cmp_ctx->rx_idx);
+            return TE_ETADNOTMATCH;
+        }
     }
 
     /* Compare the two payloads. */
@@ -1718,7 +1758,7 @@ rte_mbuf_match_tx_rx(struct tarpc_rte_mbuf_match_tx_rx_in  *in,
     struct rte_mbuf_parse_ctx     parse_ctx = { 0 };
     struct rte_mbuf_cmp_ctx       cmp_ctx = { 0 };
     struct tarpc_rte_mbuf_report  report = { 0 };
-    unsigned int                  nb_rx;
+    unsigned int                  nb_rx_min;
     struct rte_mbuf              *m_tx;
     struct rte_mbuf              *m_rx;
     te_errno                      rc;
@@ -1741,18 +1781,20 @@ rte_mbuf_match_tx_rx(struct tarpc_rte_mbuf_match_tx_rx_in  *in,
         return -TE_RC(TE_RPCS, rc);
 
     if (m_tx->tso_segsz != 0)
-        nb_rx = TE_DIV_ROUND_UP(parse_ctx.pld_size, m_tx->tso_segsz);
+        nb_rx_min = TE_DIV_ROUND_UP(parse_ctx.pld_size, m_tx->tso_segsz);
     else
-        nb_rx = 1;
+        nb_rx_min = 1;
 
-    cmp_ctx.nb_rx = MAX(nb_rx, 1);
+    nb_rx_min = MAX(nb_rx_min, 1);
 
-    if (in->rx_burst.rx_burst_len != cmp_ctx.nb_rx)
+    if (in->rx_burst.rx_burst_len < nb_rx_min)
     {
-        ERROR("rx_burst: wrong packet count (%u); must be %u",
-              in->rx_burst.rx_burst_len, cmp_ctx.nb_rx);
+        ERROR("rx_burst: wrong packet count (%u); must be at least %u",
+              in->rx_burst.rx_burst_len, nb_rx_min);
         return -TE_RC(TE_RPCS, TE_ETADNOTMATCH);
     }
+
+    cmp_ctx.nb_rx = in->rx_burst.rx_burst_len;
 
     cmp_ctx.m_tx = m_tx;
     cmp_ctx.m_rx = m_rx;
@@ -1768,9 +1810,6 @@ rte_mbuf_match_tx_rx(struct tarpc_rte_mbuf_match_tx_rx_in  *in,
     rc = rte_mbuf_match_tx_rx_learn(&parse_ctx, &cmp_ctx, &report);
     if (rc != 0)
         return -TE_RC(TE_RPCS, rc);
-
-    /* Let this report hit the log even in the case of comparison failure. */
-    memcpy(&out->report, &report, sizeof(report));
 
     /* Conduct the comparison. TSO edits are taken care of internally. */
     for (i = 0; i < cmp_ctx.nb_rx; ++i)
@@ -1789,6 +1828,8 @@ rte_mbuf_match_tx_rx(struct tarpc_rte_mbuf_match_tx_rx_in  *in,
         if (rc != 0)
             return -TE_RC(TE_RPCS, rc);
     }
+
+    memcpy(&out->report, &report, sizeof(report));
 
     return 0;
 }

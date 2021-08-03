@@ -740,6 +740,7 @@ struct tarpc_rte_mbuf_report {
     enum tarpc_rte_mbuf_ol_status ol_outer_udp_cksum;
     enum tarpc_rte_mbuf_ol_status ol_innermost_ip_cksum;
     enum tarpc_rte_mbuf_ol_status ol_innermost_l4_cksum;
+    tarpc_size_t                  tso_cutoff_barrier;
 };
 
 struct tarpc_rte_mbuf_match_tx_rx_out {

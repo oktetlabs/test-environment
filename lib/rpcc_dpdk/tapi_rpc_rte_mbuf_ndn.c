@@ -239,6 +239,7 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
                  "m_tx = " RPC_PTR_FMT "; rx_burst = %s", "offloads = { "
                  "vlan = %s; outer_ip_cksum = %s; outer_udp_cksum = %s; "
                  "innermost_ip_cksum = %s; innermost_l4_cksum = %s }; "
+                 "tso_cutoff_barrier = %u; "
                  NEG_ERRNO_FMT, RPC_PTR_VAL(in.m_tx),
                  rpc_rte_mbufs2str(tlbp, in.rx_burst.rx_burst_val,
                                    in.rx_burst.rx_burst_len, rpcs),
@@ -247,7 +248,7 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
                  tarpc_rte_mbuf_ol_status2str(out.report.ol_outer_udp_cksum),
                  tarpc_rte_mbuf_ol_status2str(out.report.ol_innermost_ip_cksum),
                  tarpc_rte_mbuf_ol_status2str(out.report.ol_innermost_l4_cksum),
-                 NEG_ERRNO_ARGS(out.retval));
+                 out.report.tso_cutoff_barrier, NEG_ERRNO_ARGS(out.retval));
     te_log_buf_free(tlbp);
 
     if (reportp != NULL)
