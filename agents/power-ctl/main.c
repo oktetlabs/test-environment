@@ -2,9 +2,9 @@
  * @brief Power Distribution Unit Proxy Test Agent
  *
  * Test Agent running on the Linux and used to control the Power
- * Distribution Units via SNMP.
+ * Distribution Units.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2021 OKTET Labs. All rights reserved.
  *
  * 
  *
@@ -30,193 +30,14 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "ta_common.h"
-#include "ta_snmp.h"
+#include "power_ctl_internal.h"
+
 
 const char *ta_name = "(power-ctl)";
 
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 
-/* IP address of the unit */
-static struct sockaddr unit_netaddr;
-
-/* Number of outlets in the unit */
-static long int unit_size = 0;
-
 const char *te_lockdir = "/tmp";
-
-/* APC: Default name of SNMP community with read-write access */
-const char *apc_rw_community = "private";
-
-/* APC: Commands for controlling outlets */
-typedef enum {
-    OUTLET_IMMEDIATE_ON     = 1,
-    OUTLET_IMMEDIATE_OFF    = 2,
-    OUTLET_IMMEDIATE_REBOOT = 3,
-} outlet_cmd_t;
-
-/**
- * Open SNMP session to the power unit with current default settings.
- *
- * @return Pointer to new SNMP session (should be closed 
- *         with ta_snmp_close_session()), or NULL in the case of error.
- */
-ta_snmp_session *
-power_snmp_open()
-{
-    ta_snmp_session *ss;
-
-    ss = ta_snmp_open_session(&unit_netaddr, SNMP_VERSION_1, apc_rw_community);
-    if (ss == NULL)
-    {
-        ERROR("Failed to open SNMP session for %s",
-              te_sockaddr_get_ipstr(&unit_netaddr));
-    }
-    return ss;
-}
-
-/**
- * Get the size of outlet array of the unit
- *
- * @param size  Number of outlets (OUT)
- *
- * @return Status code.
- */
-te_errno
-power_get_size(long int *size)
-{
-    /* APC PowerMIB sPDUOutletControlTableSize */
-    static ta_snmp_oid oid_sPDUOutletControlTableSize[] =
-                    { 1, 3, 6, 1, 4, 1, 318, 1, 1, 4, 4, 1, 0 };
-
-    ta_snmp_session *ss;
-    te_errno         rc;
-
-    ss = power_snmp_open();
-    if (ss == NULL)
-        return TE_EFAIL;
-
-    rc = ta_snmp_get_int(ss, oid_sPDUOutletControlTableSize,
-                         TE_ARRAY_LEN(oid_sPDUOutletControlTableSize),
-                         size);
-    ta_snmp_close_session(ss);
-    return rc;
-}
-
-/**
- * Find number of outlet by its human-readable name
- *
- * @param name  Name of outlet
- * @param num   Number of outlet (OUT)
- *
- * @return Status code.
- */
-te_errno
-power_find_outlet(const char *name, long int *num)
-{
-    /* APC PowerMIB sPDUOutletName */
-    static ta_snmp_oid oid_sPDUOutletName[] =
-                    { 1, 3, 6, 1, 4, 1, 318, 1, 1, 4, 5, 2, 1, 3, 0 };
-
-    long int         i;
-    te_errno         rc, retval = TE_ENOENT;
-    ta_snmp_session *ss;
-
-    ss = power_snmp_open();
-    if (ss == NULL)
-        return TE_EFAIL;
-
-    for (i = 1; i <= unit_size; i++)
-    {
-        char    buf[128];
-        size_t  buf_len;
-
-        oid_sPDUOutletName[TE_ARRAY_LEN(oid_sPDUOutletName) - 1] = i;
-        buf_len = sizeof(buf);
-        if ((rc = ta_snmp_get_string(ss, oid_sPDUOutletName,
-                                     TE_ARRAY_LEN(oid_sPDUOutletName),
-                                     buf, &buf_len)) != 0)
-            continue;
-
-        if (strcmp(buf, name) == 0)
-        {
-            *num = i;
-            retval = 0;
-            break;
-        }
-    }
-    ta_snmp_close_session(ss);
-    return retval;
-}
-
-/**
- * Perform command on specific outlet
- *
- * @param outlet_num  Number of outlet to control
- * @param command     Command to perform
- *
- * @return Status code.
- */
-te_errno
-power_set_outlet(long int outlet_num, outlet_cmd_t command)
-{
-    /* APC PowerMIB rPDUOutletControlOutletCommand */
-    static oid oid_rPDUOutletControlOutletCommand[] =
-                    { 1, 3, 6, 1, 4, 1, 318, 1, 1, 12, 3, 3, 1, 1, 4, 0 };
-    ta_snmp_session *ss;
-    int              rc;
-
-    if (outlet_num > unit_size || outlet_num == 0)
-        return TE_ENOENT;
-
-    ss = power_snmp_open();
-    if (ss == NULL)
-        return TE_EFAIL;
-
-    oid_rPDUOutletControlOutletCommand[
-        TE_ARRAY_LEN(oid_rPDUOutletControlOutletCommand) - 1] = outlet_num;
-
-    if ((rc = ta_snmp_set(ss, oid_rPDUOutletControlOutletCommand,
-                          TE_ARRAY_LEN(oid_rPDUOutletControlOutletCommand),
-                          TA_SNMP_INTEGER,
-                          (uint8_t *)&command, sizeof(command))) != 0)
-    {
-        ERROR("%s(): failed to perform power outlet command", __FUNCTION__);
-    }
-
-    ta_snmp_close_session(ss);
-    return rc;
-}
-
-/**
- * Perform rebooting an outlet
- *
- * @param id  Decimal number or human-readable name of the outlet
- *
- * @return Status code.
- */
-te_errno
-power_reboot_outlet(const char *id)
-{
-    int       rc;
-    long int  outlet_num;
-    char     *endptr;
-
-    WARN("Rebooting host at outlet '%s'", id);
-    outlet_num = strtol(id, &endptr, 10);
-    if (*endptr != '\0')
-    {
-        WARN("Outlet is referenced by name '%s', looking up", id);
-        rc = power_find_outlet(id, &outlet_num);
-        if (rc != 0)
-        {
-            ERROR("Failed to find outlet named '%s'", id);
-            return rc;
-        }
-        WARN("Found outlet number %u named '%s'", outlet_num, id);
-    }
-
-    return power_set_outlet(outlet_num, OUTLET_IMMEDIATE_REBOOT);
-}
 
 /* Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
@@ -388,13 +209,28 @@ rcf_ch_call(struct rcf_comm_connection *handle,
     if (strcmp(rtn, "cold_reboot") == 0)
     {
         if (is_argv && argc == 1)
-            rc = power_reboot_outlet(params[0]);
+        {
+#ifdef HAVE_SNMP_PDU_TYPE
+            rc = ta_snmp_cold_reboot(params[0]);
+#else
+            ERROR("Cold reboot via SNMP is not supported");
+            rc = TE_EFAIL;
+#endif
+        }
         else
+        {
             rc = TE_EINVAL;
-        SEND_ANSWER("%d %d", rc, RCF_FUNC);
-        return 0;
+        }
     }
-    return -1;
+
+    if (rc != 0)
+    {
+        ERROR("Failed to make a cold reboot");
+        rc = TE_RC(TE_RCF_PCH, rc);
+    }
+
+    SEND_ANSWER("%d %d", rc, RCF_FUNC);
+    return 0;
 }
 
 
@@ -563,6 +399,17 @@ rcf_ch_conf_fini()
 }
 
 
+static int
+init_cold_reboot(char *param)
+{
+#ifdef HAVE_SNMP_PDU_TYPE
+    return ta_snmp_init_cold_reboot(param);
+#else
+    fprintf(stderr, "Cold reboot via SNMP is not supported");
+    return -1;
+#endif
+}
+
 /**
  * Entry point of the Test Agent.
  *
@@ -574,7 +421,7 @@ main(int argc, char **argv)
 {
     int         rc;
     char        buf[16];
-    const char *unit_netaddr_str;
+    char       *param;
 
     fprintf(stderr, "Starting power agent\n");
     if (argc < 4)
@@ -586,37 +433,28 @@ main(int argc, char **argv)
     ta_name = argv[1];
 
     if ((rc = ta_log_init(ta_name)) != 0)
+    {
+        fprintf(stderr, "ta_log_init() failed: error=%d\n", rc);
         return rc;
+    }
 
-    if ((unit_netaddr_str = strrchr(argv[argc - 1], ':')) != NULL)
-        unit_netaddr_str++;
+    if ((param = strrchr(argv[argc - 1], ':')) != NULL)
+        param++;
     else
-        unit_netaddr_str = argv[argc - 1];
+        param = argv[argc - 1];
 
-    if ((te_sockaddr_netaddr_from_string(unit_netaddr_str, &unit_netaddr) != 0))
+    if ((rc = init_cold_reboot(param)) != 0)
     {
-        fprintf(stderr, "Failed to start for '%s': invalid unit address",
-                unit_netaddr_str);
-        return -1;
+        fprintf(stderr, "Failed to initialize the cold reboot\n");
+        return rc;
     }
-    WARN("started at '%s'\n", unit_netaddr_str);
-
-    ta_snmp_init();
-
-    if ((rc = power_get_size(&unit_size)) != 0)
-    {
-        ERROR("Failed to detect the number of outlets of unit, rc=%r", rc);
-        return -1;
-    }
-    RING("Found APC Power Unit at %s with %d outlets",
-         unit_netaddr_str, unit_size);
 
     snprintf(buf, sizeof(buf), "PID %lu", (unsigned long)getpid());
     rc = rcf_pch_run(argv[2], buf);
     if (rc != 0)
     {
-        ERROR("Failed to rcf_pch_run(), rc=%r", rc);
-        return -1;
+        fprintf(stderr, "Failed to rcf_pch_run(), rc=%d", rc);
+        return rc;
     }
 
     return 0;

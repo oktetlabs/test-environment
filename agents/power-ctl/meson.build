@@ -13,7 +13,6 @@ deps = [ dep_threads, cc.find_library('m') ]
 
 sources = files(
     'main.c',
-    'ta_snmp.c'
 )
 
 ta_symtbl_libs = [
@@ -37,29 +36,38 @@ foreach extra_lib : get_option('agent-powerctl-libs')
 endforeach
 
 
-check_headers = [
-    'net-snmp/session_api.h',
-    'net-snmp/net-snmp-config.h',
-    'net-snmp/library/snmp_transport.h',
-]
+netsnmp_deps = dependency('netsnmp', required : false)
+if netsnmp_deps.found()
+    check_headers = [
+        'net-snmp/session_api.h',
+        'net-snmp/net-snmp-config.h',
+        'net-snmp/library/snmp_transport.h',
+    ]
 
-foreach h : check_headers
-    if cc.has_header(h)
-        c_args += [ '-DHAVE_' + h.to_upper().underscorify() ]
-    endif
-endforeach
+    foreach h : check_headers
+        if cc.has_header(h)
+            c_args += [ '-DHAVE_' + h.to_upper().underscorify() ]
+        endif
+    endforeach
 
-deps += [ dependency('netsnmp') ]
 
-check_funcs = [
-    'snmp_pdu_type'
-]
+    check_funcs = [
+        'snmp_pdu_type'
+    ]
 
-foreach h : check_funcs
-    if cc.has_function(h, dependencies: deps)
-        c_args += [ '-DHAVE_' + h.to_upper().underscorify() ]
-    endif
-endforeach
+    foreach h : check_funcs
+        if cc.has_function(h, dependencies: deps)
+            c_args += [ '-DHAVE_' + h.to_upper().underscorify() ]
+        endif
+    endforeach
+
+    sources += files(
+        'ta_snmp_cold_reboot.c',
+        'ta_snmp.c'
+    )
+
+    deps += netsnmp_deps
+endif
 
 
 foreach l : ta_non_symtbl_libs + ta_symtbl_libs
