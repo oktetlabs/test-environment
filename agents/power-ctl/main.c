@@ -39,6 +39,10 @@ static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 
 const char *te_lockdir = "/tmp";
 
+#define SHELL_REBOOT_PARAM "cold_reboot_cmd"
+
+static te_bool is_shell_reboot_type;
+
 /* Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
     do {                                                                  \
@@ -210,12 +214,19 @@ rcf_ch_call(struct rcf_comm_connection *handle,
     {
         if (is_argv && argc == 1)
         {
+            if (is_shell_reboot_type)
+            {
+                rc = ta_shell_cold_reboot(params[0]);
+            }
+            else
+            {
 #ifdef HAVE_SNMP_PDU_TYPE
-            rc = ta_snmp_cold_reboot(params[0]);
+                rc = ta_snmp_cold_reboot(params[0]);
 #else
-            ERROR("Cold reboot via SNMP is not supported");
-            rc = TE_EFAIL;
+                ERROR("Cold reboot via SNMP is not supported");
+                rc = TE_EFAIL;
 #endif
+            }
         }
         else
         {
@@ -402,12 +413,30 @@ rcf_ch_conf_fini()
 static int
 init_cold_reboot(char *param)
 {
+    char *ch;
+    int rc = 0;
+
+    ch = strstr(param, "=");
+    if (ch == NULL)
+        return -1;
+
+    if (strncmp(param, SHELL_REBOOT_PARAM, ch - param - 1) == 0)
+    {
+        is_shell_reboot_type = TRUE;
+        rc = ta_shell_init_cold_reboot(param);
+    }
+    else
+    {
 #ifdef HAVE_SNMP_PDU_TYPE
-    return ta_snmp_init_cold_reboot(param);
+        is_shell_reboot_type = FALSE;
+        rc = ta_snmp_init_cold_reboot(param);
 #else
-    fprintf(stderr, "Cold reboot via SNMP is not supported");
-    return -1;
+        fprintf(stderr, "Cold reboot via SNMP is not supported");
+        rc = -1;
+    }
 #endif
+
+    return rc;
 }
 
 /**

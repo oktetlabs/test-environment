@@ -33,4 +33,22 @@ extern int ta_snmp_init_cold_reboot(char *param);
  */
 extern te_errno ta_snmp_cold_reboot(const char *id);
 
+/**
+ * Prepare the cold reboot via shell command.
+ *
+ * @param param Parameter for initialization the cold reboot
+ *
+ * @return Status code.
+ */
+extern int ta_shell_init_cold_reboot(char *param);
+
+/**
+ * Cold reboot for the specified host via shell command
+ *
+ * @param id Name of the host
+ *
+ * @return Status code
+ */
+extern te_errno ta_shell_cold_reboot(const char *id);
+
 #endif /* __TE_TA_POWER_CTL_INTERNAL_H__ */

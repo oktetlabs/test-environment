@@ -13,6 +13,7 @@ deps = [ dep_threads, cc.find_library('m') ]
 
 sources = files(
     'main.c',
+    'ta_shell_cold_reboot.c',
 )
 
 ta_symtbl_libs = [
