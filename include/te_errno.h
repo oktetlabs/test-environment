@@ -239,6 +239,7 @@ typedef enum {
     TE_ERPCDEAD,     /**< RPC server is dead */
     TE_ERPCKILLED,   /**< RPC server is killed */
     TE_ETAFATAL,     /**< Test Agent is dead and cannot be recovered */
+    TE_ETAREBOOTING, /**< Test Agent is being rebooted */
 /*@}*/
 
 /** @name ASN.1 text parse errors */
@@ -652,6 +653,7 @@ te_rc_err2str(te_errno err)
         ERR2STR(ETADEAD);
         ERR2STR(ETAFATAL);
         ERR2STR(ETAREBOOTED);
+        ERR2STR(ETAREBOOTING);
         ERR2STR(ESUNRPC);
         ERR2STR(ECORRUPTED);
         ERR2STR(ERPCTIMEOUT);

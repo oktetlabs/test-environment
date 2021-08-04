@@ -697,10 +697,12 @@ ta_handler(void *ta)
                 (rc == TE_RC(TE_RCF_PCH, TE_ENOENT)) ||
                 /* RCF request to TA is timed out */
                 (rc == TE_RC(TE_RCF, TE_ETIMEDOUT)) ||
-                /* TA is being rebooted, or has been rebooted */
+                /* TA has been rebooted */
                 (rc == TE_RC(TE_RCF, TE_ETAREBOOTED)) ||
                 /* TA has dies, but may be revivified later by RCF */
-                (rc == TE_RC(TE_RCF, TE_ETADEAD)))
+                (rc == TE_RC(TE_RCF, TE_ETADEAD)) ||
+                /* TA is being rebooted */
+                (rc == TE_RC(TE_RCF, TE_ETAREBOOTING)))
             {
                 continue;
             }
