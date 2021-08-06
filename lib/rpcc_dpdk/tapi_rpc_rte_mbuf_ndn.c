@@ -221,9 +221,9 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
                          unsigned int                  nb_rx,
                          struct tarpc_rte_mbuf_report *reportp)
 {
-    tarpc_rte_mbuf_match_tx_rx_in in;
-    tarpc_rte_mbuf_match_tx_rx_out out;
-    te_log_buf *tlbp;
+    tarpc_rte_mbuf_match_tx_rx_in   in;
+    tarpc_rte_mbuf_match_tx_rx_out  out;
+    te_log_buf                     *tlbp;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -250,6 +250,8 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
                  tarpc_rte_mbuf_ol_status2str(out.report.ol_innermost_l4_cksum),
                  out.report.tso_cutoff_barrier, NEG_ERRNO_ARGS(out.retval));
     te_log_buf_free(tlbp);
+
+    free(in.rx_burst.rx_burst_val);
 
     if (reportp != NULL)
         memcpy(reportp, &out.report, sizeof(*reportp));
