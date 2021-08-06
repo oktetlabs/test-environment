@@ -16,10 +16,13 @@
 
 #include "te_config.h"
 
+#include "conf_api.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_rte.h"
 #include "tapi_rpc_rte_mbuf_ndn.h"
 #include "tapi_mem.h"
+#include "tapi_test.h"
+#include "te_errno.h"
 #include "log_bufs.h"
 #include "rpcc_dpdk.h"
 #include "tapi_test_log.h"
@@ -221,6 +224,7 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
                          unsigned int                  nb_rx,
                          struct tarpc_rte_mbuf_report *reportp)
 {
+    cfg_val_type                    cvt = CVT_STRING;
     tarpc_rte_mbuf_match_tx_rx_in   in;
     tarpc_rte_mbuf_match_tx_rx_out  out;
     te_log_buf                     *tlbp;
@@ -232,17 +236,23 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
     in.rx_burst.rx_burst_val = tapi_memdup(rx_burst, nb_rx * sizeof(*rx_burst));
     in.rx_burst.rx_burst_len = nb_rx;
 
+    CHECK_RC(cfg_get_instance_fmt(&cvt, &in.tso_ip_id_inc_algo,
+                                  "/local:/dpdk:/tso_ip_id_inc_algo:"));
+
     rcf_rpc_call(rpcs, "rte_mbuf_match_tx_rx", &in, &out);
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_mbuf_match_tx_rx,
-                 "m_tx = " RPC_PTR_FMT "; rx_burst = %s", "offloads = { "
+                 "m_tx = " RPC_PTR_FMT "; rx_burst = %s; "
+                 "tso_ip_id_inc_algo = %s", "offloads = { "
                  "vlan = %s; outer_ip_cksum = %s; outer_udp_cksum = %s; "
                  "innermost_ip_cksum = %s; innermost_l4_cksum = %s }; "
                  "tso_cutoff_barrier = %u; "
                  NEG_ERRNO_FMT, RPC_PTR_VAL(in.m_tx),
                  rpc_rte_mbufs2str(tlbp, in.rx_burst.rx_burst_val,
                                    in.rx_burst.rx_burst_len, rpcs),
+                 (in.tso_ip_id_inc_algo[0] != '\0') ?
+                     in.tso_ip_id_inc_algo : "default",
                  tarpc_rte_mbuf_ol_status2str(out.report.ol_vlan),
                  tarpc_rte_mbuf_ol_status2str(out.report.ol_outer_ip_cksum),
                  tarpc_rte_mbuf_ol_status2str(out.report.ol_outer_udp_cksum),
@@ -252,6 +262,7 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
     te_log_buf_free(tlbp);
 
     free(in.rx_burst.rx_burst_val);
+    free(in.tso_ip_id_inc_algo);
 
     if (reportp != NULL)
         memcpy(reportp, &out.report, sizeof(*reportp));

@@ -724,6 +724,7 @@ struct tarpc_rte_mbuf_match_tx_rx_in {
     struct tarpc_in_arg common;
     tarpc_rte_mbuf      m_tx;
     tarpc_rte_mbuf      rx_burst<>;
+    string              tso_ip_id_inc_algo<>;
 };
 
 enum tarpc_rte_mbuf_ol_status {

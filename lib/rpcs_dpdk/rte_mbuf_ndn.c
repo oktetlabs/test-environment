@@ -1207,6 +1207,11 @@ struct rte_mbuf_cmp_ctx {
     struct rte_mbuf *m_tx;
     /* This refers to rx_burst[rx_idx]; no const qualifier here. */
     struct rte_mbuf *m_rx;
+    /* This shows whether mod15 algorithm is expected for TSO IP ID edits. */
+    te_bool          tso_ip_id_inc_algo_is_mod15;
+    /* These 2 fields contain the original (superframe) IP ID values. */
+    uint16_t         start_ip_id_outer;
+    uint16_t         start_ip_id_inner;
 };
 
 /* Fill in cmp_ctx->m_tx and cmp_ctx->m_rx (rx_burst[0]) before invocation. */
@@ -1481,7 +1486,7 @@ rte_mbuf_recompute_cksums(const struct rte_mbuf_parse_ctx    *parse_ctx,
 
 static void
 rte_mbuf_apply_edits(const struct rte_mbuf_parse_ctx    *parse_ctx,
-                     const struct rte_mbuf_cmp_ctx      *cmp_ctx,
+                     struct rte_mbuf_cmp_ctx            *cmp_ctx,
                      const struct tarpc_rte_mbuf_report *report)
 {
     struct rte_mbuf     *m_tx = cmp_ctx->m_tx;
@@ -1506,9 +1511,25 @@ rte_mbuf_apply_edits(const struct rte_mbuf_parse_ctx    *parse_ctx,
 
             ipv4h = rte_pktmbuf_mtod_offset(m_tx, struct rte_ipv4_hdr *,
                                             parse_ctx->outer_l3_ofst);
+
             ipv4h_packet_id = rte_be_to_cpu_16(ipv4h->packet_id);
-            ipv4h_packet_id += (cmp_ctx->rx_idx != 0) ? 1 : 0;
+
+            if (cmp_ctx->rx_idx == 0)
+            {
+                cmp_ctx->start_ip_id_outer = ipv4h_packet_id;
+            }
+            else if (cmp_ctx->tso_ip_id_inc_algo_is_mod15)
+            {
+                ipv4h_packet_id =
+                    ((cmp_ctx->start_ip_id_outer + cmp_ctx->rx_idx) % 0x8000);
+            }
+            else
+            {
+                ipv4h_packet_id = cmp_ctx->start_ip_id_outer + cmp_ctx->rx_idx;
+            }
+
             ipv4h->packet_id = rte_cpu_to_be_16(ipv4h_packet_id);
+
             ipv4h->total_length = rte_cpu_to_be_16(parse_ctx->header_size -
                                                    parse_ctx->outer_l3_ofst +
                                                    cmp_ctx->m_rx_pld_size);
@@ -1558,9 +1579,25 @@ rte_mbuf_apply_edits(const struct rte_mbuf_parse_ctx    *parse_ctx,
 
             ipv4h = rte_pktmbuf_mtod_offset(m_tx, struct rte_ipv4_hdr *,
                                             parse_ctx->innermost_l3_ofst);
+
             ipv4h_packet_id = rte_be_to_cpu_16(ipv4h->packet_id);
-            ipv4h_packet_id += (cmp_ctx->rx_idx != 0) ? 1 : 0;
+
+            if (cmp_ctx->rx_idx == 0)
+            {
+                cmp_ctx->start_ip_id_inner = ipv4h_packet_id;
+            }
+            else if (cmp_ctx->tso_ip_id_inc_algo_is_mod15)
+            {
+                ipv4h_packet_id =
+                    ((cmp_ctx->start_ip_id_inner + cmp_ctx->rx_idx) % 0x8000);
+            }
+            else
+            {
+                ipv4h_packet_id = cmp_ctx->start_ip_id_inner + cmp_ctx->rx_idx;
+            }
+
             ipv4h->packet_id = rte_cpu_to_be_16(ipv4h_packet_id);
+
             ipv4h->total_length =
                 rte_cpu_to_be_16(parse_ctx->header_size -
                                  parse_ctx->innermost_l3_ofst +
@@ -1810,6 +1847,10 @@ rte_mbuf_match_tx_rx(struct tarpc_rte_mbuf_match_tx_rx_in  *in,
     rc = rte_mbuf_match_tx_rx_learn(&parse_ctx, &cmp_ctx, &report);
     if (rc != 0)
         return -TE_RC(TE_RPCS, rc);
+
+    if (in->tso_ip_id_inc_algo != NULL &&
+        strcmp(in->tso_ip_id_inc_algo, "mod15") == 0)
+        cmp_ctx.tso_ip_id_inc_algo_is_mod15 = TRUE;
 
     /* Conduct the comparison. TSO edits are taken care of internally. */
     for (i = 0; i < cmp_ctx.nb_rx; ++i)
