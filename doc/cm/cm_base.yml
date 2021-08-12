@@ -388,6 +388,21 @@
          Name: empty
          Value: Kind of an interface
 
+    - oid: "/agent/interface/coalesce"
+      access: read_only
+      type: none
+      d: |
+         Network interface interrupt coalescing parameters
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/coalesce/param"
+      access: read_write
+      type: uint64
+      d: |
+         Name: Name of a field from ethtool_coalesce structure
+         Value: See documentation of ethtool_coalesce structure
+
     - oid: "/agent/interface/phy"
       access: read_only
       type: none

@@ -273,6 +273,12 @@ extern void ta_cfg_obj_log(const ta_cfg_obj_t *obj);
 /** Name for object of type sniffer */
 #define TA_OBJ_TYPE_SNIFFER "sniffer"
 
+/**
+ * Name for the object type of network interface interrupt coalescing
+ * settings
+ */
+#define TA_OBJ_TYPE_IF_COALESCE "if_coalesce"
+
 /** System-independent route types */
 typedef enum ta_route_type {
     TA_RT_TYPE_UNSPECIFIED,

@@ -15,6 +15,7 @@ sources += files(
     'base/conf.c',
     'base/conf_block.c',
     'base/conf_bridge.c',
+    'base/conf_coalesce.c',
     'base/conf_configfs.c',
     'base/conf_cpu.c',
     'base/conf_eth.c',
