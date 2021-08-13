@@ -11,6 +11,7 @@
 #include "te_config.h"
 #include "te_defs.h"
 #include "te_string.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "te_log_stack.h"
 #include "conf_api.h"
@@ -352,6 +353,40 @@ tapi_cfg_module_int_params_add(const char *ta_name, const char *mod_name,
             break;
     }
     va_end(ap);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_modules.h */
+te_errno
+tapi_cfg_module_param_get(const char *ta_name,
+                          const char *mod_name,
+                          const char *param_name,
+                          char **param_value)
+{
+    cfg_val_type vtype = CVT_STRING;
+
+    return cfg_get_instance_fmt(&vtype, param_value,
+                                CFG_MODULE_PARAM_OID_FMT,
+                                ta_name, mod_name, param_name);
+}
+
+/* See description in tapi_cfg_modules.h */
+te_errno
+tapi_cfg_module_param_get_int(const char *ta_name,
+                              const char *mod_name,
+                              const char *param_name,
+                              int *param_value)
+{
+    char *value;
+    te_errno rc;
+
+    rc = tapi_cfg_module_param_get(ta_name, mod_name, param_name, &value);
+    if (rc != 0)
+        return rc;
+
+    rc = te_strtoi(value, 0, param_value);
+    free(value);
 
     return rc;
 }

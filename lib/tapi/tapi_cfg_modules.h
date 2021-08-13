@@ -120,6 +120,37 @@ te_errno tapi_cfg_module_int_params_add(const char *ta_name,
                                         const char *mod_name, ...);
 
 /**
+ * Get value of the module parameter (as string).
+ *
+ * @param ta_name        Name of the agent
+ * @param mod_name       Name of the kernel module
+ * @param param_name     Name of the module parameter
+ * @param param_value    Where to save pointer to string value of
+ *                       the parameter (to be released by the caller)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_module_param_get(const char *ta_name,
+                                          const char *mod_name,
+                                          const char *param_name,
+                                          char **param_value);
+
+/**
+ * Get value of the module parameter (as integer number).
+ *
+ * @param ta_name        Name of the agent
+ * @param mod_name       Name of the kernel module
+ * @param param_name     Name of the module parameter
+ * @param param_value    Where to save parameter value
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_module_param_get_int(const char *ta_name,
+                                              const char *mod_name,
+                                              const char *param_name,
+                                              int *param_value);
+
+/**
  * Given a module file in a TA directory, insert the former.
  * Take care of the module dependencies if required.
  *
