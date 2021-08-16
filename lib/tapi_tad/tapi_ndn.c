@@ -2318,7 +2318,6 @@ out:
 te_errno
 tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
                              unsigned int       nb_pkts,
-                             te_bool            inc_mod15,
                              tapi_ndn_level_t   level)
 {
     int           pdu_idx;
@@ -2349,15 +2348,7 @@ tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
     {
         int32_t provisional_ip_id;
 
-        if (inc_mod15)
-        {
-            provisional_ip_id = (uint16_t)((superframe_ip_id & 0x8000) |
-                                           ((superframe_ip_id + i) & 0x7fff));
-        }
-        else
-        {
-            provisional_ip_id = (uint16_t)(superframe_ip_id + i);
-        }
+        provisional_ip_id = (uint16_t)(superframe_ip_id + i);
 
         assert(pkts[i] != NULL);
 

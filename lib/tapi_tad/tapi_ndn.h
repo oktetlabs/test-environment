@@ -596,16 +596,14 @@ extern te_errno tapi_ndn_gso_pkts_ip_len_edit(asn_value          **pkts,
  * Given a bunch of ASN.1 raw packets originating from some GSO
  * transaction, line up IPv4 ID field values across the packets.
  *
- * @param pkts      The array of ASN.1 raw packets
- * @param nb_pkts   The number of ASN.1 raw packets
- * @param inc_mod15 IPv4 ID increment MOD16 --> MOD15 toggle
- * @param level     @c TAPI_NDN_OUTER_L3 or @c TAPI_NDN_INNER_L3
+ * @param pkts    The array of ASN.1 raw packets
+ * @param nb_pkts The number of ASN.1 raw packets
+ * @param level   @c TAPI_NDN_OUTER_L3 or @c TAPI_NDN_INNER_L3
  *
  * @return Status code.
  */
 extern te_errno tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
                                              unsigned int       nb_pkts,
-                                             te_bool            inc_mod15,
                                              tapi_ndn_level_t   level);
 
 /**
