@@ -2345,7 +2345,7 @@ tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
 
     assert(superframe_ip_id_size == sizeof(superframe_ip_id));
 
-    for (i = 0; i < nb_pkts; ++i)
+    for (i = 1; i < nb_pkts; ++i)
     {
         int32_t provisional_ip_id;
 
