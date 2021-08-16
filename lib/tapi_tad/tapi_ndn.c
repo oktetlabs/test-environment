@@ -32,6 +32,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "conf_api.h"
 #include "te_stdint.h"
 #include "te_string.h"
 #include "te_errno.h"
@@ -2323,6 +2324,9 @@ tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
     int           pdu_idx;
     uint16_t      superframe_ip_id;
     size_t        superframe_ip_id_size = sizeof(superframe_ip_id);
+    char         *tso_ip_id_inc_algo = NULL;
+    cfg_val_type  cvt = CVT_STRING;
+    te_bool       mod15 = FALSE;
     te_errno      rc = 0;
     unsigned int  i;
 
@@ -2344,11 +2348,22 @@ tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
 
     assert(superframe_ip_id_size == sizeof(superframe_ip_id));
 
+    rc = cfg_get_instance_fmt(&cvt, &tso_ip_id_inc_algo,
+                              "/local:/dpdk:/tso_ip_id_inc_algo:");
+    if (rc != 0)
+        goto out;
+
+    if (strcmp(tso_ip_id_inc_algo, "mod15") == 0)
+        mod15 = TRUE;
+
     for (i = 1; i < nb_pkts; ++i)
     {
         int32_t provisional_ip_id;
 
-        provisional_ip_id = (uint16_t)(superframe_ip_id + i);
+        if (mod15)
+            provisional_ip_id = (uint16_t)((superframe_ip_id + i) % 0x8000);
+        else
+            provisional_ip_id = (uint16_t)(superframe_ip_id + i);
 
         assert(pkts[i] != NULL);
 
@@ -2361,6 +2376,8 @@ tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
     }
 
 out:
+    free(tso_ip_id_inc_algo);
+
     return TE_RC(TE_TAPI, rc);
 }
 
