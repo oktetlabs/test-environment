@@ -863,7 +863,7 @@ job_create(const char *spawner, const char *tool, char **argv,
     return 0;
 }
 
-te_errno
+static te_errno
 proc_wait(pid_t pid, int timeout_ms, tarpc_job_status *status)
 {
     struct timeval tv_start;
