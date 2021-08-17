@@ -2284,7 +2284,13 @@ rcf_ta_check_start(void)
 static void
 get_reboot_type_from_reboot_request(ta *agent, rcf_msg *msg)
 {
-    if ((msg->flags & COLD_REBOOT) != 0)
+    if ((msg->flags & (AGENT_REBOOT | HOST_REBOOT | COLD_REBOOT)) ==
+        (AGENT_REBOOT | HOST_REBOOT | COLD_REBOOT))
+    {
+        agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_COLD;
+        agent->reboot_ctx.current_type = TA_REBOOT_TYPE_AGENT;
+    }
+    else if ((msg->flags & COLD_REBOOT) != 0)
     {
         agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_COLD;
         agent->reboot_ctx.current_type = TA_REBOOT_TYPE_COLD;
