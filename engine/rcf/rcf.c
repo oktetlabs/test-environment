@@ -82,6 +82,9 @@
 /*
  * TA reboot and RCF shutdown algorithms.
  *
+ * TA reboot:
+ *     See rcf.h
+ *
  * RCF shutdown:
  *     send a shutdown command to TA with first free SID to all Test Aents;
  *     shutdown_num = ta_num;
@@ -112,7 +115,7 @@ static char names[RCF_MAX_LEN - sizeof(rcf_msg)];   /**< TA names */
 static int  names_len = 0;      /**< Length of TA name list */
 
 /* Backup select parameters */
-static struct timeval tv0;
+struct timeval tv0;
 fd_set set0;
 
 /** Name of directory for temporary files */
@@ -956,7 +959,6 @@ int
 rcf_init_agent(ta *agent)
 {
     int       rc;
-    te_bool   is_reboot = ((agent->flags & TA_REBOOTING) != 0);
     te_string str = TE_STRING_INIT;
 
     if ((rc = te_kvpair_to_str(&agent->conf, &str)) != 0)
@@ -979,12 +981,16 @@ rcf_init_agent(ta *agent)
                                &agent->conf, &(agent->handle),
                                &(agent->flags))) != 0)
     {
-        if (!is_reboot)
-        {
-            ERROR("Cannot (re-)initialize TA '%s' error=%r",
-                  agent->name, rc);
+        RING("Cannot (re-)initialize TA '%s' error=%r",
+              agent->name, rc);
+
+        /*
+         * It's OK if the agent can't initialize in the REBOOTING state,
+         * since it can do it so in the next reboot type.
+         */
+        if (agent->reboot_ctx.state != TA_REBOOT_STATE_REBOOTING)
             rcf_set_ta_unrecoverable(agent);
-        }
+
         return rc;
     }
     INFO("TA '%s' started, trying to connect", agent->name);
@@ -1010,21 +1016,9 @@ rcf_init_agent(ta *agent)
     }
 
     if (rc != 0)
-    {
         rcf_set_ta_unrecoverable(agent);
-    }
     else
-    {
-        rcf_answer_all_requests(&(agent->sent), TE_ETAREBOOTED);
-        if (is_reboot)
-            send_all_pending_commands(agent);
-        else
-        {
-            rcf_answer_all_requests(&(agent->pending), TE_ETAREBOOTED);
-            rcf_answer_all_requests(&(agent->waiting), TE_ETAREBOOTED);
-        }
         agent->conn_locked = FALSE;
-    }
 
     return rc;
 }
@@ -1251,6 +1245,7 @@ process_reply(ta *agent)
     char    *ptr = cmd;
     char    *ba = NULL;
     te_bool  ack = FALSE;
+    rcf_op_t last_opcode;
 
 #define READ_INT(n) \
     do {                                                    \
@@ -1544,7 +1539,12 @@ process_reply(ta *agent)
         }
     }
 
+    /* This value is necessary for the reboot state machine */
+    last_opcode = msg->opcode;
     rcf_answer_user_request(req);
+
+    if (rcf_ta_reboot_on_req_reply(agent, last_opcode))
+        return;
 
     /* Push next waiting request */
 push:
@@ -1791,6 +1791,13 @@ rcf_send_cmd(ta *agent, usrreq *req)
     rcf_msg *msg = req->message;
 
     unsigned int space = 0;
+
+    if (!rcf_ta_reboot_before_req(agent, req))
+    {
+        msg->error = TE_RC(TE_RCF, TE_ETAREBOOTING);
+        rcf_answer_user_request(req);
+        return -1;
+    }
 
     if (agent->conn_locked)
     {
@@ -2121,6 +2128,7 @@ rcf_ta_check_all_done(void)
     VERB("%s()", __FUNCTION__);
     if (ta_checker.req != NULL && ta_checker.active == 0)
     {
+        te_bool     rebooting = FALSE;
         te_bool     remain_dead = FALSE;
         ta         *agent;
         const char *target = NULL;
@@ -2145,19 +2153,24 @@ rcf_ta_check_all_done(void)
                 continue;
             }
 
-            if (agent->flags & TA_DEAD)
+            if (agent->reboot_ctx.state != TA_REBOOT_STATE_IDLE)
             {
-                ERROR("TA '%s' is dead, try to reboot...", agent->name);
-                remain_dead = TRUE;
+                rebooting = TRUE;
                 continue;
             }
+
+            if (agent->flags & TA_DEAD)
+                rebooting = rcf_ta_reboot_on_ta_dead(agent, ta_checker.req);
         }
 
-        ta_checker.req->message->error =
-            remain_dead ? TE_ETADEAD : 0;
+        if (!rebooting)
+        {
+            ta_checker.req->message->error =
+                remain_dead ? TE_ETADEAD : 0;
 
-        rcf_answer_user_request(ta_checker.req);
-        ta_checker.req = NULL;
+            rcf_answer_user_request(ta_checker.req);
+            ta_checker.req = NULL;
+        }
     }
 }
 
@@ -2243,6 +2256,57 @@ rcf_ta_check_start(void)
     rcf_ta_check_all_done();
 }
 
+static void
+get_reboot_type_from_reboot_request(ta *agent, rcf_msg *msg)
+{
+    if ((msg->flags & AGENT_REBOOT) != 0)
+    {
+        agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_AGENT;
+        agent->reboot_ctx.current_type = TA_REBOOT_TYPE_AGENT;
+    }
+    else
+    {
+        msg->error = TE_RC(TE_RCF, TE_EOPNOTSUPP);
+        ERROR("Unsupported reboot type");
+    }
+}
+
+static void
+process_reboot_request(ta *agent, usrreq *req)
+{
+    rcf_msg *msg = req->message;
+
+    if ((agent->flags & TA_REBOOTABLE) == 0)
+    {
+        msg->error = TE_RC(TE_RCF, TE_EPERM);
+        ERROR("Agent '%s' is not rebootable", agent->name);
+        return;
+    }
+
+    if (agent->reboot_ctx.state == TA_REBOOT_STATE_REBOOTING)
+    {
+        msg->error = TE_RC(TE_RCF, TE_EINPROGRESS);
+        ERROR("Agent '%s' is being rebooted", agent->name);
+        return;
+    }
+
+    get_reboot_type_from_reboot_request(agent, msg);
+    if (msg->error != 0)
+        return;
+
+    if ((agent->flags & TA_LOCAL) && !(agent->flags & TA_PROXY)
+        && agent->reboot_ctx.requested_type != TA_REBOOT_TYPE_AGENT)
+    {
+        msg->error = TE_RC(TE_RCF, TE_ETALOCAL);
+        ERROR("Agent '%s' runs on the same host with TEN and "
+              "isn't a proxy agent. It cannot be rebooted", agent->name);
+        return;
+    }
+
+    rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_LOG_FLUSH);
+    agent->reboot_ctx.req = req;
+}
+
 
 /**
  * Process a request from the user: send the command to the Test Agent or
@@ -2255,7 +2319,6 @@ process_user_request(usrreq *req)
 {
     ta *agent;
     rcf_msg *msg = req->message;
-    int rc;
 
     /* Process non-TA commands */
     switch (msg->opcode)
@@ -2346,6 +2409,8 @@ process_user_request(usrreq *req)
                 agent->dynamic = TRUE;
                 agent->next = agents;
                 agent->flags = msg->flags | TA_DEAD;
+
+                rcf_ta_reboot_init_ctx(agent);
 
                 if (resolve_ta_methods(agent, msg->file) != 0)
                 {
@@ -2573,7 +2638,7 @@ process_user_request(usrreq *req)
         return;
     }
 
-    if ((agent->flags & TA_DEAD) && !(agents->flags & TA_REBOOTING))
+    if (agent->flags & TA_DEAD)
     {
         ERROR("Request '%s' to dead TA '%s'",
               rcf_op_to_string(msg->opcode), msg->ta);
@@ -2617,9 +2682,14 @@ process_user_request(usrreq *req)
             return;
 
         case RCFOP_REBOOT:
-            ERROR("Reboot opcode is not supported");
-            msg->error = TE_RC(TE_RCF, TE_EOPNOTSUPP);
-            rcf_answer_user_request(req);
+            process_reboot_request(agent, req);
+            /*
+             * If the reboot request does not pass the primitive checks
+             * an error should be sent to the user. Otherwise a reply to
+             * the user will be sent after the reboot attempt
+             */
+            if (msg->error != 0)
+                rcf_answer_user_request(req);
             return;
 
         default:
@@ -2953,8 +3023,17 @@ main(int argc, const char *argv[])
         {
             usrreq *next;
 
-            if ((agent->m.is_ready)(agent->handle))
+            /*
+            * In all reboot states except @c TA_REBOOT_STATE_REBOOTING,
+            * messages may come from the agent
+            */
+            if ((agent->m.is_ready)(agent->handle) &&
+                 agent->reboot_ctx.state != TA_REBOOT_STATE_REBOOTING)
+            {
                 process_reply(agent);
+            }
+
+            rcf_ta_reboot_state_handler(agent);
 
             now = time(NULL);
             for (req = agent->sent.next;

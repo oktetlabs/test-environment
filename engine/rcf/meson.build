@@ -20,7 +20,7 @@ if dep_dl.found()
     deps += [ dep_dl ]
 endif
 
-executable('te_rcf', 'rcf.c', rcf_consistency_checks, install: true,
+executable('te_rcf', ['rcf.c', 'rcf_reboot.c'], rcf_consistency_checks, install: true,
            link_args: [  '-rdynamic', '-export-dynamic' ],
            dependencies: [ common_deps, dep_lib_ipcserver, deps ])
 

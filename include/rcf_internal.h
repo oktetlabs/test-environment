@@ -48,6 +48,7 @@ extern "C" {
                                          traffic receiving continues */
 #define PARAMETERS_ARGV         4   /**< Routine parameters are passed in
                                          argc/argv mode */
+#define AGENT_REBOOT            8   /**< Reboot Test Agent process */
 /*@}*/
 
 /** @name Traffic flags */

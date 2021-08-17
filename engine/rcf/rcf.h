@@ -45,6 +45,9 @@ extern "C" {
 /** TA shutdown timeout in seconds */
 #define RCF_SHUTDOWN_TIMEOUT    5
 
+/** Timeout to wait for logs in seconds */
+#define RCF_LOG_FLUSHED_TIMEOUT 10
+
 /**
  * Timeout for CONFSET operation, in seconds.
  *
@@ -84,6 +87,94 @@ typedef struct ta_initial_task {
     struct ta_initial_task *next;          /**< Link to the next task */
 } ta_initial_task;
 
+/**
+ * State of the reboot
+ *
+ * +-------------+     +-------------+     +-------------+
+ * |             | (1) |             | (2) |             |
+ * |    IDLE     |---->|  LOG_FLUSH  |---->|   WAITING   |----+
+ * |             |     |             |     |             |    |
+ * +-------------+     +-------------+     +-------------+    |
+ *                                                            |
+ * +----------------------------------------------------------+
+ * |
+ * |     +-------------+     +-------------+
+ * | (3) |             | (4) |             | (5)
+ * +---->| WAITING_ACK |---->|  REBOOTING  |----> goto IDLE
+ *       |             |     |             |
+ *       +-------------+     +-------------+
+ *
+ * (1),(2),(3),(4) - Event for switching to the next state
+ *
+ * - @c IDLE - The normal state of the agent
+ * - (1)  - An user requested to reboot TA
+ * - @c LOG_FLUSH - RCF is waiting for a response (10 second)
+ *   to the @c GET_LOG last command
+ * - (2) - RCF received an answer from the agent to the GET_LOG last command
+ * - @c WAITING - RCF is forming a request to reboot the TA and sending it
+ * - (3) - RCF sent a reboot request to TA
+ * - @c WAITING_ACK - RCF is waiting for confirmation (10 second) of receiving
+ *                    a reboot request from the TA
+ * - (4) - RCF received confirmation from the TA
+ * - @c REBOOTING - RCF is waiting for the reboot to finish using the specified
+ *                  timeout. If the waiting time has expired, the RCF marks the
+ *                  agent unrecoverable dead. Either switсh to the next reboot
+ *                  type if it allowed
+ * - (5) - RCF is initializing the TA process
+ *
+ * In case of TA process reboot, RCF goes from state LOG_FLUSH to (5)
+ * immediately.
+ */
+typedef enum ta_reboot_state {
+    /** The normal state of the agent */
+    TA_REBOOT_STATE_IDLE,
+    /** Waiting for the log flush command */
+    TA_REBOOT_STATE_LOG_FLUSH,
+    /** Send a reboot request to agent and wait for confirmation of sending */
+    TA_REBOOT_STATE_WAITING,
+    /** Wait for a response from the agent to the reboot command */
+    TA_REBOOT_STATE_WAITING_ACK,
+    /** Waiting for the end of the reboot */
+    TA_REBOOT_STATE_REBOOTING,
+} ta_reboot_state;
+
+/** Type of the reboot */
+typedef enum ta_reboot_type {
+    /** Restart TA process */
+    TA_REBOOT_TYPE_AGENT,
+} ta_reboot_type;
+
+/** Contextual information for rebooting the agent */
+typedef struct ta_reboot_context {
+    /** Current reboot state */
+    ta_reboot_state state;
+    /** The type of reboot requested by the user */
+    ta_reboot_type requested_type;
+    /**
+     * Current reboot type.
+     * The current reboot type will increase to the requested type according
+     * to the Reboot types are enumerated from the lowest one up to
+     * @a requested_type until until one of them completes successfully
+     */
+    ta_reboot_type current_type;
+    /** Timestamp of one reboot state */
+    time_t reboot_timestamp;
+    /** User request with reboot message */
+    usrreq *req;
+    /**
+     * The flag to check that the response from the agent is received.
+     * Use for the reboot context only.
+     */
+    te_bool is_answer_recv;
+    /** The error that occurred during the reboot */
+    te_errno error;
+    /**
+     * This field is used to avoid a lot of message
+     * "Agent in the reboot state" in the logs
+     */
+    te_bool is_agent_reboot_msg_sent;
+} ta_reboot_context;
+
 /** Structure for one Test Agent */
 typedef struct ta {
     struct ta          *next;               /**< Link to the next TA */
@@ -122,6 +213,8 @@ typedef struct ta {
     te_bool            dynamic;             /**< Dynamic creation flag */
 
     struct rcf_talib_methods m; /**< TA-specific Methods */
+
+    ta_reboot_context reboot_ctx; /**< Reboot context */
 } ta;
 
 /**
@@ -134,6 +227,7 @@ typedef struct ta_check {
 
 extern ta_check ta_checker;
 extern fd_set set0;
+extern struct timeval tv0;
 
 /**
  * Obtain TA structure address by Test Agent name.
@@ -205,6 +299,60 @@ extern int rcf_send_cmd(ta *agent, usrreq *req);
  * Allocate memory for user request.
  */
 extern usrreq *rcf_alloc_usrreq(void);
+
+/**
+ * Entry point of reboot state machine.
+ *
+ * @param agent Test Agent structure
+ */
+extern void rcf_ta_reboot_state_handler(ta *agent);
+
+/**
+ * Set the specified agent reboot state, log the message about it
+ * and and remember the timestamp of switching to a new state.
+ *
+ * @param agent Test Agent structure
+ * @param state Reboot state
+ */
+extern void rcf_set_ta_reboot_state(ta *agent, ta_reboot_state state);
+
+/**
+ * Check that from the point of view of the reboot context
+ * command can be sent to the agent
+ *
+ * @param agent Test Agent structure
+ * @param req   User request
+ *
+ * @return @c TRUE if command should be sent
+ */
+extern te_bool rcf_ta_reboot_before_req(ta *agent, usrreq *req);
+
+/**
+ * Check that in terms of the reboot context the waiting
+ * requests should be processed
+ *
+ * @param agent  Test Agent structure
+ * @param opcode Request operation code
+ * @return @c FLASE if the waiting requests should be processed
+ */
+extern te_bool rcf_ta_reboot_on_req_reply(ta *agent, rcf_op_t opcode);
+
+/**
+ * Try to initialize the reboot process for the agent
+ *
+ * @param agent Test Agent structure
+ * @param req   User request to report the result of the reboot
+ *
+ * @return @c TRUE if reboot process is initialized
+ */
+extern te_bool rcf_ta_reboot_on_ta_dead(ta *agent, usrreq *req);
+
+/**
+ * Initialize reboot context for the TA
+ *
+ * @param agent Test Agent structure
+ */
+extern void rcf_ta_reboot_init_ctx(ta *agent);
 
 #ifdef __cplusplus
 } /* extern "C" */
