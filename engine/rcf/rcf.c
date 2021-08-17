@@ -541,7 +541,7 @@ parse_config_ta(xmlNodePtr ta_node)
                 key = "shell";
             }
 
-            if ((rc = te_kvpair_add(&agent->conf, key, val)) != 0)
+            if ((rc = te_kvpair_add(&agent->conf, key, "%s", val)) != 0)
             {
                 free(attr);
                 te_kvpair_fini(&agent->conf);
@@ -611,7 +611,7 @@ parse_config_ta(xmlNodePtr ta_node)
             }
         }
 
-        rc = te_kvpair_add(&agent->conf, key, val != NULL ? val : "");
+        rc = te_kvpair_add(&agent->conf, key, "%s", val != NULL ? val : "");
 
         free(key);
         free(val);
