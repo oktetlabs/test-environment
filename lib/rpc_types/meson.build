@@ -162,3 +162,46 @@ foreach d : check_decls_list
     endif
 endforeach
 
+ethtool_decls_list = [
+    'ETH_RESET_MGMT',
+    'ETH_RESET_IRQ',
+    'ETH_RESET_DMA',
+    'ETH_RESET_FILTER',
+    'ETH_RESET_OFFLOAD',
+    'ETH_RESET_MAC',
+    'ETH_RESET_PHY',
+    'ETH_RESET_RAM',
+    'ETH_RESET_AP',
+    'ETH_RESET_DEDICATED',
+    'ETH_RESET_ALL',
+    'ETH_FLAG_TXVLAN',
+    'ETH_FLAG_RXVLAN',
+    'ETH_FLAG_LRO',
+    'ETH_FLAG_NTUPLE',
+    'ETH_FLAG_RXHASH',
+]
+
+ethtool_decls_headers = '''
+#include <linux/ethtool.h>
+'''
+
+foreach d : ethtool_decls_list
+    if cc.has_type(d, prefix: ethtool_decls_headers)
+        c_args += '-DHAVE_DECL_' + d.to_upper()
+    endif
+endforeach
+
+ethtool_cmd_members_list = [
+    'mdio_support',
+    'speed_hi',
+    'eth_tp_mdix',
+    'reserved2',
+    'lp_advertising',
+    'reserved'
+]
+
+foreach d : ethtool_cmd_members_list
+    if cc.has_member('struct ethtool_cmd', d, prefix: ethtool_decls_headers)
+        c_args += '-DHAVE_ETHTOOL_CMD_' + d.to_upper().underscorify()
+    endif
+endforeach
