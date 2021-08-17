@@ -1339,6 +1339,17 @@ process_reply(ta *agent)
     if (req->cb != NULL)
         error = req->cb(agent, req);
 
+    /*
+     * This is intercepted here since there is no need to process
+     * the pending and waiting requests below
+     */
+    if (msg->opcode == RCFOP_REBOOT)
+    {
+        agent->reboot_ctx.error = error;
+        rcf_answer_user_request(req);
+        return;
+    }
+
     if (error == 0 ||
         /*
          * In case of TRRECV_STOP and TRRECV_WAIT we should get actual
@@ -1837,7 +1848,7 @@ rcf_send_cmd(ta *agent, usrreq *req)
             PUT(TE_PROTO_REBOOT);
             if (msg->data_len > 0)
                 write_str(msg->data, msg->data_len);
-            req->timeout = RCF_REBOOT_TIMEOUT;
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CONFGET:
@@ -2262,7 +2273,12 @@ rcf_ta_check_start(void)
 static void
 get_reboot_type_from_reboot_request(ta *agent, rcf_msg *msg)
 {
-    if ((msg->flags & AGENT_REBOOT) != 0)
+    if ((msg->flags & HOST_REBOOT) != 0)
+    {
+        agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_HOST;
+        agent->reboot_ctx.current_type = TA_REBOOT_TYPE_HOST;
+    }
+    else if ((msg->flags & AGENT_REBOOT) != 0)
     {
         agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_AGENT;
         agent->reboot_ctx.current_type = TA_REBOOT_TYPE_AGENT;

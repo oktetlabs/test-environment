@@ -40,13 +40,18 @@ extern "C" {
 #define RCF_CMD_TIMEOUT         100
 /** Huge timeout for command processing on the TA */
 #define RCF_CMD_TIMEOUT_HUGE    10000
-/** TA reboot timeout in seconds */
-#define RCF_REBOOT_TIMEOUT      60
+/** TA host reboot timeout in seconds */
+#define RCF_HOST_REBOOT_TIMEOUT 600
 /** TA shutdown timeout in seconds */
 #define RCF_SHUTDOWN_TIMEOUT    5
 
 /** Timeout to wait for logs in seconds */
 #define RCF_LOG_FLUSHED_TIMEOUT 10
+/**
+ * The interval between sending a reboot request to the agent
+ * and receiving a response in seconds
+ */
+#define RCF_ACK_HOST_REBOOT_TIMEOUT 10
 
 /**
  * Timeout for CONFSET operation, in seconds.
@@ -157,6 +162,8 @@ typedef enum ta_reboot_state {
 typedef enum ta_reboot_type {
     /** Restart TA process */
     TA_REBOOT_TYPE_AGENT,
+    /** Reboot TA host */
+    TA_REBOOT_TYPE_HOST,
 } ta_reboot_type;
 
 /** Contextual information for rebooting the agent */
@@ -188,6 +195,8 @@ typedef struct ta_reboot_context {
      * "Agent in the reboot state" in the logs
      */
     te_bool is_agent_reboot_msg_sent;
+    /** Number of agent restart attempts */
+    unsigned int restart_attempt;
 } ta_reboot_context;
 
 /** Structure for one Test Agent */

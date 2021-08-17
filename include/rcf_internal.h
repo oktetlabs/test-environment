@@ -49,6 +49,8 @@ extern "C" {
 #define PARAMETERS_ARGV         4   /**< Routine parameters are passed in
                                          argc/argv mode */
 #define AGENT_REBOOT            8   /**< Reboot Test Agent process */
+#define HOST_REBOOT            16   /**< Reboot the host with Test Agent
+                                         process */
 /*@}*/
 
 /** @name Traffic flags */
