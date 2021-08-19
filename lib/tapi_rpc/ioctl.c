@@ -83,6 +83,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
     int            *arg;
     const char     *req_val;
 
+    uint32_t passed_val_data = 0;
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
@@ -470,8 +472,14 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     break;
 
                 case TARPC_ETHTOOL_VALUE:
+                {
+                    struct tarpc_ethtool_value *evalue =
+                        (struct tarpc_ethtool_value *)(ifr->ifr_data);
+
+                    passed_val_data = evalue->data;
                     size = sizeof(tarpc_ethtool_value);
                     break;
+                }
 
                 default:
                     size = 0;
@@ -905,7 +913,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                     ifreq_buf + strlen(ifreq_buf),
                                     sizeof(ifreq_buf) -
                                                     strlen(ifreq_buf),
-                                    "data %s",
+                                    "requested flags %s, returned %s",
+                                    ethtool_reset_flags_rpc2str(
+                                                          passed_val_data),
                                     ethtool_reset_flags_rpc2str(
                                                             evalue->data));
                             else if (cmd == RPC_ETHTOOL_GFLAGS ||
