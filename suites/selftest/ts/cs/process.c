@@ -79,12 +79,11 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_cfg_ps_add_arg(ta, ps1_name, 2, "TESTARG3"));
     CHECK_RC(tapi_cfg_ps_add_arg(ta, ps1_name, 4, "TESTARG4"));
 
-    TEST_STEP("Set long option value separator for the first process");
-    CHECK_RC(tapi_cfg_ps_set_long_opt_sep(ta, ps1_name, "="));
-
     TEST_STEP("Add options for the first process");
     CHECK_RC(tapi_cfg_ps_add_opt(ta, ps1_name, "s", "optval1"));
+    CHECK_RC(tapi_cfg_ps_add_opt(ta, ps1_name, "o", NULL));
     CHECK_RC(tapi_cfg_ps_add_opt(ta, ps1_name, "long", "optval2"));
+    CHECK_RC(tapi_cfg_ps_add_opt(ta, ps1_name, "without_val", NULL));
 
     CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
                                       ta, ps1_name));
@@ -92,6 +91,22 @@ main(int argc, char *argv[])
                                  ta, ps1_name));
 
     TEST_STEP("Start the first process again");
+    CHECK_RC(tapi_cfg_ps_start(ta, ps1_name));
+
+    SLEEP(1);
+
+    TEST_STEP("Stop the first process");
+    CHECK_RC(tapi_cfg_ps_stop(ta, ps1_name));
+
+    TEST_STEP("Set long option value separator for the first process");
+    CHECK_RC(tapi_cfg_ps_set_long_opt_sep(ta, ps1_name, "="));
+
+    CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
+                                      ta, ps1_name));
+    CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/process:%s",
+                                 ta, ps1_name));
+
+    TEST_STEP("Start the first process for the third time");
     CHECK_RC(tapi_cfg_ps_start(ta, ps1_name));
 
     SLEEP(1);
