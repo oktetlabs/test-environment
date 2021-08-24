@@ -117,6 +117,10 @@ te_ta_signature_local()
                     sed -n "s/\(\([.-]\?[0-9]\+\)*\).*/\1/p;q"`
                 echo -n "${SEPARATOR}kernel${KERNEL_VERSION}"
                 ;;
+            kernel-version-full)
+                local KERNEL_VERSION=`uname -r`
+                echo -n "${SEPARATOR}kernel${KERNEL_VERSION}"
+                ;;
             cpu-arch)
                 local CPU_ARCH=`${CC} -march=native -Q --help=target |
                     awk '/-march=/ {print $2; exit}'`
