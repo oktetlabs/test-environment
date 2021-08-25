@@ -8,6 +8,8 @@
  * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  */
 
+#define TE_LGR_USER     "TAPI RTE flow"
+
 #include "te_config.h"
 
 #include "tapi_test.h"

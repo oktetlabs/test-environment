@@ -9,6 +9,8 @@
  * @author Georgiy Levashov <Georgiy.Levashov@oktetlabs.ru>
  */
 
+#define TE_LGR_USER     "TAPI l2fwd"
+
 #include "te_config.h"
 
 #include <stdio.h>

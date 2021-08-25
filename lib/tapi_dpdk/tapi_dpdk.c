@@ -9,6 +9,8 @@
  * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  */
 
+#define TE_LGR_USER     "TAPI DPDK"
+
 #include "te_config.h"
 
 #include <stdio.h>
