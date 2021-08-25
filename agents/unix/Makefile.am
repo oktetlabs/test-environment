@@ -57,7 +57,7 @@ endif
 ta_LDADD = conf/libconf.a -lrpcserver -lrcfpch \
            -l$(TAD) $(TE_LDADD) \
            -lrpcxdrta -lrpc_types -lloggerta -llogger_file -lrpctransport \
-		   -ltools -lagentlib \
+		   -ltools -lagentlib -lta_job \
            $(EXTRA_LDADD) \
            -lconf_oid -llogger_core
 
@@ -67,6 +67,7 @@ SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
 			  $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcserver.a \
 			  $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libagentlib.a \
               $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib$(TAD).a \
+              $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libta_job.a \
               conf/libconf.a
 
 if ISCSI_TARGET_USE

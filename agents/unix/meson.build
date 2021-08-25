@@ -27,6 +27,7 @@ ta_symtbl_libs = [
     'rpcserver',
     'agentlib',
     'tad',
+    'ta_job',
 ]
 
 ta_non_symtbl_libs = [

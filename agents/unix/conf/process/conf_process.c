@@ -18,8 +18,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 
-#include "te_errno.h"
+#include "ta_job.h"
 #include "logger_api.h"
 #include "te_defs.h"
 #include "te_queue.h"
@@ -31,6 +32,13 @@
 #include "agentlib.h"
 #include "conf_common.h"
 #include "conf_process.h"
+
+/*
+ * This value is taken from ta_kill_death() which was previously used
+ * in ps_stop()
+ */
+/** Default timeout of process graceful termination */
+#define PS_TERM_TIMEOUT_MS 1000
 
 extern char **environ;
 
@@ -57,6 +65,19 @@ typedef SLIST_HEAD(ps_arg_list_t, ps_arg_entry) ps_arg_list_t;
 typedef SLIST_HEAD(ps_env_list_t, ps_env_entry) ps_env_list_t;
 typedef SLIST_HEAD(ps_opt_list_t, ps_opt_entry) ps_opt_list_t;
 
+struct ps_ta_job {
+    unsigned int  id;
+    te_bool       created;
+    /*
+     * TA job subsystem is used to control actual processes on TA.
+     * Everytime we change parameters of a process (e.g. arguments, exe, etc.),
+     * new TA job should be created instead of the old one because TA jobs
+     * parameters cannot be changed.
+     * This flag is used to check whether or not TA job should be renewed.
+     */
+    te_bool       reconfigure_required;
+};
+
 struct ps_entry {
     SLIST_ENTRY(ps_entry)   links;
     te_bool                 enabled;
@@ -70,7 +91,7 @@ struct ps_entry {
     unsigned int            autorestart;
     unsigned int            time_until_check;
     te_bool                 autorestart_failed;
-    pid_t                   id;
+    struct ps_ta_job        ta_job;
 };
 
 static SLIST_HEAD(, ps_entry) processes = SLIST_HEAD_INITIALIZER(processes);
@@ -82,26 +103,7 @@ static pthread_t autorestart_thread;
  */
 static pthread_mutex_t autorestart_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static te_bool
-ps_is_running(struct ps_entry *ps)
-{
-    pid_t ret;
-
-    if (ps->id == -1)
-        return FALSE;
-
-    do {
-        ret = ta_waitpid(ps->id, NULL, WNOHANG);
-    } while (ret == -1 && errno == EINTR);
-
-    if (ret != 0)
-    {
-        ps->id = -1;
-        return FALSE;
-    }
-
-    return TRUE;
-}
+static ta_job_manager_t *manager = NULL;
 
 static int
 ps_arg_compare(const void *a, const void *b)
@@ -300,11 +302,25 @@ ps_get_envp(struct ps_entry *ps, char ***envp)
 }
 
 static te_errno
-ps_start(struct ps_entry *ps)
+ps_ta_job_reconfigure(struct ps_entry *ps)
 {
+    te_errno rc;
     char **argv = NULL;
     char **envp = NULL;
-    te_errno rc;
+    struct ps_ta_job *ta_job = &ps->ta_job;
+
+    if (ta_job->created)
+    {
+        rc = ta_job_destroy(manager, ta_job->id, -1);
+        if (rc != 0)
+        {
+            ERROR("Failed to destroy TA job corresponding to process '%s', "
+                  "error: %r", ps->name, rc);
+            return rc;
+        }
+
+        ta_job->created = FALSE;
+    }
 
     rc = ps_get_argv(ps, &argv);
     if (rc != 0)
@@ -312,24 +328,56 @@ ps_start(struct ps_entry *ps)
 
     rc = ps_get_envp(ps, &envp);
     if (rc != 0)
+    {
+        ps_free_argv(argv);
         return rc;
+    }
 
-    ps->id = te_exec_child(ps->exe, argv, envp,
-                             (uid_t)-1, NULL, NULL, NULL, NULL);
+    rc = ta_job_create(manager, NULL, ps->exe, argv, envp, &ta_job->id);
+    if (rc != 0)
+    {
+        te_str_free_array(argv);
+        te_str_free_array(envp);
 
-    ps_free_argv(argv);
-    ps_free_envp(envp);
+        ERROR("Failed to create TA job corresponding to the process '%s', "
+              "error: %r", ps->name, rc);
 
-    return (ps->id < 0) ? TE_RC(TE_TA_UNIX, TE_ECHILD) : 0;
+        return rc;
+    }
+
+    ta_job->created = TRUE;
+
+    return 0;
+}
+
+static te_errno
+ps_start(struct ps_entry *ps)
+{
+    te_errno rc;
+
+    if (ps->ta_job.reconfigure_required)
+    {
+        rc = ps_ta_job_reconfigure(ps);
+        if (rc != 0)
+            return rc;
+
+        ps->ta_job.reconfigure_required = FALSE;
+    }
+
+    rc = ta_job_start(manager, ps->ta_job.id);
+    if (rc != 0)
+    {
+        ERROR("Failed to start TA job corresponding to the process '%s', "
+              "error: %r", ps->name, rc);
+    }
+
+    return rc;
 }
 
 static te_errno
 ps_stop(struct ps_entry *ps)
 {
-    if (ta_kill_death(ps->id) != 0)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    return 0;
+    return ta_job_stop(manager, ps->ta_job.id, SIGTERM, PS_TERM_TIMEOUT_MS);
 }
 
 static struct ps_entry *
@@ -384,6 +432,17 @@ ps_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
     return 0;
 }
 
+static void
+ps_ta_job_init(struct ps_ta_job *ta_job)
+{
+    ta_job->created = FALSE;
+    /*
+     * We should create a new TA job for the process because for now
+     * it does not exist
+     */
+    ta_job->reconfigure_required = TRUE;
+}
+
 static te_errno
 ps_add(unsigned int gid, const char *oid, const char *value,
        const char *ps_name)
@@ -411,12 +470,13 @@ ps_add(unsigned int gid, const char *oid, const char *value,
     }
 
     ps->enabled = FALSE;
-    ps->id = -1;
     ps->argc = 0;
     ps->long_opt_sep = FALSE;
     ps->autorestart = 0;
     ps->time_until_check = 0;
     ps->autorestart_failed = FALSE;
+
+    ps_ta_job_init(&ps->ta_job);
 
     SLIST_INIT(&ps->args);
     SLIST_INIT(&ps->envs);
@@ -473,6 +533,8 @@ ps_long_opt_sep_set(unsigned int gid, const char *oid, const char *value,
         ps->long_opt_sep = FALSE;
     else
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    ps->ta_job.reconfigure_required = TRUE;
 
     return 0;
 }
@@ -538,7 +600,7 @@ ps_del(unsigned int gid, const char *oid,
        const char *ps_name)
 {
     struct ps_entry *ps;
-    te_errno rc;
+    te_errno rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -551,11 +613,16 @@ ps_del(unsigned int gid, const char *oid,
 
     pthread_mutex_lock(&autorestart_lock);
 
-    if (ps_is_running(ps))
+    if (ps->ta_job.created)
     {
-        rc = ps_stop(ps);
+        rc = ta_job_destroy(manager, ps->ta_job.id, -1);
         if (rc != 0)
-            WARN("Failed to stop process '%s', error: %r", ps->name, rc);
+        {
+            ERROR("Failed to destroy TA job corresponding to process '%s', "
+                  "error: %r", ps->name, rc);
+        }
+
+        ps->ta_job.created = FALSE;
     }
 
     SLIST_REMOVE(&processes, ps, ps_entry, links);
@@ -564,7 +631,7 @@ ps_del(unsigned int gid, const char *oid,
 
     ps_free(ps);
 
-    return 0;
+    return rc;
 }
 
 static te_errno
@@ -591,6 +658,7 @@ static te_errno
 ps_exe_set(unsigned int gid, const char *oid, const char *value,
            const char *ps_name)
 {
+    te_errno rc;
     struct ps_entry *ps;
 
     UNUSED(gid);
@@ -605,7 +673,32 @@ ps_exe_set(unsigned int gid, const char *oid, const char *value,
     if (ps->enabled)
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    return string_replace(&ps->exe, value);
+    rc = string_replace(&ps->exe, value);
+    if (rc == 0)
+        ps->ta_job.reconfigure_required = TRUE;
+
+    return rc;
+}
+
+static te_bool
+ps_is_running(struct ps_entry *ps)
+{
+    te_errno rc = ta_job_wait(manager, ps->ta_job.id, 0, NULL);
+
+    switch (rc)
+    {
+        case 0:
+        case TE_ECHILD:
+            return FALSE;
+        case TE_EINPROGRESS:
+            return TRUE;
+        default:
+            WARN("Failed to check if TA job corresponding to process '%s' "
+                 "is running, ta_job_wait exited with error %r. "
+                 "Considering that the job is not running.",
+                 ps->name, rc);
+            return FALSE;
+    }
 }
 
 static te_errno
@@ -671,7 +764,7 @@ ps_status_set(unsigned int gid, const char *oid, const char *value,
             ps->time_until_check = ps->autorestart;
         }
     }
-    else if (ps_is_running(ps))
+    else
     {
         rc = ps_stop(ps);
     }
@@ -847,6 +940,7 @@ ps_arg_add(unsigned int gid, const char *oid, const char *value,
 
     SLIST_INSERT_HEAD(&ps->args, arg, links);
     ps->argc++;
+    ps->ta_job.reconfigure_required = TRUE;
 
     return 0;
 }
@@ -879,6 +973,7 @@ ps_arg_del(unsigned int gid, const char *oid,
 
     SLIST_REMOVE(&ps->args, arg, ps_arg_entry, links);
     ps->argc--;
+    ps->ta_job.reconfigure_required = TRUE;
 
     ps_arg_free(arg);
 
@@ -994,6 +1089,7 @@ ps_env_add(unsigned int gid, const char *oid, const char *value,
     }
 
     SLIST_INSERT_HEAD(&ps->envs, env, links);
+    ps->ta_job.reconfigure_required = TRUE;
 
     return 0;
 }
@@ -1019,6 +1115,7 @@ ps_env_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_REMOVE(&ps->envs, env, ps_env_entry, links);
+    ps->ta_job.reconfigure_required = TRUE;
 
     ps_env_free(env);
 
@@ -1136,6 +1233,7 @@ ps_opt_add(unsigned int gid, const char *oid, const char *value,
     opt->is_long = (strlen(opt->name) > 1) ? TRUE : FALSE;
 
     SLIST_INSERT_HEAD(&ps->opts, opt, links);
+    ps->ta_job.reconfigure_required = TRUE;
 
     return 0;
 }
@@ -1161,6 +1259,7 @@ ps_opt_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_REMOVE(&ps->opts, opt, ps_opt_entry, links);
+    ps->ta_job.reconfigure_required = TRUE;
 
     ps_opt_free(opt);
 
@@ -1301,7 +1400,15 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ps, "process", &node_ps_autorestart, NULL,
 te_errno
 ta_unix_conf_ps_init(void)
 {
+    te_errno rc;
     int ret;
+
+    rc = ta_job_manager_init(&manager);
+    if (rc != 0)
+    {
+        ERROR("Failed to initialize TA job manager, error: %r", rc);
+        return rc;
+    }
 
     ret = pthread_create(&autorestart_thread, NULL, autorestart_loop, NULL);
     if (ret != 0)
