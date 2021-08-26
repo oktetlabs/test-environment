@@ -448,7 +448,6 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
         if (_dst == NULL)                                           \
         {                                                           \
             ERROR("Failed to find the data in the iperf output");   \
-            report->errors[TAPI_PERF_ERROR_FORMAT]++;               \
             return TE_RC(TE_TAPI, TE_ENODATA);                      \
         }                                                           \
     } while (0)
