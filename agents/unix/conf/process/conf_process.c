@@ -123,19 +123,9 @@ ps_opt_is_one_arg(struct ps_entry *ps, struct ps_opt_entry *opt)
 }
 
 static void
-ps_free_argv(struct ps_entry *ps, char **argv)
+ps_free_argv(char **argv)
 {
-    struct ps_opt_entry *opt;
-    unsigned int i = 1;
-
-    SLIST_FOREACH(opt, &ps->opts, links)
-    {
-        free(argv[i++]);
-        if (!ps_opt_is_one_arg(ps, opt))
-            free(argv[i++]);
-    }
-
-    free(argv);
+    te_str_free_array(argv);
 }
 
 static te_errno
@@ -157,6 +147,13 @@ ps_get_argv(struct ps_entry *ps, char ***argv)
     tmp = TE_ALLOC((ps->argc + len + 2) * sizeof(char *));
     if (tmp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    tmp[0] = strdup(ps->exe);
+    if (tmp[0] == NULL)
+    {
+        free(tmp);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
 
     i = 1;
     SLIST_FOREACH(opt, &ps->opts, links)
@@ -184,7 +181,7 @@ ps_get_argv(struct ps_entry *ps, char ***argv)
         if (rc < 0)
         {
             rc = errno;
-            ps_free_argv(ps, tmp);
+            ps_free_argv(tmp);
             return TE_OS_RC(TE_TA_UNIX, rc);
         }
     }
@@ -192,7 +189,7 @@ ps_get_argv(struct ps_entry *ps, char ***argv)
     args = TE_ALLOC(ps->argc * sizeof(*args));
     if (args == NULL)
     {
-        ps_free_argv(ps, tmp);
+        ps_free_argv(tmp);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
@@ -205,10 +202,18 @@ ps_get_argv(struct ps_entry *ps, char ***argv)
 
     qsort(args, ps->argc, sizeof(*args), ps_arg_compare);
 
-    tmp[0] = ps->exe;
-    tmp[ps->argc + len + 1] = NULL;
     for (i = 1; i < ps->argc + 1; i++)
-        tmp[i + len] = args[i - 1]->value;
+    {
+        tmp[i + len] = strdup(args[i - 1]->value);
+        if (tmp[i + len] == NULL)
+        {
+            ps_free_argv(tmp);
+            free(args);
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        }
+    }
+
+    tmp[ps->argc + len + 1] = NULL;
 
     *argv = tmp;
 
@@ -317,7 +322,7 @@ ps_start(struct ps_entry *ps)
     ps->id = te_exec_child(ps->exe, argv, envp,
                              (uid_t)-1, NULL, NULL, NULL, NULL);
 
-    ps_free_argv(ps, argv);
+    ps_free_argv(argv);
     ps_free_envp(envp);
 
     return (ps->id < 0) ? TE_RC(TE_TA_UNIX, TE_ECHILD) : 0;
