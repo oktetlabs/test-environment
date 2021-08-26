@@ -225,12 +225,7 @@ ps_get_argv(struct ps_entry *ps, char ***argv)
 static void
 ps_free_envp(char **envp)
 {
-    char **env;
-
-    for (env = envp; *env != NULL; env++)
-        free(*env);
-
-    free(envp);
+    te_str_free_array(envp);
 }
 
 static te_errno
