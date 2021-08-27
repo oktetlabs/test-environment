@@ -145,6 +145,8 @@ merge(const char *split_log_path,
 
     off_t raw_fp;
 
+    RGT_ERROR_INIT;
+
     assert(f_raw_gist != NULL && f_frags_list != NULL && f_result != NULL);
 
     while (!feof(f_frags_list))
@@ -313,6 +315,12 @@ merge(const char *split_log_path,
     if (cum_length > 0)
         file2file(f_result, f_raw_gist, -1, -1, cum_length);
 
+    RGT_ERROR_SECTION;
+
+    /* TODO: this should be avoided */
+    if (RGT_ERROR)
+        exit(EXIT_FAILURE);
+
     return 0;
 }
 
@@ -469,6 +477,8 @@ main(int argc, char **argv)
     te_string cmd = TE_STRING_INIT;
     int res;
 
+    RGT_ERROR_INIT;
+
     te_log_init("RGT LOG MERGE", te_log_message_file);
 
     process_cmd_line_opts(argc, argv);
@@ -536,6 +546,8 @@ main(int argc, char **argv)
     merge(split_log_path, f_raw_gist, f_frags_list, f_result,
           f_frags_count, FALSE, NULL);
 
+    RGT_ERROR_SECTION;
+
     fclose(f_result);
     fclose(f_frags_list);
     fclose(f_frags_count);
@@ -548,5 +560,8 @@ main(int argc, char **argv)
 
     te_string_free(&cmd);
 
-    return 0;
+    if (RGT_ERROR)
+        return EXIT_FAILURE;
+
+    return EXIT_SUCCESS;
 }
