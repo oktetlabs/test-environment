@@ -481,6 +481,8 @@ static const char * const env_hidden[] = {
     "TCE_CONNECTION",
     "LD_PRELOAD",
     "LS_COLORS",
+    "XDG_RUNTIME_DIR",
+    "XDG_SESSION_ID",
 };
 
 static te_errno uname_get(unsigned int, const char *, char *);
