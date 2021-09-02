@@ -108,7 +108,7 @@ copy_test(tapi_packetdrill_opts *opts, tapi_packetdrill_app *app)
 
     CHECK_RC(te_string_append(&src_path, "%s/%s", opts->src_test_dir,
                               opts->short_test_name));
-    CHECK_RC(te_string_append(&dst_path, "%s%s", agt_dir,
+    CHECK_RC(te_string_append(&dst_path, "%s/%s", agt_dir,
                               opts->short_test_name));
     if (access(src_path.ptr, F_OK) < 0)
     {

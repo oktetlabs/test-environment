@@ -350,7 +350,7 @@ ta_unix_conf_upnp_cp_release(void)
 void
 ta_unix_conf_upnp_cp_set_socket_name(const char *ta_path)
 {
-    TE_SPRINTF(upnp_cp_unix_socket_storage, "%s%s", ta_path,
+    TE_SPRINTF(upnp_cp_unix_socket_storage, "%s/%s", ta_path,
                UPNP_CP_UNIX_SOCKET_BASENAME);
 }
 

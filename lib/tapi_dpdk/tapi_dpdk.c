@@ -1020,7 +1020,7 @@ tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
 
     prep_eal->nb_cores = prep_eal->nb_cpus_grabbed - 1 - service_cores_count;
 
-    rc = te_string_append(&prep_eal->testpmd_path, "%sdpdk-testpmd",
+    rc = te_string_append(&prep_eal->testpmd_path, "%s/dpdk-testpmd",
                           working_dir);
     if (rc != 0)
         goto fail_get_testpmd_path;

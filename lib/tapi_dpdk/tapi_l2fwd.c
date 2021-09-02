@@ -204,7 +204,7 @@ tapi_dpdk_create_l2fwd_job(rcf_rpc_server *rpcs, tapi_env *env,
         goto out;
     }
 
-    CHECK_RC(te_string_append(&l2fwd_path, "%sdpdk-l2fwd", working_dir));
+    CHECK_RC(te_string_append(&l2fwd_path, "%s/dpdk-l2fwd", working_dir));
 
     rc = tapi_dpdk_build_eal_arguments(rpcs, env, n_cpus_grabbed, cpu_ids,
                                        l2fwd_path.ptr, &l2fwd_argc,
