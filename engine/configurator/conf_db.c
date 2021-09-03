@@ -16,6 +16,7 @@
 
 #include "conf_defs.h"
 #include "te_alloc.h"
+#include "te_string.h"
 
 #define CFG_OBJ_NUM     64      /**< Number of objects */
 #define CFG_INST_NUM    128     /**< Number of object instances */
@@ -46,51 +47,51 @@ static cfg_object cfg_obj_conf_delay_ta;
 /** Root of configuration objects */
 cfg_object cfg_obj_root =
     { CFG_OBJ_HANDLE_ROOT, "/", { 0 }, CVT_NONE, CFG_READ_ONLY, NULL, FALSE,
-      NULL, &cfg_obj_agent, NULL, CFG_DEP_INITIALIZER };
+      NULL, &cfg_obj_agent, NULL, CFG_DEP_INITIALIZER, FALSE };
 
 /** "/agent" object */
 static cfg_object cfg_obj_agent =
     { CFG_OBJ_HANDLE_AGENT, "/agent", "agent",
       CVT_NONE, CFG_READ_ONLY, NULL, FALSE, &cfg_obj_root,
-      &cfg_obj_agent_rsrc, &cfg_obj_conf_delay, CFG_DEP_INITIALIZER };
+      &cfg_obj_agent_rsrc, &cfg_obj_conf_delay, CFG_DEP_INITIALIZER, FALSE };
 
 /** "/agent/rsrc" object */
 static cfg_object cfg_obj_agent_rsrc =
     { CFG_OBJ_HANDLE_RSRC, "/agent/rsrc", "rsrc",
       CVT_STRING, CFG_READ_CREATE, NULL, FALSE, &cfg_obj_agent,
-      &cfg_obj_agent_rsrc_shared, NULL, CFG_DEP_INITIALIZER };
+      &cfg_obj_agent_rsrc_shared, NULL, CFG_DEP_INITIALIZER, FALSE };
 
 /** "/agent/rsrc/shared" object */
 static cfg_object cfg_obj_agent_rsrc_shared =
     { CFG_OBJ_HANDLE_RSRC_SHARED, "/agent/rsrc/shared", "shared",
       CVT_INTEGER, CFG_READ_WRITE, NULL, TRUE, &cfg_obj_agent_rsrc,
-      NULL, &cfg_obj_agent_rsrc_timeout, CFG_DEP_INITIALIZER };
+      NULL, &cfg_obj_agent_rsrc_timeout, CFG_DEP_INITIALIZER, FALSE };
 
 /** "/agent/rsrc/acquire_timeout" object */
 static cfg_object cfg_obj_agent_rsrc_timeout =
     { CFG_OBJ_HANDLE_RSRC_ACQUIRE_TIMEOUT,
       "/agent/rsrc/acquire_attempts_timeout", "acquire_attempts_timeout",
       CVT_INTEGER, CFG_READ_WRITE, NULL, FALSE, &cfg_obj_agent_rsrc,
-      NULL, &cfg_obj_agent_rsrc_fallback_shared, CFG_DEP_INITIALIZER };
+      NULL, &cfg_obj_agent_rsrc_fallback_shared, CFG_DEP_INITIALIZER, FALSE };
 
 /** "/agent/rsrc/fallback_shared" object */
 static cfg_object cfg_obj_agent_rsrc_fallback_shared =
     { CFG_OBJ_HANDLE_RSRC_FALLBACK_SHARED, "/agent/rsrc/fallback_shared",
       "fallback_shared",
       CVT_INTEGER, CFG_READ_WRITE, NULL, FALSE, &cfg_obj_agent_rsrc,
-      NULL, NULL, CFG_DEP_INITIALIZER };
+      NULL, NULL, CFG_DEP_INITIALIZER, FALSE };
 
 /** "/conf_delay" object */
 static cfg_object cfg_obj_conf_delay =
     { CFG_OBJ_HANDLE_CONF_DELAY, "/conf_delay", "conf_delay",
       CVT_STRING, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_root,
-      &cfg_obj_conf_delay_ta, NULL, CFG_DEP_INITIALIZER };
+      &cfg_obj_conf_delay_ta, NULL, CFG_DEP_INITIALIZER, FALSE };
 
 /** "/conf_delay/ta" object */
 static cfg_object cfg_obj_conf_delay_ta =
     { CFG_OBJ_HANDLE_CONF_DELAY_TA, "/conf_delay/ta", "ta",
       CVT_INTEGER, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_conf_delay,
-      NULL, NULL, CFG_DEP_INITIALIZER };
+      NULL, NULL, CFG_DEP_INITIALIZER, FALSE };
 
 /** Pool with configuration objects */
 cfg_object **cfg_all_obj = NULL;
@@ -155,6 +156,136 @@ static cfg_orphan *orphaned_objects;
  * preceeds all its dependant objects
  */
 static cfg_object *topological_order;
+
+static te_errno
+get_value_for_substitution(const char *oid, char **value)
+{
+    te_errno rc;
+    cfg_instance *inst = NULL;
+
+    inst = cfg_get_ins_by_ins_id_str(oid);
+    if (inst == NULL)
+    {
+        ERROR("Failed to expand substitution. Instance with OID %s "
+              "doesn't exist", oid);
+        return TE_RC(TE_CS, TE_ENOENT);
+    }
+
+    rc = cfg_types[inst->obj->type].val2str(inst->val, value);
+    if (rc != 0)
+        ERROR("Failed to copy instance value: %r", rc);
+
+    return rc;
+}
+
+static te_errno
+replace_substitutions_to_values(te_string *str, te_bool *is_subs_found)
+{
+    te_substring_t iter = TE_SUBSTRING_INIT(str);
+    te_substring_t end;
+    te_substring_t oid_p;
+    te_string oid = TE_STRING_INIT;
+    char *value = NULL;
+    te_errno rc = 0;
+
+    *is_subs_found = FALSE;
+
+    while (1)
+    {
+        te_substring_find(&iter, CS_SUBSTITUTION_DELIMITER);
+
+        if (!te_substring_is_valid(&iter))
+            break;
+
+        *is_subs_found = TRUE;
+        end = iter;
+        oid_p = iter;
+        te_substring_advance(&end);
+        te_substring_find(&end, CS_SUBSTITUTION_DELIMITER);
+
+        if (!te_substring_is_valid(&iter))
+            break;
+
+        te_substring_advance(&oid_p);
+        te_substring_limit(&oid_p, &end);
+
+        rc = te_string_append(&oid, "%.*s", oid_p.len,
+                              oid_p.base->ptr + oid_p.start);
+        if (rc != 0)
+            break;
+
+        rc = get_value_for_substitution(oid.ptr, &value);
+        if (rc != 0)
+        {
+            ERROR("Failed to find the value for %s: %r", oid.ptr, rc);
+            break;
+        }
+
+        te_string_reset(&oid);
+
+        te_substring_advance(&end);
+        te_substring_limit(&iter, &end);
+
+        rc = te_substring_replace(&iter, value);
+        if (rc != 0)
+        {
+            ERROR("Failed to replace the substitution in %s: %r",
+                  str->ptr, rc);
+            break;
+        }
+        free(value);
+        value = NULL;
+    }
+
+    free(value);
+
+    te_string_free(&oid);
+    return rc;
+}
+
+static int
+expand_substitution(cfg_inst_val val_in, cfg_inst_val *val_out,
+                    cfg_val_type type)
+{
+    char *val_in_str = NULL;
+    te_string val_out_str = TE_STRING_INIT;
+    te_errno rc = 0;
+    te_bool is_subs_found;
+
+    rc = cfg_types[type].val2str(val_in, &val_in_str);
+    if (rc != 0)
+    {
+        ERROR("Failed to convert instance value to string: %r", rc);
+        return rc;
+    }
+
+    rc = te_string_append(&val_out_str, "%s", val_in_str);
+    if (rc != 0)
+        goto out;
+
+    rc = replace_substitutions_to_values(&val_out_str, &is_subs_found);
+    if (rc != 0)
+        goto out;
+
+    if (is_subs_found)
+    {
+        rc = cfg_types[type].str2val(val_out_str.ptr, val_out);
+        if (rc != 0)
+            ERROR("Failed to convert string '%s' to value type %d: %r",
+                  val_out_str.ptr, type, rc);
+    }
+    else
+    {
+        rc = cfg_types[type].copy(val_in, val_out);
+        if (rc != 0)
+            ERROR("Failed to copy instance value: %r", rc);
+    }
+
+out:
+    free(val_in_str);
+    te_string_free(&val_out_str);
+    return rc;
+}
 
 /**
  * Find a place for a new record in the topologically sorted list.
@@ -541,6 +672,8 @@ cfg_process_msg_register(cfg_register_msg *msg)
     cfg_all_obj[i]->son = NULL;
     cfg_all_obj[i]->brother = father->son;
     father->son = cfg_all_obj[i];
+
+    cfg_all_obj[i]->substitution = msg->substitution;
 
     cfg_all_obj[i]->ordinal_number = 0;
     cfg_all_obj[i]->depends_on = NULL;
@@ -1721,12 +1854,31 @@ int
 cfg_db_get(cfg_handle handle, cfg_inst_val *val)
 {
     cfg_instance *inst = CFG_GET_INST(handle);
+    int err;
 
     if (inst == NULL)
         return TE_ENOENT;
 
     if (inst->obj->type != CVT_NONE)
-        return cfg_types[inst->obj->type].copy(inst->val, val);
+    {
+        cfg_inst_val val0;
+
+        if (inst->obj->substitution)
+        {
+            err = expand_substitution(inst->val, &val0, inst->obj->type);
+            if (err != 0)
+                return err;
+
+            err = cfg_types[inst->obj->type].copy(val0, val);
+            cfg_types[inst->obj->type].free(val0);
+            return err;
+        }
+        else
+        {
+            err = cfg_types[inst->obj->type].copy(inst->val, val);
+            return err;
+        }
+    }
     else
         return 0;
 }

@@ -686,6 +686,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                               xmlStrcmp(parent_dep,
                                         (const xmlChar *)"no") == 0);
                 msg->val_type = CVT_NONE;
+                msg->substitution = FALSE;
 
                 strcpy(msg->oid, (char *)oid);
                 if (val_s != NULL)
@@ -747,6 +748,22 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                         RETERR(TE_EINVAL,
                                "Wrong value %s of 'access' attribute",
                                attr);
+                    xmlFree((xmlChar *)attr);
+                    attr = NULL;
+                }
+
+                attr = (char *)xmlGetProp(tmp, (const xmlChar *)"substitution");
+                if (attr != NULL)
+                {
+                    if (strcmp(attr, "true") == 0)
+                    {
+                        msg->substitution = TRUE;
+                    }
+                    else if (strcmp(attr, "false") != 0)
+                    {
+                        RETERR(TE_EINVAL, "substitution should be specified "
+                                          "using \"true\" or \"false\"");
+                    }
                     xmlFree((xmlChar *)attr);
                     attr = NULL;
                 }

@@ -65,6 +65,8 @@ typedef struct cfg_object {
                                           order */
     struct cfg_object     *dep_prev; /**< The previous object in toplogical
                                           order */
+
+    te_bool substitution;   /**< The object uses substitution */
 } cfg_object;
 
 #define CFG_DEP_INITIALIZER  0, NULL, NULL, NULL, NULL

@@ -29,7 +29,7 @@
     (_n)->start_mark.line + 1, (_n)->start_mark.column + 1
 
 #define YAML_TARGET_CONTEXT_INIT \
-    { NULL, NULL, NULL, NULL, NULL, SLIST_HEAD_INITIALIZER(deps), TRUE };
+    { NULL, NULL, NULL, NULL, NULL, NULL, SLIST_HEAD_INITIALIZER(deps), TRUE };
 
 typedef struct parse_config_yaml_ctx {
     char            *file_path;
@@ -188,6 +188,7 @@ typedef enum cs_yaml_node_attribute_type_e {
     CS_YAML_NODE_ATTRIBUTE_DEPENDENCE,
     CS_YAML_NODE_ATTRIBUTE_SCOPE,
     CS_YAML_NODE_ATTRIBUTE_DESCRIPTION,
+    CS_YAML_NODE_ATTRIBUTE_SUBSTITUTION,
     CS_YAML_NODE_ATTRIBUTE_UNKNOWN,
 } cs_yaml_node_attribute_type_t;
 
@@ -204,6 +205,7 @@ static struct {
     { "depends",  CS_YAML_NODE_ATTRIBUTE_DEPENDENCE },
     { "scope",    CS_YAML_NODE_ATTRIBUTE_SCOPE },
     { "d",        CS_YAML_NODE_ATTRIBUTE_DESCRIPTION },
+    { "substitution", CS_YAML_NODE_ATTRIBUTE_SUBSTITUTION },
 };
 
 static cs_yaml_node_attribute_type_t
@@ -235,6 +237,7 @@ typedef struct cs_yaml_target_context_s {
     const xmlChar   *access;
     const xmlChar   *type;
     const xmlChar   *xmlvolatile;
+    const xmlChar   *substitution;
     cytc_dep_list_t  deps;
     te_bool          cond;
 } cs_yaml_target_context_t;
@@ -516,6 +519,17 @@ parse_config_yaml_cmd_add_target_attribute(yaml_document_t        *d,
             /* Ignore the description */
             break;
 
+        case CS_YAML_NODE_ATTRIBUTE_SUBSTITUTION:
+            if (c->substitution != NULL)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "detected multiple substitution "
+                      "specifiers of the target: only one can be present");
+                return TE_EINVAL;
+            }
+
+            c->substitution = (const xmlChar *)v->data.scalar.value;
+            break;
+
         default:
             if (v->type == YAML_SCALAR_NODE && v->data.scalar.length == 0)
             {
@@ -544,6 +558,8 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
     const xmlChar  *prop_name_type = (const xmlChar *)"type";
     const xmlChar  *prop_name_scope = (const xmlChar *)"scope";
     const xmlChar  *prop_name_volatile = (const xmlChar *)"volatile";
+    const xmlChar  *prop_name_substitution = (const xmlChar *)"substitution";
+
     xmlNodePtr      dependency_node;
     cytc_dep_entry *dep_entry;
 
@@ -591,6 +607,14 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
         xmlNewProp(xn_target, prop_name_volatile, c->xmlvolatile) == NULL)
     {
         ERROR(CS_YAML_ERR_PREFIX "failed to embed the target volatile "
+              "attribute in XML output");
+        return TE_ENOMEM;
+    }
+
+    if (c->substitution != NULL &&
+        xmlNewProp(xn_target, prop_name_substitution, c->substitution) == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to embed the target substitution"
               "attribute in XML output");
         return TE_ENOMEM;
     }

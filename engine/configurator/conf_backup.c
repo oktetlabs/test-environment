@@ -149,6 +149,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
                               xmlStrcmp(parent_dep,
                                         (const xmlChar *)"no") == 0);
         msg->val_type = CVT_NONE;
+        msg->substitution = FALSE;
         strcpy(msg->oid, (char *)oid);
         if (def_val != NULL)
         {

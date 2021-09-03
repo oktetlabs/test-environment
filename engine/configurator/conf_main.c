@@ -1310,19 +1310,21 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         goto cleanup;
     }
 
-    /* FIXME: do sync for objects with substitution enabled only. */
-    msg->rc = cfg_ta_sync(CFG_GET_INST(handle)->oid, TRUE);
-    if (msg->rc != 0)
+    if (obj->substitution)
     {
-        te_errno rc;
+        msg->rc = cfg_ta_sync(CFG_GET_INST(handle)->oid, TRUE);
+        if (msg->rc != 0)
+        {
+            te_errno rc;
 
-        ERROR("Failed to synchronize subtree %s: %r",
-              CFG_GET_INST(handle)->oid, msg->rc);
-        rc = process_set_error_after_send(handle, inst->name, old_val);
-        if (rc != 0)
-            ERROR("Failed to rollback the latest changes: %r", rc);
+            ERROR("Failed to synchronize subtree %s: %r",
+                CFG_GET_INST(handle)->oid, msg->rc);
+            rc = process_set_error_after_send(handle, inst->name, old_val);
+            if (rc != 0)
+                ERROR("Failed to rollback the latest changes: %r", rc);
 
-        goto cleanup;
+            goto cleanup;
+        }
     }
 
     if (update_dh)

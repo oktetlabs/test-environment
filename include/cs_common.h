@@ -18,6 +18,9 @@
 #ifndef __TE_CS_COMMON_H__
 #define __TE_CS_COMMON_H__
 
+/** Separator in values in which there are substitutions */
+#define CS_SUBSTITUTION_DELIMITER "$$"
+
 /** Neighbour entry states, see /agent/interface/neigh_dynamic/state */
 typedef enum {
     CS_NEIGH_INCOMPLETE = 1, /**< Incomplete entry */
