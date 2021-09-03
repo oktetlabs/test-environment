@@ -235,16 +235,23 @@ ins_tree_bufprint(cfg_instance *ins, const int indent)
     static int    offset = 0;
     int           i;
     char          *tmp;
-    char          *str;
+    char          *str = NULL;
+    cfg_inst_val  val;
 
     for (i = 0; i < indent; i++)
         CHECK(bufprintf(&buf, &offset, &sz, " ") != NULL);
 
-    if (ins->obj->type == CVT_NONE ||
-        cfg_types[ins->obj->type].val2str(ins->val, &str) != 0)
+    if (ins->obj->type != CVT_NONE && cfg_db_get(ins->handle, &val) == 0)
     {
-        str = NULL;
+        /*
+         * There is no need to worry about the return code of val2str(),
+         * since the current function should return as much information
+         * as possible.
+         */
+        cfg_types[ins->obj->type].val2str(val, &str);
+        cfg_types[ins->obj->type].free(val);
     }
+
     CHECK(bufprintf(&buf, &offset, &sz, "%s = %s\n",
                     ins->oid, (str != NULL) ? str : "")
           != NULL);

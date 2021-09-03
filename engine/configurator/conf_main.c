@@ -1178,6 +1178,24 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
 
     if (obj->type != CVT_NONE)
     {
+        cfg_types[obj->type].free(val);
+        /*
+         * When processing a backup file or restore by the history the values
+         * is contained substitutions, i.e they contain references to another
+         * instance. They should be expanded before send to the RCF.
+         * The expand perform in the cfg_db_get() function
+         */
+        if ((msg->rc = cfg_db_get(handle, &val)) != 0)
+        {
+            ERROR("Failed to get value from DB: %r", msg->rc);
+            cfg_db_set(handle, old_val);
+            cfg_types[obj->type].free(old_val);
+            if (update_dh)
+                cfg_dh_delete_last_command();
+            cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
+            return;
+        }
+
         msg->rc = cfg_types[obj->type].val2str(val, &val_str);
         if (msg->rc != 0)
         {
@@ -1380,6 +1398,7 @@ process_get(cfg_get_msg *msg)
     cfg_handle    handle = msg->handle;
     cfg_instance *inst;
     cfg_object   *obj;
+    cfg_inst_val val;
 
     if ((inst = CFG_GET_INST(handle)) == NULL)
     {
@@ -1397,7 +1416,20 @@ process_get(cfg_get_msg *msg)
 
     msg->val_type = obj->type;
     msg->len = sizeof(*msg);
-    cfg_types[obj->type].put_to_msg(inst->val, (cfg_msg *)msg);
+
+    /*
+     * Some instances have a substitution in its values.
+     * Therefore, before returning the values, it must be expanded.
+     * cfg_db_get() function does it.
+     */
+    if ((msg->rc = cfg_db_get(handle, &val)) != 0)
+    {
+        ERROR("Failed to get value for %s, rc=%r", inst->oid, msg->rc);
+        return;
+    }
+
+    cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
+    cfg_types[obj->type].free(val);
 }
 
 /* Returns time since Epoche in milliseconds */
