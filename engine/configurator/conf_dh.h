@@ -15,6 +15,9 @@
 
 #ifndef __TE_CONF_DH_H__
 #define __TE_CONF_DH_H__
+
+#include "te_vector.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -132,6 +135,18 @@ extern void cfg_dh_release_after(char *filename);
  * @return status code
  */
 extern int cfg_dh_release_backup(char *filename);
+
+/**
+ * Restore TA configuration using the direct order of the DH commands.
+ * If the command from DH has a backup file, this file will be
+ * compared with current state and TA will be restore using the attached
+ * file. Processed commands are not removed from the history.
+ *
+ * @param ta Test agent name
+ *
+ * @return Status code
+ */
+extern te_errno cfg_dh_restore_agents(const te_vec *ta_list);
 
 #ifdef __cplusplus
 }

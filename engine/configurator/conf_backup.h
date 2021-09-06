@@ -66,6 +66,51 @@ extern int cfg_backup_create_file(const char *filename,
 extern te_errno cfg_backup_create_filter_file(const char *filename,
                                               const te_vec *subtrees);
 
+/**
+ * Verify backup configuration file
+ *
+ * @param filename Name of the backup file
+ * @param subtree  Vector of subtrees
+ *
+ * @return Status code
+ */
+extern te_errno cfg_backup_verify(const char *filename,
+                                  const te_vec *subtrees);
+
+/**
+ * Restore backup configuration file
+ *
+ * @param filename Name of the backup file
+ * @param subtree  Vector of subtrees
+ *
+ * @return Status code
+ */
+extern te_errno cfg_backup_restore_nohistory(const char *filename,
+                                             const te_vec *subtrees);
+
+/**
+ * Verify backup and try to restore by backup
+ *
+ * @param filename Name of the backup file
+ * @param subtree  Vector of subtrees
+ *
+ * @return Status code
+ */
+extern te_errno cfg_backup_verify_and_restore(const char *filename,
+                                              const te_vec *subtrees);
+
+/**
+ * Verify backup and try to restore by backup by specified agents
+ *
+ * @param filename Name of the backup file
+ * @param ta_list  Vector of the test agents
+ *
+ * @return Status code
+ */
+extern te_errno cfg_backup_verify_and_restore_ta_subtrees(
+                                                const char *filename,
+                                                const te_vec *ta_list);
+
 #ifdef __cplusplus
 }
 #endif

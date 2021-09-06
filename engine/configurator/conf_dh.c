@@ -1877,3 +1877,230 @@ cfg_dh_apply_commit(const char *oid)
 
     return 0;
 }
+
+/**
+ * Execute 'register' command from the DH
+ *
+ * @param msg Register message
+ *
+ * @return Status code
+ */
+static te_errno
+restore_cmd_register(cfg_register_msg *msg)
+{
+    cfg_object *obj;
+
+    obj = cfg_get_obj_by_obj_id_str(msg->oid);
+    if (obj != NULL)
+        return 0;
+
+    cfg_process_msg((cfg_msg **)&msg, FALSE);
+    if (msg->rc != 0)
+    {
+        ERROR("%s(): failed to execute register command for "
+              "object %s: %r", __FUNCTION__, msg->oid, msg->rc);
+    }
+
+    return msg->rc;
+}
+
+static te_bool
+check_oid_contains_ta(const char *oid, const te_vec *ta_list)
+{
+    te_bool is_found = FALSE;
+    char * const *ta;
+    char *ta_oid;
+    int agent_subid_pos;
+
+    if (strcmp_start(CFG_TA_PREFIX, oid) == 0)
+        agent_subid_pos = 1;
+    else if (strcmp_start(CFG_RCF_PREFIX, oid) == 0)
+        agent_subid_pos = 2;
+    else
+        return is_found;
+
+    ta_oid = cfg_oid_str_get_inst_name(oid, agent_subid_pos);
+    if (ta_oid == NULL)
+        return is_found;
+
+    TE_VEC_FOREACH(ta_list, ta)
+    {
+        if (strcmp(ta_oid, *ta) == 0)
+        {
+            is_found = TRUE;
+            break;
+        }
+    }
+
+    free(ta_oid);
+    return is_found;
+}
+
+/**
+ * Execute 'add' command from the DH
+ *
+ * @param msg Add message
+ * @param ta  Name of the TA
+ *
+ * @return Status code
+ */
+static te_errno
+restore_cmd_add(cfg_add_msg *msg, const te_vec *ta_list)
+{
+    char *oid;
+    cfg_instance *inst;
+    char *val_str = NULL;
+    cfg_inst_val val;
+    int rv;
+
+    oid = (char *)msg + msg->oid_offset;
+
+    if (!check_oid_contains_ta(oid, ta_list))
+        return 0;
+
+    inst = cfg_get_ins_by_ins_id_str(oid);
+    if (inst != NULL)
+    {
+        ERROR("%s(): failed to add %s from DH", __FUNCTION__, oid);
+        return TE_EFAIL;
+    }
+
+    cfg_process_msg((cfg_msg **)&msg, FALSE);
+    if (msg->rc != 0)
+    {
+        ERROR("%s(): failed to add a new instance %s: %r",
+              __FUNCTION__, oid, msg->rc);
+        return msg->rc;
+    }
+
+    rv = cfg_db_get(msg->handle, &val);
+    if (rv != 0)
+    {
+        ERROR("Failed to get value for %s", oid);
+        return rv;
+    }
+
+    cfg_types[CFG_GET_INST(msg->handle)->obj->type].val2str(val, &val_str);
+    RING("Added %s%s = %s", msg->local ? "locally " : "", oid,
+         (val_str != NULL) ? val_str : "(none)");
+    free(val_str);
+    cfg_types[CFG_GET_INST(msg->handle)->obj->type].free(val);
+
+    return 0;
+}
+
+/**
+ * Execute 'set' or 'delete' command from the DH
+ *
+ * @param entry Dynamic history entry
+ * @param ta    Name of the TA
+ *
+ * @return Status code
+ */
+static te_errno
+restore_cmd_set_del(cfg_dh_entry *entry, const te_vec *ta_list)
+{
+    cfg_instance *inst;
+    cfg_set_msg *msg = (cfg_set_msg *)(entry->cmd);
+    char *val_str = NULL;
+    cfg_inst_val val;
+    te_errno rc;
+
+    if (!check_oid_contains_ta(entry->old_oid, ta_list))
+        return 0;
+
+    inst = cfg_get_ins_by_ins_id_str(entry->old_oid);
+    if (inst == NULL)
+    {
+        ERROR("%s(): failed to get instance by oid %s",
+              __FUNCTION__, entry->old_oid);
+        return TE_EFAIL;
+    }
+
+    /* DH stores invalid handle */
+    msg->handle = inst->handle;
+
+    cfg_types[inst->obj->type].free(entry->old_val);
+    rc = cfg_types[inst->obj->type].copy(inst->val, &(entry->old_val));
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to copy value: %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    cfg_process_msg((cfg_msg **)&msg, FALSE);
+    if (msg->rc != 0)
+    {
+        ERROR("%s(): failed to set/delete %s: %r",
+              __FUNCTION__, inst->oid, msg->rc);
+        return msg->rc;
+    }
+
+    if (msg->type == CFG_SET)
+    {
+        rc = cfg_db_get(msg->handle, &val);
+        if (rc != 0)
+        {
+            ERROR("Failed to get value for %s: %r", inst->oid, rc);
+            return rc;
+        }
+
+        cfg_types[inst->obj->type].val2str(val, &val_str);
+        RING("Set %s%s = %s", msg->local ? "locally " : "",
+             inst->oid, val_str);
+        cfg_types[inst->obj->type].free(val);
+        free(val_str);
+    }
+    else
+    {
+        RING("Deleted %s%s", (msg->local ? "locally " : ""),
+             inst->oid);
+    }
+
+    return 0;
+}
+
+te_errno
+cfg_dh_restore_agents(const te_vec *ta_list)
+{
+    cfg_dh_entry *entry;
+    te_errno rc;
+
+    for (entry = first; entry != NULL; entry = entry->next)
+    {
+        switch (entry->cmd->type)
+        {
+            case CFG_REGISTER:
+                rc = restore_cmd_register((cfg_register_msg *)(entry->cmd));
+                break;
+
+            case CFG_ADD:
+                rc = restore_cmd_add((cfg_add_msg *)(entry->cmd), ta_list);
+                break;
+
+            case CFG_SET:
+            case CFG_DEL:
+                rc = restore_cmd_set_del(entry, ta_list);
+                break;
+
+            default:
+                ERROR("%s(): unknown command in the DH: %d", __FUNCTION__,
+                      entry->cmd->type);
+                return TE_EINVAL;
+        }
+
+        if (rc != 0)
+            return rc;
+
+        if (entry->backup != NULL)
+        {
+            rc = cfg_backup_verify_and_restore_ta_subtrees(
+                                                entry->backup->filename,
+                                                ta_list);
+            if (rc != 0)
+                return rc;
+        }
+    }
+
+    return 0;
+}

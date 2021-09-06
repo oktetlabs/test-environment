@@ -14,6 +14,7 @@
  */
 
 #include "conf_defs.h"
+#include "te_alloc.h"
 
 /**
  * Parses all object dependencies in the configuration file.
@@ -1030,4 +1031,114 @@ cfg_backup_create_filter_file(const char *filename, const te_vec *subtrees)
     fprintf(f, "</filters>\n");
     fclose(f);
     return 0;
+}
+
+static te_errno
+cfg_backup_wrapper(const char *filename, const te_vec *subtrees, uint8_t op)
+{
+    cfg_backup_msg *msg;
+    size_t len;
+    te_errno rc;
+    char subtrees_str[RCF_MAX_PATH];
+
+    msg = TE_ALLOC(sizeof(cfg_backup_msg) + PATH_MAX);
+
+    msg->type = CFG_BACKUP;
+    msg->op = op;
+    msg->len = sizeof(cfg_backup_msg);
+    msg->subtrees_num = 0;
+    msg->subtrees_offset = msg->len;
+
+    if (subtrees != 0 && te_vec_size(subtrees) != 0)
+    {
+        char * const *subtree;
+        /* -1 since snprintf returns number of bytes without '\0' */
+        int written = -1;
+        int total_written = 0;
+
+        TE_VEC_FOREACH(subtrees, subtree)
+        {
+            /* -1 since we should to write the value after '\0' */
+            written = snprintf(subtrees_str + written + 1, RCF_MAX_PATH,
+                               "%s", *subtree);
+            total_written = total_written + written + 1;
+            msg->subtrees_num++;
+        }
+
+        memcpy((char *)msg + msg->subtrees_offset, subtrees_str,
+               total_written);
+        msg->len += total_written;
+    }
+
+    msg->filename_offset = msg->len;
+    len = strlen(filename) + 1;
+    memcpy((char *)msg + msg->filename_offset, filename, len);
+
+    cfg_process_msg((cfg_msg **)&msg, FALSE);
+
+    rc = msg->rc;
+    free(msg);
+    return rc;
+}
+
+te_errno
+cfg_backup_verify(const char *filename, const te_vec *subtrees)
+{
+    return cfg_backup_wrapper(filename, subtrees, CFG_BACKUP_VERIFY);
+}
+
+te_errno
+cfg_backup_restore_nohistory(const char *filename, const te_vec *subtrees)
+{
+    return cfg_backup_wrapper(filename, subtrees, CFG_BACKUP_RESTORE_NOHISTORY);
+}
+
+te_errno
+cfg_backup_verify_and_restore(const char *filename, const te_vec *subtrees)
+{
+    te_errno rc;
+
+    rc = cfg_backup_verify(filename, subtrees);
+    if (rc == 0)
+        return rc;
+
+    WARN("Configuration differs from backup - try to restore the backup...");
+
+    rc = cfg_backup_restore_nohistory(filename, subtrees);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to restore from the backup: %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = cfg_backup_verify(filename, subtrees);
+    if (rc != 0)
+        ERROR("%s(): failed to restore subtrees: %r", __FUNCTION__, rc);
+
+    return rc;
+}
+
+te_errno
+cfg_backup_verify_and_restore_ta_subtrees(const char *filename,
+                                          const te_vec *ta_list)
+{
+    te_vec subtrees = TE_VEC_INIT(char *);
+    char * const *ta;
+    te_errno rc;
+
+    if (te_vec_size(ta_list) == 0)
+        return 0;
+
+    TE_VEC_FOREACH(ta_list, ta)
+    {
+        rc = te_vec_append_str_fmt(&subtrees, "/agent:%s", *ta);
+        if (rc != 0)
+            goto out;
+    }
+
+    rc = cfg_backup_verify_and_restore(filename, &subtrees);
+
+out:
+    te_vec_deep_free(&subtrees);
+    return rc;
 }
