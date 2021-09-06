@@ -999,7 +999,24 @@ match_callback(ta_job_manager_t *manager, filter_t *filter,
             return TE_EINVAL;
         }
 
+        /*
+         * TODO: ta_log_message() does not support "%.*s" now (Bug 44).
+         * After it is supported, the following code block should be used
+         * instead of the next one.
+         */
+#if 0
         LGR_MESSAGE(filter->log_level, log_user, "%.*s", log_size, buf);
+#else
+        te_string message = TE_STRING_INIT;
+
+        rc = te_string_append(&message, "%.*s", log_size, buf);
+        if (rc != 0)
+            return rc;
+
+        LGR_MESSAGE(filter->log_level, log_user, "%s", message.ptr);
+
+        te_string_free(&message);
+#endif
     }
 
     if (filter->readable)
