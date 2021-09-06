@@ -61,7 +61,7 @@ static unsigned int cs_flags = 0;
 
 static te_bool cs_inconsistency_state = FALSE;
 
-static void process_backup(cfg_backup_msg *msg);
+static void process_backup(cfg_backup_msg *msg, te_bool release_dh);
 static te_errno create_backup(char **bkp_filename);
 static te_errno process_backup_op(const char *name, uint8_t op);
 static te_errno release_backup(const char *name);
@@ -2177,9 +2177,11 @@ check_agents(void)
  * Process backup user request.
  *
  * @param msg           message pointer
+ * @param release_dh    Release DH if restore or verify action was a success.
+ *                      Does not affect on create and release backup actions
  */
 static void
-process_backup(cfg_backup_msg *msg)
+process_backup(cfg_backup_msg *msg, te_bool release_dh)
 {
     switch (msg->op)
     {
@@ -2243,7 +2245,9 @@ process_backup(cfg_backup_msg *msg)
 
             msg->rc = parse_config_xml(msg->filename, NULL, FALSE);
             rcf_log_cfg_changes(FALSE);
-            cfg_dh_release_after(msg->filename);
+
+            if (release_dh)
+                cfg_dh_release_after(msg->filename);
 
             break;
         }
@@ -2259,15 +2263,15 @@ process_backup(cfg_backup_msg *msg)
                 break;
             }
 
-            if ((msg->rc = verify_backup(msg->filename, TRUE, NULL)) == 0)
-                cfg_dh_release_after(msg->filename);
-            else
+            msg->rc = verify_backup(msg->filename, TRUE, NULL);
+            if (msg->rc != 0)
             {
                 cfg_ta_sync("/:", TRUE);
-                if ((msg->rc = verify_backup(msg->filename, TRUE,
-                                             NULL)) == 0)
-                    cfg_dh_release_after(msg->filename);
+                msg->rc = verify_backup(msg->filename, TRUE, NULL);
             }
+
+            if (msg->rc == 0 && release_dh)
+                cfg_dh_release_after(msg->filename);
 
             break;
         }
@@ -2301,7 +2305,7 @@ create_backup(char **bkp_filename)
     bkp_msg->op = CFG_BACKUP_CREATE;
     bkp_msg->len = sizeof(cfg_backup_msg);
 
-    process_backup(bkp_msg);
+    process_backup(bkp_msg, TRUE);
     rc = bkp_msg->rc;
     if (rc != 0)
     {
@@ -2347,7 +2351,7 @@ process_backup_op(const char *name, uint8_t op)
     memcpy(bkp_msg->filename, name, len);
     bkp_msg->len = sizeof(cfg_backup_msg) + len;
 
-    process_backup(bkp_msg);
+    process_backup(bkp_msg, TRUE);
     rc = bkp_msg->rc;
 
     free(bkp_msg);
@@ -2549,7 +2553,11 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             break;
 
         case CFG_BACKUP:
-            process_backup((cfg_backup_msg *)(*msg));
+            /*
+             * @p update_dh in this case is used as the flag to
+             * release or not release DH
+             */
+            process_backup((cfg_backup_msg *)(*msg), update_dh);
             cfg_conf_delay_reset();
             break;
 
