@@ -112,23 +112,27 @@ ps_arg_compare(const void *a, const void *b)
     return (*arg_a)->order - (*arg_b)->order;
 }
 
+/**
+ * Whether the option consists of one or two arguments (i.e. there should be
+ * space between option name and value).
+ */
+static te_bool
+ps_opt_is_one_arg(struct ps_entry *ps, struct ps_opt_entry *opt)
+{
+    return (opt->value[0] == '\0') || (opt->is_long && ps->long_opt_sep);
+}
+
 static void
 ps_free_argv(struct ps_entry *ps, char **argv)
 {
     struct ps_opt_entry *opt;
     unsigned int i = 1;
 
-
     SLIST_FOREACH(opt, &ps->opts, links)
     {
-        free(argv[i]);
-        /*
-         * Memory in argv is allocated for option names and only
-         * for such values that go with a long option after '='.
-         * So skip argv[j] assigned to some opt->value.
-        */
-        i += ((opt->value[0] == '\0') ||
-              (ps->long_opt_sep && opt->is_long)) ? 1 : 2;
+        free(argv[i++]);
+        if (!ps_opt_is_one_arg(ps, opt))
+            free(argv[i++]);
     }
 
     free(argv);
@@ -147,8 +151,7 @@ ps_get_argv(struct ps_entry *ps, char ***argv)
 
     SLIST_FOREACH(opt, &ps->opts, links)
     {
-        len += ((opt->value[0] == '\0') ||
-                (ps->long_opt_sep && opt->is_long)) ? 1 : 2;
+        len += ps_opt_is_one_arg(ps, opt) ? 1 : 2;
     }
 
     tmp = TE_ALLOC((ps->argc + len + 2) * sizeof(char *));
@@ -158,27 +161,32 @@ ps_get_argv(struct ps_entry *ps, char ***argv)
     i = 1;
     SLIST_FOREACH(opt, &ps->opts, links)
     {
-        rc = te_asprintf(&tmp[i], "-%s%s%s%s",
-                         opt->is_long ? "-" : "",
-                         opt->name,
-                         ps->long_opt_sep && opt->is_long &&
-                         opt->value[0] != '\0' ?
-                         "=" : "",
-                         opt->is_long && opt->value[0] != '\0' ?
-                         opt->value : "");
+        if (ps_opt_is_one_arg(ps, opt))
+        {
+            if (opt->value[0] == '\0')
+            {
+                rc = te_asprintf(&tmp[i++], "-%s%s",
+                                 opt->is_long ? "-" : "", opt->name);
+            }
+            else
+            {
+                rc = te_asprintf(&tmp[i++], "--%s=%s", opt->name, opt->value);
+            }
+        }
+        else
+        {
+            rc = te_asprintf(&tmp[i++], "-%s%s",
+                             opt->is_long ? "-" : "", opt->name);
+            if (rc > 0)
+                rc = te_asprintf(&tmp[i++], "%s", opt->value);
+        }
+
         if (rc < 0)
         {
             rc = errno;
             ps_free_argv(ps, tmp);
             return TE_OS_RC(TE_TA_UNIX, rc);
         }
-        if (!opt->is_long && opt->value[0] != '\0')
-        {
-            i++;
-            tmp[i] = opt->value;
-        }
-
-        i++;
     }
 
     args = TE_ALLOC(ps->argc * sizeof(*args));
