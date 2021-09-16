@@ -2209,6 +2209,12 @@ ta_job_receive_common(ta_job_manager_t *manager, unsigned int n_filters,
     unsigned int i;
     te_errno rc;
 
+    if (n_filters == 0)
+    {
+        ERROR("Number of filters to receive from must be greater than zero");
+        return TE_EINVAL;
+    }
+
     if (do_poll)
     {
         rc = ta_job_poll(manager, n_filters, filters, timeout_ms, TRUE);
