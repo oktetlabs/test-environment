@@ -399,7 +399,6 @@ static te_errno
 app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
                tapi_perf_report *report, te_bool ignore_connect_write_errors)
 {
-    te_string stdout_msg = TE_STRING_INIT;
     const char *str;
     double time;
     double bytes;
@@ -422,22 +421,20 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    /* Read tool output */
-    err = perf_app_read_output(app->out_filter, &stdout_msg);
-    if (err != 0)
-        return err;
-
-    /* Check for available data */
-    if (stdout_msg.ptr == NULL || stdout_msg.len == 0)
+    if (app->stdout.ptr == NULL || app->stdout.len == 0)
     {
-        ERROR("There are no data in the output");
-        return TE_RC(TE_TAPI, TE_ENODATA);
-    }
+        /* Read tool output */
+        err = perf_app_read_output(app->out_filter, &app->stdout);
+        if (err != 0)
+            return err;
 
-    err = te_string_append(&app->stdout, "%s", stdout_msg.ptr);
-    te_string_free(&stdout_msg);
-    if (err != 0)
-        return err;
+        /* Check for available data */
+        if (app->stdout.ptr == NULL || app->stdout.len == 0)
+        {
+            ERROR("There are no data in the output");
+            return TE_RC(TE_TAPI, TE_ENODATA);
+        }
+    }
 
     INFO("iperf stdout:\n%s", app->stdout.ptr);
 
