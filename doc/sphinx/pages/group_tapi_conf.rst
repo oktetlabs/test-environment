@@ -17,7 +17,7 @@ TAPI: Test API for configuration nodes
 	/generated/group_tapi_conf_serial.rst
 	/generated/group_tapi_conf_sh_env.rst
 	/generated/group_tapi_conf_phy.rst
-	/generated/group_tapi_conf_eth.rst
+	/generated/group_tapi_conf_if.rst
 	/generated/group_tapi_conf_ip_rule.rst
 	/generated/group_tapi_conf_ip6.rst
 	/generated/group_tapi_conf_modules.rst

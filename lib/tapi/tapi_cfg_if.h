@@ -1,19 +1,19 @@
 /** @file
- * @brief Ethernet interface features
+ * @brief Network interface configuration
  *
- * @defgroup tapi_conf_eth Ethernet interface features configuration
+ * @defgroup tapi_conf_if Network interface configuration TAPI
  * @ingroup tapi_conf
  * @{
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2021 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  */
 
-#ifndef __TE_TAPI_CFG_ETH_EXT_H__
-#define __TE_TAPI_CFG_ETH_EXT_H__
+#ifndef __TE_TAPI_CFG_IF_H__
+#define __TE_TAPI_CFG_IF_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,10 +29,10 @@ extern "C" {
  *
  * @return Status code
  */
-extern te_errno tapi_eth_feature_get(const char *ta,
-                                     const char *ifname,
-                                     const char *feature_name,
-                                     int        *feature_value_out);
+extern te_errno tapi_cfg_if_feature_get(const char *ta,
+                                        const char *ifname,
+                                        const char *feature_name,
+                                        int        *feature_value_out);
 
 /**
  * Set feature value of an ethernet interface
@@ -44,10 +44,10 @@ extern te_errno tapi_eth_feature_get(const char *ta,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_feature_set(const char *ta,
-                                     const char *ifname,
-                                     const char *feature_name,
-                                     int         feature_value);
+extern te_errno tapi_cfg_if_feature_set(const char *ta,
+                                        const char *ifname,
+                                        const char *feature_name,
+                                        int         feature_value);
 
 /**
  * Set feature value of an ethernet interface and all its parents if they are.
@@ -61,10 +61,10 @@ extern te_errno tapi_eth_feature_set(const char *ta,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_feature_set_all_parents(const char *ta,
-                                                 const char *ifname,
-                                                 const char *feature_name,
-                                                 int         feature_value);
+extern te_errno tapi_cfg_if_feature_set_all_parents(const char *ta,
+                                                    const char *ifname,
+                                                    const char *feature_name,
+                                                    int feature_value);
 
 /**
  * Get driver name of a network interface.
@@ -76,9 +76,9 @@ extern te_errno tapi_eth_feature_set_all_parents(const char *ta,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_deviceinfo_drivername_get(const char *ta,
-                                                   const char *ifname,
-                                                   char **drivername);
+extern te_errno tapi_cfg_if_deviceinfo_drivername_get(const char *ta,
+                                                      const char *ifname,
+                                                      char **drivername);
 
 /**
  * Get driver version of a network interface.
@@ -90,9 +90,9 @@ extern te_errno tapi_eth_deviceinfo_drivername_get(const char *ta,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_deviceinfo_driverversion_get(const char *ta,
-                                                      const char *ifname,
-                                                      char **driverversion);
+extern te_errno tapi_cfg_if_deviceinfo_driverversion_get(const char *ta,
+                                                         const char *ifname,
+                                                         char **driverversion);
 
 /**
  * Get firmware version of a network interface.
@@ -104,9 +104,10 @@ extern te_errno tapi_eth_deviceinfo_driverversion_get(const char *ta,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_deviceinfo_firmwareversion_get(const char *ta,
-                                                      const char *ifname,
-                                                      char **firmwareversion);
+extern te_errno tapi_cfg_if_deviceinfo_firmwareversion_get(
+                                                    const char *ta,
+                                                    const char *ifname,
+                                                    char **firmwareversion);
 
 /**
  * Get GRO value of an ethernet interface
@@ -117,8 +118,8 @@ extern te_errno tapi_eth_deviceinfo_firmwareversion_get(const char *ta,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_gro_get(const char *ta, const char *ifname,
-                                 int *gro);
+extern te_errno tapi_cfg_if_gro_get(const char *ta, const char *ifname,
+                                    int *gro);
 
 /**
  * Get GSO value of an ethernet interface
@@ -129,8 +130,8 @@ extern te_errno tapi_eth_gro_get(const char *ta, const char *ifname,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_gso_get(const char *ta, const char *ifname,
-                                 int *gso);
+extern te_errno tapi_cfg_if_gso_get(const char *ta, const char *ifname,
+                                    int *gso);
 
 /**
  * Get TSO value of an ethernet interface
@@ -141,8 +142,8 @@ extern te_errno tapi_eth_gso_get(const char *ta, const char *ifname,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_tso_get(const char *ta, const char *ifname,
-                                 int *tso);
+extern te_errno tapi_cfg_if_tso_get(const char *ta, const char *ifname,
+                                    int *tso);
 
 /**
  * Get flags value of an ethernet interface
@@ -153,8 +154,8 @@ extern te_errno tapi_eth_tso_get(const char *ta, const char *ifname,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_flags_get(const char *ta, const char *ifname,
-                                 int *flags);
+extern te_errno tapi_cfg_if_flags_get(const char *ta, const char *ifname,
+                                      int *flags);
 
 /**
  * Set GRO value of an ethernet interface
@@ -165,8 +166,8 @@ extern te_errno tapi_eth_flags_get(const char *ta, const char *ifname,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_gro_set(const char *ta, const char *ifname,
-                                 int gro);
+extern te_errno tapi_cfg_if_gro_set(const char *ta, const char *ifname,
+                                    int gro);
 
 /**
  * Set GSO value of an ethernet interface
@@ -177,7 +178,7 @@ extern te_errno tapi_eth_gro_set(const char *ta, const char *ifname,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_gso_set(const char *ta, const char *ifname,
+extern te_errno tapi_cfg_if_gso_set(const char *ta, const char *ifname,
                                  int gso);
 
 /**
@@ -189,8 +190,8 @@ extern te_errno tapi_eth_gso_set(const char *ta, const char *ifname,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_tso_set(const char *ta, const char *ifname,
-                                 int tso);
+extern te_errno tapi_cfg_if_tso_set(const char *ta, const char *ifname,
+                                    int tso);
 
 /**
  * Set flags value of an ethernet interface
@@ -201,8 +202,8 @@ extern te_errno tapi_eth_tso_set(const char *ta, const char *ifname,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_flags_set(const char *ta, const char *ifname,
-                                 int flags);
+extern te_errno tapi_cfg_if_flags_set(const char *ta, const char *ifname,
+                                      int flags);
 
 /**
  * Reset an ethernet interface
@@ -212,12 +213,12 @@ extern te_errno tapi_eth_flags_set(const char *ta, const char *ifname,
  *
  * @return Status code
  */
-extern te_errno tapi_eth_reset(const char *ta, const char *ifname);
+extern te_errno tapi_cfg_if_reset(const char *ta, const char *ifname);
 
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_TAPI_CFG_ETH_EXT_H__ */
+#endif /* !__TE_TAPI_CFG_IF_H__ */
 
-/**@} <!-- END tapi_conf_eth --> */
+/**@} <!-- END tapi_conf_if --> */
