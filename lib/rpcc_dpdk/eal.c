@@ -420,7 +420,7 @@ tapi_rte_eal_hotplug_add(rcf_rpc_server *rpcs, const char *busname,
         if (rc != 0)
             return rc;
 
-        arg = te_string_fmt("--pci-whitelist=%s", devname);
+        arg = te_string_fmt("--allow=%s", devname);
         if (arg == NULL)
         {
             free(eal_args_old);
@@ -497,7 +497,7 @@ tapi_rte_eal_hotplug_remove(rcf_rpc_server *rpcs, const char *busname,
         if (rc != 0)
             return rc;
 
-        arg = te_string_fmt("--pci-whitelist=%s", devname);
+        arg = te_string_fmt("--allow=%s", devname);
         if (arg == NULL)
         {
             free(eal_args_old);
@@ -1192,7 +1192,7 @@ tapi_eal_whitelist_vdev_slaves(tapi_env               *env,
         if (rc != 0)
             return rc;
 
-        append_arg(argcp, argvpp, "--pci-whitelist=%s%s%s", slaves[i],
+        append_arg(argcp, argvpp, "--allow=%s%s%s", slaves[i],
                    (dev_args == NULL) ? "" : ",",
                    (dev_args == NULL) ? "" : dev_args);
 
@@ -1558,7 +1558,7 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
             if (rc != 0)
                 goto cleanup;
 
-            append_arg(&my_argc, &my_argv, "--pci-whitelist=%s%s%s",
+            append_arg(&my_argc, &my_argv, "--allow=%s%s%s",
                        ps_if->iface->if_info.if_name,
                        (dev_args == NULL) ? "" : ",",
                        (dev_args == NULL) ? "" : dev_args);

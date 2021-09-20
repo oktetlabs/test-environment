@@ -888,7 +888,7 @@ tapi_dpdk_get_vdev_port_number(const char *vdev, unsigned int *port_number)
 
     /*
      * Hack: assume that port number of vdev is right after all slave
-     * devices. It might fail if --vdev and --pci-whitelist have
+     * devices. It might fail if --vdev and --allow have
      * different devices specified.
      */
     *port_number = dev_count;
