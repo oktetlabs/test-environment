@@ -36,6 +36,22 @@ extern te_errno tapi_cfg_if_feature_is_readonly(const char *ta,
                                                 te_bool *readonly);
 
 /**
+ * Check whether a given interface feature is present
+ *
+ * @param ta                Test agent name
+ * @param ifname            Interface name
+ * @param feature_name      Feature name
+ * @param present           Will be set to @c TRUE if the feature
+ *                          is present
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_if_feature_is_present(const char *ta,
+                                               const char *ifname,
+                                               const char *feature_name,
+                                               te_bool *present);
+
+/**
  * Get feature value of an ethernet interface
  *
  * @param ta                Test agent name

@@ -49,6 +49,34 @@ tapi_cfg_if_feature_is_readonly(const char *ta,
 
 /* See description in the tapi_cfg_if.h */
 te_errno
+tapi_cfg_if_feature_is_present(const char *ta,
+                               const char *ifname,
+                               const char *feature_name,
+                               te_bool *present)
+{
+    te_errno rc;
+    unsigned int p_num = 0;
+    cfg_handle *p_set = NULL;
+
+    rc = cfg_find_pattern_fmt(&p_num, &p_set,
+                              TE_CFG_TA_IF_FMT
+                              "/feature:%s",
+                              ta, ifname, feature_name);
+    if (rc != 0)
+        return rc;
+
+    free(p_set);
+
+    if (p_num > 0)
+        *present = TRUE;
+    else
+        *present = FALSE;
+
+    return 0;
+}
+
+/* See description in the tapi_cfg_if.h */
+te_errno
 tapi_cfg_if_feature_get(const char *ta,
                         const char *ifname,
                         const char *feature_name,
