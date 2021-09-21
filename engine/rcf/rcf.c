@@ -67,12 +67,7 @@
 #include "te_stdint.h"
 #include "te_printf.h"
 #include "te_str.h"
-#include "te_errno.h"
-#include "te_defs.h"
-#include "ipc_server.h"
-#include "rcf_methods.h"
-#include "rcf_api.h"
-#include "rcf_internal.h"
+#include "rcf.h"
 
 #define RCF_NEED_TYPES      1
 #define RCF_NEED_TYPE_LEN   1
@@ -83,37 +78,6 @@
 
 #define TE_EXPAND_XML 1
 #include "te_expand.h"
-
-
-#define RCF_SELECT_TIMEOUT      1   /**< Default select timeout
-                                         in seconds */
-#define RCF_CMD_TIMEOUT         100  /**< Default timeout (in seconds) for
-                                          command processing on the TA */
-#define RCF_CMD_TIMEOUT_HUGE    10000
-                                    /**< Huge timeout for command
-                                         processing on the TA */
-#define RCF_REBOOT_TIMEOUT      60  /**< TA reboot timeout in seconds */
-#define RCF_SHUTDOWN_TIMEOUT    5   /**< TA shutdown timeout in seconds */
-
-/**
- * Timeout for CONFSET operation, in seconds.
- *
- * RCF_CMD_TIMEOUT is not big enough to allow performing time consuming
- * set operations (for example, to generate DH parameters and start
- * openvpn deamon) via Configurator.
- */
-#define RCF_CONFSET_TIMEOUT (RCF_CMD_TIMEOUT * 3)
-
-/** Special session identifiers */
-enum {
-    RCF_SID_GET_LOG = 1,    /**< Session used for Log gathering */
-    RCF_SID_TACHECK,        /**< Session used for TA check */
-
-    /** Unused SID, must be the last in the enum */
-    RCF_SID_UNUSED,
-};
-
-
 
 /*
  * TA reboot and RCF shutdown algorithms.
@@ -129,74 +93,7 @@ enum {
  *     response to user shutdown request.
  */
 
-
-/** One request from the user */
-typedef struct usrreq {
-    struct usrreq            *next;
-    struct usrreq            *prev;
-    rcf_msg                  *message;
-    struct ipc_server_client *user;
-    uint32_t                  timeout;  /**< Timeout in seconds */
-    time_t                    sent;
-} usrreq;
-
-/** A description for a task/thread to be executed at TA startup */
-typedef struct ta_initial_task {
-    rcf_execute_mode        mode;          /**< Task execution mode */
-    char                   *entry;         /**< Procedure entry point */
-    int                     argc;          /**< Number of arguments */
-    char                  **argv;          /**< Arguments as strings */
-    struct ta_initial_task *next;          /**< Link to the next task */
-} ta_initial_task;
-
-/** Structure for one Test Agent */
-typedef struct ta {
-    struct ta          *next;               /**< Link to the next TA */
-    rcf_talib_handle    handle;             /**< Test Agent handle returted
-                                                 by start() method */
-    char               *name;               /**< Test Agent name */
-    char               *type;               /**< Test Agent type */
-    te_bool             enable_synch_time;  /**< Enable synchronize time */
-    te_kvpair_h         conf;               /**< Configurations list of kv_pairs */
-    usrreq              sent;               /**< User requests sent
-                                                 to the TA */
-    usrreq              waiting;            /**< User requests waiting
-                                                 for unblocking of
-                                                 TA connection */
-    usrreq              pending;            /**< User requests pending
-                                                 until answer on previous
-                                                 request with the same SID
-                                                 is received */
-    unsigned int        flags;              /**< Test Agent flags */
-    time_t              reboot_timestamp;   /**< Time of reboot command
-                                                 sending (in seconds) */
-    int                 sid;                /**< Free session identifier
-                                                 (starts from 2) */
-    te_bool             conn_locked;        /**< Connection is locked until
-                                                 the response from TA
-                                                 is received */
-    int                 lock_sid;           /**< SID of the command
-                                                 locked the connection */
-    void               *dlhandle;           /**< Dynamic library handle */
-    ta_initial_task    *initial_tasks;      /**< Startup tasks */
-    char               *cold_reboot_ta;     /**< Cold reboot TA name */
-    const char         *cold_reboot_param;  /**< Cold reboot params */
-
-    te_bool            dynamic;             /**< Dynamic creation flag */
-
-    struct rcf_talib_methods m; /**< TA-specific Methods */
-} ta;
-
-
-/**
- * TA check initiator data.
- */
-typedef struct ta_check {
-    usrreq         *req;    /**< User request */
-    unsigned int    active; /**< Number of active checks */
-} ta_check;
-
-static ta_check ta_checker;
+ta_check ta_checker;
 
 
 #define RCF_FOREGROUND  0x01    /**< Flag to run RCF in foreground */
@@ -216,16 +113,14 @@ static int  names_len = 0;      /**< Length of TA name list */
 
 /* Backup select parameters */
 static struct timeval tv0;
-static fd_set set0;
+fd_set set0;
 
 /** Name of directory for temporary files */
 static char *tmp_dir;
 
 
 /* Forward declarations */
-static usrreq * alloc_usrreq(void);
 static int write_str(char *s, size_t len);
-static int send_cmd(ta *agent, usrreq *req);
 static void rcf_ta_check_done(usrreq *req);
 static void send_all_pending_commands(ta *agent);
 
@@ -269,15 +164,9 @@ free_ta_list(void)
     agents = NULL;
 }
 
-/**
- * Obtain TA structure address by Test Agent name.
- *
- * @param name          Test Agent name
- *
- * @return TA structure pointer or NULL
- */
-static ta *
-find_ta_by_name(char *name)
+/* See description in rcf.h */
+ta *
+rcf_find_ta_by_name(char *name)
 {
     ta *tmp;
 
@@ -288,14 +177,9 @@ find_ta_by_name(char *name)
     return NULL;
 }
 
-/**
- * Check if a message with the same SID is already sent.
- *
- * @param req           request list anchor (ta->sent or ta->failed)
- * @param sid           session identifier of the received user request
- */
-static usrreq *
-find_user_request(usrreq *req, int sid)
+/* See description in rcf.h */
+usrreq *
+rcf_find_user_request(usrreq *req, int sid)
 {
     usrreq *tmp;
 
@@ -898,13 +782,9 @@ synchronize_time(ta *agent)
     return rc;
 }
 
-/**
- * Respond to user request and remove the request from the list.
- *
- * @param req           request with already filled out parameters
- */
-static void
-answer_user_request(usrreq *req)
+/* See description in rcf.h */
+void
+rcf_answer_user_request(usrreq *req)
 {
     if (req->message->error != 0)
         req->message->data_len = 0;
@@ -956,14 +836,9 @@ answer_user_request(usrreq *req)
     }
 }
 
-/**
- * Respond to all user requests in the specified list with specified error.
- *
- * @param req           anchor of request list (&ta->sent or &ta->pending)
- * @param error         error to be filled in
- */
-static void
-answer_all_requests(usrreq *req, int error)
+/* See description in rcf.h */
+void
+rcf_answer_all_requests(usrreq *req, int error)
 {
     usrreq *tmp, *next;
 
@@ -971,7 +846,7 @@ answer_all_requests(usrreq *req, int error)
     {
         next = tmp->next;
         tmp->message->error = TE_RC(TE_RCF, error);
-        answer_user_request(tmp);
+        rcf_answer_user_request(tmp);
     }
 }
 
@@ -1025,21 +900,17 @@ startup_tasks(ta *agent)
     return 0;
 }
 
-/**
- * Mark test agent as recoverable dead.
- *
- * @param agent     Test Agent
- */
-static void
-set_ta_dead(ta *agent)
+/* See description in rcf.h */
+void
+rcf_set_ta_dead(ta *agent)
 {
     if (~agent->flags & TA_DEAD)
     {
         int rc;
 
         ERROR("TA '%s' is dead", agent->name);
-        answer_all_requests(&(agent->sent), TE_ETADEAD);
-        answer_all_requests(&(agent->waiting), TE_ETADEAD);
+        rcf_answer_all_requests(&(agent->sent), TE_ETADEAD);
+        rcf_answer_all_requests(&(agent->waiting), TE_ETADEAD);
         rc = (agent->m.close)(agent->handle, &set0);
         if (rc != 0)
             ERROR("Failed to close connection with TA '%s': rc=%r",
@@ -1049,20 +920,16 @@ set_ta_dead(ta *agent)
     }
 }
 
-/**
- * Mark test agent as unrecoverable dead.
- *
- * @param agent     Test Agent
- */
-static void
-set_ta_unrecoverable(ta *agent)
+/* See description in rcf.h */
+void
+rcf_set_ta_unrecoverable(ta *agent)
 {
     if (~agent->flags & TA_UNRECOVER)
     {
         ERROR("TA '%s' is unrecoverable dead", agent->name);
-        answer_all_requests(&(agent->sent), TE_ETADEAD);
-        answer_all_requests(&(agent->pending), TE_ETADEAD);
-        answer_all_requests(&(agent->waiting), TE_ETADEAD);
+        rcf_answer_all_requests(&(agent->sent), TE_ETADEAD);
+        rcf_answer_all_requests(&(agent->pending), TE_ETADEAD);
+        rcf_answer_all_requests(&(agent->waiting), TE_ETADEAD);
         if (agent->handle != NULL)
         {
             int rc;
@@ -1084,16 +951,9 @@ set_ta_unrecoverable(ta *agent)
     }
 }
 
-/**
- * Initialize Test Agent or recovery it after reboot.
- * Test Agent is marked as "unrecoverable dead" in the case of failure.
- *
- * @param agent         Test Agent structure
- *
- * @return Status code
- */
-static int
-init_agent(ta *agent)
+/* See description in rcf.h */
+int
+rcf_init_agent(ta *agent)
 {
     int       rc;
     te_bool   is_reboot = ((agent->flags & TA_REBOOTING) != 0);
@@ -1123,7 +983,7 @@ init_agent(ta *agent)
         {
             ERROR("Cannot (re-)initialize TA '%s' error=%r",
                   agent->name, rc);
-            set_ta_unrecoverable(agent);
+            rcf_set_ta_unrecoverable(agent);
         }
         return rc;
     }
@@ -1131,7 +991,7 @@ init_agent(ta *agent)
     if ((rc = (agent->m.connect)(agent->handle, &set0, &tv0)) != 0)
     {
         ERROR("Cannot connect to TA '%s' error=%r", agent->name, rc);
-        set_ta_unrecoverable(agent);
+        rcf_set_ta_unrecoverable(agent);
         return rc;
     }
     agent->flags &= ~(TA_DEAD | TA_REBOOTING);
@@ -1139,7 +999,7 @@ init_agent(ta *agent)
 
     if ((rc = rcf_consistency_check(agent)) != 0)
     {
-        set_ta_unrecoverable(agent);
+        rcf_set_ta_unrecoverable(agent);
         return rc;
     }
 
@@ -1151,17 +1011,17 @@ init_agent(ta *agent)
 
     if (rc != 0)
     {
-        set_ta_unrecoverable(agent);
+        rcf_set_ta_unrecoverable(agent);
     }
     else
     {
-        answer_all_requests(&(agent->sent), TE_ETAREBOOTED);
+        rcf_answer_all_requests(&(agent->sent), TE_ETAREBOOTED);
         if (is_reboot)
             send_all_pending_commands(agent);
         else
         {
-            answer_all_requests(&(agent->pending), TE_ETAREBOOTED);
-            answer_all_requests(&(agent->waiting), TE_ETAREBOOTED);
+            rcf_answer_all_requests(&(agent->pending), TE_ETAREBOOTED);
+            rcf_answer_all_requests(&(agent->waiting), TE_ETAREBOOTED);
         }
         agent->conn_locked = FALSE;
     }
@@ -1273,7 +1133,7 @@ save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
 static void
 send_pending_command(ta *agent, int sid)
 {
-    usrreq *req = find_user_request(&(agent->pending), sid);
+    usrreq *req = rcf_find_user_request(&(agent->pending), sid);
 
     if (req == NULL)
     {
@@ -1285,7 +1145,7 @@ send_pending_command(ta *agent, int sid)
     VERB("Send pending command to TA %s:%d", agent->name, sid);
 
     QEL_DELETE(req);
-    send_cmd(agent, req);
+    rcf_send_cmd(agent, req);
 }
 
 /**
@@ -1306,11 +1166,11 @@ send_all_pending_commands(ta *agent)
          req = next)
     {
         next = req->next;
-        if (find_user_request(&(agent->sent), req->message->sid) == NULL)
+        if (rcf_find_user_request(&(agent->sent), req->message->sid) == NULL)
         {
             /* No requests with such SID sent */
             QEL_DELETE(req);
-            send_cmd(agent, req);
+            rcf_send_cmd(agent, req);
         }
     }
 }
@@ -1412,7 +1272,7 @@ process_reply(ta *agent)
     {
         ERROR("Too big answer from TA '%s' - increase memory constants",
               agent->name);
-        set_ta_dead(agent);
+        rcf_set_ta_dead(agent);
         return;
     }
 
@@ -1420,7 +1280,7 @@ process_reply(ta *agent)
     {
         ERROR("Receiving answer from TA '%s' failed error=%r",
               agent->name, rc);
-        set_ta_dead(agent);
+        rcf_set_ta_dead(agent);
         return;
     }
 
@@ -1440,7 +1300,7 @@ process_reply(ta *agent)
     ptr += strlen("SID ");
     READ_INT(sid);
 
-    if ((req = find_user_request(&(agent->sent), sid)) == NULL)
+    if ((req = rcf_find_user_request(&(agent->sent), sid)) == NULL)
     {
         ERROR("Can't find user request with SID %d", sid);
         goto push;
@@ -1466,7 +1326,7 @@ process_reply(ta *agent)
          */
         msg->file[0] = '\0';
         save_attachment(agent, msg, len, ba);
-        answer_user_request(req);
+        rcf_answer_user_request(req);
         return;
     }
 
@@ -1549,7 +1409,7 @@ process_reply(ta *agent)
                     if (new_msg == NULL)
                     {
                         msg->error = TE_RC(TE_RCF, TE_ENOMEM);
-                        answer_user_request(req);
+                        rcf_answer_user_request(req);
                         return;
                     }
                     memset(new_msg, 0, sizeof(rcf_msg) + balen);
@@ -1684,7 +1544,7 @@ process_reply(ta *agent)
         }
     }
 
-    answer_user_request(req);
+    rcf_answer_user_request(req);
 
     /* Push next waiting request */
 push:
@@ -1696,7 +1556,7 @@ push:
         if (req != &agent->waiting)
         {
             QEL_DELETE(req);
-            send_cmd(agent, req);
+            rcf_send_cmd(agent, req);
         }
     }
 
@@ -1710,9 +1570,9 @@ bad_protocol:
     if (req != NULL)
     {
         req->message->error = TE_RC(TE_RCF, TE_EIPC);
-        answer_user_request(req);
+        rcf_answer_user_request(req);
     }
-    set_ta_dead(agent);
+    rcf_set_ta_dead(agent);
 
 #undef READ_INT
 }
@@ -1741,14 +1601,14 @@ transmit_cmd(ta *agent, usrreq *req)
         {
             req->message->error = TE_OS_RC(TE_RCF, errno);
             ERROR("Cannot open file '%s'", req->message->file);
-            answer_user_request(req);
+            rcf_answer_user_request(req);
             return -1;
         }
         if (fstat(file, &st) != 0)
         {
             req->message->error = TE_OS_RC(TE_RCF, errno);
             ERROR("RCF", "stat() failed for file %s", req->message->file);
-            answer_user_request(req);
+            rcf_answer_user_request(req);
             close(file);
             return -1;
         }
@@ -1771,8 +1631,8 @@ transmit_cmd(ta *agent, usrreq *req)
             if (req->message->opcode == RCFOP_REBOOT)
                 return -1;
 
-            answer_user_request(req);
-            set_ta_dead(agent);
+            rcf_answer_user_request(req);
+            rcf_set_ta_dead(agent);
 
             if (file != -1)
                 close(file);
@@ -1798,7 +1658,7 @@ transmit_cmd(ta *agent, usrreq *req)
             ERROR("Read from file '%s' failed error=%r",
                   req->message->file, req->message->error);
             close(file);
-            answer_user_request(req);
+            rcf_answer_user_request(req);
             return -1;
         }
 
@@ -1924,16 +1784,9 @@ print_value(char *cmd, size_t size, unsigned char type, void *value)
     return ret;
 }
 
-/**
- * Send command to the Test Agent according to user request.
- *
- * @param agent         Test Agent structure
- * @param req           user request
- *
- * @return 0 (success) or -1 (failure)
- */
-static int
-send_cmd(ta *agent, usrreq *req)
+/* See description in rcf.h */
+int
+rcf_send_cmd(ta *agent, usrreq *req)
 {
     rcf_msg *msg = req->message;
 
@@ -1956,7 +1809,7 @@ send_cmd(ta *agent, usrreq *req)
         {                                                         \
             ERROR("Too long RCF command");                        \
             msg->error = TE_RC(TE_RCF, TE_EINVAL);                \
-            answer_user_request(req);                             \
+            rcf_answer_user_request(req);                         \
             return -1;                                            \
         }                                                         \
     } while (0)
@@ -2033,7 +1886,7 @@ send_cmd(ta *agent, usrreq *req)
             if (msg->sid != RCF_SID_GET_LOG)
             {
                 msg->error = TE_RC(TE_RCF, TE_EINVAL);
-                answer_user_request(req);
+                rcf_answer_user_request(req);
                 return -1;
             }
             PUT(TE_PROTO_GET_LOG);
@@ -2144,7 +1997,7 @@ send_cmd(ta *agent, usrreq *req)
                 default:
                     ERROR("Incorrect execute mode");
                     msg->error = TE_RC(TE_RCF, TE_EINVAL);
-                    answer_user_request(req);
+                    rcf_answer_user_request(req);
                     return -1;
             }
             PUT(" %s", msg->id);
@@ -2216,7 +2069,7 @@ send_cmd(ta *agent, usrreq *req)
                 default:
                     ERROR("Incorrect execute mode");
                     msg->error = TE_RC(TE_RCF, TE_EINVAL);
-                    answer_user_request(req);
+                    rcf_answer_user_request(req);
                     return -1;
             }
             PUT(" %u", msg->handle);
@@ -2226,7 +2079,7 @@ send_cmd(ta *agent, usrreq *req)
         default:
             ERROR("Unhandled case value %d", msg->opcode);
             msg->error = TE_RC(TE_RCF, TE_EINVAL);
-            answer_user_request(req);
+            rcf_answer_user_request(req);
             return -1;
     }
 
@@ -2239,11 +2092,9 @@ send_cmd(ta *agent, usrreq *req)
 }
 
 
-/**
- * Allocate memory for user request.
- */
-static usrreq *
-alloc_usrreq(void)
+/* See description in rcf.h */
+usrreq *
+rcf_alloc_usrreq(void)
 {
     usrreq *req;
 
@@ -2305,7 +2156,7 @@ rcf_ta_check_all_done(void)
         ta_checker.req->message->error =
             remain_dead ? TE_ETADEAD : 0;
 
-        answer_user_request(ta_checker.req);
+        rcf_answer_user_request(ta_checker.req);
         ta_checker.req = NULL;
     }
 }
@@ -2320,7 +2171,7 @@ rcf_ta_check_done(usrreq *req)
 {
     ta *agent;
 
-    agent = find_ta_by_name(req->message->ta);
+    agent = rcf_find_ta_by_name(req->message->ta);
     if (agent == NULL)
     {
         ERROR("Failed to find TA by name '%s'", req->message->ta);
@@ -2363,7 +2214,7 @@ rcf_ta_check_start(void)
         if (agent->flags & TA_DEAD)
             continue;
 
-        req = alloc_usrreq();
+        req = rcf_alloc_usrreq();
         if (req == NULL)
         {
             rc = TE_RC(TE_RCF, TE_ENOMEM);
@@ -2387,7 +2238,7 @@ rcf_ta_check_start(void)
             ERROR("TA '%s' checking is already in progress", agent->name);
         agent->flags |= TA_CHECKING;
         ta_checker.active++;
-        send_cmd(agent, req);
+        rcf_send_cmd(agent, req);
     }
     rcf_ta_check_all_done();
 }
@@ -2417,7 +2268,7 @@ process_user_request(usrreq *req)
             if (new_msg == NULL)
             {
                 msg->error = TE_RC(TE_RCF, TE_ENOMEM);
-                answer_user_request(req);
+                rcf_answer_user_request(req);
                 return;
             }
             *new_msg = *msg;
@@ -2425,7 +2276,7 @@ process_user_request(usrreq *req)
             msg = req->message = new_msg;
             msg->data_len = names_len;
             memcpy(msg->data, names, names_len);
-            answer_user_request(req);
+            rcf_answer_user_request(req);
             return;
         }
 
@@ -2438,7 +2289,7 @@ process_user_request(usrreq *req)
             else
             {
                 msg->error = TE_RC(TE_RCF, TE_EINPROGRESS);
-                answer_user_request(req);
+                rcf_answer_user_request(req);
             }
             return;
 
@@ -2526,7 +2377,7 @@ process_user_request(usrreq *req)
                     break; /** Leave 'do/while' block */
                 }
 
-                if ((rc = init_agent(agent)) != 0)
+                if ((rc = rcf_init_agent(agent)) != 0)
                 {
                     /* Suppose that calloc provided all NULLs */
                     free(agent->name);
@@ -2547,7 +2398,7 @@ process_user_request(usrreq *req)
                 ta_num++;
             } while(0);
 
-            answer_user_request(req);
+            rcf_answer_user_request(req);
             return;
 
         case RCFOP_DEL_TA:
@@ -2563,7 +2414,7 @@ process_user_request(usrreq *req)
                 if (new_msg == NULL)
                 {
                     msg->error = TE_RC(TE_RCF, TE_ENOMEM);
-                    answer_user_request(req);
+                    rcf_answer_user_request(req);
                     return;
                 }
 
@@ -2626,9 +2477,9 @@ process_user_request(usrreq *req)
                                    ++agt->sid, TE_PROTO_SHUTDOWN);
                         (agt->m.transmit)(agt->handle,
                                           cmd, strlen(cmd) + 1);
-                        answer_all_requests(&(agt->sent), TE_EIO);
-                        answer_all_requests(&(agt->pending), TE_EIO);
-                        answer_all_requests(&(agt->waiting), TE_EIO);
+                        rcf_answer_all_requests(&(agt->sent), TE_EIO);
+                        rcf_answer_all_requests(&(agt->pending), TE_EIO);
+                        rcf_answer_all_requests(&(agt->waiting), TE_EIO);
 
                         while (time(NULL) - t < RCF_SHUTDOWN_TIMEOUT)
                         {
@@ -2702,7 +2553,7 @@ process_user_request(usrreq *req)
 
             } while(0);
 
-            answer_user_request(req);
+            rcf_answer_user_request(req);
             return;
 
         default:
@@ -2710,7 +2561,7 @@ process_user_request(usrreq *req)
             break;
     }
 
-    if ((agent = find_ta_by_name(msg->ta)) == NULL)
+    if ((agent = rcf_find_ta_by_name(msg->ta)) == NULL)
     {
         LOG_MSG((msg->opcode == RCFOP_GET_LOG ||
                  msg->opcode == RCFOP_GET_SNIFFERS) ?
@@ -2718,7 +2569,7 @@ process_user_request(usrreq *req)
                 "Request '%s' to unknown TA '%s'",
                 rcf_op_to_string(msg->opcode), msg->ta);
         msg->error = TE_RC(TE_RCF, TE_EINVAL);
-        answer_user_request(req);
+        rcf_answer_user_request(req);
         return;
     }
 
@@ -2732,14 +2583,14 @@ process_user_request(usrreq *req)
         else
             msg->error = TE_RC(TE_RCF, TE_ETADEAD);
 
-        answer_user_request(req);
+        rcf_answer_user_request(req);
         return;
     }
 
     if (msg->opcode == RCFOP_TADEAD)
     {
-        answer_user_request(req);
-        set_ta_unrecoverable(agent);
+        rcf_answer_user_request(req);
+        rcf_set_ta_unrecoverable(agent);
         return;
     }
 
@@ -2748,7 +2599,7 @@ process_user_request(usrreq *req)
         ERROR("Request '%s' with invalid SID %d for TA '%s'",
               rcf_op_to_string(msg->opcode), req->message->sid, msg->ta);
         msg->error = TE_RC(TE_RCF, TE_EINVAL);
-        answer_user_request(req);
+        rcf_answer_user_request(req);
         return;
     }
 
@@ -2757,18 +2608,18 @@ process_user_request(usrreq *req)
     {
         case RCFOP_TATYPE:
             strcpy(msg->id, agent->type);
-            answer_user_request(req);
+            rcf_answer_user_request(req);
             return;
 
         case RCFOP_SESSION:
             msg->sid = ++(agent->sid);
-            answer_user_request(req);
+            rcf_answer_user_request(req);
             return;
 
         case RCFOP_REBOOT:
             ERROR("Reboot opcode is not supported");
             msg->error = TE_RC(TE_RCF, TE_EOPNOTSUPP);
-            answer_user_request(req);
+            rcf_answer_user_request(req);
             return;
 
         default:
@@ -2780,15 +2631,15 @@ process_user_request(usrreq *req)
     if (shutdown_num > 0 ||
         agent->reboot_timestamp > 0 ||
         (agent->flags & TA_CHECKING) ||
-        find_user_request(&(agent->sent), msg->sid) != NULL ||
-        find_user_request(&(agent->waiting), msg->sid) != NULL)
+        rcf_find_user_request(&(agent->sent), msg->sid) != NULL ||
+        rcf_find_user_request(&(agent->waiting), msg->sid) != NULL)
     {
         VERB("Pending user request for TA %s:%d", agent->name, msg->sid);
         QEL_INSERT(&(agent->pending), req);
     }
     else
     {
-        send_cmd(agent, req);
+        rcf_send_cmd(agent, req);
     }
 }
 
@@ -2816,9 +2667,9 @@ rcf_shutdown(void)
 
         TE_SPRINTF(cmd, "SID %d %s", ++agent->sid, TE_PROTO_SHUTDOWN);
         (agent->m.transmit)(agent->handle, cmd, strlen(cmd) + 1);
-        answer_all_requests(&(agent->sent), TE_EIO);
-        answer_all_requests(&(agent->pending), TE_EIO);
-        answer_all_requests(&(agent->waiting), TE_EIO);
+        rcf_answer_all_requests(&(agent->sent), TE_EIO);
+        rcf_answer_all_requests(&(agent->pending), TE_EIO);
+        rcf_answer_all_requests(&(agent->waiting), TE_EIO);
     }
 
     while (shutdown_num > 0 && time(NULL) - t < RCF_SHUTDOWN_TIMEOUT)
@@ -2998,7 +2849,7 @@ main(int argc, const char *argv[])
     }
     for (agent = agents; agent != NULL; agent = agent->next)
     {
-        if (init_agent(agent) != 0)
+        if (rcf_init_agent(agent) != 0)
         {
             ERROR("FATAL ERROR: TA initialization failed");
             goto exit;
@@ -3044,7 +2895,7 @@ main(int argc, const char *argv[])
         {
             len = sizeof(rcf_msg);
 
-            if ((req = alloc_usrreq()) == NULL)
+            if ((req = rcf_alloc_usrreq()) == NULL)
                 goto exit;
 
             rc = ipc_receive_message(server, req->message,
@@ -3143,8 +2994,8 @@ main(int argc, const char *argv[])
                           agent->name, time_buf, (unsigned)req->timeout);
                 }
                 req->message->error = TE_RC(TE_RCF, TE_ETIMEDOUT);
-                answer_user_request(req);
-                set_ta_dead(agent);
+                rcf_answer_user_request(req);
+                rcf_set_ta_dead(agent);
                 break;
             }
         }
@@ -3159,7 +3010,7 @@ exit:
     rcf_shutdown();
 
     if (req != NULL && req->message->opcode == RCFOP_SHUTDOWN)
-        answer_user_request(req);
+        rcf_answer_user_request(req);
 
     free_ta_list();
     ipc_close_server(server);
