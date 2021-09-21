@@ -20,6 +20,22 @@ extern "C" {
 #endif
 
 /**
+ * Check whether a given interface feature is read-only
+ *
+ * @param ta                Test agent name
+ * @param ifname            Interface name
+ * @param feature_name      Feature name
+ * @param readonly          Will be set to @c TRUE if the feature
+ *                          is read-only
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_if_feature_is_readonly(const char *ta,
+                                                const char *ifname,
+                                                const char *feature_name,
+                                                te_bool *readonly);
+
+/**
  * Get feature value of an ethernet interface
  *
  * @param ta                Test agent name

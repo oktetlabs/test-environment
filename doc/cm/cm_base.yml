@@ -549,6 +549,15 @@
          Value: 0 - disabled
                 1 - enabled
 
+    - oid: "/agent/interface/feature/readonly"
+      access: read_only
+      type: integer
+      d: |
+         Is network interface feature read-only?
+         Name: none
+         Value: 0 - feature can be changed
+                1 - feature is read-only
+
     - oid: "/agent/interface/ring"
       access: read_only
       type: none

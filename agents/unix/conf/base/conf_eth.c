@@ -358,6 +358,31 @@ eth_feature_get_index_by_name(struct eth_if_context     *if_context,
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
+/** Get pointer to feature structure by its name */
+static te_errno
+eth_feature_get_by_name(const char *ifname,
+                        const char *feature_name,
+                        eth_feature_entry **feature)
+{
+    struct eth_if_context *if_context;
+    unsigned int feature_index;
+    te_errno rc;
+
+    if_context = eth_feature_iface_context(ifname);
+    if ((if_context == NULL) || !if_context->valid)
+        return TE_ENOENT;
+
+    rc = eth_feature_get_index_by_name(if_context,
+                                       feature_name,
+                                       &feature_index);
+    if (rc != 0)
+        return rc;
+
+    *feature = &if_context->features[feature_index];
+    return 0;
+}
+
+
 /* 'get' method implementation */
 static te_errno
 eth_feature_get(unsigned int    gid,
@@ -366,9 +391,8 @@ eth_feature_get(unsigned int    gid,
                 const char     *ifname,
                 const char     *feature_name)
 {
-    te_errno                    rc;
-    struct eth_if_context     *if_context;
-    unsigned int                feature_index;
+    te_errno rc;
+    eth_feature_entry *feature;
 
     UNUSED(gid);
     UNUSED(oid_str);
@@ -379,17 +403,11 @@ eth_feature_get(unsigned int    gid,
         return 0;
     }
 
-    if_context = eth_feature_iface_context(ifname);
-    if ((if_context == NULL) || !if_context->valid)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    rc = eth_feature_get_index_by_name(if_context,
-                                       feature_name,
-                                       &feature_index);
+    rc = eth_feature_get_by_name(ifname, feature_name, &feature);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    value[0] = (if_context->features[feature_index].enabled) ? '1' : '0';
+    value[0] = (feature->enabled) ? '1' : '0';
     value[1] = '\0';
 
     return 0;
@@ -496,6 +514,32 @@ eth_feature_commit(unsigned int    gid,
     rc = eth_feature_set_values(if_context);
 
     return TE_RC(TE_TA_UNIX, rc);
+}
+
+/** 'get' method implementation for interface/feature/readonly */
+static te_errno
+eth_feature_readonly_get(unsigned int gid,
+                         const char *oid_str,
+                         char *value,
+                         const char *ifname,
+                         const char *feature_name,
+                         const char *inst_name)
+{
+    eth_feature_entry *feature;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid_str);
+    UNUSED(inst_name);
+
+    rc = eth_feature_get_by_name(ifname, feature_name, &feature);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    value[0] = (feature->readonly ? '1' : '0');
+    value[1] = '\0';
+
+    return 0;
 }
 
 /**
@@ -810,8 +854,11 @@ RCF_PCH_CFG_NODE_RO(drivername, "drivername", NULL, &driverversion,
 
 RCF_PCH_CFG_NODE_NA(deviceinfo, "deviceinfo", &drivername, NULL);
 
+RCF_PCH_CFG_NODE_RO(eth_feature_readonly, "readonly", NULL, NULL,
+                    eth_feature_readonly_get);
+
 static rcf_pch_cfg_object eth_feature = {
-    "feature", 0, NULL, &deviceinfo,
+    "feature", 0, &eth_feature_readonly, &deviceinfo,
     (rcf_ch_cfg_get)eth_feature_get, (rcf_ch_cfg_set)eth_feature_set,
     NULL, NULL, (rcf_ch_cfg_list)eth_feature_list,
     (rcf_ch_cfg_commit)eth_feature_commit, NULL

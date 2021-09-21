@@ -23,6 +23,32 @@
 
 /* See description in the tapi_cfg_if.h */
 te_errno
+tapi_cfg_if_feature_is_readonly(const char *ta,
+                                const char *ifname,
+                                const char *feature_name,
+                                te_bool *readonly)
+{
+    cfg_val_type type = CVT_INTEGER;
+    int val;
+    te_errno rc;
+
+    if (ta == NULL || ifname == NULL ||
+        feature_name == NULL || readonly == NULL)
+        return TE_EINVAL;
+
+    rc = cfg_get_instance_sync_fmt(&type, &val,
+                                   TE_CFG_TA_IF_FMT
+                                   "/feature:%s/readonly:",
+                                   ta, ifname, feature_name);
+    if (rc != 0)
+        return rc;
+
+    *readonly = (val == 0 ? FALSE : TRUE);
+    return 0;
+}
+
+/* See description in the tapi_cfg_if.h */
+te_errno
 tapi_cfg_if_feature_get(const char *ta,
                         const char *ifname,
                         const char *feature_name,
