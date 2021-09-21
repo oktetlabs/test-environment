@@ -422,10 +422,10 @@ eth_feature_set(unsigned int    gid,
                 const char     *feature_name)
 {
     int                         feature_value;
-    struct eth_if_context     *if_context;
-    unsigned int                feature_index;
     te_errno                    rc;
     char                       *endp;
+
+    eth_feature_entry *feature;
 
     UNUSED(gid);
     UNUSED(oid_str);
@@ -433,23 +433,23 @@ eth_feature_set(unsigned int    gid,
     if (feature_name[0] == '\0')
         return 0;
 
+    rc = eth_feature_get_by_name(ifname, feature_name, &feature);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    if (feature->readonly)
+    {
+        ERROR("Feature '%s' is read-only on interface '%s' and cannot "
+              "be changed", feature_name, ifname);
+        return TE_RC(TE_TA_UNIX, TE_EACCES);
+    }
+
     feature_value = strtol(value, &endp, 10);
     if (*endp != '\0')
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    if_context = eth_feature_iface_context(ifname);
-    if ((if_context == NULL) || !if_context->valid)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    rc = eth_feature_get_index_by_name(if_context,
-                                       feature_name,
-                                       &feature_index);
-    if (rc != 0)
-        return TE_RC(TE_TA_UNIX, rc);
-
-    if_context->features[feature_index].enabled = (feature_value == 1);
-    if_context->features[feature_index].need_update = TRUE;
-
+    feature->enabled = (feature_value == 1);
+    feature->need_update = TRUE;
 
     return 0;
 }
