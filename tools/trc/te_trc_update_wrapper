@@ -14,8 +14,8 @@ my $db_used = 0;
 my $rules_used = 0;
 my $test_name_used = 0;
 
-my $def_tester_conf = "tester.conf.sockapi-ts";
-my $def_trc_db = "trc/trc-sockapi-ts.xml";
+my $def_tester_conf = "tester.conf";
+my $def_trc_db = "trc/top.xml";
 
 my $guess_script_path = "";
 my $script_dir = dirname(__FILE__);
