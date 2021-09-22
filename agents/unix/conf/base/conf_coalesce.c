@@ -71,8 +71,15 @@ ioctl_ethtool_coalesce(const char *if_name, struct ethtool_coalesce *ecmd,
     rc = ioctl(cfg_socket, SIOCETHTOOL, &ifr);
     if (rc < 0)
     {
-        ERROR("%s(do_set=%s): ioctl() failed", __FUNCTION__,
-              (do_set ? "TRUE" : "FALSE"));
+        /*
+         * Avoid extra logs if this command is simply not supported
+         * for a given interface.
+         */
+        if (errno != EOPNOTSUPP)
+        {
+            ERROR("%s(do_set=%s): ioctl() failed", __FUNCTION__,
+                  (do_set ? "TRUE" : "FALSE"));
+        }
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
@@ -155,10 +162,12 @@ get_ethtool_coalesce(const char *if_name, unsigned int gid,
 /**
  * Get list of supported interrupt coalescing parameters.
  *
- * @param gid       Group ID (unused)
- * @param oid       Object instance identifier (unused)
- * @param sub_id    Name of the object to be listed (unused)
- * @param list_out  Pointer to the list will be stored here
+ * @param gid             Group ID (unused)
+ * @param oid             Object instance identifier (unused)
+ * @param sub_id          Name of the object to be listed (unused)
+ * @param list_out        Pointer to the list will be stored here
+ * @param if_name         Interface name
+ * @param coalesce_name   Not used
  *
  * @return Status code.
  */
@@ -166,11 +175,28 @@ static te_errno
 coalesce_param_list(unsigned int gid,
                     const char *oid,
                     const char *sub_id,
-                    char **list_out)
+                    char **list_out,
+                    const char *if_name,
+                    const char *coalesce_name)
 {
+    struct ethtool_coalesce ecmd;
+    te_errno rc;
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
+    UNUSED(coalesce_name);
+
+    rc = ioctl_ethtool_coalesce(if_name, &ecmd, FALSE);
+    if (rc == TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP))
+    {
+        *list_out = NULL;
+        return 0;
+    }
+    else if (rc != 0)
+    {
+        return rc;
+    }
 
     *list_out = strdup(
         "rx_coalesce_usecs "
