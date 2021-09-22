@@ -2577,7 +2577,8 @@ process_reboot(cfg_reboot_msg *msg, te_bool update_dh)
         (msg->rc = cfg_dh_push_command((cfg_msg *)msg, FALSE, NULL)) != 0)
         return;
 
-    msg->rc = rcf_ta_reboot(msg->ta_name, NULL, NULL);
+    msg->rc = rcf_ta_reboot(msg->ta_name, NULL, NULL,
+                            msg->reboot_type);
 
     if (msg->rc == 0 && msg->restore)
     {

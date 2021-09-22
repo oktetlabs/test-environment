@@ -112,6 +112,14 @@ enum rcf_ta_flags {
     RCF_TA_UNIX_SUDO    = 0x010000, /**< Start agent under sudo */
 };
 
+/** Reboot types */
+typedef enum {
+    RCF_REBOOT_TYPE_AGENT, /**< Reboot TA process */
+    RCF_REBOOT_TYPE_WARM,  /**< Reboot TA host */
+    RCF_REBOOT_TYPE_COLD,  /**< Cold reboot for the TA host */
+    RCF_REBOOT_TYPE_FORCE  /**< Reboot TA in any possible way */
+} rcf_reboot_type;
+
 /**
  * Add a new Test Agent to RCF.
  *
@@ -241,6 +249,7 @@ extern te_errno rcf_ta_create_session(const char *ta_name, int *session);
  *                      passed to the Test Agent as binary attachment or
  *                      NULL (it is assumed that NUT images are located in
  *                      ${TE_INSTALL_NUT}/bin or ${TE_INSTALL}/nuts/bin)
+ * @param reboot_type   Reboot type
  *
  * @return error code
  *
@@ -257,7 +266,8 @@ extern te_errno rcf_ta_create_session(const char *ta_name, int *session);
  */
 extern te_errno rcf_ta_reboot(const char *ta_name,
                               const char *boot_params,
-                              const char *image);
+                              const char *image,
+                              rcf_reboot_type reboot_type);
 
 /**
  * Enable/disable logging of TA configuration changes.

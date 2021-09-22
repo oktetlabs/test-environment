@@ -155,7 +155,7 @@ cfg_ta_reboot_all(void)
              ta < ta_list.list + ta_list.list_size;
              ta += strlen(ta) + 1)
         {
-            rcf_ta_reboot(ta, NULL, NULL);
+            rcf_ta_reboot(ta, NULL, NULL, RCF_REBOOT_TYPE_FORCE);
         }
         free(ta_list.list);
     }

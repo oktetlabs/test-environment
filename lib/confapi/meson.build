@@ -1,6 +1,6 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
-deps += [ dep_lib_conf_oid ]
+deps += [ dep_lib_conf_oid, dep_lib_rcfapi ]
 
 te_lib_conf_types = library('conf_types', 'conf_types.c', install: install_lib,
                             dependencies: deps)

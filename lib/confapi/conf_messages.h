@@ -236,6 +236,7 @@ typedef struct cfg_sync_msg {
 typedef struct cfg_reboot_msg {
     CFG_MSG_FIELDS
     /* IN fields - should not be in the answer */
+    rcf_reboot_type reboot_type; /** Reboot type */
     te_bool restore;    /**< Restore current configuration */
     char    ta_name[0]; /**< start of Test Agent name*/
 } cfg_reboot_msg;

@@ -982,10 +982,34 @@ rcf_ta_create_session(const char *ta_name, int *session)
     return rc;
 }
 
+static int
+rcf_reboot_type2reboot_type(rcf_reboot_type rt)
+{
+    switch (rt)
+    {
+        case RCF_REBOOT_TYPE_AGENT:
+            return AGENT_REBOOT;
+
+        case RCF_REBOOT_TYPE_WARM:
+            return HOST_REBOOT;
+
+        case RCF_REBOOT_TYPE_COLD:
+            return COLD_REBOOT;
+
+        case RCF_REBOOT_TYPE_FORCE:
+            return AGENT_REBOOT | HOST_REBOOT | COLD_REBOOT;
+
+        default:
+            ERROR("Unsupported reboot type");
+            return -1;
+    }
+}
+
 /* See description in rcf_api.h */
 te_errno
 rcf_ta_reboot(const char *ta_name,
-              const char *boot_params, const char *image)
+              const char *boot_params, const char *image,
+              rcf_reboot_type reboot_type)
 {
     rcf_msg    *msg;
 
@@ -993,6 +1017,8 @@ rcf_ta_reboot(const char *ta_name,
     size_t      len = 0;
     int         fd;
     te_errno    rc;
+
+    rcf_reboot_type rt;
 
     RCF_API_INIT;
 
@@ -1079,6 +1105,11 @@ rcf_ta_reboot(const char *ta_name,
     }
 
     msg->opcode = RCFOP_REBOOT;
+    rt = rcf_reboot_type2reboot_type(reboot_type);
+    if (rt < 0)
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+
+    msg->flags |= rt;
 
     rc = send_recv_rcf_ipc_message(ctx_handle, msg, sizeof(rcf_msg) + len,
                                    msg, &anslen, NULL);

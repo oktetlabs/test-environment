@@ -47,6 +47,7 @@
 #include "cs_common.h"
 #include "conf_oid.h"
 #include "te_kvpair.h"
+#include "rcf_api.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -722,10 +723,12 @@ extern te_errno cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
  *
  * @param ta_name      name of the Test Agent
  * @param restore      if TRUE, restore the current configuration
+ * @param reboot_type  type of TA reboot
  *
  * @return Status code (see te_errno.h)
  */
-extern te_errno cfg_reboot_ta(const char *ta_name, te_bool restore);
+extern te_errno cfg_reboot_ta(const char *ta_name, te_bool restore,
+                              rcf_reboot_type reboot_type);
 
 /**@}*/
 

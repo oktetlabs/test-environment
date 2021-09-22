@@ -2062,7 +2062,8 @@ cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
 
 /* See description in conf_api.h */
 te_errno
-cfg_reboot_ta(const char *ta_name, te_bool restore)
+cfg_reboot_ta(const char *ta_name, te_bool restore,
+              rcf_reboot_type reboot_type)
 {
     cfg_reboot_msg *msg;
 
@@ -2089,6 +2090,7 @@ cfg_reboot_ta(const char *ta_name, te_bool restore)
     msg = (cfg_reboot_msg *)cfgl_msg_buf;
     msg->type = CFG_REBOOT;
     msg->restore = restore;
+    msg->reboot_type = reboot_type;
 
     len = strlen(ta_name) + 1;
     memcpy(msg->ta_name, ta_name, len);
