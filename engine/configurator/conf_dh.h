@@ -81,12 +81,15 @@ extern int cfg_dh_restore_backup_on_shutdown();
 /**
  * Add a command to the history.
  *
- * @param msg    message with set, add or delete user request.
- * @param local  whether this command is local or not.
+ * @param msg     message with set, add or delete user request.
+ * @param local   whether this command is local or not.
+ * @param old_val The old value of the instance. It is used for @c CFG_SET and
+ *                @c CFG_DEL command.
  *
  * @return 0 (success) or TE_ENOMEM
  */
-extern int cfg_dh_add_command(cfg_msg *msg, te_bool local);
+extern int cfg_dh_add_command(cfg_msg *msg, te_bool local,
+                              const cfg_inst_val *old_val);
 
 /**
  * Notify history DB about successfull commit operation.

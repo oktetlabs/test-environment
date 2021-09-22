@@ -1454,8 +1454,10 @@ cfg_dh_restore_backup_on_shutdown()
 /**
  * Add a command to the history.
  *
- * @param msg    message with set, add or delete user request.
- * @param local  whether this command is local or not.
+ * @param msg     message with set, add or delete user request.
+ * @param local   whether this command is local or not.
+ * @param old_val The old value of the instance. It is used for @c CFG_SET and
+ *                @c CFG_DEL command.
  *
  * @return status code
  * @retval 0            success
@@ -1464,7 +1466,7 @@ cfg_dh_restore_backup_on_shutdown()
  *                      history
  */
 int
-cfg_dh_add_command(cfg_msg *msg, te_bool local)
+cfg_dh_add_command(cfg_msg *msg, te_bool local, const cfg_inst_val *old_val)
 {
     cfg_dh_entry *entry = (cfg_dh_entry *)calloc(sizeof(cfg_dh_entry), 1);
 
@@ -1522,7 +1524,7 @@ cfg_dh_add_command(cfg_msg *msg, te_bool local)
             entry->type = inst->obj->type;
 
             if (inst->obj->type != CVT_NONE)
-                if (cfg_types[inst->obj->type].copy(inst->val,
+                if (cfg_types[inst->obj->type].copy(*old_val,
                                                     &(entry->old_val)) != 0)
                     RETERR(TE_ENOMEM);
 

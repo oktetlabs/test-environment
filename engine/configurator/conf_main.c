@@ -959,25 +959,29 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         return;
     }
 
-    if (update_dh &&
-        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local)) != 0)
-    {
-        ERROR("Failed to add a new instance %s in DH: error=%r",
-              oid, msg->rc);
-        cfg_wipe_cmd_error(CFG_ADD, handle);
-        return;
-    }
-
     if (strcmp_start(CFG_TA_PREFIX, oid) != 0)
     {
         if (strcmp_start(CFG_RCF_PREFIX, inst->oid) == 0 &&
             (msg->rc = cfg_rcf_add(inst)) != 0)
         {
-            if (update_dh)
-                cfg_dh_delete_last_command();
             cfg_db_del(handle);
             return;
         }
+
+        if (update_dh)
+        {
+            msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local, NULL);
+            if (msg->rc != 0)
+            {
+                ERROR("Failed to add a new instance %s in DH: %r",
+                      oid, msg->rc);
+                if (strcmp_start(CFG_RCF_PREFIX, inst->oid) == 0)
+                    cfg_rcf_del(inst);
+                cfg_wipe_cmd_error(CFG_ADD, handle);
+                return;
+            }
+        }
+
         /*
          * Instance is not from agent subtree, but we set 'added'
          * to TRUE to avoid possible problems with this instance.
@@ -990,6 +994,18 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
 
     if (msg->local)
     {
+        if (update_dh)
+        {
+            msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local, NULL);
+            if (msg->rc != 0)
+            {
+                ERROR("Failed to add a new instance %s in DH: %r",
+                      oid, msg->rc);
+                cfg_wipe_cmd_error(CFG_ADD, handle);
+                return;
+            }
+        }
+
         /* Local add operation */
         VERB("Local add operation for %s OID", oid);
         msg->handle = handle;
@@ -1005,8 +1021,6 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     {
         if ((msg->rc = cfg_db_get(handle, &val)) != 0)
         {
-            if (update_dh)
-                cfg_dh_delete_last_command();
             cfg_db_del(handle);
             return;
         }
@@ -1017,8 +1031,6 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         if (msg->rc != 0)
         {
             cfg_db_del(handle);
-            if (update_dh)
-                cfg_dh_delete_last_command();
             return;
         }
     }
@@ -1027,9 +1039,6 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     if (msg->rc != 0)
     {
         cfg_db_del(handle);
-
-        if (update_dh)
-            cfg_dh_delete_last_command();
 
         WARN("Failed to add a new instance %s with value '%s' into TA "
              "error=%r", oid, val_str, msg->rc);
@@ -1055,9 +1064,38 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
             rcf_ta_cfg_del(ta, 0, inst->oid);
             cfg_db_del(handle);
         }
-        if (update_dh)
-            cfg_dh_delete_last_command();
         return;
+    }
+
+    /* Add value with substitution to msg to add to DH */
+    if (obj->type != CVT_NONE)
+    {
+        cfg_types[obj->type].put_to_msg(CFG_GET_INST(handle)->val, (cfg_msg *)msg);
+        msg->oid_offset = msg->len;
+        msg->len += strlen(CFG_GET_INST(handle)->oid) + 1;
+        strcpy((char *)msg + msg->oid_offset, CFG_GET_INST(handle)->oid);
+        oid = (char *)msg + msg->oid_offset;
+    }
+
+    if (update_dh)
+    {
+        msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local, NULL);
+        if (msg->rc != 0)
+        {
+            te_errno rc;
+
+            ERROR("Failed to add a new instance %s in DH: %r",
+                  oid, msg->rc);
+            rc = rcf_ta_cfg_del(ta, 0, CFG_GET_INST(handle)->oid);
+            if (rc != 0)
+            {
+                ERROR("Failed to delete %s: %r", CFG_GET_INST(handle)->oid,
+                      rc);
+                set_inconsistency_state();
+            }
+            cfg_wipe_cmd_error(CFG_ADD, handle);
+            return;
+        }
     }
 
     /*
@@ -1176,19 +1214,9 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         return;
     }
 
-    if (update_dh &&
-        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local)) != 0)
-    {
-        ERROR("Failed to add command in DH: error=%r", msg->rc);
-        cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
-        goto cleanup;
-    }
-
     if ((msg->rc = cfg_db_set(handle, val)) != 0)
     {
         ERROR("Failed to set new value in DB: error=%r", msg->rc);
-        if (update_dh)
-            cfg_dh_delete_last_command();
         cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
         goto cleanup;
     }
@@ -1198,10 +1226,22 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         if (strcmp_start(CFG_RCF_PREFIX, inst->oid) == 0 &&
             (msg->rc = cfg_rcf_set(inst)) != 0)
         {
-            if (update_dh)
-                cfg_dh_delete_last_command();
             cfg_db_set(handle, old_val);
             cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
+            goto cleanup;
+        }
+
+        if (update_dh)
+        {
+            msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local, &old_val);
+            if (msg->rc != 0)
+            {
+                ERROR("Failed to add command in DH: %r", msg->rc);;
+                cfg_db_set(handle, old_val);
+                if (strcmp_start(CFG_RCF_PREFIX, inst->oid) == 0)
+                    cfg_rcf_set(inst);
+                cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
+            }
         }
         goto cleanup;
     }
@@ -1210,6 +1250,16 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
 
     if (msg->local)
     {
+        if (update_dh)
+        {
+            msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local, &old_val);
+            if (msg->rc != 0)
+            {
+                ERROR("Failed to add command in DH: %r", msg->rc);;
+                cfg_db_set(handle, old_val);
+                cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
+            }
+        }
         /* Local set operation */
         goto cleanup;
     }
@@ -1231,8 +1281,6 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
             ERROR("Failed to get value from DB: %r", msg->rc);
             cfg_db_set(handle, old_val);
             cfg_types[obj->type].free(old_val);
-            if (update_dh)
-                cfg_dh_delete_last_command();
             cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
             return;
         }
@@ -1240,8 +1288,6 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         msg->rc = cfg_types[obj->type].val2str(val, &val_str);
         if (msg->rc != 0)
         {
-            if (update_dh)
-                cfg_dh_delete_last_command();
             cfg_db_set(handle, old_val);
             /*
              * Note that the cfg_wipe_cmd_error() function is missing here.
@@ -1258,8 +1304,6 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
 
     if (msg->rc != 0)
     {
-        if (update_dh)
-            cfg_dh_delete_last_command();
         cfg_db_set(handle, old_val);
         cfg_ta_sync_dependants(CFG_GET_INST(handle));
         cfg_conf_delay_update(CFG_GET_INST(handle)->oid);
@@ -1274,13 +1318,29 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
 
         ERROR("Failed to synchronize subtree %s: %r",
               CFG_GET_INST(handle)->oid, msg->rc);
-        if (update_dh)
-            cfg_dh_delete_last_command();
         rc = process_set_error_after_send(handle, inst->name, old_val);
         if (rc != 0)
             ERROR("Failed to rollback the latest changes: %r", rc);
 
         goto cleanup;
+    }
+
+    if (update_dh)
+    {
+        cfg_types[obj->type].put_to_msg(CFG_GET_INST(handle)->val,
+                                        (cfg_msg *)msg);
+        msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local, &old_val);
+        if (msg->rc != 0)
+        {
+            te_errno rc;
+
+            ERROR("Failed to add command in DH: %r", msg->rc);
+            rc = process_set_error_after_send(handle, inst->name, old_val);
+            if (rc != 0)
+                ERROR("Failed to rollback the latest changes: %r", rc);
+
+            goto cleanup;
+        }
     }
 
     cfg_ta_sync_dependants(CFG_GET_INST(handle));
@@ -1349,7 +1409,8 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
 
     if (update_dh &&
-        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local)) != 0)
+        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local,
+                                      &(inst->val))) != 0)
     {
         ERROR("%s: Failed to add into DH errno %r",
               __FUNCTION__, msg->rc);
@@ -2316,7 +2377,7 @@ static void
 process_reboot(cfg_reboot_msg *msg, te_bool update_dh)
 {
     if (update_dh &&
-        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, FALSE)) != 0)
+        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, FALSE, NULL)) != 0)
         return;
 
     msg->rc = rcf_ta_reboot(msg->ta_name, NULL, NULL);
@@ -2341,7 +2402,7 @@ process_register(cfg_register_msg *msg, te_bool update_dh)
 
     if (update_dh)
     {
-        if ((msg->rc = cfg_dh_add_command((cfg_msg *)msg, FALSE)) != 0)
+        if ((msg->rc = cfg_dh_add_command((cfg_msg *)msg, FALSE, NULL)) != 0)
             return;
     }
 
