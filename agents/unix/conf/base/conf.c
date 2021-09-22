@@ -1628,8 +1628,16 @@ read_sys_value(char *value, size_t len, te_bool ignore_eaccess,
         if (ignore_eaccess && errno == EACCES)
             return 0;
 
-        ERROR("%s: failed to open %s for reading",
-              __FUNCTION__, path);
+        /*
+         * Do not print any logs here to avoid a lot of error
+         * messages during configuration synchronization if
+         * some sysfs file is simply not present.
+         */
+        if (errno == ENOENT)
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+        ERROR("%s: failed to open %s for reading, errno=%d ('%s')",
+              __FUNCTION__, path, errno, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
