@@ -1,14 +1,10 @@
 /** @file
  * @brief Test Environment: implementation of raw log fragmentation.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
- *
- * 
+ * Copyright (C) 2016-2021 OKTET Labs. All rights reserved.
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
- *
- * $Id$
  */
 
 #include <stdlib.h>
@@ -24,6 +20,7 @@
 #include "te_defs.h"
 #include "logger_api.h"
 #include "logger_file.h"
+#include "te_str.h"
 #include "te_string.h"
 #include "te_raw_log.h"
 #include "rgt_log_bundle_common.h"
@@ -103,15 +100,15 @@ static unsigned int    nodes_count = 0;
  *
  * @param node_id     Log node id
  *
- * @return Pointer to node_info structure
+ * @return Pointer to node_info structure or @c NULL on failure
  */
 static node_info *
 get_node_info(int node_id)
 {
     if (node_id < 0)
     {
-        fprintf(stderr, "Incorrect node_id in %s\n", __FUNCTION__);
-        exit(1);
+        ERROR("%s(): incorrect node_id %d", __FUNCTION__, node_id);
+        return NULL;
     }
 
     while (nodes_count <= (unsigned)node_id)
@@ -123,8 +120,8 @@ get_node_info(int node_id)
         p = realloc(nodes_info, nodes_count * sizeof(node_info));
         if (p == NULL)
         {
-            fprintf(stderr, "%s\n", "Not enough memory");
-            exit(1);
+            ERROR("%s(): not enough memory", __FUNCTION__);
+            return NULL;
         }
         nodes_info = (node_info *)p;
 
@@ -153,21 +150,28 @@ get_node_info(int node_id)
  * @param child_id        Child node ID.
  * @param child_opened    @c TRUE if a child is opened,
  *                        @c FALSE if it is closed.
+ *
+ * @return @c 0 on success, @c -1 on failure
  */
-static void
+static int
 update_children_state(int parent_id, int child_id,
                       te_bool child_opened)
 {
     node_info *parent_descr;
 
     if (parent_id < 0)
-        return;
+        return 0;
 
     /* This may happen for root node */
     if (parent_id == child_id)
-        return;
+        return 0;
 
     parent_descr = get_node_info(parent_id);
+    if (parent_descr == NULL)
+    {
+        ERROR("%s(): failed to get parent node", __FUNCTION__);
+        return -1;
+    }
 
     if (child_opened)
     {
@@ -181,10 +185,12 @@ update_children_state(int parent_id, int child_id,
 
     if (parent_descr->opened_children < 0)
     {
-        fprintf(stderr, "More children of node %d were closed than were "
-                "opened\n", parent_id);
-        exit(EXIT_FAILURE);
+        ERROR("%s(): more children of node %d were closed than were "
+              "opened", __FUNCTION__, parent_id);
+        return -1;
     }
+
+    return 0;
 }
 
 /**
@@ -203,8 +209,10 @@ static unsigned int  depth_levels = 0;
  * for a given depth; if it is not, reallocate it.
  *
  * @param depth     Required depth level
+ *
+ * @return @c 0 on success, @c -1 on failure
  */
-static void
+static int
 depth_levels_up_to_depth(unsigned int depth)
 {
     unsigned int i = depth_levels;
@@ -217,15 +225,17 @@ depth_levels_up_to_depth(unsigned int depth)
         p = realloc(depth_seq, depth_levels * sizeof(unsigned int));
         if (p == NULL)
         {
-            fprintf(stderr, "%s\n",
-                    "Not enough memory for depth_seq array");
-            exit(1);
+            ERROR("%s(): not enough memory for depth_seq array",
+                  __FUNCTION__);
+            return -1;
         }
         depth_seq = (unsigned int *)p;
     }
 
     for ( ; i < depth_levels; i++)
         depth_seq[i] = 0;
+
+    return 0;
 }
 
 /*
@@ -274,7 +284,7 @@ static off_t last_msg_offset = -1;
  *                        original raw log from fragments
  * @param output_path     Where to store log fragment files
  *
- * @return 0 on success, -1 on failure
+ * @return @c 0 on success, @c -1 on failure
  */
 static int
 append_to_frag(int node_id, fragment_type frag_type,
@@ -286,20 +296,22 @@ append_to_frag(int node_id, fragment_type frag_type,
     FILE *f_frag;
     node_info *node_descr;
 
-    te_string frag_name = TE_STRING_INIT;
-    te_string frag_path = TE_STRING_INIT;
+    RGT_ERROR_INIT;
 
-    te_string_append(&frag_name, "%d_frag_",
-                     node_id);
+    te_string frag_name = TE_STRING_INIT;
+
+    CHECK_TE_RC(te_string_append(&frag_name, "%d_frag_",
+                                 node_id));
     switch (frag_type)
     {
         case FRAG_START:
-            te_string_append(&frag_name, "%s", "start");
+            CHECK_TE_RC(te_string_append(&frag_name, "%s", "start"));
             break;
 
         case FRAG_INNER:
         {
-            node_descr = get_node_info(node_id);
+            CHECK_NOT_NULL(node_descr = get_node_info(node_id));
+
             if (node_descr->inner_frags_cnt == 0)
                 node_descr->inner_frags_cnt = 1;
             if (node_descr->cur_file_size > MAX_FRAG_SIZE)
@@ -311,39 +323,34 @@ append_to_frag(int node_id, fragment_type frag_type,
             else
                 node_descr->cur_file_size += length;
 
-            te_string_append(&frag_name, "inner_%" PRIu64,
-                             node_descr->cur_file_num);
+            CHECK_TE_RC(te_string_append(&frag_name, "inner_%" PRIu64,
+                                         node_descr->cur_file_num));
             break;
         }
 
         case FRAG_END:
-            te_string_append(&frag_name, "%s", "end");
+            CHECK_TE_RC(te_string_append(&frag_name, "%s", "end"));
             break;
 
         case FRAG_AFTER:
-            node_descr = get_node_info(node_id);
+            CHECK_NOT_NULL(node_descr = get_node_info(node_id));
+
             node_descr->after_frag = TRUE;
 
-            te_string_append(&frag_name, "%s", "after");
+            CHECK_TE_RC(te_string_append(&frag_name, "%s", "after"));
             break;
     }
 
-    te_string_append(&frag_path, "%s/%s", output_path, frag_name.ptr);
-
-    f_frag = fopen(frag_path.ptr, "a");
-    if (f_frag == NULL)
-    {
-        fprintf(stderr, "Failed to open %s\n", frag_path.ptr);
-        exit(1);
-    }
+    CHECK_FOPEN_FMT(f_frag, "a", "%s/%s", output_path, frag_name.ptr);
 
     if (cur_block_offset < 0)
     {
         cur_block_offset = offset;
         cur_block_length = length;
         cur_block_frag_offset = ftello(f_frag);
-        snprintf(cur_block_frag_name, sizeof(cur_block_frag_name),
-                 "%s", frag_name.ptr);
+        CHECK_TE_RC(te_snprintf(cur_block_frag_name,
+                                sizeof(cur_block_frag_name),
+                                "%s", frag_name.ptr));
     }
     else
     {
@@ -363,26 +370,29 @@ append_to_frag(int node_id, fragment_type frag_type,
                             (long long unsigned int)
                                   cur_block_frag_offset) < 0)
                 {
-                    ERROR("%s\n", "fprintf() failed");
-                    exit(1);
+                    ERROR("%s(): fprintf() failed", __FUNCTION__);
+                    RGT_ERROR_JUMP;
                 }
 
                 cur_block_offset = offset;
                 cur_block_length = length;
                 cur_block_frag_offset = ftello(f_frag);
-                snprintf(cur_block_frag_name, sizeof(cur_block_frag_name),
-                         "%s", frag_name.ptr);
+                CHECK_TE_RC(te_snprintf(cur_block_frag_name,
+                                        sizeof(cur_block_frag_name),
+                                        "%s", frag_name.ptr));
             }
         }
     }
     last_msg_offset = offset;
 
-    file2file(f_frag, f_raw_log, -1, offset, length);
-    fclose(f_frag);
-    te_string_free(&frag_name);
-    te_string_free(&frag_path);
+    CHECK_RC(file2file(f_frag, f_raw_log, -1, offset, length));
 
-    return 0;
+    RGT_ERROR_SECTION;
+
+    CHECK_FCLOSE(f_frag);
+    te_string_free(&frag_name);
+
+    return RGT_ERROR_VAL;
 }
 
 /**
@@ -395,7 +405,7 @@ append_to_frag(int node_id, fragment_type frag_type,
  *                          restore original raw log from its fragments
  * @param output_path       Where to store raw log fragments
  *
- * @return 0 on success, -1 on failure
+ * @return @c 0 on success, @c -1 on failure
  */
 static int
 split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
@@ -417,8 +427,10 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
     char  node_type[DEF_STR_LEN];
     int   rc;
 
+    RGT_ERROR_INIT;
+
     /* Make sure root node is opened */
-    get_node_info(0);
+    CHECK_NOT_NULL(get_node_info(0));
 
     while (!feof(f_index))
     {
@@ -426,9 +438,10 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
         {
             if (feof(f_index))
                 break;
-            fprintf(stderr, "fgets() returned NULL unexpectedly at "
-                    "line %ld\n", line);
-            exit(EXIT_FAILURE);
+
+            ERROR("fgets() returned NULL unexpectedly at line %ld\n",
+                  __FUNCTION__, line);
+            RGT_ERROR_JUMP;
         }
 
         rc = sscanf(str, "%u.%u %" PRId64 " %d %d %s %u %s %" PRId64,
@@ -437,16 +450,15 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
                     msg_type, &tin_or_start_frag, node_type, &length);
         if (rc < 8)
         {
-            fprintf(stderr, "Wrong record in raw log index at line %ld",
-                    line);
-            exit(1);
+            ERROR("Wrong record in raw log index at line %ld", line);
+            RGT_ERROR_JUMP;
         }
         if (rc < 9)
         {
-            raw_fp = ftello(f_raw_log);
-            fseeko(f_raw_log, 0LL, SEEK_END);
-            length = ftello(f_raw_log);
-            fseeko(f_raw_log, raw_fp, SEEK_SET);
+            CHECK_OS_RC(raw_fp = ftello(f_raw_log));
+            CHECK_OS_RC(fseeko(f_raw_log, 0LL, SEEK_END));
+            CHECK_OS_RC(length = ftello(f_raw_log));
+            CHECK_OS_RC(fseeko(f_raw_log, raw_fp, SEEK_SET));
             length -= offset;
         }
 
@@ -458,9 +470,10 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
             frag_type = FRAG_END;
 
-            node_descr = get_node_info(node_id);
+            CHECK_NOT_NULL(node_descr = get_node_info(node_id));
             node_descr->opened = FALSE;
-            update_children_state(parent_id, node_id, FALSE);
+
+            CHECK_RC(update_children_state(parent_id, node_id, FALSE));
         }
         else
         {
@@ -468,9 +481,10 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
             frag_type = FRAG_START;
 
-            node_descr = get_node_info(node_id);
+            CHECK_NOT_NULL(node_descr = get_node_info(node_id));
+
             node_descr->opened = TRUE;
-            update_children_state(parent_id, node_id, TRUE);
+            CHECK_RC(update_children_state(parent_id, node_id, TRUE));
 
             node_descr->tin = tin_or_start_frag;
             node_descr->start_len = length;
@@ -482,9 +496,9 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
         {
             if (parent_id != TE_LOG_ID_UNDEFINED)
             {
-                append_to_frag(parent_id, frag_type, f_raw_log,
-                               offset, length,
-                               f_recover, output_path);
+                CHECK_RC(append_to_frag(parent_id, frag_type, f_raw_log,
+                                        offset, length,
+                                        f_recover, output_path));
             }
             else
             {
@@ -507,16 +521,18 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
                     {
                         if (nodes_info[j].last_closed_child >= 0)
                         {
-                            append_to_frag(nodes_info[j].last_closed_child,
+                            CHECK_RC(append_to_frag(
+                                           nodes_info[j].last_closed_child,
                                            FRAG_AFTER, f_raw_log,
                                            offset, length,
-                                           f_recover, output_path);
+                                           f_recover, output_path));
                         }
                         else
                         {
-                            append_to_frag(j, frag_type, f_raw_log,
-                                           offset, length,
-                                           f_recover, output_path);
+                            CHECK_RC(append_to_frag(
+                                               j, frag_type, f_raw_log,
+                                               offset, length,
+                                               f_recover, output_path));
                         }
                         matching_frag_found = TRUE;
                     }
@@ -524,9 +540,9 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
                 if (!matching_frag_found)
                 {
-                    fprintf(stderr, "Failed to find fragment for a message "
-                            "with offset %" PRIu64 "\n", offset);
-                    exit(EXIT_FAILURE);
+                    ERROR("Failed to find fragment for a message "
+                          "with offset %" PRIu64, offset);
+                    RGT_ERROR_JUMP;
                 }
             }
 
@@ -534,20 +550,23 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
             {
                 node_info *node_descr;
 
-                node_descr = get_node_info(parent_id);
+                CHECK_NOT_NULL(node_descr = get_node_info(parent_id));
+
                 if (node_descr->verdicts_num < MAX_VERDICTS_NUM)
                 {
-                    append_to_frag(parent_id, FRAG_START, f_raw_log,
-                                   offset, length,
-                                   f_recover, output_path);
+                    CHECK_RC(append_to_frag(parent_id, FRAG_START,
+                                            f_raw_log, offset, length,
+                                            f_recover, output_path));
+
                     node_descr->verdicts_num++;
                 }
             }
         }
         else
         {
-            append_to_frag(node_id, frag_type, f_raw_log,
-                           offset, length, f_recover, output_path);
+            CHECK_RC(append_to_frag(node_id, frag_type, f_raw_log,
+                                    offset, length, f_recover,
+                                    output_path));
         }
 
         line++;
@@ -561,12 +580,14 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
                     cur_block_frag_name,
                     (long long unsigned int)cur_block_frag_offset) < 0)
         {
-            ERROR("%s\n", "fprintf() failed");
-            exit(1);
+            ERROR("%s(): fprintf() failed", __FUNCTION__);
+            RGT_ERROR_JUMP;
         }
     }
 
-    return 0;
+    RGT_ERROR_SECTION;
+
+    return RGT_ERROR_VAL;
 }
 
 /**
@@ -574,7 +595,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
  *
  * @param f     File pointer
  *
- * @return Length of file
+ * @return Length of file on success, @c -1 on failure
  */
 static off_t
 file_length(FILE *f)
@@ -582,10 +603,17 @@ file_length(FILE *f)
     off_t cur_pos;
     off_t length;
 
-    cur_pos = ftello(f);
-    fseeko(f, 0LLU, SEEK_END);
-    length = ftello(f);
-    fseeko(f, cur_pos, SEEK_SET);
+    RGT_ERROR_INIT;
+
+    CHECK_OS_RC(cur_pos = ftello(f));
+    CHECK_OS_RC(fseeko(f, 0LLU, SEEK_END));
+    CHECK_OS_RC(length = ftello(f));
+    CHECK_OS_RC(fseeko(f, cur_pos, SEEK_SET));
+
+    RGT_ERROR_SECTION;
+
+    if (RGT_ERROR)
+        return -1;
 
     return length;
 }
@@ -601,7 +629,7 @@ file_length(FILE *f)
  * @param depth               Depth of current log node
  * @param seq                 Sequence number of current log node
  *
- * @return 0 on success, -1 on failure
+ * @return @c 0 on success, @c -1 on failure
  */
 static int
 print_frags_list(const char *output_path, FILE *f_raw_gist,
@@ -614,19 +642,17 @@ print_frags_list(const char *output_path, FILE *f_raw_gist,
     te_string  path = TE_STRING_INIT;
     off_t      frag_len;
 
-    depth_levels_up_to_depth(depth);
+    RGT_ERROR_INIT;
 
-    te_string_append(&path, "%s/%d_frag_start", output_path, node_id);
-    f_frag = fopen(path.ptr, "r");
-    if (f_frag == NULL)
-    {
-        fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
-        exit(1);
-    }
-    te_string_free(&path);
-    frag_len = file_length(f_frag);
-    file2file(f_raw_gist, f_frag, -1, -1, frag_len);
-    fclose(f_frag);
+    CHECK_RC(depth_levels_up_to_depth(depth));
+
+    CHECK_FOPEN_FMT(f_frag, "r", "%s/%d_frag_start",
+                    output_path, node_id);
+
+    CHECK_RC(frag_len = file_length(f_frag));
+    CHECK_RC(file2file(f_raw_gist, f_frag, -1, -1, frag_len));
+
+    CHECK_FCLOSE(f_frag);
 
     if (fprintf(f_frags_list,
                 "%d_frag_start %u %u %u %llu %llu %" PRIu64 " %d\n",
@@ -636,33 +662,36 @@ print_frags_list(const char *output_path, FILE *f_raw_gist,
                 nodes_info[node_id].inner_frags_cnt,
                 nodes_info[node_id].parent) < 0)
     {
-        ERROR("%s\n", "fprintf() failed");
-        exit(1);
+        ERROR("fprintf() failed");
+        RGT_ERROR_JUMP;
     }
 
     for (i = node_id + 1; i < nodes_count; i++)
     {
         if (nodes_info[i].parent == node_id)
         {
-            print_frags_list(output_path, f_raw_gist, f_frags_list, i,
-                             depth + 1, depth_seq[depth]);
+            CHECK_RC(print_frags_list(output_path, f_raw_gist,
+                                      f_frags_list, i,
+                                      depth + 1, depth_seq[depth]));
             depth_seq[depth]++;
         }
     }
 
-    te_string_append(&path, "%s/%d_frag_end", output_path, node_id);
+    CHECK_TE_RC(te_string_append(&path, "%s/%d_frag_end",
+                                 output_path, node_id));
     f_frag = fopen(path.ptr, "r");
     if (f_frag == NULL && errno != ENOENT)
     {
-        fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
-        exit(1);
+        ERROR("Failed to open '%s' for reading, errno = %d ('%s')",
+              path.ptr, errno, strerror(errno));
+        RGT_ERROR_JUMP;
     }
-    te_string_free(&path);
+
     if (f_frag != NULL)
     {
-        frag_len = file_length(f_frag);
-        file2file(f_raw_gist, f_frag, -1, -1, frag_len);
-        fclose(f_frag);
+        CHECK_RC(frag_len = file_length(f_frag));
+        CHECK_RC(file2file(f_raw_gist, f_frag, -1, -1, frag_len));
+        CHECK_RC(fclose(f_frag));
 
         if (fprintf(f_frags_list, "%d_frag_end %u %u %u %llu %d %d\n",
                     node_id, nodes_info[node_id].tin, depth, seq,
@@ -670,12 +699,16 @@ print_frags_list(const char *output_path, FILE *f_raw_gist,
                     (nodes_info[node_id].after_frag ? 1 : 0),
                     nodes_info[node_id].parent) < 0)
         {
-            ERROR("%s\n", "fprintf() failed");
-            exit(1);
+            ERROR("fprintf() failed");
+            RGT_ERROR_JUMP;
         }
     }
 
-    return 0;
+    RGT_ERROR_SECTION;
+
+    te_string_free(&path);
+
+    return RGT_ERROR_VAL;
 }
 
 /** Path to raw log to be split */
@@ -693,12 +726,16 @@ static char *output_path = NULL;
  *
  * @param argc    Number of arguments
  * @param argv    Array of command line arguments
+ *
+ * @return @c 0 on success, @c -1 on failure
  */
-static void
+static int
 process_cmd_line_opts(int argc, char **argv)
 {
     poptContext  optCon; /* Context for parsing command-line options */
     int          rc;
+
+    RGT_ERROR_INIT;
 
     /* Option Table */
     struct poptOption optionsTable[] = {
@@ -730,22 +767,32 @@ process_cmd_line_opts(int argc, char **argv)
     }
 
     if (raw_log_path == NULL || index_path == NULL || output_path == NULL)
-        usage(optCon, 1, "Specify all the required parameters", NULL);
+    {
+        poptPrintUsage(optCon, stderr, 0);
+        ERROR("Specify all the required parameters");
+        RGT_ERROR_JUMP;
+    }
 
     if (rc < -1)
     {
         /* An error occurred during option processing */
-        fprintf(stderr, "%s: %s\n",
-                poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
-                poptStrerror(rc));
-        poptFreeContext(optCon);
-        exit(1);
+        ERROR("%s: %s\n",
+              poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
+              poptStrerror(rc));
+        RGT_ERROR_JUMP;
     }
 
     if (poptPeekArg(optCon) != NULL)
-        usage(optCon, 1, "Too many parameters specified", NULL);
+    {
+        poptPrintUsage(optCon, stderr, 0);
+        ERROR("Too many parameters specified");
+        RGT_ERROR_JUMP;
+    }
+
+    RGT_ERROR_SECTION;
 
     poptFreeContext(optCon);
+    return RGT_ERROR_VAL;
 }
 
 int
@@ -757,66 +804,42 @@ main(int argc, char **argv)
     FILE *f_frags_list = NULL;
     FILE *f_raw_gist = NULL;
 
-    te_string path_aux = TE_STRING_INIT;
+    RGT_ERROR_INIT;
 
     te_log_init("RGT LOG SPLIT", te_log_message_file);
 
-    process_cmd_line_opts(argc, argv);
+    CHECK_RC(process_cmd_line_opts(argc, argv));
 
-    f_raw_log = fopen(raw_log_path, "r");
-    if (f_raw_log == NULL)
-    {
-        fprintf(stderr, "Failed to open '%s' for reading\n", raw_log_path);
-        exit(1);
-    }
-    f_index = fopen(index_path, "r");
-    if (f_index == NULL)
-    {
-        fprintf(stderr, "Failed to open '%s' for reading\n", index_path);
-        exit(1);
-    }
+    CHECK_FOPEN(f_raw_log, raw_log_path, "r");
+    CHECK_FOPEN(f_index, index_path, "r");
 
-    te_string_append(&path_aux, "%s/recover_list",
-                     output_path);
-    f_recover = fopen(path_aux.ptr, "w");
-    if (f_recover == NULL)
-    {
-        fprintf(stderr, "Failed to open '%s' for writing\n", path_aux.ptr);
-        exit(1);
-    }
-    te_string_free(&path_aux);
+    CHECK_FOPEN_FMT(f_recover, "w", "%s/recover_list", output_path);
 
-    split_raw_log(f_raw_log, f_index, f_recover, output_path);
+    CHECK_RC(split_raw_log(f_raw_log, f_index, f_recover, output_path));
 
-    te_string_append(&path_aux, "%s/frags_list", output_path);
-    f_frags_list = fopen(path_aux.ptr, "w");
-    if (f_frags_list == NULL)
-    {
-        fprintf(stderr, "Failed to open '%s' for writing\n", path_aux.ptr);
-        exit(1);
-    }
-    te_string_free(&path_aux);
+    CHECK_FOPEN_FMT(f_frags_list, "w", "%s/frags_list", output_path);
 
-    te_string_append(&path_aux, "%s/log_gist.raw", output_path);
-    f_raw_gist = fopen(path_aux.ptr, "w");
-    if (f_raw_gist == NULL)
-    {
-        fprintf(stderr, "Failed to open '%s' for writing\n", path_aux.ptr);
-        exit(1);
-    }
-    te_string_free(&path_aux);
+    CHECK_FOPEN_FMT(f_raw_gist, "w", "%s/log_gist.raw", output_path);
 
-    print_frags_list(output_path, f_raw_gist, f_frags_list, 0, 1, 0);
+    CHECK_RC(print_frags_list(output_path, f_raw_gist, f_frags_list,
+                              0, 1, 0));
 
-    fclose(f_raw_gist);
-    fclose(f_frags_list);
-    fclose(f_raw_log);
-    fclose(f_index);
-    fclose(f_recover);
+    RGT_ERROR_SECTION;
+
+    CHECK_FCLOSE(f_raw_gist);
+    CHECK_FCLOSE(f_frags_list);
+    CHECK_FCLOSE(f_raw_log);
+    CHECK_FCLOSE(f_index);
+    CHECK_FCLOSE(f_recover);
+
     free(nodes_info);
 
     free(output_path);
     free(index_path);
     free(raw_log_path);
+
+    if (RGT_ERROR)
+        return EXIT_FAILURE;
+
     return 0;
 }
