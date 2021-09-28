@@ -943,9 +943,11 @@ typedef struct rcf_pch_cfg_object {
  * @param _brother  pointer to the next brother node
  */
 #define RCF_PCH_CFG_NODE_NA(_name, _subid, _son, _brother) \
-    static rcf_pch_cfg_object _name =                       \
-        { _subid, 0, _son, _brother,                        \
-          NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+    static rcf_pch_cfg_object _name = {                     \
+         .sub_id = _subid,                                  \
+         .son = _son,                                       \
+         .brother = _brother,                               \
+        }
 
 /**
  * Define non-accessible configuration tree node with commit
@@ -959,9 +961,12 @@ typedef struct rcf_pch_cfg_object {
  */
 #define RCF_PCH_CFG_NODE_NA_COMMIT(_name, _subid, _son, \
                                    _brother, _f_commit)     \
-    static rcf_pch_cfg_object _name =                       \
-        { _subid, 0, _son, _brother,                        \
-          NULL, NULL, NULL, NULL, NULL, _f_commit, NULL }
+    static rcf_pch_cfg_object _name = {                     \
+         .sub_id = _subid,                                  \
+         .son = _son,                                       \
+         .brother = _brother,                               \
+         .commit = _f_commit,                               \
+        }
 
 /**
  * Define read-only singleton.
@@ -973,10 +978,12 @@ typedef struct rcf_pch_cfg_object {
  * @param _f_get    get accessor
  */
 #define RCF_PCH_CFG_NODE_RO(_name, _subid, _son, _brother, _f_get) \
-    static rcf_pch_cfg_object _name =                               \
-        { _subid, 0, _son, _brother,                                \
-          (rcf_ch_cfg_get)_f_get, NULL, NULL, NULL, NULL,           \
-          NULL, NULL }
+    static rcf_pch_cfg_object _name = {                     \
+         .sub_id = _subid,                                  \
+         .son = _son,                                       \
+         .brother = _brother,                               \
+         .get = (rcf_ch_cfg_get)_f_get,                     \
+        }
 
 /**
  * Define read-write singleton w/o commit support.
@@ -990,10 +997,13 @@ typedef struct rcf_pch_cfg_object {
  */
 #define RCF_PCH_CFG_NODE_RW(_name, _subid, _son, _brother, \
                             _f_get, _f_set)                 \
-    static rcf_pch_cfg_object _name =                       \
-        { _subid, 0, _son, _brother,                        \
-          (rcf_ch_cfg_get)_f_get, (rcf_ch_cfg_set)_f_set,   \
-          NULL, NULL, NULL, NULL, NULL }
+    static rcf_pch_cfg_object _name = {                     \
+         .sub_id = _subid,                                  \
+         .son = _son,                                       \
+         .brother = _brother,                               \
+         .get = (rcf_ch_cfg_get)_f_get,                     \
+         .set = (rcf_ch_cfg_set)_f_set,                     \
+        }
 
 /**
  * Define read-write singleton with on-parent commit support.
@@ -1008,10 +1018,14 @@ typedef struct rcf_pch_cfg_object {
  */
 #define RCF_PCH_CFG_NODE_RWC(_name, _subid, _son, _brother, \
                              _f_get, _f_set, _commit)       \
-    static rcf_pch_cfg_object _name =                       \
-        { _subid, 0, _son, _brother,                        \
-          (rcf_ch_cfg_get)_f_get, (rcf_ch_cfg_set)_f_set,   \
-          NULL, NULL, NULL, NULL, _commit }
+    static rcf_pch_cfg_object _name = {                     \
+         .sub_id = _subid,                                  \
+         .son = _son,                                       \
+         .brother = _brother,                               \
+         .get = (rcf_ch_cfg_get)_f_get,                     \
+         .set = (rcf_ch_cfg_set)_f_set,                     \
+         .commit_parent = _commit                           \
+        }
 
 /**
  * Define node collection.
@@ -1028,11 +1042,15 @@ typedef struct rcf_pch_cfg_object {
 #define RCF_PCH_CFG_NODE_COLLECTION(_name, _subid, _son, _brother, \
                                     _f_add, _f_del, _f_list,        \
                                     _f_commit)                      \
-    static rcf_pch_cfg_object _name =                               \
-        { _subid, 0, _son, _brother,                                \
-          NULL, NULL,                                               \
-          (rcf_ch_cfg_add)_f_add, (rcf_ch_cfg_del)_f_del,           \
-          (rcf_ch_cfg_list)_f_list, _f_commit, NULL }
+    static rcf_pch_cfg_object _name = {                     \
+         .sub_id = _subid,                                  \
+         .son = _son,                                       \
+         .brother = _brother,                               \
+         .add = (rcf_ch_cfg_add)_f_add,                     \
+         .del = (rcf_ch_cfg_del)_f_del,                     \
+         .list = (rcf_ch_cfg_list)_f_list,                  \
+         .commit = _f_commit,                               \
+        }
 
 /**
  * Define node collection that can be set
@@ -1050,11 +1068,17 @@ typedef struct rcf_pch_cfg_object {
                                        _f_get,  _f_set,                 \
                                        _f_add, _f_del, _f_list,         \
                                        _f_commit)                       \
-    static rcf_pch_cfg_object _name =                                   \
-    { _subid, 0, _son, _brother,                                        \
-      (rcf_ch_cfg_get)_f_get, (rcf_ch_cfg_set)_f_set,                   \
-      (rcf_ch_cfg_add)_f_add, (rcf_ch_cfg_del)_f_del,                   \
-      (rcf_ch_cfg_list)_f_list, _f_commit, NULL }
+    static rcf_pch_cfg_object _name = {                     \
+         .sub_id = _subid,                                  \
+         .son = _son,                                       \
+         .brother = _brother,                               \
+         .get = (rcf_ch_cfg_get)_f_get,                     \
+         .set = (rcf_ch_cfg_set)_f_set,                     \
+         .add = (rcf_ch_cfg_add)_f_add,                     \
+         .del = (rcf_ch_cfg_del)_f_del,                     \
+         .list = (rcf_ch_cfg_list)_f_list,                  \
+         .commit = _f_commit,                               \
+        }
 
 /**
  * Define read-only node collection.
@@ -1068,11 +1092,13 @@ typedef struct rcf_pch_cfg_object {
  */
 #define RCF_PCH_CFG_NODE_RO_COLLECTION(_name, _subid, _son, _brother, \
                                        _f_get, _f_list)               \
-    static rcf_pch_cfg_object _name =                                 \
-        { _subid, 0, _son, _brother,                                  \
-          (rcf_ch_cfg_get)_f_get, NULL,                               \
-          NULL, NULL,                                                 \
-          (rcf_ch_cfg_list)_f_list, NULL, NULL }
+    static rcf_pch_cfg_object _name = {                     \
+         .sub_id = _subid,                                  \
+         .son = _son,                                       \
+         .brother = _brother,                               \
+         .get = (rcf_ch_cfg_get)_f_get,                     \
+         .list = (rcf_ch_cfg_list)_f_list,                  \
+        }
 
 
 /* @} */
