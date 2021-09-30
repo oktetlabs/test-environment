@@ -81,6 +81,7 @@
 #include "te_str.h"
 #include "tq_string.h"
 #include "te_hex_diff_dump.h"
+#include "te_time.h"
 
 #include "agentlib.h"
 #include "iomux.h"
@@ -11440,8 +11441,11 @@ TARPC_FUNC_STATIC(read_fd, {},
  * @param fd        File descriptor or socket.
  * @param size      Read buffer size, bytes.
  * @param time2wait Time to wait for extra data, milliseconds. If a negative
- *                  value is set, then blocking @c recv() will be used to
- *                  read data.
+ *                  value is set and @p duration is zero, then blocking
+ *                  @c recv() will be used to read data. If value is not
+ *                  positive and @p duration is not zero, data will be
+ *                  waited for until @p duration timeout expires.
+ * @param duration  Time limit for this call, in seconds. If zero, ignored.
  * @param read      Read data amount.
  *
  * @return The last return code of @c recv() function: @c -1 in the case of
@@ -11449,7 +11453,7 @@ TARPC_FUNC_STATIC(read_fd, {},
  */
 static int
 drain_fd(tarpc_lib_flags lib_flags, int fd, size_t size, int time2wait,
-         uint64_t *read)
+         unsigned int duration, uint64_t *read)
 {
     api_func      recv_func;
     iomux_funcs   iomux_f;
@@ -11461,18 +11465,29 @@ drain_fd(tarpc_lib_flags lib_flags, int fd, size_t size, int time2wait,
     int num = 0;
     int rc;
 
+    int iomux_timeout;
+    long int time_diff;
+    long int duration_usec = TE_SEC2US(duration);
+    te_bool do_iomux = FALSE;
+
+    struct timeval tv_start;
+    struct timeval tv_now;
+    te_errno te_rc;
+
     if (tarpc_find_func(lib_flags, "recv", &recv_func) != 0)
     {
         ERROR("Failed to resolve recv function address");
         return -1;
     }
 
-    if (time2wait < 0)
+    if (time2wait < 0 && duration == 0)
     {
         flags = 0;
     }
-    else if (time2wait > 0)
+    else if (time2wait > 0 || duration > 0)
     {
+        do_iomux = TRUE;
+
         if (iomux_find_func(lib_flags, &iomux, &iomux_f) != 0)
         {
             ERROR("Failed to resolve iomux function address");
@@ -11499,17 +11514,51 @@ drain_fd(tarpc_lib_flags lib_flags, int fd, size_t size, int time2wait,
 
     *read = 0;
 
+    if (duration > 0)
+    {
+        te_rc = te_gettimeofday(&tv_start, NULL);
+        if (te_rc != 0)
+        {
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, te_rc),
+                             "te_gettimeofday() failed");
+            rc = -1;
+            goto cleanup;
+        }
+    }
+
     do {
         rc = recv_func(fd, buf, size, flags);
         if (rc < 0)
         {
             if (errno != EAGAIN)
                 break;
-            if (time2wait <= 0)
+            if (time2wait <= 0 && duration == 0)
                 break;
 
+            if (time2wait <= 0)
+            {
+                te_rc = te_gettimeofday(&tv_now, NULL);
+                if (te_rc != 0)
+                {
+                    te_rpc_error_set(TE_RC(TE_TA_UNIX, te_rc),
+                                     "te_gettimeofday() failed");
+                    rc = -1;
+                    goto cleanup;
+                }
+
+                time_diff = TIMEVAL_SUB(tv_now, tv_start);
+                if (time_diff >= duration_usec)
+                    break;
+
+                iomux_timeout = TE_US2MS(duration_usec - time_diff);
+            }
+            else
+            {
+                iomux_timeout = time2wait;
+            }
+
             num = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
-                             time2wait);
+                             iomux_timeout);
             if (num <= 0)
                 break;
         }
@@ -11518,7 +11567,8 @@ drain_fd(tarpc_lib_flags lib_flags, int fd, size_t size, int time2wait,
             (*read) += rc;
     } while (rc != 0);
 
-    if (time2wait > 0)
+cleanup:
+    if (do_iomux)
         iomux_close(iomux, &iomux_f, &iomux_st);
     free(buf);
     return rc;
@@ -11527,7 +11577,7 @@ drain_fd(tarpc_lib_flags lib_flags, int fd, size_t size, int time2wait,
 TARPC_FUNC_STATIC(drain_fd, {},
 {
    MAKE_CALL(out->retval = func(in->common.lib_flags, in->fd, in->size,
-                                in->time2wait, &out->read));
+                                in->time2wait, in->duration, &out->read));
 })
 
 

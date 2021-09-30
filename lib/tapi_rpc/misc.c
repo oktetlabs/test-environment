@@ -3288,8 +3288,8 @@ rpc_send_flooder_iomux(rcf_rpc_server *rpcs, int sock, iomux_func iomux,
 
 /* See the description in tapi_rpc_misc.h */
 int
-rpc_drain_fd(rcf_rpc_server *rpcs, int fd, size_t size, int time2wait,
-             uint64_t *read)
+rpc_drain_fd_duration(rcf_rpc_server *rpcs, int fd, size_t size,
+                      int time2wait, unsigned int duration, uint64_t *read)
 {
     tarpc_drain_fd_in  in;
     tarpc_drain_fd_out out;
@@ -3300,19 +3300,30 @@ rpc_drain_fd(rcf_rpc_server *rpcs, int fd, size_t size, int time2wait,
     in.fd = fd;
     in.size = size;
     in.time2wait = time2wait;
+    in.duration = duration;
 
     rcf_rpc_call(rpcs, "drain_fd", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(drain_fd, out.retval);
 
     TAPI_RPC_LOG(rpcs, drain_fd, "fd = %d, size = %"TE_PRINTF_SIZE_T"u, "
-                 "time2wait = %d, read = %"TE_PRINTF_64"u", "%d", fd, size,
-                 time2wait, out.read, out.retval);
+                 "time2wait = %d ms, duration = %u sec, "
+                 "read = %"TE_PRINTF_64"u", "%d", fd, size,
+                 time2wait, duration, out.read, out.retval);
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT && read != NULL)
         *read = out.read;
 
     RETVAL_ZERO_INT(drain_fd, out.retval);
+}
+
+
+/* See the description in tapi_rpc_misc.h */
+int
+rpc_drain_fd(rcf_rpc_server *rpcs, int fd, size_t size,
+             int time2wait, uint64_t *read)
+{
+    return rpc_drain_fd_duration(rpcs, fd, size, time2wait, 0, read);
 }
 
 /* See the description in tapi_rpc_misc.h */

@@ -777,6 +777,33 @@ extern int rpc_drain_fd(rcf_rpc_server *rpcs, int fd, size_t size,
                         int time2wait, uint64_t *read);
 
 /**
+ * The same as rpc_drain_fd() but allows to specify general time limit for
+ * this call.
+ *
+ * @param rpcs      RPC server handle.
+ * @param fd        File descriptor or socket.
+ * @param size      Read buffer size, bytes.
+ * @param time2wait How long to wait for data after read failure,
+ *                  milliseconds.
+ *                  If a negative value is set and @p duration is zero,
+ *                  then blocking @c recv() will be used to read data.
+ *                  Otherwise, if value is negative or zero, new data will
+ *                  be waited for until @p duration timeout expires with
+ *                  an iomux function.
+ * @param duration  If not zero, specifies time limit for this call, in
+ *                  seconds.
+ * @param read      Pointer for read data amount or @c NULL.
+ *
+ * @return The last return code of @b recv() function: @c -1 in the case of
+ *         failure or @c 0 on success. In a common case @c -1 with
+ *         @c RPC_EAGAIN should be considered as the correct behavior if the
+ *         connection was not closed from the peer side.
+ */
+extern int rpc_drain_fd_duration(rcf_rpc_server *rpcs, int fd, size_t size,
+                                 int time2wait, unsigned int duration,
+                                 uint64_t *read);
+
+/**
  * Simplified call of @c rpc_drain_fd(). It executes the call with default
  * @b size and @b time2wait parameters what is useful in a common case. Also
  * it checks return code and errno.

@@ -4830,6 +4830,7 @@ struct tarpc_drain_fd_in {
     tarpc_int    fd;
     tarpc_size_t size;
     tarpc_int    time2wait;
+    tarpc_uint   duration;
 };
 
 struct tarpc_drain_fd_out {
