@@ -62,6 +62,8 @@
 #include "te_vector.h"
 #include "te_alloc.h"
 #include "te_sleep.h"
+#include "te_string.h"
+#include "cs_common.h"
 
 #define OID_ETC "/..."
 
@@ -773,6 +775,201 @@ rcf_pch_agent_list(unsigned int id, const char *oid,
     return (*list = strdup(rcf_ch_conf_agent())) == NULL ? TE_ENOMEM : 0;
 }
 
+/**
+ * Get the value of the object
+ *
+ * @param[in]  obj   Object
+ * @param[in]  oid   Object instance identifier
+ * @param[out] value value of the object
+ *
+ * @return Status code
+ */
+static te_errno
+get_object_value(rcf_pch_cfg_object *obj, const char *oid, char *value)
+{
+#define ALL_INST_NAMES \
+    inst_names[0], inst_names[1], inst_names[2], inst_names[3], \
+    inst_names[4], inst_names[5], inst_names[6], inst_names[7], \
+    inst_names[8], inst_names[9]
+
+    char *inst_names[RCF_MAX_PARAMS] = {NULL,};
+    cfg_oid *p_oid = NULL;
+    cfg_inst_subid *p_ids;
+    unsigned int i;
+    te_errno rc = 0;
+
+    p_oid = cfg_convert_oid_str(oid);
+    if (p_oid == NULL)
+    {
+        ERROR("Failed to convert OID string '%s' to structured "
+              "representation", oid);
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
+    }
+
+    p_ids = (cfg_inst_subid *)(p_oid->ids);
+
+    /*
+     * The value starts with 2, since the first one (with index 0) is empty
+     * root and the second one is the agent name which are not required to
+     * get value.
+     */
+    for (i = 2; i < p_oid->len; i++)
+        inst_names[i - 2] = p_ids[i].name;
+
+    rc = (obj->get)(gid, oid, value, ALL_INST_NAMES);
+    if (rc != 0)
+        ERROR("Failed to get value for '%s' rc=%r", oid, rc);
+
+    cfg_free_oid(p_oid);
+    return rc;
+#undef ALL_INST_NAMES
+}
+
+/**
+ * Get the instance OID by the object OID.
+ *
+ * The function implements an algorithm for finding the instance OID (@p oid)
+ * by object OID (@p object) for the substitution purposes.
+ * The idea is to compare sub-identifiers of the object's and instance's OID
+ * (@p p_ids) for which the substitution is being performed.
+ * If the first N sub-identifiers match, then the first N identifiers and
+ * their values are copied to the final instance OID (the value from the
+ * configuration tree will be got by this instance OID).
+ * It is guaranteed that N is equal to at least one.
+ * If the subidentifiers starting from N+1 are not equal, then they are copied
+ * with empty values.
+ *
+ * @param[in]  object Object OID (Source value for substitution)
+ * @param[in]  p_ids  Pointer to object instance identifer element
+ *                    for which the substitution is being made
+ * @param[out] oid    The instance OID
+ *
+ * @return Status code
+ */
+static te_errno
+get_instance_oid_by_object_oid(const char *object, cfg_inst_subid *p_ids,
+                               te_string *oid)
+{
+    cfg_oid *p_subst_oid = NULL;
+    cfg_object_subid *p_subst_ids;
+    te_errno rc = 0;
+    int i;
+
+    p_subst_oid = cfg_convert_oid_str(object);
+    if (p_subst_oid == NULL)
+    {
+        ERROR("Failed to convert OID string '%s' to structured "
+              "representation", object);
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
+    }
+
+    p_subst_ids = (cfg_object_subid *)(p_subst_oid->ids);
+
+    for (i = 1; i < p_subst_oid->len; i++)
+    {
+        if (strcmp(p_subst_ids[i].subid, p_ids[i].subid) != 0)
+            break;
+
+        rc = te_string_append(oid, "/%s:%s", p_ids[i].subid,
+                              p_ids[i].name);
+        if (rc != 0)
+            break;
+    }
+
+    if (rc != 0)
+    {
+        cfg_free_oid(p_subst_oid);
+        return rc;
+    }
+
+    for (; i < p_subst_oid->len; i++)
+    {
+        rc = te_string_append(oid, "/%s:", p_subst_ids[i].subid);
+        if (rc != 0)
+            break;
+    }
+
+    cfg_free_oid(p_subst_oid);
+
+    return rc;
+}
+
+/**
+ * Processing of the configurator node substitution
+ *
+ * @param[in]    obj    Configuration tree node
+ * @param[inout] value  The string in which the substitution is performed.
+ * @param[in]    sub_id Value of the subid for substitution
+ * @param[in]    p_ids  Pointer to array of instance OID elements
+ *
+ * @return Status code
+ */
+static int
+do_substitutions(rcf_pch_cfg_object *obj, char *value, const char *sub_id,
+                 cfg_inst_subid *p_ids)
+{
+    const rcf_pch_cfg_substitution *subst;
+    rcf_pch_cfg_object *node;
+    te_string subs = TE_STRING_INIT;
+    te_string inst_oid = TE_STRING_INIT;
+    te_string value_s = TE_STRING_INIT;
+    char ret_val[RCF_MAX_VAL] = "";
+    te_errno rc = 0;
+
+    for (subst = obj->subst; subst->name != NULL; subst++)
+    {
+        if (strcmp(subst->name, "*") == 0)
+            break;
+
+        if (strcmp(subst->name, sub_id) == 0)
+            break;
+    }
+
+    if (subst->name == NULL)
+        goto out;
+
+    rc = te_string_append(&value_s, "%s", value);
+    if (rc != 0)
+        goto out;
+
+    rc = get_instance_oid_by_object_oid(subst->ref_name, p_ids, &inst_oid);
+    if (rc != 0)
+        goto out;
+
+    rc = rcf_pch_find_node(subst->ref_name, &node);
+    if (rc != 0)
+        goto out;
+
+    rc = get_object_value(node, inst_oid.ptr, ret_val);
+    if (rc != 0)
+        goto out;
+
+    rc = te_string_append(&subs,
+                        CS_SUBSTITUTION_DELIMITER"%s"CS_SUBSTITUTION_DELIMITER,
+                        inst_oid.ptr);
+    if (rc != 0)
+        goto out;
+
+    rc = subst->apply(&value_s, subs.ptr, ret_val);
+    if (rc != 0)
+        goto out;
+
+    if (value_s.len >= RCF_MAX_VAL)
+    {
+        ERROR("The value after substitution is too large");
+        rc = ENOBUFS;
+        goto out;
+    }
+
+    memcpy(value, value_s.ptr, value_s.len + 1);
+
+out:
+    te_string_free(&value_s);
+    te_string_free(&subs);
+    te_string_free(&inst_oid);
+
+    return rc;
+}
 
 /* See description in rcf_pch.h */
 int
@@ -921,18 +1118,26 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
             }
 
             rc = (obj->get)(gid, oid, value, ALL_INST_NAMES);
-
-            cfg_free_oid(p_oid);
-
-            if (rc == 0)
+            if (rc != 0)
             {
-                write_str_in_quotes(ret_val, value, RCF_MAX_VAL);
-                SEND_ANSWER("0 %s", ret_val);
-            }
-            else
-            {
+                cfg_free_oid(p_oid);
                 SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, rc));
             }
+
+            if (obj->subst != NULL)
+            {
+                rc = do_substitutions(obj, value, inst_names[i - 3], p_ids);
+                if (rc != 0)
+                {
+                    ERROR("Failed to replace value in %s rc=%r", value, rc);
+                    cfg_free_oid(p_oid);
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, rc));
+                }
+            }
+
+            cfg_free_oid(p_oid);
+            write_str_in_quotes(ret_val, value, RCF_MAX_VAL);
+            SEND_ANSWER("0 %s", ret_val);
             break;
         }
 

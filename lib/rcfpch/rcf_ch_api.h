@@ -1052,6 +1052,29 @@ typedef struct rcf_pch_cfg_object {
         }
 
 /**
+ * Define read-write singleton w/o commit support and with
+ * an array of substitutions.
+ *
+ * @param _name     node name (rcf_pch_cfg_object)
+ * @param _subid    subidentifier name (const char *)
+ * @param _son      pointer to the first son node
+ * @param _brother  pointer to the next brother node
+ * @param _f_get    get accessor
+ * @param _f_set    set accessor
+ * @param _subst    array of substitutions (rcf_pch_cfg_substitution)
+ */
+#define RCF_PCH_CFG_NODE_RW_WITH_SUBST(_name, _subid, _son, _brother, \
+                                       _f_get, _f_set, _subst)        \
+    static rcf_pch_cfg_object _name = {                               \
+        .sub_id = _subid,                                             \
+        .son = _son,                                                  \
+        .brother = _brother,                                          \
+        .get = (rcf_ch_cfg_get)_f_get,                                \
+        .set = (rcf_ch_cfg_set)_f_set,                                \
+        .subst = _subst                                               \
+    }
+
+/**
  * Define node collection.
  *
  * @param _name     node name (rcf_pch_cfg_object)
@@ -1105,6 +1128,36 @@ typedef struct rcf_pch_cfg_object {
         }
 
 /**
+ * Define node collection that can be set with an array of substitutions
+ *
+ * @param _name     node name (rcf_pch_cfg_object)
+ * @param _subid    subidentifier name (const char *)
+ * @param _son      pointer to the first son node
+ * @param _brother  pointer to the next brother node
+ * @param _f_add    add accessor
+ * @param _f_del    delete accessor
+ * @param _f_list   list accessor
+ * @param _f_commit commit function
+ * @param _subst    array of substitutions (rcf_pch_cfg_substitution)
+ */
+#define RCF_PCH_CFG_NODE_RW_COLLECTION_WITH_SUBST(_name, _subid, _son,       \
+                                                   _brother, _f_get, _f_set, \
+                                                   _f_add, _f_del, _f_list,  \
+                                                   _f_commit, _subst)        \
+    static rcf_pch_cfg_object _name = {                                      \
+        .sub_id = _subid,                                                    \
+        .son = _son,                                                         \
+        .brother = _brother,                                                 \
+        .get = (rcf_ch_cfg_get)_f_get,                                       \
+        .set = (rcf_ch_cfg_set)_f_set,                                       \
+        .add = (rcf_ch_cfg_add)_f_add,                                       \
+        .del = (rcf_ch_cfg_del)_f_del,                                       \
+        .list = (rcf_ch_cfg_list)_f_list,                                    \
+        .commit = _f_commit,                                                 \
+        .subst = _subst                                                      \
+    }
+
+/**
  * Define read-only node collection.
  *
  * @param _name     node name (rcf_pch_cfg_object)
@@ -1154,6 +1207,10 @@ extern void rcf_ch_conf_fini(void);
 extern const char *rcf_ch_conf_agent(void);
 
 /*@}*/
+
+/** A convenience constructor to define substitutions */
+#define RCF_PCH_CFG_SUBST_SET(...) \
+    { __VA_ARGS__, {NULL, NULL, NULL} }
 
 /*@} <!-- END rcf_ch --> */
 
