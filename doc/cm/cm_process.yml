@@ -22,6 +22,7 @@
     - oid: "/agent/process/exe"
       access: read_write
       type: string
+      substitution: true
       d: |
         Executable to run with search in PATH if there is no path separators.
 
@@ -69,6 +70,7 @@
     - oid: "/agent/process/arg"
       access: read_create
       type: string
+      substitution: true
       d: |
         Process raw arguments to be added in specified order after options.
         Name: order

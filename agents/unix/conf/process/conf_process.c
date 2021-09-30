@@ -1246,9 +1246,33 @@ autorestart_loop(void *arg)
     return NULL;
 }
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_ps_arg, "arg", NULL, NULL,
-                               ps_arg_get, NULL, ps_arg_add,
-                               ps_arg_del, ps_arg_list, NULL);
+static te_errno
+subst_process(te_string *value, const char *subst,
+              const char *replaced_value)
+{
+    te_errno rc = 0;
+    te_substring_t iter = TE_SUBSTRING_INIT(value);
+
+    if (strcmp_start(replaced_value, value->ptr) == 0)
+    {
+        iter.len = strlen(replaced_value);
+        rc = te_substring_replace(&iter, subst);
+    }
+
+    if (rc != 0)
+        ERROR("Failed to make a substitution in '%s': %r", value, rc);
+
+    return rc;
+}
+
+static const rcf_pch_cfg_substitution subst[] = RCF_PCH_CFG_SUBST_SET(
+    { "*", "/agent/dir", subst_process }
+);
+
+RCF_PCH_CFG_NODE_RW_COLLECTION_WITH_SUBST(node_ps_arg, "arg", NULL, NULL,
+                                          ps_arg_get, NULL, ps_arg_add,
+                                          ps_arg_del, ps_arg_list,
+                                          NULL, subst);
 
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_ps_env, "env", NULL, &node_ps_arg,
                                ps_env_get, NULL, ps_env_add,
@@ -1258,8 +1282,8 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_ps_opt, "option", NULL, &node_ps_env,
                                ps_opt_get, NULL, ps_opt_add,
                                ps_opt_del, ps_opt_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_ps_exe, "exe", NULL, &node_ps_opt,
-                    ps_exe_get, ps_exe_set);
+RCF_PCH_CFG_NODE_RW_WITH_SUBST(node_ps_exe, "exe", NULL, &node_ps_opt,
+                               ps_exe_get, ps_exe_set, subst);
 
 RCF_PCH_CFG_NODE_RW(node_ps_status, "status", NULL, &node_ps_exe,
                     ps_status_get, ps_status_set);
