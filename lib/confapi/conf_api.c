@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -142,10 +142,10 @@ cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
 
     if ((oid == NULL) || (descr == NULL))
         return TE_RC(TE_CONF_API, TE_EINVAL);
-    
+
     len = strlen(oid) + 1;
     def_val_len = descr->def_val == NULL ? 0 : strlen(descr->def_val) + 1;
-    
+
     if (sizeof(*msg) + len + def_val_len > CFG_MSG_MAX ||
         len > RCF_MAX_ID)
     {
@@ -770,7 +770,7 @@ cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
         alloc_msg = malloc(len);
         if (alloc_msg == NULL)
             return TE_RC(TE_CONF_API, TE_ENOMEM);
-        
+
         ret_val = ipc_receive_rest_answer(cfgl_ipc_client,
                                           CONFIGURATOR_SERVER,
                                           alloc_msg + CFG_MSG_MAX,
@@ -991,11 +991,11 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
 {
     cfg_add_msg  *msg;
     cfg_inst_val  value;
-    char         *valstr = NULL; 
+    char         *valstr = NULL;
 
     size_t  len;
     int     ret_val = 0;
-    
+
     if (oid == NULL)
     {
         return TE_RC(TE_CONF_API, TE_EINVAL);
@@ -1312,9 +1312,9 @@ kill(cfg_handle handle, te_bool local)
 
     te_errno    ret_val = 0;
     size_t      len;
-    
+
     char  *oidstr = NULL;
-    
+
 
     if ((ret_val = cfg_get_oid_str(handle, &oidstr)) != 0)
     {
@@ -1346,14 +1346,14 @@ kill(cfg_handle handle, te_bool local)
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
                                            msg, msg->len, msg, &len);
-    if (ret_val == 0) 
+    if (ret_val == 0)
         ret_val = msg->rc;
-                                           
+
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
 #endif
 
-    if (ret_val == 0 &&  oidstr != NULL && 
+    if (ret_val == 0 &&  oidstr != NULL &&
         strncmp(oidstr, AGENT_BOID, BOID_LEN) == 0)
     {
         RING("Deleted %s%s", (local ? "locally " : ""), oidstr);
@@ -1378,7 +1378,7 @@ cfg_del_instance_gen(cfg_handle handle, te_bool with_children,
 {
     cfg_handle  son;
     te_errno    ret_val;
-    
+
     if (handle == CFG_HANDLE_INVALID)
     {
         return TE_RC(TE_CONF_API, TE_EINVAL);
@@ -1447,7 +1447,7 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
 {
     cfg_set_msg    *msg;
     cfg_inst_val    value;
-    
+
     char    *oidstr = NULL;
     char    *valstr = NULL;
 
@@ -1504,27 +1504,27 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
 
     len = CFG_MSG_MAX;
 
-    ret_val = ipc_send_message_with_answer(cfgl_ipc_client, 
-                                           CONFIGURATOR_SERVER, 
+    ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
+                                           CONFIGURATOR_SERVER,
                                            msg, msg->len, msg, &len);
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
 #endif
-    
+
     if (ret_val == 0)
     {
         ret_val = msg->rc;
 
         cfg_types[type].val2str(value, &valstr);
-        if (ret_val == 0 && cfg_get_oid_str(handle, &oidstr) == 0 && 
+        if (ret_val == 0 && cfg_get_oid_str(handle, &oidstr) == 0 &&
             strncmp(oidstr, AGENT_BOID, BOID_LEN) == 0 && valstr != NULL)
         {
             RING("Set %s%s = %s", local ? "locally " : "", oidstr, valstr);
         }
         free(oidstr);
         free(valstr);
-        
+
     }
     return TE_RC(TE_CONF_API, ret_val);
 }
@@ -1912,7 +1912,7 @@ cfg_synchronize(const char *oid, te_bool subtree)
 
     size_t  len;
     int     ret_val = 0;
-    
+
     if (oid == NULL)
         return TE_EINVAL;
 
@@ -2502,7 +2502,7 @@ cfg_tree_print(const char *filename,
     te_errno    ret_val = 0;
     va_list ap;
 
-    
+
     if (id_fmt == NULL)
         return TE_RC(TE_CONF_API, TE_EINVAL);
     va_start(ap, id_fmt);
@@ -2516,10 +2516,10 @@ cfg_tree_print(const char *filename,
         flname_len = 0;
     else
         flname_len = strlen(filename) + 1;
-    
+
     if (sizeof(cfg_tree_print_msg) + id_len + flname_len > CFG_MSG_MAX)
         return TE_RC(TE_CONF_API, TE_EMSGSIZE);
-    
+
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&cfgl_lock);
 #endif
@@ -2536,16 +2536,16 @@ cfg_tree_print(const char *filename,
     msg = (cfg_tree_print_msg *)cfgl_msg_buf;
     msg->type = CFG_TREE_PRINT;
     msg->log_lvl = log_lvl;
-    
+
     memcpy(msg->buf, id, id_len);
     msg->id_len = id_len;
-   
+
     if (flname_len != 0)
         memcpy((msg->buf) + id_len, filename, flname_len);
     msg->flname_len = flname_len;
-    
+
     msg->len = sizeof(cfg_tree_print_msg) + id_len + flname_len;
-    
+
     len = CFG_MSG_MAX;
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
@@ -2571,7 +2571,7 @@ cfg_unregister_object_str(const char *id_fmt, ...)
     te_errno    ret_val = 0;
     va_list ap;
 
-    
+
     if (id_fmt == NULL)
         return TE_RC(TE_CONF_API, TE_EINVAL);
     va_start(ap, id_fmt);
@@ -2580,10 +2580,10 @@ cfg_unregister_object_str(const char *id_fmt, ...)
     if (id_len >= sizeof(id))
         return TE_RC(TE_CONF_API, TE_EINVAL);
     id_len += 1; /* '\0' */
-    
+
     if (sizeof(cfg_unregister_msg) + id_len > CFG_MSG_MAX)
         return TE_RC(TE_CONF_API, TE_EMSGSIZE);
-    
+
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&cfgl_lock);
 #endif
@@ -2599,11 +2599,11 @@ cfg_unregister_object_str(const char *id_fmt, ...)
     memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_unregister_msg *)cfgl_msg_buf;
     msg->type = CFG_UNREGISTER;
-    
+
     memcpy(msg->id, id, id_len);
-    
+
     msg->len = sizeof(cfg_unregister_msg) + id_len;
-    
+
     len = CFG_MSG_MAX;
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,

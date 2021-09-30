@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -28,10 +28,10 @@ static inline const char *
 cs_server_name(void)
 {
     static const char *cs_name = NULL;
-    
+
     if ((cs_name == NULL) && (cs_name = getenv("TE_CS")) == NULL)
         cs_name = "TE_CS";
-        
+
     return cs_name;
 }
 
@@ -45,7 +45,7 @@ cs_server_name(void)
 enum {
     CFG_REGISTER,  /**< Register object: IN: OID, description;
                         OUT: handle */
-    CFG_UNREGISTER,  /**< Unregister object: IN: OID. */    
+    CFG_UNREGISTER,  /**< Unregister object: IN: OID. */
     CFG_FIND,      /**< Find handle by OID: IN: OID; OUT: handle */
     CFG_GET_DESCR, /**< Get description by handle:
                         IN: handle; OUT: description */
@@ -70,8 +70,8 @@ enum {
     CFG_CONFIG,    /**< Create configuration file:
                         IN: file name, history flag */
     CFG_CONF_TOUCH,/**< Update conf_delay after touching the instance by
-                        non-CS means */                        
-    CFG_CONF_DELAY,/**< Sleep conf_delay */                        
+                        non-CS means */
+    CFG_CONF_DELAY,/**< Sleep conf_delay */
     CFG_SHUTDOWN,  /**< Shutdown the Configurator */
     CFG_ADD_DEPENDENCY, /**< Add a dependency */
     CFG_TREE_PRINT,/**< Print a tree of obj|ins from a prefix */
@@ -98,9 +98,9 @@ typedef struct cfg_register_msg {
     te_bool       no_parent_dep; /**< Object should not depend on parent */
     te_bool       substitution;  /**< The object uses substitution */
     uint8_t       access;   /**< Access rights */
-    uint16_t      def_val;  /**< Default value offset from start of OID 
-                                 or 0 if no default value is provided */ 
-    cfg_handle    handle;   /**< OUT: handle of created object 
+    uint16_t      def_val;  /**< Default value offset from start of OID
+                                 or 0 if no default value is provided */
+    cfg_handle    handle;   /**< OUT: handle of created object
                                  object identifier */
     char          oid[0];   /**< IN: start of the object identifier */
 } cfg_register_msg;
@@ -165,7 +165,7 @@ typedef struct cfg_add_msg {
     cfg_handle      handle;         /**< OUT: object instance handle */
     te_bool         local;          /**< Local add */
     cfg_val_type    val_type;       /**< Object value type */
-    uint8_t         oid_offset;     /**< Offset to OID from the 
+    uint8_t         oid_offset;     /**< Offset to OID from the
                                          message start */
     union {
         struct sockaddr val_addr[0];    /**< start of sockaddr value */
@@ -246,13 +246,13 @@ typedef struct cfg_backup_msg {
     CFG_MSG_FIELDS
     uint8_t op;            /**< Operation, always present */
 /** Create configuration backup */
-#define CFG_BACKUP_CREATE       1   
+#define CFG_BACKUP_CREATE       1
 
 /** Verify configuration backup */
-#define CFG_BACKUP_VERIFY       2   
+#define CFG_BACKUP_VERIFY       2
 
 /** Restore configuration backup */
-#define CFG_BACKUP_RESTORE      3   
+#define CFG_BACKUP_RESTORE      3
 
 /** Release configuration backup */
 #define CFG_BACKUP_RELEASE      4
@@ -286,7 +286,7 @@ typedef struct cfg_add_dependency_msg {
     CFG_MSG_FIELDS
     cfg_handle    handle;   /**< IN: object handle */
     te_bool       object_wide; /**< IN: whether dependency is object wide */
-    char          oid[0];   /**< IN: start of the master 
+    char          oid[0];   /**< IN: start of the master
                                  instance identifier */
 } cfg_add_dependency_msg;
 

@@ -1,4 +1,4 @@
-/** @file 
+/** @file
  * @brief Configurator API
  *
  * Configurator API exports functionality that makes it possible to:
@@ -15,14 +15,14 @@
  * @copyright
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  * $Id$
  */
-  
+
 
 #ifndef __TE_CONF_API_H__
 #define __TE_CONF_API_H__
@@ -61,7 +61,7 @@ extern "C" {
 /** Cast to Configurator Instance Value Pointer */
 #define CFG_IVP(x)     ((cfg_inst_val *)(x))
 
-/** 
+/**
  * Macro definition to be used in cfg_{add,set}_instance_fmp() calls.
  * Here it is assumed that 'long' type has the same size as 'void *'.
  */
@@ -295,7 +295,7 @@ extern te_errno cfg_find(const cfg_oid *oid, cfg_handle *handle);
  *
  * @return Status code
  */
-extern te_errno cfg_find_object_by_instance(cfg_handle  instance, 
+extern te_errno cfg_find_object_by_instance(cfg_handle  instance,
                                             cfg_handle *object);
 
 /**
@@ -369,7 +369,7 @@ extern te_errno cfg_get_brother(cfg_handle handle, cfg_handle *brother);
  * Get handle of the father of the object or object instance.
  *
  * @param handle    handle of the object or object instance
- * @param father    pointer to the father's handle 
+ * @param father    pointer to the father's handle
  *
  * @returns Status code
  */
@@ -675,7 +675,7 @@ extern te_errno cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
 /**
  * Synchronize Configurator database with managed objects.
  *
- * @param oid        identifier of the object instance or subtree 
+ * @param oid        identifier of the object instance or subtree
  * @param subtree    1 if the subtree of the specified node should
  *                   be synchronized
  *
@@ -813,7 +813,7 @@ extern te_errno cfg_process_history(const char *filename,
 
 /**@}*/
 
-/** 
+/**
  * Macro to call cfg_wait_changes() from the test without check of
  * return value.
  */
@@ -833,7 +833,7 @@ extern te_errno cfg_wait_changes(void);
 
 /**
  * Notify the Configurator that instances matching OID template are
- * touched by non-CS means (necesary for subsequent correct 
+ * touched by non-CS means (necesary for subsequent correct
  * cfg_wait_changes() processing).
  *
  * @param oid_tmpl      instance identifier format string (may contain
