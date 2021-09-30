@@ -190,6 +190,7 @@ typedef struct pam_message const pam_message_t;
 #include "conf_getmsg.h"
 #include "conf_common.h"
 #include "te_shell_cmd.h"
+#include "te_string.h"
 
 #ifdef CFG_UNIX_DAEMONS
 #include "conf_daemons.h"
@@ -471,6 +472,16 @@ static te_errno env_del(unsigned int, const char *,
                    const char *);
 static te_errno env_list(unsigned int, const char *,
                          const char *, char **);
+
+/* routines to make substitutions */
+static te_errno env_subst_path_process(te_string *value, const char *subst,
+                                       const char *replaced_value);
+static te_errno env_subst_ld_lib_path_process(te_string *value,
+                                              const char *subst,
+                                              const char *replaced_value);
+static te_errno env_subst_underscore_process(te_string *value,
+                                             const char *subst,
+                                             const char *replaced_value);
 
 /** Environment variables hidden in list operation */
 static const char * const env_hidden[] = {
@@ -937,11 +948,15 @@ RCF_PCH_CFG_NODE_RW(node_ip4_fw, "ip4_fw", NULL, &node_interface,
 RCF_PCH_CFG_NODE_RW(node_ip6_fw, "ip6_fw", NULL, &node_ip4_fw,
                     ip6_fw_get, ip6_fw_set);
 
-static rcf_pch_cfg_object node_env =
-    { "env", 0, NULL, &node_ip6_fw,
-      (rcf_ch_cfg_get)env_get, (rcf_ch_cfg_set)env_set,
-      (rcf_ch_cfg_add)env_add, (rcf_ch_cfg_del)env_del,
-      (rcf_ch_cfg_list)env_list, NULL, NULL, NULL };
+static const rcf_pch_cfg_substitution env_subst[] = RCF_PCH_CFG_SUBST_SET(
+    { "PATH", "/agent/dir", env_subst_path_process },
+    { "LD_LIBRARY_PATH", "/agent/dir", env_subst_ld_lib_path_process },
+    { "_", "/agent/dir", env_subst_underscore_process}
+);
+
+RCF_PCH_CFG_NODE_RW_COLLECTION_WITH_SUBST(node_env, "env", NULL, &node_ip6_fw,
+                                          env_get, env_set, env_add, env_del,
+                                          env_list, NULL, env_subst);
 
 RCF_PCH_CFG_NODE_RO(node_uname, "uname", NULL, &node_env, uname_get);
 
@@ -7488,6 +7503,82 @@ env_list(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
+}
+
+static te_errno
+path_substitution_process(te_string *value, const char *subst,
+                          const char *replaced_value,
+                          const char *env_var)
+{
+    te_substring_t iter = TE_SUBSTRING_INIT(value);
+    te_errno rc = 0;
+    char *cur_pos = value->ptr;
+    char *end_pos;
+    char *ch;
+
+    while (1)
+    {
+        if (strcmp_start(replaced_value, cur_pos) == 0)
+        {
+            end_pos = cur_pos + strlen(replaced_value);
+            if (*end_pos == '/' || *end_pos == '\0' || *end_pos == ':')
+            {
+                iter.start = cur_pos - value->ptr;
+                iter.len = strlen(replaced_value);
+                rc = te_substring_replace(&iter, subst);
+                if (rc != 0)
+                    break;
+            }
+        }
+
+        ch = strchr(cur_pos, ':');
+        if (ch == NULL)
+            break;
+
+        cur_pos = ch + 1;
+    }
+
+    if (rc != 0)
+    {
+        ERROR("Failed to make a substitution in '%s' env variable: %r",
+              env_var, rc);
+    }
+
+    return rc;
+}
+
+static te_errno
+env_subst_path_process(te_string *value, const char *subst,
+                       const char *replaced_value)
+{
+    return path_substitution_process(value, subst, replaced_value, "PATH");
+}
+
+static te_errno
+env_subst_ld_lib_path_process(te_string *value, const char *subst,
+                              const char *replaced_value)
+{
+    return path_substitution_process(value, subst, replaced_value,
+                                     "LD_LIBRARY_PATH");
+}
+
+static te_errno
+env_subst_underscore_process(te_string *value, const char *subst,
+                             const char *replaced_value)
+{
+    te_errno rc = 0;
+    te_substring_t iter = TE_SUBSTRING_INIT(value);
+
+    if (strcmp_start(replaced_value, value->ptr) == 0)
+    {
+        iter.len = strlen(replaced_value);
+        rc = te_substring_replace(&iter, subst);
+    }
+
+    if (rc != 0)
+        ERROR("Failed to make a substitution in '_' env variable: %r", rc);
+
+    return rc;
 }
 
 /**

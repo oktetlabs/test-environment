@@ -1316,6 +1316,7 @@
     - oid: "/agent/env"
       access: read_create
       type: string
+      substitution: true
       d: |
          Environment variables.
          Name: variable name
