@@ -37,6 +37,7 @@
 #include "rcf_internal.h"
 #include "comm_agent.h"
 #include "conf_oid.h"
+#include "te_string.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -893,6 +894,26 @@ typedef te_errno (* rcf_ch_cfg_list)(unsigned int gid, const char *oid,
  */
 typedef te_errno (* rcf_ch_cfg_commit)(unsigned int gid,
                                        const cfg_oid *p_oid);
+
+/**
+ * Type of the function to apply the substitution.
+ *
+ * @param src The string in which the substitution is performed.
+ * @param new The string to replace.
+ * @param old The string to be replaced.
+ *
+ * @return Status code
+ */
+typedef te_errno (* rcf_ch_substitution_apply)(te_string *src, const char *new,
+                                               const char *old);
+typedef struct rcf_pch_cfg_substitution {
+    /** Name of an instance value the substitution applies to */
+    const char *name;
+    /** OID for getting the substitution value */
+    const char *ref_name;
+    /** Substitution apply method */
+    rcf_ch_substitution_apply apply;
+} rcf_pch_cfg_substitution;
 
 /** Configuration tree node */
 typedef struct rcf_pch_cfg_object {
