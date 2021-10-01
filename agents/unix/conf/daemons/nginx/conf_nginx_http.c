@@ -1423,7 +1423,7 @@ static rcf_pch_cfg_object node_nginx_http_us_server =
       (rcf_ch_cfg_add)nginx_http_us_server_add,
       (rcf_ch_cfg_del)nginx_http_us_server_del,
       (rcf_ch_cfg_list)nginx_http_us_server_list, (rcf_ch_cfg_commit)NULL,
-      &node_nginx_http };
+      &node_nginx_http, NULL };
 
 static rcf_pch_cfg_object node_nginx_http_upstream =
     { "upstream", 0, &node_nginx_http_us_server, NULL,
@@ -1431,7 +1431,7 @@ static rcf_pch_cfg_object node_nginx_http_upstream =
       (rcf_ch_cfg_add)nginx_http_upstream_add,
       (rcf_ch_cfg_del)nginx_http_upstream_del,
       (rcf_ch_cfg_list)nginx_http_upstream_list, (rcf_ch_cfg_commit)NULL,
-      &node_nginx_http };
+      &node_nginx_http, NULL };
 
 RCF_PCH_CFG_NODE_RWC(node_nginx_http_server_mime_type_default, "default",
                      NULL, NULL,
@@ -1608,7 +1608,7 @@ static rcf_pch_cfg_object node_nginx_http_loc_proxy_hdr =
       (rcf_ch_cfg_add)nginx_http_loc_proxy_hdr_add,
       (rcf_ch_cfg_del)nginx_http_loc_proxy_hdr_del,
       (rcf_ch_cfg_list)nginx_http_loc_proxy_hdr_list, (rcf_ch_cfg_commit)NULL,
-      &node_nginx_http };
+      &node_nginx_http, NULL };
 
 RCF_PCH_CFG_NODE_RWC(node_nginx_http_loc_proxy_ssl_name, "ssl_name",
                      NULL, &node_nginx_http_loc_proxy_hdr,
@@ -1659,7 +1659,7 @@ static rcf_pch_cfg_object node_nginx_http_loc =
       (rcf_ch_cfg_add)nginx_http_loc_add,
       (rcf_ch_cfg_del)nginx_http_loc_del,
       (rcf_ch_cfg_list)nginx_http_loc_list, (rcf_ch_cfg_commit)NULL,
-      &node_nginx_http };
+      &node_nginx_http, NULL };
 
 RCF_PCH_CFG_NODE_RO(node_nginx_http_server_access_log_path, "path",
                     NULL, NULL, nginx_http_server_access_log_path_get);
@@ -1705,7 +1705,7 @@ static rcf_pch_cfg_object node_nginx_http_listen_entry =
       (rcf_ch_cfg_add)nginx_http_listen_entry_add,
       (rcf_ch_cfg_del)nginx_http_listen_entry_del,
       (rcf_ch_cfg_list)nginx_http_listen_entry_list, (rcf_ch_cfg_commit)NULL,
-      &node_nginx_http };
+      &node_nginx_http, NULL };
 
 static rcf_pch_cfg_object node_nginx_http_server =
     { "server", 0, &node_nginx_http_listen_entry,
@@ -1714,7 +1714,7 @@ static rcf_pch_cfg_object node_nginx_http_server =
       (rcf_ch_cfg_add)nginx_http_server_add,
       (rcf_ch_cfg_del)nginx_http_server_del,
       (rcf_ch_cfg_list)nginx_http_server_list, (rcf_ch_cfg_commit)NULL,
-      &node_nginx_http };
+      &node_nginx_http, NULL };
 
 RCF_PCH_CFG_NODE_NA_COMMIT(node_nginx_http, "http", &node_nginx_http_server,
                            NULL, nginx_commit);

@@ -1112,7 +1112,7 @@ static rcf_pch_cfg_object node_pppoe_server_options =
       (rcf_ch_cfg_set)pppoe_server_option_set,
       (rcf_ch_cfg_add)pppoe_server_option_add,
       (rcf_ch_cfg_del)pppoe_server_option_del,
-      (rcf_ch_cfg_list)pppoe_server_option_list, NULL, &node_pppoe_server };
+      (rcf_ch_cfg_list)pppoe_server_option_list, NULL, &node_pppoe_server, NULL };
 
 RCF_PCH_CFG_NODE_RO(node_pppoe_server_raddr, "raddr",
                     NULL, &node_pppoe_server_options,
@@ -1126,14 +1126,14 @@ static rcf_pch_cfg_object node_pppoe_server_subnet =
     { "subnet", 0, NULL, &node_pppoe_server_laddr,
       (rcf_ch_cfg_get)pppoe_server_subnet_get,
       (rcf_ch_cfg_set)pppoe_server_subnet_set,
-      NULL, NULL, NULL, NULL, &node_pppoe_server };
+      NULL, NULL, NULL, NULL, &node_pppoe_server, NULL };
 
 static rcf_pch_cfg_object node_pppoe_server_ifs =
     { "interface", 0, NULL, &node_pppoe_server_subnet,
       NULL, NULL,
       (rcf_ch_cfg_add)pppoe_server_ifs_add,
       (rcf_ch_cfg_del)pppoe_server_ifs_del,
-      (rcf_ch_cfg_list)pppoe_server_ifs_list, NULL, &node_pppoe_server };
+      (rcf_ch_cfg_list)pppoe_server_ifs_list, NULL, &node_pppoe_server, NULL };
 
 
 static rcf_pch_cfg_object node_pppoe_server =
@@ -1141,7 +1141,7 @@ static rcf_pch_cfg_object node_pppoe_server =
       (rcf_ch_cfg_get)pppoe_server_get,
       (rcf_ch_cfg_set)pppoe_server_set,
       NULL, NULL, NULL,
-      (rcf_ch_cfg_commit)pppoe_server_commit, NULL };
+      (rcf_ch_cfg_commit)pppoe_server_commit, NULL, NULL };
 
 /**
  * Grab callback for pppoeserver resource

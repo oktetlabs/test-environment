@@ -1078,13 +1078,13 @@ static rcf_pch_cfg_object serial_pattern =
     { "pattern", 0, NULL, &serial_event_counter,
      (rcf_ch_cfg_get)parser_pattern_get, (rcf_ch_cfg_set)parser_pattern_set,
      (rcf_ch_cfg_add)parser_pattern_add, (rcf_ch_cfg_del)parser_pattern_del,
-     (rcf_ch_cfg_list)parser_pattern_list, NULL, NULL };
+     (rcf_ch_cfg_list)parser_pattern_list, NULL, NULL, NULL };
 
 static rcf_pch_cfg_object serial_event =
     { "event", 0, &serial_pattern, NULL,
      (rcf_ch_cfg_get)parser_event_get, (rcf_ch_cfg_set)parser_event_set,
      (rcf_ch_cfg_add)parser_event_add, (rcf_ch_cfg_del)parser_event_del,
-     (rcf_ch_cfg_list)parser_event_list, NULL, NULL };
+     (rcf_ch_cfg_list)parser_event_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(serial_log_user, "user", NULL, NULL,
                     parser_common_get, parser_common_set);
@@ -1114,7 +1114,7 @@ static rcf_pch_cfg_object node_parser_inst =
     { "parser", 0, &serial_enable, NULL,
       (rcf_ch_cfg_get)parser_get, (rcf_ch_cfg_set)parser_set,
       (rcf_ch_cfg_add)parser_add, (rcf_ch_cfg_del)parser_del,
-      (rcf_ch_cfg_list)parsers_list, NULL, NULL };
+      (rcf_ch_cfg_list)parsers_list, NULL, NULL, NULL };
 
 /* See description in conf_serial_parser.h */
 te_errno

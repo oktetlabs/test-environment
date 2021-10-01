@@ -1657,7 +1657,7 @@ static rcf_pch_cfg_object node_ds_radiusserver_user = {
     (rcf_ch_cfg_add)ds_radius_user_add,
     (rcf_ch_cfg_del)ds_radius_user_del,
     ds_radius_user_list,
-    NULL, NULL
+    NULL, NULL, NULL
 };
 
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_client_secret, "secret",

@@ -648,7 +648,7 @@ static rcf_pch_cfg_object node_netconsole =
       (rcf_ch_cfg_add)netconsole_add,
       (rcf_ch_cfg_del)netconsole_del,
       (rcf_ch_cfg_list)netconsole_list,
-      NULL, NULL };
+      NULL, NULL, NULL };
 
 /*
  * Initializing netconsole configuration subtree.

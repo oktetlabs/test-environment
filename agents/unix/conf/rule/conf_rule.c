@@ -211,7 +211,7 @@ static rcf_pch_cfg_object node_rule =
     {"rule", 0, NULL, NULL,
      (rcf_ch_cfg_get)NULL, (rcf_ch_cfg_set)NULL,
      (rcf_ch_cfg_add)rule_add, (rcf_ch_cfg_del)rule_del,
-     (rcf_ch_cfg_list)rule_list, (rcf_ch_cfg_commit)rule_commit, NULL};
+     (rcf_ch_cfg_list)rule_list, (rcf_ch_cfg_commit)rule_commit, NULL, NULL};
 
 /* See the description in conf_rule.h */
 te_errno

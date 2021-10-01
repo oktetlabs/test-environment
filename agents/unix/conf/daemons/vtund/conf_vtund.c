@@ -1136,7 +1136,7 @@ static rcf_pch_cfg_object node_vtund_server =
       (rcf_ch_cfg_set)vtund_server_set,
       (rcf_ch_cfg_add)vtund_server_add,
       (rcf_ch_cfg_del)vtund_server_del,
-      (rcf_ch_cfg_list)vtund_server_list, NULL, NULL };
+      (rcf_ch_cfg_list)vtund_server_list, NULL, NULL, NULL };
 
 
 /*
@@ -1168,7 +1168,7 @@ static rcf_pch_cfg_object node_vtund_client =
       (rcf_ch_cfg_set)vtund_client_set,
       (rcf_ch_cfg_add)vtund_client_add,
       (rcf_ch_cfg_del)vtund_client_del,
-      (rcf_ch_cfg_list)vtund_client_list, NULL, NULL };
+      (rcf_ch_cfg_list)vtund_client_list, NULL, NULL, NULL };
 
 /* 
  * VTund root

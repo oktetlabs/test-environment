@@ -1227,13 +1227,13 @@ static rcf_pch_cfg_object node_route_nexthop =
       (rcf_ch_cfg_get)NULL, (rcf_ch_cfg_set)NULL,
       (rcf_ch_cfg_add)route_nexthop_add, (rcf_ch_cfg_del)route_nexthop_del,
       (rcf_ch_cfg_list)route_nexthop_list, (rcf_ch_cfg_commit)NULL,
-      &node_route };
+      &node_route, NULL};
 
 static rcf_pch_cfg_object node_route =
     {"route", 0, &node_route_nexthop, &node_blackhole,
      (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
      (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
-     (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit, NULL};
+     (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit, NULL, NULL};
 
 /* See the description in conf_route.h */
 te_errno

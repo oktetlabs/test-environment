@@ -115,7 +115,7 @@ static rcf_pch_cfg_object node_iptables_chain =
       (rcf_ch_cfg_add)iptables_chain_add,
       (rcf_ch_cfg_del)iptables_chain_del,
       (rcf_ch_cfg_list)iptables_chain_list,
-      NULL, NULL};
+      NULL, NULL, NULL};
 
 RCF_PCH_CFG_NODE_COLLECTION(node_iptables_table, "table",
                             &node_iptables_chain, NULL,

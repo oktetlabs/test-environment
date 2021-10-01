@@ -3921,7 +3921,7 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_interface, "interface",
 static rcf_pch_cfg_object node_ovs_log = {
     "log", 0, NULL, &node_ovs_interface,
     (rcf_ch_cfg_get)ovs_log_get, (rcf_ch_cfg_set)ovs_log_set,
-    NULL, NULL, (rcf_ch_cfg_list)ovs_log_list, NULL, NULL
+    NULL, NULL, (rcf_ch_cfg_list)ovs_log_list, NULL, NULL, NULL
 };
 
 RCF_PCH_CFG_NODE_RW(node_ovs_status, "status",

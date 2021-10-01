@@ -4026,7 +4026,7 @@ RCF_PCH_CFG_NODE_RWC(node_stp_prio, "prio",
 static rcf_pch_cfg_object node_stp =
         { "stp", 0, &node_stp_prio, &node_arl,
           (rcf_ch_cfg_get)stp_get, (rcf_ch_cfg_set)stp_set, 
-          NULL, NULL, NULL, stp_commit, NULL };
+          NULL, NULL, NULL, stp_commit, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(node_vlan_ip, "ip",
                     NULL, NULL,
@@ -4042,7 +4042,7 @@ static rcf_pch_cfg_object node_vlan =
           &node_vlan_port, &node_stp,
           (rcf_ch_cfg_get)vlan_get, (rcf_ch_cfg_set)vlan_set, 
           (rcf_ch_cfg_add)vlan_add, (rcf_ch_cfg_del)vlan_del, 
-          (rcf_ch_cfg_list)vlan_list, NULL, NULL };
+          (rcf_ch_cfg_list)vlan_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(node_cos, "cos",
                     NULL, &node_vlan,

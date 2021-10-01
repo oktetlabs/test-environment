@@ -2539,7 +2539,7 @@ RCF_PCH_CFG_NODE_RO(node_ds_lease_state, "state",
 static rcf_pch_cfg_object node_ds_client_lease =
     { "lease", 0, NULL, NULL,
       (rcf_ch_cfg_get)ds_client_lease_get, NULL, NULL, NULL,
-      (rcf_ch_cfg_list)ds_client_lease_list, NULL, NULL };
+      (rcf_ch_cfg_list)ds_client_lease_list, NULL, NULL, NULL };
 #endif /* TA_UNIX_ISC_DHCPS_LEASES_SUPPORTED */
 
 /*** Node /agent/dhcpserver/group children ***/
@@ -2549,7 +2549,7 @@ static rcf_pch_cfg_object node_ds_group_option =
       (rcf_ch_cfg_set)ds_group_option_set,
       (rcf_ch_cfg_add)ds_group_option_add,
       (rcf_ch_cfg_del)ds_group_option_del,
-      (rcf_ch_cfg_list)ds_group_option_list, NULL, NULL };
+      (rcf_ch_cfg_list)ds_group_option_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(node_ds_group_file, "file",
                     NULL, &node_ds_group_option,
@@ -2566,7 +2566,7 @@ static rcf_pch_cfg_object node_ds_host_option =
       (rcf_ch_cfg_set)ds_host_option_set,
       (rcf_ch_cfg_add)ds_host_option_add,
       (rcf_ch_cfg_del)ds_host_option_del,
-      (rcf_ch_cfg_list)ds_host_option_list, NULL, NULL };
+      (rcf_ch_cfg_list)ds_host_option_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(node_ds_host_prefix6, "prefix6",
                     NULL, &node_ds_host_option,
@@ -2617,7 +2617,7 @@ static rcf_pch_cfg_object node_ds_subnet_option =
       (rcf_ch_cfg_set)ds_subnet_option_set,
       (rcf_ch_cfg_add)ds_subnet_option_add,
       (rcf_ch_cfg_del)ds_subnet_option_del,
-      (rcf_ch_cfg_list)ds_subnet_option_list, NULL, NULL };
+      (rcf_ch_cfg_list)ds_subnet_option_list, NULL, NULL, NULL};
 
 RCF_PCH_CFG_NODE_RW(node_ds_subnet_vendor_sp, "vendor_option_space",
                     NULL, &node_ds_subnet_option,
@@ -2633,12 +2633,12 @@ RCF_PCH_CFG_NODE_RW(node_ds_subnet_range, "range",
 static rcf_pch_cfg_object node_ds_lease =
     { "lease", 0, &node_ds_lease_state, NULL,
       (rcf_ch_cfg_get)ds_lease_get, NULL, NULL, NULL,
-      (rcf_ch_cfg_list)ds_lease_list, NULL, NULL};
+      (rcf_ch_cfg_list)ds_lease_list, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_ds_client =
     { "client", 0, &node_ds_client_lease, &node_ds_lease,
       (rcf_ch_cfg_get)ds_client_get, NULL, NULL, NULL,
-      (rcf_ch_cfg_list)ds_client_list, NULL, NULL};
+      (rcf_ch_cfg_list)ds_client_list, NULL, NULL, NULL};
 
 RCF_PCH_CFG_NODE_COLLECTION(node_ds_group, "group",
                             &node_ds_group_next, &node_ds_client,
@@ -2668,7 +2668,7 @@ static rcf_pch_cfg_object node_ds_subnet =
       (rcf_ch_cfg_set)ds_subnet_set,
       (rcf_ch_cfg_add)ds_subnet_add,
       (rcf_ch_cfg_del)ds_subnet_del,
-      (rcf_ch_cfg_list)ds_subnet_list, NULL, NULL };
+      (rcf_ch_cfg_list)ds_subnet_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver_allow_unknown_clients,
                     "allow_unknown_clients",
@@ -2687,7 +2687,7 @@ static rcf_pch_cfg_object node_ds_dhcpserver =
       (rcf_ch_cfg_get)ds_dhcpserver_get,
       (rcf_ch_cfg_set)ds_dhcpserver_set,
       NULL, NULL, NULL,
-      (rcf_ch_cfg_commit)ds_dhcpserver_commit, NULL };
+      (rcf_ch_cfg_commit)ds_dhcpserver_commit, NULL, NULL };
 
 /*** Resource /agent/dhcpserver grab and release functions ***/
 te_errno

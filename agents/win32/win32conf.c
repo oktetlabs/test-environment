@@ -463,7 +463,7 @@ static rcf_pch_cfg_object node_route =
       (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
       (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
       (rcf_ch_cfg_list)route_list,
-      (rcf_ch_cfg_commit)route_commit, NULL};
+      (rcf_ch_cfg_commit)route_commit, NULL, NULL};
 
 RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
                     NULL, NULL,
@@ -473,20 +473,20 @@ static rcf_pch_cfg_object node_neigh_dynamic =
     { "neigh_dynamic", 0, &node_neigh_state, NULL,
       (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
-      (rcf_ch_cfg_list)neigh_dynamic_list, NULL, NULL};
+      (rcf_ch_cfg_list)neigh_dynamic_list, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_neigh_static =
     { "neigh_static", 0, NULL, &node_neigh_dynamic,
       (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
-      (rcf_ch_cfg_list)neigh_list, NULL, NULL};
+      (rcf_ch_cfg_list)neigh_list, NULL, NULL, NULL};
 
 //Multicast
 static rcf_pch_cfg_object node_mcast_link_addr =
  { "mcast_link_addr", 0, NULL, &node_neigh_static,
   NULL, NULL, (rcf_ch_cfg_add)mcast_link_addr_add,
   (rcf_ch_cfg_del)mcast_link_addr_del,
-  (rcf_ch_cfg_list)mcast_link_addr_list, NULL, NULL };
+  (rcf_ch_cfg_list)mcast_link_addr_list, NULL, NULL, NULL};
 //
 
 /* VLANS */
@@ -522,7 +522,7 @@ static rcf_pch_cfg_object node_net_addr =
     { "net_addr", 0, &node_prefix, &node_link_addr,
       (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
       (rcf_ch_cfg_add)net_addr_add, (rcf_ch_cfg_del)net_addr_del,
-      (rcf_ch_cfg_list)net_addr_list, NULL, NULL };
+      (rcf_ch_cfg_list)net_addr_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_net_addr,
                     ifindex_get);
@@ -535,7 +535,7 @@ static rcf_pch_cfg_object node_env =
     { "env", 0, NULL, &node_interface,
       (rcf_ch_cfg_get)env_get, (rcf_ch_cfg_set)env_set,
       (rcf_ch_cfg_add)env_add, (rcf_ch_cfg_del)env_del,
-      (rcf_ch_cfg_list)env_list, NULL, NULL };
+      (rcf_ch_cfg_list)env_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RO(node_uname, "uname", NULL, &node_env, uname_get);
 

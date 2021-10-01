@@ -321,7 +321,7 @@ static rcf_pch_cfg_object node_console_inst =
     { "console", 0, &console_port, NULL,
       (rcf_ch_cfg_get)console_get, (rcf_ch_cfg_set)console_set,
       (rcf_ch_cfg_add)console_add, (rcf_ch_cfg_del)console_del,
-      (rcf_ch_cfg_list)console_list, NULL, NULL };
+      (rcf_ch_cfg_list)console_list, NULL, NULL, NULL };
 
 /** Initialize the module and add the subtree to agent tree */
 te_errno

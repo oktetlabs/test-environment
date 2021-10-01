@@ -188,43 +188,43 @@ static rcf_pch_cfg_object node_rpcprovider =
     { "rpcprovider", 0, NULL, NULL,
       (rcf_ch_cfg_get)rpcprovider_get,
       (rcf_ch_cfg_set)rpcprovider_set,
-      NULL, NULL, NULL, NULL, NULL};
+      NULL, NULL, NULL, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_rpc_default_timeout =
     { "rpc_default_timeout", 0, NULL, &node_rpcprovider,
       (rcf_ch_cfg_get)rpc_default_timeout_get,
       (rcf_ch_cfg_set)rpc_default_timeout_set,
-      NULL, NULL, NULL, NULL, NULL};
+      NULL, NULL, NULL, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_rpcserver_sid =
     { "sid", 0, NULL, NULL,
       (rcf_ch_cfg_get)rpcserver_sid_get,
       (rcf_ch_cfg_set)rpcserver_sid_set,
-      NULL, NULL, NULL, NULL, NULL};
+      NULL, NULL, NULL, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_rpcserver_config =
     { "config", 0, NULL, &node_rpcserver_sid,
       (rcf_ch_cfg_get)rpcserver_config_get,
       (rcf_ch_cfg_set)rpcserver_config_set,
-      NULL, NULL, NULL, NULL, NULL};
+      NULL, NULL, NULL, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_rpcserver_finished =
     { "finished", 0, NULL, &node_rpcserver_config,
       (rcf_ch_cfg_get)rpcserver_finished_get,
       (rcf_ch_cfg_set)rpcserver_finished_set,
-      NULL, NULL, NULL, NULL, NULL};
+      NULL, NULL, NULL, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_rpcserver_dead =
     { "dead", 0, NULL, &node_rpcserver_finished,
       (rcf_ch_cfg_get)rpcserver_dead_get,
       (rcf_ch_cfg_set)rpcserver_dead_set,
-      NULL, NULL, NULL, NULL, NULL};
+      NULL, NULL, NULL, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_rpcserver =
     { "rpcserver", 0, &node_rpcserver_dead, &node_rpc_default_timeout,
       (rcf_ch_cfg_get)rpcserver_get, (rcf_ch_cfg_set)rpcserver_set,
       (rcf_ch_cfg_add)rpcserver_add, (rcf_ch_cfg_del)rpcserver_del,
-      (rcf_ch_cfg_list)rpcserver_list, NULL, NULL};
+      (rcf_ch_cfg_list)rpcserver_list, NULL, NULL, NULL};
 
 static struct rcf_comm_connection *conn_saved;
 

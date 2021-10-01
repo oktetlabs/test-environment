@@ -864,7 +864,7 @@ static rcf_pch_cfg_object eth_feature = {
     "feature", 0, &eth_feature_readonly, &deviceinfo,
     (rcf_ch_cfg_get)eth_feature_get, (rcf_ch_cfg_set)eth_feature_set,
     NULL, NULL, (rcf_ch_cfg_list)eth_feature_list,
-    (rcf_ch_cfg_commit)eth_feature_commit, NULL
+    (rcf_ch_cfg_commit)eth_feature_commit, NULL, NULL
 };
 
 RCF_PCH_CFG_NODE_RO(eth_ring_rx_max, "max", NULL, NULL,

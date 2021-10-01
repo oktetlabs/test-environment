@@ -808,7 +808,7 @@ static rcf_pch_cfg_object node_aggr =
       (rcf_ch_cfg_add)aggregation_add,
       (rcf_ch_cfg_del)aggregation_del,
       (rcf_ch_cfg_list)aggregation_list,
-      NULL, NULL };
+      NULL, NULL, NULL };
 
 te_errno
 ta_unix_conf_aggr_init(void)

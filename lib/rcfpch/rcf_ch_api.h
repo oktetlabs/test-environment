@@ -945,6 +945,9 @@ typedef struct rcf_pch_cfg_object {
     struct rcf_pch_cfg_object  *commit_parent;
     /*@}*/
 
+    /** Pointer to a linear array of substitutions */
+    const rcf_pch_cfg_substitution *subst;
+
 } rcf_pch_cfg_object;
 
 /**

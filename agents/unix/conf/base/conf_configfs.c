@@ -235,7 +235,7 @@ static rcf_pch_cfg_object node_configfs =
       (rcf_ch_cfg_add)configfs_add,
       (rcf_ch_cfg_del)configfs_del,
       (rcf_ch_cfg_list)configfs_list,
-      NULL, NULL };
+      NULL, NULL, NULL };
 
 /*
  * Initializing configfs configuration subtree.

@@ -3522,149 +3522,149 @@ static rcf_pch_cfg_object node_l2tp_lns_pppoption =
         { "option", 0, NULL, NULL, NULL, NULL,
           (rcf_ch_cfg_add)l2tp_lns_pppopt_add,
           (rcf_ch_cfg_del)l2tp_lns_pppopt_del,
-          (rcf_ch_cfg_list)l2tp_lns_pppopt_list, NULL, &node_l2tp };
+          (rcf_ch_cfg_list)l2tp_lns_pppopt_list, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_einterval =
         { "lcp-echo-interval", 0, NULL, &node_l2tp_lns_pppoption,
           (rcf_ch_cfg_get)l2tp_lns_opt_get_lei,
           (rcf_ch_cfg_set)l2tp_lns_opt_set_lei,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_efailure =
         { "lcp-echo-failure", 0, NULL, &node_l2tp_lns_einterval,
           (rcf_ch_cfg_get)l2tp_lns_opt_get_lef,
           (rcf_ch_cfg_set)l2tp_lns_opt_set_lef,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_mru =
         { "mru", 0, NULL, &node_l2tp_lns_efailure,
           (rcf_ch_cfg_get)l2tp_lns_opt_get_mru,
           (rcf_ch_cfg_set)l2tp_lns_opt_set_mru,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_mtu =
         { "mtu", 0, NULL, &node_l2tp_lns_mru,
           (rcf_ch_cfg_get)l2tp_lns_opt_get_mtu,
           (rcf_ch_cfg_set)l2tp_lns_opt_set_mtu,
-          NULL, NULL, NULL, NULL, &node_l2tp};
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_ppp_debug =
         { "ppp_debug", 0, NULL, NULL,
           (rcf_ch_cfg_get)l2tp_lns_opt_get_debug,
           (rcf_ch_cfg_set)l2tp_lns_opt_set_debug,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_ppp =
         { "pppopt", 0, &node_l2tp_lns_mtu, &node_l2tp_lns_ppp_debug,
-          NULL, NULL, NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_unix_auth =
         { "unix_auth", 0, NULL, &node_l2tp_lns_ppp,
           (rcf_ch_cfg_get)l2tp_lns_opt_get_uauth,
           (rcf_ch_cfg_set)l2tp_lns_opt_set_uauth,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_challenge =
         { "use_challenge", 0, NULL, &node_l2tp_lns_unix_auth,
           (rcf_ch_cfg_get)l2tp_lns_opt_get_challenge,
           (rcf_ch_cfg_set)l2tp_lns_opt_set_challenge,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL};
 
 static rcf_pch_cfg_object node_l2tp_lns_sserver =
         { "server",  0, NULL, NULL,
           (rcf_ch_cfg_get)l2tp_lns_secret_get_serv,
           (rcf_ch_cfg_set)l2tp_lns_secret_set_serv,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_sipv4 =
         { "ipv4",  0, NULL, &node_l2tp_lns_sserver,
           (rcf_ch_cfg_get)l2tp_lns_secret_get_ipv4,
           (rcf_ch_cfg_set)l2tp_lns_secret_set_ipv4,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_ssecret =
         { "secret",  0, NULL, &node_l2tp_lns_sipv4,
           (rcf_ch_cfg_get)l2tp_lns_secret_get_sec,
           (rcf_ch_cfg_set)l2tp_lns_secret_set_sec,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_sclient =
         { "client", 0, &node_l2tp_lns_ssecret, NULL,
           NULL, NULL,
           (rcf_ch_cfg_add)l2tp_lns_client_add,
           (rcf_ch_cfg_del)l2tp_lns_client_del,
-          (rcf_ch_cfg_list)l2tp_lns_client_list, NULL, &node_l2tp };
+          (rcf_ch_cfg_list)l2tp_lns_client_list, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_refuse =
         { "refuse", 0, NULL, &node_l2tp_lns_sclient,
           (rcf_ch_cfg_get)l2tp_lns_refuse_get,
           (rcf_ch_cfg_set)l2tp_lns_refuse_set,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_require =
         { "require", 0, NULL, &node_l2tp_lns_refuse,
           (rcf_ch_cfg_get)l2tp_lns_require_get,
           (rcf_ch_cfg_set)l2tp_lns_require_set,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL};
 
 static rcf_pch_cfg_object node_l2tp_lns_auth =
         { "auth", 0, &node_l2tp_lns_require, &node_l2tp_lns_challenge,
           NULL, NULL,
           (rcf_ch_cfg_add)l2tp_lns_auth_add,
           (rcf_ch_cfg_del)l2tp_lns_auth_del,
-          (rcf_ch_cfg_list)l2tp_lns_auth_list, NULL, &node_l2tp };
+          (rcf_ch_cfg_list)l2tp_lns_auth_list, NULL, &node_l2tp, NULL};
 
 static rcf_pch_cfg_object node_l2tp_lns_bit =
         { "bit", 0, NULL, &node_l2tp_lns_auth,
           (rcf_ch_cfg_get)l2tp_lns_bit_get, NULL,
           (rcf_ch_cfg_add)l2tp_lns_bit_add,
           (rcf_ch_cfg_del)l2tp_lns_bit_del,
-          (rcf_ch_cfg_list)l2tp_lns_bit_list, NULL, &node_l2tp };
+          (rcf_ch_cfg_list)l2tp_lns_bit_list, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_local_ip =
         { "local_ip", 0, NULL, &node_l2tp_lns_bit,
           (rcf_ch_cfg_get)l2tp_lns_local_ip_get,
           (rcf_ch_cfg_set)l2tp_lns_local_ip_set,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_connected =
         { "connected", 0, NULL, &node_l2tp_lns_local_ip,
           NULL, NULL, NULL, NULL,
           (rcf_ch_cfg_list)l2tp_lns_connected_list,
-          NULL, &node_l2tp };
+          NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_lac_range =
         { "lac_range", 0, NULL, &node_l2tp_connected,
           (rcf_ch_cfg_get)l2tp_lns_lac_range_get, NULL,
           (rcf_ch_cfg_add)l2tp_lns_lac_range_add,
           (rcf_ch_cfg_del)l2tp_lns_lac_range_del,
-          (rcf_ch_cfg_list)l2tp_lns_lac_range_list, NULL, &node_l2tp };
+          (rcf_ch_cfg_list)l2tp_lns_lac_range_list, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns_ip_range =
         { "ip_range", 0, NULL, &node_l2tp_lns_lac_range,
           (rcf_ch_cfg_get)l2tp_lns_ip_range_get, NULL,
           (rcf_ch_cfg_add)l2tp_lns_ip_range_add,
           (rcf_ch_cfg_del)l2tp_lns_ip_range_del,
-          (rcf_ch_cfg_list)l2tp_lns_ip_range_list, NULL, &node_l2tp };
+          (rcf_ch_cfg_list)l2tp_lns_ip_range_list, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_listen =
         { "listen", 0, NULL, NULL,
           (rcf_ch_cfg_get)l2tp_global_listen_get,
           (rcf_ch_cfg_set)l2tp_global_listen_set,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL};
 
 static rcf_pch_cfg_object node_l2tp_port =
         { "port", 0, NULL, &node_l2tp_listen,
           (rcf_ch_cfg_get)l2tp_global_port_get,
           (rcf_ch_cfg_set)l2tp_global_port_set,
-          NULL, NULL, NULL, NULL, &node_l2tp };
+          NULL, NULL, NULL, NULL, &node_l2tp, NULL };
 
 static rcf_pch_cfg_object node_l2tp_lns =
         { "lns", 0, &node_l2tp_lns_ip_range, &node_l2tp_port,
           NULL, NULL,
           (rcf_ch_cfg_add)l2tp_lns_section_add,
           (rcf_ch_cfg_del)l2tp_lns_section_del,
-          (rcf_ch_cfg_list)l2tp_lns_section_list, NULL, &node_l2tp };
+          (rcf_ch_cfg_list)l2tp_lns_section_list, NULL, &node_l2tp, NULL };
 
 
 static rcf_pch_cfg_object node_l2tp =
@@ -3672,7 +3672,7 @@ static rcf_pch_cfg_object node_l2tp =
           (rcf_ch_cfg_get)l2tp_server_get,
           (rcf_ch_cfg_set)l2tp_server_set,
           NULL, NULL, NULL,
-          (rcf_ch_cfg_commit)l2tp_server_commit, NULL };
+          (rcf_ch_cfg_commit)l2tp_server_commit, NULL, NULL};
 
 /**
  * Grab method for l2tp server resource

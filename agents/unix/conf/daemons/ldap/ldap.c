@@ -227,7 +227,7 @@ static rcf_pch_cfg_object node_ds_slapd = { "slapd", 0, NULL, NULL,
                                             (rcf_ch_cfg_add)ds_slapd_add, 
                                             (rcf_ch_cfg_del)ds_slapd_del, 
                                             (rcf_ch_cfg_list)ds_slapd_list, 
-                                            NULL, NULL };
+                                            NULL, NULL, NULL };
 
 /**
  * Add slapd node to the configuration tree.

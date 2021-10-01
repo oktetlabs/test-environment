@@ -2357,7 +2357,7 @@ static rcf_pch_cfg_object node_ds_##_father##_options =             \
       (rcf_ch_cfg_set)ds_##_father##_option_set,                    \
       (rcf_ch_cfg_add)ds_##_father##_option_add,                    \
       (rcf_ch_cfg_del)ds_##_father##_option_del,                    \
-      (rcf_ch_cfg_list)ds_##_father##_option_list, NULL, NULL }
+      (rcf_ch_cfg_list)ds_##_father##_option_list, NULL, NULL, NULL }
     OPTIONS_NODE(prefix, NULL);
     OPTIONS_NODE(route, NULL);
     OPTIONS_NODE(rdnss, NULL);
@@ -2367,7 +2367,7 @@ static rcf_pch_cfg_object node_ds_clients =
     { "clients", 0, NULL, NULL,
       (rcf_ch_cfg_get)ds_clients_get,
       (rcf_ch_cfg_set)ds_clients_set,
-      NULL, NULL, NULL, NULL, NULL };
+      NULL, NULL, NULL, NULL, NULL, NULL };
 
 #define INTERFACE_NODE(_name, _brother) \
 static rcf_pch_cfg_object node_ds_##_name =                         \
@@ -2375,7 +2375,7 @@ static rcf_pch_cfg_object node_ds_##_name =                         \
       NULL, NULL,                                                   \
       (rcf_ch_cfg_add)ds_##_name##_add,                             \
       (rcf_ch_cfg_del)ds_##_name##_del,                             \
-      (rcf_ch_cfg_list)ds_##_name##_list, NULL, NULL }
+      (rcf_ch_cfg_list)ds_##_name##_list, NULL, NULL, NULL }
     INTERFACE_NODE(rdnss, &node_ds_clients);
     INTERFACE_NODE(route, &node_ds_rdnss);
     INTERFACE_NODE(prefix, &node_ds_route);
@@ -2416,7 +2416,7 @@ static rcf_pch_cfg_object node_ds_radvd =
       (rcf_ch_cfg_get)ds_radvd_get,
       (rcf_ch_cfg_set)ds_radvd_set,
       NULL, NULL, NULL,
-      (rcf_ch_cfg_commit)ds_radvd_commit, NULL };
+      (rcf_ch_cfg_commit)ds_radvd_commit, NULL, NULL };
 
 /*** radvd grab and release functions ***/
 te_errno

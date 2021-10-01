@@ -1758,7 +1758,7 @@ static rcf_pch_cfg_object node_sniffer_inst =
     { "sniffer", 0, &node_enable, NULL,
       (rcf_ch_cfg_get)sniffer_get, (rcf_ch_cfg_set)sniffer_set,
       (rcf_ch_cfg_add)sniffer_add, (rcf_ch_cfg_del)sniffer_del,
-      (rcf_ch_cfg_list)sniffers_list, NULL, NULL };
+      (rcf_ch_cfg_list)sniffers_list, NULL, NULL, NULL };
 
 /** 
  * Get capture logs of the sniffer and send it as the answer with a binary

@@ -1152,7 +1152,7 @@ static rcf_pch_cfg_object node_nginx_ssl_entry =
       (rcf_ch_cfg_get)NULL, (rcf_ch_cfg_set)NULL,
       (rcf_ch_cfg_add)nginx_ssl_entry_add, (rcf_ch_cfg_del)nginx_ssl_entry_del,
       (rcf_ch_cfg_list)nginx_ssl_entry_list, (rcf_ch_cfg_commit)NULL,
-      &node_nginx };
+      &node_nginx, NULL };
 
 RCF_PCH_CFG_NODE_RWC(node_nginx_accept_mutex, "accept_mutex",
                      NULL, NULL, nginx_accept_mutex_get,

@@ -188,7 +188,7 @@ static rcf_pch_cfg_object node_phy_modes_speed_duplex = {
     (rcf_ch_cfg_get)phy_modes_speed_duplex_get,
     (rcf_ch_cfg_set)phy_modes_speed_duplex_set,
     NULL, NULL,
-    (rcf_ch_cfg_list)phy_modes_speed_duplex_list, NULL, &node_phy
+    (rcf_ch_cfg_list)phy_modes_speed_duplex_list, NULL, &node_phy, NULL
 };
 
 RCF_PCH_CFG_NODE_COLLECTION(node_phy_modes_speed, "speed",

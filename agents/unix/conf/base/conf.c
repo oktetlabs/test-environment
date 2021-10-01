@@ -840,13 +840,13 @@ static rcf_pch_cfg_object node_neigh_dynamic =
     { "neigh_dynamic", 0, &node_neigh_state, NULL,
       (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
-      (rcf_ch_cfg_list)neigh_list, NULL, NULL};
+      (rcf_ch_cfg_list)neigh_list, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_neigh_static =
     { "neigh_static", 0, NULL, &node_neigh_dynamic,
       (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
-      (rcf_ch_cfg_list)neigh_list, NULL, NULL};
+      (rcf_ch_cfg_list)neigh_list, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_neigh_proxy =
     { "neigh_proxy", 0, NULL, &node_neigh_static,
@@ -861,13 +861,13 @@ static rcf_pch_cfg_object node_net_addr =
     { "net_addr", 0, &node_broadcast, &node_neigh_proxy,
       (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
       (rcf_ch_cfg_add)net_addr_add, (rcf_ch_cfg_del)net_addr_del,
-      (rcf_ch_cfg_list)net_addr_list, NULL, NULL };
+      (rcf_ch_cfg_list)net_addr_list, NULL, NULL, NULL };
 
 static rcf_pch_cfg_object node_mcast_link_addr =
     { "mcast_link_addr", 0, NULL, &node_net_addr,
       NULL, NULL, (rcf_ch_cfg_add)mcast_link_addr_add,
       (rcf_ch_cfg_del)mcast_link_addr_del,
-      (rcf_ch_cfg_list)mcast_link_addr_list, NULL, NULL };
+      (rcf_ch_cfg_list)mcast_link_addr_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RO(node_vl_ifname, "ifname", NULL, NULL,
                     vlan_ifname_get);
@@ -941,7 +941,7 @@ static rcf_pch_cfg_object node_env =
     { "env", 0, NULL, &node_ip6_fw,
       (rcf_ch_cfg_get)env_get, (rcf_ch_cfg_set)env_set,
       (rcf_ch_cfg_add)env_add, (rcf_ch_cfg_del)env_del,
-      (rcf_ch_cfg_list)env_list, NULL, NULL };
+      (rcf_ch_cfg_list)env_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RO(node_uname, "uname", NULL, &node_env, uname_get);
 
@@ -984,7 +984,7 @@ static rcf_pch_cfg_object node_dom_u_bridge =
       (rcf_ch_cfg_set)&dom_u_bridge_set,
       (rcf_ch_cfg_add)&dom_u_bridge_add,
       (rcf_ch_cfg_del)&dom_u_bridge_del,
-      (rcf_ch_cfg_list)&dom_u_bridge_list, NULL, NULL };
+      (rcf_ch_cfg_list)&dom_u_bridge_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(node_dom_u_mac_addr, "mac_addr",
                     NULL, &node_dom_u_bridge,
@@ -1006,7 +1006,7 @@ static rcf_pch_cfg_object node_dom_u =
     { "dom_u", 0, &node_dom_u_status, NULL,
       (rcf_ch_cfg_get)&dom_u_get, (rcf_ch_cfg_set)&dom_u_set,
       (rcf_ch_cfg_add)&dom_u_add, (rcf_ch_cfg_del)&dom_u_del,
-      (rcf_ch_cfg_list)&dom_u_list, NULL, NULL };
+      (rcf_ch_cfg_list)&dom_u_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(node_xen_interface_bridge, "bridge",
                     NULL, NULL,
@@ -1018,7 +1018,7 @@ static rcf_pch_cfg_object node_xen_interface =
       (rcf_ch_cfg_set)&xen_interface_set,
       (rcf_ch_cfg_add)&xen_interface_add,
       (rcf_ch_cfg_del)&xen_interface_del,
-      (rcf_ch_cfg_list)&xen_interface_list, NULL, NULL };
+      (rcf_ch_cfg_list)&xen_interface_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(node_xen_init, "init",
                     NULL, &node_xen_interface,

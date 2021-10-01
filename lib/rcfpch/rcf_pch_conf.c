@@ -75,7 +75,7 @@
     static rcf_pch_cfg_object _name =                       \
         { "agent", 0, NULL, NULL, NULL, NULL, NULL, NULL,   \
            (rcf_ch_cfg_list)rcf_pch_agent_list,             \
-           NULL, NULL }
+           NULL, NULL, NULL }
 
 /** Structure for temporary storing of instances/objects identifiers */
 typedef struct olist {
@@ -2382,26 +2382,26 @@ static rcf_pch_cfg_object node_rsrc_acquire_timeout =
     { "acquire_attempts_timeout", 0, NULL, NULL,
       (rcf_ch_cfg_get)rsrc_property_get,
       (rcf_ch_cfg_set)rsrc_property_set,
-      NULL, NULL, NULL, NULL, NULL };
+      NULL, NULL, NULL, NULL, NULL, NULL };
 
 static rcf_pch_cfg_object node_rsrc_fallback_shared =
     { "fallback_shared", 0, NULL, &node_rsrc_acquire_timeout,
       (rcf_ch_cfg_get)rsrc_property_get,
       (rcf_ch_cfg_set)rsrc_property_set,
-      NULL, NULL, NULL, NULL, NULL };
+      NULL, NULL, NULL, NULL, NULL, NULL };
 
 /** Resource's shared property node */
 static rcf_pch_cfg_object node_rsrc_shared =
     { "shared", 0, NULL, &node_rsrc_fallback_shared,
       (rcf_ch_cfg_get)rsrc_shared_get, (rcf_ch_cfg_set)rsrc_shared_set,
-      NULL, NULL, NULL, NULL, NULL };
+      NULL, NULL, NULL, NULL, NULL, NULL };
 
 /** Resource node */
 static rcf_pch_cfg_object node_rsrc =
     { "rsrc", 0, &node_rsrc_shared, NULL,
       (rcf_ch_cfg_get)rsrc_get, (rcf_ch_cfg_set)rsrc_set,
       (rcf_ch_cfg_add)rsrc_add, (rcf_ch_cfg_del)rsrc_del,
-      (rcf_ch_cfg_list)rsrc_list, NULL, NULL };
+      (rcf_ch_cfg_list)rsrc_list, NULL, NULL, NULL };
 
 /**
  * Link resource configuration tree.

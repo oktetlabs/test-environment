@@ -106,7 +106,7 @@ static rcf_pch_cfg_object node_pppoe_client =
       (rcf_ch_cfg_set)&pppoe_set,
       (rcf_ch_cfg_add)&pppoe_add,
       (rcf_ch_cfg_del)&pppoe_del,
-      (rcf_ch_cfg_list)&pppoe_list, NULL, NULL };
+      (rcf_ch_cfg_list)&pppoe_list, NULL, NULL, NULL };
 
 /**
  * Create PPPoE client over the particular interface

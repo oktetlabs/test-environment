@@ -152,7 +152,7 @@ static rcf_pch_cfg_object node_macvlan =
     { "macvlan", 0, NULL, NULL,
       (rcf_ch_cfg_get)macvlan_get, (rcf_ch_cfg_set)macvlan_set,
       (rcf_ch_cfg_add)macvlan_add, (rcf_ch_cfg_del)macvlan_del,
-      (rcf_ch_cfg_list)macvlan_list, NULL, NULL };
+      (rcf_ch_cfg_list)macvlan_list, NULL, NULL, NULL };
 
 /* See the description in conf_rule.h */
 te_errno

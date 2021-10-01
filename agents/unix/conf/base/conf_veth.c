@@ -131,7 +131,7 @@ static rcf_pch_cfg_object node_veth =
     { "veth", 0, NULL, NULL,
       (rcf_ch_cfg_get)veth_get, NULL,
       (rcf_ch_cfg_add)veth_add, (rcf_ch_cfg_del)veth_del,
-      (rcf_ch_cfg_list)veth_list, NULL, NULL };
+      (rcf_ch_cfg_list)veth_list, NULL, NULL, NULL };
 
 /* See the description in conf_rule.h */
 te_errno
