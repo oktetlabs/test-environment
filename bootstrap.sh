@@ -66,7 +66,9 @@ EOF
 elif test -d .git; then
     # Remove files ignored by Git, excluding user's config files
     for i in $(git ls-files --others --ignored --exclude-standard) ; do
-        test "$i" = ".reviewboardrc" || rm --force $i
+        [[ "$i" = ".reviewboardrc" ]] ||
+        [[ "$i" = *".vscode/"* ]] ||
+        rm --force $i
     done
 else
     echo "Unknown type of repository"
