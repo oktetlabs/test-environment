@@ -389,3 +389,11 @@
              and let the test or some other entity interpret the data,
            - identify some set of important parameters and make a bona fide
              effort to provide platform-independent way to access them.
+
+    - oid: "/agent/hardware/iommu"
+      access: read_only
+      type: string
+      d: |
+         Node indicating if IOMMU is enabled
+         Name: none
+         Value: "on", "off"

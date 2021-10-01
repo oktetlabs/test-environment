@@ -19,6 +19,7 @@ sources += files(
     'base/conf_configfs.c',
     'base/conf_cpu.c',
     'base/conf_eth.c',
+    'base/conf_iommu.c',
     'base/conf_ipvlan.c',
     'base/conf_l4_port.c',
     'base/conf_macvlan.c',
