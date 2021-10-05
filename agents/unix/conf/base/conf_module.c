@@ -88,6 +88,7 @@ typedef struct te_kernel_module {
     te_bool fallback; /*< Load module shipped with the kernel if file
                           pointed by filename does not exist */
 
+    /*< List of parameters of unloaded module to pass later when load it */
     LIST_HEAD(te_kernel_module_params, te_kernel_module_param) params;
 } te_kernel_module;
 
@@ -867,6 +868,11 @@ module_param_add(unsigned int gid, const char *oid,
 
     if (module->loaded)
     {
+        /*
+         * For already loaded module the list of parameters is exported
+         * from /sys/module/modname/parameters. Only their values could be
+         * changed with set.
+         */
         ERROR("We don't support addition of module parameters "
               "when loaded and module '%s' is loaded", mod_name);
         return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
@@ -902,6 +908,11 @@ module_param_del(unsigned int gid, const char *oid,
 
     if (module->loaded)
     {
+        /*
+         * For already loaded module the list of parameters is exported
+         * from /sys/module/modname/parameters. Only their values could be
+         * changed with set.
+         */
         ERROR("We don't support removal of module parameters "
               "when loaded and module '%s' is loaded", mod_name);
         return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
