@@ -8,3 +8,5 @@
 .log_h1 {font-size: 1.1em; font-weight: bold; display: block;}
 .log_h2 {font-size: 1.05em; font-weight: bold; display: block; margin-top: 0.5em;}
 .log_h3 {font-size: 1em; font-weight: bold; display: block; margin-top: 0.3em;}
+
+.te_log_table { font-size: 1em; font-family: monospace; }

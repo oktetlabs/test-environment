@@ -1694,6 +1694,58 @@ RGT_DEF_FUNC(proc_meta_artifact_end)
     depth_user->ignore_artifact = FALSE;
 }
 
+/**
+ * Write a string to HTML file. If a sequence of multiple consecutive
+ * spaces is encountered, replace every second space with "&nbsp;" so
+ * that HTML will not replace such a sequence with a single space.
+ *
+ * @param fd      FILE to which to write
+ * @param ch      String to write
+ * @param len     Length of the string
+ */
+static void
+write_chars_preserve_spaces(FILE *fd, const rgt_xmlChar *ch, size_t len)
+{
+    te_dbuf chars_dbuf = TE_DBUF_INIT(50);
+    size_t i;
+    size_t processed_len;
+    te_bool prev_space = FALSE;
+    static const char nbsp[] = "&nbsp;";
+
+    for (i = 0, processed_len = 0; i < len; i++)
+    {
+        if (prev_space && ch[i] == ' ')
+        {
+            te_dbuf_append(&chars_dbuf, &ch[processed_len],
+                           i - processed_len);
+            te_dbuf_append(&chars_dbuf, nbsp, sizeof(nbsp) - 1);
+            processed_len = i + 1;
+        }
+
+        if (ch[i] == ' ')
+            prev_space = !prev_space;
+        else
+            prev_space = FALSE;
+    }
+
+    if (chars_dbuf.len == 0)
+    {
+        fwrite(ch, len, 1, fd);
+    }
+    else
+    {
+        if (len > processed_len)
+        {
+            te_dbuf_append(&chars_dbuf, &ch[processed_len],
+                           len - processed_len);
+        }
+
+        fwrite(chars_dbuf.ptr, chars_dbuf.len, 1, fd);
+    }
+
+    te_dbuf_free(&chars_dbuf);
+}
+
 void
 proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
            const rgt_xmlChar *ch, size_t len)
@@ -1763,7 +1815,7 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     if (p > ch_begin)
         fwrite(ch_begin, p - ch_begin, 1, fd);
 #else
-    fwrite(ch, len, 1, fd);
+    write_chars_preserve_spaces(fd, ch, len);
 #endif
 }
 
