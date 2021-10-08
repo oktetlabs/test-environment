@@ -51,6 +51,7 @@ if test x$host = x${host%windows} ; then
 fi
 
 AC_SEARCH_LIBS([pow], [m])
+AC_SEARCH_LIBS([timer_create], [rt])
 
 AC_CHECK_HEADERS([sched.h])
 

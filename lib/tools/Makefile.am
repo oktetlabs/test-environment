@@ -34,6 +34,7 @@ include_HEADERS = \
 	te_str.h \
 	te_stopwatch.h \
 	te_time.h \
+	te_timer.h \
 	te_units.h \
 	te_log_stack.h \
 	te_vector.h \
@@ -90,6 +91,7 @@ libtools_la_SOURCES = \
 	te_str.c \
 	te_stopwatch.c \
 	te_time.c \
+	te_timer.c \
 	te_units.c \
 	te_log_stack.c \
 	te_vector.c \

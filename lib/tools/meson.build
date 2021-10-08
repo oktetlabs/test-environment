@@ -38,6 +38,7 @@ headers += files(
     'te_str.h',
     'te_string.h',
     'te_time.h',
+    'te_timer.h',
     'te_toeplitz.h',
     'te_tools.h',
     'te_units.h',
@@ -69,6 +70,7 @@ sources += files(
     'te_str.c',
     'te_string.c',
     'te_time.c',
+    'te_timer.c',
     'te_toeplitz.c',
     'te_units.c',
     'te_vector.c',
@@ -107,7 +109,11 @@ if cc.has_function('getaddrinfo')
     c_args += [ '-DHAVE_GETADDRINFO' ]
 endif
 
-deps += [ cc.find_library('m'), dep_threads ]
+deps += [
+    cc.find_library('m'),
+    cc.find_library('rt'),
+    dep_threads
+]
 
 h = 'sched.h'
 if cc.has_header(h)
