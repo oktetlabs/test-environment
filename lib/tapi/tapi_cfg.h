@@ -744,6 +744,8 @@ typedef enum {
                                      implementation of the same Link
                                      aggregation concept. */
     TE_INTERFACE_KIND_BRIDGE,   /**< Bridge */
+    TE_INTERFACE_KIND_TUN,      /**< TAP/TUN: in both cases ethtool says
+                                     it is tun */
     TE_INTERFACE_KIND_END       /**< Not a real interface kind, but ending
                                      enum element. */
 } te_interface_kind;
@@ -757,7 +759,8 @@ typedef enum {
     { "veth",       TE_INTERFACE_KIND_VETH },       \
     { "bond",       TE_INTERFACE_KIND_BOND },       \
     { "team",       TE_INTERFACE_KIND_TEAM },       \
-    { "bridge",     TE_INTERFACE_KIND_BRIDGE }
+    { "bridge",     TE_INTERFACE_KIND_BRIDGE },     \
+    { "tun",        TE_INTERFACE_KIND_TUN }
 
 /**
  * Get value of a test parameter of type @ref te_interface_kind.
