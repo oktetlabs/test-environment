@@ -8,6 +8,7 @@ Common tools API
 	:hidden:
 
 	/generated/group_te_tools_te_shell_cmd.rst
+	/generated/group_te_tools_te_stopwatch.rst
 	/generated/group_te_tools_te_time.rst
 	/generated/group_te_tools_te_vec.rst
 	/generated/group_te_tools_te_dbuf.rst
@@ -39,6 +40,7 @@ Common tools API
 Here is a common library which functions are designed for using them everywhere, whether in Engine modules, Agent modules, or Test Suite
 
 |	:ref:`Call shell commands<doxid-group__te__tools__te__shell__cmd>`
+|	:ref:`Stopwatch<doxid-group__te__tools__te__stopwatch>`
 |	:ref:`Date, time<doxid-group__te__tools__te__time>`
 |	:ref:`Dymanic array<doxid-group__te__tools__te__vec>`
 |	:ref:`Dynamic buffers<doxid-group__te__tools__te__dbuf>`

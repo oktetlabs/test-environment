@@ -32,6 +32,7 @@ include_HEADERS = \
 	te_kvpair.h \
 	te_toeplitz.h \
 	te_str.h \
+	te_stopwatch.h \
 	te_time.h \
 	te_units.h \
 	te_log_stack.h \
@@ -87,6 +88,7 @@ libtools_la_SOURCES = \
 	te_kvpair.c \
 	te_toeplitz.c \
 	te_str.c \
+	te_stopwatch.c \
 	te_time.c \
 	te_units.c \
 	te_log_stack.c \
