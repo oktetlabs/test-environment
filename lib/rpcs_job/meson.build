@@ -4,11 +4,7 @@ sources += files(
     'job.c',
 )
 
-dep_pcre = dependency('libpcre')
-
-deps += [
-    dep_pcre,
-]
 te_libs += [
     'rpcserver',
+    'ta_job',
 ]

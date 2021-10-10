@@ -25,18 +25,6 @@ AC_ARG_VAR([TE_BASE])
 
 TE_LIB_SET
 
-dnl Check for libpcre
-
-PCRE_LIBS=
-
-AC_CHECK_HEADER([pcre.h], [],
-[AC_MSG_ERROR([Job control RPC server requires pcre.h])],
-[#include <pcre.h>])
-AC_CHECK_LIB([pcre], [pcre_exec], [],
-[AC_MSG_ERROR([Job control RPC server requires PCRE library])])
-
-AC_SUBST([PCRE_LIBS])
-
 dnl Used here tarpc.h includes rpc/rpc.h which requires extra -I option
 dnl in the case of libtirpc. There is no easy way to inherit it from
 dnl rpcxdr findings so just repeat the check here
