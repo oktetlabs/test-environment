@@ -1,0 +1,21 @@
+# Copyright (C) 2021 OKTET Labs. All rights reserved.
+
+headers += files(
+    'ta_job.h',
+)
+
+sources += files(
+    'ta_job.c',
+)
+
+te_libs += [
+    'agentlib',
+    'rpc_types',
+    'tools',
+]
+
+dep_pcre = dependency('libpcre')
+
+deps += [
+    dep_pcre,
+]
