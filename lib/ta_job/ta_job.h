@@ -346,7 +346,7 @@ extern te_errno ta_job_killpg(ta_job_manager_t *manager, unsigned int job_id,
  *                             current status and exit, negative value means
  *                             that the call of the function blocks until
  *                             the job changes its status.
- * @param[out] status          Job exit status location
+ * @param[out] status          Job exit status location, may be @c NULL
  *
  * @return     Status code
  * @retval     0               The job completed running

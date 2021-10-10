@@ -2313,7 +2313,8 @@ ta_job_wait(ta_job_manager_t *manager, unsigned int job_id, int timeout_ms,
         if (!job->has_started)
             return TE_ECHILD;
 
-        *status = job->last_status;
+        if (status != NULL)
+            *status = job->last_status;
 
         return 0;
     }
@@ -2322,7 +2323,8 @@ ta_job_wait(ta_job_manager_t *manager, unsigned int job_id, int timeout_ms,
     {
         job->pid = -1;
         job->last_status = job_status;
-        *status = job_status;
+        if (status != NULL)
+            *status = job_status;
     }
 
     return rc;
