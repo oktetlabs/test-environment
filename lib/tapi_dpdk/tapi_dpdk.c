@@ -917,6 +917,8 @@ typedef struct tapi_dpdk_testpmd_prep_eal {
     char **testpmd_argv;
     unsigned int port_number;
     unsigned int nb_cores;
+    tapi_cpu_index_t *grabbed_cpu_ids;
+    unsigned int nb_cpus_grabbed;
 } tapi_dpdk_testpmd_prep_eal;
 
 static void
@@ -925,12 +927,26 @@ tapi_dpdk_testpmd_prepare_eal_init(tapi_dpdk_testpmd_prep_eal *prep_eal)
     memset(prep_eal, 0, sizeof(*prep_eal));
     prep_eal->testpmd_path = (te_string)TE_STRING_INIT;
     prep_eal->testpmd_argv = NULL;
+    prep_eal->grabbed_cpu_ids = NULL;
 }
 
 static void
-tapi_dpdk_testpmd_prepare_eal_cleanup(tapi_dpdk_testpmd_prep_eal *prep_eal)
+tapi_dpdk_testpmd_prepare_eal_cleanup(tapi_dpdk_testpmd_prep_eal *prep_eal,
+                                      te_bool release_cpus_rsrc, const char *ta)
 {
     int i;
+
+    if (release_cpus_rsrc && ta != NULL)
+    {
+        for (i = 0; i < prep_eal->nb_cpus_grabbed; i++)
+        {
+            (void)tapi_cfg_cpu_release_by_id(ta,
+                                             &prep_eal->grabbed_cpu_ids[i]);
+        }
+    }
+    free(prep_eal->grabbed_cpu_ids);
+    prep_eal->nb_cpus_grabbed = 0;
+    prep_eal->grabbed_cpu_ids = NULL;
 
     prep_eal->nb_cores = 0;
     prep_eal->port_number = 0;
@@ -950,13 +966,11 @@ tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
                                      tapi_dpdk_testpmd_job_t *testpmd_job,
                                      tapi_dpdk_testpmd_prep_eal *prep_eal)
 {
-    tapi_cpu_index_t *cpu_ids = NULL;
     char *working_dir = NULL;
     const char *vdev_arg = NULL;
     /* The first CPU is reserved by testpmd for command-line processing */
     unsigned int n_cpus = n_fwd_cpus + 1;
     unsigned int service_cores_count;
-    unsigned int n_cpus_grabbed;
     int numa_node;
     te_errno rc = 0;
 
@@ -991,25 +1005,28 @@ tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
      */
     n_cpus += service_cores_count;
 
-    cpu_ids = tapi_calloc(n_cpus, sizeof(*cpu_ids));
+    prep_eal->grabbed_cpu_ids = tapi_calloc(n_cpus,
+                                          sizeof(*(prep_eal->grabbed_cpu_ids)));
     if ((rc = tapi_dpdk_grab_cpus_nonstrict_prop(rpcs->ta, n_cpus,
-                                                 TESTPMD_MIN_N_CORES +
-                                                 service_cores_count,
-                                                 numa_node,
-                                                 prop,
-                                                 &n_cpus_grabbed, cpu_ids)) != 0)
+                                             TESTPMD_MIN_N_CORES +
+                                             service_cores_count,
+                                             numa_node,
+                                             prop,
+                                             &prep_eal->nb_cpus_grabbed,
+                                             prep_eal->grabbed_cpu_ids)) != 0)
     {
         goto fail_grab_cpus;
     }
 
-    prep_eal->nb_cores = n_cpus_grabbed - 1 - service_cores_count;
+    prep_eal->nb_cores = prep_eal->nb_cpus_grabbed - 1 - service_cores_count;
 
     rc = te_string_append(&prep_eal->testpmd_path, "%sdpdk-testpmd",
                           working_dir);
     if (rc != 0)
         goto fail_get_testpmd_path;
 
-    rc = tapi_dpdk_build_eal_arguments(rpcs, env, n_cpus_grabbed, cpu_ids,
+    rc = tapi_dpdk_build_eal_arguments(rpcs, env, prep_eal->nb_cpus_grabbed,
+                                       prep_eal->grabbed_cpu_ids,
                                        prep_eal->testpmd_path.ptr,
                                        &prep_eal->testpmd_argc,
                                        &prep_eal->testpmd_argv);
@@ -1030,10 +1047,9 @@ tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
 fail_get_port_number:
 fail_build_eal_args:
 fail_get_testpmd_path:
-    tapi_dpdk_testpmd_prepare_eal_cleanup(prep_eal);
 fail_grab_cpus:
+    tapi_dpdk_testpmd_prepare_eal_cleanup(prep_eal, TRUE, rpcs->ta);
     free(working_dir);
-    free(cpu_ids);
 fail_get_working_dir:
 fail_get_service_cores:
 fail_get_numa_node:
@@ -1178,7 +1194,7 @@ out:
         free(testpmd_argv[i]);
     free(testpmd_argv);
 
-    tapi_dpdk_testpmd_prepare_eal_cleanup(&prep_eal);
+    tapi_dpdk_testpmd_prepare_eal_cleanup(&prep_eal, FALSE, NULL);
     tapi_job_factory_destroy(factory);
 
     return rc;
@@ -1289,7 +1305,7 @@ out:
         free(testpmd_argv[i]);
     free(testpmd_argv);
 
-    tapi_dpdk_testpmd_prepare_eal_cleanup(&prep_eal);
+    tapi_dpdk_testpmd_prepare_eal_cleanup(&prep_eal, TRUE, rpcs->ta);
     te_string_free(&stop_testpmd_cmd);
 
     tapi_job_factory_destroy(factory);
