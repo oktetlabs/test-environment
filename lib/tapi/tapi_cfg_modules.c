@@ -212,20 +212,20 @@ tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
                               mod_name, ta_name);
             goto out;
         }
-
-        rc = cfg_get_instance_fmt(&cvt, &loaded, CFG_MODULE_OID_FMT "/loaded:",
-                                  ta_name, mod_name);
-        if (rc != 0)
-        {
-            ERROR("Cannot get module '%s' after addition on %s: %r",
-                  mod_name, ta_name, rc);
-            goto out;
-        }
     }
     else if (rc != 0)
     {
         te_log_stack_push("Check if there is module '%s' on TA %s failed: %r",
                           mod_name, ta_name, rc);
+        goto out;
+    }
+
+    rc = cfg_get_instance_fmt(&cvt, &loaded, CFG_MODULE_OID_FMT "/loaded:",
+                              ta_name, mod_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot get supposedly added module '%s' on %s: %r",
+              mod_name, ta_name, rc);
         goto out;
     }
 

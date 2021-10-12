@@ -24,6 +24,8 @@ extern "C" {
 
 /**
  * Add module into the list of the agent modules. Load if asked.
+ * No error is returned if module is already added or loaded. Check
+ * it beforehand if needed.
  *
  * @param ta_name        Name of the agent
  * @param mod_name       Name of the module
