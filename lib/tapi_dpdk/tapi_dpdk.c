@@ -950,11 +950,6 @@ tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
                                      tapi_dpdk_testpmd_job_t *testpmd_job,
                                      tapi_dpdk_testpmd_prep_eal *prep_eal)
 {
-    te_string testpmd_path = TE_STRING_INIT;
-    int testpmd_argc = 0;
-    char **testpmd_argv = NULL;
-    unsigned int port_number = 0;
-
     tapi_cpu_index_t *cpu_ids = NULL;
     char *working_dir = NULL;
     const char *vdev_arg = NULL;
@@ -971,17 +966,24 @@ tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
     {
         ERROR("Testpmd cannot be run with 0 forwarding cores");
         rc = TE_RC(TE_TAPI, TE_EINVAL);
-        goto out;
+        goto wrong_fwd_cpus;
     }
 
     rc = tapi_rte_get_numa_node(env, rpcs, &numa_node);
     if (rc != 0)
-        goto out;
+        goto fail_get_numa_node;
 
     rc = tapi_eal_get_nb_required_service_cores_rpcs(env, rpcs,
                                                      &service_cores_count);
     if (rc != 0)
-        goto out;
+        goto fail_get_service_cores;
+
+    rc = cfg_get_instance_fmt(NULL, &working_dir, "/agent:%s/dir:", rpcs->ta);
+    if (rc != 0)
+    {
+        ERROR("Failed to get working directory");
+        goto fail_get_working_dir;
+    }
 
     /*
      * Adjust the preferred count of CPUs to grab, include required service
@@ -997,42 +999,45 @@ tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
                                                  prop,
                                                  &n_cpus_grabbed, cpu_ids)) != 0)
     {
-        goto out;
+        goto fail_grab_cpus;
     }
 
-    n_fwd_cpus = n_cpus_grabbed - 1 - service_cores_count;
+    prep_eal->nb_cores = n_cpus_grabbed - 1 - service_cores_count;
 
-    rc = cfg_get_instance_fmt(NULL, &working_dir, "/agent:%s/dir:", rpcs->ta);
+    rc = te_string_append(&prep_eal->testpmd_path, "%sdpdk-testpmd",
+                          working_dir);
     if (rc != 0)
-    {
-        ERROR("Failed to get working directory");
-        goto out;
-    }
-
-    CHECK_RC(te_string_append(&testpmd_path, "%sdpdk-testpmd", working_dir));
+        goto fail_get_testpmd_path;
 
     rc = tapi_dpdk_build_eal_arguments(rpcs, env, n_cpus_grabbed, cpu_ids,
-                                       testpmd_path.ptr, &testpmd_argc,
-                                       &testpmd_argv);
+                                       prep_eal->testpmd_path.ptr,
+                                       &prep_eal->testpmd_argc,
+                                       &prep_eal->testpmd_argv);
     if (rc != 0)
-        goto out;
+        goto fail_build_eal_args;
 
-    vdev_arg = tapi_dpdk_get_vdev_eal_argument(testpmd_argc, testpmd_argv);
+    vdev_arg = tapi_dpdk_get_vdev_eal_argument(prep_eal->testpmd_argc,
+                                               prep_eal->testpmd_argv);
     if (vdev_arg != NULL)
     {
-        if ((rc = tapi_dpdk_get_vdev_port_number(vdev_arg, &port_number)) != 0)
-            goto out;
+        if ((rc = tapi_dpdk_get_vdev_port_number(vdev_arg,
+                                                 &prep_eal->port_number)) != 0)
+            goto fail_get_port_number;
     }
 
-out:
-    prep_eal->testpmd_path = testpmd_path;
-    prep_eal->testpmd_argc = testpmd_argc;
-    prep_eal->testpmd_argv = testpmd_argv;
-    prep_eal->port_number = port_number;
-    prep_eal->nb_cores = n_fwd_cpus;
+    return 0;
 
-    free(cpu_ids);
+fail_get_port_number:
+fail_build_eal_args:
+fail_get_testpmd_path:
+    tapi_dpdk_testpmd_prepare_eal_cleanup(prep_eal);
+fail_grab_cpus:
     free(working_dir);
+    free(cpu_ids);
+fail_get_working_dir:
+fail_get_service_cores:
+fail_get_numa_node:
+wrong_fwd_cpus:
     return rc;
 }
 
@@ -1059,15 +1064,15 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     rc = tapi_dpdk_prepare_and_build_eal_args(rpcs, env, n_fwd_cpus, prop,
                                               test_args, testpmd_job,
                                               &prep_eal);
+    if (rc != 0)
+        goto out;
+
     testpmd_argc = prep_eal.testpmd_argc;
     testpmd_argv = prep_eal.testpmd_argv;
     prep_eal.testpmd_argc = 0;
     prep_eal.testpmd_argv = NULL;
     port_number = prep_eal.port_number;
     n_fwd_cpus = prep_eal.nb_cores;
-
-    if (rc != 0)
-        goto out;
 
     /* Separate EAL arguments from testpmd arguments */
     tapi_dpdk_append_argument("--", &testpmd_argc, &testpmd_argv);
@@ -1201,13 +1206,13 @@ tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs, tapi_env *env,
     rc = tapi_dpdk_prepare_and_build_eal_args(rpcs, env, TESTPMD_MIN_N_CORES,
                                               NULL, opt, testpmd_job,
                                               &prep_eal);
+    if (rc != 0)
+        goto out;
+
     testpmd_argc = prep_eal.testpmd_argc;
     testpmd_argv = prep_eal.testpmd_argv;
     prep_eal.testpmd_argc = 0;
     prep_eal.testpmd_argv = NULL;
-
-    if (rc != 0)
-        goto out;
 
     /* Separate EAL arguments from testpmd arguments */
     tapi_dpdk_append_argument("--", &testpmd_argc, &testpmd_argv);
