@@ -919,6 +919,29 @@ typedef struct tapi_dpdk_testpmd_prep_eal {
     unsigned int nb_cores;
 } tapi_dpdk_testpmd_prep_eal;
 
+static void
+tapi_dpdk_testpmd_prepare_eal_init(tapi_dpdk_testpmd_prep_eal *prep_eal)
+{
+    memset(prep_eal, 0, sizeof(*prep_eal));
+    prep_eal->testpmd_path = (te_string)TE_STRING_INIT;
+    prep_eal->testpmd_argv = NULL;
+}
+
+static void
+tapi_dpdk_testpmd_prepare_eal_cleanup(tapi_dpdk_testpmd_prep_eal *prep_eal)
+{
+    int i;
+
+    prep_eal->nb_cores = 0;
+    prep_eal->port_number = 0;
+    for (i = 0; i < prep_eal->testpmd_argc; i++)
+        free(prep_eal->testpmd_argv[i]);
+    free(prep_eal->testpmd_argv);
+    prep_eal->testpmd_argc = 0;
+    prep_eal->testpmd_argv = NULL;
+    te_string_free(&prep_eal->testpmd_path);
+}
+
 static te_errno
 tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
                                      unsigned int n_fwd_cpus,
@@ -941,6 +964,8 @@ tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
     unsigned int n_cpus_grabbed;
     int numa_node;
     te_errno rc = 0;
+
+    tapi_dpdk_testpmd_prepare_eal_init(prep_eal);
 
     if (n_fwd_cpus == 0)
     {
@@ -1018,9 +1043,8 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
                              te_kvpair_h *test_args,
                              tapi_dpdk_testpmd_job_t *testpmd_job)
 {
-    te_string testpmd_path;
-    int testpmd_argc;
-    char **testpmd_argv;
+    int testpmd_argc = 0;
+    char **testpmd_argv = NULL;
     unsigned int port_number;
     tapi_dpdk_testpmd_prep_eal prep_eal;
 
@@ -1035,9 +1059,10 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     rc = tapi_dpdk_prepare_and_build_eal_args(rpcs, env, n_fwd_cpus, prop,
                                               test_args, testpmd_job,
                                               &prep_eal);
-    testpmd_path = prep_eal.testpmd_path;
     testpmd_argc = prep_eal.testpmd_argc;
     testpmd_argv = prep_eal.testpmd_argv;
+    prep_eal.testpmd_argc = 0;
+    prep_eal.testpmd_argv = NULL;
     port_number = prep_eal.port_number;
     n_fwd_cpus = prep_eal.nb_cores;
 
@@ -1089,7 +1114,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
 
     rc = tapi_job_simple_create(factory,
                           &(tapi_job_simple_desc_t){
-                                .program = testpmd_path.ptr,
+                                .program = prep_eal.testpmd_path.ptr,
                                 .argv = (const char **)testpmd_argv,
                                 .job_loc = &testpmd_job->job,
                                 .stdin_loc = &testpmd_job->in_channel,
@@ -1147,7 +1172,8 @@ out:
     for (i = 0; i < testpmd_argc; i++)
         free(testpmd_argv[i]);
     free(testpmd_argv);
-    te_string_free(&testpmd_path);
+
+    tapi_dpdk_testpmd_prepare_eal_cleanup(&prep_eal);
     tapi_job_factory_destroy(factory);
 
     return rc;
@@ -1157,8 +1183,8 @@ te_errno
 tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs, tapi_env *env,
                                    te_kvpair_h *opt, te_bool *opt_supported)
 {
-    int testpmd_argc;
-    char **testpmd_argv;
+    int testpmd_argc = 0;
+    char **testpmd_argv = NULL;
     tapi_dpdk_testpmd_prep_eal prep_eal;
 
     tapi_job_factory_t *factory = NULL;
@@ -1177,6 +1203,8 @@ tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs, tapi_env *env,
                                               &prep_eal);
     testpmd_argc = prep_eal.testpmd_argc;
     testpmd_argv = prep_eal.testpmd_argv;
+    prep_eal.testpmd_argc = 0;
+    prep_eal.testpmd_argv = NULL;
 
     if (rc != 0)
         goto out;
@@ -1255,7 +1283,8 @@ out:
     for (i = 0; i < testpmd_argc; i++)
         free(testpmd_argv[i]);
     free(testpmd_argv);
-    te_string_free(&(prep_eal.testpmd_path));
+
+    tapi_dpdk_testpmd_prepare_eal_cleanup(&prep_eal);
     te_string_free(&stop_testpmd_cmd);
 
     tapi_job_factory_destroy(factory);
