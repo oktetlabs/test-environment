@@ -202,7 +202,7 @@ tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
 
     rc = cfg_get_instance_fmt(NULL, NULL, CFG_MODULE_OID_FMT, ta_name,
                               mod_name);
-    if (rc != 0)
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
     {
         rc = cfg_add_instance_fmt(NULL, CFG_VAL(NONE, NULL),
                                   CFG_MODULE_OID_FMT, ta_name, mod_name);
@@ -221,6 +221,12 @@ tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
                   mod_name, ta_name, rc);
             goto out;
         }
+    }
+    else if (rc != 0)
+    {
+        te_log_stack_push("Check if there is module '%s' on TA %s failed: %r",
+                          mod_name, ta_name, rc);
+        goto out;
     }
 
     if (!loaded && load)
