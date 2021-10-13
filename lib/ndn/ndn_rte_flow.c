@@ -181,8 +181,6 @@ const asn_type * const ndn_rte_flow_action_conf_rss =
 static asn_named_entry_t _ndn_rte_flow_action_conf_count_ne_array[] = {
     { "counter-id", &asn_base_uint32_s,
       { PRIVATE, NDN_FLOW_ACTION_CONF_COUNT_ID } },
-    { "shared", &asn_base_boolean_s,
-      { PRIVATE, NDN_FLOW_ACTION_CONF_COUNT_SHARED } },
 };
 
 asn_type ndn_rte_flow_action_conf_count_s = {

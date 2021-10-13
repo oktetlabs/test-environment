@@ -1971,8 +1971,6 @@ rte_flow_action_count_from_pdu(const asn_value *conf_pdu,
     asn_tag_value conf_pdu_choice_tag;
     asn_value *conf_pdu_choice;
     asn_value *counter_id;
-    asn_value *shared_asn;
-    te_bool shared;
     uint32_t id;
     size_t len;
     int rc;
@@ -2009,28 +2007,11 @@ rte_flow_action_count_from_pdu(const asn_value *conf_pdu,
             return rc;
     }
 
-    rc = asn_get_subvalue(conf_pdu_choice, &shared_asn, "shared");
-    if (rc == TE_EASNINCOMPLVAL)
-    {
-        shared = FALSE;
-    }
-    else if (rc != 0)
-    {
-        return rc;
-    }
-    else
-    {
-        rc = asn_read_bool(shared_asn, &shared, "");
-        if (rc != 0)
-            return rc;
-    }
-
     conf = calloc(1, sizeof(*conf));
     if (conf == NULL)
         return TE_ENOMEM;
 
     conf->id = id;
-    conf->shared = (shared ? 1 : 0);
     action->conf = conf;
 
     return 0;
