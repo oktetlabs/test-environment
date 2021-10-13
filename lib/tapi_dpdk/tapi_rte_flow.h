@@ -54,12 +54,10 @@ extern void tapi_rte_flow_add_ndn_action_drop(asn_value *ndn_actions,
  * @param[inout]  ndn_actions   Action list
  * @param[in]     action_index  Index at which the action is put to list
  * @param[in]     counter_id    Counter index
- * @param[in]     shared        Shared counter if @c TRUE
  */
 extern void tapi_rte_flow_add_ndn_action_count(asn_value *ndn_actions,
                                                int action_index,
-                                               uint32_t counter_id,
-                                               te_bool shared);
+                                               uint32_t counter_id);
 
 /**
  * Add a encap action to an action list at specified index.

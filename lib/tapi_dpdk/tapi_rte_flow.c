@@ -49,7 +49,7 @@ tapi_rte_flow_add_ndn_action_drop(asn_value *ndn_actions, int action_index)
 
 void
 tapi_rte_flow_add_ndn_action_count(asn_value *ndn_actions, int action_index,
-                                   uint32_t counter_id, te_bool shared)
+                                   uint32_t counter_id)
 {
     asn_value *count_action;
 
@@ -59,7 +59,6 @@ tapi_rte_flow_add_ndn_action_count(asn_value *ndn_actions, int action_index,
     CHECK_RC(asn_write_int32(count_action, NDN_FLOW_ACTION_TYPE_COUNT,
                              "type"));
     CHECK_RC(asn_write_int32(count_action, counter_id, "conf.#count.counter-id"));
-    CHECK_RC(asn_write_bool(count_action, shared, "conf.#count.shared"));
 
     CHECK_RC(asn_insert_indexed(ndn_actions, count_action, action_index, ""));
 }
