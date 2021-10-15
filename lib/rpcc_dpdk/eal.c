@@ -142,7 +142,7 @@ tapi_rte_get_pci_fn_specifiers(const char *property, const char *ta,
         if (*instances[i] == &empty)
             continue;
 
-        rc = cfg_get_instance_fmt(NULL, NULL, *instances[i]);
+        rc = cfg_get_instance_fmt(NULL, NULL, "%s", *instances[i]);
         if (rc == 0)
         {
             rc = TE_VEC_APPEND(result, *instances[i]);
