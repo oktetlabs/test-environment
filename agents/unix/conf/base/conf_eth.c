@@ -437,16 +437,19 @@ eth_feature_set(unsigned int    gid,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
+    feature_value = strtol(value, &endp, 10);
+    if (*endp != '\0')
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    if (feature->enabled == (feature_value == 1))
+        return 0;
+
     if (feature->readonly)
     {
         ERROR("Feature '%s' is read-only on interface '%s' and cannot "
               "be changed", feature_name, ifname);
         return TE_RC(TE_TA_UNIX, TE_EACCES);
     }
-
-    feature_value = strtol(value, &endp, 10);
-    if (*endp != '\0')
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     feature->enabled = (feature_value == 1);
     feature->need_update = TRUE;
