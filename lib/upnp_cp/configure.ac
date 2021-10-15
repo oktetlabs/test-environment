@@ -34,13 +34,21 @@ PKG_CHECK_MODULES([GUPNPAV], [gupnp-av-1.0],
     [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -lgupnp-av-1.0"],
     [AC_MSG_ERROR([gupnp-av-1.0 not found])]
 )
-PKG_CHECK_MODULES([GUPNP], [gupnp-1.0],
-    [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -lgupnp-1.0"],
-    [AC_MSG_ERROR([gupnp-1.0 not found])]
+PKG_CHECK_MODULES([GUPNP], [gupnp-1.2],
+    [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -lgupnp-1.2"],
+    [
+        PKG_CHECK_MODULES([GUPNP], [gupnp-1.0],
+        [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -lgupnp-1.0"],
+        [AC_MSG_ERROR([Neither gupnp-1.2 nor gupnp-1.0 found])])
+    ]
 )
-PKG_CHECK_MODULES([GSSDP], [gssdp-1.0],
-    [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -lgssdp-1.0"],
-    [AC_MSG_ERROR([gssdp-1.0 not found])]
+PKG_CHECK_MODULES([GSSDP], [gssdp-1.2],
+    [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -lgssdp-1.2"],
+    [
+        PKG_CHECK_MODULES([GSSDP], [gssdp-1.0],
+        [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -lgssdp-1.0"],
+        [AC_MSG_ERROR([Neither gssdp-1.2 nor gssdp-1.0 found])])
+    ]
 )
 PKG_CHECK_MODULES([LIBSOUP], [libsoup-2.4],
     [UPNP_DYNAMIC_LIBS="${UPNP_DYNAMIC_LIBS} -lsoup-2.4"],
