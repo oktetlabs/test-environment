@@ -774,6 +774,9 @@ extern te_errno tapi_job_add_sched_param(tapi_job_t *job,
  * instances are created on the specified RPC server and are controlled
  * by the facility that is set up on the RPC server.
  *
+ * When factory is created by tapi_job_factory_cfg_create(), the job
+ * instances are controlled by "/agent/process" Configurator subtree.
+ *
  * Job factory API allows tapi_job_create() API to be independent from
  * a particular implementation of job control. It makes any other
  * programming logic that is build on tapi_job functionality fully

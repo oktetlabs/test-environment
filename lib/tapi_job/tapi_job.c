@@ -13,6 +13,7 @@
 
 #include "te_queue.h"
 #include "tapi_job.h"
+#include "tapi_job_factory_cfg.h"
 #include "tapi_job_factory_rpc.h"
 #include "tapi_job_internal.h"
 #include "tapi_job_methods.h"
@@ -41,6 +42,7 @@ typedef SLIST_HEAD(channel_entry_list, channel_entry) channel_entry_list;
 
 typedef enum tapi_job_factory_type {
     TAPI_JOB_FACTORY_RPC,
+    TAPI_JOB_FACTORY_CFG,
 } tapi_job_factory_type;
 
 struct tapi_job_factory_t {
@@ -48,6 +50,7 @@ struct tapi_job_factory_t {
     /** Backend-specific data */
     union {
         rcf_rpc_server *rpcs;
+        const char *ta;
     } backend;
 };
 
@@ -164,6 +167,24 @@ tapi_job_factory_rpc_create(rcf_rpc_server *rpcs,
     return 0;
 }
 
+/* See description in tapi_job_factory_cfg.h */
+te_errno
+tapi_job_factory_cfg_create(const char *ta, tapi_job_factory_t **factory)
+{
+    tapi_job_factory_t *result;
+
+    result = TE_ALLOC(sizeof(*result));
+    if (result == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    result->type = TAPI_JOB_FACTORY_CFG;
+    result->backend.ta = ta;
+
+    *factory = result;
+
+    return 0;
+}
+
 /* See description in tapi_job.h */
 const char *
 tapi_job_factory_ta(const tapi_job_factory_t *factory)
@@ -178,6 +199,9 @@ tapi_job_factory_ta(const tapi_job_factory_t *factory)
     {
         case TAPI_JOB_FACTORY_RPC:
             return factory->backend.rpcs->ta;
+
+        case TAPI_JOB_FACTORY_CFG:
+            return factory->backend.ta;
 
         default:
             ERROR("Invalid job factory type");
@@ -195,6 +219,7 @@ tapi_job_factory_destroy(tapi_job_factory_t *factory)
     switch (factory->type)
     {
         case TAPI_JOB_FACTORY_RPC:
+        case TAPI_JOB_FACTORY_CFG:
             break;
 
         default:
