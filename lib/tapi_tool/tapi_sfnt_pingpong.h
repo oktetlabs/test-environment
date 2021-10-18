@@ -206,7 +206,7 @@ extern te_errno tapi_sfnt_pp_create(tapi_job_factory_t *client_factory,
  *
  * @return Status code.
  */
-extern te_errno tapi_sfnt_pp_start_clinet(tapi_sfnt_pp_app_client_t *app);
+extern te_errno tapi_sfnt_pp_start_client(tapi_sfnt_pp_app_client_t *app);
 
 /**
  * Start server.
