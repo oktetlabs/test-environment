@@ -19,6 +19,9 @@
 #include "tapi_cfg_cpu.h"
 #include "fio.h"
 
+/** Default path to FIO tool */
+#define TAPI_FIO_TOOL_PATH_DEFAULT "fio"
+
 static void
 numjobs_transform(tapi_job_factory_t *factory, tapi_fio_numjobs_t *numjobs)
 {
@@ -37,11 +40,15 @@ numjobs_transform(tapi_job_factory_t *factory, tapi_fio_numjobs_t *numjobs)
 
 static void
 app_init(tapi_fio_app *app, const tapi_fio_opts *opts,
-         tapi_job_factory_t *factory)
+         tapi_job_factory_t *factory, const char *path)
 {
     app->factory = factory;
     app->running = FALSE;
     app->args = TE_VEC_INIT(char *);
+    app->path = (te_string)TE_STRING_INIT;
+
+    te_string_append(&app->path, path == NULL ?
+                                 TAPI_FIO_TOOL_PATH_DEFAULT : path);
 
     if (opts == NULL)
         tapi_fio_opts_init(&app->opts);
@@ -61,6 +68,7 @@ static void
 app_fini(tapi_fio_app *app)
 {
     te_vec_deep_free(&app->args);
+    te_string_free(&app->path);
     tapi_job_destroy(app->job, -1);
 }
 
@@ -73,14 +81,15 @@ tapi_fio_opts_init(tapi_fio_opts *opts)
 
 /* See description in tapi_fio.h */
 tapi_fio *
-tapi_fio_create(const tapi_fio_opts *options, tapi_job_factory_t *factory)
+tapi_fio_create(const tapi_fio_opts *options, tapi_job_factory_t *factory,
+                const char *path)
 {
     tapi_fio *fio;
 
     fio = TE_ALLOC(sizeof(*fio));
     CHECK_NOT_NULL(fio);
 
-    app_init(&fio->app, options, factory);
+    app_init(&fio->app, options, factory, path);
     fio->methods = &methods;
 
     return fio;

@@ -204,6 +204,7 @@ typedef struct tapi_fio_opts {
 /** FIO tool context. Based on tapi_perf_app */
 typedef struct tapi_fio_app {
     tapi_job_factory_t *factory; /**< Factory to create the job */
+    te_string path; /** Path to fio tool */
     te_bool running; /**< Is the app running */
     tapi_job_t *job; /**< TAPI job handle */
     tapi_job_channel_t *out_chs[2]; /**< Output channel handles */
@@ -306,13 +307,16 @@ extern tapi_fio_numjobs_t test_get_fio_numjobs_param(int argc, char **argv,
  *
  * @param options       FIO options
  * @param factory       Job factory
+ * @param path          Path to fio tool.
+ *                      May be NULL if no special path desired.
  *
  * @return Initialization created fio.
  *
  * @sa tapi_fio_destroy
  */
 extern tapi_fio * tapi_fio_create(const tapi_fio_opts *options,
-                                  tapi_job_factory_t *factory);
+                                  tapi_job_factory_t *factory,
+                                  const char *path);
 
 /**
  * Destroy FIO context.

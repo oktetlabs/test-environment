@@ -162,7 +162,6 @@ static const tapi_job_opt_bind fio_binds[] = TAPI_JOB_OPT_SET(
 te_errno
 fio_app_start(tapi_fio_app *app)
 {
-    static const char *path = "fio";
     te_errno rc;
 
     if (app->running)
@@ -174,14 +173,14 @@ fio_app_start(tapi_fio_app *app)
     app->out_chs[1] = NULL;
     te_vec_deep_free(&app->args);
 
-    rc = tapi_job_opt_build_args(path, fio_binds, &app->opts,
+    rc = tapi_job_opt_build_args(app->path.ptr, fio_binds, &app->opts,
                                  &app->args);
     if (rc != 0)
         return rc;
 
     rc = tapi_job_simple_create(app->factory,
                           &(tapi_job_simple_desc_t){
-                                .program = path,
+                                .program = app->path.ptr,
                                 .argv = (const char **)app->args.data.ptr,
                                 .job_loc = &app->job,
                                 .stdout_loc = &app->out_chs[0],
