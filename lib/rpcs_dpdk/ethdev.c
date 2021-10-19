@@ -730,7 +730,7 @@ tarpc_eth_rxmode2rte(const struct tarpc_rte_eth_rxmode *rpc,
     int ret = 1;
 
     ret &= tarpc_eth_rx_mq_mode2rte(rpc->mq_mode, &rte->mq_mode);
-    rte->max_rx_pkt_len = rpc->max_rx_pkt_len;
+    rte->mtu = rpc->mtu;
     rte->split_hdr_size = rpc->split_hdr_size;
 #if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
     ret &= tarpc_rte_rx_offloads2rte(rpc->offloads, &rte->offloads);
