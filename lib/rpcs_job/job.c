@@ -17,6 +17,7 @@
 
 #include "ta_job.h"
 #include "te_alloc.h"
+#include "te_str.h"
 #include "rpc_server.h"
 
 #include "agentlib.h"
@@ -406,17 +407,17 @@ TARPC_FUNC_STATIC(job_create, {},
     MAKE_CALL(out->retval = func(in->spawner, in->tool, argv, env,
                                  &out->job_id));
     out->common.errno_changed = FALSE;
-    goto done;
+    if (out->retval != 0)
+        goto free;
+    else
+        goto done;
 
 err:
     out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
     out->retval = -out->common._errno;
-    for (i = 0; argv != NULL && argv[i] != NULL; i++)
-        free(argv[i]);
-    free(argv);
-    for (i = 0; env != NULL && env[i] != NULL; i++)
-        free(env[i]);
-    free(env);
+free:
+    te_str_free_array(argv);
+    te_str_free_array(env);
 done:
     ;
 })

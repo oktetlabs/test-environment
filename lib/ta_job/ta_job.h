@@ -122,6 +122,9 @@ extern te_errno ta_job_manager_init(ta_job_manager_t **manager);
  *                             May be @c NULL to keep the current environment.
  * @param[out] job_id          ID of the created job
  *
+ * @note       @p argv and @p env are owned by the function on success and must
+ *             not be modified or freed by the caller.
+ *
  * @return     Status code
  */
 extern te_errno ta_job_create(ta_job_manager_t *manager, const char *spawner,

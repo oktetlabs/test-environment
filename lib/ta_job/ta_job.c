@@ -17,6 +17,7 @@
 #include "ta_job.h"
 #include "te_exec_child.h"
 #include "te_queue.h"
+#include "te_str.h"
 #include "te_string.h"
 #include "te_sleep.h"
 #include "te_vector.h"
@@ -837,15 +838,8 @@ ta_job_alloc(const char *spawner, const char *tool, char **argv,
 static void
 ta_job_dealloc(ta_job_t *job)
 {
-    unsigned int i;
-
-    for (i = 0; job->argv != NULL && job->argv[i] != NULL; i++)
-        free(job->argv[i]);
-    free(job->argv);
-
-    for (i = 0; job->env != NULL && job->env[i] != NULL; i++)
-        free(job->env[i]);
-    free(job->env);
+    te_str_free_array(job->argv);
+    te_str_free_array(job->env);
 
     free(job->spawner);
     free(job->tool);
@@ -873,7 +867,11 @@ ta_job_create(ta_job_manager_t *manager, const char *spawner, const char *tool,
 
     if ((rc = ta_job_add(manager, job)) != 0)
     {
+        /* Do not own argv and env on failure */
+        job->argv = NULL;
+        job->env = NULL;
         ta_job_dealloc(job);
+
         return rc;
     }
 
