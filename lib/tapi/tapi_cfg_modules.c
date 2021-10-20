@@ -568,3 +568,64 @@ tapi_cfg_module_version_get(const char *ta_name, const char *module_name,
     return cfg_get_instance_fmt(NULL, version, CFG_MODULE_OID_FMT
                                 "/version:", ta_name, module_name);
 }
+
+/* See description in 'tapi_cfg_modules.h' */
+te_errno
+tapi_cfg_module_check_devices(const char *ta_name, const char *module_name,
+                              te_bool *all_grabbed)
+{
+    cfg_handle *devs = NULL;
+    unsigned int devs_num;
+    unsigned int i;
+    te_errno rc;
+
+    cfg_val_type ctype = CVT_STRING;
+    char *dev = NULL;
+    cfg_handle dev_inst = CFG_HANDLE_INVALID;
+
+    if (ta_name == NULL || module_name == NULL || all_grabbed == NULL)
+    {
+        ERROR("%s(): no parameter of this function can be NULL",
+              __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = cfg_find_pattern_fmt(&devs_num, &devs,
+                              "/agent:%s/module:%s/driver:*/device:*",
+                              ta_name, module_name);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < devs_num; i++)
+    {
+        rc = cfg_get_instance(devs[i], &ctype, &dev);
+        if (rc != 0)
+            goto cleanup;
+
+        rc = cfg_find_str(dev, &dev_inst);
+        if (rc != 0)
+        {
+            if (rc != TE_RC(TE_CS, TE_ENOENT))
+            {
+                ERROR("%s(): cfg_find_str() returned unexpected value %r",
+                      rc);
+                return rc;
+            }
+
+            *all_grabbed = FALSE;
+            rc = 0;
+            goto cleanup;
+        }
+
+        free(dev);
+        dev = NULL;
+    }
+
+    *all_grabbed = TRUE;
+
+cleanup:
+
+    free(devs);
+    free(dev);
+    return rc;
+}

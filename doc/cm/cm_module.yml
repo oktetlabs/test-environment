@@ -85,3 +85,21 @@
          Parameter of a system module.
          Name: Name of the parameter
          Value: Value of the parameter
+
+    - oid: "/agent/module/driver"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/module/loaded"
+      d: |
+         Driver implemented by a system module.
+         Name: Name of the driver
+
+    - oid: "/agent/module/driver/device"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Reference to a device of a given driver
+         Name: Name of the device
+         Value: Reference to the device in configuration tree

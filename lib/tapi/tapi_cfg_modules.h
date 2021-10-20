@@ -207,6 +207,20 @@ extern te_errno tapi_cfg_module_version_get(const char *ta_name,
                                             const char *module_name,
                                             char **version);
 
+/**
+ * Check that all the devices related to a given module are grabbed.
+ *
+ * @param ta_name        Name of the agent
+ * @param module_name    Name of the kernel module
+ * @param all_grabbed    Will be set to @c TRUE if all devices are grabbed
+ *                       and to @c FALSE otherwise.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_module_check_devices(const char *ta_name,
+                                              const char *module_name,
+                                              te_bool *all_grabbed);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

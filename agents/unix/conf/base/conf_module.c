@@ -154,6 +154,20 @@ static te_errno module_filename_fallback_set(unsigned int gid, const char *oid,
                                              const char *value,
                                              const char *mod_name, ...);
 
+static te_errno module_driver_list(unsigned int gid, const char *oid,
+                                   const char *sub_id, char **list,
+                                   const char *module_name);
+
+static te_errno driver_device_list(unsigned int gid, const char *oid,
+                                   const char *sub_id, char **list,
+                                   const char *module_name,
+                                   const char *driver_name);
+static te_errno driver_device_get(unsigned int gid, const char *oid,
+                                  char *value,
+                                  const char *module_name,
+                                  const char *driver_name,
+                                  const char *device_name);
+
 RCF_PCH_CFG_NODE_RW(node_filename_fallback,
                     "fallback", NULL, NULL,
                     module_filename_fallback_get,
@@ -182,8 +196,17 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_module_param, "parameter",
                                module_param_add, module_param_del,
                                module_param_list, NULL);
 
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_driver_device, "device", NULL,
+                               NULL, &driver_device_get,
+                               &driver_device_list);
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_module_driver, "driver",
+                               &node_driver_device,
+                               &node_module_param, NULL,
+                               &module_driver_list);
+
 RCF_PCH_CFG_NODE_RW(node_module_loaded, "loaded",
-                    NULL, &node_module_param,
+                    NULL, &node_module_driver,
                     module_loaded_get, module_loaded_set);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_module, "module",
@@ -395,6 +418,85 @@ mod_insert_or_move_holder_uniq_tail(tqh_strings *holders, char *mod_name)
     {
         return tq_strings_add_uniq_dup(holders, mod_name);
     }
+}
+
+/**
+ * Callback to use with get_dir_list() function. It filters out
+ * all file names except those which look like PCI addresses.
+ *
+ * @param fn        File name
+ * @param data      Not used
+ *
+ * @return @c TRUE if file name looks like PCI address,
+ *         @c FALSE otherwise.
+ */
+static te_bool
+filter_pci_addrs_cb(const char *fn, void *data)
+{
+    int i;
+    te_bool point_found = FALSE;
+
+    UNUSED(data);
+
+    for (i = 0; fn[i] != '\0'; i++)
+    {
+        if ((point_found || (fn[i] != ':' && fn[i] != '.')) &&
+            !isxdigit(fn[i]))
+        {
+            return FALSE;
+        }
+
+        if (fn[i] == '.')
+            point_found = TRUE;
+    }
+
+    return point_found;
+}
+
+/**
+ * List file names inside some folder under /sys/<module>/.
+ *
+ * @param module_name       Kernel module name
+ * @param buf               Buffer where to save list of file names
+ * @param len               Size of the buffer
+ * @param include_cb        Callback to use for filtering file names
+ * @param cb_data           Data passed to the callback
+ * @param fmt               Format string and arguments for a relative
+ *                          path
+ *
+ * @return Status code.
+ */
+static te_errno
+get_module_subdir_list(const char *module_name, char *buf, size_t len,
+                       include_callback_func include_cb,
+                       void *cb_data, const char *fmt, ...)
+{
+    te_string path_str = TE_STRING_INIT;
+    char name[TE_MODULE_NAME_LEN];
+    va_list ap;
+    te_errno rc;
+
+    rc = mod_name_underscorify(module_name, name, sizeof(name));
+    if (rc != 0)
+        return rc;
+
+    rc = te_string_append(&path_str, SYS_MODULE "/%s/", name);
+    if (rc != 0)
+        goto cleanup;
+
+    va_start(ap, fmt);
+    rc = te_string_append_va(&path_str, fmt, ap);
+    va_end(ap);
+    if (rc != 0)
+        goto cleanup;
+
+    rc = get_dir_list(path_str.ptr, buf, len, TRUE,
+                      include_cb, cb_data);
+
+cleanup:
+
+    te_string_free(&path_str);
+    return rc;
 }
 
 /**
@@ -685,27 +787,13 @@ module_param_list(unsigned int gid, const char *oid,
 
 #ifdef __linux__
     {
-        te_errno  rc;
-        char      path[PATH_MAX];
         te_kernel_module *module;
+        te_errno rc;
 
         if (mod_loaded(module_name))
         {
-            char name[TE_MODULE_NAME_LEN];
-
-            rc = mod_name_underscorify(module_name, name, sizeof(name));
-            if (rc != 0)
-                return rc;
-
-            rc = te_snprintf(path, PATH_MAX, SYS_MODULE "/%s/parameters/",
-                             name);
-            if (rc != 0)
-            {
-                ERROR("%s(): te_snprintf() failed: %r", __FUNCTION__, rc);
-                return TE_RC(TE_TA_UNIX, rc);
-            }
-            rc = get_dir_list(path, buf, sizeof(buf), TRUE,
-                              NULL, NULL);
+            rc = get_module_subdir_list(module_name, buf, sizeof(buf),
+                                        NULL, NULL, "parameters");
             if (rc != 0)
                 return rc;
         }
@@ -1082,6 +1170,140 @@ module_unload_holders_get(unsigned int gid, const char *oid,
     value[1] = '\0';
 
     return 0;
+}
+
+/**
+ * Get list of module driver names.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Full identifier of the father instance (unused)
+ * @param sub_id        ID of the object to be listed (unused)
+ * @param list          Where to save the list
+ * @param module_name   Name of the module
+ *
+ * @return Status code.
+ */
+static te_errno
+module_driver_list(unsigned int gid, const char *oid,
+                   const char *sub_id, char **list,
+                   const char *module_name)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+#ifdef __linux__
+    if (mod_loaded(module_name))
+    {
+        te_errno rc;
+
+        rc = get_module_subdir_list(module_name, buf, sizeof(buf),
+                                    NULL, NULL, "drivers");
+        if (rc != 0)
+            return rc;
+    }
+    else
+    {
+        buf[0] = '\0';
+    }
+#else
+    UNUSED(module_name);
+
+    ERROR("%s(): getting list of system module drivers "
+          "is supported only for Linux", __FUNCTION__);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    return 0;
+}
+
+/**
+ * Get list of device names for a given driver.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Full identifier of the father instance (unused)
+ * @param sub_id        ID of the object to be listed (unused)
+ * @param list          Where to save the list
+ * @param module_name   Name of the module
+ * @param driver_name   Name of the driver
+ *
+ * @return Status code.
+ */
+static te_errno
+driver_device_list(unsigned int gid, const char *oid,
+                   const char *sub_id, char **list,
+                   const char *module_name, const char *driver_name)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+#ifdef __linux__
+    if (mod_loaded(module_name) && strcmp_start("pci:", driver_name) == 0)
+    {
+        te_errno rc;
+
+        rc = get_module_subdir_list(module_name, buf, sizeof(buf),
+                                    filter_pci_addrs_cb, NULL,
+                                    "drivers/%s/", driver_name);
+        if (rc != 0)
+            return rc;
+    }
+    else
+    {
+        buf[0] = '\0';
+    }
+#else
+    UNUSED(module_name);
+    UNUSED(driver_name);
+
+    ERROR("%s(): getting list of devices is supported only for Linux",
+          __FUNCTION__);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    return 0;
+}
+
+/**
+ * Get device node value (bus address).
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Full identifier of the father instance (unused)
+ * @param sub_id        ID of the object to be listed (unused)
+ * @param list          Where to save the list
+ * @param module_name   Name of the module
+ * @param driver_name   Name of the driver
+ * @param device_name   Name of the device
+ *
+ * @return Status code.
+ */
+static te_errno
+driver_device_get(unsigned int gid, const char *oid,
+                  char *value, const char *module_name,
+                  const char *driver_name,
+                  const char *device_name)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(module_name);
+
+    if (strcmp_start("pci:", driver_name) != 0)
+    {
+        /* Only PCI devices are supported here currently. */
+        *value = '\0';
+        return 0;
+    }
+
+    return te_snprintf(value, RCF_MAX_VAL,
+                       "/agent:%s/hardware:/pci:/device:%s",
+                       ta_name, device_name);
 }
 
 static te_errno
