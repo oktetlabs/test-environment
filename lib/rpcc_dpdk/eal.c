@@ -769,9 +769,14 @@ tapi_reuse_eal(tapi_env         *env,
         RPC_AWAIT_ERROR(rpcs);
         rc = rpc_rte_eth_dev_get_port_by_name(rpcs, dev_name, &port_id);
         if (rc == 0)
+        {
+            rpc_rte_eth_dev_stop(rpcs, port_id);
             rpc_rte_eth_dev_close(rpcs, port_id);
+        }
         else if (rc != -TE_RC(TE_RPC, TE_ENODEV))
+        {
             goto out;
+        }
 
         /* If ethdev is removed, its PCI device can still be plugged in. */
         RPC_AWAIT_ERROR(rpcs);
