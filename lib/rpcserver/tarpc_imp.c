@@ -80,6 +80,7 @@
 #include "te_dbuf.h"
 #include "te_str.h"
 #include "tq_string.h"
+#include "te_hex_diff_dump.h"
 
 #include "agentlib.h"
 #include "iomux.h"
@@ -8127,6 +8128,8 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
 
             if (memcmp(buf, check_buf + offset, len) != 0)
             {
+                LOG_HEX_DIFF_DUMP(TE_LL_WARN, check_buf + offset, buf, len);
+
                 te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
                                  "%s(): received data does not match the "
                                  "pattern", __FUNCTION__);
