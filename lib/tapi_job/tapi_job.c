@@ -704,6 +704,61 @@ tapi_job_filter_add_channels(tapi_job_channel_t *filter,
 
 /* See description in tapi_job.h */
 te_errno
+tapi_job_filter_remove_channels(tapi_job_channel_t *filter,
+                                tapi_job_channel_set_t channels)
+{
+    te_errno rc;
+    unsigned int *channel_ids;
+    unsigned int n_channels;
+    rcf_rpc_server *rpcs;
+    unsigned int i;
+
+    if ((rc = validate_channel_set(channels)) != 0)
+        return rc;
+
+    rpcs = channels[0]->rpcs;
+
+    alloc_id_array_from_channel_set(channels, &n_channels, &channel_ids);
+
+    rc = rpc_job_filter_remove_channels(rpcs, filter->id, n_channels,
+                                        channel_ids);
+    free(channel_ids);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; channels[i] != NULL; i++)
+    {
+        channel_entry *entry;
+        channel_entry *entry_tmp;
+
+        SLIST_FOREACH_SAFE(entry, &channels[i]->job->channel_entries, next,
+                           entry_tmp)
+        {
+            if (entry->channel == filter)
+            {
+                SLIST_REMOVE(&channels[i]->job->channel_entries, entry,
+                             channel_entry, next);
+
+                if (--filter->ref_count <= 0)
+                    free(filter);
+                free(entry);
+                /*
+                 * If a filter is attached to several channels of one job,
+                 * job->channel_entries will have more than one entry pointing
+                 * to that filter. Each iteration over job->channel_entries must
+                 * remove only one of such entries because the others will be
+                 * removed in further iterations over channels.
+                 */
+                break;
+            }
+        }
+    }
+
+    return 0;
+}
+
+/* See description in tapi_job.h */
+te_errno
 tapi_job_send(tapi_job_channel_t *channel, const te_string *str)
 {
     return rpc_job_send(channel->rpcs, channel->id, str->ptr, str->size);

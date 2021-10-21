@@ -223,6 +223,31 @@ extern te_errno ta_job_filter_add_channels(ta_job_manager_t *manager,
                                            unsigned int *channels);
 
 /**
+ * Remove filter from specified output channels.
+ * For instance, if the filter is attached to stdout and stderr and the function
+ * is called with only stdout specified, the filter will continue working
+ * with stderr.
+ * Either the function succeeds and the filter is removed from all specified
+ * channels, or the function fails and the filter is not removed from any
+ * channel.
+ *
+ * @note       If the filter is removed from every channel it was attached to,
+ *             all associated resources will be freed, so ta_job_receive() will
+ *             fail
+ *
+ * @param      manager         Job manager handle
+ * @param      filter_id       ID of the filter to remove
+ * @param      n_channels      Number of channels to remove the filter from
+ * @param      channels        IDs of output channels to remove the filter from
+ *
+ * @return     Status code
+ */
+extern te_errno ta_job_filter_remove_channels(ta_job_manager_t *manager,
+                                              unsigned int filter_id,
+                                              unsigned int n_channels,
+                                              unsigned int *channels);
+
+/**
  * Poll channels/filters for readiness.
  * A filter is considered ready if it is readable and has some data that
  * can be got via ta_job_receive(). A channel is considered ready if it

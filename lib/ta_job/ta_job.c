@@ -757,6 +757,28 @@ channel_destroy(channel_t *channel)
     free(channel);
 }
 
+static void
+channel_remove_filter(channel_t *channel, filter_t *filter)
+{
+    unsigned int i;
+
+    for (i = 0; i < channel->n_filters; i++)
+    {
+        if (channel->filters[i] == filter)
+        {
+            if (i < channel->n_filters - 1)
+            {
+                memmove(&channel->filters[i], &channel->filters[i + 1],
+                        (channel->n_filters - i - 1) * sizeof(filter_t));
+            }
+            channel->n_filters--;
+            filter_destroy(filter);
+
+            break;
+        }
+    }
+}
+
 static te_errno
 ta_job_add(ta_job_manager_t *manager, ta_job_t *job)
 {
@@ -1909,6 +1931,55 @@ ta_job_filter_add_channels(ta_job_manager_t *manager, unsigned int filter_id,
 
     rc = ta_job_filter_add_channels_unsafe(manager, filter_id, n_channels,
                                            channels);
+
+    pthread_mutex_unlock(&manager->channels_lock);
+
+    return rc;
+}
+
+static te_errno
+ta_job_filter_remove_channels_unsafe(ta_job_manager_t *manager,
+                                     unsigned int filter_id,
+                                     unsigned int n_channels,
+                                     unsigned int *channels)
+{
+    filter_t *filter;
+    unsigned int i;
+
+    if ((filter = get_filter(manager, filter_id)) == NULL)
+        return TE_EINVAL;
+
+    for (i = 0; i < n_channels; i++)
+    {
+        channel_t *channel = get_channel(manager, channels[i]);
+
+        if (channel == NULL)
+            return TE_EINVAL;
+
+        if (channel->is_input_channel)
+        {
+            ERROR("Failed to remove filter from input channel");
+            return TE_EINVAL;
+        }
+    }
+
+    for (i = 0; i < n_channels; i++)
+        channel_remove_filter(get_channel(manager, channels[i]), filter);
+
+    return 0;
+}
+
+/* See description in ta_job.h */
+te_errno
+ta_job_filter_remove_channels(ta_job_manager_t *manager, unsigned int filter_id,
+                              unsigned int n_channels, unsigned int *channels)
+{
+    te_errno rc;
+
+    pthread_mutex_lock(&manager->channels_lock);
+
+    rc = ta_job_filter_remove_channels_unsafe(manager, filter_id, n_channels,
+                                              channels);
 
     pthread_mutex_unlock(&manager->channels_lock);
 

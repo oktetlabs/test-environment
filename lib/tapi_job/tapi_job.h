@@ -298,8 +298,9 @@ extern te_errno tapi_job_alloc_input_channels(tapi_job_t *job,
  * spawner-dependant.
  *
  * @note The implementation need not support any other operations on
- *       primary output channels other than attaching filters to them
- *       (see tapi_job_attach_filter())
+ *       primary output channels other than attaching and removing filters
+ *       to/from them (see tapi_job_attach_filter(),
+ *       tapi_job_filter_add_channels(), and tapi_job_filter_remove_channels())
  *
  * @param      job        Job instace handle
  * @param      n_channels Number of channels
@@ -385,6 +386,29 @@ extern te_errno tapi_job_filter_add_regexp(tapi_job_channel_t *filter,
  */
 extern te_errno tapi_job_filter_add_channels(tapi_job_channel_t *filter,
                                              tapi_job_channel_set_t channels);
+
+/**
+ * Remove filter from specified output channels.
+ * For instance, if the filter is attached to stdout and stderr and the function
+ * is called with only stdout specified, the filter will continue working
+ * with stderr.
+ * Either the function succeeds and the filter is removed from all specified
+ * channels, or the function fails and the filter is not removed from any
+ * channel.
+ *
+ * @note           If the filter is removed from every channel it was attached
+ *                 to, all associated resources including the memory for
+ *                 tapi_job_channel_t structure will be freed, so @p filter
+ *                 variable must not be used again.
+ *
+ * @param filter   Filter to remove
+ * @param channels Channels from which to remove the filter
+ *
+ * @return         Status code
+ */
+extern te_errno tapi_job_filter_remove_channels(tapi_job_channel_t *filter,
+                                                tapi_job_channel_set_t
+                                                                    channels);
 
 /**
  * Send data to a job input channel.

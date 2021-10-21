@@ -105,6 +105,20 @@ struct tarpc_job_filter_add_channels_out {
     tarpc_int retval;
 };
 
+/* job_filter_remove_channels */
+struct tarpc_job_filter_remove_channels_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint filter;
+    tarpc_uint channels<>;
+};
+
+struct tarpc_job_filter_remove_channels_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+};
+
 /* job_receive */
 struct tarpc_job_receive_in {
     struct tarpc_in_arg common;
@@ -373,6 +387,7 @@ program job
         RPC_DEF(job_attach_filter)
         RPC_DEF(job_filter_add_regexp)
         RPC_DEF(job_filter_add_channels)
+        RPC_DEF(job_filter_remove_channels)
         RPC_DEF(job_receive)
         RPC_DEF(job_receive_last)
         RPC_DEF(job_receive_many)

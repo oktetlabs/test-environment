@@ -305,6 +305,35 @@ rpc_job_filter_add_channels(rcf_rpc_server *rpcs, unsigned int filter,
     RETVAL_INT(job_filter_add_channels, out.retval);
 }
 
+int
+rpc_job_filter_remove_channels(rcf_rpc_server *rpcs, unsigned int filter,
+                               unsigned int n_channels, unsigned int *channels)
+{
+    tarpc_job_filter_remove_channels_in  in;
+    tarpc_job_filter_remove_channels_out out;
+    te_log_buf *tlbp_channels;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.filter = filter;
+    in.channels.channels_val = channels;
+    in.channels.channels_len = n_channels;
+
+    rcf_rpc_call(rpcs, "job_filter_remove_channels", &in, &out);
+    CHECK_RPC_ERRNO_UNCHANGED(job_filter_remove_channels, out.retval);
+
+    tlbp_channels = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, job_filter_remove_channels, "%u, {%s}", "%r",
+                 in.filter, tarpc_uint_array2log_buf(tlbp_channels,
+                                                     in.channels.channels_len,
+                                                     in.channels.channels_val),
+                 out.retval);
+    te_log_buf_free(tlbp_channels);
+
+    RETVAL_INT(job_filter_remove_channels, out.retval);
+}
+
 static void
 tarpc_job_buffer_copy(const tarpc_job_buffer *from, tarpc_job_buffer *to)
 {
