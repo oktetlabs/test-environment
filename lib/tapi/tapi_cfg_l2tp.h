@@ -65,7 +65,7 @@ enum l2tp_iprange_class {
 enum l2tp_bit {
     L2TP_BIT_HIDDEN,    /**< hidden bit option */
     L2TP_BIT_LENGTH,    /**< flow bits option */
-} l2tp_bit;
+};
 
 /** Structure for the IP-address pool */
 typedef struct l2tp_ipaddr_range {
