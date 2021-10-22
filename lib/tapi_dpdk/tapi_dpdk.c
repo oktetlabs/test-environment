@@ -622,8 +622,7 @@ tapi_dpdk_dbells_available(tapi_job_channel_t *dbells_skip_filter, te_bool *res)
     tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
     te_errno rc;
 
-    rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(dbells_skip_filter),
-                          TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS, &buf);
+    rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(dbells_skip_filter), 1000, &buf);
     if (rc != 0)
     {
         if (rc != TE_ETIMEDOUT)
