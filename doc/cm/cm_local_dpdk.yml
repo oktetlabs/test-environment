@@ -61,6 +61,26 @@
               Format - pci_fn:<vendor_id>:<device_id>:
         Value: Maximum number of Tx queues
 
+    - oid: "/local/dpdk/min_mtu"
+      access: read_create
+      type: integer
+      d: |
+        Minimum MTU reported by PCI function.
+
+        Name: PCI function.
+              Format - pci_fn:<vendor_id>:<device_id>:
+        Value: Minimum MTU
+
+    - oid: "/local/dpdk/max_mtu"
+      access: read_create
+      type: integer
+      d: |
+        Maximum MTU reported by PCI function.
+
+        Name: PCI function.
+              Format - pci_fn:<vendor_id>:<device_id>:
+        Value: Maximum MTU
+
     - oid: "/local/dpdk/required_service_cores"
       access: read_create
       type: integer
