@@ -1445,7 +1445,7 @@ cleanup0:
 int
 tapi_dhcpv6_plain_csap_create(const char *ta_name,
                               const char *iface,
-                              dhcp_csap_mode mode,
+                              dhcp6_csap_mode mode,
                               csap_handle_t *dhcp_csap)
 {
     int         rc;

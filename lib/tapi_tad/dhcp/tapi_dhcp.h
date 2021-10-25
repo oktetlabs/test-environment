@@ -424,7 +424,7 @@ extern te_errno tapi_dhcp_release_ip_addr(char const *ta,
 
 extern int tapi_dhcpv6_plain_csap_create(const char *ta_name,
                                          const char *iface,
-                                         dhcp_csap_mode mode,
+                                         dhcp6_csap_mode mode,
                                          csap_handle_t *dhcp_csap);
 
 int dhcpv6_prepare_traffic_template(const asn_value *dhcp6_msg,
