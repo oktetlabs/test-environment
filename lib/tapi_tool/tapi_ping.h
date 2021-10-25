@@ -16,6 +16,7 @@
 #define __TE_TAPI_PING_H__
 
 #include "tapi_job.h"
+#include "tapi_job_opt.h"
 #include "te_mi_log.h"
 
 #ifdef __cplusplus
@@ -34,6 +35,13 @@ typedef struct tapi_ping_opt {
      * size of the packet will be 8 bytes more because of an ICMP header.
      */
     unsigned int packet_size;
+
+    /**
+     * Number of seconds to wait between sending packets.
+     * By default ping waits for one second.
+     */
+    tapi_job_opt_double_t interval;
+
     /** Address or interface name to send packets from */
     const char *interface;
     /** Ping destination address */

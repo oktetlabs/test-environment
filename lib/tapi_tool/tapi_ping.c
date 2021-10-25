@@ -51,6 +51,7 @@ struct tapi_ping_app {
 const tapi_ping_opt tapi_ping_default_opt = {
     .packet_count     = TAPI_JOB_OPT_OMIT_UINT,
     .packet_size      = TAPI_JOB_OPT_OMIT_UINT,
+    .interval         = TAPI_JOB_OPT_DOUBLE_UNDEF,
     .interface        = NULL,
     .destination      = NULL,
 };
@@ -58,6 +59,7 @@ const tapi_ping_opt tapi_ping_default_opt = {
 static const tapi_job_opt_bind ping_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_UINT_OMITTABLE("-c", FALSE, NULL, tapi_ping_opt, packet_count),
     TAPI_JOB_OPT_UINT_OMITTABLE("-s", FALSE, NULL, tapi_ping_opt, packet_size),
+    TAPI_JOB_OPT_DOUBLE("-i", FALSE, NULL, tapi_ping_opt, interval),
     TAPI_JOB_OPT_STRING("-I", FALSE, tapi_ping_opt, interface),
     TAPI_JOB_OPT_STRING(NULL, FALSE, tapi_ping_opt, destination)
 );
