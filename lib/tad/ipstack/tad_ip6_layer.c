@@ -1192,7 +1192,8 @@ tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
 }
 
 typedef struct tad_ip6_upper_checksum_seg_cb_data {
-    uint32_t    checksum;   /**< Accumulated checksum */
+    uint32_t        checksum;   /**< Accumulated checksum */
+    const uint8_t  *uncksumed;  /**< Unchecksumed byte in the segment end */
 } tad_ip6_upper_checksum_seg_cb_data;
 
 static te_errno
@@ -1200,11 +1201,50 @@ tad_ip6_upper_checksum_seg_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
                               unsigned int seg_num, void *opaque)
 {
     tad_ip6_upper_checksum_seg_cb_data *data = opaque;
+    const uint8_t                      *seg_data_ptr;
+    const uint8_t                      *data_ptr;
+    size_t                              data_len;
+    te_bool                             last_segment;
 
-    /* Data length is even or it is the last segument */
-    assert(((seg->data_len & 1) == 0) ||
-           (seg_num == tad_pkt_seg_num(pkt) - 1));
-    data->checksum += calculate_checksum(seg->data_ptr, seg->data_len);
+    if (seg_num == (tad_pkt_seg_num(pkt) - 1))
+        last_segment = TRUE;
+    else
+        last_segment = FALSE;
+
+    if (seg->data_len == 0)
+    {
+        if ((data->uncksumed != NULL) && last_segment)
+            data->checksum += calculate_checksum(data->uncksumed, 1);
+
+        return 0;
+    }
+
+    seg_data_ptr = (const uint8_t *)(seg->data_ptr);
+
+    if (data->uncksumed != NULL)
+    {
+        uint8_t arr[2];
+
+        arr[0] = *data->uncksumed;
+        arr[1] = seg_data_ptr[0];
+        data->checksum += calculate_checksum(&arr, 2);
+        data->uncksumed = NULL;
+        data_ptr = seg_data_ptr + 1;
+        data_len = seg->data_len - 1;
+    }
+    else
+    {
+        data_ptr = seg_data_ptr;
+        data_len = seg->data_len;
+    }
+
+    if ((data_len & 1) != 0 && !last_segment)
+    {
+        data->uncksumed = &data_ptr[data_len - 1];
+        data_len--;
+    }
+
+    data->checksum += calculate_checksum(data_ptr, data_len);
 
     return 0;
 }
