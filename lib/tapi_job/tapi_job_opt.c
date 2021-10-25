@@ -48,6 +48,17 @@ tapi_job_opt_create_uint_omittable(const void *value, te_vec *args)
 }
 
 te_errno
+tapi_job_opt_create_double_t(const void *value, te_vec *args)
+{
+    tapi_job_opt_double_t *p = (tapi_job_opt_double_t *)value;
+
+    if (!p->defined)
+        return TE_ENOENT;
+
+    return te_vec_append_str_fmt(args, "%f", p->value);
+}
+
+te_errno
 tapi_job_opt_create_string(const void *value, te_vec *args)
 {
     const char *str = *(const char *const *)value;

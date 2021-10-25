@@ -115,6 +115,24 @@ typedef struct tapi_job_opt_uint_t {
 #define TAPI_JOB_OPT_UINT_UNDEF \
     (tapi_job_opt_uint_t){ .defined = FALSE }
 
+/** Double which can be left undefined */
+typedef struct tapi_job_opt_double_t {
+    double value; /**< Value */
+    te_bool defined; /**< If @c TRUE, value is defined */
+} tapi_job_opt_double_t;
+
+/**
+ * Defined value for tapi_job_opt_double_t.
+ *
+ * @param _x        Value to set.
+ */
+#define TAPI_JOB_OPT_DOUBLE_VAL(_x) \
+    (tapi_job_opt_double_t){ .value = (_x), .defined = TRUE }
+
+/** Undefined value for tapi_job_opt_double_t. */
+#define TAPI_JOB_OPT_DOUBLE_UNDEF \
+    (tapi_job_opt_double_t){ .defined = FALSE }
+
 /**
  * @defgroup tapi_job_opt_formatting functions for argument formatting
  * @{
@@ -132,6 +150,9 @@ te_errno tapi_job_opt_create_uint(const void *value, te_vec *args);
 
 /** value type: `unsigned int`, may be omitted */
 te_errno tapi_job_opt_create_uint_omittable(const void *value, te_vec *args);
+
+/** value type: `tapi_job_opt_double_t` */
+te_errno tapi_job_opt_create_double_t(const void *value, te_vec *args);
 
 /** value type: `char *` */
 te_errno tapi_job_opt_create_string(const void *value, te_vec *args);
@@ -204,6 +225,20 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
 #define TAPI_JOB_OPT_UINT_OMITTABLE(_prefix, _concat_prefix, _suffix, \
                                     _struct, _field) \
     { tapi_job_opt_create_uint_omittable, _prefix, _concat_prefix, _suffix, \
+      offsetof(_struct, _field) }
+
+/**
+ * Bind `tapi_job_opt_double_t` argument.
+ *
+ * @param[in] _prefix         Argument prefix.
+ * @param[in] _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in] _suffix         Argument suffix.
+ * @param[in] _struct         Option struct.
+ * @param[in] _field          Field name in option struct.
+ */
+#define TAPI_JOB_OPT_DOUBLE(_prefix, _concat_prefix, _suffix, \
+                            _struct, _field) \
+    { tapi_job_opt_create_double_t, _prefix, _concat_prefix, _suffix, \
       offsetof(_struct, _field) }
 
 /**
