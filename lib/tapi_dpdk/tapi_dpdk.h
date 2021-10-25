@@ -145,9 +145,11 @@ extern te_errno tapi_dpdk_testpmd_destroy(tapi_dpdk_testpmd_job_t *testpmd_job);
  * should be specified explicitly in the parameters.
  *
  * @param packet_size   Size of a packet
- * @param mtu[out]      Required mtu (set when the function returns @c TRUE)
+ * @param[out] mtu      Location for required MTU
  *
- * @return          @c TRUE - MTU should be set, @c FALSE - should not be
+ * @return If required MTU is greater than @c ETHER_DATA_LEN
+ * @retval TRUE         Required MTU is greater than @c ETHER_DATA_LEN
+ * @retval FALSE        Required MTU is less or equal to @c ETHER_DATA_LEN
  */
 extern te_bool tapi_dpdk_mtu_by_pkt_size(unsigned int packet_size,
                                          unsigned int *mtu);

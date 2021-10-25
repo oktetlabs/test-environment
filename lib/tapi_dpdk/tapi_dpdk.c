@@ -1497,12 +1497,8 @@ tapi_dpdk_mtu_by_pkt_size(unsigned int packet_size, unsigned int *mtu)
     unsigned int sufficient_mtu = packet_size -
                                   MIN(ETHER_HDR_LEN, packet_size);
 
-    if (sufficient_mtu <= ETHER_DATA_LEN)
-        return FALSE;
-
     *mtu = sufficient_mtu;
-
-    return TRUE;
+    return (sufficient_mtu > ETHER_DATA_LEN) ? TRUE : FALSE;
 }
 
 te_bool
