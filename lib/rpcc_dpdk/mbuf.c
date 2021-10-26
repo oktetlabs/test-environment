@@ -30,8 +30,8 @@ tarpc_rte_pktmbuf_ol_flags2str(te_log_buf *tlbp, uint64_t ol_flags)
 {
     const struct te_log_buf_bit2str ol_flags2str[] = {
 #define TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(_bit) \
-        { TARPC_PKT_##_bit, #_bit }
-        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_VLAN_PKT),
+        { TARPC_RTE_MBUF_F_##_bit, #_bit }
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_VLAN),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_RSS_HASH),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_FDIR),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_IP_CKSUM_BAD),
@@ -49,9 +49,9 @@ tarpc_rte_pktmbuf_ol_flags2str(te_log_buf *tlbp, uint64_t ol_flags)
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_IEEE1588_TMST),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_FDIR_ID),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_FDIR_FLX),
-        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_QINQ_PKT),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_QINQ),
 
-        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_QINQ_PKT),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_QINQ),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_TCP_SEG),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_IEEE1588_TMST),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_L4_NO_CKSUM),
@@ -62,7 +62,7 @@ tarpc_rte_pktmbuf_ol_flags2str(te_log_buf *tlbp, uint64_t ol_flags)
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_IP_CKSUM),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_IPV4),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_IPV6),
-        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_VLAN_PKT),
+        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_VLAN),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_OUTER_IP_CKSUM),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_OUTER_IPV4),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_OUTER_IPV6),
@@ -71,9 +71,8 @@ tarpc_rte_pktmbuf_ol_flags2str(te_log_buf *tlbp, uint64_t ol_flags)
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_TUNNEL_GENEVE),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(TX_TUNNEL_GRE),
 #undef TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR
-        { TARPC_IND_ATTACHED_MBUF, "IND_ATTACHED_MBUF" },
-        { TARPC_CTRL_MBUF_FLAG, "CTRL_MBUF_FLAG" },
-        { TARPC_EXT_ATTACHED_MBUF, "EXT_ATTACHED_MBUF" },
+        { TARPC_RTE_MBUF_F_INDIRECT, "INDIRECT" },
+        { TARPC_RTE_MBUF_F_EXTERNAL, "EXTERNAL" },
         { 0, NULL }
     };
 
@@ -1153,7 +1152,8 @@ rpc_rte_pktmbuf_get_fdir_id(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "rte_pktmbuf_get_fdir_id", &in, &out);
 
     if (out.retval == UINT32_MAX)
-        TEST_FAIL("%s(): PKT_RX_FDIR_ID must be in offload flags", __func__);
+        TEST_FAIL("%s(): RTE_MBUF_F_RX_FDIR_ID must be in offload flags",
+                  __func__);
 
     CHECK_RETVAL_VAR(rte_pktmbuf_get_fdir_id, out.retval, FALSE, UINT32_MAX);
 

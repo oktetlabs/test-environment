@@ -391,7 +391,7 @@ extern uint32_t rpc_rte_pktmbuf_get_rss_hash(rcf_rpc_server *rpcs,
                                              rpc_rte_mbuf_p m);
 
 /**
- * Get FDIR ID, if PKT_RX_FDIR_ID is in offload flags
+ * Get FDIR ID, if RTE_MBUF_F_RX_FDIR_ID is in offload flags
  *
  * @param m               RTE mbuf pointer
  *

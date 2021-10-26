@@ -844,8 +844,8 @@ struct rte_mbuf_parse_ctx {
  * for the inner header, too. Make two sets of ptype flags, correspondingly. In
  * both, the masks are: RTE_PTYPE_L2_MASK, RTE_PTYPE_L3_MASK, RTE_PTYPE_L4_MASK.
  *
- * The reason behind having this function is that there are no flags PKT_TX_TCP
- * and PKT_TX_UDP in DPDK for 'lib/tad/tad_rte_mbuf_sap.c' to set automatically.
+ * The reason behind having this function is that there are no flags RTE_MBUF_F_TX_TCP
+ * and RTE_MBUF_F_TX_UDP in DPDK for 'lib/tad/tad_rte_mbuf_sap.c' to set automatically.
  */
 static te_errno
 rte_mbuf_detect_layers(struct rte_mbuf_parse_ctx *parse_ctx,
@@ -1239,9 +1239,9 @@ rte_mbuf_match_tx_rx_learn(struct rte_mbuf_parse_ctx     *parse_ctx,
         return TE_ETADLESSDATA;
     }
 
-    if (m_tx->ol_flags & PKT_TX_VLAN_PKT)
+    if (m_tx->ol_flags & RTE_MBUF_F_TX_VLAN)
     {
-        uint64_t rx_vlan_strip = PKT_RX_VLAN | PKT_RX_VLAN_STRIPPED;
+        uint64_t rx_vlan_strip = RTE_MBUF_F_RX_VLAN | RTE_MBUF_F_RX_VLAN_STRIPPED;
 
         /*
          * Tx VLAN insertion was requested. Assume that Rx VLAN stripping is
@@ -1364,7 +1364,7 @@ static int
 rte_mbuf_match_tx_rx_cmp_vlan(const struct rte_mbuf_cmp_ctx      *cmp_ctx,
                               const struct tarpc_rte_mbuf_report *report)
 {
-    uint64_t rx_vlan_strip = PKT_RX_VLAN | PKT_RX_VLAN_STRIPPED;
+    uint64_t rx_vlan_strip = RTE_MBUF_F_RX_VLAN | RTE_MBUF_F_RX_VLAN_STRIPPED;
 
     if (report->ol_vlan == TARPC_RTE_MBUF_OL_DONE)
     {

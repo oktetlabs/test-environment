@@ -385,7 +385,7 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
             if ((transform->hw_flags & SEND_COND_HW_OFFL_VLAN) ==
                 SEND_COND_HW_OFFL_VLAN)
             {
-                ol_flags |= (1UL << TARPC_PKT_TX_VLAN_PKT);
+                ol_flags |= (1UL << TARPC_RTE_MBUF_F_TX_VLAN);
 
                 rpc_rte_pktmbuf_set_vlan_tci(rpcs, mbufs[i],
                                              transform->vlan_tci);
@@ -394,25 +394,25 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
             if (pdu_ip4_i != NULL &&
                 (transform->hw_flags & SEND_COND_HW_OFFL_IP_CKSUM) ==
                 SEND_COND_HW_OFFL_IP_CKSUM)
-                    ol_flags |= (1UL << TARPC_PKT_TX_IP_CKSUM);
+                    ol_flags |= (1UL << TARPC_RTE_MBUF_F_TX_IP_CKSUM);
 
             if (pdu_ip4_o != NULL &&
                 (transform->hw_flags & SEND_COND_HW_OFFL_OUTER_IP_CKSUM) ==
                 SEND_COND_HW_OFFL_OUTER_IP_CKSUM)
-                    ol_flags |= (1UL << TARPC_PKT_TX_OUTER_IP_CKSUM);
+                    ol_flags |= (1UL << TARPC_RTE_MBUF_F_TX_OUTER_IP_CKSUM);
 
             if ((transform->hw_flags & SEND_COND_HW_OFFL_L4_CKSUM) ==
                 SEND_COND_HW_OFFL_L4_CKSUM)
             {
                 if (pdu_tcp != NULL)
-                    ol_flags |= (1UL << TARPC_PKT_TX_TCP_CKSUM);
+                    ol_flags |= (1UL << TARPC_RTE_MBUF_F_TX_TCP_CKSUM);
 
                 if (pdu_udp_i != NULL)
-                    ol_flags |= (1UL << TARPC_PKT_TX_UDP_CKSUM);
+                    ol_flags |= (1UL << TARPC_RTE_MBUF_F_TX_UDP_CKSUM);
             }
             else
             {
-                ol_flags |= (1UL << TARPC_PKT_TX_L4_NO_CKSUM);
+                ol_flags |= (1UL << TARPC_RTE_MBUF_F_TX_L4_NO_CKSUM);
             }
 
             if (((transform->hw_flags & SEND_COND_HW_OFFL_TSO) ==
@@ -420,7 +420,7 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
             {
                 struct tarpc_rte_pktmbuf_tx_offload tx_offload;
 
-                ol_flags |= (1UL << TARPC_PKT_TX_TCP_SEG);
+                ol_flags |= (1UL << TARPC_RTE_MBUF_F_TX_TCP_SEG);
 
                 memset(&tx_offload, 0, sizeof(tx_offload));
 

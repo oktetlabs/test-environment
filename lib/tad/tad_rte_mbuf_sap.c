@@ -99,12 +99,8 @@ tad_rte_mbuf_sap_read(tad_rte_mbuf_sap   *sap,
 
     *pkt_len = m->pkt_len;
 
-#ifdef PKT_RX_VLAN_PKT
-    if (((m->ol_flags & PKT_RX_VLAN_PKT) == 0) &&
-#else
-    if (((m->ol_flags & PKT_RX_VLAN_STRIPPED) == 0) &&
-#endif
-        ((m->ol_flags & PKT_TX_VLAN_PKT) == 0))
+    if (((m->ol_flags & RTE_MBUF_F_RX_VLAN_STRIPPED) == 0) &&
+        ((m->ol_flags & RTE_MBUF_F_TX_VLAN) == 0))
         goto out;
 
     tad_seg = CIRCLEQ_FIRST(&pkt->segs);
@@ -174,14 +170,14 @@ handle_layer_info(const tad_pkt      *pkt,
 
         case TE_PROTO_IP4:
             m->l3_len = layer_data_len;
-            *ol_flags_inner |= PKT_TX_IPV4;
-            *ol_flags_outer |= PKT_TX_OUTER_IPV4;
+            *ol_flags_inner |= RTE_MBUF_F_TX_IPV4;
+            *ol_flags_outer |= RTE_MBUF_F_TX_OUTER_IPV4;
             break;
 
         case TE_PROTO_IP6:
             m->l3_len = layer_data_len;
-            *ol_flags_inner |= PKT_TX_IPV6;
-            *ol_flags_outer |= PKT_TX_OUTER_IPV6;
+            *ol_flags_inner |= RTE_MBUF_F_TX_IPV6;
+            *ol_flags_outer |= RTE_MBUF_F_TX_OUTER_IPV6;
             break;
 
         case TE_PROTO_TCP:
@@ -192,12 +188,12 @@ handle_layer_info(const tad_pkt      *pkt,
 
         case TE_PROTO_VXLAN:
             encap_header_detected = TRUE;
-            m->ol_flags |= PKT_TX_TUNNEL_VXLAN;
+            m->ol_flags |= RTE_MBUF_F_TX_TUNNEL_VXLAN;
             break;
 
         case TE_PROTO_GENEVE:
             encap_header_detected = TRUE;
-            m->ol_flags |= PKT_TX_TUNNEL_GENEVE;
+            m->ol_flags |= RTE_MBUF_F_TX_TUNNEL_GENEVE;
             break;
 
         case TE_PROTO_GRE:
@@ -210,7 +206,7 @@ handle_layer_info(const tad_pkt      *pkt,
             /*
              * TE_PROTO_GRE may serve either GRE or NVGRE tunnel types.
              * RTE has no Tx tunnel offload flag for the latter.
-             * Rule out NVGRE and set PKT_TX_TUNNEL_GRE flag.
+             * Rule out NVGRE and set RTE_MBUF_F_TX_TUNNEL_GRE flag.
              */
             assert(gre_hdr_offset + WORD_4BYTE <= tad_pkt_len(pkt));
             tad_pkt_read_bits(pkt, gre_hdr_offset << 3, WORD_32BIT,
@@ -220,7 +216,7 @@ handle_layer_info(const tad_pkt      *pkt,
                    sizeof(gre_hdr_protocol_type));
             gre_hdr_protocol_type = rte_be_to_cpu_16(gre_hdr_protocol_type);
             if (gre_hdr_protocol_type != GRE_HDR_PROTOCOL_TYPE_NVGRE)
-                m->ol_flags |= PKT_TX_TUNNEL_GRE;
+                m->ol_flags |= RTE_MBUF_F_TX_TUNNEL_GRE;
             break;
 
         default:
