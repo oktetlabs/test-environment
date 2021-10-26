@@ -662,13 +662,6 @@ if test -n "$with_bpf"; then
     DYNAMIC_LIBS="${DYNAMIC_LIBS} -lelf -lbpf"
 fi
 
-dnl
-dnl Check for 'jited_func_lens' member in 'struct bpf_prog_info'.
-dnl
-AC_CHECK_MEMBERS([struct bpf_prog_info.jited_func_lens], [], [], [
-#include <linux/bpf.h>
-])
-
 #if ! test "$cross_compiling" = "yes" ; then
 case "$host" in
    sparc*linux*) TE_CPPFLAGS="$TE_CPPFLAGS -DNO_DL" ;;
