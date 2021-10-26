@@ -1297,6 +1297,7 @@ tad_ip6_upper_checksum_cb(tad_pkt *sdu, void *opaque)
     if (ntohs(csum) != TE_IP6_UPPER_LAYER_CSUM_ZERO)
     {
         /* Upper layer data checksum */
+        seg_data.uncksumed = NULL;
         (void)tad_pkt_enumerate_seg(sdu,
                                     tad_ip6_upper_checksum_seg_cb,
                                     &seg_data);
