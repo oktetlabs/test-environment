@@ -83,8 +83,8 @@ extern te_errno tapi_cfg_if_feature_set(const char *ta,
 
 /**
  * Set feature value of an ethernet interface and all its parents if they are.
- * Ignore @c EOPNOTSUPP failures if it is successful at least for one
- * interface.
+ * Ignore @c EOPNOTSUPP failures and failures to change read-only feature if
+ * requested changing was successful at least for one interface.
  *
  * @param ta            Test agent name
  * @param ifname        Interface name

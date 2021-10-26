@@ -130,12 +130,34 @@ if_feature_set_cb(const char *ta, const char *ifname, void *opaque)
 {
     if_feature_set_ctx *ctx = (if_feature_set_ctx *)opaque;
     te_errno rc;
+    te_bool readonly;
+    int value;
 
-    rc = tapi_cfg_if_feature_set(ta, ifname, ctx->name, ctx->value);
-    if (rc == 0)
-        ctx->success = TRUE;
-    else if (TE_RC_GET_ERROR(rc) != TE_EOPNOTSUPP)
-        return rc;
+    rc = tapi_cfg_if_feature_is_readonly(ta, ifname, ctx->name,
+                                         &readonly);
+    if (rc != 0)
+    {
+        if (TE_RC_GET_ERROR(rc) != TE_EOPNOTSUPP)
+            return rc;
+    }
+    else if (readonly)
+    {
+        rc = tapi_cfg_if_feature_get(ta, ifname, ctx->name,
+                                     &value);
+        if (rc != 0)
+            return rc;
+
+        if (value == ctx->value)
+            ctx->success = TRUE;
+    }
+    else
+    {
+        rc = tapi_cfg_if_feature_set(ta, ifname, ctx->name, ctx->value);
+        if (rc == 0)
+            ctx->success = TRUE;
+        else if (TE_RC_GET_ERROR(rc) != TE_EOPNOTSUPP)
+            return rc;
+    }
 
     return tapi_host_ns_if_parent_iter(ta, ifname, &if_feature_set_cb,
                                        opaque);
@@ -152,7 +174,10 @@ tapi_cfg_if_feature_set_all_parents(const char *ta, const char *ifname,
 
     rc = if_feature_set_cb(ta, ifname, &ctx);
 
-    /* Setting of the feature failed with EOPNOTSUPP for all interfaces. */
+    /*
+     * Setting of the feature failed with EOPNOTSUPP or or it was
+     * read-only for all interfaces.
+     */
     if (rc == 0 && ctx.success == FALSE)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
