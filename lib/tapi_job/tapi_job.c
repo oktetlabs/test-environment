@@ -809,6 +809,56 @@ tapi_job_simple_receive(const tapi_job_channel_set_t filters, int timeout_ms,
 }
 
 te_errno
+tapi_job_receive_single(tapi_job_channel_t *filter, te_string *val,
+                        int timeout_ms)
+{
+    te_errno rc;
+    tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
+    te_bool matched = FALSE;
+
+    while (1)
+    {
+        /*
+         * There is no te_string_reset() since we fail anyway if there are
+         * at least two successful receives.
+         */
+        rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(filter),
+                              timeout_ms, &buf);
+        if (rc != 0)
+        {
+            if (TE_RC_GET_ERROR(rc) == TE_ETIMEDOUT)
+                break;
+
+            te_string_free(&buf.data);
+            return rc;
+        }
+
+        if (buf.eos)
+            break;
+
+        if (matched)
+        {
+            ERROR("%s(): more than one message was read", __FUNCTION__);
+            te_string_free(&buf.data);
+            return TE_RC(TE_TAPI, TE_EPROTO);
+        }
+
+        matched = TRUE;
+        *val = buf.data;
+    }
+
+    if (!matched)
+    {
+        ERROR("%s(): no data was received", __FUNCTION__);
+        te_string_free(&buf.data);
+
+        return TE_RC(TE_TAPI, TE_EPROTO);
+    }
+
+    return 0;
+}
+
+te_errno
 tapi_job_clear(const tapi_job_channel_set_t filters)
 {
     unsigned int *channel_ids;

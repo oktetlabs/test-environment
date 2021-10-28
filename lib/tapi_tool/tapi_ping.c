@@ -270,66 +270,14 @@ parse_rtt_stats(const char *str, tapi_ping_rtt_stats *rtt)
     return 0;
 }
 
-/* Read data from filter and assure that there is only one match */
-static te_errno
-read_filter(tapi_job_channel_t *filter, te_string *val)
-{
-    te_errno           rc;
-    tapi_job_buffer_t  buf = TAPI_JOB_BUFFER_INIT;
-    te_bool            matched = FALSE;
-
-    while (1)
-    {
-        /**
-         * There is no te_string_reset since we fail anyway if there are
-         * at least two successfull receives.
-         */
-        rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(filter),
-                              TAPI_PING_RECEIVE_TIMEOUT_MS, &buf);
-        if (rc != 0)
-        {
-            if (TE_RC_GET_ERROR(rc) == TE_ETIMEDOUT)
-                break;
-
-            ERROR("Failed to receive report from ping tool");
-            te_string_free(&buf.data);
-
-            return rc;
-        }
-
-        if (buf.eos)
-            break;
-
-        if (matched)
-        {
-            ERROR("Failed to receive report: multiple matches");
-            te_string_free(&buf.data);
-
-            return TE_EPROTO;
-        }
-
-        matched = TRUE;
-        *val = buf.data;
-    }
-
-    if (!matched)
-    {
-        ERROR("Failed to receive report: no data");
-        te_string_free(&buf.data);
-
-        return TE_EPROTO;
-    }
-
-    return 0;
-}
-
 static te_errno
 process_filter_uint_data(tapi_job_channel_t *filter, unsigned int *field)
 {
     te_errno   rc;
     te_string  val = TE_STRING_INIT;
 
-    rc = read_filter(filter, &val);
+    rc = tapi_job_receive_single(filter, &val,
+                                 TAPI_PING_RECEIVE_TIMEOUT_MS);
     if (rc == 0)
         rc = te_strtoui(val.ptr, 10, field);
 
@@ -344,7 +292,8 @@ process_filter_rtt_data(tapi_job_channel_t *filter, tapi_ping_rtt_stats *field)
     te_errno   rc;
     te_string  val = TE_STRING_INIT;
 
-    rc = read_filter(filter, &val);
+    rc = tapi_job_receive_single(filter, &val,
+                                 TAPI_PING_RECEIVE_TIMEOUT_MS);
     if (rc == 0)
         rc = parse_rtt_stats(val.ptr, field);
 

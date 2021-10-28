@@ -533,6 +533,21 @@ extern void tapi_job_simple_receive(const tapi_job_channel_set_t filters,
                                     tapi_job_buffer_t *buffer);
 
 /**
+ * Get contents of a single message. This function will fail if
+ * there is more than one message. It is useful for filters looking
+ * for something unique in the output.
+ *
+ * @param filter      From where to read the message
+ * @param val         Where to save the contents
+ * @param timeout_ms  Timeout to wait (negative means tapi_job_get_timeout())
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_job_receive_single(tapi_job_channel_t *filter,
+                                        te_string *val,
+                                        int timeout_ms);
+
+/**
  * Remove all pending messages from filters, they are lost completely.
  *
  * @param filters     Set of filters to clear.
