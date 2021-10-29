@@ -98,12 +98,15 @@ function build_and_install () {
     meson install --help | grep "meson install" > /dev/null 2> /dev/null
     supports_steps=$?
     if test ${supports_steps} -eq 0 ; then
+        # Build with ninja
+        run_ninja -v
+        # And install only changed files with meson
         run_meson_install
     else
         # Not all meson versions support builtin build/install wrapper,
         # so we run ninja instead if it is the case.
         # Known bad versions: <=0.45
-        run_ninja install
+        run_ninja -v install
     fi
 }
 
