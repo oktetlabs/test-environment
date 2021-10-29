@@ -156,7 +156,10 @@ static const tapi_job_opt_bind fio_binds[] = TAPI_JOB_OPT_SET(
       offsetof(tapi_fio_opts, ioengine) },
     TAPI_JOB_OPT_UINT("--numjobs=", TRUE, NULL, tapi_fio_opts, numjobs.value),
     TAPI_JOB_OPT_DUMMY("--thread"),
-    { user_argument, NULL, FALSE, NULL, offsetof(tapi_fio_opts, user) }
+    { user_argument, NULL, FALSE, NULL, offsetof(tapi_fio_opts, user) },
+    TAPI_JOB_OPT_STRING("--rbdname=", TRUE, tapi_fio_opts, rbdname),
+    TAPI_JOB_OPT_STRING("--pool=", TRUE, tapi_fio_opts, pool),
+    TAPI_JOB_OPT_STRING("--size=", TRUE, tapi_fio_opts, size)
 );
 
 /* See description in tapi_internal.h */

@@ -212,6 +212,11 @@ typedef struct tapi_fio_opts {
     const char *rand_gen;        /**< Random generator type */
     const char *user;            /**< Raw string passed to fio */
     const char *prefix;          /**< Raw string used as a prefix before fio */
+    const char *rbdname;         /**< Specifies the name of the RBD */
+    const char *pool;            /**< Specifies the name of the Ceph pool
+                                      containing RBD or RADOS data. */
+    const char *size;            /**< The total size of file I/O for
+                                      each thread of this job */
 } tapi_fio_opts;
 
 /** Macro to initialize default value. */
@@ -234,6 +239,9 @@ typedef struct tapi_fio_opts {
     .rand_gen = NULL,                                   \
     .user = NULL,                                       \
     .prefix = NULL,                                     \
+    .rbdname = NULL,                                    \
+    .pool = NULL,                                       \
+    .size = NULL,                                       \
 })
 
 /** FIO tool context. Based on tapi_perf_app */
