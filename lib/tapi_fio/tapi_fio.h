@@ -101,13 +101,16 @@ typedef enum {
     TAPI_FIO_IOENGINE_PSYNC,     /**< Use pread/pwrite */
     TAPI_FIO_IOENGINE_LIBAIO,    /**< Use Kernel Asynchronous I/O */
     TAPI_FIO_IOENGINE_POSIXAIO,  /**< Use POSIX asynchronous IO */
+    TAPI_FIO_IOENGINE_RBD,       /**< I/O engine supporting direct access
+                                      to Ceph Rados Block Devices */
 } tapi_fio_ioengine;
 
 #define TAPI_FIO_IOENGINE_MAPPING_LIST \
-    {"sync", TAPI_FIO_IOENGINE_SYNC},        \
-    {"psync", TAPI_FIO_IOENGINE_PSYNC},      \
-    {"libaio", TAPI_FIO_IOENGINE_LIBAIO},    \
-    {"posixaio", TAPI_FIO_IOENGINE_POSIXAIO}
+    {"sync", TAPI_FIO_IOENGINE_SYNC},         \
+    {"psync", TAPI_FIO_IOENGINE_PSYNC},       \
+    {"libaio", TAPI_FIO_IOENGINE_LIBAIO},     \
+    {"posixaio", TAPI_FIO_IOENGINE_POSIXAIO}, \
+    {"rbd", TAPI_FIO_IOENGINE_RBD}
 
 /**
  * Get the value of parameter of type 'tapi_fio_ioengine'

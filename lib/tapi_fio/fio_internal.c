@@ -72,7 +72,8 @@ ioengine_argument(const void *value, te_vec *args)
         [TAPI_FIO_IOENGINE_LIBAIO] = "libaio",
         [TAPI_FIO_IOENGINE_PSYNC] = "psync",
         [TAPI_FIO_IOENGINE_SYNC] = "sync",
-        [TAPI_FIO_IOENGINE_POSIXAIO] = "posixaio"
+        [TAPI_FIO_IOENGINE_POSIXAIO] = "posixaio",
+        [TAPI_FIO_IOENGINE_RBD] = "rbd"
     };
     tapi_fio_ioengine enum_value = *(const tapi_fio_ioengine *)value;
     return enum_argument(enum_value, ioengines, TE_ARRAY_LEN(ioengines), args);
