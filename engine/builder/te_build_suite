@@ -79,7 +79,7 @@ function run_ninja () {
     (
         set -o pipefail
         export NINJA_STATUS="[ninja][%f/%t] "
-        ${ninja_exec} "$@" | ninja_status_filter
+        ${ninja_exec} "${NINJA_EXTRA_OPTS[@]}" "$@" | ninja_status_filter
     )
 }
 

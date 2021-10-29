@@ -15,6 +15,11 @@ declare -a NINJA_STDOUT_LIST
 NINJA_STDOUT_LIST+=("Installing ")
 NINJA_STDOUT_LIST+=("Preserving existing file ")
 
+declare -a NINJA_EXTRA_OPTS
+if test -n "$BUILDER_DEBUG" ; then
+     NINJA_EXTRA_OPTS+=("-dexplain")
+fi
+
 # Helper function to split ninja output into stdout and stderr
 function ninja_status_filter () {
     local l n

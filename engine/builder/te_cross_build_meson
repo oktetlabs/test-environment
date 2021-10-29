@@ -338,7 +338,7 @@ build_platform() {
         te_eval_or_ssh "${p}" \
             "which ninja >/dev/null 2>&1 && NINJA=ninja || NINJA=ninja-build ;
             TE_BASE=\"${ws}\"/src ${destdir} NINJA_STATUS=\"[ninja][%f/%t] \"
-            \$NINJA -C \"${ws}\"/build -v install" | ninja_status_filter
+            \$NINJA "${NINJA_EXTRA_OPTS[@]}" -C \"${ws}\"/build -v install" | ninja_status_filter
     ) || result=$?
 
     if test ${result} -eq 0 ; then
