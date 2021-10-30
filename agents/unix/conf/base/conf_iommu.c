@@ -45,6 +45,8 @@ pci_iommu_get(unsigned int gid, const char *oid, char *value,
     else
         strcpy(value, "off");
 
+    (void)closedir(dir);
+
     return 0;
 }
 
