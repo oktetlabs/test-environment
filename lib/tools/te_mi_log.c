@@ -109,6 +109,7 @@ typedef enum te_mi_meas_base_unit_type {
     TE_MI_MEAS_BASE_UNIT_CELSIUS, /**< Degrees of celsius */
     TE_MI_MEAS_BASE_UNIT_RPS, /**< Requests per second */
     TE_MI_MEAS_BASE_UNIT_HZ, /**< Events per seconds (Hz) */
+    TE_MI_MEAS_BASE_UNIT_IOPS, /**< Input/Output operations per second */
 } te_mi_meas_base_unit_type;
 
 static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
@@ -122,6 +123,7 @@ static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
     [TE_MI_MEAS_RETRANS] = TE_MI_MEAS_BASE_UNITLESS,
     [TE_MI_MEAS_FREQ] = TE_MI_MEAS_BASE_UNIT_HZ,
     [TE_MI_MEAS_EPE] = TE_MI_MEAS_BASE_UNITLESS,
+    [TE_MI_MEAS_IOPS] = TE_MI_MEAS_BASE_UNIT_IOPS,
 };
 
 static const char *meas_base_unit_names[] = {
@@ -132,6 +134,7 @@ static const char *meas_base_unit_names[] = {
     [TE_MI_MEAS_BASE_UNIT_CELSIUS] = "degrees celsius",
     [TE_MI_MEAS_BASE_UNIT_RPS] = "rps",
     [TE_MI_MEAS_BASE_UNIT_HZ] = "Hz",
+    [TE_MI_MEAS_BASE_UNIT_IOPS] = "iops",
 };
 
 static const char *mi_type_names[] = {
@@ -164,6 +167,7 @@ static const char *meas_type_names[] = {
     [TE_MI_MEAS_RETRANS] = "TCP retransmissions",
     [TE_MI_MEAS_FREQ] = "events-per-second",
     [TE_MI_MEAS_EPE] = "events-per-event",
+    [TE_MI_MEAS_IOPS] = "iops",
 };
 
 /** Array for storing string representations of view types */
@@ -866,6 +870,10 @@ te_mi_meas_type2descr(te_mi_meas_type type)
 
         case TE_MI_MEAS_EPE:
             return "Events per another event";
+
+
+        case TE_MI_MEAS_IOPS:
+            return "Input/Output operations per second";
 
         default:
             return "Unknown type";
