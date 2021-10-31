@@ -38,6 +38,7 @@ include_HEADERS = \
 	te_vector.h \
 	te_meas_stats.h \
 	te_mi_log.h \
+	te_hex_diff_dump.h \
 	te_yaml.h
 
 if WINDOWS
@@ -91,6 +92,7 @@ libtools_la_SOURCES = \
 	te_log_stack.c \
 	te_vector.c \
 	te_meas_stats.c \
+	te_hex_diff_dump.c \
 	te_mi_log.c
 
 liblogger_file_la_SOURCES = te_log_file.c
