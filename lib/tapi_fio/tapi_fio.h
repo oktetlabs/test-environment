@@ -21,6 +21,7 @@
 #include "te_queue.h"
 #include "tapi_job.h"
 #include "te_vector.h"
+#include "te_mi_log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -418,6 +419,17 @@ extern te_errno tapi_fio_get_report(tapi_fio *fio,
  * @param report      report to log
  */
 extern void tapi_fio_log_report(tapi_fio_report *report);
+
+/**
+ * Add FIO report to MI logger
+ *
+ * @param logger   MI logger
+ * @param report   FIO report structure
+ *
+ * @return Status code
+ */
+extern te_errno tapi_fio_mi_report(te_mi_logger *logger,
+                                   const tapi_fio_report *report);
 
 #ifdef __cplusplus
 } /* extern "C" */

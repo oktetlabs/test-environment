@@ -871,7 +871,6 @@ te_mi_meas_type2descr(te_mi_meas_type type)
         case TE_MI_MEAS_EPE:
             return "Events per another event";
 
-
         case TE_MI_MEAS_IOPS:
             return "Input/Output operations per second";
 

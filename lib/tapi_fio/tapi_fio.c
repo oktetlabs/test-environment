@@ -313,3 +313,24 @@ test_get_fio_numjobs_param(int argc, char **argv, const char *name)
 
     return result;
 }
+
+te_errno
+tapi_fio_mi_report(te_mi_logger *logger, const tapi_fio_report *report)
+{
+    if (logger == NULL || report == NULL)
+        return TE_EINVAL;
+
+    te_mi_logger_add_meas_vec(logger, NULL, TE_MI_MEAS_V(
+        TE_MI_MEAS(THROUGHPUT, "Read throughput", MEAN,
+                   report->read.bandwidth.mean / 128., MEBI),
+        TE_MI_MEAS(IOPS, "Read iops", MEAN, report->read.iops.mean, PLAIN),
+        TE_MI_MEAS(LATENCY, "Read clat 99.00 percentile", PERCENTILE,
+                   report->read.clatency.percentiles.percent_99_00 / 1000, MICRO),
+        TE_MI_MEAS(THROUGHPUT, "Write throughput", MEAN,
+                   report->write.bandwidth.mean / 128., MEBI),
+        TE_MI_MEAS(IOPS, "Write iops", MEAN, report->write.iops.mean, PLAIN),
+        TE_MI_MEAS(LATENCY, "Write clat 99.00 percentile", PERCENTILE,
+                   report->write.clatency.percentiles.percent_99_00 / 1000, MICRO)));
+
+    return 0;
+}
