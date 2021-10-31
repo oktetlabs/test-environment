@@ -103,17 +103,81 @@ get_latency_report(const json_t *jrpt, tapi_fio_report_lat *lat)
 }
 
 static te_errno
+get_clatency_percentile_report(const json_t *jrpt,
+                               tapi_fio_report_percentiles *percentile)
+{
+    tapi_fio_report_percentiles temp_report;
+
+    TRY_GET_JSON_VALUE(jrpt, "99.000000", integer, temp_report.percent_99_00);
+    TRY_GET_JSON_VALUE(jrpt, "99.500000", integer, temp_report.percent_99_50);
+    TRY_GET_JSON_VALUE(jrpt, "99.900000", integer, temp_report.percent_99_90);
+    TRY_GET_JSON_VALUE(jrpt, "99.950000", integer, temp_report.percent_99_95);
+
+    *percentile = temp_report;
+    return 0;
+}
+
+static te_errno
+get_clatency_report(const json_t *jrpt, tapi_fio_report_clat *clat)
+{
+    tapi_fio_report_clat temp_report;
+    te_errno rc;
+    json_t *jperc;
+
+    TRY_GET_JSON_VALUE(jrpt, "min", integer, temp_report.min_ns);
+    TRY_GET_JSON_VALUE(jrpt, "max", integer, temp_report.max_ns);
+    TRY_GET_JSON_VALUE(jrpt, "mean", real, temp_report.mean_ns);
+    TRY_GET_JSON_VALUE(jrpt, "stddev", real, temp_report.stddev_ns);
+
+    jperc = json_object_get(jrpt, "percentile");
+    if (jperc != NULL)
+    {
+        rc = get_clatency_percentile_report(jperc, &temp_report.percentiles);
+        if (rc != 0)
+            return rc;
+    }
+    else
+    {
+        memset(&temp_report.percentiles, 0, sizeof(temp_report.percentiles));
+    }
+
+    *clat = temp_report;
+    return 0;
+}
+
+static te_errno
+get_iops_report(const json_t *jrpt, tapi_fio_report_iops *iops)
+{
+    tapi_fio_report_iops temp_report;
+
+    TRY_GET_JSON_VALUE(jrpt, "iops_min", integer, temp_report.min);
+    TRY_GET_JSON_VALUE(jrpt, "iops_max", integer, temp_report.max);
+    TRY_GET_JSON_VALUE(jrpt, "iops_mean", real, temp_report.mean);
+    TRY_GET_JSON_VALUE(jrpt, "iops_stddev", real, temp_report.stddev);
+
+    *iops = temp_report;
+    return 0;
+}
+
+static te_errno
 get_report_io(const json_t *jrpt, tapi_fio_report_io *rio)
 {
     te_errno rc;
-    json_t *jlat;
+    json_t *jlat, *jclat;
     tapi_fio_report_io temp_report;
 
     if ((rc = get_bandwidth_report(jrpt, &temp_report.bandwidth)) != 0)
         return rc;
 
+    if ((rc = get_iops_report(jrpt, &temp_report.iops)) != 0)
+        return rc;
+
     TRY_GET_JSON_OBJ(jrpt, "lat_ns", object, jlat);
     if ((rc = get_latency_report(jlat, &temp_report.latency)) != 0)
+        return rc;
+
+    TRY_GET_JSON_OBJ(jrpt, "clat_ns", object, jclat);
+    if ((rc = get_clatency_report(jclat, &temp_report.clatency)) != 0)
         return rc;
 
     *rio = temp_report;

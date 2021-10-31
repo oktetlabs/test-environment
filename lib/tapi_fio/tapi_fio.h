@@ -50,11 +50,42 @@ typedef struct tapi_fio_report_bw
     double stddev;    /**< Bandwidth standard deviation */
 } tapi_fio_report_bw;
 
-/** FIO report of latency and bandwidth*/
+/** Latency percentiles */
+typedef struct tapi_fio_report_percentiles {
+    int percent_99_00; /**< 99.00 percentile */
+    int percent_99_50; /**< 99.50 percentile */
+    int percent_99_90; /**< 99.90 percentile */
+    int percent_99_95; /**< 99.95 percentile */
+} tapi_fio_report_percentiles;
+
+/** Completion latency FIO report */
+typedef struct tapi_fio_report_clat {
+    int min_ns;                              /**< Minimal completion latency
+                                                  in nanoseconds */
+    int max_ns;                              /**< Maximum completion latency
+                                                  in nanoseconds */
+    double mean_ns;                          /**< Completion latency mean
+                                                  in nanoseconds */
+    double stddev_ns;                        /**< Completion latency standard
+                                                  deviation in nanoseconds */
+    tapi_fio_report_percentiles percentiles; /**< Latency percentiles */
+} tapi_fio_report_clat;
+
+/** IOPS FIO report */
+typedef struct tapi_fio_report_iops {
+    int min;          /**< Minimal iops */
+    int max;          /**< Maximal iops */
+    double mean;      /**< iops mean */
+    double stddev;    /**< iops standard deviation */
+} tapi_fio_report_iops;
+
+/** FIO reports */
 typedef struct tapi_fio_report_io
 {
     tapi_fio_report_lat latency;
+    tapi_fio_report_clat clatency;
     tapi_fio_report_bw bandwidth;
+    tapi_fio_report_iops iops;
 } tapi_fio_report_io;
 
 /** FIO test tool report. */

@@ -193,6 +193,52 @@ log_report_lat(te_string *log, const tapi_fio_report_lat *rlat)
     return 0;
 }
 
+static te_errno
+log_report_iops(te_string *log, const tapi_fio_report_iops *riops)
+{
+    REPORT("\tiops\n");
+    REPORT("\t\tmin:\t%d iops \n", riops->min);
+    REPORT("\t\tmax:\t%d iops \n", riops->max);
+    REPORT("\t\tmean:\t%f iops\n", riops->mean);
+    REPORT("\t\tstddev:\t%f iops \n", riops->stddev);
+
+    return 0;
+}
+
+static te_errno
+log_report_percentile(te_string *log,
+                      const tapi_fio_report_percentiles *rpercentile)
+{
+    REPORT("\tlatency percentiles\n");
+    REPORT("\t\t99.00:\t%f us\n",
+           TE_NS2US((double)rpercentile->percent_99_00));
+    REPORT("\t\t99.50:\t%f us\n",
+           TE_NS2US((double)rpercentile->percent_99_50));
+    REPORT("\t\t99.90:\t%f us\n",
+           TE_NS2US((double)rpercentile->percent_99_90));
+    REPORT("\t\t99.95:\t%f us\n",
+           TE_NS2US((double)rpercentile->percent_99_95));
+
+    return 0;
+}
+
+static te_errno
+log_report_clat(te_string *log, const tapi_fio_report_clat *rclat)
+{
+    te_errno rc;
+
+    REPORT("\tcompletion latency\n");
+    REPORT("\t\tmin:\t%f us\n", TE_NS2US((double)rclat->min_ns));
+    REPORT("\t\tmax:\t%f us\n", TE_NS2US((double)rclat->max_ns));
+    REPORT("\t\tmean:\t%f us\n", TE_NS2US(rclat->mean_ns));
+    REPORT("\t\tstddev:\t%f us\n", TE_NS2US(rclat->stddev_ns));
+
+    if ((rc = log_report_percentile(log, &rclat->percentiles)) != 0)
+        return rc;
+
+    return 0;
+}
+
 #undef REPORT
 
 static te_errno
@@ -204,6 +250,12 @@ log_report_io(te_string *log, const tapi_fio_report_io *rio)
         return rc;
 
     if ((rc = log_report_bw(log, &rio->bandwidth)) != 0)
+        return rc;
+
+    if ((rc = log_report_clat(log, &rio->clatency)) != 0)
+        return rc;
+
+    if ((rc = log_report_iops(log, &rio->iops)) != 0)
         return rc;
 
     return 0;
