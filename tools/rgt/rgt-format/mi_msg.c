@@ -298,7 +298,7 @@ get_child_keys(json_t *obj, const char *field,
     if (*num == 0)
         return 0;
 
-    *kvs = calloc(*num, sizeof(*kvs));
+    *kvs = calloc(*num, sizeof(**kvs));
     if (*kvs == NULL)
         return TE_ENOMEM;
 
