@@ -21,6 +21,7 @@
 
 #include "te_errno.h"
 #include "tapi_job.h"
+#include "te_kvpair.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,6 +33,7 @@ extern "C" {
 /** Supported ethtool commands */
 typedef enum tapi_ethtool_cmd {
     TAPI_ETHTOOL_CMD_NONE, /**< No command (shows interface properties) */
+    TAPI_ETHTOOL_CMD_STATS, /**< Interface statistics */
 } tapi_ethtool_cmd;
 
 /** Command line options for ethtool */
@@ -60,6 +62,7 @@ typedef struct tapi_ethtool_report {
     union {
         tapi_ethtool_if_props if_props; /**< Interface properties printed
                                              when no command is supplied */
+        te_kvpair_h stats; /**< Interface statistics */
     } data; /**< Parsed data */
 } tapi_ethtool_report;
 
@@ -144,6 +147,19 @@ extern te_errno tapi_ethtool_check_stderr(tapi_ethtool_app *app);
  */
 extern te_errno tapi_ethtool_get_report(tapi_ethtool_app *app,
                                         tapi_ethtool_report *report);
+
+/**
+ * Get a single statistic from parsed ethtool output.
+ *
+ * @param report      Pointer to parsed data storage
+ * @param name        Name of the statistic
+ * @param value       Where to save parsed value
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ethtool_get_stat(tapi_ethtool_report *report,
+                                      const char *name,
+                                      long int *value);
 
 /**
  * Release resources allocated for ethtool output data.

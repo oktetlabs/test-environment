@@ -46,6 +46,8 @@ struct tapi_ethtool_app {
 
     union {
         if_props_filters if_props; /**< Filters for interface properties */
+        tapi_job_channel_t *line_filter; /**< Filter extracting output
+                                              line by line */
     } out_filters; /**< Filters for parsing stdout */
 };
 
@@ -84,6 +86,10 @@ fill_cmd_arg(const void *value, te_vec *args)
     {
         case TAPI_ETHTOOL_CMD_NONE:
             return TE_ENOENT;
+
+        case TAPI_ETHTOOL_CMD_STATS:
+            cmd_str = "--statistics";
+            break;
 
         default:
             ERROR("%s(): unknown command code %d", __FUNCTION__, cmd);
@@ -172,6 +178,29 @@ attach_if_props_filters(tapi_ethtool_app *app)
 }
 
 /**
+ * Attach a filter which gets output line by line, removing spaces
+ * at the beginning and at the end of every line.
+ *
+ * @param app     Ethtool application structure
+ *
+ * @return Status code.
+ */
+static te_errno
+attach_line_filter(tapi_ethtool_app *app)
+{
+    te_errno rc;
+
+    rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
+                                "Line", TRUE, 0,
+                                &app->out_filters.line_filter);
+    if (rc != 0)
+        return rc;
+
+    return tapi_job_filter_add_regexp(app->out_filters.line_filter,
+                                      "^\\s*(.*)\\s*$", 1);
+}
+
+/**
  * Attach filters used to parse ethtool output.
  * Filters are chosen depending on specific ethtool command.
  *
@@ -186,6 +215,9 @@ attach_filters(tapi_ethtool_app *app)
     {
         case TAPI_ETHTOOL_CMD_NONE:
             return attach_if_props_filters(app);
+
+        case TAPI_ETHTOOL_CMD_STATS:
+            return attach_line_filter(app);
 
         default:
             return 0;
@@ -378,6 +410,61 @@ out:
     return rc;
 }
 
+/**
+ * Obtain interface statistics from ethtool output via filters.
+ *
+ * @param app       Ethtool application structure
+ * @param stats     Where to save parsed statistics
+ *
+ * @return Status code.
+ */
+static te_errno
+get_stats(tapi_ethtool_app *app, te_kvpair_h *stats)
+{
+    te_errno rc;
+    tapi_job_buffer_t *bufs = NULL;
+    unsigned int count = 0;
+    unsigned int i;
+    char *colon = NULL;
+
+    te_kvpair_init(stats);
+
+    rc = tapi_job_receive_many(
+                    TAPI_JOB_CHANNEL_SET(app->out_filters.line_filter),
+                    0, &bufs, &count);
+    if (rc != 0)
+        goto out;
+
+    for (i = 0; i < count; i++)
+    {
+        if (bufs[i].eos)
+            break;
+
+        colon = strrchr(bufs[i].data.ptr, ':');
+        if (colon == NULL)
+        {
+            ERROR("%s(): wrong format of a line:\n%s",
+                  __FUNCTION__, bufs[i].data.ptr);
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+            break;
+        }
+
+        *colon = '\0';
+
+        rc = te_kvpair_add(stats, bufs[i].data.ptr, colon + 1);
+        if (rc != 0)
+            break;
+    }
+
+out:
+    if (rc != 0)
+        te_kvpair_fini(stats);
+
+    tapi_job_buffers_free(bufs, count);
+
+    return rc;
+}
+
 /* See description in tapi_ethtool.h */
 te_errno
 tapi_ethtool_get_report(tapi_ethtool_app *app,
@@ -387,6 +474,9 @@ tapi_ethtool_get_report(tapi_ethtool_app *app,
     {
         case TAPI_ETHTOOL_CMD_NONE:
             return get_if_props(app, &report->data.if_props);
+
+        case TAPI_ETHTOOL_CMD_STATS:
+            return get_stats(app, &report->data.stats);
 
         default:
             ERROR("%s(): no report is defined for the current command",
@@ -401,5 +491,31 @@ tapi_ethtool_get_report(tapi_ethtool_app *app,
 void
 tapi_ethtool_destroy_report(tapi_ethtool_report *report)
 {
-    UNUSED(report);
+    switch (report->cmd)
+    {
+        case TAPI_ETHTOOL_CMD_STATS:
+            te_kvpair_fini(&report->data.stats);
+            break;
+
+        default:
+            return;
+    }
+}
+
+/* See description in tapi_ethtool.h */
+te_errno
+tapi_ethtool_get_stat(tapi_ethtool_report *report,
+                      const char *name, long int *value)
+{
+    const char *value_str;
+
+    value_str = te_kvpairs_get(&report->data.stats, name);
+    if (value_str == NULL)
+    {
+        ERROR("%s(): there is no statistic named '%s'",
+              __FUNCTION__, name);
+        return TE_RC(TE_TAPI, TE_ENOENT);
+    }
+
+    return te_strtol(value_str, 10, value);
 }
