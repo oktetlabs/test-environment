@@ -300,7 +300,8 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
 
     SNPRINTF(cmdline, MAX_STR,
              "failed to compose netconsole configfs dir checking command",
-             "cd %s/netconsole/ || exit 1", configfs_mount_point);
+             "cd %s/netconsole/ >/dev/null 2>&1 || exit 1",
+             configfs_mount_point);
 
     if (strlen(configfs_mount_point) == 0 ||
         ta_system(cmdline) != 0)
