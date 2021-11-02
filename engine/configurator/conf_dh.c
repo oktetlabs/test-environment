@@ -1165,13 +1165,16 @@ has_backup(cfg_dh_entry *entry, char *filename)
  *                      on restore backup. For instance if on deleting
  *                      some instance we got ESRCH or ENOENT, we should
  *                      kepp processing without any error.
+ * @param shutdown      if @c TRUE - the configurator shuts down.
+ *                      Do no stop restoring backup when error @c ENOENT
+ *                      occurs (for example for @c CFG_SET command).
  *
  * @return status code (see te_errno.h)
  * @retval TE_ENOENT       there is not command in dynamic history to which
  *                      the specified backup is attached
  */
-int
-cfg_dh_restore_backup(char *filename, te_bool hard_check)
+static int
+cfg_dh_restore_backup_ext(char *filename, te_bool hard_check, te_bool shutdown)
 {
     cfg_dh_entry *limit = NULL;
     cfg_dh_entry *tmp;
@@ -1312,9 +1315,19 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
 
                 if ((rc = cfg_db_find(tmp->old_oid, &msg->handle)) != 0)
                 {
-                    ERROR("cfg_db_find(%s) failed: %r", tmp->old_oid, rc);
                     free(msg);
-                    return rc;
+                    if (!shutdown || TE_RC_GET_ERROR(rc) != TE_ENOENT)
+                    {
+                        ERROR("cfg_db_find(%s) failed: %r", tmp->old_oid, rc);
+                        return rc;
+                    }
+
+                    /*
+                     * Let is try to restore the remaining entries,
+                     * even if this one failed
+                     */
+                    VERB("cfg_db_find(%s) failed: %r", tmp->old_oid, rc);
+                    break;
                 }
 
                 msg->type = CFG_SET;
@@ -1421,6 +1434,21 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
 
     return result;
 }
+
+/* See description in conf_dh.h */
+int
+cfg_dh_restore_backup(char *filename, te_bool hard_check)
+{
+    return cfg_dh_restore_backup_ext(filename, hard_check, FALSE);
+}
+
+/* See description in conf_dh.h */
+int
+cfg_dh_restore_backup_on_shutdown()
+{
+    return cfg_dh_restore_backup_ext(NULL, TRUE, TRUE);
+}
+
 
 /**
  * Add a command to the history.

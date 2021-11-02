@@ -71,6 +71,14 @@ extern int cfg_dh_attach_backup(char *filename);
 extern int cfg_dh_restore_backup(char *filename, te_bool hard_check);
 
 /**
+ * Restore backup when the configurator shuts down reversing the dynamic
+ * history. Processed commands are removed from the history.
+ *
+ * @return status code (see te_errno.h)
+ */
+extern int cfg_dh_restore_backup_on_shutdown();
+
+/**
  * Add a command to the history.
  *
  * @param msg    message with set, add or delete user request.
