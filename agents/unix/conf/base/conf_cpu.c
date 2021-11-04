@@ -473,7 +473,10 @@ is_cpu_online(const char *name, te_bool *is_online)
 
     /* cpu0 is always online */
     if (thread_id == 0)
+    {
+        *is_online = TRUE;
         return rc;
+    }
 
     if ((rc = te_string_append(&buf, "cpu/%s/online", name)) != 0)
     {
