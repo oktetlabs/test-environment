@@ -741,7 +741,8 @@ tapi_dpdk_stats_log_dbells(tapi_job_channel_t *dbells_filter,
         }
     }
 
-    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_FREQ, NULL,
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_FREQ,
+                          "Doorbells per second",
                           TE_MI_MEAS_AGGR_MEAN, meas_stats_dbells.data.mean,
                           TE_MI_MEAS_MULTIPLIER_PLAIN);
 
@@ -750,7 +751,8 @@ tapi_dpdk_stats_log_dbells(tapi_job_channel_t *dbells_filter,
                meas_stats_pps->data.mean;
 
     if (meas_stats_dbells.data.mean != 0)
-        te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_EPE, NULL,
+        te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_EPE,
+                              "Packets per doorbell",
                               TE_MI_MEAS_AGGR_MEAN,
                               (double)pps_mean / meas_stats_dbells.data.mean,
                               TE_MI_MEAS_MULTIPLIER_PLAIN);
