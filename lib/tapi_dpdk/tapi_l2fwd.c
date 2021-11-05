@@ -143,6 +143,9 @@ append_default_l2fwd_args(int *l2fwd_argc, char ***l2fwd_argv)
     /* Set stats updating period to 1 second */
     tapi_dpdk_append_argument("-T", l2fwd_argc, l2fwd_argv);
     tapi_dpdk_append_argument("1", l2fwd_argc, l2fwd_argv);
+
+    /* Enable promisucous mode by default which is common for L2fwd case */
+    tapi_dpdk_append_argument("-P", l2fwd_argc, l2fwd_argv);
 }
 
 te_errno
