@@ -53,3 +53,13 @@ te_gettimeofday(struct timeval *tv, struct timezone *tz)
     return 0;
 }
 
+/* See description in te_time.h */
+void
+te_timersub(const struct timeval *a, const struct timeval *b,
+            struct timeval *res)
+{
+    long long difference_us;
+
+    difference_us = TE_SEC2US(a->tv_sec - b->tv_sec) + a->tv_usec - b->tv_usec;
+    TE_US2TV(difference_us, res);
+}

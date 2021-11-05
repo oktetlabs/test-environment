@@ -47,6 +47,19 @@ extern char *te_time_current_date2str(void);
  */
 extern te_errno te_gettimeofday(struct timeval *tv, struct timezone *tz);
 
+/**
+ * Subtract the time value in @p b from the time value in @p a, and place
+ * the result in the timeval pointed to by @p res
+ *
+ * @note It is an alternative to BSD timersub()
+ *
+ * @param[in]  a        Minuend
+ * @param[in]  b        Subtrahend
+ * @param[out] res      Difference
+ */
+extern void te_timersub(const struct timeval *a, const struct timeval *b,
+                        struct timeval *res);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
