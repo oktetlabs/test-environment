@@ -129,6 +129,21 @@ struct tarpc_job_receive_last_out {
     tarpc_int retval;
 };
 
+struct tarpc_job_receive_many_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint filters<>;
+    tarpc_int timeout_ms;
+    tarpc_uint count;
+};
+
+struct tarpc_job_receive_many_out {
+    struct tarpc_out_arg common;
+
+    tarpc_job_buffer buffers<>;
+    tarpc_int retval;
+};
+
 /* job_clear */
 struct tarpc_job_clear_in {
     struct tarpc_in_arg common;
@@ -345,6 +360,7 @@ program job
         RPC_DEF(job_filter_add_regexp)
         RPC_DEF(job_receive)
         RPC_DEF(job_receive_last)
+        RPC_DEF(job_receive_many)
         RPC_DEF(job_clear)
         RPC_DEF(job_send)
         RPC_DEF(job_poll)

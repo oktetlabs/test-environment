@@ -781,6 +781,75 @@ tapi_job_receive_last(const tapi_job_channel_set_t filters, int timeout_ms,
     return receive_common(filters, timeout_ms, buffer, rpc_job_receive_last);
 }
 
+te_errno
+tapi_job_receive_many(const tapi_job_channel_set_t filters, int timeout_ms,
+                      tapi_job_buffer_t **buffers, unsigned int *count)
+{
+    unsigned int *channel_ids = NULL;
+    unsigned int n_channels;
+    te_errno rc;
+
+    rcf_rpc_server *rpcs;
+    tarpc_job_buffer *bufs = NULL;
+    tapi_job_buffer_t *tapi_bufs = NULL;
+    unsigned int bufs_count = *count;
+    unsigned int i;
+
+    *buffers = NULL;
+    *count = 0;
+
+    if ((rc = validate_channel_set(filters)) != 0)
+        return rc;
+    rpcs = filters[0]->rpcs;
+
+    alloc_id_array_from_channel_set(filters, &n_channels, &channel_ids);
+
+    rc = rpc_job_receive_many(rpcs, n_channels, channel_ids, timeout_ms,
+                              &bufs, &bufs_count);
+    free(channel_ids);
+
+    if (bufs_count > 0)
+    {
+        tapi_bufs = TE_ALLOC(bufs_count * sizeof(*tapi_bufs));
+        if (tapi_bufs == NULL)
+        {
+            if (rc == 0)
+                rc = TE_RC(TE_TAPI, TE_ENOMEM);
+
+            goto out;
+        }
+
+        for (i = 0; i < bufs_count; i++)
+        {
+            tapi_bufs[i] = (tapi_job_buffer_t)TAPI_JOB_BUFFER_INIT;
+            tarpc_job_buffer2tapi_job_buffer(rpcs, &bufs[i], &tapi_bufs[i]);
+        }
+    }
+
+    *buffers = tapi_bufs;
+    *count = bufs_count;
+
+out:
+
+    tarpc_job_buffers_free(bufs, bufs_count);
+
+    return rc;
+}
+
+void
+tapi_job_buffers_free(tapi_job_buffer_t *buffers, unsigned int count)
+{
+    unsigned int i;
+
+    if (buffers == NULL)
+        return;
+
+    for (i = 0; i < count; i++)
+        te_string_free(&buffers[i].data);
+
+    free(buffers);
+}
+
 te_bool
 tapi_job_filters_have_data(const tapi_job_channel_set_t filters, int timeout_ms)
 {

@@ -2006,14 +2006,18 @@ job_poll(unsigned int n_channels, unsigned int *channel_ids, int timeout_ms,
 
 static te_errno
 job_receive_common(unsigned int n_filters, unsigned int *filters,
-                   int timeout_ms, tarpc_job_buffer *buffer,
+                   te_bool do_poll, int timeout_ms,
+                   tarpc_job_buffer *buffer,
                    queue_action_t action)
 {
     unsigned int i;
     te_errno rc;
 
-    if ((rc = job_poll(n_filters, filters, timeout_ms, TRUE)) != 0)
-        return rc;
+    if (do_poll)
+    {
+        if ((rc = job_poll(n_filters, filters, timeout_ms, TRUE)) != 0)
+            return rc;
+    }
 
     for (i = 0; i < n_filters; i++)
     {
@@ -2030,8 +2034,15 @@ job_receive_common(unsigned int n_filters, unsigned int *filters,
         }
     }
 
-    ERROR("Critical job receive error");
-    return TE_EIO;
+    if (do_poll)
+    {
+        ERROR("Critical job receive error");
+        return TE_EIO;
+    }
+    else
+    {
+        return TE_ENODATA;
+    }
 }
 
 /* Receive first message from filter queue and remove it from there. */
@@ -2039,7 +2050,7 @@ static te_errno
 job_receive(unsigned int n_filters, unsigned int *filters, int timeout_ms,
             tarpc_job_buffer *buffer)
 {
-    return job_receive_common(n_filters, filters, timeout_ms, buffer,
+    return job_receive_common(n_filters, filters, TRUE, timeout_ms, buffer,
                               EXTRACT_FIRST);
 }
 
@@ -2051,8 +2062,50 @@ static te_errno
 job_receive_last(unsigned int n_filters, unsigned int *filters, int timeout_ms,
                  tarpc_job_buffer *buffer)
 {
-    return job_receive_common(n_filters, filters, timeout_ms, buffer,
+    return job_receive_common(n_filters, filters, TRUE, timeout_ms, buffer,
                               GET_LAST);
+}
+
+/* Receive multiple messages at once. */
+static te_errno
+job_receive_many(unsigned int n_filters, unsigned int *filters,
+                 int timeout_ms, tarpc_job_buffer **buffers,
+                 unsigned int *count)
+{
+    te_vec bufs = TE_VEC_INIT(tarpc_job_buffer);
+    tarpc_job_buffer buf;
+    te_errno rc;
+    int i;
+
+    if ((rc = job_poll(n_filters, filters, timeout_ms, TRUE)) != 0)
+    {
+        *count = 0;
+        return rc;
+    }
+
+    for (i = 0; i < *count || *count == 0; i++)
+    {
+        memset(&buf, 0, sizeof(buf));
+
+        rc = job_receive_common(n_filters, filters, FALSE, 0, &buf,
+                                EXTRACT_FIRST);
+        if (rc != 0)
+        {
+            if (rc == TE_ENODATA)
+                rc = 0;
+
+            break;
+        }
+
+        rc = TE_VEC_APPEND(&bufs, buf);
+        if (rc != 0)
+            break;
+    }
+
+    *buffers = (tarpc_job_buffer *)(bufs.data.ptr);
+    *count = i;
+
+    return rc;
 }
 
 static te_errno
@@ -2596,6 +2649,20 @@ TARPC_FUNC_STATIC(job_receive_last, {},
                                  in->filters.filters_val,
                                  in->timeout_ms, &out->buffer));
     out->common.errno_changed = FALSE;
+})
+
+TARPC_FUNC_STATIC(job_receive_many, {},
+{
+    tarpc_job_buffer *bufs = NULL;
+    unsigned int bufs_count = in->count;
+
+    MAKE_CALL(out->retval = func(in->filters.filters_len,
+                                 in->filters.filters_val,
+                                 in->timeout_ms, &bufs, &bufs_count));
+    out->common.errno_changed = FALSE;
+
+    out->buffers.buffers_val = bufs;
+    out->buffers.buffers_len = bufs_count;
 })
 
 TARPC_FUNC_STATIC(job_clear, {},

@@ -156,6 +156,39 @@ extern int rpc_job_receive_last(rcf_rpc_server *rpcs, unsigned int n_filters,
                                 tarpc_job_buffer *buffer);
 
 /**
+ * Read multiple messages at once from the specified filters.
+ * This function may retrieve some messages and return error if attempt to
+ * read the next message failed.
+ *
+ * @param rpcs        RPC server
+ * @param n_filters   Count of @p filters
+ * @param filters     Set of filters to read from
+ * @param timeout_ms  Timeout to wait (negative means
+ *                    #TAPI_RPC_JOB_BIG_TIMEOUT_MS)
+ * @param buffers     Where to save pointer to array of message buffers.
+ *                    It should be released by the caller with
+ *                    tarpc_job_buffers_free()
+ * @param count       On input, maximum number of messages to retrieve.
+ *                    If zero, all available messages will be retrieved.
+ *                    On output - number of actually retrieved messages
+ *
+ * @return Status code.
+ */
+extern int rpc_job_receive_many(rcf_rpc_server *rpcs, unsigned int n_filters,
+                                unsigned int *filters, int timeout_ms,
+                                tarpc_job_buffer **buffers,
+                                unsigned int *count);
+
+/**
+ * Release array of message buffers.
+ *
+ * @param buffers     Pointer to the array
+ * @param count       Number of buffers in the array
+ */
+extern void tarpc_job_buffers_free(tarpc_job_buffer *buffers,
+                                   unsigned int count);
+
+/**
  * Remove all pending messages from filters, they are lost completely.
  *
  * @param rpcs        RPC server

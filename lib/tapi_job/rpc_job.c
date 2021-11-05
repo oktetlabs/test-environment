@@ -366,6 +366,59 @@ rpc_job_receive_last(rcf_rpc_server *rpcs, unsigned int n_filters,
     RETVAL_INT(job_receive_last, out.retval);
 }
 
+int
+rpc_job_receive_many(rcf_rpc_server *rpcs, unsigned int n_filters,
+                     unsigned int *filters, int timeout_ms,
+                     tarpc_job_buffer **buffers, unsigned int *count)
+{
+    tarpc_job_receive_many_in in;
+    tarpc_job_receive_many_out out;
+    te_log_buf *tlbp_filters;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.filters.filters_val = filters;
+    in.filters.filters_len = n_filters;
+    in.timeout_ms = timeout_ms;
+    in.count = *count;
+
+    rpc_job_set_rpcs_timeout(rpcs, timeout_ms, TAPI_RPC_JOB_BIG_TIMEOUT_MS);
+    rcf_rpc_call(rpcs, "job_receive_many", &in, &out);
+    CHECK_RPC_ERRNO_UNCHANGED(job_receive_many, out.retval);
+
+    tlbp_filters = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, job_receive_many, "%u, {%s}, %d ms, %d", "%r count=%d",
+                 in.filters.filters_len,
+                 tarpc_uint_array2log_buf(tlbp_filters,
+                                          in.filters.filters_len,
+                                          in.filters.filters_val),
+                 in.timeout_ms, in.count, out.retval,
+                 out.buffers.buffers_len);
+    te_log_buf_free(tlbp_filters);
+
+    *buffers = out.buffers.buffers_val;
+    *count = out.buffers.buffers_len;
+    out.buffers.buffers_val = NULL;
+    out.buffers.buffers_len = 0;
+
+    RETVAL_INT(job_receive_many, out.retval);
+}
+
+void
+tarpc_job_buffers_free(tarpc_job_buffer *buffers, unsigned int count)
+{
+    unsigned int i;
+
+    if (buffers == NULL)
+        return;
+
+    for (i = 0; i < count; i++)
+        free(buffers[i].data.data_val);
+
+    free(buffers);
+}
+
 te_errno
 rpc_job_clear(rcf_rpc_server *rpcs, unsigned int n_filters,
                unsigned int *filters)

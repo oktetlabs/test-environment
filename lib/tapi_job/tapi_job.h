@@ -502,6 +502,37 @@ extern te_errno tapi_job_receive_last(const tapi_job_channel_set_t filters,
                                       tapi_job_buffer_t *buffer);
 
 /**
+ * Obtain multiple messages at once from the specified filters.
+ * This function may retrieve some messages and return error if attempt to
+ * read the next message failed.
+ *
+ * @param filters     Set of filters to read from
+ * @param timeout_ms  Timeout to wait (negative means tapi_job_get_timeout())
+ *                    until some messages are available
+ * @param buffers     Where to save pointer to array of buffers with
+ *                    messages (should be released by caller with
+ *                    tapi_job_buffers_free())
+ * @param count       On input, maximum number of messages to retrieve.
+ *                    If zero, all available messages will be retrieved.
+ *                    On output - number of actually retrieved messages
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_job_receive_many(const tapi_job_channel_set_t filters,
+                                      int timeout_ms,
+                                      tapi_job_buffer_t **buffers,
+                                      unsigned int *count);
+
+/**
+ * Release array of message buffers.
+ *
+ * @param buffers     Pointer to the array
+ * @param count       Number of buffers in the array
+ */
+extern void tapi_job_buffers_free(tapi_job_buffer_t *buffers,
+                                  unsigned int count);
+
+/**
  * Check if there is at least one non-eos message on one of the available
  * filters. The message is not removed from the queue, it can still be read with
  * tapi_job_receive().
