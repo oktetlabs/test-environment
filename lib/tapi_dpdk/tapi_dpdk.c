@@ -1588,7 +1588,7 @@ tapi_dpdk_stats_log_rx_dbells(const tapi_dpdk_testpmd_job_t *testpmd_job,
 {
     return tapi_dpdk_stats_log_dbells(testpmd_job->rx_dbells_filter,
                                       testpmd_job->rx_dbells_skip_filter,
-                                      meas_stats_pps, "rx");
+                                      meas_stats_pps, "Rx");
 }
 
 te_errno
@@ -1597,5 +1597,5 @@ tapi_dpdk_stats_log_tx_dbells(const tapi_dpdk_testpmd_job_t *testpmd_job,
 {
     return tapi_dpdk_stats_log_dbells(testpmd_job->tx_dbells_filter,
                                       testpmd_job->tx_dbells_skip_filter,
-                                      meas_stats_pps, "tx");
+                                      meas_stats_pps, "Tx");
 }
