@@ -103,13 +103,13 @@ rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
 
     tlbp_argv = te_log_buf_alloc();
     tlbp_env = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, job_create, "%s, %s, {%s}, {%s}", "%r",
+    TAPI_RPC_LOG(rpcs, job_create, "%s, %s, {%s}, {%s}", "%r job_id=%u",
                  in.spawner, in.tool,
                  te_args2log_buf(tlbp_argv, in.argv.argv_len - 1,
                                  (const char **)argv),
                  te_args2log_buf(tlbp_env, in.env.env_len - 1,
                                  (const char **)env),
-                 out.retval);
+                 out.retval, out.job_id);
     te_log_buf_free(tlbp_argv);
     te_log_buf_free(tlbp_env);
 
@@ -317,7 +317,7 @@ rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
     CHECK_RPC_ERRNO_UNCHANGED(job_receive, out.retval);
 
     tlbp_filters = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, job_receive, "%u, {%s}, %d", "%r",
+    TAPI_RPC_LOG(rpcs, job_receive, "%u, {%s}, %d ms", "%r",
                  in.filters.filters_len,
                  tarpc_uint_array2log_buf(tlbp_filters,
                                           in.filters.filters_len,
@@ -352,7 +352,7 @@ rpc_job_receive_last(rcf_rpc_server *rpcs, unsigned int n_filters,
     CHECK_RPC_ERRNO_UNCHANGED(job_receive_last, out.retval);
 
     tlbp_filters = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, job_receive_last, "%u, {%s}, %d", "%r",
+    TAPI_RPC_LOG(rpcs, job_receive_last, "%u, {%s}, %d ms", "%r",
                  in.filters.filters_len,
                  tarpc_uint_array2log_buf(tlbp_filters,
                                           in.filters.filters_len,
@@ -438,7 +438,8 @@ rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
     CHECK_RPC_ERRNO_UNCHANGED(job_poll, out.retval);
 
     tlbp_channels = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, job_poll, "%u, {%s}, %d", "%r", in.channels.channels_len,
+    TAPI_RPC_LOG(rpcs, job_poll, "%u, {%s}, %d ms", "%r",
+                 in.channels.channels_len,
                  tarpc_uint_array2log_buf(tlbp_channels,
                                           in.channels.channels_len,
                                           in.channels.channels_val),
@@ -490,12 +491,37 @@ rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo)
     RETVAL_INT(job_killpg, out.retval);
 }
 
+static const char *
+tarpc_job_status_type2str(tarpc_job_status_type type)
+{
+    switch (type)
+    {
+        case TARPC_JOB_STATUS_EXITED:
+            return "exited";
+        case TARPC_JOB_STATUS_SIGNALED:
+            return "signaled";
+        case TARPC_JOB_STATUS_UNKNOWN:
+            return "unknown";
+        default:
+            return "INVALID";
+    }
+}
+
+static const char *
+tarpc_job_status2str(te_log_buf *tlbp, const tarpc_job_status *status)
+{
+    te_log_buf_append(tlbp, "%s(%d)",
+                      tarpc_job_status_type2str(status->type), status->value);
+    return te_log_buf_get(tlbp);
+}
+
 int
 rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id, int timeout_ms,
              tarpc_job_status *status)
 {
-    tarpc_job_wait_in  in;
-    tarpc_job_wait_out out;
+    tarpc_job_wait_in   in;
+    tarpc_job_wait_out  out;
+    te_log_buf         *tlbp = NULL;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -507,11 +533,18 @@ rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id, int timeout_ms,
     rcf_rpc_call(rpcs, "job_wait", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_wait, out.retval);
 
-    TAPI_RPC_LOG(rpcs, job_wait, "%u, %d", "%r", in.job_id,
-                 in.timeout_ms, out.retval);
+    if (out.retval == 0)
+        tlbp = te_log_buf_alloc();
+
+    TAPI_RPC_LOG(rpcs, job_wait, "%u, %d ms", "%r status=%s", in.job_id,
+                 in.timeout_ms, out.retval,
+                 out.retval == 0 ?
+                     tarpc_job_status2str(tlbp, &out.status) : "N/A");
 
     if (out.retval == 0 && status != NULL)
         *status = out.status;
+
+    te_log_buf_free(tlbp);
 
     RETVAL_INT(job_wait, out.retval);
 }
@@ -534,8 +567,8 @@ rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo,
     rcf_rpc_call(rpcs, "job_stop", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_stop, out.retval);
 
-    TAPI_RPC_LOG(rpcs, job_stop, "%u, %s", "%r", in.job_id,
-                 signum_rpc2str(signo), out.retval);
+    TAPI_RPC_LOG(rpcs, job_stop, "%u, %s, %d ms", "%r", in.job_id,
+                 signum_rpc2str(signo), in.term_timeout_ms, out.retval);
 
     RETVAL_INT(job_stop, out.retval);
 }
@@ -556,7 +589,8 @@ rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id, int term_timeout_ms)
     rcf_rpc_call(rpcs, "job_destroy", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_destroy, out.retval);
 
-    TAPI_RPC_LOG(rpcs, job_destroy, "%u", "%r", in.job_id, out.retval);
+    TAPI_RPC_LOG(rpcs, job_destroy, "%u, %d ms", "%r",
+                 in.job_id, in.term_timeout_ms, out.retval);
 
     RETVAL_INT(job_destroy, out.retval);
 }
@@ -602,8 +636,8 @@ rpc_job_wrapper_add(rcf_rpc_server *rpcs, unsigned int job_id,
     CHECK_RPC_ERRNO_UNCHANGED(job_wrapper_add, out.retval);
 
     tlbp_argv = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, job_wrapper_add, "%s, {%s}", "%r",
-                 in.tool,
+    TAPI_RPC_LOG(rpcs, job_wrapper_add, "%u, %s, {%s}", "%r",
+                 in.job_id, in.tool,
                  te_args2log_buf(tlbp_argv, in.argv.argv_len - 1,
                                  (const char **)argv),
                  out.retval);
@@ -638,8 +672,8 @@ rpc_job_wrapper_delete(rcf_rpc_server *rpcs, unsigned int job_id,
 
     rcf_rpc_call(rpcs, "job_wrapper_delete", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, job_wrapper_delete, "%u", "%r",
-                 in.wrapper_id, out.retval);
+    TAPI_RPC_LOG(rpcs, job_wrapper_delete, "%u, %u", "%r",
+                 in.job_id, in.wrapper_id, out.retval);
     RETVAL_INT(job_wrapper_delete, out.retval);
 }
 
