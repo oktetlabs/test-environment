@@ -213,7 +213,7 @@ perf_app_start(tapi_perf_app *app)
         return TE_RC(TE_TAPI, TE_EINPROGRESS);
     }
 
-    RING("Run \"%s\"", app->cmd);
+    RING("Run \"%s\" on %s", app->cmd, tapi_job_factory_ta(app->factory));
 
     return tapi_job_start(app->job);
 }
