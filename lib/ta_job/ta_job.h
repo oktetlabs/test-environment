@@ -208,6 +208,21 @@ extern te_errno ta_job_filter_add_regexp(ta_job_manager_t *manager,
                                          char *re, unsigned int extract);
 
 /**
+ * Attach an existing filter to additional output channels
+ *
+ * @param      manager         Job manager handle
+ * @param      filter_id       ID of the filter to attach
+ * @param      n_channel       Number of channels to attach the filter to
+ * @param      channels        IDs of output channels to attach the filter to
+ *
+ * @return     Status code
+ */
+extern te_errno ta_job_filter_add_channels(ta_job_manager_t *manager,
+                                           unsigned int filter_id,
+                                           unsigned int n_channels,
+                                           unsigned int *channels);
+
+/**
  * Poll channels/filters for readiness.
  * A filter is considered ready if it is readable and has some data that
  * can be got via ta_job_receive(). A channel is considered ready if it

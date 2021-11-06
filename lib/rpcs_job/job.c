@@ -94,6 +94,15 @@ job_filter_add_regexp(unsigned int filter_id, char *re, unsigned int extract)
 }
 
 static te_errno
+job_filter_add_channels(unsigned int filter_id, unsigned int n_channels,
+                        unsigned int *channels)
+{
+    INIT_MANAGER_IF_NEEDED(manager);
+
+    return ta_job_filter_add_channels(manager, filter_id, n_channels, channels);
+}
+
+static te_errno
 job_poll(unsigned int n_channels, unsigned int *channel_ids, int timeout_ms,
          te_bool filter_only)
 {
@@ -443,6 +452,13 @@ TARPC_FUNC_STATIC(job_attach_filter, {},
 TARPC_FUNC_STATIC(job_filter_add_regexp, {},
 {
     MAKE_CALL(out->retval = func(in->filter, in->re, in->extract));
+    out->common.errno_changed = FALSE;
+})
+
+TARPC_FUNC_STATIC(job_filter_add_channels, {},
+{
+    MAKE_CALL(out->retval = func(in->filter, in->channels.channels_len,
+                                 in->channels.channels_val));
     out->common.errno_changed = FALSE;
 })
 

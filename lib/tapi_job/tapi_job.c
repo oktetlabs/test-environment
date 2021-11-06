@@ -663,6 +663,44 @@ tapi_job_filter_add_regexp(tapi_job_channel_t *filter, const char *re,
     return rpc_job_filter_add_regexp(filter->rpcs, filter->id, re, extract);
 }
 
+/* See description in tapi_job.h */
+te_errno
+tapi_job_filter_add_channels(tapi_job_channel_t *filter,
+                             tapi_job_channel_set_t channels)
+{
+    te_errno rc;
+    unsigned int *channel_ids;
+    unsigned int n_channels;
+    rcf_rpc_server *rpcs;
+    unsigned int i;
+
+    if ((rc = validate_channel_set(channels)) != 0)
+        return rc;
+
+    for (i = 0; channels[i] != NULL; i++)
+    {
+        if (!is_primary_channel(channels[i]))
+        {
+            ERROR("Attach filter fail: filters over filters are not supported");
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+    }
+
+    rpcs = channels[0]->rpcs;
+
+    alloc_id_array_from_channel_set(channels, &n_channels, &channel_ids);
+
+    rc = rpc_job_filter_add_channels(rpcs, filter->id, n_channels, channel_ids);
+    free(channel_ids);
+    if (rc != 0)
+        return rc;
+
+    filter->ref_count += n_channels;
+    for (i = 0; i < n_channels; i++)
+        add_channel_to_entry_list(filter, &channels[i]->job->channel_entries);
+
+    return 0;
+}
 
 /* See description in tapi_job.h */
 te_errno

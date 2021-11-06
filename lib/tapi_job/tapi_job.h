@@ -376,6 +376,17 @@ extern te_errno tapi_job_filter_add_regexp(tapi_job_channel_t *filter,
                                            unsigned int extract);
 
 /**
+ * Attach an existing filter to additional output channels
+ *
+ * @param filter   Filter to attach
+ * @param channels Output channels to attach the filter to
+ *
+ * @return         Status code
+ */
+extern te_errno tapi_job_filter_add_channels(tapi_job_channel_t *filter,
+                                             tapi_job_channel_set_t channels);
+
+/**
  * Send data to a job input channel.
  *
  * @param channel  Output channel handle

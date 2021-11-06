@@ -113,6 +113,21 @@ extern int rpc_job_filter_add_regexp(rcf_rpc_server *rpcs, unsigned int filter,
                                      const char *re, unsigned int extract);
 
 /**
+ * Attach an existing filter to additional output channels
+ *
+ * @param rpcs        RPC server
+ * @param filter      Filter to attach
+ * @param n_channels  Count of @p channels
+ * @param channels    Output channels to attach the filter to
+ *
+ * @return            Status code
+ */
+extern int rpc_job_filter_add_channels(rcf_rpc_server *rpcs,
+                                       unsigned int filter,
+                                       unsigned int n_channels,
+                                       unsigned int *channels);
+
+/**
  * Read the next message from one of the available filters.
  *
  * @param rpcs        RPC server

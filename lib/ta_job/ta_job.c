@@ -1745,6 +1745,28 @@ out:
     return rc;
 }
 
+/** Checks if some filter may be attached to the channel */
+static te_errno
+channel_accepts_filters(channel_t *channel)
+{
+    if (channel == NULL)
+        return TE_EINVAL;
+
+    if (channel->is_input_channel)
+    {
+        ERROR("Failed to attach filter to input channel");
+        return TE_EPERM;
+    }
+
+    if (channel->n_filters == MAX_FILTERS_PER_CHANNEL)
+    {
+        ERROR("Failed to attach filter to a channel, limit exceeded");
+        return TE_ENOBUFS;
+    }
+
+    return 0;
+}
+
 static te_errno
 ta_job_attach_filter_unsafe(ta_job_manager_t *manager, const char *filter_name,
                             unsigned int n_channels, unsigned int *channels,
@@ -1757,21 +1779,9 @@ ta_job_attach_filter_unsafe(ta_job_manager_t *manager, const char *filter_name,
 
     for (i = 0; i < n_channels; i++)
     {
-        channel_t *channel = get_channel(manager, channels[i]);
-        if (channel == NULL)
-            return TE_EINVAL;
-
-        if (channel->is_input_channel)
-        {
-            ERROR("Failed to attach filter to input channel");
-            return TE_EPERM;
-        }
-
-        if (channel->n_filters == MAX_FILTERS_PER_CHANNEL)
-        {
-            ERROR("Failed to attach filter to a channel, limit exceeded");
-            return TE_ENOBUFS;
-        }
+        rc = channel_accepts_filters(get_channel(manager, channels[i]));
+        if (rc != 0)
+            return rc;
     }
 
     if ((rc = filter_alloc(filter_name, readable, log_level, &filter)) != 0)
@@ -1844,6 +1854,61 @@ ta_job_filter_add_regexp(ta_job_manager_t *manager, unsigned int filter_id,
     pthread_mutex_lock(&manager->channels_lock);
 
     rc = ta_job_filter_add_regexp_unsafe(manager, filter_id, re, extract);
+
+    pthread_mutex_unlock(&manager->channels_lock);
+
+    return rc;
+}
+
+static te_errno
+ta_job_filter_add_channels_unsafe(ta_job_manager_t *manager,
+                                  unsigned int filter_id,
+                                  unsigned int n_channels,
+                                  unsigned int *channels)
+{
+    te_errno rc;
+    filter_t *filter;
+    unsigned int i, j;
+
+    if ((filter = get_filter(manager, filter_id)) == NULL)
+        return TE_EINVAL;
+
+    for (i = 0; i < n_channels; i++)
+    {
+        channel_t *channel = get_channel(manager, channels[i]);
+
+        rc = channel_accepts_filters(channel);
+        if (rc != 0)
+            return rc;
+
+        /*
+         * MAX_FILTERS_PER_CHANNEL is only 32 so this check will not take
+         * too long
+         */
+        for (j = 0; j < channel->n_filters; j++)
+        {
+            if (channel->filters[j] == filter)
+                return TE_EALREADY;
+        }
+    }
+
+    for (i = 0; i < n_channels; i++)
+        channel_add_filter(get_channel(manager, channels[i]), filter);
+
+    return 0;
+}
+
+/* See description in ta_job.h */
+te_errno
+ta_job_filter_add_channels(ta_job_manager_t *manager, unsigned int filter_id,
+                           unsigned int n_channels, unsigned int *channels)
+{
+    te_errno rc;
+
+    pthread_mutex_lock(&manager->channels_lock);
+
+    rc = ta_job_filter_add_channels_unsafe(manager, filter_id, n_channels,
+                                           channels);
 
     pthread_mutex_unlock(&manager->channels_lock);
 
