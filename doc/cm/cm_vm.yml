@@ -251,6 +251,14 @@
          true - server mode, false - client mode, default is false
          Name: None
 
+    - oid: "/agent/vm/mgmt_net_device"
+      access: read_write
+      type: string
+      d: |
+         Virtual machine network device driver used for management network.
+         Value: QEMU network device driver, e.g. virtio-net-pci (default),
+                e1000e.
+
     - oid: "/agent/vm/net"
       access: read_create
       type: none

@@ -48,6 +48,9 @@
 #define VM_MACHINE_DEFAULT  \
     "pc-i440fx-2.8,usb=off,vmport=off,dump-guest-core=off"
 
+/** Default managment network device */
+#define VM_MGMT_NET_DEVICE_DEFAULT  "virtio-net-pci"
+
 typedef struct vm_cpu {
     te_string       model;
     unsigned int    num;
@@ -111,6 +114,7 @@ struct vm_entry {
     char                   *name;
     char                   *qemu;
     char                   *machine;
+    char                   *mgmt_net_device;
     te_bool                 kvm;
     uint16_t                host_ssh_port;
     uint16_t                guest_ssh_port;
@@ -655,6 +659,7 @@ vm_start(struct vm_entry *vm)
     te_string name_str = TE_STRING_INIT;
     te_string machine_str = TE_STRING_INIT;
     te_string net_mgmt_str = TE_STRING_INIT;
+    te_string net_mgmt_dev_str = TE_STRING_INIT;
     te_errno rc;
 
     if (inet_ntop(AF_INET, &local_ip, local_ip_str, sizeof(local_ip_str)) == NULL)
@@ -679,6 +684,15 @@ vm_start(struct vm_entry *vm)
     if (rc != 0)
     {
         ERROR("Cannot compose management network config");
+        goto exit;
+    }
+
+    rc = te_string_append(&net_mgmt_dev_str,
+             "%s,netdev=mgmt,romfile=,addr=0x3",
+             vm->mgmt_net_device);
+    if (rc != 0)
+    {
+        ERROR("Cannot compose management network device config");
         goto exit;
     }
 
@@ -748,7 +762,7 @@ vm_start(struct vm_entry *vm)
 
     rc = te_string_append_shell_args_as_is(&vm->cmd,
              "-netdev", net_mgmt_str.ptr,
-             "-device", "virtio-net-pci,netdev=mgmt,romfile=,addr=0x3",
+             "-device", net_mgmt_dev_str.ptr,
              NULL);
     if (rc != 0)
     {
@@ -838,6 +852,7 @@ exit:
     te_string_free(&name_str);
     te_string_free(&machine_str);
     te_string_free(&net_mgmt_str);
+    te_string_free(&net_mgmt_dev_str);
     return TE_RC(TE_TA_UNIX, rc);
 }
 
@@ -995,6 +1010,7 @@ vm_free(struct vm_entry *vm)
 
     te_string_free(&vm->cmd);
     free(vm->mem_path);
+    free(vm->mgmt_net_device);
     free(vm->machine);
     free(vm->qemu);
     free(vm->name);
@@ -1178,6 +1194,13 @@ vm_add(unsigned int gid, const char *oid, const char *value,
     {
         vm_free(vm);
         return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    vm->mgmt_net_device = strdup(VM_MGMT_NET_DEVICE_DEFAULT);
+    if (vm->mgmt_net_device == NULL)
+    {
+        vm_free(vm);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
     rc = agent_alloc_l4_port(AF_INET, SOCK_STREAM, &vm->host_ssh_port);
@@ -1716,6 +1739,50 @@ vm_chardev_list(unsigned int gid, const char *oid, const char *sub_id, char **li
 
     *list = result.ptr;
     return 0;
+}
+
+static te_errno
+vm_mgmt_net_device_get(unsigned int gid, const char *oid, char *value,
+                       const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", vm->mgmt_net_device);
+
+    return 0;
+}
+
+static te_errno
+vm_mgmt_net_device_set(unsigned int gid, const char *oid, const char *value,
+                       const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    if (te_str_is_null_or_empty(value))
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
+
+    return string_replace(&vm->mgmt_net_device, value);
 }
 
 static te_errno
@@ -3171,6 +3238,10 @@ RCF_PCH_CFG_NODE_COLLECTION(node_vm_net, "net", &node_vm_net_type,
                             &node_vm_kernel, vm_net_add, vm_net_del,
                             vm_net_list, NULL);
 
+RCF_PCH_CFG_NODE_RW(node_vm_mgmt_net_device, "mgmt_net_device", NULL,
+                    &node_vm_net,
+                    vm_mgmt_net_device_get, vm_mgmt_net_device_set);
+
 RCF_PCH_CFG_NODE_RW(node_vm_chardev_server, "server", NULL, NULL,
                     vm_chardev_server_get, vm_chardev_server_set);
 
@@ -3178,7 +3249,8 @@ RCF_PCH_CFG_NODE_RW(node_vm_chardev_path, "path", NULL, &node_vm_chardev_server,
                     vm_chardev_path_get, vm_chardev_path_set);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_vm_chardev, "chardev", &node_vm_chardev_path,
-                            &node_vm_net, vm_chardev_add, vm_chardev_del,
+                            &node_vm_mgmt_net_device,
+                            vm_chardev_add, vm_chardev_del,
                             vm_chardev_list, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_vm_mem_prealloc, "prealloc", NULL, NULL,
