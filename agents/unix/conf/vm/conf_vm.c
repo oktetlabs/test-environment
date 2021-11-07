@@ -27,6 +27,7 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_alloc.h"
+#include "te_sleep.h"
 #include "te_string.h"
 #include "te_shell_cmd.h"
 #include "te_str.h"
@@ -825,6 +826,13 @@ vm_start(struct vm_entry *vm)
         goto exit;
     }
 
+    /*
+     * VMs are created and started from CS configuration files which
+     * have no ways to wait for configuration changes yet. Add a delay
+     * here to let process to start and create interfaces which are
+     * typically required for further processing.
+     */
+    te_msleep(200);
 
 exit:
     te_string_free(&name_str);
