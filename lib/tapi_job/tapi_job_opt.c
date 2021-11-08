@@ -31,6 +31,17 @@ tapi_job_opt_create_uint_t(const void *value, te_vec *args)
 }
 
 te_errno
+tapi_job_opt_create_uint_t_hex(const void *value, te_vec *args)
+{
+    tapi_job_opt_uint_t *p = (tapi_job_opt_uint_t *)value;
+
+    if (!p->defined)
+        return TE_ENOENT;
+
+    return te_vec_append_str_fmt(args, "0x%x", p->value);
+}
+
+te_errno
 tapi_job_opt_create_uint(const void *value, te_vec *args)
 {
     unsigned int uint = *(const unsigned int *)value;

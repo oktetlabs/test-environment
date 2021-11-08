@@ -145,6 +145,9 @@ typedef struct tapi_job_opt_double_t {
 /** value type: `tapi_job_opt_uint_t` */
 te_errno tapi_job_opt_create_uint_t(const void *value, te_vec *args);
 
+/** value type: `tapi_job_opt_uint_t` */
+te_errno tapi_job_opt_create_uint_t_hex(const void *value, te_vec *args);
+
 /** value type: `unsigned int` */
 te_errno tapi_job_opt_create_uint(const void *value, te_vec *args);
 
@@ -192,6 +195,21 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
 #define TAPI_JOB_OPT_UINT_T(_prefix, _concat_prefix, _suffix, \
                             _struct, _field) \
     { tapi_job_opt_create_uint_t, _prefix, _concat_prefix, _suffix, \
+      offsetof(_struct, _field) }
+
+/**
+ * Bind `tapi_job_opt_uint_t` argument, specifying it in hexadecimal
+ * format in command line.
+ *
+ * @param[in] _prefix         Argument prefix.
+ * @param[in] _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in] _suffix         Argument suffix.
+ * @param[in] _struct         Option struct.
+ * @param[in] _field          Field name in option struct.
+ */
+#define TAPI_JOB_OPT_UINT_T_HEX(_prefix, _concat_prefix, _suffix, \
+                                _struct, _field) \
+    { tapi_job_opt_create_uint_t_hex, _prefix, _concat_prefix, _suffix, \
       offsetof(_struct, _field) }
 
 /**
