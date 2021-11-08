@@ -34,6 +34,8 @@ extern "C" {
 typedef enum tapi_ethtool_cmd {
     TAPI_ETHTOOL_CMD_NONE, /**< No command (shows interface properties) */
     TAPI_ETHTOOL_CMD_STATS, /**< Interface statistics */
+    TAPI_ETHTOOL_CMD_SHOW_PAUSE, /**< Show pause parameters (--show-pause
+                                      command) */
 } tapi_ethtool_cmd;
 
 /** Command line options for ethtool */
@@ -55,6 +57,13 @@ typedef struct tapi_ethtool_if_props {
     te_bool autoneg;  /**< Auto-negotiation state */
 } tapi_ethtool_if_props;
 
+/** Pause parameters parsed in case of @c TAPI_ETHTOOL_CMD_SHOW_PAUSE */
+typedef struct tapi_ethtool_pause {
+    te_bool autoneg; /**< Pause auto-negotiation state */
+    te_bool rx; /**< Whether reception of pause frames is enabled */
+    te_bool tx; /**< Whether transmission of pause frames is enabled */
+} tapi_ethtool_pause;
+
 /** Structure for storing parsed data from ethtool output */
 typedef struct tapi_ethtool_report {
     tapi_ethtool_cmd cmd; /**< Ethtool command */
@@ -63,6 +72,7 @@ typedef struct tapi_ethtool_report {
         tapi_ethtool_if_props if_props; /**< Interface properties printed
                                              when no command is supplied */
         te_kvpair_h stats; /**< Interface statistics */
+        tapi_ethtool_pause pause; /**< Pause parameters */
     } data; /**< Parsed data */
 } tapi_ethtool_report;
 

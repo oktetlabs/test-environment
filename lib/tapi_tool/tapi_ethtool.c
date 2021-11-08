@@ -35,6 +35,16 @@ typedef struct if_props_filters {
     tapi_job_channel_t *link_status; /**< Get link status */
 } if_props_filters;
 
+/**
+ * Filters used to parse ethtool output when --show-pause command
+ * is supplied
+ */
+typedef struct pause_filters {
+    tapi_job_channel_t *autoneg; /**< Pause auto-negotiation state */
+    tapi_job_channel_t *rx; /**< Whether Rx pause frames are enabled */
+    tapi_job_channel_t *tx; /**< Whether Tx pause frames are enabled */
+} pause_filters;
+
 /** Main structure describing ethtool command */
 struct tapi_ethtool_app {
     tapi_ethtool_cmd cmd; /**< Ethtool command */
@@ -48,6 +58,7 @@ struct tapi_ethtool_app {
         if_props_filters if_props; /**< Filters for interface properties */
         tapi_job_channel_t *line_filter; /**< Filter extracting output
                                               line by line */
+        pause_filters pause; /**< Filters for pause parameters */
     } out_filters; /**< Filters for parsing stdout */
 };
 
@@ -89,6 +100,10 @@ fill_cmd_arg(const void *value, te_vec *args)
 
         case TAPI_ETHTOOL_CMD_STATS:
             cmd_str = "--statistics";
+            break;
+
+        case TAPI_ETHTOOL_CMD_SHOW_PAUSE:
+            cmd_str = "--show-pause";
             break;
 
         default:
@@ -201,6 +216,34 @@ attach_line_filter(tapi_ethtool_app *app)
 }
 
 /**
+ * Attach filters used to parse ethtool output when it is run
+ * with --show-pause command.
+ *
+ * @param app     Ethtool application structure
+ *
+ * @return Status code.
+ */
+static te_errno
+attach_pause_filters(tapi_ethtool_app *app)
+{
+    te_errno rc;
+
+    rc = add_value_filter(app, "Autonegotiate",
+                          &app->out_filters.pause.autoneg,
+                          "Autonegotiate");
+    if (rc != 0)
+        return rc;
+
+    rc = add_value_filter(app, "Rx pause",
+                          &app->out_filters.pause.rx, "RX");
+    if (rc != 0)
+        return rc;
+
+    return add_value_filter(app, "Tx pause",
+                            &app->out_filters.pause.tx, "TX");
+}
+
+/**
  * Attach filters used to parse ethtool output.
  * Filters are chosen depending on specific ethtool command.
  *
@@ -218,6 +261,9 @@ attach_filters(tapi_ethtool_app *app)
 
         case TAPI_ETHTOOL_CMD_STATS:
             return attach_line_filter(app);
+
+        case TAPI_ETHTOOL_CMD_SHOW_PAUSE:
+            return attach_pause_filters(app);
 
         default:
             return 0;
@@ -465,6 +511,75 @@ out:
     return rc;
 }
 
+/**
+ * Get a single value from a filter which can be either on or off.
+ *
+ * @param filter      Filter to read from
+ * @param value       Will be set to @c TRUE in case of 'on' and
+ *                    to @c FALSE in case of 'off'
+ *
+ * @return Status code.
+ */
+static te_errno
+get_on_off_value(tapi_job_channel_t *filter, te_bool *value)
+{
+    te_errno rc = 0;
+    te_string str_val = TE_STRING_INIT;
+
+    rc = tapi_job_receive_single(filter, &str_val, 0);
+    if (rc != 0)
+        goto out;
+
+    if (strcasecmp(str_val.ptr, "on") == 0)
+    {
+        *value = TRUE;
+    }
+    else if (strcasecmp(str_val.ptr, "off") == 0)
+    {
+        *value = FALSE;
+    }
+    else
+    {
+        ERROR("%s(): cannot parse value '%s'", __FUNCTION__,
+              str_val.ptr);
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+out:
+
+    te_string_free(&str_val);
+    return rc;
+}
+
+/**
+ * Obtain pause parameters from ethtool output via filters.
+ *
+ * @param app       Ethtool application structure
+ * @param pause     Where to save parsed parameters
+ *
+ * @return Status code.
+ */
+static te_errno
+get_pause(tapi_ethtool_app *app, tapi_ethtool_pause *pause)
+{
+    te_errno rc;
+
+    memset(pause, 0, sizeof(*pause));
+
+    rc = get_on_off_value(app->out_filters.pause.autoneg,
+                          &pause->autoneg);
+    if (rc != 0)
+        return rc;
+
+    rc = get_on_off_value(app->out_filters.pause.rx,
+                          &pause->rx);
+    if (rc != 0)
+        return rc;
+
+    return get_on_off_value(app->out_filters.pause.tx,
+                            &pause->tx);
+}
+
 /* See description in tapi_ethtool.h */
 te_errno
 tapi_ethtool_get_report(tapi_ethtool_app *app,
@@ -477,6 +592,9 @@ tapi_ethtool_get_report(tapi_ethtool_app *app,
 
         case TAPI_ETHTOOL_CMD_STATS:
             return get_stats(app, &report->data.stats);
+
+        case TAPI_ETHTOOL_CMD_SHOW_PAUSE:
+            return get_pause(app, &report->data.pause);
 
         default:
             ERROR("%s(): no report is defined for the current command",
