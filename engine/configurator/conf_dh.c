@@ -1326,7 +1326,8 @@ cfg_dh_restore_backup_ext(char *filename, te_bool hard_check, te_bool shutdown)
                      * Let is try to restore the remaining entries,
                      * even if this one failed
                      */
-                    VERB("cfg_db_find(%s) failed: %r", tmp->old_oid, rc);
+                    ERROR("cfg_db_find(%s) returned %r, trying to restore "
+                          "the rest", tmp->old_oid, rc);
                     break;
                 }
 
