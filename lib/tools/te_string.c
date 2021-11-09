@@ -337,3 +337,97 @@ te_string_from_te_dbuf(te_string *testr, struct te_dbuf *dbuf)
 
     return 0;
 }
+
+void
+te_substring_find(te_substring_t *substr, const char *str)
+{
+    char *ch;
+
+    if (!te_substring_is_valid(substr))
+        return;
+
+    ch = strstr(substr->base->ptr + substr->start, str);
+    if (ch == NULL)
+    {
+        substr->start = SIZE_MAX;
+        substr->len = 0;
+    }
+    else
+    {
+       substr->start = ch - substr->base->ptr;
+       substr->len = strlen(str);
+    }
+
+    return;
+}
+
+te_errno
+te_substring_replace(te_substring_t *substr, const char *str)
+{
+    te_errno rc;
+    te_string tail = TE_STRING_INIT;
+
+    if (substr->start + substr->len > substr->base->len)
+    {
+        ERROR("Substring position out of bounds");
+        return TE_EINVAL;
+    }
+
+    // TODO: Rewrite this using te_string_reserve, memmove and memcpy
+    rc = te_string_append(&tail, "%s",
+                          substr->base->ptr + substr->start + substr->len);
+    if (rc != 0)
+        return rc;
+
+    te_string_cut(substr->base, substr->base->len - substr->start);
+    rc = te_string_append(substr->base, "%s%s", str, tail.ptr);
+    if (rc != 0)
+    {
+        te_string_free(&tail);
+        return rc;
+    }
+
+    substr->start += strlen(str);
+    substr->len = 0;
+
+    te_string_free(&tail);
+    return 0;
+}
+
+void
+te_substring_advance(te_substring_t *substr)
+{
+    substr->start += substr->len;
+    substr->len = 0;
+}
+
+void
+te_substring_limit(te_substring_t *substr, const te_substring_t *limit)
+{
+    substr->len = limit->start - substr->start;
+}
+
+te_errno
+te_string_replace_all_substrings(te_string *str, const char *new,
+                                 const char *old)
+{
+    te_substring_t iter = TE_SUBSTRING_INIT(str);
+    te_errno rc = 0;
+
+    while (1)
+    {
+        te_substring_find(&iter, old);
+
+        if (!te_substring_is_valid(&iter))
+            break;
+
+        rc = te_substring_replace(&iter, new);
+        if (rc != 0)
+        {
+            ERROR("Failed to replace '%s' to '%s'", new, old);
+            break;
+        }
+    }
+
+    return rc;
+}

@@ -290,6 +290,95 @@ char *raw2string(uint8_t *data, int size)
  */
 extern te_errno te_string_from_te_dbuf(te_string *testr, struct te_dbuf *dbuf);
 
+/**
+ * @defgroup te_tools_te_substring Substring manipulation API
+ * @ingroup te_tools_te_string
+ * @{
+ */
+
+/** Structure for describing a piece of string */
+typedef struct te_substring_t {
+   /** The underlying string */
+   te_string *base;
+   /** The position of the beginning of the substring */
+   size_t start;
+   /** The length of the substring */
+   size_t len;
+} te_substring_t;
+
+/**
+ * Substring initializer
+ *
+ * @param _base Pointer to the base string
+ */
+#define TE_SUBSTRING_INIT(_base) \
+    (te_substring_t){ .base = _base, .len = 0, .start = 0 }
+
+/**
+ * Check that substring is valid
+ *
+ * @param substr Substring
+ *
+ * @return @c TRUE or @c FALSE
+ */
+static inline te_bool
+te_substring_is_valid(const te_substring_t *substr)
+{
+    return substr->start < substr->base->len;
+}
+
+/**
+ * Find a @p str starting at @p substr position and update it accordingly
+ *
+ * @param substr Substring
+ * @param str    The string to find
+ */
+extern void te_substring_find(te_substring_t *substr, const char *str);
+
+/**
+ * Replace a substring at a given position, modifying
+ * the underlying `te_string`
+ *
+ * @param substr Substring
+ * @param str    Replacement string
+ *
+ * @return Status code
+ */
+extern te_errno te_substring_replace(te_substring_t *substr,
+                                     const char *str);
+
+/**
+ * Move the position by the length of the previously substring
+ *
+ * @param substr Substring
+ */
+extern void te_substring_advance(te_substring_t *substr);
+
+/**
+ * Limit the length of the @p substr to position @p limit
+ * so that it ended right before @p limit
+ *
+ * @param substr Substring
+ * @param limit Limiting substring
+ */
+extern void te_substring_limit(te_substring_t *substr,
+                               const te_substring_t *limit);
+
+/**@} <!-- END te_tools_te_substring --> */
+
+/**
+ * Replace all the substrings in a string
+ *
+ * @param src The string in which to replace.
+ * @param new The new substring to replace.
+ * @param old The substring to be replaced.
+ *
+ * @return Status code
+ */
+extern te_errno te_string_replace_all_substrings(te_string *str,
+                                                 const char *new,
+                                                 const char *old);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
