@@ -100,6 +100,9 @@ function check_sphinx_binary()
     [ -z "$SPHINX_BUILD_BIN" ] && SPHINX_BUILD_BIN="sphinx-build"
     if ! which $SPHINX_BUILD_BIN >/dev/null; then
         echo "Please install sphinx before:"
+        echo " # apt-get install python-sphinx"
+        echo " # apt-get install python-sphinx-rtd-theme"
+        echo "If they are unavailable, try"
         echo " $ pip install sphinx"
         exit -2
     fi
