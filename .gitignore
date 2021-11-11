@@ -16,6 +16,7 @@ lib/rpcserver/rpc_server_config.h.in
 tools/trc/trc_config.h.in
 package.h.in
 *~
+*.pyc
 .idea
 CMakeLists.txt
 cmake-build-*
