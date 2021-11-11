@@ -592,6 +592,9 @@ static te_errno vlan_ifname_get_internal(const char *ifname, int vlan_id,
 static te_errno ifindex_get(unsigned int, const char *, char *,
                             const char *);
 
+static te_errno oper_status_get(unsigned int, const char *, char *,
+                                const char *);
+
 static te_errno status_get(unsigned int, const char *, char *,
                            const char *);
 static te_errno status_set(unsigned int, const char *, const char *,
@@ -881,7 +884,10 @@ RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_arp_ignore,
 RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
                     status_get, status_set);
 
-RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
+RCF_PCH_CFG_NODE_RO(node_oper_status, "oper_status", NULL,
+                    &node_status, oper_status_get);
+
+RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_oper_status,
                     mtu_get, mtu_set);
 
 RCF_PCH_CFG_NODE_RW(node_arp, "arp", NULL, &node_mtu,
@@ -5768,6 +5774,39 @@ arp_set(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
+ * Get oper status of the interface (TRUE - RUNNING).
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param status        location to put status of the interface
+ *
+ * @return              Status code
+ */
+te_errno
+ta_interface_oper_status_get(const char *ifname, te_bool *status)
+{
+    te_errno rc;
+
+    assert(status != NULL);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    strcpy(req.my_ifr_name, ifname);
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
+    *status = !!(req.my_ifr_flags & IFF_RUNNING);
+
+#if defined(__sun__)
+    rc = ioctl(cfg6_socket, MY_SIOCGIFFLAGS, &req);
+    if (rc < 0)
+        WARN("Failed to get staust of %s IPv6 interface", ifname);
+    else if (*status != !!(req.my_ifr_flags & IFF_RUNNING))
+        WARN("Different statuses for %s IPv4 and IPv6 interfaces", ifname);
+#endif
+
+    return 0;
+}
+
+/**
  * Get status of the interface (FALSE - down or TRUE - up).
  *
  * @param ifname        name of the interface (like "eth0")
@@ -5832,6 +5871,34 @@ ta_interface_status_set(const char *ifname, te_bool status)
     if (rc < 0)
         WARN("Failed to bring up %s IPv6 interface", ifname);
 #endif
+    return 0;
+}
+
+/**
+ * Get oper status of the interface ("1" - RUNNING).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+oper_status_get(unsigned int gid, const char *oid, char *value,
+                const char *ifname)
+{
+    te_errno rc;
+    te_bool  status;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ta_interface_oper_status_get(ifname, &status);
+    if (rc != 0)
+        return rc;
+    sprintf(value, "%d", status);
+
     return 0;
 }
 

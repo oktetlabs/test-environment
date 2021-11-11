@@ -173,6 +173,17 @@ extern char ta_dir[RCF_MAX_PATH];
 extern char ta_tmp_dir[RCF_MAX_PATH];
 
 /**
+ * Get oper status of the interface (TRUE - RUNNING).
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param status        location to put status of the interface
+ *
+ * @return              Status code
+ */
+extern te_errno ta_interface_oper_status_get(const char *ifname,
+                                             te_bool *status);
+
+/**
  * Get status of the interface (FALSE - down or TRUE - up).
  *
  * @param ifname        name of the interface (like "eth0")

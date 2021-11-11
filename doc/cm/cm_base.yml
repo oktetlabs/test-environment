@@ -153,6 +153,16 @@
          Value: 0 (disabled) or 1 (enabled)
          Limit: 1
 
+    - oid: "/agent/interface/oper_status"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Link status of the interface.
+         Name:  empty
+         Value: 0 (link down) or 1 (link up)
+         Limit: 1
+
     - oid: "/agent/interface/promisc"
       access: read_write
       type: integer
