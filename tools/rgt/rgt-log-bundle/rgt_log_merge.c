@@ -1,14 +1,10 @@
 /** @file
  * @brief Test Environment: implementation of merging fragments into raw log.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
- *
- * 
+ * Copyright (C) 2016-2021 OKTET Labs. All rights reserved.
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
- *
- * $Id$
  */
 
 #include <stdlib.h>
@@ -46,44 +42,30 @@ static int64_t filter_frag_num = 0;
  *
  * @param f           File to where to copy contents.
  * @param frag_path   Path to the file with log fragment to append.
+ *
+ * @return @c 0 on success, @c -1 on failure.
  */
-static void
+static int
 append_frag_to_file(FILE *f, const char *frag_path)
 {
-    FILE *f_frag;
+    FILE *f_frag = NULL;
     off_t frag_len;
 
-    f_frag = fopen(frag_path, "r");
-    if (f_frag == NULL)
-    {
-        fprintf(stderr, "Failed to open %s for reading\n",
-                frag_path);
-        exit(EXIT_FAILURE);
-    }
+    RGT_ERROR_INIT;
 
-    if (fseeko(f_frag, 0LLU, SEEK_END) < 0 ||
-        (frag_len = ftello(f_frag)) < 0 ||
-        fseeko(f_frag, 0LLU, SEEK_SET) < 0)
-    {
-        fprintf(stderr, "Failed to get length of %s, error='%s'\n",
-                frag_path, strerror(errno));
-        fclose(f_frag);
-        exit(EXIT_FAILURE);
-    }
+    CHECK_FOPEN(f_frag, frag_path, "r");
 
-    if (file2file(f, f_frag, -1, -1, frag_len) < 0)
-    {
-        fprintf(stderr, "Failed to append %s to result file\n",
-                frag_path);
-        fclose(f_frag);
-        exit(EXIT_FAILURE);
-    }
+    CHECK_OS_RC(fseeko(f_frag, 0LLU, SEEK_END));
+    CHECK_OS_RC(frag_len = ftello(f_frag));
+    CHECK_OS_RC(fseeko(f_frag, 0LLU, SEEK_SET));
 
-    if (fclose(f_frag) != 0)
-    {
-        fprintf(stderr, "fclose() failed for %s\n", frag_path);
-        exit(EXIT_FAILURE);
-    }
+    CHECK_RC(file2file(f, f_frag, -1, -1, frag_len));
+
+    RGT_ERROR_SECTION;
+
+    CHECK_FCLOSE(f_frag);
+
+    return RGT_ERROR_VAL;
 }
 
 /**
@@ -107,8 +89,7 @@ append_frag_to_file(FILE *f, const char *frag_path)
  *                            @c TRUE.
  *
  * @return Number of required fragment files if @p get_needed_frags is
- *         @c TRUE; @c 0 otherwise. On failure this function calls
- *         exit() to terminate the tool.
+ *         @c TRUE; @c 0 otherwise. On failure this function returns @c -1.
  */
 static int
 merge(const char *split_log_path,
@@ -160,9 +141,9 @@ merge(const char *split_log_path,
                      &x, &y, &z);
         if (scanf_rc < 5)
         {
-            fprintf(stderr, "sscanf() read too few fragment parameters in "
-                    "'%s' (%d)\n", s, scanf_rc);
-            exit(EXIT_FAILURE);
+            ERROR("sscanf() read too few fragment parameters in "
+                  "'%s' (%d)", s, scanf_rc);
+            RGT_ERROR_JUMP;
         }
 
         name_suff = NULL;
@@ -185,8 +166,8 @@ merge(const char *split_log_path,
         {
             if (scanf_rc < 7)
             {
-                fprintf(stderr, "Too few parameters in '%s'\n", s);
-                exit(EXIT_FAILURE);
+                ERROR("Too few parameters in '%s'", s);
+                RGT_ERROR_JUMP;
             }
             start_frag = TRUE;
             start_len = x;
@@ -194,15 +175,15 @@ merge(const char *split_log_path,
         }
         else
         {
-            fprintf(stderr, "Unknown fragment type '%s'\n", frag_name);
-            exit(EXIT_FAILURE);
+            ERROR("Unknown fragment type '%s'", frag_name);
+            RGT_ERROR_JUMP;
         }
 
         if (sscanf(frag_name, "%u_", &test_id) <= 0)
         {
-            fprintf(stderr, "sscanf() could not parse node ID in %s\n",
-                    frag_name);
-            exit(EXIT_FAILURE);
+            ERROR("sscanf() could not parse node ID in %s",
+                  frag_name);
+            RGT_ERROR_JUMP;
         }
 
         cum_length += length;
@@ -236,9 +217,10 @@ merge(const char *split_log_path,
                 TE_SPRINTF(frag_path, "%s/%s_after", split_log_path,
                            frag_name);
 
-                file2file(f_result, f_raw_gist, -1, -1, cum_length);
+                CHECK_RC(file2file(f_result, f_raw_gist, -1, -1,
+                                   cum_length));
                 cum_length = 0;
-                append_frag_to_file(f_result, frag_path);
+                CHECK_RC(append_frag_to_file(f_result, frag_path));
             }
         }
         else if (start_frag &&
@@ -259,16 +241,17 @@ merge(const char *split_log_path,
                  */
 
                 cum_length -= (length - start_len);
-                file2file(f_result, f_raw_gist, -1, -1, cum_length);
-                raw_fp = ftello(f_raw_gist);
+                CHECK_RC(file2file(f_result, f_raw_gist, -1, -1,
+                                   cum_length));
+                CHECK_OS_RC(raw_fp = ftello(f_raw_gist));
                 raw_fp += (length - start_len);
-                fseeko(f_raw_gist, raw_fp, SEEK_SET);
+                CHECK_OS_RC(fseeko(f_raw_gist, raw_fp, SEEK_SET));
                 cum_length = 0;
 
                 if (f_frags_count != NULL)
                 {
-                    fprintf(f_frags_count, "%llu",
-                            (long long unsigned)frags_cnt);
+                    CHECK_RC(fprintf(f_frags_count, "%llu",
+                                     (long long unsigned)frags_cnt));
                     /*
                      * This should never happen, however if multiple
                      * records matched, save number of fragments for
@@ -296,7 +279,7 @@ merge(const char *split_log_path,
                                "%s/%s_inner_%" PRIu64,
                                split_log_path, frag_name, i);
 
-                    append_frag_to_file(f_result, frag_path);
+                    CHECK_RC(append_frag_to_file(f_result, frag_path));
                 }
 
                 if (filter_frag_num >= 0)
@@ -308,20 +291,16 @@ merge(const char *split_log_path,
 
     if (get_needed_frags)
     {
-        fseeko(f_frags_list, 0, SEEK_SET);
+        CHECK_OS_RC(fseeko(f_frags_list, 0, SEEK_SET));
         return needed_frags_cnt;
     }
 
     if (cum_length > 0)
-        file2file(f_result, f_raw_gist, -1, -1, cum_length);
+        CHECK_RC(file2file(f_result, f_raw_gist, -1, -1, cum_length));
 
     RGT_ERROR_SECTION;
 
-    /* TODO: this should be avoided */
-    if (RGT_ERROR)
-        exit(EXIT_FAILURE);
-
-    return 0;
+    return RGT_ERROR_VAL;
 }
 
 /** Where to find raw log bundle  */
@@ -338,12 +317,16 @@ static char *output_path = NULL;
  *
  * @param argc    Number of arguments
  * @param argv    Array of command line arguments
+ *
+ * @return @c 0 on success, @c -1 on failure.
  */
-static void
+static int
 process_cmd_line_opts(int argc, char **argv)
 {
-    poptContext  optCon; /* Context for parsing command-line options */
+    poptContext  optCon = NULL;
     int          rc;
+
+    RGT_ERROR_INIT;
 
     /* Option Table */
     struct poptOption optionsTable[] = {
@@ -372,8 +355,9 @@ process_cmd_line_opts(int argc, char **argv)
     };
 
     /* Process command line options */
-    optCon = poptGetContext(NULL, argc, (const char **)argv,
-                            optionsTable, 0);
+    CHECK_NOT_NULL(optCon = poptGetContext(NULL, argc,
+                                           (const char **)argv,
+                                           optionsTable, 0));
 
     while ((rc = poptGetNextOpt(optCon)) >= 0)
     {
@@ -394,7 +378,10 @@ process_cmd_line_opts(int argc, char **argv)
             char *filter = poptGetOptArg(optCon);
 
             if (filter == NULL)
-                usage(optCon, 1, "--filter value is not specified", NULL);
+            {
+                ERROR("--filter value is not specified");
+                RGT_ERROR_JUMP;
+            }
 
             if (strchr(filter, '_') != NULL)
             {
@@ -418,7 +405,10 @@ process_cmd_line_opts(int argc, char **argv)
             char *page = poptGetOptArg(optCon);
 
             if (page == NULL)
-                usage(optCon, 1, "--page value is not specified", NULL);
+            {
+                ERROR("--page value is not specified");
+                RGT_ERROR_JUMP;
+            }
 
             if (strcasecmp(page, "all") == 0)
                 filter_frag_num = -1;
@@ -434,37 +424,38 @@ process_cmd_line_opts(int argc, char **argv)
     }
 
     if (split_log_path == NULL || output_path == NULL)
-        usage(optCon, 1, "Specify all the required parameters", NULL);
+    {
+        ERROR("Specify all the required parameters");
+        RGT_ERROR_JUMP;
+    }
 
     if (rc < -1)
     {
         /* An error occurred during option processing */
-        fprintf(stderr, "%s: %s\n",
-                poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
-                poptStrerror(rc));
-        poptFreeContext(optCon);
-        exit(1);
+        ERROR("%s: %s",
+              poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
+              poptStrerror(rc));
+        RGT_ERROR_JUMP;
     }
 
     if (poptPeekArg(optCon) != NULL)
-        usage(optCon, 1, "Too many parameters specified", NULL);
+    {
+        ERROR("Too many parameters were specified");
+        RGT_ERROR_JUMP;
+    }
 
-    poptFreeContext(optCon);
+    RGT_ERROR_SECTION;
+
+    if (optCon != NULL)
+    {
+        if (RGT_ERROR)
+            poptPrintUsage(optCon, stderr, 0);
+
+        poptFreeContext(optCon);
+    }
+
+    return RGT_ERROR_VAL;
 }
-
-/**
- * Call te_fopen_fmt(), terminate the program if it failed.
- *
- * @param _f          Where to save FILE pointer on success.
- * @param _mode       File opening mode.
- * @param _path_fmt   File path format string.
- */
-#define FOPEN_FMT(_f, _mode, _path_fmt...) \
-    do {                                                \
-        _f = te_fopen_fmt(_mode, _path_fmt);            \
-        if (_f == NULL)                                 \
-            exit(EXIT_FAILURE);                         \
-    } while (0)
 
 int
 main(int argc, char **argv)
@@ -481,7 +472,7 @@ main(int argc, char **argv)
 
     te_log_init("RGT LOG MERGE", te_log_message_file);
 
-    process_cmd_line_opts(argc, argv);
+    CHECK_RC(process_cmd_line_opts(argc, argv));
 
     if (bundle_path != NULL)
     {
@@ -499,23 +490,17 @@ main(int argc, char **argv)
         res = system(cmd.ptr);
         if (res != 0)
         {
-            fprintf(stderr, "Failed to extract log_gist.raw and "
-                    "frags_list\n");
-            exit(EXIT_FAILURE);
+            ERROR("Failed to extract log_gist.raw and frags_list");
+            RGT_ERROR_JUMP;
         }
     }
 
-    FOPEN_FMT(f_raw_gist, "r", "%s/log_gist.raw", split_log_path);
-    FOPEN_FMT(f_frags_list, "r", "%s/frags_list", split_log_path);
+    CHECK_FOPEN_FMT(f_raw_gist, "r", "%s/log_gist.raw", split_log_path);
+    CHECK_FOPEN_FMT(f_frags_list, "r", "%s/frags_list", split_log_path);
     if (frags_count_path != NULL)
-        FOPEN_FMT(f_frags_count, "w", "%s", frags_count_path);
+        CHECK_FOPEN_FMT(f_frags_count, "w", "%s", frags_count_path);
 
-    f_result = fopen(output_path, "w");
-    if (f_result == NULL)
-    {
-        fprintf(stderr, "Failed to open %s for writing\n", output_path);
-        exit(1);
-    }
+    CHECK_FOPEN(f_result, output_path, "w");
 
     if (bundle_path != NULL)
     {
@@ -526,8 +511,10 @@ main(int argc, char **argv)
 
         te_string_reset(&cmd);
         CHECK_TE_RC(te_string_append(&cmd, "pixz -x "));
-        if (merge(split_log_path, f_raw_gist, f_frags_list, f_result,
-                  NULL, TRUE, &cmd) > 0)
+        CHECK_RC(res = merge(split_log_path, f_raw_gist, f_frags_list,
+                             f_result, NULL, TRUE, &cmd));
+
+        if (res > 0)
         {
             CHECK_TE_RC(te_string_append(
                              &cmd, " <\"%s\" | "
@@ -537,21 +524,21 @@ main(int argc, char **argv)
             res = system(cmd.ptr);
             if (res != 0)
             {
-                fprintf(stderr, "Failed to extract required fragments\n");
-                exit(EXIT_FAILURE);
+                ERROR("Failed to extract required fragments");
+                RGT_ERROR_JUMP;
             }
         }
     }
 
-    merge(split_log_path, f_raw_gist, f_frags_list, f_result,
-          f_frags_count, FALSE, NULL);
+    CHECK_RC(merge(split_log_path, f_raw_gist, f_frags_list, f_result,
+                   f_frags_count, FALSE, NULL));
 
     RGT_ERROR_SECTION;
 
-    fclose(f_result);
-    fclose(f_frags_list);
-    fclose(f_frags_count);
-    fclose(f_raw_gist);
+    CHECK_FCLOSE(f_result);
+    CHECK_FCLOSE(f_frags_list);
+    CHECK_FCLOSE(f_frags_count);
+    CHECK_FCLOSE(f_raw_gist);
 
     free(split_log_path);
     free(output_path);
