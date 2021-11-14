@@ -4,14 +4,10 @@
  * This program recovers original raw log from fragments produced by
  * rgt-log-split.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
- *
- * 
+ * Copyright (C) 2016-2021 OKTET Labs. All rights reserved.
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
- *
- * $Id$
  */
 
 #include <stdlib.h>
@@ -40,12 +36,16 @@ static char *output_path = NULL;
  *
  * @param argc    Number of arguments
  * @param argv    Array of command line arguments
+ *
+ * @return @c 0 on success, @c -1 on failure.
  */
-static void
+static int
 process_cmd_line_opts(int argc, char **argv)
 {
-    poptContext  optCon; /* Context for parsing command-line options */
+    poptContext  optCon = NULL;
     int          rc;
+
+    RGT_ERROR_INIT;
 
     /* Option Table */
     struct poptOption optionsTable[] = {
@@ -60,8 +60,9 @@ process_cmd_line_opts(int argc, char **argv)
     };
 
     /* Process command line options */
-    optCon = poptGetContext(NULL, argc, (const char **)argv,
-                            optionsTable, 0);
+    CHECK_NOT_NULL(optCon = poptGetContext(NULL, argc,
+                                           (const char **)argv,
+                                           optionsTable, 0));
 
     while ((rc = poptGetNextOpt(optCon)) >= 0)
     {
@@ -72,41 +73,52 @@ process_cmd_line_opts(int argc, char **argv)
     }
 
     if (split_log_path == NULL || output_path == NULL)
-        usage(optCon, 1, "Specify all the required parameters", NULL);
+    {
+        ERROR("Specify all the required parameters");
+        RGT_ERROR_JUMP;
+    }
 
     if (rc < -1)
     {
         /* An error occurred during option processing */
-        fprintf(stderr, "%s: %s\n",
-                poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
-                poptStrerror(rc));
-        poptFreeContext(optCon);
-        exit(1);
+        ERROR("%s: %s",
+              poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
+              poptStrerror(rc));
+        RGT_ERROR_JUMP;
     }
 
     if (poptPeekArg(optCon) != NULL)
-        usage(optCon, 1, "Too many parameters specified", NULL);
+    {
+        ERROR("Too many parameters were specified");
+        RGT_ERROR_JUMP;
+    }
 
-    poptFreeContext(optCon);
+    RGT_ERROR_SECTION;
+
+    if (optCon != NULL)
+        poptFreeContext(optCon);
+
+    return RGT_ERROR_VAL;
 }
 
 int
 main(int argc, char **argv)
 {
-    FILE       *f_recover;
-    FILE       *f_result;
-    FILE       *f_frag;
+    FILE       *f_recover = NULL;
+    FILE       *f_result = NULL;
+    FILE       *f_frag = NULL;
     char        s[DEF_STR_LEN];
-    te_string   path = TE_STRING_INIT;
 
     char      frag_name[DEF_STR_LEN];
     uint64_t  raw_offset;
     uint64_t  raw_length;
     uint64_t  frag_offset;
 
+    RGT_ERROR_INIT;
+
     te_log_init("RGT LOG RECOVER", te_log_message_file);
 
-    process_cmd_line_opts(argc, argv);
+    CHECK_RC(process_cmd_line_opts(argc, argv));
 
     /**
      * In recover_list file we list of raw log blocks is stored,
@@ -115,21 +127,9 @@ main(int argc, char **argv)
      * it should appear in recovered raw log. Restoring original raw log
      * from this data is straightforward.
      */
-    te_string_append(&path, "%s/recover_list", split_log_path);
-    f_recover = fopen(path.ptr, "r");
-    if (f_recover == NULL)
-    {
-        fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
-        exit(1);
-    }
-    te_string_free(&path);
+    CHECK_FOPEN_FMT(f_recover, "r", "%s/recover_list", split_log_path);
 
-    f_result = fopen(output_path, "w");
-    if (f_result == NULL)
-    {
-        fprintf(stderr, "Failed to open '%s' for writing\n", output_path);
-        exit(1);
-    }
+    CHECK_FOPEN(f_result, output_path, "w");
 
     while (!feof(f_recover))
     {
@@ -141,21 +141,21 @@ main(int argc, char **argv)
                    frag_name, &frag_offset) <= 0)
             break;
 
-        te_string_append(&path, "%s/%s", split_log_path, frag_name);
-        f_frag = fopen(path.ptr, "r");
-        if (f_frag == NULL)
-        {
-            fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
-            exit(1);
-        }
-        te_string_free(&path);
-        file2file(f_result, f_frag, raw_offset, frag_offset, raw_length);
-        fclose(f_frag);
+        CHECK_FOPEN_FMT(f_frag, "r", "%s/%s", split_log_path, frag_name);
+        CHECK_RC(file2file(f_result, f_frag, raw_offset, frag_offset,
+                           raw_length));
+        CHECK_FCLOSE(f_frag);
     }
 
-    fclose(f_result);
-    fclose(f_recover);
+    RGT_ERROR_SECTION;
+
+    CHECK_FCLOSE(f_result);
+    CHECK_FCLOSE(f_recover);
     free(split_log_path);
     free(output_path);
-    return 0;
+
+    if (RGT_ERROR)
+        return EXIT_FAILURE;
+
+    return EXIT_SUCCESS;
 }
