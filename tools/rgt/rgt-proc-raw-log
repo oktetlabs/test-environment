@@ -22,6 +22,7 @@ plain_html_path=
 txt_path=
 junit_path=
 line_prefix=
+mi_raw=
 
 declare -a rgt_conv_opts
 declare -a rgt_x2hm_opts
@@ -136,6 +137,9 @@ function process_opts() {
 
             --txt-detailed-packets)
                 sniff_detailed_packets="--detailed-packets"
+                ;;
+            --txt-mi-raw)
+                mi_raw='--mi-raw'
                 ;;
 
             --rgt-conv-*)
@@ -268,7 +272,7 @@ function main() {
             if [[ -n "${txt_path}" ]] ; then
                 "${BINDIR}"/rgt-xml2text -f "${log_xml_merged}" \
                     -o "${txt_path}" \
-                    ${line_prefix} ${sniff_detailed_packets}
+                    ${line_prefix} ${mi_raw} ${sniff_detailed_packets}
             fi
 
             if [[ -n "${plain_html_path}" ]] ; then

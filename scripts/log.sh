@@ -83,6 +83,9 @@ process_opts()
                 SNIFF_LOG_DIR="${1#--sniff-log-dir=}"
                 PROC_OPTS+=("$1")
                 ;;
+            --txt-*)
+                PROC_OPTS+=("$1")
+                ;;
 
             --output-to=*) OUTPUT_LOCATION="${1#--output-to=}" ;;
 

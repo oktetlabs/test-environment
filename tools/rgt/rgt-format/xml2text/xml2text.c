@@ -41,6 +41,8 @@ int rgt_max_attribute_length = 76;
 const char *rgt_line_separator = "\n";
 /* Flag turning on detailed packet dumps in log. */
 int detailed_packets = 0;
+/* Print raw MI artifacts, not post-processed */
+int mi_raw = 0;
 
 /**
  * Flag turning on printing a prefix before each line of the message
@@ -185,6 +187,8 @@ struct poptOption rgt_options_table[] = {
       "Print more detailed packet dumps", NULL },
     { "line-prefix", 'L', POPT_ARG_NONE, &line_prefix, 0,
       "Print prefix before every message line", NULL },
+    { "mi-raw", 'M', POPT_ARG_NONE, &mi_raw, 0,
+      "Include raw MI artifacts instead of post-processed", NULL },
     POPT_TABLEEND
 };
 
@@ -470,7 +474,7 @@ RGT_DEF_FUNC(proc_log_msg_start)
 
     RGT_FUNC_UNUSED_PRMS();
 
-    if (level != NULL && strcmp(level, "MI") == 0)
+    if (level != NULL && strcmp(level, "MI") == 0 && !mi_raw)
         user_ctx->mi_artifact = TRUE;
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
