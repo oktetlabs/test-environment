@@ -36,6 +36,98 @@ static int filter_seq = 0;
 /** Number of inner fragment file to be merged */
 static int64_t filter_frag_num = 0;
 
+/** Index of capture file "heads" */
+static rgt_cap_idx_rec *caps_idx = NULL;
+/** Array of FILE pointers for opened capture files */
+static FILE **caps_files = NULL;
+/** Number of capture files */
+static unsigned int caps_num = 0;
+/** Opened file with PCAP files "heads" */
+static FILE *f_sniff_heads = NULL;
+
+/**
+ * Load index of PCAP files "heads", open file storing those "heads".
+ *
+ * @param split_log_path      Path to unpacked RAW log bundle.
+ *
+ * @return @c 0 on success, @c -1 on failure.
+ */
+static int
+load_caps_idx(const char *split_log_path)
+{
+    RGT_ERROR_INIT;
+
+    CHECK_RC(rgt_load_caps_idx(split_log_path, &caps_idx, &caps_num,
+                               &f_sniff_heads));
+    CHECK_OS_NOT_NULL(caps_files = calloc(caps_num, sizeof(FILE *)));
+
+    RGT_ERROR_SECTION;
+
+    return RGT_ERROR_VAL;
+}
+
+/**
+ * Process a fragment file containing sniffed network packets,
+ * copying these packets to corresponding sniffer files
+ * (there may be packets from different sniffers in such a fragment
+ * file).
+ *
+ * @param fpath             Path to the fragment file.
+ * @param sniff_path        Where to save reconstructed sniffer capture
+ *                          files.
+ * @param split_log_path    Path to unpacked RAW log bundle.
+ *
+ * @return @c 0 on success, @c -1 on failure.
+ */
+static int
+process_sniff_frag(const char *fpath, const char *sniff_path,
+                   const char *split_log_path)
+{
+    FILE *f;
+    uint32_t file_id;
+    uint64_t pkt_offset;
+    uint32_t len;
+    size_t rc;
+    void *data = NULL;
+
+    RGT_ERROR_INIT;
+
+    if (caps_idx == NULL)
+        CHECK_RC(load_caps_idx(split_log_path));
+
+    CHECK_FOPEN(f, fpath, "r");
+
+    while (TRUE)
+    {
+        CHECK_RC(rc = rgt_read_cap_prefix(f, &file_id, &pkt_offset, &len));
+        if (rc == 0)
+            break;
+
+        if (caps_files[file_id] == NULL)
+        {
+            CHECK_FOPEN_FMT(caps_files[file_id], "w", "%s/%u.pcap",
+                            sniff_path, (unsigned int)file_id);
+
+            CHECK_RC(file2file(caps_files[file_id], f_sniff_heads, -1,
+                               caps_idx[file_id].pos,
+                               caps_idx[file_id].len));
+        }
+
+        CHECK_OS_NOT_NULL(data = calloc(1, len));
+        CHECK_FREAD(data, len, 1, f);
+        CHECK_FWRITE(data, len, 1, caps_files[file_id]);
+        free(data);
+        data = NULL;
+    }
+
+    RGT_ERROR_SECTION;
+
+    free(data);
+    CHECK_FCLOSE(f);
+
+    return RGT_ERROR_VAL;
+}
+
 /**
  * Open log fragment file and copy all its contents into
  * resulting file.
@@ -73,6 +165,7 @@ append_frag_to_file(FILE *f, const char *frag_path)
  * of starting and terminating fragments only.
  *
  * @param split_log_path      Where log fragments are to be found
+ * @param sniff_path          Where to find sniffer capture files
  * @param f_raw_gist          "raw gist" log
  * @param f_frags_list        File with list of starting and terminating
  *                            fragments (in the same order they appear in
@@ -92,37 +185,21 @@ append_frag_to_file(FILE *f, const char *frag_path)
  *         @c TRUE; @c 0 otherwise. On failure this function returns @c -1.
  */
 static int
-merge(const char *split_log_path,
+merge(const char *split_log_path, const char *sniff_path,
       FILE *f_raw_gist, FILE *f_frags_list, FILE *f_result,
       FILE *f_frags_count, te_bool get_needed_frags,
       te_string *needed_frags)
 {
+    rgt_frag_rec rec;
     char s[DEF_STR_LEN];
-    char frag_name[DEF_STR_LEN];
     char frag_path[DEF_STR_LEN];
-    char *name_suff;
 
     uint64_t cum_length = 0;
-    uint64_t length;
-    uint64_t start_len;
-    uint64_t frags_cnt;
-    unsigned int parent_id;
     int64_t target_node_id = -1;
-    te_bool start_frag;
-    te_bool check_after_frag;
-
-    uint64_t x;
-    uint64_t y;
-    uint64_t z;
+    te_bool sniff_logs_needed = FALSE;
 
     uint64_t i;
-    int scanf_rc;
     int needed_frags_cnt = 0;
-
-    unsigned int tin;
-    unsigned int test_id;
-    int          depth;
-    int          seq;
 
     off_t raw_fp;
 
@@ -135,65 +212,13 @@ merge(const char *split_log_path,
         if (fgets(s, sizeof(s), f_frags_list) == NULL)
             break;
 
-        scanf_rc = sscanf(
-                     s, "%s %u %d %d %" PRIu64 " %" PRIu64 " %" PRIu64 " %"
-                     PRIu64, frag_name, &tin, &depth, &seq, &length,
-                     &x, &y, &z);
-        if (scanf_rc < 5)
-        {
-            ERROR("sscanf() read too few fragment parameters in "
-                  "'%s' (%d)", s, scanf_rc);
-            RGT_ERROR_JUMP;
-        }
+        CHECK_RC(rgt_parse_frag_rec(s, &rec));
 
-        name_suff = NULL;
-        check_after_frag = FALSE;
-        if ((name_suff = strstr(frag_name, "_end")) != NULL)
-        {
-            start_frag = FALSE;
-            if (scanf_rc >= 7)
-            {
-                /*
-                 * These fields are present only in newer version of
-                 * RAW log bundle.
-                 */
-                frags_cnt = x;
-                parent_id = y;
-                check_after_frag = TRUE;
-            }
-        }
-        else if ((name_suff = strstr(frag_name, "_start")) != NULL)
-        {
-            if (scanf_rc < 7)
-            {
-                ERROR("Too few parameters in '%s'", s);
-                RGT_ERROR_JUMP;
-            }
-            start_frag = TRUE;
-            start_len = x;
-            frags_cnt = y;
-        }
-        else
-        {
-            ERROR("Unknown fragment type '%s'", frag_name);
-            RGT_ERROR_JUMP;
-        }
+        cum_length += rec.length;
 
-        if (sscanf(frag_name, "%u_", &test_id) <= 0)
-        {
-            ERROR("sscanf() could not parse node ID in %s",
-                  frag_name);
-            RGT_ERROR_JUMP;
-        }
-
-        cum_length += length;
-
-        /* Remove _start or _end suffix from fragment name. */
-        *name_suff = '\0';
-
-        if (!start_frag && check_after_frag && target_node_id >= 0 &&
-            (unsigned int)target_node_id == parent_id &&
-            frags_cnt != 0)
+        if (!rec.start_frag && target_node_id >= 0 &&
+            (unsigned int)target_node_id == rec.parent_id &&
+            rec.frags_cnt != 0)
         {
             /*
              * This is a terminating fragment (with control message
@@ -209,13 +234,13 @@ merge(const char *split_log_path,
             if (get_needed_frags)
             {
                 CHECK_TE_RC(te_string_append(needed_frags, " %s_after",
-                                             frag_name));
+                                             rec.frag_name));
                 needed_frags_cnt++;
             }
             else
             {
                 TE_SPRINTF(frag_path, "%s/%s_after", split_log_path,
-                           frag_name);
+                           rec.frag_name);
 
                 CHECK_RC(file2file(f_result, f_raw_gist, -1, -1,
                                    cum_length));
@@ -223,13 +248,13 @@ merge(const char *split_log_path,
                 CHECK_RC(append_frag_to_file(f_result, frag_path));
             }
         }
-        else if (start_frag &&
-                 ((use_tin && filter_tin == tin) ||
-                  (use_test_id && filter_test_id == test_id) ||
+        else if (rec.start_frag &&
+                 ((use_tin && filter_tin == rec.tin) ||
+                  (use_test_id && filter_test_id == rec.test_id) ||
                   (!use_tin && !use_test_id &&
-                   filter_depth == depth && filter_seq == seq)))
+                   filter_depth == rec.depth && filter_seq == rec.seq)))
         {
-            target_node_id = test_id;
+            target_node_id = rec.test_id;
 
             if (!get_needed_frags)
             {
@@ -240,18 +265,18 @@ merge(const char *split_log_path,
                  * for a target node.
                  */
 
-                cum_length -= (length - start_len);
+                cum_length -= (rec.length - rec.start_len);
                 CHECK_RC(file2file(f_result, f_raw_gist, -1, -1,
                                    cum_length));
                 CHECK_OS_RC(raw_fp = ftello(f_raw_gist));
-                raw_fp += (length - start_len);
+                raw_fp += (rec.length - rec.start_len);
                 CHECK_OS_RC(fseeko(f_raw_gist, raw_fp, SEEK_SET));
                 cum_length = 0;
 
                 if (f_frags_count != NULL)
                 {
                     CHECK_RC(fprintf(f_frags_count, "%llu",
-                                     (long long unsigned)frags_cnt));
+                                     (long long unsigned)(rec.frags_cnt)));
                     /*
                      * This should never happen, however if multiple
                      * records matched, save number of fragments for
@@ -261,7 +286,7 @@ merge(const char *split_log_path,
                 }
             }
 
-            for (i = 0; i < frags_cnt; i++)
+            for (i = 0; i < rec.frags_cnt; i++)
             {
                 if (filter_frag_num >= 0)
                     i = filter_frag_num;
@@ -270,16 +295,35 @@ merge(const char *split_log_path,
                 {
                     CHECK_TE_RC(te_string_append(needed_frags,
                                                  " %s_inner_%" PRIu64,
-                                                 frag_name, i));
+                                                 rec.frag_name, i));
+                    if (rec.sniff_logs && sniff_path != NULL)
+                    {
+                        CHECK_TE_RC(te_string_append(
+                                               needed_frags,
+                                               " %s_sniff_%" PRIu64,
+                                               rec.frag_name, i));
+                        sniff_logs_needed = TRUE;
+                    }
+
                     needed_frags_cnt++;
                 }
                 else
                 {
                     TE_SPRINTF(frag_path,
                                "%s/%s_inner_%" PRIu64,
-                               split_log_path, frag_name, i);
+                               split_log_path, rec.frag_name, i);
 
                     CHECK_RC(append_frag_to_file(f_result, frag_path));
+
+                    if (rec.sniff_logs && sniff_path != NULL)
+                    {
+                        TE_SPRINTF(frag_path,
+                                   "%s/%s_sniff_%" PRIu64,
+                                   split_log_path, rec.frag_name, i);
+
+                        CHECK_RC(process_sniff_frag(frag_path, sniff_path,
+                                                    split_log_path));
+                    }
                 }
 
                 if (filter_frag_num >= 0)
@@ -288,9 +332,15 @@ merge(const char *split_log_path,
         }
     }
 
-
     if (get_needed_frags)
     {
+        if (sniff_logs_needed)
+        {
+            CHECK_TE_RC(te_string_append(
+                               needed_frags,
+                               " sniff_heads sniff_heads_idx"));
+        }
+
         CHECK_OS_RC(fseeko(f_frags_list, 0, SEEK_SET));
         return needed_frags_cnt;
     }
@@ -307,6 +357,8 @@ merge(const char *split_log_path,
 static char *bundle_path = NULL;
 /** Where to find raw log fragments and "raw gist" log  */
 static char *split_log_path = NULL;
+/** Path to sniffer capture files directory */
+static char *sniff_path = NULL;
 /** Where to save number of log fragments in the requested node */
 static char *frags_count_path = NULL;
 /** Where to store merged raw log */
@@ -336,6 +388,9 @@ process_cmd_line_opts(int argc, char **argv)
 
         { "split-log", 's', POPT_ARG_STRING, NULL, 's',
           "Path to split raw log.", NULL },
+
+        { "sniff-log-dir", 'd', POPT_ARG_STRING, NULL, 'd',
+          "Where to find sniffer capture files.", NULL },
 
         { "frags-count", 'c', POPT_ARG_STRING, NULL, 'c',
           "Where to save number of fragments in the requested node.",
@@ -421,6 +476,10 @@ process_cmd_line_opts(int argc, char **argv)
         {
             output_path = poptGetOptArg(optCon);
         }
+        else if (rc == 'd')
+        {
+            sniff_path = poptGetOptArg(optCon);
+        }
     }
 
     if (split_log_path == NULL || output_path == NULL)
@@ -464,6 +523,8 @@ main(int argc, char **argv)
     FILE *f_frags_list = NULL;
     FILE *f_frags_count = NULL;
     FILE *f_result = NULL;
+
+    unsigned int i;
 
     te_string cmd = TE_STRING_INIT;
     int res;
@@ -511,8 +572,8 @@ main(int argc, char **argv)
 
         te_string_reset(&cmd);
         CHECK_TE_RC(te_string_append(&cmd, "pixz -x "));
-        CHECK_RC(res = merge(split_log_path, f_raw_gist, f_frags_list,
-                             f_result, NULL, TRUE, &cmd));
+        CHECK_RC(res = merge(split_log_path, sniff_path, f_raw_gist,
+                             f_frags_list, f_result, NULL, TRUE, &cmd));
 
         if (res > 0)
         {
@@ -530,8 +591,8 @@ main(int argc, char **argv)
         }
     }
 
-    CHECK_RC(merge(split_log_path, f_raw_gist, f_frags_list, f_result,
-                   f_frags_count, FALSE, NULL));
+    CHECK_RC(merge(split_log_path, sniff_path, f_raw_gist, f_frags_list,
+                   f_result, f_frags_count, FALSE, NULL));
 
     RGT_ERROR_SECTION;
 
@@ -539,13 +600,24 @@ main(int argc, char **argv)
     CHECK_FCLOSE(f_frags_list);
     CHECK_FCLOSE(f_frags_count);
     CHECK_FCLOSE(f_raw_gist);
+    CHECK_FCLOSE(f_sniff_heads);
+
+    if (caps_files != NULL)
+    {
+        for (i = 0; i < caps_num; i++)
+            CHECK_FCLOSE(caps_files[i]);
+    }
 
     free(split_log_path);
+    free(sniff_path);
     free(output_path);
     free(bundle_path);
     free(frags_count_path);
 
     te_string_free(&cmd);
+
+    free(caps_idx);
+    free(caps_files);
 
     if (RGT_ERROR)
         return EXIT_FAILURE;
