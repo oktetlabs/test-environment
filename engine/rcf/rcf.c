@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -89,7 +89,7 @@
                                          in seconds */
 #define RCF_CMD_TIMEOUT         100  /**< Default timeout (in seconds) for
                                           command processing on the TA */
-#define RCF_CMD_TIMEOUT_HUGE    10000  
+#define RCF_CMD_TIMEOUT_HUGE    10000
                                     /**< Huge timeout for command
                                          processing on the TA */
 #define RCF_REBOOT_TIMEOUT      60  /**< TA reboot timeout in seconds */
@@ -191,8 +191,8 @@ typedef struct ta {
     usrreq              sent;               /**< User requests sent
                                                  to the TA */
     usrreq              waiting;            /**< User requests waiting
-                                                 for unblocking of 
-                                                 TA connection */ 
+                                                 for unblocking of
+                                                 TA connection */
     usrreq              pending;            /**< User requests pending
                                                  until answer on previous
                                                  request with the same SID
@@ -201,11 +201,11 @@ typedef struct ta {
     time_t              reboot_timestamp;   /**< Time of reboot command
                                                  sending (in seconds) */
     time_t              restart_timestamp;
-    int                 sid;                /**< Free session identifier 
+    int                 sid;                /**< Free session identifier
                                                  (starts from 2) */
     te_bool             conn_locked;        /**< Connection is locked until
-                                                 the response from TA 
-                                                 is received */      
+                                                 the response from TA
+                                                 is received */
     int                 lock_sid;           /**< SID of the command
                                                  locked the connection */
     void               *dlhandle;           /**< Dynamic library handle */
@@ -236,9 +236,9 @@ static unsigned int flags = 0;  /**< Global flags */
 static const char *cfg_file;    /**< Configuration file name */
 static ta *agents = NULL;       /**< List of Test Agents */
 static int ta_num = 0;          /**< Number of Test Agents */
-static int reboot_num = 0;      /**< Number of TA which should be 
+static int reboot_num = 0;      /**< Number of TA which should be
                                      for rebooted */
-static int shutdown_num = 0;    /**< Number of TA which should be 
+static int shutdown_num = 0;    /**< Number of TA which should be
                                      for shut down */
 
 static struct ipc_server *server = NULL;    /**< IPC Server handle */
@@ -272,7 +272,7 @@ free_ta_list(void)
     ta *agent, *next;
 
     ta_initial_task *task, *nexttask;
-    
+
 
     for (agent = agents; agent != NULL; agent = next)
     {
@@ -361,7 +361,7 @@ resolve_ta_methods(ta *agent, char *libname)
     TE_SPRINTF(name, "lib%s.so", libname);
     if ((handle = dlopen(name, RTLD_LAZY)) == NULL)
     {
-        ERROR("FATAL ERROR: Cannot load shared library %s errno %s", 
+        ERROR("FATAL ERROR: Cannot load shared library %s errno %s",
               libname, dlerror());
         return -1;
     }
@@ -902,7 +902,7 @@ synchronize_time(ta *agent)
     if ((rc = (agent->m.transmit)(agent->handle,
                                   cmd, strlen(cmd) + 1)) != 0)
     {
-        ERROR("Failed to transmit command to TA '%s' error=%r", 
+        ERROR("Failed to transmit command to TA '%s' error=%r",
               agent->name, rc);
         return -1;
     }
@@ -917,17 +917,17 @@ synchronize_time(ta *agent)
     else
     {
         struct timeval tv2;
-        
+
         gettimeofday(&tv2, NULL);
         if (tv2.tv_sec - tv.tv_sec > 1)
             WARN("Possible time drift is larger than 1s");
         else
         {
-            INFO("Possible time drift: %u us", 
-                 (tv2.tv_usec + (tv2.tv_sec == tv.tv_sec ? 0 : 1000000) 
+            INFO("Possible time drift: %u us",
+                 (tv2.tv_usec + (tv2.tv_sec == tv.tv_sec ? 0 : 1000000)
                   - tv.tv_usec) / 2);
         }
-        
+
     }
     return rc;
 }
@@ -942,7 +942,7 @@ answer_user_request(usrreq *req)
 {
     if (req->message->error != 0)
         req->message->data_len = 0;
-        
+
     if (req->user != NULL)
     {
         int rc;
@@ -959,10 +959,10 @@ answer_user_request(usrreq *req)
         if (rc != 0)
         {
             ERROR("Cannot send an answer to user: error=%r", rc);
-            RING("Failed msg has: opcode %d; TA %s; SID %d; file %s;", 
-                 req->message->opcode, 
-                 req->message->ta, 
-                 req->message->sid, 
+            RING("Failed msg has: opcode %d; TA %s; SID %d; file %s;",
+                 req->message->opcode,
+                 req->message->ta,
+                 req->message->sid,
                  req->message->file);
         }
     }
@@ -1024,7 +1024,7 @@ startup_tasks(ta *agent)
     int              i;
     char            *args;
     int rc;
-    
+
     for (task = agent->initial_tasks; task; task = task->next)
     {
         TE_SPRINTF(cmd, "SID 0 " TE_PROTO_EXECUTE " %s %s",
@@ -1047,10 +1047,10 @@ startup_tasks(ta *agent)
         VERB("Running startup task %s", cmd);
         (agent->m.transmit)(agent->handle, cmd, strlen(cmd) + 1);
         rc = consume_answer(agent);
-        
+
         if (rc != 0 || strncmp(cmd, "SID 0 0", 7) != 0)
         {
-            WARN("Startup task '%s' failed on %s", task->entry, 
+            WARN("Startup task '%s' failed on %s", task->entry,
                  agent->name);
             return -1;
         }
@@ -1417,7 +1417,7 @@ save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
     assert(cmdlen >= (size_t)(ba - cmd));
     /* Above asserts guarantee that 'len' is not negative */
     len = cmdlen - (ba - cmd);
-    VERB("Save attachment length=%d", len); 
+    VERB("Save attachment length=%d", len);
 
     write_len = (cmdlen > sizeof(cmd)) ? (sizeof(cmd) - (ba - cmd)) :
                                          (size_t)len;
@@ -1626,12 +1626,12 @@ process_reply(ta *agent)
 
     if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF)
     {
-        ERROR("Too big answer from TA '%s' - increase memory constants", 
+        ERROR("Too big answer from TA '%s' - increase memory constants",
               agent->name);
         set_ta_dead(agent);
         return;
     }
-    
+
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_EPENDING)
     {
         ERROR("Receiving answer from TA '%s' failed error=%r",
@@ -1641,7 +1641,7 @@ process_reply(ta *agent)
     }
 
     VERB("Answer \"%s\" is received from TA '%s'", cmd, agent->name);
-    
+
     if (strncmp(ptr, "SID ", strlen("SID ")) != 0)
     {
         if (strstr(ptr, "bad command") != NULL)
@@ -1742,7 +1742,7 @@ process_reply(ta *agent)
     {
         VERB("Answer on %s command is received from TA '%s':\"%s\"",
              rcf_op_to_string(msg->opcode), agent->name, cmd);
-        
+
         switch (msg->opcode)
         {
             case RCFOP_CONFGRP_START:
@@ -1852,7 +1852,7 @@ process_reply(ta *agent)
 
             case RCFOP_TRPOLL:
             {
-                int poll_id; 
+                int poll_id;
 
                 READ_INT(poll_id);
                 if (poll_id != 0)
@@ -1886,12 +1886,12 @@ process_reply(ta *agent)
 #define INSIDE_LEN \
     (sizeof(((rcf_msg *)0)->file) + sizeof(((rcf_msg *)0)->value))
                 size_t n = ba ? len - (ba - cmd) : strlen(ptr);
-                
+
                 if (msg->intparm < (int)n && n > INSIDE_LEN)
                 {
-                    rcf_msg *new_msg = 
+                    rcf_msg *new_msg =
                         (rcf_msg *)malloc(n + sizeof(*msg) - INSIDE_LEN);
-                    
+
                     if (new_msg == NULL)
                     {
                         msg->error = TE_RC(TE_RCF, TE_EINVAL);
@@ -1901,33 +1901,33 @@ process_reply(ta *agent)
                     free(msg);
                     msg = req->message = new_msg;
                 }
-                
+
                 if (ba)
                 {
                     size_t start_len = sizeof(cmd) - (ba - cmd);
-                    
+
                     if (start_len > n)
                         start_len = n;
-                        
+
                     msg->intparm = n;
                     memcpy(msg->file, ba, start_len);
                     if (rc != 0)
                     {
                         n -= start_len;
-                        msg->error = (agent->m.receive)(agent->handle, 
+                        msg->error = (agent->m.receive)(agent->handle,
                                          msg->file + start_len, &n, NULL);
-                    } 
+                    }
                 }
                 else
                 {
                     read_str(&ptr, msg->file);
                     msg->intparm = strlen(msg->file) + 1;
                 }
-                msg->data_len = msg->intparm  < (int)INSIDE_LEN ? 0 
+                msg->data_len = msg->intparm  < (int)INSIDE_LEN ? 0
                                 : msg->intparm - INSIDE_LEN;
-                
+
                 break;
-#undef INSIDE_LEN                
+#undef INSIDE_LEN
             }
 
             default:
@@ -1936,21 +1936,21 @@ process_reply(ta *agent)
     }
 
     answer_user_request(req);
-    
+
     /* Push next waiting request */
 push:
     if (agent->conn_locked && sid == agent->lock_sid)
     {
         agent->conn_locked = FALSE;
         req = agent->waiting.next;
-            
+
         if (req != &agent->waiting)
         {
             QEL_DELETE(req);
             send_cmd(agent, req);
         }
     }
-    
+
     if (!ack)
         send_pending_command(agent, sid);
 
@@ -1983,7 +1983,7 @@ transmit_cmd(ta *agent, usrreq *req)
     int   file = -1;
     char *data = cmd;
 
-    if (req->message->flags & BINARY_ATTACHMENT && 
+    if (req->message->flags & BINARY_ATTACHMENT &&
         req->message->opcode != RCFOP_RPC)
     {
         struct stat st;
@@ -2016,12 +2016,12 @@ transmit_cmd(ta *agent, usrreq *req)
         if ((rc = (agent->m.transmit)(agent->handle, data, len)) != 0)
         {
             req->message->error = TE_RC(TE_RCF, rc);
-            ERROR("Failed to transmit command to TA '%s' errno %r", 
+            ERROR("Failed to transmit command to TA '%s' errno %r",
                   agent->name, req->message->error);
 
             if (req->message->opcode == RCFOP_REBOOT)
                 return -1;
-                
+
             answer_user_request(req);
             set_ta_dead(agent);
 
@@ -2030,7 +2030,7 @@ transmit_cmd(ta *agent, usrreq *req)
 
             return -1;
         }
-        if (req->message->opcode == RCFOP_RPC && 
+        if (req->message->opcode == RCFOP_RPC &&
             req->message->flags & BINARY_ATTACHMENT)
         {
             if (data == req->message->file)
@@ -2039,25 +2039,25 @@ transmit_cmd(ta *agent, usrreq *req)
             len = req->message->intparm;
             continue;
         }
-            
+
         if (file < 0 || (len = read(file, cmd, sizeof(cmd))) == 0)
             break;
 
         if (len < 0)
         {
             req->message->error = TE_OS_RC(TE_RCF, errno);
-            ERROR("Read from file '%s' failed error=%r", 
+            ERROR("Read from file '%s' failed error=%r",
                   req->message->file, req->message->error);
             close(file);
             answer_user_request(req);
             return -1;
         }
-        
+
     }
 
     if (file != -1)
         close(file);
-        
+
     VERB("The command is transmitted to %s", agent->name);
     req->sent = time(NULL);
     agent->conn_locked = TRUE;
@@ -2187,15 +2187,15 @@ static int
 send_cmd(ta *agent, usrreq *req)
 {
     rcf_msg *msg = req->message;
-    
+
     unsigned int space = 0;
 
     if (agent->conn_locked)
     {
         if (req->message->opcode == RCFOP_REBOOT)
             return -1;
-        
-        INFO("Command '%s' is placed to waiting queue of TA %s", 
+
+        INFO("Command '%s' is placed to waiting queue of TA %s",
              rcf_op_to_string(req->message->opcode), agent->name);
         QEL_INSERT(&(agent->waiting), req);
         return 0;
@@ -2297,8 +2297,8 @@ send_cmd(ta *agent, usrreq *req)
                 req->timeout = RCF_CMD_TIMEOUT;
             break;
 
-        case RCFOP_VWRITE: 
-            PUT(TE_PROTO_VWRITE " %s %s ", msg->id, 
+        case RCFOP_VWRITE:
+            PUT(TE_PROTO_VWRITE " %s %s ", msg->id,
                 rcf_types[msg->intparm]);
             if (msg->intparm == RCF_STRING)
                 write_str(msg->value, RCF_MAX_VAL);
@@ -2310,7 +2310,7 @@ send_cmd(ta *agent, usrreq *req)
         case RCFOP_FPUT:
         case RCFOP_FGET:
         case RCFOP_FDEL:
-            PUT("%s %s", 
+            PUT("%s %s",
                 msg->opcode == RCFOP_FPUT ? TE_PROTO_FPUT :
                 msg->opcode == RCFOP_FDEL ? TE_PROTO_FDEL : TE_PROTO_FGET,
                 msg->data);
@@ -2358,7 +2358,7 @@ send_cmd(ta *agent, usrreq *req)
         case RCFOP_TRRECV_GET:
         case RCFOP_TRRECV_WAIT:
         case RCFOP_TRRECV_STOP:
-            PUT("%s %u", 
+            PUT("%s %u",
                 msg->opcode == RCFOP_TRRECV_GET ? TE_PROTO_TRRECV_GET :
                 msg->opcode == RCFOP_TRRECV_WAIT ? TE_PROTO_TRRECV_WAIT :
                 TE_PROTO_TRRECV_STOP,
@@ -2392,7 +2392,7 @@ send_cmd(ta *agent, usrreq *req)
                 case RCF_FUNC:    PUT(TE_PROTO_FUNC); break;
                 case RCF_THREAD:  PUT(TE_PROTO_THREAD); break;
                 case RCF_PROCESS: PUT(TE_PROTO_PROCESS); break;
-                default: 
+                default:
                     ERROR("Incorrect execute mode");
                     msg->error = TE_RC(TE_RCF, TE_EINVAL);
                     answer_user_request(req);
@@ -2438,13 +2438,13 @@ send_cmd(ta *agent, usrreq *req)
             }
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
-            
+
         case RCFOP_RPC:
         {
-            PUT("%s %s %u ", 
+            PUT("%s %s %u ",
                 TE_PROTO_RPC, msg->id, (unsigned)msg->timeout);
-            
-            if (msg->intparm < RCF_MAX_VAL && 
+
+            if (msg->intparm < RCF_MAX_VAL &&
                 strcmp_start("<?xml", msg->file) == 0)
             {
                 write_str(msg->file, strlen(msg->file));
@@ -2464,7 +2464,7 @@ send_cmd(ta *agent, usrreq *req)
             {
                 case RCF_THREAD:  PUT(TE_PROTO_THREAD); break;
                 case RCF_PROCESS: PUT(TE_PROTO_PROCESS); break;
-                default: 
+                default:
                     ERROR("Incorrect execute mode");
                     msg->error = TE_RC(TE_RCF, TE_EINVAL);
                     answer_user_request(req);
@@ -2497,7 +2497,7 @@ static usrreq *
 alloc_usrreq(void)
 {
     usrreq *req;
-    
+
     if ((req = (usrreq *)calloc(1, sizeof(usrreq))) == NULL)
         return NULL;
 
@@ -2560,7 +2560,7 @@ rcf_ta_check_all_done(void)
                 if (force_reboot(agent, NULL) != 0)
                 {
                     remain_dead = TRUE;
-                    if ((agent->flags & TA_REBOOTABLE) && 
+                    if ((agent->flags & TA_REBOOTABLE) &&
                         cold_reboot(agent) == 0)
                     {
                         agent->flags &= (~TA_UNRECOVER);
@@ -2983,7 +2983,7 @@ process_user_request(usrreq *req)
             /* The rest of commands are processed below */
             break;
     }
-    
+
     if ((agent = find_ta_by_name(msg->ta)) == NULL)
     {
         LOG_MSG((msg->opcode == RCFOP_GET_LOG ||
@@ -2995,7 +2995,7 @@ process_user_request(usrreq *req)
         answer_user_request(req);
         return;
     }
-    
+
     if ((agent->flags & TA_DEAD) && !(agents->flags & TA_REBOOTING))
     {
         ERROR("Request '%s' to dead TA '%s'",
@@ -3009,14 +3009,14 @@ process_user_request(usrreq *req)
         answer_user_request(req);
         return;
     }
-    
+
     if (msg->opcode == RCFOP_TADEAD)
     {
         answer_user_request(req);
         set_ta_unrecoverable(agent);
         return;
     }
-    
+
     if (req->message->sid > agent->sid)
     {
         ERROR("Request '%s' with invalid SID %d for TA '%s'",
@@ -3092,7 +3092,7 @@ process_user_request(usrreq *req)
     if (shutdown_num > 0 ||
         agent->reboot_timestamp > 0 ||
         (agent->flags & TA_CHECKING) ||
-        find_user_request(&(agent->sent), msg->sid) != NULL || 
+        find_user_request(&(agent->sent), msg->sid) != NULL ||
         find_user_request(&(agent->waiting), msg->sid) != NULL)
     {
         VERB("Pending user request for TA %s:%d", agent->name, msg->sid);
@@ -3129,8 +3129,8 @@ rcf_shutdown(void)
         TE_SPRINTF(cmd, "SID %d %s", ++agent->sid, TE_PROTO_SHUTDOWN);
         (agent->m.transmit)(agent->handle, cmd, strlen(cmd) + 1);
         answer_all_requests(&(agent->sent), TE_EIO);
-        answer_all_requests(&(agent->pending), TE_EIO);        
-        answer_all_requests(&(agent->waiting), TE_EIO);        
+        answer_all_requests(&(agent->pending), TE_EIO);
+        answer_all_requests(&(agent->waiting), TE_EIO);
     }
 
     while (shutdown_num > 0 && time(NULL) - t < RCF_SHUTDOWN_TIMEOUT)
@@ -3148,10 +3148,10 @@ rcf_shutdown(void)
                 char    answer[16];
                 char   *ba;
                 size_t  len = sizeof(cmd);
-                
+
                 if ((agent->m.receive)(agent->handle, cmd, &len, &ba) != 0)
                     continue;
-                    
+
                 TE_SPRINTF(answer, "SID %d 0", agent->sid);
 
                 if (strcmp(cmd, answer) != 0)
@@ -3181,7 +3181,7 @@ rcf_shutdown(void)
 
 /**
  * Process command line options and parameters specified in argv.
- * The procedure contains "Option table" that should be updated 
+ * The procedure contains "Option table" that should be updated
  * if some new options are going to be added.
  *
  * @param argc  Number of elements in array "argv".
@@ -3194,7 +3194,7 @@ process_cmd_line_opts(int argc, const char **argv)
 {
     poptContext  optCon;
     int          rc;
-    
+
     /* Option Table */
     struct poptOption options_table[] = {
         { "foreground", 'f', POPT_ARG_NONE | POPT_BIT_SET, &flags,
@@ -3204,11 +3204,11 @@ process_cmd_line_opts(int argc, const char **argv)
         POPT_AUTOHELP
         POPT_TABLEEND
     };
-    
+
     /* Process command line options */
     optCon = poptGetContext(NULL, argc, (const char **)argv,
                             options_table, 0);
-      
+
     poptSetOtherOptionHelp(optCon, "[OPTIONS] <cfg-file>");
 
     rc = poptGetNextOpt(optCon);
@@ -3298,7 +3298,7 @@ main(int argc, const char *argv[])
     }
 
     if ((ta_list_file = getenv("TE_TA_LIST_FILE")) != NULL)
-        unlink(ta_list_file); 
+        unlink(ta_list_file);
 
     if (parse_config(cfg_file) != 0)
         goto exit;
@@ -3317,7 +3317,7 @@ main(int argc, const char *argv[])
         }
     }
 
-    /* 
+    /*
      * Go to background, if foreground mode is not requested.
      * No threads should be created before become a daemon.
      */
@@ -3335,7 +3335,7 @@ main(int argc, const char *argv[])
         size_t          len;
         time_t          now;
         int             select_rc;
-        
+
         req = NULL;
         rc = -1;
 
@@ -3358,19 +3358,19 @@ main(int argc, const char *argv[])
             ipc_is_server_ready(server, &set, FD_SETSIZE))
         {
             len = sizeof(rcf_msg);
-            
+
             if ((req = alloc_usrreq()) == NULL)
                 goto exit;
 
             rc = ipc_receive_message(server, req->message,
                                      &len, &(req->user));
 
-            if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF) 
+            if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF)
             {
                 size_t n = len;
-                
+
                 len += sizeof(rcf_msg);
-                if ((req->message = 
+                if ((req->message =
                          (rcf_msg *)realloc(req->message, len)) == NULL)
                 {
                     ERROR("Cannot allocate memory for user request");
@@ -3380,7 +3380,7 @@ main(int argc, const char *argv[])
                 rc = ipc_receive_message(server, req->message + 1,
                                          &n, &(req->user));
             }
-            
+
             if (rc != 0)
             {
                 ERROR("Failed to receive user request: errno %r", rc);
@@ -3399,7 +3399,7 @@ main(int argc, const char *argv[])
                 free(req);
                 continue;
             }
-            
+
             INFO("Got request %u:%d:'%s' from user '%s'",
                  (unsigned)req->message->seqno, req->message->sid,
                  rcf_op_to_string(req->message->opcode),
@@ -3416,17 +3416,17 @@ main(int argc, const char *argv[])
         for (agent = agents; agent != NULL; agent = agent->next)
         {
             usrreq *next;
-            
+
             if ((agent->m.is_ready)(agent->handle))
                 process_reply(agent);
-                
+
             now = time(NULL);
-            for (req = agent->sent.next; 
-                 req != &(agent->sent); 
+            for (req = agent->sent.next;
+                 req != &(agent->sent);
                  req = next)
             {
                 next = req->next;
-                
+
                 if ((uint32_t)(now - req->sent) < req->timeout)
                     continue;
 
@@ -3435,7 +3435,7 @@ main(int argc, const char *argv[])
                     WARN("Current time is less than request's sent time");
                     continue;
                 }
-               
+
                 {
                     size_t  ret;
                     char    time_buf[9];    /* Sufficient for format
