@@ -22,7 +22,9 @@ plain_html_path=
 txt_path=
 junit_path=
 line_prefix=
+no_prefix=
 mi_raw=
+mi_only=false
 
 declare -a rgt_conv_opts
 declare -a rgt_x2hm_opts
@@ -65,6 +67,10 @@ Usage: te_proc_raw_log.sh [<options>]
   --sniff-log-dir=<dirpath>     Path to the *TEN* side capture files.
   --txt-detailed-packets        Print more detailed packet dumps in text log.
   --txt-line-prefix             Add a prefix before every message line in text log.
+  --txt-no-prefix               Print only message bodies without any prefixes
+                                or headers in text log.
+  --txt-mi-raw                  Print MI messages in raw form in text log.
+  --txt-mi-only                 Print only MI messages in text log.
   --bundle=<filepath>           Where to save RAW log bundle (if needed).
   --html=<dirpath>              Where to save HTML logs (if needed).
   --plain-html=<filepath>       Where to save plain HTML log (if needed).
@@ -109,6 +115,9 @@ function print_warn() {
 #   txt_path
 #   junit_path
 #   line_prefix
+#   no_prefix
+#   mi_raw
+#   mi_only
 #   sniff_detailed_packets
 #   rgt_conv_opts
 #   rgt_x2hm_opts
@@ -134,12 +143,17 @@ function process_opts() {
             --junit=*) junit_path=${1#--junit=} ;;
 
             --txt-line-prefix) line_prefix="-L" ;;
+            --txt-no-prefix) no_prefix="-N" ;;
 
             --txt-detailed-packets)
                 sniff_detailed_packets="--detailed-packets"
                 ;;
             --txt-mi-raw)
                 mi_raw='--mi-raw'
+                ;;
+
+            --txt-mi-only)
+                mi_only=true
                 ;;
 
             --rgt-conv-*)
@@ -156,6 +170,25 @@ function process_opts() {
         esac
         shift 1
     done
+}
+
+#################################################################
+# Save to a file the RGT filter which matches only MI messages.
+# Arguments:
+#   File name.
+#################################################################
+function save_mi_only_filter() {
+    cat >$1 <<EOF
+<?xml version="1.0"?>
+<filters>
+  <entity-filter match="regexp">
+    <exclude entity=""/>
+    <include entity=".*">
+        <user name=".*" level="MI"/>
+    </include>
+  </entity-filter>
+</filters>
+EOF
 }
 
 #######################################################################
@@ -252,14 +285,25 @@ function main() {
         # Generate XML log not taking into account control messages
         local log_xml_plain
         local log_xml_merged
+        local mi_only_filter
+
+        declare -a rgt_conv_opts_txt
 
         log_xml_plain="$(mktemp "${TMPDIR}/log_plain_XXXXXX.xml")"
         log_xml_merged="$(mktemp "${TMPDIR}/log_plain_ext_XXXXXX.xml")"
         tmp_files+=("${log_xml_plain}")
         tmp_files+=("${log_xml_merged}")
 
+        if [[ "${mi_only}" == "true" ]] ; then
+            mi_only_filter="$(mktemp "${TMPDIR}/filter_XXXXXX.xml")"
+            tmp_files+=("${mi_only_filter}")
+            save_mi_only_filter "${mi_only_filter}"
+            rgt_conv_opts_txt+=("-c" "${mi_only_filter}")
+       fi
+
         "${BINDIR}"/rgt-conv --no-cntrl-msg -m postponed \
-            "${rgt_conv_opts[@]}" -f "${raw_path}" -o "${log_xml_plain}"
+            "${rgt_conv_opts[@]}" "${rgt_conv_opts_txt[@]}" \
+            -f "${raw_path}" -o "${log_xml_plain}"
         if [[ $? -eq 0 && -e "${log_xml_plain}" ]] ; then
             if [[ "${#sniff_logs[@]}" -gt 0 ]] ; then
                 # Merge main TE log with capture logs
@@ -272,7 +316,8 @@ function main() {
             if [[ -n "${txt_path}" ]] ; then
                 "${BINDIR}"/rgt-xml2text -f "${log_xml_merged}" \
                     -o "${txt_path}" \
-                    ${line_prefix} ${mi_raw} ${sniff_detailed_packets}
+                    ${line_prefix} ${no_prefix} ${mi_raw} \
+                    ${sniff_detailed_packets}
             fi
 
             if [[ -n "${plain_html_path}" ]] ; then
