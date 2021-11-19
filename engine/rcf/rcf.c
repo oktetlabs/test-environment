@@ -348,6 +348,17 @@ parse_config_ta(xmlNodePtr ta_node)
             agent->cold_reboot_ta = attr;
             *param = '\0';
             agent->cold_reboot_param = param + 1;
+            agent->cold_reboot_timeout = RCF_COLD_REBOOT_TIMEOUT;
+        }
+    }
+
+    attr = xmlGetProp_exp(ta_node, (const xmlChar *)"cold_reboot_timeout");
+    if (attr != NULL)
+    {
+        if (te_strtoi(attr, 10, &(agent->cold_reboot_timeout)) != 0)
+        {
+            ERROR("Failed to get cold reboot timeout");
+            return TE_RC(TE_RCF, TE_EINVAL);
         }
     }
 
@@ -2273,7 +2284,12 @@ rcf_ta_check_start(void)
 static void
 get_reboot_type_from_reboot_request(ta *agent, rcf_msg *msg)
 {
-    if ((msg->flags & HOST_REBOOT) != 0)
+    if ((msg->flags & COLD_REBOOT) != 0)
+    {
+        agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_COLD;
+        agent->reboot_ctx.current_type = TA_REBOOT_TYPE_COLD;
+    }
+    else if ((msg->flags & HOST_REBOOT) != 0)
     {
         agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_HOST;
         agent->reboot_ctx.current_type = TA_REBOOT_TYPE_HOST;

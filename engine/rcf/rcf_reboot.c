@@ -45,6 +45,9 @@ ta_reboot_type2str(ta_reboot_type type)
         case TA_REBOOT_TYPE_HOST:
             return "reboot the host";
 
+        case TA_REBOOT_TYPE_COLD:
+            return "cold reboot the host";
+
         default:
             return "<unknown>";
     }
@@ -150,7 +153,7 @@ rcf_ta_reboot_on_ta_dead(ta *agent, usrreq *req)
     {
         WARN("TA '%s' is dead, try to reboot...", agent->name);
         rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_LOG_FLUSH);
-        agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_HOST;
+        agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_COLD;
         agent->reboot_ctx.current_type = TA_REBOOT_TYPE_AGENT;
         agent->reboot_ctx.req = req;
         return TRUE;
@@ -164,6 +167,18 @@ rcf_ta_reboot_is_reboot_answer(ta *agent, usrreq *req)
 {
     if (req->message->opcode == RCFOP_REBOOT)
         agent->reboot_ctx.is_answer_recv = TRUE;
+
+    return 0;
+}
+
+te_errno
+rcf_ta_reboot_is_cold_reboot_answer(ta *agent, usrreq *req)
+{
+    if (req->message->opcode == RCFOP_EXECUTE &&
+        strcmp(req->message->id, "cold_reboot") == 0)
+    {
+        agent->reboot_ctx.is_answer_recv = TRUE;
+    }
 
     return 0;
 }
@@ -270,6 +285,90 @@ waiting_state_host_reboot_handler(ta *agent)
 }
 
 /**
+ * @c TA_REBOOT_STATE_WAITING handler for @c TA_REBOOT_TYPE_COLD
+ *
+ * Make and send a cold reboot request to the power control TA associated
+ * with @p agent and set the next reboot state for the @p agent.
+ *
+ * @param agent Test Agent structure
+ *
+ * @return Status code
+ */
+static te_errno
+waiting_state_cold_reboot_handler(ta *agent)
+{
+    ta     *power_ta;
+    rcf_msg *tmp;
+    usrreq *req;
+    size_t  param_len;
+
+    if (agent->cold_reboot_ta == NULL)
+    {
+        RING("Cold rebooting is not supported for '%s'", agent->name);
+        agent->reboot_ctx.error = TE_EINVAL;
+        return 0;
+    }
+
+    RING("Cold rebooting TA '%s' using '%s', '%s'", agent->name,
+         agent->cold_reboot_ta, agent->cold_reboot_param);
+
+    power_ta = rcf_find_ta_by_name(agent->cold_reboot_ta);
+    if (power_ta == NULL)
+    {
+        ERROR("Non-existant TA '%s' is specified for cold_reboot of '%s'",
+              agent->cold_reboot_ta, agent->name);
+        return TE_EINVAL;
+    }
+
+    if ((power_ta->flags & TA_DEAD) != 0)
+    {
+        ERROR("Power agent '%s' for TA '%s' is dead!",
+              power_ta->name, agent->name);
+        return TE_ETADEAD;
+    }
+
+    req = rcf_alloc_usrreq();
+    if (req == NULL)
+    {
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return TE_ENOMEM;
+    }
+
+    param_len = strlen(agent->cold_reboot_param) + 1;
+    if ((tmp = realloc(req->message, sizeof(rcf_msg) + param_len)) == NULL)
+    {
+        ERROR("%s(): failed to re-allocate memory", __FUNCTION__);
+        free(req->message);
+        free(req);
+        return TE_ENOMEM;
+    }
+
+    req->message = (rcf_msg *)tmp;
+    req->user = NULL;
+    req->timeout = RCF_CMD_TIMEOUT;
+    strcpy(req->message->ta, power_ta->name);
+    req->message->sid = 0;
+    req->message->opcode = RCFOP_EXECUTE;
+    req->message->intparm = RCF_FUNC;
+    strcpy(req->message->id, "cold_reboot");
+    req->message->num = 1;
+    req->message->flags |= PARAMETERS_ARGV;
+    strcpy(req->message->data, agent->cold_reboot_param);
+    req->message->data_len = param_len;
+    req->cb = rcf_ta_reboot_is_cold_reboot_answer;
+
+    if (rcf_send_cmd(power_ta, req) != 0)
+    {
+        ERROR("Failed to send message to '%s'", power_ta->name);
+        return TE_ECOMM;
+    }
+
+    rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_WAITING_ACK);
+    return 0;
+}
+
+
+/**
  * @c TA_REBOOT_STATE_WAITING handler.
  *
  * @note When restarting the TA process @c TA_REBOOT_STATE_WAITING in
@@ -291,6 +390,10 @@ waiting_state_handler(ta *agent)
 
         case TA_REBOOT_TYPE_HOST:
             rc = waiting_state_host_reboot_handler(agent);
+            break;
+
+        case TA_REBOOT_TYPE_COLD:
+            rc = waiting_state_cold_reboot_handler(agent);
             break;
 
         default:
@@ -331,11 +434,53 @@ waiting_ack_state_host_reboot_handler(ta *agent)
 }
 
 /**
+ * @c TA_REBOOT_STATE_WAITING_ACK handeler for @c TA_REBOOT_TYPE_COLD
+ *
+ * Check that response from power TA is received and set the next reboot state
+ * for the agent.
+ *
+ * @return Status code
+ */
+static te_errno
+waiting_ack_state_cold_reboot_handler(ta *agent)
+{
+    ta *power_ta;
+
+    power_ta = rcf_find_ta_by_name(agent->cold_reboot_ta);
+    if (power_ta == NULL)
+    {
+        ERROR("Non-existant TA is specified for cold_reboot of '%s'",
+              agent->name);
+        return TE_EINVAL;
+    }
+
+    if (power_ta->reboot_ctx.is_answer_recv)
+    {
+        rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_REBOOTING);
+        power_ta->reboot_ctx.is_answer_recv = FALSE;
+    }
+
+    if (is_timed_out(agent->reboot_ctx.reboot_timestamp,
+                     RCF_ACK_HOST_REBOOT_TIMEOUT))
+    {
+        WARN("Agent '%s' doesn't respond to the reboot request",
+             power_ta->name);
+        agent->reboot_ctx.error = TE_ETIMEDOUT;
+    }
+
+    return 0;
+}
+
+/**
  * @c TA_REBOOT_STATE_WAITING_ACK handeler.
  *
  * For @c TA_REBOOT_TYPE_HOST:
  *     check that response from TA is received and set the next reboot state
  *     for the agent.
+ *
+ * For @c TA_REBOOT_TYPE_COLD:
+ *     check that response from power controll TA associated with @p agent
+ *     is received and set the next reboot state for the @p agent.
  *
  * @note When restarting the TA process @c TA_REBOOT_STATE_WAITING_ACK in
  *       this case is empty.
@@ -356,6 +501,10 @@ waiting_ack_state_handler(ta *agent)
 
         case TA_REBOOT_TYPE_HOST:
             rc = waiting_ack_state_host_reboot_handler(agent);
+            break;
+
+        case TA_REBOOT_TYPE_COLD:
+            rc = waiting_ack_state_cold_reboot_handler(agent);
             break;
 
         default:
@@ -521,6 +670,53 @@ rebooting_state_host_reboot_handler(ta *agent)
 }
 
 /**
+ * @c TA_REBOOT_STATE_REBOOTING for @c TA_REBOOT_TYPE_COLD
+ *
+ * Try to init agent every @c RCF_RESTART_TA_ATTEMPT_TIMEOUT second
+ *
+ * @param agent Test Agent structure
+ *
+ * @return Status code
+ */
+static te_errno
+rebooting_state_cold_reboot_handler(ta *agent)
+{
+    te_errno rc = 0;
+
+    if (is_timed_out(agent->reboot_ctx.reboot_timestamp,
+                     agent->cold_reboot_timeout))
+    {
+        WARN("Cannot start the agent after %s timeout",
+             agent->cold_reboot_timeout);
+        agent->reboot_ctx.error = TE_ETIMEDOUT;
+        return 0;
+    }
+
+    if (is_timed_out(agent->reboot_ctx.reboot_timestamp,
+                     RCF_RESTART_TA_ATTEMPT_TIMEOUT *
+                     (agent->reboot_ctx.restart_attempt + 1)))
+    {
+        agent->reboot_ctx.restart_attempt++;
+        rc = rcf_init_agent(agent);
+        if (rc == 0)
+        {
+            rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_IDLE);
+        }
+        else
+        {
+            agent->handle = NULL;
+            /*
+             * after a failed start of the agent, it is marked as DEAD,
+             * but in case of a failed reboot attempt, we should not do this
+             */
+            agent->flags &= ~TA_DEAD;
+        }
+    }
+
+    return 0;
+}
+
+/**
  * @c TA_REBOOT_STATE_REBOOTING handler.
  *
  * @param agent Test Agent structure
@@ -540,6 +736,10 @@ rebooting_state_handler(ta *agent)
 
         case TA_REBOOT_TYPE_HOST:
             rc = rebooting_state_host_reboot_handler(agent);
+            break;
+
+        case TA_REBOOT_TYPE_COLD:
+            rc = rebooting_state_cold_reboot_handler(agent);
             break;
 
         default:

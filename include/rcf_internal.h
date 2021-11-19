@@ -51,6 +51,7 @@ extern "C" {
 #define AGENT_REBOOT            8   /**< Reboot Test Agent process */
 #define HOST_REBOOT            16   /**< Reboot the host with Test Agent
                                          process */
+#define COLD_REBOOT            32   /**< Cold reboot host */
 /*@}*/
 
 /** @name Traffic flags */

@@ -52,6 +52,8 @@ extern "C" {
  * and receiving a response in seconds
  */
 #define RCF_ACK_HOST_REBOOT_TIMEOUT 10
+ /** Timeout for cold reboot in seconds */
+#define RCF_COLD_REBOOT_TIMEOUT 600
 
 /**
  * Timeout for CONFSET operation, in seconds.
@@ -164,6 +166,8 @@ typedef enum ta_reboot_type {
     TA_REBOOT_TYPE_AGENT,
     /** Reboot TA host */
     TA_REBOOT_TYPE_HOST,
+    /** Cold reboot the host using assigned power control agent */
+    TA_REBOOT_TYPE_COLD,
 } ta_reboot_type;
 
 /** Contextual information for rebooting the agent */
