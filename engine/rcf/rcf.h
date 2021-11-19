@@ -71,6 +71,17 @@ enum {
 typedef struct ta ta;
 typedef struct usrreq usrreq;
 
+/**
+ * The prototype of the function that is called when receiving
+ * a response from the agent.
+ *
+ * @param ta  Test Agent
+ * @param req Request
+ *
+ * @return Status code
+ */
+typedef te_errno (* userreq_callback)(ta *agent, usrreq *req);
+
 /** One request from the user */
 struct usrreq {
     struct usrreq            *next;
@@ -79,6 +90,7 @@ struct usrreq {
     struct ipc_server_client *user;
     uint32_t                  timeout;  /**< Timeout in seconds */
     time_t                    sent;
+    userreq_callback          cb;
 };
 
 /** A description for a task/thread to be executed at TA startup */

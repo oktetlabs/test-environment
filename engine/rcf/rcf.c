@@ -1336,6 +1336,9 @@ process_reply(ta *agent)
     if (error != 0)
         req->message->error = error;
 
+    if (req->cb != NULL)
+        error = req->cb(agent, req);
+
     if (error == 0 ||
         /*
          * In case of TRRECV_STOP and TRRECV_WAIT we should get actual
