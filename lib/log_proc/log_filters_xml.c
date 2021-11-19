@@ -196,6 +196,9 @@ get_level_mask(const char *level_str)
         CHECK_SET_BIT(INFO);
         CHECK_SET_BIT(VERB);
         CHECK_SET_BIT(ENTRY_EXIT);
+        CHECK_SET_BIT(PACKET);
+        CHECK_SET_BIT(MI);
+        CHECK_SET_BIT(CONTROL);
 
 #undef CHECK_SET_BIT
 
