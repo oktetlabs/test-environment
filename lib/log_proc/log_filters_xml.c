@@ -322,7 +322,7 @@ log_msg_filter_load_xml(log_msg_filter *filter, xmlNodePtr filter_node)
 
                     rc = log_msg_filter_add_user(filter, include,
                                                  (const char *)entity, regex,
-                                                 (const char *)name, FALSE,
+                                                 (const char *)name, regex,
                                                  user_level);
                     if (rc != 0)
                         return rc;
