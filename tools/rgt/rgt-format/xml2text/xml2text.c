@@ -50,6 +50,12 @@ int mi_raw = 0;
  */
 static int line_prefix = 0;
 
+/**
+ * If this is turned on, no prefixes or headers is printed before
+ * messages, and no empty lines between them.
+ */
+static int no_prefix = 0;
+
 /** Description of a flow tree node */
 typedef struct flow_item {
     SLIST_ENTRY(flow_item) links; /**< Link to the description of the
@@ -187,6 +193,8 @@ struct poptOption rgt_options_table[] = {
       "Print more detailed packet dumps", NULL },
     { "line-prefix", 'L', POPT_ARG_NONE, &line_prefix, 0,
       "Print prefix before every message line", NULL },
+    { "no-prefix", 'N', POPT_ARG_NONE, &no_prefix, 0,
+      "Do not print any prefix or header before messages", NULL },
     { "mi-raw", 'M', POPT_ARG_NONE, &mi_raw, 0,
       "Include raw MI artifacts instead of post-processed", NULL },
     POPT_TABLEEND
@@ -362,7 +370,8 @@ RGT_DEF_FUNC(proc_document_start)
         exit(2);
     }
 
-    rgt_tmpls_output(gen_user->fd, &xml2fmt_tmpls[DOCUMENT_START], NULL);
+    if (!no_prefix)
+        rgt_tmpls_output(gen_user->fd, &xml2fmt_tmpls[DOCUMENT_START], NULL);
 
     if (line_prefix)
         capture_tmpls_out_cb = &tmpls_output_cb;
@@ -477,24 +486,27 @@ RGT_DEF_FUNC(proc_log_msg_start)
     if (level != NULL && strcmp(level, "MI") == 0 && !mi_raw)
         user_ctx->mi_artifact = TRUE;
 
-    attrs = rgt_tmpls_attrs_new(xml_attrs);
-
-    if (line_prefix)
+    if (!no_prefix)
     {
-        te_string_append(&str, "[");
-        rgt_tmpls_output_str(&str,
-                             &xml2fmt_tmpls[LOG_MSG_START_LINE_PREFIX],
-                             attrs);
-        te_string_append(&str, "]: ");
-        user_ctx->msg_prefix_len = str.len;
-        fwrite(user_ctx->msg_prefix, 1, user_ctx->msg_prefix_len, fd);
-    }
-    else
-    {
-        rgt_tmpls_output(fd, &xml2fmt_tmpls[LOG_MSG_START], attrs);
-    }
+        attrs = rgt_tmpls_attrs_new(xml_attrs);
 
-    rgt_tmpls_attrs_free(attrs);
+        if (line_prefix)
+        {
+            te_string_append(&str, "[");
+            rgt_tmpls_output_str(&str,
+                                 &xml2fmt_tmpls[LOG_MSG_START_LINE_PREFIX],
+                                 attrs);
+            te_string_append(&str, "]: ");
+            user_ctx->msg_prefix_len = str.len;
+            fwrite(user_ctx->msg_prefix, 1, user_ctx->msg_prefix_len, fd);
+        }
+        else
+        {
+            rgt_tmpls_output(fd, &xml2fmt_tmpls[LOG_MSG_START], attrs);
+        }
+
+        rgt_tmpls_attrs_free(attrs);
+    }
 }
 
 /**
@@ -833,13 +845,10 @@ RGT_DEF_FUNC(proc_log_msg_end)
         te_dbuf_reset(&user_ctx->json_data);
     }
 
-    attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_output(fd,
-                     &xml2fmt_tmpls[line_prefix ?
-                                          LOG_MSG_END_LINE_PREFIX :
-                                          LOG_MSG_END],
-                     attrs);
-    rgt_tmpls_attrs_free(attrs);
+    if (line_prefix || no_prefix)
+        fprintf(fd, "\n");
+    else
+        fprintf(fd, "\n\n");
 
     user_ctx->msg_prefix_len = 0;
 }
