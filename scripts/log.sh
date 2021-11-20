@@ -47,6 +47,7 @@ cat <<EOF
                                  next time you use it.
   -P, --detailed-packets        Print more detailed packet dumps.
   --html                        Generate log in html format (instead of text).
+  --mi                          Generate a stream of MIs
 EOF
 else
 cat <<EOF
@@ -85,6 +86,9 @@ process_opts()
                 ;;
             --txt-*)
                 PROC_OPTS+=("$1")
+                ;;
+            --mi)
+                PROC_OPTS+=("--txt-mi-only" "--txt-mi-raw" "--txt-no-prefix")
                 ;;
 
             --output-to=*) OUTPUT_LOCATION="${1#--output-to=}" ;;
