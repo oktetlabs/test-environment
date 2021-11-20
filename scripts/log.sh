@@ -25,6 +25,9 @@ CONF_LOGGER="${CONFDIR}"/logger.conf
 SNIFF_LOG_DIR=
 SNIFF_LOGS_INCLUDED=false
 OUTPUT_LOCATION=
+OUTPUT_TXT=true
+OUTPUT_HTML=false
+OUTPUT_STDOUT=false
 
 usage()
 {
@@ -89,11 +92,16 @@ process_opts()
                 ;;
             --mi)
                 PROC_OPTS+=("--txt-mi-only" "--txt-mi-raw" "--txt-no-prefix")
+                OUTPUT_TXT=false
+                OUTPUT_STDOUT=true
                 ;;
 
             --output-to=*) OUTPUT_LOCATION="${1#--output-to=}" ;;
 
-            --html) OUTPUT_HTML=true ;;
+            --html)
+                OUTPUT_HTML=true
+                OUTPUT_TXT=false
+                ;;
 
             *) echo "WARNING: unknown option $1 will be passed to rgt-proc-raw-log" >&2;
                 UNKNOWN_OPTS+=("$1")
@@ -108,10 +116,9 @@ process_opts "$@"
 
 # Check the output location for consistency and create path, if necessary.
 if test -z "${OUTPUT_LOCATION}" ; then
-    OUTPUT_LOCATION="log.txt"
-    if $OUTPUT_HTML ; then
-        OUTPUT_LOCATION="html"
-    fi
+    $OUTPUT_TXT && OUTPUT_LOCATION='log.txt'
+    $OUTPUT_HTML && OUTPUT_LOCATION='html'
+    $OUTPUT_STDOUT && OUTPUT_LOCATION='/dev/stdout'
 elif test -e "${OUTPUT_LOCATION}" ; then
     if [ -f "${OUTPUT_LOCATION}" ] && $OUTPUT_HTML ; then
         echo "ERROR: html log requested, while output location" \
@@ -156,13 +163,13 @@ fi
 
 if $OUTPUT_HTML ; then
     PROC_OPTS+=("--html=${OUTPUT_LOCATION}")
-else
+elif $OUTPUT_TXT || $OUTPUT_STDOUT ; then
     PROC_OPTS+=("--txt=${OUTPUT_LOCATION}")
 fi
 
 rgt-proc-raw-log "${PROC_OPTS[@]}" "${UNKNOWN_OPTS[@]}"
 
-if [[ "${OUTPUT_HTML}" == "false" ]] ;  then
+if $OUTPUT_TXT ;  then
     # If text log was generated, show it to the user
     if [[ -e "${OUTPUT_LOCATION}" ]] ; then
         ${PAGER:-less} "${OUTPUT_LOCATION}"
