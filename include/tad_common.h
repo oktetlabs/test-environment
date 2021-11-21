@@ -202,6 +202,12 @@ enum tad_eth_recv_mode {
 /** Receive nothing */
 #define TAD_ETH_RECV_NO     (0)
 
+/** Default IPv4 header size (without options) */
+#define TAD_IP4_HDR_LEN     20
+/** Default IPv6 header size (without options) */
+#define TAD_IP6_HDR_LEN     40
+/** Default TCP header size (without options) */
+#define TAD_TCP_HDR_LEN     20
 /** Length of UDP header */
 #define TAD_UDP_HDR_LEN     8
 
