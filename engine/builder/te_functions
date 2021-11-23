@@ -61,7 +61,7 @@ te_ta_signature_local()
         esac
     fi
     case "$GCC_TARGET" in
-        *-linux-gnu | \
+        *-linux-gnu* | \
         *-redhat-linux )
             local TEMP_IN="$(mktemp /tmp/tmp.XXXXXXXXXX.c)"
             echo '
