@@ -15,7 +15,6 @@ else
 fi
 
 RUN_DIR="${PWD}"
-: ${OUTPUT_HTML:=false}
 : ${HTML_OPTION:=true}
 : ${EXEC_NAME:=$0}
 

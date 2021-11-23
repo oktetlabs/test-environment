@@ -8,4 +8,4 @@
 #
 # $Id: $
 
-HTML_OPTION=false OUTPUT_HTML=true EXEC_NAME=$0 `dirname \`which $0\``/log.sh "$@"
+HTML_OPTION=false EXEC_NAME=$0 `dirname \`which $0\``/log.sh --html "$@"
