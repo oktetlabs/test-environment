@@ -904,7 +904,7 @@ put_instance(FILE *f, cfg_instance *inst)
     if (inst != &cfg_inst_root && !cfg_inst_agent(inst) &&
         !cfg_instance_volatile(inst))
     {
-        fprintf(f, "\n  <instance oid=\"%s\" ", inst->oid);
+        fprintf(f, "\n  <instance oid=\"%s\"", inst->oid);
 
         if (inst->obj->type != CVT_NONE)
         {
@@ -925,7 +925,7 @@ put_instance(FILE *f, cfg_instance *inst)
             if (xml_str == NULL)
                 return TE_ENOMEM;
 
-            fprintf(f, "value=\"%s\"", xml_str);
+            fprintf(f, " value=\"%s\"", xml_str);
             free(xml_str);
          }
          fprintf(f, "/>\n");
