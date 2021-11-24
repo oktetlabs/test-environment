@@ -1862,6 +1862,8 @@ log_msg(cfg_msg *msg, te_bool before)
         case CFG_BACKUP:
         {
             uint8_t op = ((cfg_backup_msg *)msg)->op;
+            char *bkp_filename = (char *)((cfg_backup_msg *)msg) +
+                                 ((cfg_backup_msg *)msg)->filename_offset;
 
             if (!before && (op == CFG_BACKUP_VERIFY) &&
                 (TE_RC_GET_ERROR(msg->rc) == TE_EBACKUP))
@@ -1876,8 +1878,7 @@ log_msg(cfg_msg *msg, te_bool before)
                     "Restore w/o history" :
                     op == CFG_BACKUP_RELEASE ? "Release" :
                     op == CFG_BACKUP_VERIFY ? "Verify" : "unknown",
-                    op == CFG_BACKUP_CREATE ? "" :
-                        ((cfg_backup_msg *)msg)->filename,
+                    op == CFG_BACKUP_CREATE ? "" : bkp_filename,
                     op == CFG_BACKUP_CREATE ? "" : " ", addon);
             break;
         }
@@ -1932,7 +1933,7 @@ verify_backup(const char *backup, te_bool log, const char *msg)
     char diff_file[RCF_MAX_PATH];
     int  rc;
 
-    if ((rc = cfg_backup_create_file(filename)) != 0)
+    if ((rc = cfg_backup_create_file(filename, NULL)) != 0)
         return rc;
 
     TE_SPRINTF(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
@@ -2173,6 +2174,34 @@ check_agents(void)
     return 0;
 }
 
+static te_errno
+subtrees_str2vec(const char *str, te_vec *vec, unsigned int subtrees_num)
+{
+    const char *ch = str;
+    const char *current = str;
+    unsigned int i = 0;
+    te_errno rc = 0;
+
+    while (i != subtrees_num)
+    {
+        if (*ch != '\0')
+        {
+            ch++;
+            continue;
+        }
+
+        rc = te_vec_append_str_fmt(vec, "%s", current);
+        if (rc != 0)
+            break;
+
+        ch++;
+        current = ch;
+        i++;
+    }
+
+    return rc;
+}
+
 /**
  * Process backup user request.
  *
@@ -2183,20 +2212,41 @@ check_agents(void)
 static void
 process_backup(cfg_backup_msg *msg, te_bool release_dh)
 {
+    char *backup_filename;
+    char *subtrees = NULL;
+    te_vec subtrees_vec = TE_VEC_INIT(char *);
+
+    if (msg->subtrees_num != 0)
+    {
+        subtrees = (char *)msg + msg->subtrees_offset;
+        msg->rc = subtrees_str2vec(subtrees, &subtrees_vec, msg->subtrees_num);
+        if (msg->rc != 0)
+        {
+            ERROR("Failed to convert string with subtrees to vector: %r",
+                  msg->rc);
+            return;
+        }
+    }
+
+    backup_filename = (char *)msg + msg->filename_offset;
+
     switch (msg->op)
     {
         case CFG_BACKUP_CREATE:
         {
-            sprintf(msg->filename, CONF_BACKUP_NAME,
+            sprintf(backup_filename, CONF_BACKUP_NAME,
                     tmp_dir, getpid(), get_time_ms());
 
-            if ((msg->rc = cfg_backup_create_file(msg->filename)) != 0)
-                return;
+            if ((msg->rc = cfg_backup_create_file(backup_filename,
+                                                  &subtrees_vec)) != 0)
+            {
+                break;;
+            }
 
-            if ((msg->rc = cfg_dh_attach_backup(msg->filename)) != 0)
-                unlink(msg->filename);
+            if ((msg->rc = cfg_dh_attach_backup(backup_filename)) != 0)
+                unlink(backup_filename);
 
-            msg->len += strlen(msg->filename) + 1;
+            msg->len += strlen(backup_filename) + 1;
 
             break;
         }
@@ -2215,7 +2265,7 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
             if (msg->op != CFG_BACKUP_RESTORE_NOHISTORY)
             {
                 /* Try to restore using dynamic history */
-                msg->rc = cfg_dh_restore_backup(msg->filename, TRUE);
+                msg->rc = cfg_dh_restore_backup(backup_filename, TRUE);
                 if (msg->rc != 0)
                 {
                     WARN("Restoring backup from history failed; "
@@ -2226,13 +2276,13 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
                     cfg_conf_delay_reset();
                     cfg_ta_sync("/:", TRUE);
 
-                    msg->rc = verify_backup(msg->filename, FALSE,
+                    msg->rc = verify_backup(backup_filename, FALSE,
                                             "Restoring backup from history "
                                             "failed:");
                     if (msg->rc == 0)
                     {
                         rcf_log_cfg_changes(FALSE);
-                        return;
+                        break;
                     }
                 }
 
@@ -2243,11 +2293,11 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
                 cfg_ta_sync("/:", TRUE);
             }
 
-            msg->rc = parse_config_xml(msg->filename, NULL, FALSE);
+            msg->rc = parse_config_xml(backup_filename, NULL, FALSE);
             rcf_log_cfg_changes(FALSE);
 
             if (release_dh)
-                cfg_dh_release_after(msg->filename);
+                cfg_dh_release_after(backup_filename);
 
             break;
         }
@@ -2263,25 +2313,27 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
                 break;
             }
 
-            msg->rc = verify_backup(msg->filename, TRUE, NULL);
+            msg->rc = verify_backup(backup_filename, TRUE, NULL);
             if (msg->rc != 0)
             {
                 cfg_ta_sync("/:", TRUE);
-                msg->rc = verify_backup(msg->filename, TRUE, NULL);
+                msg->rc = verify_backup(backup_filename, TRUE, NULL);
             }
 
             if (msg->rc == 0 && release_dh)
-                cfg_dh_release_after(msg->filename);
+                cfg_dh_release_after(backup_filename);
 
             break;
         }
 
         case CFG_BACKUP_RELEASE:
         {
-            msg->rc = cfg_dh_release_backup(msg->filename);
+            msg->rc = cfg_dh_release_backup(backup_filename);
             break;
         }
     }
+
+    te_vec_deep_free(&subtrees_vec);
 }
 
 /**
@@ -2304,6 +2356,9 @@ create_backup(char **bkp_filename)
     bkp_msg->type = CFG_BACKUP;
     bkp_msg->op = CFG_BACKUP_CREATE;
     bkp_msg->len = sizeof(cfg_backup_msg);
+    bkp_msg->subtrees_num = 0;
+    bkp_msg->subtrees_offset = bkp_msg->len;
+    bkp_msg->filename_offset = bkp_msg->len;
 
     process_backup(bkp_msg, TRUE);
     rc = bkp_msg->rc;
@@ -2314,10 +2369,10 @@ create_backup(char **bkp_filename)
         return rc;
     }
 
-    *bkp_filename = strdup(bkp_msg->filename);
+    *bkp_filename = strdup((const char *)bkp_msg + bkp_msg->filename_offset);
     if (*bkp_filename == NULL)
     {
-        cfg_dh_release_backup(bkp_msg->filename);
+        cfg_dh_release_backup((char *)bkp_msg + bkp_msg->filename_offset);
         rc = TE_ENOMEM;
     }
 
@@ -2346,10 +2401,14 @@ process_backup_op(const char *name, uint8_t op)
 
     bkp_msg->type = CFG_BACKUP;
     bkp_msg->op = op;
+    bkp_msg->len = sizeof(cfg_backup_msg);
+    bkp_msg->subtrees_num = 0;
+    bkp_msg->subtrees_offset = bkp_msg->len;
+    bkp_msg->filename_offset = bkp_msg->len;
 
     len = strlen(name) + 1;
-    memcpy(bkp_msg->filename, name, len);
-    bkp_msg->len = sizeof(cfg_backup_msg) + len;
+    bkp_msg->len += len;
+    memcpy((char *)bkp_msg + bkp_msg->filename_offset, name, len);
 
     process_backup(bkp_msg, TRUE);
     rc = bkp_msg->rc;
@@ -2570,7 +2629,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             else
             {
                 (*msg)->rc = cfg_backup_create_file(
-                                 ((cfg_config_msg *)(*msg))->filename);
+                                 ((cfg_config_msg *)(*msg))->filename, NULL);
             }
             break;
 

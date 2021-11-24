@@ -2138,6 +2138,9 @@ cfg_create_backup(char **name)
     msg->type = CFG_BACKUP;
     msg->op = CFG_BACKUP_CREATE;
     msg->len = sizeof(cfg_backup_msg);
+    msg->subtrees_num = 0;
+    msg->subtrees_offset = msg->len;
+    msg->filename_offset = msg->len;
     len = CFG_MSG_MAX;
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
@@ -2145,7 +2148,7 @@ cfg_create_backup(char **name)
                                            msg, msg->len, msg, &len);
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
-        len = strlen(msg->filename) + 1;
+        len = msg->len - msg->filename_offset;
         *name = (char *)calloc(1, len);
         if (*name == NULL)
         {
@@ -2153,7 +2156,7 @@ cfg_create_backup(char **name)
         }
         else
         {
-            memcpy((void *)(*name), (void *)(msg->filename), len);
+            memcpy(*name, (const char *)msg + msg->filename_offset, len);
         }
     }
 #ifdef HAVE_PTHREAD_H
@@ -2197,10 +2200,16 @@ cfg_backup(const char *name, uint8_t op)
     msg = (cfg_backup_msg *)cfgl_msg_buf;
     msg->type = CFG_BACKUP;
     msg->op = op;
+    msg->len = sizeof(cfg_backup_msg);
+
+    msg->subtrees_num = 0;
+    msg->subtrees_offset = msg->len;
+    msg->filename_offset = msg->len;
 
     len = strlen(name) + 1;
-    memcpy(msg->filename, name, len);
-    msg->len = sizeof(cfg_backup_msg) + len;
+    msg->len += len;
+
+    memcpy((char *)msg + msg->filename_offset, name, len);
     len = CFG_MSG_MAX;
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,

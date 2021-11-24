@@ -258,7 +258,12 @@ typedef struct cfg_backup_msg {
 
 /** Restore configuration backup w/o trying to process history */
 #define CFG_BACKUP_RESTORE_NOHISTORY  5
-    char    filename[0];  /**< IN or OUT depending on operation */
+    unsigned int subtrees_num; /**< Number of subtrees */
+    size_t subtrees_offset;    /**< Offset to subtrees string from message
+                                    start. The string must contain subtrees
+                                    separated by \0*/
+    size_t filename_offset;    /**< Offset of the filename (terminated by \0)
+                                    from message start */
 } cfg_backup_msg;
 
 /** CFG_CONFIG message content  */

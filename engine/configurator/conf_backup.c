@@ -937,17 +937,35 @@ put_instance(FILE *f, cfg_instance *inst)
     return 0;
 }
 
+static te_errno
+put_instance_by_oid(FILE *f, const char *oid)
+{
+    cfg_instance *inst;
+
+    inst = cfg_get_ins_by_ins_id_str(oid);
+    if (inst == NULL)
+    {
+        ERROR("Failed to find instance with OID %s", oid);
+        return TE_ENOENT;
+    }
+
+    return put_instance(f, inst);
+}
+
 /**
  * Create "backup" configuration file with specified name.
  *
  * @param filename      name of the file to be created
+ * @param subtrees      Vector of the subtrees to create a backup file.
+ *                      @c NULL to create backup fo all the subtrees
  *
  * @return status code (errno.h)
  */
 int
-cfg_backup_create_file(const char *filename)
+cfg_backup_create_file(const char *filename, const te_vec *subtrees)
 {
     FILE *f= fopen(filename, "w");
+    te_errno rc;
 
     if (f == NULL)
         return TE_OS_RC(TE_CS, errno);;
@@ -956,11 +974,31 @@ cfg_backup_create_file(const char *filename)
     fprintf(f, "<backup>\n");
 
     put_object(f, &cfg_obj_root);
-    if (put_instance(f, &cfg_inst_root) != 0)
+
+    if (subtrees != NULL && te_vec_size(subtrees) != 0)
     {
-        fclose(f);
-        unlink(filename);
-        return TE_ENOMEM;
+        char * const *subtree;
+
+        TE_VEC_FOREACH(subtrees, subtree)
+        {
+            rc = put_instance_by_oid(f, *subtree);
+            if (rc != 0)
+            {
+                fclose(f);
+                unlink(filename);
+                return rc;
+            }
+        }
+    }
+    else
+    {
+        rc = put_instance(f, &cfg_inst_root);
+        if (rc != 0)
+        {
+            fclose(f);
+            unlink(filename);
+            return rc;
+        }
     }
 
     fprintf(f, "\n</backup>\n");

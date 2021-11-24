@@ -15,6 +15,9 @@
 
 #ifndef __TE_CONF_BACKUP_H__
 #define __TE_CONF_BACKUP_H__
+
+#include "te_vector.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -44,10 +47,13 @@ extern int cfg_backup_restore_ta(char *ta);
  * Create "backup" configuration file with specified name.
  *
  * @param filename   name of the file to be created
+ * @param subtrees   Vector of the subtrees to create a backup file.
+ *                   @c NULL to create backup fo all the subtrees
  *
  * @return status code (errno.h)
  */
-extern int cfg_backup_create_file(const char *filename);
+extern int cfg_backup_create_file(const char *filename,
+                                  const te_vec *subtrees);
 
 #ifdef __cplusplus
 }
