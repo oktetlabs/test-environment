@@ -2341,6 +2341,8 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
         case CFG_BACKUP_RESTORE:
         case CFG_BACKUP_RESTORE_NOHISTORY:
         {
+            te_string backup = TE_STRING_INIT;
+
             /* Check agents */
             int rc = rcf_check_agents();
 
@@ -2380,12 +2382,26 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
                 cfg_ta_sync("/:", TRUE);
             }
 
-            msg->rc = parse_config_xml(backup_filename, NULL, FALSE);
+            /*
+             * If subtrees is NULL @p backup string will contain
+             * filename specified by the user
+             */
+            msg->rc = filter_backup_by_subtrees(backup_filename, &subtrees_vec,
+                                                &backup);
+            if (msg->rc != 0)
+            {
+                ERROR("Restore backup failed: %r", msg->rc);
+                te_string_free(&backup);
+                break;
+            }
+
+            msg->rc = parse_config_xml(backup.ptr, NULL, FALSE);
             rcf_log_cfg_changes(FALSE);
 
             if (release_dh)
                 cfg_dh_release_after(backup_filename);
 
+            te_string_free(&backup);
             break;
         }
 
