@@ -1006,3 +1006,28 @@ cfg_backup_create_file(const char *filename, const te_vec *subtrees)
     return 0;
 }
 
+te_errno
+cfg_backup_create_filter_file(const char *filename, const te_vec *subtrees)
+{
+    FILE *f;
+    char * const *subtree;
+
+    f = fopen(filename, "w");
+    if (f == NULL)
+    {
+        ERROR("Failed to open '%s': %s", filename, strerror(errno));
+        return te_rc_os2te(errno);
+    }
+
+    fprintf(f, "<?xml version=\"1.0\"?>\n");
+    fprintf(f, "<filters>\n");
+
+    TE_VEC_FOREACH(subtrees, subtree)
+    {
+        fprintf(f, "<subtree>%s</subtree>\n", *subtree);
+    }
+
+    fprintf(f, "</filters>\n");
+    fclose(f);
+    return 0;
+}

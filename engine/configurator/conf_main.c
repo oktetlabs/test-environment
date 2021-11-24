@@ -26,6 +26,7 @@
 #include "te_kvpair.h"
 #include "te_alloc.h"
 #include "te_str.h"
+#include "te_string.h"
 
 #if HAVE_SIGNAL_H
 #include <signal.h>
@@ -33,6 +34,15 @@
 
 /** Format for backup file name */
 #define CONF_BACKUP_NAME         "%s/te_cfg_backup_%d_%llu.xml"
+
+/** Format for backup file name for subtree*/
+#define CONF_SUBTREE_BACKUP_NAME "%s/te_cfg_subree_backup_%d_%llu.xml"
+
+/** Name of the XSL filter file for generation subtree backup */
+#define CONF_SUBTREE_BACKUP_FILTER_NAME "subtree_backup.xsl"
+
+/** Name of the file to store a list of the subtrees */
+#define CONF_FILTERS_FILE_NAME  "%s/te_cfg_filter_%d_%llu.xml"
 
 static char  buf[CFG_BUF_LEN];
 static char  tmp_buf[1024];
@@ -1924,16 +1934,18 @@ log_msg(cfg_msg *msg, te_bool before)
  * @param filename      backup filename
  * @param log           if TRUE, log changes
  * @param error_msg     if not NULL, log failure with specified message
+ * @param subtrees       Subtree to verification. @c NULL to verify all trees
  *
  * @return 0 if DB state does not differ from backup; status code otherwise
  */
 static inline te_errno
-verify_backup(const char *backup, te_bool log, const char *msg)
+verify_backup(const char *backup, te_bool log, const char *msg,
+              const te_vec *subtrees)
 {
     char diff_file[RCF_MAX_PATH];
     int  rc;
 
-    if ((rc = cfg_backup_create_file(filename, NULL)) != 0)
+    if ((rc = cfg_backup_create_file(filename, subtrees)) != 0)
         return rc;
 
     TE_SPRINTF(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
@@ -2202,6 +2214,81 @@ subtrees_str2vec(const char *str, te_vec *vec, unsigned int subtrees_num)
     return rc;
 }
 
+static te_errno
+get_path_to_xslt_filter(te_string *path)
+{
+    char *dir_name = NULL;
+
+    dir_name = getenv("TE_INSTALL");
+    if (dir_name == NULL)
+    {
+        ERROR("Failed to get TE_INSTALL");
+        return TE_ENOENT;
+    }
+
+    return te_string_append(path, "%s/default/share/xsl/%s", dir_name,
+                            CONF_SUBTREE_BACKUP_FILTER_NAME);
+}
+
+/**
+ * Filter the backup file by the specified subtree and
+ * save the result
+ *
+ * @param current_backup Backup file
+ * @param subtree        Vector of subtrees for which to filter the backup file
+ * @param target_backup  OUT: Result file name
+ *
+ * @return Status code
+ */
+static te_errno
+filter_backup_by_subtrees(const char *current_backup, const te_vec *subtrees,
+                          te_string *target_backup)
+{
+    te_string filter_cmd = TE_STRING_INIT;
+    te_string xslt_file = TE_STRING_INIT;
+    te_string filter_filename = TE_STRING_INIT;
+    te_errno rc;
+
+    if (subtrees == NULL || te_vec_size(subtrees) == 0)
+        return te_string_append(target_backup, "%s", current_backup);
+
+    rc = te_string_append(&filter_filename, CONF_FILTERS_FILE_NAME,
+                          tmp_dir, getpid(), get_time_ms());
+    if (rc != 0)
+        goto out;
+
+    rc = cfg_backup_create_filter_file(filter_filename.ptr, subtrees);
+    if (rc != 0)
+        goto out;
+
+    rc = te_string_append(target_backup, CONF_SUBTREE_BACKUP_NAME,
+                          tmp_dir, getpid(), get_time_ms());
+    if (rc != 0)
+        goto out;
+
+    rc = get_path_to_xslt_filter(&xslt_file);
+    if (rc != 0)
+        goto out;
+
+    rc = te_string_append(&filter_cmd,
+                          "xsltproc --stringparam filters %s %s %s > %s",
+                          filter_filename.ptr, xslt_file.ptr,
+                          current_backup, target_backup->ptr);
+    if (rc != 0)
+        goto out;
+
+    rc = system(filter_cmd.ptr);
+    if (rc != 0)
+        ERROR("Failed to extract subtrees from the backup file");
+
+out:
+    te_string_free(&filter_cmd);
+    te_string_free(&xslt_file);
+    te_string_free(&filter_filename);
+
+    return rc;
+}
+
 /**
  * Process backup user request.
  *
@@ -2278,7 +2365,7 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
 
                     msg->rc = verify_backup(backup_filename, FALSE,
                                             "Restoring backup from history "
-                                            "failed:");
+                                            "failed:", NULL);
                     if (msg->rc == 0)
                     {
                         rcf_log_cfg_changes(FALSE);
@@ -2305,23 +2392,41 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
         case CFG_BACKUP_VERIFY:
         {
             te_errno rc;
+            te_string backup = TE_STRING_INIT;
+
+            /*
+             * If subtrees is NULL @p backup string will contain
+             * filename specified by the user
+             */
+            rc = filter_backup_by_subtrees(backup_filename, &subtrees_vec,
+                                           &backup);
+            if (rc != 0)
+            {
+                ERROR("Backup verification failed: %r", rc);
+                msg->rc = rc;
+                te_string_free(&backup);
+                break;
+            }
 
             rc = check_agents();
             if (rc != 0){
                 ERROR("Backup verification failed: %r", rc);
                 msg->rc = rc;
+                te_string_free(&backup);
                 break;
             }
 
-            msg->rc = verify_backup(backup_filename, TRUE, NULL);
+            msg->rc = verify_backup(backup.ptr, TRUE, NULL, &subtrees_vec);
             if (msg->rc != 0)
             {
                 cfg_ta_sync("/:", TRUE);
-                msg->rc = verify_backup(backup_filename, TRUE, NULL);
+                msg->rc = verify_backup(backup.ptr, TRUE, NULL, &subtrees_vec);
             }
 
             if (msg->rc == 0 && release_dh)
                 cfg_dh_release_after(backup_filename);
+
+            te_string_free(&backup);
 
             break;
         }

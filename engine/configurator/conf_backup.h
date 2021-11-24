@@ -55,6 +55,17 @@ extern int cfg_backup_restore_ta(char *ta);
 extern int cfg_backup_create_file(const char *filename,
                                   const te_vec *subtrees);
 
+/**
+ * Create file XML file with subtrees to filter backup file
+ *
+ * @param filename Name of the filter file
+ * @param subtrees Vector of the subtrees
+ *
+ * @return Status code
+ */
+extern te_errno cfg_backup_create_filter_file(const char *filename,
+                                              const te_vec *subtrees);
+
 #ifdef __cplusplus
 }
 #endif

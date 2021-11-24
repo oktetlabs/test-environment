@@ -49,3 +49,8 @@ executable('te_cs_shutdown', 'conf_shutdown.c', install: true,
            c_args: c_args,
            dependencies: [ dep_lib_confapi, dep_lib_logger_ten,
                            dep_lib_ipc, dep_lib_tools, dep_lib_logger_core ])
+
+install_data(
+    'subtree_backup.xsl',
+    install_dir: join_paths(get_option('datadir'), 'xsl'),
+)
