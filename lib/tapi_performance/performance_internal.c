@@ -11,6 +11,8 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */
+#define TE_LGR_USER     "TAPI performance"
+
 #include "te_config.h"
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
