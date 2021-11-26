@@ -21,6 +21,7 @@
 #include "log_bufs.h"
 #include "rpcc_dpdk.h"
 #include "tapi_test_log.h"
+#include "rpc_dpdk_defs.h"
 
 #include "tarpc.h"
 
@@ -34,12 +35,6 @@ tarpc_rte_pktmbuf_ol_flags2str(te_log_buf *tlbp, uint64_t ol_flags)
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_VLAN),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_RSS_HASH),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_FDIR),
-        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_IP_CKSUM_BAD),
-        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_IP_CKSUM_GOOD),
-        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_IP_CKSUM_NONE),
-        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_L4_CKSUM_BAD),
-        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_L4_CKSUM_GOOD),
-        TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_L4_CKSUM_NONE),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_OUTER_IP_CKSUM_BAD),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_OVERSIZE),
         TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR(RX_HBUF_OVERFLOW),
@@ -76,7 +71,31 @@ tarpc_rte_pktmbuf_ol_flags2str(te_log_buf *tlbp, uint64_t ol_flags)
         { 0, NULL }
     };
 
-    return te_bit_mask2log_buf(tlbp, ol_flags, ol_flags2str);
+    const struct te_log_buf_flag2str ol_csum_flags2str[] = {
+#define TARPC_RTE_PKTMBUF_PKT_MASK_OL_FLAGS2STR(_flag, _mask) \
+        { TARPC_RTE_MBUF_F_##_flag, TARPC_RTE_MBUF_F_##_mask, #_flag }
+
+        TARPC_RTE_PKTMBUF_PKT_MASK_OL_FLAGS2STR(RX_IP_CKSUM_UNKNOWN,
+                                                RX_IP_CKSUM_MASK),
+        TARPC_RTE_PKTMBUF_PKT_MASK_OL_FLAGS2STR(RX_IP_CKSUM_BAD,
+                                                RX_IP_CKSUM_MASK),
+        TARPC_RTE_PKTMBUF_PKT_MASK_OL_FLAGS2STR(RX_IP_CKSUM_GOOD,
+                                                RX_IP_CKSUM_MASK),
+        TARPC_RTE_PKTMBUF_PKT_MASK_OL_FLAGS2STR(RX_IP_CKSUM_NONE,
+                                                RX_IP_CKSUM_MASK),
+        TARPC_RTE_PKTMBUF_PKT_MASK_OL_FLAGS2STR(RX_L4_CKSUM_UNKNOWN,
+                                                RX_L4_CKSUM_MASK),
+        TARPC_RTE_PKTMBUF_PKT_MASK_OL_FLAGS2STR(RX_L4_CKSUM_BAD,
+                                                RX_L4_CKSUM_MASK),
+        TARPC_RTE_PKTMBUF_PKT_MASK_OL_FLAGS2STR(RX_L4_CKSUM_GOOD,
+                                                RX_L4_CKSUM_MASK),
+        TARPC_RTE_PKTMBUF_PKT_MASK_OL_FLAGS2STR(RX_L4_CKSUM_NONE,
+                                                RX_L4_CKSUM_MASK),
+        { 0, 0, NULL }
+    };
+
+    return te_extended_bit_mask2log_buf(tlbp, ol_flags, ol_flags2str,
+                                        ol_csum_flags2str);
 }
 
 static const char *

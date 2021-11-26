@@ -23,6 +23,7 @@
 
 #include "rpc_server.h"
 #include "rpcs_dpdk.h"
+#include "rpc_dpdk_defs.h"
 #include "te_errno.h"
 
 static uint64_t
@@ -30,35 +31,38 @@ tarpc_rte_pktmbuf_ol_flags2rpc(uint64_t rte)
 {
     uint64_t    rpc = 0;
 
-#define RTE_PKTMBUF_OL_FLAGS2RPC(_bit) \
-    do {                                                            \
-        uint64_t flag = _bit;                                       \
-                                                                    \
-        if ((rte & flag) && ((rte & flag) == flag))                 \
-        {                                                           \
-            rte &= ~flag;                                           \
-            rpc |= (1UL << TARPC_##_bit);                           \
-        }                                                           \
+#define RTE_PKTMBUF_MASK_OL_FLAGS2RPC(_rte_mask, _rte_value, _rpc_value) \
+    do {                                                                 \
+        if ((rte & _rte_mask) == _rte_value)                             \
+        {                                                                \
+            rte &= ~_rte_value;                                          \
+            rpc |= _rpc_value;                                           \
+        }                                                                \
     } while (0)
+
+#define RTE_PKTMBUF_OL_FLAGS2RPC(_bit) \
+    RTE_PKTMBUF_MASK_OL_FLAGS2RPC(_bit, _bit, (UINT64_C(1) << TARPC_##_bit))
+#define RTE_PKTMBUF_IP_CKSUM_OL_FLAGS2RPC(_rte_value)                      \
+    RTE_PKTMBUF_MASK_OL_FLAGS2RPC(RTE_MBUF_F_RX_IP_CKSUM_MASK, _rte_value, \
+                                  TARPC_##_rte_value)
+#define RTE_PKTMBUF_L4_CKSUM_OL_FLAGS2RPC(_rte_value)                      \
+    RTE_PKTMBUF_MASK_OL_FLAGS2RPC(RTE_MBUF_F_RX_L4_CKSUM_MASK, _rte_value, \
+                                  TARPC_##_rte_value)
 
     RTE_PKTMBUF_OL_FLAGS2RPC(RTE_MBUF_F_RX_VLAN);
     RTE_PKTMBUF_OL_FLAGS2RPC(RTE_MBUF_F_RX_VLAN_STRIPPED);
     RTE_PKTMBUF_OL_FLAGS2RPC(RTE_MBUF_F_RX_RSS_HASH);
     RTE_PKTMBUF_OL_FLAGS2RPC(RTE_MBUF_F_RX_FDIR);
 
-    RTE_PKTMBUF_OL_FLAGS2RPC(RTE_MBUF_F_RX_IP_CKSUM_NONE);
-    if (~rpc & (1UL << TARPC_RTE_MBUF_F_RX_IP_CKSUM_NONE))
-    {
-        RTE_PKTMBUF_OL_FLAGS2RPC(RTE_MBUF_F_RX_IP_CKSUM_BAD);
-        RTE_PKTMBUF_OL_FLAGS2RPC(RTE_MBUF_F_RX_IP_CKSUM_GOOD);
-    }
+    RTE_PKTMBUF_IP_CKSUM_OL_FLAGS2RPC(RTE_MBUF_F_RX_IP_CKSUM_UNKNOWN);
+    RTE_PKTMBUF_IP_CKSUM_OL_FLAGS2RPC(RTE_MBUF_F_RX_IP_CKSUM_BAD);
+    RTE_PKTMBUF_IP_CKSUM_OL_FLAGS2RPC(RTE_MBUF_F_RX_IP_CKSUM_GOOD);
+    RTE_PKTMBUF_IP_CKSUM_OL_FLAGS2RPC(RTE_MBUF_F_RX_IP_CKSUM_NONE);
 
-    RTE_PKTMBUF_OL_FLAGS2RPC(RTE_MBUF_F_RX_L4_CKSUM_NONE);
-    if (~rpc & (1UL << TARPC_RTE_MBUF_F_RX_L4_CKSUM_NONE))
-    {
-        RTE_PKTMBUF_OL_FLAGS2RPC(RTE_MBUF_F_RX_L4_CKSUM_BAD);
-        RTE_PKTMBUF_OL_FLAGS2RPC(RTE_MBUF_F_RX_L4_CKSUM_GOOD);
-    }
+    RTE_PKTMBUF_L4_CKSUM_OL_FLAGS2RPC(RTE_MBUF_F_RX_L4_CKSUM_UNKNOWN);
+    RTE_PKTMBUF_L4_CKSUM_OL_FLAGS2RPC(RTE_MBUF_F_RX_L4_CKSUM_BAD);
+    RTE_PKTMBUF_L4_CKSUM_OL_FLAGS2RPC(RTE_MBUF_F_RX_L4_CKSUM_GOOD);
+    RTE_PKTMBUF_L4_CKSUM_OL_FLAGS2RPC(RTE_MBUF_F_RX_L4_CKSUM_NONE);
 
     RTE_PKTMBUF_OL_FLAGS2RPC(RTE_MBUF_F_RX_OUTER_IP_CKSUM_BAD);
     RTE_PKTMBUF_OL_FLAGS2RPC(RTE_MBUF_F_RX_IEEE1588_PTP);
@@ -104,35 +108,39 @@ tarpc_rte_pktmbuf_ol_flags2rte(uint64_t rpc, uint64_t *rte)
 {
     uint64_t    rte_tmp = 0;
 
-#define RTE_PKTMBUF_OL_FLAGS2RTE(_bit) \
-    do {                                                            \
-        uint64_t flag = (1UL << TARPC_##_bit);                      \
-                                                                    \
-        if (rpc & flag)                                             \
-        {                                                           \
-            rpc &= ~flag;                                           \
-            rte_tmp |= _bit;                                        \
-        }                                                           \
+#define RTE_PKTMBUF_MASK_OL_FLAGS2RTE( _rpc_mask, _rpc_value, _rte_flag)  \
+    do {                                                                  \
+        if ((rpc & _rpc_mask) == _rpc_value)                              \
+        {                                                                 \
+            rpc &= ~_rpc_value;                                           \
+            rte_tmp |= _rte_flag;                                         \
+        }                                                                 \
     } while (0)
+
+#define RTE_PKTMBUF_OL_FLAGS2RTE(_bit)                           \
+    RTE_PKTMBUF_MASK_OL_FLAGS2RTE((UINT64_C(1) << TARPC_##_bit), \
+                                  (UINT64_C(1) << TARPC_##_bit), _bit)
+#define RTE_PKTMBUF_IP_CKSUM_OL_FLAGS2RTE(_rte_flag)                 \
+    RTE_PKTMBUF_MASK_OL_FLAGS2RTE(TARPC_RTE_MBUF_F_RX_IP_CKSUM_MASK, \
+                                  TARPC_##_rte_flag, _rte_flag)
+#define RTE_PKTMBUF_L4_CKSUM_OL_FLAGS2RTE(_rte_flag)                 \
+    RTE_PKTMBUF_MASK_OL_FLAGS2RTE(TARPC_RTE_MBUF_F_RX_L4_CKSUM_MASK, \
+                                  TARPC_##_rte_flag, _rte_flag)
 
     RTE_PKTMBUF_OL_FLAGS2RTE(RTE_MBUF_F_RX_VLAN);
     RTE_PKTMBUF_OL_FLAGS2RTE(RTE_MBUF_F_RX_VLAN_STRIPPED);
     RTE_PKTMBUF_OL_FLAGS2RTE(RTE_MBUF_F_RX_RSS_HASH);
     RTE_PKTMBUF_OL_FLAGS2RTE(RTE_MBUF_F_RX_FDIR);
 
-    RTE_PKTMBUF_OL_FLAGS2RTE(RTE_MBUF_F_RX_IP_CKSUM_NONE);
-    if (~rte_tmp & RTE_MBUF_F_RX_IP_CKSUM_NONE)
-    {
-        RTE_PKTMBUF_OL_FLAGS2RTE(RTE_MBUF_F_RX_IP_CKSUM_BAD);
-        RTE_PKTMBUF_OL_FLAGS2RTE(RTE_MBUF_F_RX_IP_CKSUM_GOOD);
-    }
+    RTE_PKTMBUF_IP_CKSUM_OL_FLAGS2RTE(RTE_MBUF_F_RX_IP_CKSUM_UNKNOWN);
+    RTE_PKTMBUF_IP_CKSUM_OL_FLAGS2RTE(RTE_MBUF_F_RX_IP_CKSUM_NONE);
+    RTE_PKTMBUF_IP_CKSUM_OL_FLAGS2RTE(RTE_MBUF_F_RX_IP_CKSUM_BAD);
+    RTE_PKTMBUF_IP_CKSUM_OL_FLAGS2RTE(RTE_MBUF_F_RX_IP_CKSUM_GOOD);
 
-    RTE_PKTMBUF_OL_FLAGS2RTE(RTE_MBUF_F_RX_L4_CKSUM_NONE);
-    if (~rte_tmp & RTE_MBUF_F_RX_L4_CKSUM_NONE)
-    {
-        RTE_PKTMBUF_OL_FLAGS2RTE(RTE_MBUF_F_RX_L4_CKSUM_BAD);
-        RTE_PKTMBUF_OL_FLAGS2RTE(RTE_MBUF_F_RX_L4_CKSUM_GOOD);
-    }
+    RTE_PKTMBUF_L4_CKSUM_OL_FLAGS2RTE(RTE_MBUF_F_RX_L4_CKSUM_UNKNOWN);
+    RTE_PKTMBUF_L4_CKSUM_OL_FLAGS2RTE(RTE_MBUF_F_RX_L4_CKSUM_NONE);
+    RTE_PKTMBUF_L4_CKSUM_OL_FLAGS2RTE(RTE_MBUF_F_RX_L4_CKSUM_BAD);
+    RTE_PKTMBUF_L4_CKSUM_OL_FLAGS2RTE(RTE_MBUF_F_RX_L4_CKSUM_GOOD);
 
     RTE_PKTMBUF_OL_FLAGS2RTE(RTE_MBUF_F_RX_OUTER_IP_CKSUM_BAD);
     RTE_PKTMBUF_OL_FLAGS2RTE(RTE_MBUF_F_RX_IEEE1588_PTP);
