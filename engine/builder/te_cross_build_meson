@@ -115,7 +115,9 @@ make_workspace() {
         if test -d build ; then
             rsync_to "${p}" build "${ws}"
         else
-            te_eval_or_ssh "${p}" "rm -rf \"${ws}\"/build"
+            # Remove also destdir to make sure there will be no artifacts
+            # from the previous build
+            te_eval_or_ssh "${p}" "cd \"${ws}\" && rm -fr build destdir"
         fi
     fi
 
