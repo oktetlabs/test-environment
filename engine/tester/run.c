@@ -2096,6 +2096,40 @@ tester_test_status_to_te_test_result(tester_test_status status,
     }
 }
 
+static int
+run_test_fallback_redir_to_rw(int fdin, te_bool *close_fdin)
+{
+    char buf[TESTER_STR_BULK];
+    ssize_t rcnt;
+    ssize_t wcnt;
+    ssize_t wleft;
+
+    rcnt = read(STDIN_FILENO, buf, TESTER_STR_BULK);
+    if (rcnt < 0)
+    {
+        ERROR("%s(): read failed: %s", __FUNCTION__, strerror(errno));
+        return -errno;
+    }
+    *close_fdin = rcnt == 0;
+
+    for (wleft = rcnt; wleft > 0; wleft -= wcnt)
+    {
+        wcnt = write(fdin, buf + rcnt - wleft, wleft);
+        if (wcnt < 0)
+        {
+            ERROR("%s(): write failed: %s", __FUNCTION__, strerror(errno));
+            return -errno;
+        }
+        else if (wcnt == 0)
+        {
+            ERROR("%s(): write returns 0 bytes - return to avoid infinite loop",
+                  __FUNCTION__);
+            return -EIO;
+        }
+    }
+
+    return 0;
+}
 
 /**
  * Run test script in provided context with specified parameters.
@@ -2242,6 +2276,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     {
         struct pollfd pfd[2];
         int           fdin;
+        te_bool       redir_via_rw = FALSE;
 
         /* Initialize as INCOMPLETE before processing */
         *status = TESTER_TEST_INCOMPLETE;
@@ -2280,13 +2315,35 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
 
             if ((pfd[0].revents & POLLIN) == POLLIN)
             {
-                ret = splice(STDIN_FILENO, NULL, fdin, NULL,
-                             TESTER_STR_BULK, 0);
-                if (ret < 0)
+                if (!redir_via_rw)
                 {
-                    ERROR("Failed to redirect stdin to test using splice(): %s",
-                          strerror(errno));
-                    break;
+                    ret = splice(STDIN_FILENO, NULL, fdin, NULL,
+                                 TESTER_STR_BULK, 0);
+                    if (ret < 0)
+                    {
+                        /*
+                         * Splice works when at least one descriptor refers to
+                         * pipe and another is of file type supporting splicing.
+                         * The later is not the case for Jenkins that redirects
+                         * stdin from /dev/null.
+                         */
+                        redir_via_rw = errno == EINVAL;
+                        if (!redir_via_rw)
+                        {
+                            ERROR("Failed to redirect stdin to test using"
+                                  " splice(): %s", strerror(errno));
+                            break;
+                        }
+                    }
+                }
+
+                if (redir_via_rw)
+                {
+                    te_bool close_fdin;
+
+                    ret = run_test_fallback_redir_to_rw(fdin, &close_fdin);
+                    if (ret < 0 || close_fdin)
+                        break;
                 }
             }
             if (pfd[0].revents != POLLIN || pfd[1].revents != 0)
