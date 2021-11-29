@@ -407,6 +407,33 @@ te_substring_limit(te_substring_t *substr, const te_substring_t *limit)
     substr->len = limit->start - substr->start;
 }
 
+static te_errno
+replace_substring(te_substring_t *substr, const char *new,
+                  const char *old)
+{
+    te_errno rc;
+
+    te_substring_find(substr, old);
+
+    if (!te_substring_is_valid(substr))
+        return 0;
+
+    rc = te_substring_replace(substr, new);
+    if (rc != 0)
+        ERROR("Failed to replace '%s' to '%s'", new, old);
+
+    return rc;
+}
+
+te_errno
+te_string_replace_substring(te_string *str, const char *new,
+                            const char *old)
+{
+    te_substring_t iter = TE_SUBSTRING_INIT(str);
+
+    return replace_substring(&iter, new, old);
+}
+
 te_errno
 te_string_replace_all_substrings(te_string *str, const char *new,
                                  const char *old)
@@ -416,17 +443,12 @@ te_string_replace_all_substrings(te_string *str, const char *new,
 
     while (1)
     {
-        te_substring_find(&iter, old);
+        rc = replace_substring(&iter, new, old);
+        if (rc != 0)
+            break;
 
         if (!te_substring_is_valid(&iter))
             break;
-
-        rc = te_substring_replace(&iter, new);
-        if (rc != 0)
-        {
-            ERROR("Failed to replace '%s' to '%s'", new, old);
-            break;
-        }
     }
 
     return rc;

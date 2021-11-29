@@ -379,6 +379,18 @@ extern te_errno te_string_replace_all_substrings(te_string *str,
                                                  const char *new,
                                                  const char *old);
 
+/**
+ * Replace the substring in a string
+ *
+ * @param src The string in which to replace.
+ * @param new The new substring to replace.
+ * @param old The substring to be replaced.
+ *
+ * @return Status code
+ */
+extern te_errno te_string_replace_substring(te_string *str,
+                                            const char *new,
+                                            const char *old);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
