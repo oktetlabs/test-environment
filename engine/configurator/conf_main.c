@@ -59,6 +59,8 @@ static const char *cs_sniff_cfg_file = NULL;  /**< Configuration file name
 /** Configurator global flags */
 static unsigned int cs_flags = 0;
 
+static te_bool cs_inconsistency_state = FALSE;
+
 static void process_backup(cfg_backup_msg *msg);
 static te_errno create_backup(char **bkp_filename);
 static te_errno process_backup_op(const char *name, uint8_t op);
@@ -139,6 +141,13 @@ parse_kvpair(cfg_process_history_msg *msg, te_kvpair_h *expand_vars)
     }
 
     return 0;
+}
+
+static void
+set_inconsistency_state(void)
+{
+    ERROR("Configurator is in inconsistent state");
+    cs_inconsistency_state = TRUE;
 }
 
 /**
@@ -1074,6 +1083,44 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     msg->handle = handle;
 }
 
+static te_errno
+process_set_error_after_send(cfg_handle handle, const char *ta,
+                             cfg_inst_val old_val)
+{
+    char *val_str = NULL;
+    te_errno rc;
+
+    cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
+    rc = cfg_types[CFG_GET_INST(handle)->obj->type].val2str(old_val, &val_str);
+    if (rc != 0)
+    {
+        ERROR("Failed to convert value to the string representation: %r", rc);
+        set_inconsistency_state();
+        goto out;
+    }
+
+    rc = cfg_db_set(handle, old_val);
+    if (rc != 0)
+    {
+        ERROR("Failed to set value for %s to %s into local DB: %r",
+               CFG_GET_INST(handle)->oid, val_str, rc);
+        set_inconsistency_state();
+        goto out;
+    }
+
+    rc = rcf_ta_cfg_set(ta, 0, CFG_GET_INST(handle)->oid, val_str);
+    if (rc != 0)
+    {
+        ERROR("Failed to set the value for %s to %s: %r",
+              CFG_GET_INST(handle)->oid, val_str, rc);
+        set_inconsistency_state();
+    }
+
+out:
+    free(val_str);
+    return rc;
+}
+
 /**
  * Process set user request.
  *
@@ -1214,6 +1261,26 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         if (update_dh)
             cfg_dh_delete_last_command();
         cfg_db_set(handle, old_val);
+        cfg_ta_sync_dependants(CFG_GET_INST(handle));
+        cfg_conf_delay_update(CFG_GET_INST(handle)->oid);
+        goto cleanup;
+    }
+
+    /* FIXME: do sync for objects with substitution enabled only. */
+    msg->rc = cfg_ta_sync(CFG_GET_INST(handle)->oid, TRUE);
+    if (msg->rc != 0)
+    {
+        te_errno rc;
+
+        ERROR("Failed to synchronize subtree %s: %r",
+              CFG_GET_INST(handle)->oid, msg->rc);
+        if (update_dh)
+            cfg_dh_delete_last_command();
+        rc = process_set_error_after_send(handle, inst->name, old_val);
+        if (rc != 0)
+            ERROR("Failed to rollback the latest changes: %r", rc);
+
+        goto cleanup;
     }
 
     cfg_ta_sync_dependants(CFG_GET_INST(handle));
@@ -2778,9 +2845,16 @@ main(int argc, char **argv)
             continue;
         }
 
-        msg->rc = 0;
-
-        cfg_process_msg(&msg, TRUE);
+        if (cs_inconsistency_state && msg->type != CFG_SHUTDOWN)
+        {
+            ERROR("Configurator is in inconsistent state");
+            msg->rc = TE_RC(TE_CS, TE_EFAULT);
+        }
+        else
+        {
+            msg->rc = 0;
+            cfg_process_msg(&msg, TRUE);
+        }
 
         rc = ipc_send_answer(server, user, (char *)msg, msg->len);
         if (rc != 0)
