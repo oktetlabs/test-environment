@@ -94,7 +94,7 @@ te_ta_signature_local()
                 sed -n "s/.*Linux \([0-9\.]*\).*/\1/p"`
             ;;
 
-        * ) echo "$GCC_TARGET" ;;
+        * ) ;;
     esac
 
     local SEPARATOR=""
