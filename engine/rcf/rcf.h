@@ -68,15 +68,18 @@ enum {
     RCF_SID_UNUSED,
 };
 
+typedef struct ta ta;
+typedef struct usrreq usrreq;
+
 /** One request from the user */
-typedef struct usrreq {
+struct usrreq {
     struct usrreq            *next;
     struct usrreq            *prev;
     rcf_msg                  *message;
     struct ipc_server_client *user;
     uint32_t                  timeout;  /**< Timeout in seconds */
     time_t                    sent;
-} usrreq;
+};
 
 /** A description for a task/thread to be executed at TA startup */
 typedef struct ta_initial_task {
@@ -176,7 +179,7 @@ typedef struct ta_reboot_context {
 } ta_reboot_context;
 
 /** Structure for one Test Agent */
-typedef struct ta {
+struct ta {
     struct ta          *next;               /**< Link to the next TA */
     rcf_talib_handle    handle;             /**< Test Agent handle returted
                                                  by start() method */
@@ -215,7 +218,7 @@ typedef struct ta {
     struct rcf_talib_methods m; /**< TA-specific Methods */
 
     ta_reboot_context reboot_ctx; /**< Reboot context */
-} ta;
+};
 
 /**
  * TA check initiator data.
