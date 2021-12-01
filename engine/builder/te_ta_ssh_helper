@@ -247,6 +247,56 @@ te_ta_detect_type_with_signature() {
     fi
 }
 
+#######################################
+# Pick TA type builder for a test agent.
+# If dedicated build host is already specified for the agent,
+# do not override it.
+#
+# Globals:
+#   TE_TA_BUILDERS
+#   ${builder} from ${TE_TA_BUILDERS} list
+#   ${builder}_BUILD
+#   ${builder}_SSH_KEY
+#   ${builder}_SSH_PORT
+#   ${builder}_SSH_PROXY
+#   ${builder}_SSH_USER
+#   ${builder}_TA_TYPE
+#   ${ta}_BUILD
+#   ${ta}_BUILD_HOST
+#   ${ta}_BUILD_SSH_KEY
+#   ${ta}_BUILD_SSH_PORT
+#   ${ta}_BUILD_SSH_PROXY
+#   ${ta}_BUILD_SSH_USER
+#   ${ta}_TA_TYPE
+#
+# Arguments:
+#   ta - Test agent alias name (e.g. TE_IUT)
+#######################################
+te_ta_pick_builder() {
+    local ta="$1"; shift
+
+    local ta_type="${ta}_TA_TYPE"
+    local ta_build_host="${ta}_BUILD_HOST"
+    local builder
+
+    test -n "${!ta_build_host}" && return
+
+    for builder in ${TE_TA_BUILDERS} ; do
+        local builder_type="${builder}_TA_TYPE"
+
+        test "${!ta_type}" != "${!builder_type}" && continue
+
+        maybe_export "${ta}_BUILD" "${builder}_BUILD"
+
+        rewrite_export "${ta_build_host}"       "${builder}"
+        rewrite_export "${ta}_BUILD_SSH_KEY"    "${builder}_SSH_KEY"
+        rewrite_export "${ta}_BUILD_SSH_PORT"   "${builder}_SSH_PORT"
+        rewrite_export "${ta}_BUILD_SSH_PROXY"  "${builder}_SSH_PROXY"
+        rewrite_export "${ta}_BUILD_SSH_USER"   "${builder}_SSH_USER"
+        break
+    done
+}
+
 
 #######################################
 # Add signature to the list of TA types
@@ -284,6 +334,25 @@ te_ta_list_detect_type_with_signature() {
 }
 
 #######################################
+# Pick TA type builders for a list of test agents.
+#
+# Globals:
+#   see te_ta_pick_builder()
+#
+# Arguments:
+#   List of test agent alias names (e.g. TE_IUT TE_TST1 TE_TST2)
+#######################################
+te_ta_list_pick_builder() {
+    local ta
+
+    te_ta_list_detect_type_with_signature ${TE_TA_BUILDERS}
+
+    for ta in $(te_ta_list_get_used $*) ; do
+        te_ta_pick_builder "${ta}"
+    done
+}
+
+#######################################
 # Export dst equal src value if p src has a value and dst does not.
 #
 # Globals:
@@ -299,6 +368,21 @@ maybe_export() {
     local src="$1"; shift
 
     test -n "${!dst}" -o -z "${!src}" || export "${dst}"="${!src}"
+}
+
+#######################################
+# Export dst equal src value. It can rewrite dst value!
+#
+# Arguments:
+#   dst - Destination variable name
+#   src - Source variable name
+#######################################
+rewrite_export() {
+    local dst="$1"; shift
+    local src="$1"; shift
+
+    # Do not export value if it is not changed. Just to avoid exporting empties
+    test "${!dst}" = "${!src}" || export "${dst}"="${!src}"
 }
 
 #######################################
