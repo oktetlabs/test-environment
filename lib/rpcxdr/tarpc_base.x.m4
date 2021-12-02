@@ -3244,6 +3244,21 @@ struct tarpc_sysv_signal_out {
     string handler<>;  /**< Name of the old signal handler function */
 };
 
+/* __sysv_signal() */
+
+struct tarpc___sysv_signal_in {
+    struct tarpc_in_arg common;
+
+    tarpc_signum    signum;     /**< Signal */
+    string          handler<>;  /**< Name of the signal handler function */
+};
+
+struct tarpc___sysv_signal_out {
+    struct tarpc_out_arg    common;
+
+    string handler<>;  /**< Name of the old signal handler function */
+};
+
 /* siginterrupt() */
 struct tarpc_siginterrupt_in {
     struct tarpc_in_arg     common;
@@ -5807,6 +5822,7 @@ program tarpc
         RPC_DEF(bsd_signal)
         RPC_DEF(siginterrupt)
         RPC_DEF(sysv_signal)
+        RPC_DEF(__sysv_signal)
         RPC_DEF(sigaction)
         RPC_DEF(sigaltstack)
         RPC_DEF(kill)

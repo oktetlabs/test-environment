@@ -223,6 +223,53 @@ rpc_sysv_signal(rcf_rpc_server *rpcs,
     return res;
 }
 
+char *
+rpc___sysv_signal(rcf_rpc_server *rpcs,
+                  rpc_signum signum, const char *handler)
+{
+    tarpc___sysv_signal_in  in;
+    tarpc___sysv_signal_out out;
+
+    char *res = NULL;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): invalid RPC server handle", __FUNCTION__);
+        RETVAL_PTR(__sysv_signal, NULL);
+    }
+
+    in.signum = signum;
+    in.handler = strdup(handler == NULL ? "" : handler);
+
+    if (in.handler == NULL)
+    {
+        ERROR("%s(): out of memory", __FUNCTION__);
+        rpcs->_errno = TE_ENOMEM;
+        RETVAL_PTR(__sysv_signal, NULL);
+    }
+
+    rcf_rpc_call(rpcs, "__sysv_signal", &in, &out);
+    free(in.handler);
+
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        res = out.handler;
+        out.handler = NULL;
+    }
+
+    CHECK_RETVAL_VAR_ERR_COND(__sysv_signal, res, FALSE,
+                              res, SIGNAL_RETVAL_IS_ERR(res));
+
+    TAPI_RPC_LOG(rpcs, __sysv_signal, "%s, %s", "%s", signum_rpc2str(signum),
+                 (handler != NULL ? handler : "(null)"),
+                 (res != NULL ? res : "(null)"));
+    TAPI_RPC_OUT(__sysv_signal, SIGNAL_RETVAL_IS_ERR(res));
+    return res;
+}
+
 int
 rpc_kill(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_signum signum)
 {
