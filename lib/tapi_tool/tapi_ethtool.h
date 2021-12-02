@@ -10,6 +10,8 @@
  * WARNING: do not use this TAPI unless you really need to check
  * ethtool application itself. Normally configuration tree should
  * be used to read and change network interface settings.
+ * It is strictly prohibited to use this TAPI for changing
+ * configuration.
  *
  * Copyright (C) 2021 OKTET Labs. All rights reserved.
  *
