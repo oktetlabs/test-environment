@@ -104,6 +104,13 @@ struct te_log_buf_bit2str {
     const char     *str;
 };
 
+/** Mapping of the flag within mask to string */
+struct te_log_buf_flag2str {
+    uint64_t        flag;
+    uint64_t        mask;
+    const char     *str;
+};
+
 /**
  * Append bit mask converted to string to log buffer.
  *
@@ -119,6 +126,25 @@ struct te_log_buf_bit2str {
 extern const char *te_bit_mask2log_buf(te_log_buf *buf,
                                        unsigned long long bit_mask,
                                        const struct te_log_buf_bit2str *map);
+
+/**
+ * Append extended bit mask converted to string to log buffer.
+ *
+ * Pipe '|' is used as a separator.
+ *
+ * @param buf       Pointer to the buffer
+ * @param bit_mask  Bit mask
+ * @param bm        Bit to string map terminated by the element with #NULL
+ *                  string
+ * @param fm        Flag within some mask to string map terminated by the
+ *                  element with #NULL string
+ *
+ * @return te_log_buf_get() value.
+ */
+extern const char *te_extended_bit_mask2log_buf(te_log_buf *buf,
+                                        unsigned long long bit_mask,
+                                        const struct te_log_buf_bit2str *bm,
+                                        const struct te_log_buf_flag2str *fm);
 
 /**
  * Put ether address to log buffer.

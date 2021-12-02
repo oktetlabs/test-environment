@@ -191,28 +191,77 @@ te_log_buf_free(te_log_buf *buf)
 }
 
 const char *
-te_bit_mask2log_buf(te_log_buf *buf, unsigned long long bit_mask,
-                    const struct te_log_buf_bit2str *map)
+te_bit_mask_or_flag2log_buf(te_log_buf *buf, unsigned long long bit_mask,
+                            const struct te_log_buf_bit2str *bit_map,
+                            const struct te_log_buf_flag2str *flag_map,
+                            unsigned long long *left_bit_mask,
+                            te_bool append_left, te_bool *added_out)
 {
     unsigned int        i;
-    unsigned long long  mask;
     te_bool             added = FALSE;
+    te_bool             append;
+    uint64_t            bit_or_flag;
+    const char         *str;
 
     VALIDATE_LOG_BUF(buf);
 
-    for (i = 0; map[i].str != NULL; ++i)
+    for (i = 0; (str = bit_map != NULL ? bit_map[i].str : flag_map[i].str)
+                != NULL; ++i)
     {
-        mask = (1ull << map[i].bit);
-        if ((bit_mask & mask) != 0)
+        if (bit_map != NULL)
         {
-            te_log_buf_append(buf, "%s%s", added ? "|" : "", map[i].str);
+            bit_or_flag = (UINT64_C(1) << bit_map[i].bit);
+            append = (bit_mask & bit_or_flag) != 0;
+        }
+        else
+        {
+            bit_or_flag = flag_map[i].flag;
+            append = (bit_mask & flag_map[i].mask) == bit_or_flag;
+        }
+
+        if (append)
+        {
+            te_log_buf_append(buf, "%s%s", added ? "|" : "", str);
             added = TRUE;
-            bit_mask &= ~mask;
+            bit_mask &= ~bit_or_flag;
         }
     }
 
-    if (bit_mask != 0)
+    if (bit_mask != 0 && append_left)
         te_log_buf_append(buf, "%s%#llx", added ? "|" : "", bit_mask);
+
+    if (left_bit_mask != NULL)
+        *left_bit_mask = bit_mask;
+
+    if (added_out != NULL)
+        *added_out = added;
+
+    return te_log_buf_get(buf);
+}
+
+const char *
+te_bit_mask2log_buf(te_log_buf *buf, unsigned long long bit_mask,
+                    const struct te_log_buf_bit2str *map)
+{
+    return te_bit_mask_or_flag2log_buf(buf, bit_mask, map, NULL, NULL, TRUE,
+           NULL);
+}
+
+const char *
+te_extended_bit_mask2log_buf(te_log_buf *buf, unsigned long long bit_mask,
+                             const struct te_log_buf_bit2str *bm,
+                             const struct te_log_buf_flag2str *fm)
+{
+    unsigned long long left;
+    te_bool added;
+
+    te_bit_mask_or_flag2log_buf(buf, bit_mask, bm, NULL, &left, FALSE, &added);
+    if (added)
+        te_log_buf_append(buf, "|");
+    te_bit_mask_or_flag2log_buf(buf, left, NULL, fm, &left, FALSE,
+                                added ? NULL : &added);
+    if (left != 0)
+        te_log_buf_append(buf, "%s%#llx", added ? "|" : "", left);
 
     return te_log_buf_get(buf);
 }
