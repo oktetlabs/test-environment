@@ -717,7 +717,7 @@ do {                                                            \
         if (strlen(parser->mode) == 0 ||
             strcmp(parser->mode, "exclusive") == 0)
         {
-            sprintf(tmp, "fuser -s %s", parser->mode);
+            sprintf(tmp, "fuser -s %s", parser->c_name);
             if (func_system(tmp) == 0)
             {
                 pthread_mutex_unlock(&parser->mutex);
