@@ -517,7 +517,7 @@ parser_data_processing(serial_parser_t *parser, char *buffer)
     }
 
     if (parser->logging == TRUE)
-        TE_LOG(parser->level, TE_LGR_ENTITY, parser->c_name, "%s", buffer);
+        TE_LOG(parser->level, TE_LGR_ENTITY, parser->log_user, "%s", buffer);
 
     if (pthread_mutex_unlock(&parser->mutex) != 0)
     {
@@ -614,8 +614,6 @@ te_serial_parser(serial_parser_t *parser)
     time_t  now;
     time_t  last_alive = 0;
     te_bool rcf;
-    char    user[TE_SERIAL_MAX_NAME + 1];
-    char   *puser;
 
 #define MAYBE_DO_LOG \
 do {                                                            \
@@ -642,7 +640,8 @@ do {                                                            \
         if ((*buffer != '\0' && incomp_str_count >= 10) || rest_len == 0) \
         {                                                       \
             if (rcf)                                            \
-                LGR_MESSAGE(TE_LL_WARN, user, "%s", buffer);    \
+                LGR_MESSAGE(TE_LL_WARN, parser->log_user,       \
+                            "%s", buffer);                      \
             else                                                \
                 parser_data_processing(parser, buffer);         \
             incomp_str_count = 0;                               \
@@ -670,13 +669,6 @@ do {                                                            \
     interval = parser->interval;
     rcf = parser->rcf;
 
-    /*
-     * Extract the console name from serial console name
-     * (e.g. conserver:port:user:console) as "log user name".
-     */
-    puser = strrchr(parser->c_name, ':');
-    te_strlcpy(user, puser != NULL ? puser + 1 : parser->c_name, sizeof(user));
-
     if (strncmp(parser->c_name, NETCONSOLE_PREF,
                 strlen(NETCONSOLE_PREF)) == 0)
     {
@@ -703,11 +695,35 @@ do {                                                            \
     }
     else if (*parser->c_name != '/')
     {
+
         if (parser->port >= 0)
+        {
+            /* c_name is just a console name */
+            if (strlen(parser->log_user) == 0)
+            {
+                te_strlcpy(parser->log_user, parser->c_name,
+                           TE_SERIAL_MAX_NAME);
+            }
             snprintf(tmp, RCF_MAX_PATH, "%d:%s:%s", parser->port,
                      parser->user, parser->c_name);
+        }
         else
+        {
+            if (strlen(parser->log_user) == 0)
+            {
+                char   *puser;
+
+                /*
+                 * Extract the console name from serial console
+                 * configuration (e.g. conserver:port:user:console)
+                 * as "log user name" and use it as a log user.
+                 */
+                puser = strrchr(parser->c_name, ':');
+                if (puser != NULL)
+                    te_strlcpy(parser->log_user, puser + 1, TE_SERIAL_MAX_NAME);
+            }
             te_strlcpy(tmp, parser->c_name, RCF_MAX_PATH);
+        }
         pthread_mutex_unlock(&parser->mutex);
         if ((poller.fd = te_open_conserver(tmp)) < 0)
             return TE_OS_RC(TE_TA_UNIX, errno);
@@ -755,6 +771,10 @@ do {                                                            \
         }
         pthread_mutex_unlock(&parser->mutex);
     }
+
+    /* If log user is not specified/detected yet */
+    if (strlen(parser->log_user) == 0)
+        te_strlcpy(parser->log_user, parser->name, TE_SERIAL_MAX_NAME);
 
     current = buffer;
     *current = '\0';

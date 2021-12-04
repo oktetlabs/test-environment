@@ -446,8 +446,6 @@ parser_common_set(unsigned int gid, const char *oid, char *value,
 
     if (strstr(oid, "/port:") != NULL)
         parser->port= atoi(value);
-    else if (strstr(oid, "/user:") != NULL)
-        snprintf(parser->user, TE_SERIAL_MAX_NAME, "%s", value);
     else if (strstr(oid, "/mode:") != NULL)
         snprintf(parser->mode, TE_SERIAL_MAX_NAME, "%s", value);
     else if (strstr(oid, "/interval:") != NULL)
@@ -465,10 +463,16 @@ parser_common_set(unsigned int gid, const char *oid, char *value,
             if (parser->level == 0)
                 parser->level = TE_LL_WARN;
         }
+        else if (strstr(oid, "/user:") != NULL)
+        {
+            snprintf(parser->log_user, TE_SERIAL_MAX_NAME, "%s", value);
+        }
         else
             parser->logging = atoi(value) == 0 ? FALSE : TRUE;
         TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
     }
+    else if (strstr(oid, "/user:") != NULL)
+        snprintf(parser->user, TE_SERIAL_MAX_NAME, "%s", value);
     else
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -507,8 +511,6 @@ parser_common_get(unsigned int gid, const char *oid, char *value,
         snprintf(value, RCF_MAX_VAL, "%d", parser->enable);
     else if (strstr(oid, "/port:") != NULL)
         snprintf(value, RCF_MAX_VAL, "%d", parser->port);
-    else if (strstr(oid, "/user:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%s", parser->user);
     else if (strstr(oid, "/interval:") != NULL)
         snprintf(value, RCF_MAX_VAL, "%d", parser->interval);
     else if (strstr(oid, "/reset:") != NULL)
@@ -519,9 +521,13 @@ parser_common_get(unsigned int gid, const char *oid, char *value,
     {
         if (strstr(oid, "/level:") != NULL)
             snprintf(value, RCF_MAX_VAL, "%d", parser->level);
+        else if (strstr(oid, "/user:") != NULL)
+            snprintf(value, RCF_MAX_VAL, "%s", parser->log_user);
         else
             snprintf(value, RCF_MAX_VAL, "%d", parser->logging);
     }
+    else if (strstr(oid, "/user:") != NULL)
+        snprintf(value, RCF_MAX_VAL, "%s", parser->user);
     else
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -1080,7 +1086,10 @@ static rcf_pch_cfg_object serial_event =
      (rcf_ch_cfg_add)parser_event_add, (rcf_ch_cfg_del)parser_event_del,
      (rcf_ch_cfg_list)parser_event_list, NULL, NULL };
 
-RCF_PCH_CFG_NODE_RW(serial_log_level, "level", NULL, NULL,
+RCF_PCH_CFG_NODE_RW(serial_log_user, "user", NULL, NULL,
+                    parser_common_get, parser_common_set);
+
+RCF_PCH_CFG_NODE_RW(serial_log_level, "level", NULL, &serial_log_user,
                     parser_common_get, parser_common_set);
 
 RCF_PCH_CFG_NODE_RW(serial_logging, "logging", &serial_log_level, 

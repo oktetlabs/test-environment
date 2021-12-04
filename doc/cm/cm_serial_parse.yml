@@ -186,3 +186,12 @@
          The Logger level of messages that will be logged
          Name:  empty
          Value: Name of the Logger level
+
+    - oid: "/agent/parser/logging/user"
+      access: read_write
+      type: string
+      d: |
+         The Logger user of messages that will be logged
+         Name:  empty
+         Value: String, unspecified by default.
+                If unspecified, parser name is used.

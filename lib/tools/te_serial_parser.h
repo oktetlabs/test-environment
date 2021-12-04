@@ -70,6 +70,7 @@ typedef struct serial_parser_t {
     te_bool logging;                    /**< Enable logging from console
                                              to the main log */
     int     level;                      /**< Message level for logging */
+    char    log_user[TE_SERIAL_MAX_NAME + 1];   /**< Logger user name */
     te_bool rcf;                        /**< Launched via RCF */
 
     pthread_t                     thread;     /**< Thread identifier */
