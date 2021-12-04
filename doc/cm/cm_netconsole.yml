@@ -1,0 +1,18 @@
+---
+
+- comment: |
+    Linux netconsole configuration support.
+
+    Copyright (C) 2021 OKTET Labs.
+
+    Author: Andrew Rybchenko E-mail: andrew.rybchenko@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/netconsole"
+      access: read_create
+      type: string
+      d: |
+        Enable netconsole.
+        Value format is '<local-port>:<remote-host>:<remote-port>'.
+        Name: Arbitrary name. Used just to identify the instance.

@@ -28,6 +28,7 @@ cm_files = files(
     'cm_module.yml',
     'cm_namespace.yml',
     'cm_net.yml',
+    'cm_netconsole.yml',
     'cm_nginx.yml',
     'cm_ntpd.yml',
     'cm_openvpn.yml',
