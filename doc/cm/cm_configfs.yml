@@ -1,0 +1,17 @@
+---
+
+- comment: |
+    Linux configfs control tree.
+
+    Copyright (C) 2021 OKTET Labs.
+
+    Author: Andrew Rybchenko E-mail: andrew.rybchenko@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/configfs"
+      access: read_create
+      type: none
+      d: |
+        Mount Linux configfs.
+        Name: Arbitrary name. Used just to identify the instance.
