@@ -517,7 +517,7 @@ parser_data_processing(serial_parser_t *parser, char *buffer)
     }
 
     if (parser->logging == TRUE)
-        LGR_MESSAGE(parser->level, parser->c_name, "%s", buffer);
+        TE_LOG(parser->level, TE_LGR_ENTITY, parser->c_name, "%s", buffer);
 
     if (pthread_mutex_unlock(&parser->mutex) != 0)
     {
