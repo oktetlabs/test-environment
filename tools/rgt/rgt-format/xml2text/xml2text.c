@@ -823,7 +823,6 @@ RGT_DEF_FUNC(proc_log_msg_end)
 {
     gen_ctx_user_t *user_ctx = (gen_ctx_user_t *)(ctx->user_data);
     FILE *fd = user_ctx->fd;
-    rgt_attrs_t *attrs;
 
     RGT_FUNC_UNUSED_PRMS();
 
