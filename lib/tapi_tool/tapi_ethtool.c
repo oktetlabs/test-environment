@@ -46,7 +46,7 @@ typedef struct pause_filters {
 } pause_filters;
 
 /** Main structure describing ethtool command */
-struct tapi_ethtool_app {
+typedef struct tapi_ethtool_app {
     tapi_ethtool_cmd cmd; /**< Ethtool command */
 
     tapi_job_t *job; /**< Job handle */
@@ -60,7 +60,7 @@ struct tapi_ethtool_app {
                                               line by line */
         pause_filters pause; /**< Filters for pause parameters */
     } out_filters; /**< Filters for parsing stdout */
-};
+} tapi_ethtool_app;
 
 static te_errno fill_cmd_arg(const void *value, te_vec *args);
 
@@ -270,11 +270,19 @@ attach_filters(tapi_ethtool_app *app)
     }
 }
 
-/* See description in tapi_ethtool.h */
-te_errno
-tapi_ethtool_create(tapi_job_factory_t *factory,
-                    const tapi_ethtool_opt *opt,
-                    tapi_ethtool_app **app)
+/**
+ * Create a job to run ethtool application.
+ *
+ * @param factory       Job factory
+ * @param opt           Ethtool options
+ * @param app           Where to save pointer to application structure
+ *
+ * @return Status code.
+ */
+static te_errno
+create_app(tapi_job_factory_t *factory,
+           const tapi_ethtool_opt *opt,
+           tapi_ethtool_app **app)
 {
     tapi_ethtool_app *result = NULL;
     te_vec ethtool_args = TE_VEC_INIT(char *);
@@ -350,69 +358,6 @@ out:
     }
 
     return rc;
-}
-
-/* See description in tapi_ethtool.h */
-te_errno
-tapi_ethtool_start(tapi_ethtool_app *app)
-{
-    return tapi_job_start(app->job);
-}
-
-/* See description in tapi_ethtool.h */
-te_errno
-tapi_ethtool_wait(tapi_ethtool_app *app, int timeout_ms)
-{
-    te_errno rc;
-    tapi_job_status_t status;
-
-    rc = tapi_job_wait(app->job, timeout_ms, &status);
-    if (rc != 0)
-        return rc;
-
-    TAPI_JOB_CHECK_STATUS(status);
-
-    return 0;
-}
-
-/* See description in tapi_ethtool.h */
-te_errno
-tapi_ethtool_kill(tapi_ethtool_app *app, int signum)
-{
-    return tapi_job_kill(app->job, signum);
-}
-
-/* See description in tapi_ethtool.h */
-te_errno
-tapi_ethtool_stop(tapi_ethtool_app *app)
-{
-    return tapi_job_stop(app->job, SIGINT, TAPI_ETHTOOL_TERM_TIMEOUT_MS);
-}
-
-/* See description in tapi_ethtool.h */
-te_errno
-tapi_ethtool_destroy(tapi_ethtool_app *app)
-{
-    te_errno rc;
-
-    if (app == NULL)
-        return 0;
-
-    rc = tapi_job_destroy(app->job, TAPI_ETHTOOL_TERM_TIMEOUT_MS);
-    if (rc != 0)
-        ERROR("Failed to destroy ethtool job");
-
-    free(app);
-
-    return rc;
-}
-
-/* See description in tapi_ethtool.h */
-te_errno
-tapi_ethtool_check_stderr(tapi_ethtool_app *app)
-{
-    return tapi_job_filters_have_data(TAPI_JOB_CHANNEL_SET(app->err_filter),
-                                      0);
 }
 
 /**
@@ -580,12 +525,25 @@ get_pause(tapi_ethtool_app *app, tapi_ethtool_pause *pause)
                             &pause->tx);
 }
 
-/* See description in tapi_ethtool.h */
-te_errno
-tapi_ethtool_get_report(tapi_ethtool_app *app,
-                        tapi_ethtool_report *report)
+/**
+ * Get data parsed from ethtool output.
+ *
+ * @param app       Pointer to application structure
+ * @param report    Where to save parsed data
+ *
+ * @return Status code.
+ */
+static te_errno
+get_report(tapi_ethtool_app *app,
+           tapi_ethtool_report *report)
 {
-    switch (app->cmd)
+    tapi_ethtool_destroy_report(report);
+
+    report->cmd = app->cmd;
+    report->err_out = tapi_job_filters_have_data(
+                          TAPI_JOB_CHANNEL_SET(app->err_filter), 0);
+
+    switch (report->cmd)
     {
         case TAPI_ETHTOOL_CMD_NONE:
             return get_if_props(app, &report->data.if_props);
@@ -601,8 +559,50 @@ tapi_ethtool_get_report(tapi_ethtool_app *app,
                   __FUNCTION__);
             return TE_RC(TE_TAPI, TE_ENOENT);
     }
+}
 
-    report->cmd = app->cmd;
+/* See description in tapi_ethtool.h */
+te_errno
+tapi_ethtool(tapi_job_factory_t *factory,
+             const tapi_ethtool_opt *opt,
+             tapi_ethtool_report *report)
+{
+    te_errno rc;
+    te_errno rc_aux;
+    tapi_ethtool_app *app = NULL;
+    tapi_job_status_t status;
+
+    rc = create_app(factory, opt, &app);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_job_start(app->job);
+    if (rc != 0)
+        goto out;
+
+    rc = tapi_job_wait(app->job, TAPI_ETHTOOL_TERM_TIMEOUT_MS,
+                       &status);
+    if (rc != 0)
+        goto out;
+
+    if (status.type != TAPI_JOB_STATUS_EXITED ||
+        status.value != 0)
+    {
+        rc = TE_RC(TE_TAPI, TE_ESHCMD);
+        goto out;
+    }
+
+    if (report != NULL)
+        rc = get_report(app, report);
+
+out:
+
+    rc_aux = tapi_job_destroy(app->job, TAPI_ETHTOOL_TERM_TIMEOUT_MS);
+    if (rc == 0)
+        rc = rc_aux;
+
+    free(app);
+    return rc;
 }
 
 /* See description in tapi_ethtool.h */

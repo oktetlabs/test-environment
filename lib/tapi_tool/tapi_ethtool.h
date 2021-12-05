@@ -50,9 +50,6 @@ typedef struct tapi_ethtool_opt {
 /** Default options initializer */
 extern const tapi_ethtool_opt tapi_ethtool_default_opt;
 
-/** Main structure describing ethtool command */
-typedef struct tapi_ethtool_app tapi_ethtool_app;
-
 /** Interface properties parsed in case of @c TAPI_ETHTOOL_CMD_NONE */
 typedef struct tapi_ethtool_if_props {
     te_bool link;     /**< Link status */
@@ -70,6 +67,9 @@ typedef struct tapi_ethtool_pause {
 typedef struct tapi_ethtool_report {
     tapi_ethtool_cmd cmd; /**< Ethtool command */
 
+    te_bool err_out;       /**< @c TRUE if something was printed to
+                                stderr */
+
     union {
         tapi_ethtool_if_props if_props; /**< Interface properties printed
                                              when no command is supplied */
@@ -82,83 +82,18 @@ typedef struct tapi_ethtool_report {
 extern const tapi_ethtool_report tapi_ethtool_default_report;
 
 /**
- * Create a job to run ethtool application.
+ * Run ethtool command, parse its output if required.
  *
  * @param factory       Job factory
- * @param opt           Ethtool options
- * @param app           Where to save pointer to application structure
+ * @param opt           Ethtool command options
+ * @param report        If not @c NULL, parsed data from output will be
+ *                      saved here
  *
  * @return Status code.
  */
-extern te_errno tapi_ethtool_create(tapi_job_factory_t *factory,
-                                    const tapi_ethtool_opt *opt,
-                                    tapi_ethtool_app **app);
-
-/**
- * Start ethtool application.
- *
- * @param app       Pointer to application structure
- *
- * @return Status code.
- */
-extern te_errno tapi_ethtool_start(tapi_ethtool_app *app);
-
-/**
- * Wait for termination of ethtool application.
- *
- * @param app           Pointer to application structure
- * @param timeout_ms    Timeout (negative means tapi_job_get_timeout())
- *
- * @return Status code.
- */
-extern te_errno tapi_ethtool_wait(tapi_ethtool_app *app, int timeout_ms);
-
-/**
- * Send a signal to ethtool application.
- *
- * @param app       Pointer to application structure
- *
- * @return Status code.
- */
-extern te_errno tapi_ethtool_kill(tapi_ethtool_app *app, int signum);
-
-/**
- * Stop ethtool application.
- *
- * @param app       Pointer to application structure
- *
- * @return Status code.
- */
-extern te_errno tapi_ethtool_stop(tapi_ethtool_app *app);
-
-/**
- * Release resources allocated for ethtool application.
- *
- * @param app       Pointer to application structure
- *
- * @return Status code.
- */
-extern te_errno tapi_ethtool_destroy(tapi_ethtool_app *app);
-
-/**
- * Check whether something was printed to stderr.
- *
- * @param app       Pointer to application structure
- *
- * @return @c TRUE if something was printed, @c FALSE otherwise.
- */
-extern te_errno tapi_ethtool_check_stderr(tapi_ethtool_app *app);
-
-/**
- * Get data parsed from ethtool output.
- *
- * @param app       Pointer to application structure
- * @param report    Where to save parsed data
- *
- * @return Status code.
- */
-extern te_errno tapi_ethtool_get_report(tapi_ethtool_app *app,
-                                        tapi_ethtool_report *report);
+extern te_errno tapi_ethtool(tapi_job_factory_t *factory,
+                             const tapi_ethtool_opt *opt,
+                             tapi_ethtool_report *report);
 
 /**
  * Get a single statistic from parsed ethtool output.
