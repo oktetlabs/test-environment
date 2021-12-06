@@ -817,8 +817,10 @@ ta_handler(void *ta)
 #endif
             p_buf += sizeof(te_log_id);
 
-            /* Add TA name and corresponding NFL to the message */
-            LGR_NFL_PUT(ta_name_len, p_buf);
+            /* Add TA name with @ prefix and corresponding NFL to the message */
+            LGR_NFL_PUT(ta_name_len + 1, p_buf);
+            p_buf[0] = '@';
+            p_buf++;
             memcpy(p_buf, inst->agent, ta_name_len);
             p_buf += ta_name_len;
 
