@@ -3511,9 +3511,9 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
     fprintf(f, trc_html_doc_start_part1,
             ((title != NULL) ? title : title_string.ptr));
 
-    fprintf(f, trc_html_css_include_start);
+    fprintf(f, "%s", trc_html_css_include_start);
     trc_include_external_html(f, "bootstrap.min.css");
-    fprintf(f, trc_html_css_include_end);
+    fprintf(f, "%s", trc_html_css_include_end);
 
     fprintf(f, trc_html_doc_start_part2
 #if TRC_USE_LOG_URLS

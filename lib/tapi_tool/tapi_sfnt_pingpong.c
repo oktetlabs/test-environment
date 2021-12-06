@@ -135,7 +135,7 @@ create_optional_sizes(const void *value, te_vec *args)
             return rc;
         }
     }
-    rc = te_vec_append_str_fmt(args, tmp.ptr);
+    rc = te_vec_append_str_fmt(args, "%s", tmp.ptr);
     if (rc != 0)
     {
         te_string_free(&tmp);
