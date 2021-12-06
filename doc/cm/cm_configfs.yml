@@ -11,7 +11,9 @@
 
     - oid: "/agent/configfs"
       access: read_create
-      type: none
+      type: string
+      volatile: true
       d: |
         Mount Linux configfs.
         Name: Arbitrary name. Used just to identify the instance.
+        Value: ConfigFS mount point.
