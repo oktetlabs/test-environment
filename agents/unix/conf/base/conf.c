@@ -487,6 +487,11 @@ static const char * const env_hidden[] = {
     "XDG_SESSION_ID",
 };
 
+/** Environment variables with specified prefix hidden in list operation */
+static const char * const env_prefix_hidden[] = {
+    "BASH_FUNC_",
+};
+
 static te_errno uname_get(unsigned int, const char *, char *);
 
 static te_errno ip4_fw_get(unsigned int, const char *, char *);
@@ -7276,6 +7281,14 @@ env_is_hidden(const char *name, int name_len)
     {
         if (strncmp(env_hidden[i], name,
                     (name_len < 0) ? strlen(name) : (size_t)name_len) == 0)
+            return TRUE;
+    }
+    for (i = 0; i < sizeof(env_prefix_hidden) / sizeof(env_prefix_hidden[0]);
+         ++i)
+    {
+        if ((name_len < 0 || name_len >= strlen(env_prefix_hidden[i])) &&
+            strncmp(env_prefix_hidden[i], name,
+                    strlen(env_prefix_hidden[i])) == 0)
             return TRUE;
     }
     return FALSE;
