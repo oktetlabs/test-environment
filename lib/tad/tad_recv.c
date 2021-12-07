@@ -1035,7 +1035,8 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
         return rc;
     }
 
-    if (ptrn_data->cur_unit == ptrn_data->n_units)
+    if ((csap->state & CSAP_STATE_RECV_SEQ_MATCH) &&
+        ptrn_data->cur_unit == ptrn_data->n_units)
     {
         F_VERB(CSAP_LOG_FMT "The matching of pattern sequence is finished",
                CSAP_LOG_ARGS(csap), unit, rc);
@@ -1057,6 +1058,10 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
 
                 if (csap->state & CSAP_STATE_RECV_SEQ_MATCH)
                     ptrn_data->cur_unit++;
+                else
+                    /* Let this packet know what unit it matched */
+                    ptrn_data->cur_unit = unit;
+
                 /*@fallthrough@*/
 
             case TE_ETADLESSDATA:
