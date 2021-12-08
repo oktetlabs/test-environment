@@ -83,6 +83,7 @@ cfg_register_dependency(xmlNodePtr node, const char *dependant)
         }
         free(msg);
         xmlFree(oid);
+        xmlFree(scope);
     }
     return rc;
 }
