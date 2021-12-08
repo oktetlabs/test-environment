@@ -898,9 +898,12 @@ tad_recv_match_payload(tad_payload_spec_t *pattern, const tad_pkt *payload)
  * Try match binary data with Traffic-Pattern-Unit and prepare ASN value
  * with packet if it satisfies to the pattern unit.
  *
- * @param csap          CSAP instance
- * @param unit_data     Unit data prepared during preprocessing
- * @param meta_pkt      Receiver meta packet
+ * @param csap                  CSAP instance
+ * @param unit_data             Unit data prepared during preprocessing
+ * @param meta_pkt              Receiver meta packet
+ * @param clean_bottom_layer    Shows if mismatch happened on bottom layer
+ *                              (e.g. Ethernet). Caller is responsible for
+ *                              cleanup.
  *
  * @return Status code.
  * @retval 0                Received packet match, meta_pkt is owned and
@@ -913,7 +916,7 @@ tad_recv_match_payload(tad_payload_spec_t *pattern, const tad_pkt *payload)
  */
 static te_errno
 tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
-                         tad_recv_pkt *meta_pkt)
+                         tad_recv_pkt *meta_pkt, te_bool *clean_bottom_layer)
 {
     const asn_value    *pattern_unit = unit_data->nds;
     unsigned int        layer;
@@ -968,7 +971,22 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
                     (void)tad_pkt_get_frag(&meta_pkt->payload, pdu, 0,
                                            tad_pkt_len(pdu),
                                            TAD_PKT_GET_FRAG_ERROR);
-                    tad_pkt_cleanup(pdu);
+                    if (layer == csap->depth - 1)
+                    {
+                        /*
+                         * Don't clean this layer since packet content
+                         * would be lost. It is caller responsibility to do
+                         * it when needed, i.e. matching packet against
+                         * pattern units is over and cleaning is required
+                         * to invalidate Ethernet for mismatch reporting.
+                         */
+                        *clean_bottom_layer = TRUE;
+                    }
+                    else
+                    {
+                        tad_pkt_cleanup(pdu);
+                        *clean_bottom_layer = FALSE;
+                    }
                 }
                 /* FALLTHROUGH */
             default:
@@ -1018,6 +1036,7 @@ static te_errno
 tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
                tad_recv_pkt *meta_pkt, size_t pkt_len, te_bool *no_report)
 {
+    te_bool         clean_bottom_layer = FALSE;
     unsigned int    unit;
     te_errno        rc;
 
@@ -1049,7 +1068,7 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
         tad_recv_pkt_cleanup_upper(csap, meta_pkt);
 
         rc = tad_recv_match_with_unit(csap, ptrn_data->units + unit,
-                                      meta_pkt);
+                                      meta_pkt, &clean_bottom_layer);
         switch (TE_RC_GET_ERROR(rc))
         {
             case 0: /* received data matches to this pattern unit */
@@ -1075,7 +1094,7 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
                        CSAP_LOG_ARGS(csap), unit, rc);
 
                 if (csap->state & CSAP_STATE_RECV_SEQ_MATCH)
-                    return rc;
+                    goto out;
 
                 continue;
 
@@ -1089,6 +1108,14 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
 
     } while (++unit < ptrn_data->n_units);
 
+out:
+    if (rc == TE_ETADNOTMATCH && clean_bottom_layer)
+    {
+        tad_pkt *p;
+
+        p = tad_pkts_first_pkt(&meta_pkt->layers[csap->depth - 1].pkts);
+        tad_pkt_cleanup(p);
+    }
     return rc;
 }
 
