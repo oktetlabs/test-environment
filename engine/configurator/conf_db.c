@@ -1064,6 +1064,7 @@ cfg_db_find_pattern(const char *pattern,
                     cfg_handle **p_matches)
 {
     cfg_handle  *matches = NULL;
+    cfg_handle  *result_matches = NULL;
     int         nof_matches = 0;
     cfg_oid     *idsplit = NULL;
     int         i, k;
@@ -1189,8 +1190,18 @@ cfg_db_find_pattern(const char *pattern,
     }
 
     cfg_free_oid(idsplit);
-    matches = realloc(matches, nof_matches * sizeof(cfg_handle));
-    *p_matches = matches;
+
+    result_matches = realloc(matches, nof_matches * sizeof(cfg_handle));
+    if (result_matches == NULL)
+    {
+        if (nof_matches != 0)
+        {
+            free(matches);
+            return TE_RC(TE_CS, TE_ENOMEM);
+        }
+    }
+
+    *p_matches = result_matches;
     *p_nmatches = nof_matches;
     return 0;
 #undef RETERR
