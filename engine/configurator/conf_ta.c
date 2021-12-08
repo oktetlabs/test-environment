@@ -443,6 +443,7 @@ sync_ta_subtree(const char *ta, const char *oid)
         {
             ERROR("Memory allocation failure");
             rcf_ta_cfg_group(ta, 0, FALSE);
+            free(handles);
             return TE_ENOMEM;
         }
     }
@@ -465,6 +466,7 @@ sync_ta_subtree(const char *ta, const char *oid)
         if ((rc = insert_entry(tmp, &list)) != 0)
         {
             free_list(list);
+            free(handles);
             return rc;
         }
     }
@@ -476,6 +478,7 @@ sync_ta_subtree(const char *ta, const char *oid)
     rcf_ta_cfg_group(ta, 0, FALSE);
 
     free_list(list);
+    free(handles);
 
     return rc;
 }
