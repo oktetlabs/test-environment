@@ -2986,3 +2986,36 @@ rcf_foreach_ta(rcf_ta_cb *cb, void *cookie)
 
     return 0;
 }
+
+te_errno
+rcf_get_dead_agents(te_vec *dead_agents)
+{
+    char agents[RCF_MAX_VAL];
+    size_t len = sizeof(agents);
+    size_t i;
+    te_errno rc;
+
+    rc = rcf_get_ta_list(agents, &len);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < len; i += strlen(&agents[i]) + 1)
+    {
+        rc = rcf_check_agent(&agents[i]);
+        if (rc == 0)
+            continue;
+
+        if (TE_RC_GET_ERROR(rc) == TE_ETADEAD)
+        {
+            rc = te_vec_append_str_fmt(dead_agents, "%s", &agents[i]);
+            if (rc != 0)
+                break;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return rc;
+}

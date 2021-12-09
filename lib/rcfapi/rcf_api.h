@@ -25,6 +25,7 @@
 #include "te_errno.h"
 #include "rcf_common.h"
 #include "tad_common.h"
+#include "te_vector.h"
 
 /** @defgroup rcfapi_base API: RCF
  * @ingroup rcfapi
@@ -1169,6 +1170,15 @@ typedef te_errno rcf_ta_cb(const char *ta, void *cookie);
  * @return Status code.
  */
 extern te_errno rcf_foreach_ta(rcf_ta_cb *cb, void *cookie);
+
+/**
+ * Get vector of the dead agents.
+ *
+ * @param dead_agents Vector of the dead agents
+ *
+ * @return Status code
+ */
+extern te_errno rcf_get_dead_agents(te_vec *dead_agents);
 
 /**@} <!-- END rcfapi_base --> */
 
