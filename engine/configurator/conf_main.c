@@ -2214,7 +2214,7 @@ out:
 }
 
 static te_errno
-check_and_reanimate_agents(void)
+check_and_reanimate_agents(const te_vec *already_dead_agents)
 {
     te_errno rc = 0;
     te_vec dead_agents = TE_VEC_INIT(char *);
@@ -2223,12 +2223,22 @@ check_and_reanimate_agents(void)
     if (rc != 0)
         goto out;
 
-    if (te_vec_size(&dead_agents) == 0)
+    if (te_vec_size(&dead_agents) == 0 && already_dead_agents == NULL)
         return 0;
 
-    rc = reboot_dead_agents(&dead_agents);
-    if (rc != 0)
-        goto out;
+    if (te_vec_size(&dead_agents) != 0)
+    {
+        rc = reboot_dead_agents(&dead_agents);
+        if (rc != 0)
+            goto out;
+    }
+
+    if (already_dead_agents != NULL)
+    {
+        rc = te_vec_append_vec(&dead_agents, already_dead_agents);
+        if (rc != 0)
+            goto out;
+    }
 
     cfg_ta_sync("/:", TRUE);
 
@@ -2295,7 +2305,7 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
         {
             te_string backup = TE_STRING_INIT;
 
-            msg->rc = check_and_reanimate_agents();
+            msg->rc = check_and_reanimate_agents(NULL);
             if (msg->rc != 0)
                 return;
 
@@ -2524,11 +2534,25 @@ process_reboot(cfg_reboot_msg *msg)
 {
     msg->rc = rcf_ta_reboot(msg->ta_name, NULL, NULL,
                             msg->reboot_type);
-
-    if (msg->rc == 0 && msg->restore)
+    if (msg->rc != 0)
     {
-        if ((msg->rc = cfg_backup_restore_ta(msg->ta_name)) != 0)
-            ERROR("Restoring of the TA state after reboot failed");
+        ERROR("Failed to reboot Test Agent %s: %r", msg->ta_name, msg->rc);
+        return;
+    }
+
+    if (msg->restore)
+    {
+        te_vec agents = TE_VEC_INIT(char *);
+
+        msg->rc = te_vec_append_str_fmt(&agents, "%s", msg->ta_name);
+        if (msg->rc != 0)
+            return;
+
+        msg->rc = check_and_reanimate_agents(&agents);
+        if (msg->rc != 0)
+            ERROR("Failed to reanimate agent(s): %r", msg->rc);
+
+        te_vec_free(&agents);
     }
 }
 
