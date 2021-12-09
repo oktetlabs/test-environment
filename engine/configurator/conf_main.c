@@ -2103,6 +2103,144 @@ out:
     return rc;
 }
 
+static te_errno
+delete_rcf_conf_agent(cfg_handle handle)
+{
+    cfg_instance *agent_instance;
+    cfg_handle status_handle;
+    cfg_msg *msg;
+    const size_t msg_size = sizeof(cfg_set_msg) + CFG_OID_MAX;
+    te_errno rc;
+
+    agent_instance = CFG_GET_INST(handle);
+    if (agent_instance == NULL)
+    {
+        ERROR("Failed to get agent instance");
+        return TE_EINVAL;
+    }
+
+    msg = TE_ALLOC(msg_size);
+    if (msg == NULL)
+        return TE_ENOMEM;
+
+    cfg_ipc_mk_find_fmt((cfg_find_msg *)msg, msg_size,
+                        "%s/status:", agent_instance->oid);
+    cfg_process_msg(&msg, FALSE);
+    if (msg->rc != 0)
+    {
+        rc = msg->rc;
+        ERROR("Failed to find %s/status: %r", agent_instance->oid, rc);
+        free(msg);
+        return rc;
+    }
+    status_handle = ((cfg_find_msg *)msg)->handle;
+
+    /*
+     * /rcf/agent API allows to perform some actions with the agent
+     * (including deletion) if the agent is down. Therefore, first we
+     * need to set the status to 0.
+     */
+    cfg_ipc_mk_set_int((cfg_set_msg *)msg, msg_size, status_handle,
+                       FALSE, 0);
+    cfg_process_msg(&msg, FALSE);
+    if (msg->rc != 0)
+    {
+        rc = msg->rc;
+        ERROR("Failed to disable TA %s: %r", agent_instance->oid, rc);
+        free(msg);
+        return rc;
+    }
+
+    cfg_ipc_mk_del((cfg_del_msg *)msg, msg_size, handle, FALSE);
+    cfg_process_msg(&msg, FALSE);
+
+    rc = msg->rc;
+    if (rc != 0)
+        ERROR("Failed to delete instance %s: %r", agent_instance->oid, rc);
+
+    free(msg);
+
+    return rc;
+}
+
+static te_errno
+reboot_dead_agents(const te_vec *dead_agents)
+{
+    te_vec reboot_list = TE_VEC_INIT(char *);
+    char * const *dead_agent;
+    cfg_find_msg *msg = NULL;
+    const size_t msg_size = sizeof(cfg_find_msg) + CFG_OID_MAX;
+    te_errno rc = 0;
+
+    msg = TE_ALLOC(msg_size);
+    if (msg == NULL)
+        goto out;
+
+    TE_VEC_FOREACH(dead_agents, dead_agent)
+    {
+        cfg_ipc_mk_find_fmt(msg, msg_size, "/rcf:/agent:%s",
+                            *dead_agent);
+
+        cfg_process_msg((cfg_msg **)&msg, FALSE);
+        if (TE_RC_GET_ERROR(msg->rc) == TE_ENOENT)
+        {
+            rc = te_vec_append_str_fmt(&reboot_list, "%s", *dead_agent);
+            if (rc != 0)
+                goto out;
+        }
+        else if (msg->rc == 0)
+        {
+            rc = delete_rcf_conf_agent(msg->handle);
+            if (rc != 0)
+                goto out;
+        }
+        else
+        {
+            ERROR("Failed to find /rcf:/agent: instance: %r", msg->rc);
+            goto out;
+        }
+
+        RING("TA '%s' is dead and will be rebooted", *dead_agent);
+    }
+
+    rc = conf_ta_reboot_agents(&reboot_list);
+    if (rc != 0)
+        goto out;
+
+out:
+    te_vec_deep_free(&reboot_list);
+    free(msg);
+    return rc;
+}
+
+static te_errno
+check_and_reanimate_agents(void)
+{
+    te_errno rc = 0;
+    te_vec dead_agents = TE_VEC_INIT(char *);
+
+    rc = rcf_get_dead_agents(&dead_agents);
+    if (rc != 0)
+        goto out;
+
+    if (te_vec_size(&dead_agents) == 0)
+        return 0;
+
+    rc = reboot_dead_agents(&dead_agents);
+    if (rc != 0)
+        goto out;
+
+    cfg_ta_sync("/:", TRUE);
+
+    rc = cfg_dh_restore_agents(&dead_agents);
+    if (rc != 0)
+        goto out;
+
+out:
+    te_vec_deep_free(&dead_agents);
+    return rc;
+}
+
 /**
  * Process backup user request.
  *
@@ -2157,11 +2295,9 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
         {
             te_string backup = TE_STRING_INIT;
 
-            /* Check agents */
-            int rc = rcf_check_agents();
-
-            if (TE_RC_GET_ERROR(rc) == TE_ETAREBOOTED)
-                cfg_ta_sync("/:", TRUE);
+            msg->rc = check_and_reanimate_agents();
+            if (msg->rc != 0)
+                return;
 
             rcf_log_cfg_changes(TRUE);
 

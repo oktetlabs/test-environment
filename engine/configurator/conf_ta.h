@@ -16,6 +16,8 @@
 #ifndef __TE_CONF_TA_H__
 #define __TE_CONF_TA_H__
 
+#include "te_vector.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -143,6 +145,15 @@ if (local_cmd_seq) \
  */
 #define CFG_CHECK_NO_LOCAL_SEQ_BREAK(_cmd, _cfg_msg) \
     CFG_CHECK_NO_LOCAL_SEQ_EXP(_cmd, _cfg_msg, {break;})
+
+/**
+ * Reboot the test agents specified in the vector
+ *
+ * @param agents Vector of the agents
+ *
+ * @return Status code
+ */
+extern te_errno conf_ta_reboot_agents(const te_vec *agents);
 
 #ifdef __cplusplus
 }

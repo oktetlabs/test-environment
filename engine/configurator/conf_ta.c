@@ -978,3 +978,23 @@ cfg_tas_commit(const char *oid)
     EXIT("%r", rc);
     return rc;
 }
+
+te_errno
+conf_ta_reboot_agents(const te_vec *agents)
+{
+    char * const *ta;
+    te_errno rc = 0;
+
+    TE_VEC_FOREACH(agents, ta)
+    {
+        rc = rcf_ta_reboot(*ta, NULL, NULL,
+                           RCF_REBOOT_TYPE_FORCE);
+        if (rc != 0)
+        {
+            ERROR("Failed to reboot TA %s: %r", *ta, rc);
+            break;
+        }
+    }
+
+    return rc;
+}

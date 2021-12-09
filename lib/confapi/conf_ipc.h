@@ -96,6 +96,19 @@ cfg_ipc_mk_set_str(cfg_set_msg *msg, size_t msg_buf_size,
     return cfg_ipc_mk_set(msg, msg_buf_size, handle, local, CVT_STRING, val);
 }
 
+/**
+ * Prepare a cfg_del_instance message.
+ *
+ * @param msg           message buffer
+ * @param msg_buf_size  length of the message buffer
+ * @param handle        object instance handle
+ * @param local         whether the delete is local
+ *
+ * @return Status code (see te_errno.h)
+ */
+extern te_errno cfg_ipc_mk_del(cfg_del_msg *msg, size_t msg_buf_size,
+                               cfg_handle handle, te_bool local);
+
 #ifdef __cplusplus
 }
 #endif

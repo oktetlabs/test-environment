@@ -94,3 +94,19 @@ cfg_ipc_mk_set(cfg_set_msg *msg, size_t msg_buf_size,
 
     return 0;
 }
+
+te_errno
+cfg_ipc_mk_del(cfg_del_msg *msg, size_t msg_buf_size,
+               cfg_handle handle, te_bool local)
+{
+    if (msg_buf_size < sizeof(cfg_get_msg))
+        return TE_RC(TE_CONF_API, TE_ESMALLBUF);
+
+    memset(msg, 0, sizeof(cfg_del_msg));
+    msg->type = CFG_DEL;
+    msg->len = sizeof(cfg_del_msg);
+    msg->local = local;
+    msg->handle = handle;
+
+    return 0;
+}

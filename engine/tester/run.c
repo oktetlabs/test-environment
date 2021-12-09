@@ -2589,7 +2589,8 @@ run_verify_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
     {
         /* Check configuration backup */
         rc = cfg_verify_backup(ctx->backup);
-        if (TE_RC_GET_ERROR(rc) == TE_EBACKUP)
+        if (TE_RC_GET_ERROR(rc) == TE_EBACKUP ||
+            TE_RC_GET_ERROR(rc) == TE_ETADEAD)
         {
             if (track_conf == TESTER_TRACK_CONF_YES ||
                 track_conf == TESTER_TRACK_CONF_YES_NOHISTORY)
