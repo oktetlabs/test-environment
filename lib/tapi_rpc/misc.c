@@ -1981,7 +1981,7 @@ rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
     rc = (out.retval > 0) ? 0 : out.retval;
 
     CHECK_RETVAL_VAR(get_rw_ability, rc, (rc < 0), -1);
-    TAPI_RPC_LOG(rpcs, get_rw_ability, "%d %d %s", "%d", s, timeout,
+    TAPI_RPC_LOG(rpcs, get_rw_ability, "%d, %d ms, %s", "%d", s, timeout,
                  type, out.retval);
     RETVAL_INT(get_rw_ability, rc);
 }
