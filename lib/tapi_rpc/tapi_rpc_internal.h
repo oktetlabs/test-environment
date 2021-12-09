@@ -43,6 +43,7 @@
 #include "tarpc.h"
 #include "tapi_jmp.h"
 #include "tapi_test_run_status.h"
+#include "tapi_test_log.h"
 
 
 /** Extra time in seconds to be added to time2run before RPC timeout */
@@ -103,6 +104,22 @@ do {                                                                    \
 } while (0)
 
 /**
+ * Print verdict before jumping to cleanup from RPC function.
+ *
+ * @param _func     RPC function name
+ * @param _rpcs     RPC server structure
+ */
+#define TAPI_RPC_JUMP_VERDICT(_func, _rpcs) \
+    do {                                                      \
+        if (TEST_BEHAVIOUR(rpc_fail_verdict))                 \
+        {                                                     \
+            ERROR_VERDICT("%s() unexpectedly failed with "    \
+                          "error " RPC_ERROR_FMT,             \
+                          #_func, RPC_ERROR_ARGS(rpcs));      \
+        }                                                     \
+    } while (0)
+
+/**
  * Free memory, check RPC error, jump in the case of RPC error or if
  * @a _res is @c TRUE, set jump condition to default value.
  */
@@ -117,11 +134,13 @@ do {                                                                    \
                 if (rpcs->err_jump)                                     \
                 {                                                       \
                     rpcs->iut_err_jump = TRUE;                          \
+                    TAPI_RPC_JUMP_VERDICT(_func, rpcs);                 \
                     TAPI_JMP_DO(TE_EFAIL);                              \
                 }                                                       \
             }                                                           \
             else if ((_res) && rpcs->iut_err_jump)                      \
             {                                                           \
+                TAPI_RPC_JUMP_VERDICT(_func, rpcs);                     \
                 TAPI_JMP_DO(TE_EFAIL);                                  \
             }                                                           \
             else if (tapi_test_run_status_get() !=                      \

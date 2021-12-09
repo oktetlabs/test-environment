@@ -194,6 +194,8 @@
       value: "${TE_TEST_BEHAVIOUR_PROLOGUE_SLEEP:-0}"
     - oid: "/local:/test:/behaviour:fail_verdict"
       value: "${TE_TEST_BEHAVIOUR_FAIL_VERDICT:-0}"
+    - oid: "/local:/test:/behaviour:rpc_fail_verdict"
+      value: "${TE_TEST_BEHAVIOUR_RPC_FAIL_VERDICT:-0}"
     - oid: "/local:/test:/behaviour:use_chk_funcs"
       value: "${TE_TEST_BEHAVIOUR_USE_CHK_FUNCS:-0}"
     - oid: "/local:/test:/behaviour:iface_toggle_delay_ms"
