@@ -90,8 +90,6 @@ te_ta_signature_local()
 
             local LIBC_VERSION=`$LIBC |
                 sed -n "s/.*version \(\(\.\?[0-9]\+\)*\).*/\1/p;q"`
-            local KERN_HEADERS=`$LIBC |
-                sed -n "s/.*Linux \([0-9\.]*\).*/\1/p"`
             ;;
 
         * ) ;;
@@ -105,9 +103,6 @@ te_ta_signature_local()
                 ;;
             libc-version)
                 echo -n "${SEPARATOR}glibc${LIBC_VERSION}"
-                ;;
-            libc-kernel)
-                echo -n "${SEPARATOR}glibckernel${KERN_HEADERS}"
                 ;;
             header-version)
                 echo -n "${SEPARATOR}header${LINUX_VERSION_CODE}"
