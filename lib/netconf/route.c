@@ -14,6 +14,7 @@
 #include "netconf.h"
 #include "netconf_internal.h"
 #include "te_sockaddr.h"
+#include <sys/ioctl.h>
 
 /**
  * Callback of routes dump.
@@ -533,4 +534,106 @@ netconf_route_modify(netconf_handle nh, netconf_cmd cmd,
 
     /* Send request and receive ACK */
     return netconf_talk(nh, &req, sizeof(req), NULL, NULL, NULL);
+}
+
+netconf_list *
+netconf_route_get_entry_for_addr(netconf_handle nh,
+                                 const struct sockaddr *dst_addr)
+{
+    char                req[NETCONF_MAX_REQ_LEN];
+    struct nlmsghdr    *h;
+    struct rtmsg       *rtm;
+    netconf_list       *list;
+
+    if (nh == NULL)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    if (dst_addr->sa_family != AF_INET)
+    {
+        ERROR("%s(): failed, IPv6 is not supported", __FUNCTION__);
+        errno = ENOTSUP;
+        return NULL;
+    }
+
+    memset(&req, 0, sizeof(req));
+
+    h = (struct nlmsghdr *)req;
+    h->nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
+    h->nlmsg_type = RTM_GETROUTE;
+    h->nlmsg_flags = NLM_F_REQUEST;
+    h->nlmsg_seq = ++nh->seq;
+
+    rtm = NLMSG_DATA(h);
+    rtm->rtm_family = AF_INET;
+    rtm->rtm_dst_len = sizeof(in_addr_t);
+    rtm->rtm_src_len = 0;
+    rtm->rtm_tos = 0;
+    rtm->rtm_table = RT_TABLE_UNSPEC;
+    rtm->rtm_protocol = RTPROT_UNSPEC;
+    rtm->rtm_scope = RT_SCOPE_UNIVERSE;
+    rtm->rtm_type = RTN_UNSPEC;
+    rtm->rtm_flags = RTM_F_LOOKUP_TABLE;
+
+    netconf_append_rta(h, &(SIN(dst_addr)->sin_addr.s_addr),
+                       sizeof(in_addr_t), RTA_DST);
+
+    list = malloc(sizeof(*list));
+    if (list == NULL)
+        return NULL;
+
+    memset(list, 0, sizeof(netconf_list));
+
+    if (netconf_talk(nh, &req, h->nlmsg_len, route_list_cb, NULL, list) != 0)
+    {
+        int err = errno;
+
+        netconf_list_free(list);
+        errno = err;
+        return NULL;
+    }
+
+    return list;
+}
+
+int
+netconf_route_get_src_addr_and_iface(netconf_handle         nh,
+                                     const struct sockaddr  *dst_addr,
+                                     const struct sockaddr  *src_addr,
+                                     char                   *ifname)
+{
+    netconf_list    *l;
+    netconf_route   *route;
+    int             rc;
+
+    l = netconf_route_get_entry_for_addr(nh, dst_addr);
+    if (l == NULL)
+    {
+        ERROR("%s(): failed to get entry in routing table for remote "
+              "IP address", __FUNCTION__);
+        return errno;
+    }
+
+    route = &(l->tail->data.route);
+    if (route->family != AF_INET)
+    {
+        ERROR("%s(): failed, IPv6 is not supported", __FUNCTION__);
+        rc = ENOTSUP;
+        goto out;
+    }
+    SIN(src_addr)->sin_family = route->family;
+    memcpy(&(SIN(src_addr)->sin_addr.s_addr), route->src, sizeof(in_addr_t));
+
+    if (if_indextoname(route->oifindex, ifname) == NULL)
+    {
+        rc = errno;
+        goto out;
+    }
+    rc = 0;
+
+out:
+    netconf_list_free(l);
+    return rc;
 }

@@ -451,6 +451,32 @@ netconf_list *netconf_route_dump(netconf_handle nh,
                                  unsigned char family);
 
 /**
+ * Get list with routing table entry for specified destination address.
+ *
+ * @param nh            Netconf session handle.
+ * @param dst_addr      Destination address, now only IPv4 is supported.
+ *
+ * @return List, or NULL in case of error (check errno for details).
+ */
+netconf_list *netconf_route_get_entry_for_addr(netconf_handle nh,
+                                               const struct sockaddr *dst_addr);
+
+/**
+ * Get source address and interface for specified destination address.
+ *
+ * @param nh           Netconf session handle
+ * @param dst_addr     Destination address
+ * @param src_addr     Source address (OUT)
+ * @param ifname       Source interface. Must be at least IF_NAMESIZE. (OUT)
+ *
+ * @return Status code
+ */
+int netconf_route_get_src_addr_and_iface(netconf_handle         nh,
+                                         const struct sockaddr  *dst_addr,
+                                         const struct sockaddr  *src_addr,
+                                         char                   *ifname);
+
+/**
  * Set default values to fields in rule struct.
  *
  * @param rule          Rule entry struct

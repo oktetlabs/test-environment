@@ -34,6 +34,8 @@
 #include "ta_common.h"
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
+#include "netconf.h"
+#include "conf_netconf.h"
 
 #if HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
@@ -131,20 +133,13 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
 #define IFS_BUF_SIZE 1024
 #define MAX_STR 1024
 #if defined(SIOCGARP) && defined(SIOCGIFCONF)
-    char            local_host_name[HOST_NAME_MAX];
 
     struct sockaddr_in  local_ipv4_addr;
     struct sockaddr_in  remote_ipv4_addr;
-    te_bool             local_ipv4_found = FALSE;
     te_bool             remote_ipv4_found = FALSE;
     int                 rc;
     int                 s = -1;
     struct arpreq       remote_hwaddr_req;
-
-    char            buf[IFS_BUF_SIZE];
-    struct ifconf   ifc;
-    int             i;
-    int             ifs_count;
 
     char    cmdline[MAX_STR];
     int     tmp_err;
@@ -153,21 +148,7 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
     char    remote_ip_str[RCF_MAX_VAL];
     char    remote_hwaddr_str[RCF_MAX_VAL];
 
-    if (gethostname(local_host_name, HOST_NAME_MAX) < 0)
-    {
-        tmp_err = errno;
-        ERROR("%s(): failed to obtain host name", __FUNCTION__);
-        return te_rc_os2te(tmp_err);
-    }
-
-    rc = te_get_host_addrs(local_host_name, &local_ipv4_addr,
-                           &local_ipv4_found, NULL, NULL);
-    if (rc != 0)
-    {
-        ERROR("%s(): failed to obtain addresses of local host",
-              __FUNCTION__);
-        return rc;
-    }
+    char ifname[IF_NAMESIZE];
 
     rc = te_get_host_addrs(remote_host_name, &remote_ipv4_addr,
                            &remote_ipv4_found, NULL, NULL);
@@ -178,11 +159,20 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
         return rc;
     }
 
-    if (!local_ipv4_found || !remote_ipv4_found)
+    if (!remote_ipv4_found)
     {
-        ERROR("%s(): failed to find IPv4 address for local and/or "
-              "remote host", __FUNCTION__);
+        ERROR("%s(): failed to find IPv4 address for remote host",
+              __FUNCTION__);
         return TE_EADDRNOTAVAIL;
+    }
+
+    rc = netconf_route_get_src_addr_and_iface(nh, SA(&remote_ipv4_addr),
+                                              SA(&local_ipv4_addr), ifname);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to get source address and interface, errno '%s'",
+              __FUNCTION__, strerror(rc));
+        return te_rc_os2te(rc);
     }
 
     s = socket(AF_INET, SOCK_DGRAM, 0);
@@ -192,35 +182,6 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
         ERROR("%s(): failed to create datagram socket, errno '%s'",
               __FUNCTION__, strerror(errno));
         return te_rc_os2te(tmp_err);
-    }
-
-    memset(&ifc, 0, sizeof(ifc));
-    ifc.ifc_len = sizeof(buf);
-    ifc.ifc_buf = buf;
-
-    if (ioctl(s, SIOCGIFCONF, &ifc) < 0)
-    {
-        tmp_err = errno;
-        ERROR("%s(): ioctl(SIOCGIFCONF) failed, errno '%s'",
-              __FUNCTION__, strerror(errno));
-        close(s);
-        return te_rc_os2te(tmp_err);
-    }
-
-    ifs_count = ifc.ifc_len / sizeof (struct ifreq);
-
-    for (i = 0; i < ifs_count; i++)
-    {
-        if (memcmp(&ifc.ifc_req[i].ifr_addr, &local_ipv4_addr,
-                   sizeof(local_ipv4_addr)) == 0)
-            break;
-    }
-
-    if (i == ifs_count)
-    {
-        ERROR("%s(): local interface not found", __FUNCTION__); 
-        close(s);
-        return TE_ENOENT;
     }
 
     local_ipv4_addr.sin_port = htons(local_port);
@@ -255,7 +216,7 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
            sizeof(remote_ipv4_addr));
     ((struct sockaddr_in *)&remote_hwaddr_req.arp_pa)->sin_port = 0;
 #ifdef HAVE_STRUCT_ARPREQ_ARP_DEV
-    te_strlcpy(remote_hwaddr_req.arp_dev, ifc.ifc_req[i].ifr_name,
+    te_strlcpy(remote_hwaddr_req.arp_dev, ifname,
                sizeof(remote_hwaddr_req.arp_dev));
 #endif
     ((struct sockaddr_in *)&remote_hwaddr_req.arp_ha)->sin_family =
@@ -315,7 +276,7 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
                  "/sbin/modprobe netconsole netconsole=%d@%s/%s,"
                  "%d@%s/%s",
                  (int)local_port, local_ip_str,
-                 ifc.ifc_req[i].ifr_name, (int)remote_port,
+                 ifname, (int)remote_port,
                  remote_ip_str, remote_hwaddr_str);
 
         if (ta_system("/sbin/modprobe -r netconsole") != 0)
@@ -369,7 +330,7 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
                  "echo %d > remote_port && echo %s > local_ip && "
                  "echo %s > remote_ip && echo %s > remote_mac &&"
                  "echo 1 > enabled || exit 1",
-                 tmp_path, ifc.ifc_req[i].ifr_name, (int)local_port,
+                 tmp_path, ifname, (int)local_port,
                  (int)remote_port, local_ip_str, remote_ip_str,
                  remote_hwaddr_str);
 
