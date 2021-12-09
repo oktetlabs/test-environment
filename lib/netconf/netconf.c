@@ -484,6 +484,9 @@ netconf_talk(netconf_handle nh, void *req, int len,
                     {
                         if (recv_cb(h, list, cookie) != 0)
                             return -1;
+
+                        if (!(h->nlmsg_flags & NLM_F_MULTI))
+                            return 0;
                     }
                     else
                     {
