@@ -84,11 +84,19 @@ te_ta_signature_local()
             fi
             local LIBC=`ldd $TEMP_OUT |
                 sed -n "s/^\s*libc.so.6 => \(.*\)(0x[0-9a-f]*)$/\1/p"`
+            local LD_LINUX=`ldd $TEMP_OUT |
+                sed -n "s/^\s*\(\/.*\/ld-linux.*\)\s(.*)$/\1/p"`
             local LINUX_VERSION_CODE=`$TEMP_OUT`
             rm -f $TEMP_OUT
             rm -f $TEMP_IN
 
-            local LIBC_VERSION=`$LIBC |
+            local LIBC_VERSION
+            if test -x $LIBC; then
+                LIBC_VERSION=`$LIBC | head -n 1`
+            else
+                LIBC_VERSION=`$LD_LINUX --version | head -n 1`
+            fi
+            LIBC_VERSION=`echo $LIBC_VERSION |
                 sed -n "s/.*version \(\(\.\?[0-9]\+\)*\).*/\1/p;q"`
             ;;
 
