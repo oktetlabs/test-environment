@@ -33,131 +33,9 @@
 #include <linux/sockios.h>
 #endif
 
+#include "conf_ethtool.h"
+
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
-
-/**
- * Call @c SIOCETHTOOL ioctl() to get or set interrupt coalescing
- * parameters.
- *
- * @param if_name     Name of the interface
- * @param ecmd        Pointer to ethtool_coalesce structure to pass
- *                    to ioctl()
- * @param do_set      If @c TRUE, use @c ETHTOOL_SCOALESCE command to set
- *                    parameters, otherwise - @c ETHTOOL_GCOALESCE to get
- *                    them
- *
- * @return Status code.
- */
-static te_errno
-ioctl_ethtool_coalesce(const char *if_name, struct ethtool_coalesce *ecmd,
-                       te_bool do_set)
-{
-    struct ifreq ifr;
-    int rc;
-    te_errno te_rc;
-
-    memset(&ifr, 0, sizeof(ifr));
-
-    te_rc = te_snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", if_name);
-    if (te_rc != 0)
-    {
-        ERROR("%s(): te_snprintf() failed", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, te_rc);
-    }
-
-    ecmd->cmd = (do_set ? ETHTOOL_SCOALESCE : ETHTOOL_GCOALESCE);
-    ifr.ifr_data = (caddr_t)ecmd;
-
-    rc = ioctl(cfg_socket, SIOCETHTOOL, &ifr);
-    if (rc < 0)
-    {
-        /*
-         * Avoid extra logs if this command is simply not supported
-         * for a given interface.
-         */
-        if (errno != EOPNOTSUPP)
-        {
-            ERROR("%s(do_set=%s): ioctl() failed", __FUNCTION__,
-                  (do_set ? "TRUE" : "FALSE"));
-        }
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    return 0;
-}
-
-/**
- * Get a pointer to ethtool_coalesce structure to work with.
- * It can be either pointer to locally declared structure
- * (if this is a simple get request), or a pointer to a structure
- * stored in a TA configuration object (if a set request is in
- * progress which is going to be committed later, perhaps together
- * with other set requests which should all operate on the same
- * ethtool_coalesce structure).
- * In the latter case, if there is no such object for the given
- * interface yet, this function creates it and fills the structure
- * stored in it with @c ETHTOOL_GCOALESCE command.
- *
- * @param if_name         Interface name
- * @param gid             Group ID
- * @param ecmd_local      Pointer to locally declared
- *                        ethtool_coalesce structure
- * @param ecmd_out        Here requested pointer will be saved
- * @param do_set          If @c TRUE, it is a set request
- *
- * @return Status code.
- */
-static te_errno
-get_ethtool_coalesce(const char *if_name, unsigned int gid,
-                     struct ethtool_coalesce *ecmd_local,
-                     struct ethtool_coalesce **ecmd_out,
-                     te_bool do_set)
-{
-    ta_cfg_obj_t *obj;
-    te_errno rc;
-
-    obj = ta_obj_find(TA_OBJ_TYPE_IF_COALESCE,
-                      if_name);
-    if (obj != NULL)
-    {
-        *ecmd_out = (struct ethtool_coalesce *)(obj->user_data);
-    }
-    else
-    {
-        memset(ecmd_local, 0, sizeof(*ecmd_local));
-        rc = ioctl_ethtool_coalesce(if_name, ecmd_local, FALSE);
-        if (rc != 0)
-            return rc;
-
-        if (do_set)
-        {
-            *ecmd_out = calloc(sizeof(*ecmd_local), 1);
-            if (*ecmd_out == NULL)
-            {
-                ERROR("%s(): not enough memory", __FUNCTION__);
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-            }
-
-            rc = ta_obj_add(TA_OBJ_TYPE_IF_COALESCE, if_name, "",
-                            gid, *ecmd_out, NULL);
-            if (rc != 0)
-            {
-                ERROR("%s(): failed to add a new object", __FUNCTION__);
-                free(*ecmd_out);
-                *ecmd_out = NULL;
-                return TE_RC(TE_TA_UNIX, rc);
-            }
-
-            memcpy(*ecmd_out, ecmd_local, sizeof(*ecmd_local));
-        }
-        else
-        {
-            *ecmd_out = ecmd_local;
-        }
-    }
-
-    return 0;
-}
 
 /**
  * Get list of supported interrupt coalescing parameters.
@@ -187,7 +65,7 @@ coalesce_param_list(unsigned int gid,
     UNUSED(sub_id);
     UNUSED(coalesce_name);
 
-    rc = ioctl_ethtool_coalesce(if_name, &ecmd, FALSE);
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_GCOALESCE, &ecmd);
     if (rc == TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP))
     {
         *list_out = NULL;
@@ -328,8 +206,8 @@ coalesce_param_get(unsigned int gid,
     UNUSED(oid);
     UNUSED(coalesce_name);
 
-    rc = get_ethtool_coalesce(if_name, gid, &ecmd, &eptr,
-                              FALSE);
+    rc = get_ethtool_value(if_name, gid, ETHTOOL_GCOALESCE,
+                           &ecmd, (void **)&eptr, FALSE);
     if (rc != 0)
         return rc;
 
@@ -377,8 +255,8 @@ coalesce_param_set(unsigned int gid,
     UNUSED(oid);
     UNUSED(coalesce_name);
 
-    rc = get_ethtool_coalesce(if_name, gid, &ecmd, &eptr,
-                              TRUE);
+    rc = get_ethtool_value(if_name, gid, ETHTOOL_GCOALESCE,
+                           &ecmd, (void **)&eptr, TRUE);
     if (rc != 0)
         return rc;
 
@@ -410,30 +288,12 @@ coalesce_param_set(unsigned int gid,
 static te_errno
 if_coalesce_commit(unsigned int gid, const cfg_oid *p_oid)
 {
-    struct ethtool_coalesce *eptr;
     char *if_name;
-    ta_cfg_obj_t *obj;
-    te_errno rc;
 
     UNUSED(gid);
     if_name = CFG_OID_GET_INST_NAME(p_oid, 2);
 
-    obj = ta_obj_find(TA_OBJ_TYPE_IF_COALESCE,
-                      if_name);
-    if (obj == NULL)
-    {
-        ERROR("%s(): coalescing settings object was not found for "
-              "interface '%s'", __FUNCTION__, if_name);
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
-
-    eptr = (struct ethtool_coalesce *)(obj->user_data);
-    rc = ioctl_ethtool_coalesce(if_name, eptr, TRUE);
-
-    free(eptr);
-    ta_obj_free(obj);
-
-    return rc;
+    return commit_ethtool_value(if_name, ETHTOOL_SCOALESCE);
 }
 
 /* Predeclaration */
