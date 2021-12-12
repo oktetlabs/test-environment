@@ -279,6 +279,11 @@ extern void ta_cfg_obj_log(const ta_cfg_obj_t *obj);
  */
 #define TA_OBJ_TYPE_IF_COALESCE "if_coalesce"
 
+/**
+ * Name for the object type of network interface pause parameters
+ */
+#define TA_OBJ_TYPE_IF_PAUSE "if_pause"
+
 /** System-independent route types */
 typedef enum ta_route_type {
     TA_RT_TYPE_UNSPECIFIED,
