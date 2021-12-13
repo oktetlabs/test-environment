@@ -251,9 +251,10 @@ process_tester_proc_info(const log_msg_view *msg)
 static te_errno
 process_trc_tags(const log_msg_view *msg)
 {
-    te_errno     rc;
-    te_string    str = TE_STRING_INIT;
-    json_error_t err;
+    te_errno      rc;
+    te_string     str = TE_STRING_INIT;
+    json_t       *json;
+    json_error_t  err;
 
     rc = te_raw_log_expand(msg, &str);
     if (rc != 0)
@@ -262,14 +263,24 @@ process_trc_tags(const log_msg_view *msg)
         return rc;
     }
 
-    trc_tags = json_loads(str.ptr, 0, &err);
+    json = json_loads(str.ptr, 0, &err);
     te_string_free(&str);
-    if (trc_tags == NULL)
+    if (json == NULL)
     {
         ERROR("Error parsing TRC tags: %s (line %d, column %d)",
               err.text, err.line, err.column);
         return TE_EFAIL;
     }
+
+    trc_tags = json_object_get(json, "tags");
+    if (trc_tags == NULL)
+    {
+        ERROR("Failed to extract TRC tags from MI message");
+        return TE_EFAIL;
+    }
+
+    json_incref(trc_tags);
+    json_decref(json);
 
     return 0;
 }

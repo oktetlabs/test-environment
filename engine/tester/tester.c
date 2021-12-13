@@ -901,6 +901,7 @@ tester_log_trc_tags(const tqh_strings *trc_tags)
     char         *text;
     char         *delim;
     tqe_string   *tag;
+    json_t       *msg;
     json_t       *tags;
     json_t       *tmp;
     json_error_t  err;
@@ -943,8 +944,19 @@ tester_log_trc_tags(const tqh_strings *trc_tags)
         }
     }
 
-    text = json_dumps(tags, JSON_COMPACT);
-    json_decref(tags);
+    msg = json_pack_ex(&err, 0, "{s:s, s:i, s:o}",
+                        "type", "trc_tags",
+                        "version", 1,
+                        "tags", tags);
+    if (msg == NULL)
+    {
+        ERROR("Failed to form TRC tags MI message: %s", err.text);
+        json_decref(tags);
+        return TE_ENOMEM;
+    }
+
+    text = json_dumps(msg, JSON_COMPACT);
+    json_decref(msg);
     if (text == NULL)
     {
         ERROR("Failed to dump TRC tags array into a string");
