@@ -366,16 +366,6 @@ extern te_bool rcf_ta_reboot_before_req(ta *agent, usrreq *req);
 extern te_bool rcf_ta_reboot_on_req_reply(ta *agent, rcf_op_t opcode);
 
 /**
- * Try to initialize the reboot process for the agent
- *
- * @param agent Test Agent structure
- * @param req   User request to report the result of the reboot
- *
- * @return @c TRUE if reboot process is initialized
- */
-extern te_bool rcf_ta_reboot_on_ta_dead(ta *agent, usrreq *req);
-
-/**
  * Initialize reboot context for the TA
  *
  * @param agent Test Agent structure

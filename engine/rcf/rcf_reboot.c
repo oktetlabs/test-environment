@@ -146,22 +146,6 @@ rcf_ta_reboot_on_req_reply(ta *agent, rcf_op_t opcode)
     return FALSE;
 }
 
-te_bool
-rcf_ta_reboot_on_ta_dead(ta *agent, usrreq *req)
-{
-    if (agent->flags & TA_REBOOTABLE)
-    {
-        WARN("TA '%s' is dead, try to reboot...", agent->name);
-        rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_LOG_FLUSH);
-        agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_COLD;
-        agent->reboot_ctx.current_type = TA_REBOOT_TYPE_AGENT;
-        agent->reboot_ctx.req = req;
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
 te_errno
 rcf_ta_reboot_is_reboot_answer(ta *agent, usrreq *req)
 {

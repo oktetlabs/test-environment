@@ -2154,7 +2154,7 @@ rcf_ta_check_all_done(void)
     if (ta_checker.req != NULL && ta_checker.active == 0)
     {
         te_bool     rebooting = FALSE;
-        te_bool     remain_dead = FALSE;
+        te_bool     is_dead = FALSE;
         ta         *agent;
         const char *target = NULL;
 
@@ -2172,9 +2172,9 @@ rcf_ta_check_all_done(void)
                  (agent->flags & TA_UNRECOVER) ? 'U' : '-',
                  (agent->flags & TA_REBOOTING) ? 'R' : '-'
                 );
-            if (agent->flags & TA_UNRECOVER)
+            if (agent->flags & (TA_UNRECOVER | TA_DEAD))
             {
-                remain_dead = TRUE;
+                is_dead = TRUE;
                 continue;
             }
 
@@ -2183,15 +2183,12 @@ rcf_ta_check_all_done(void)
                 rebooting = TRUE;
                 continue;
             }
-
-            if (agent->flags & TA_DEAD)
-                rebooting = rcf_ta_reboot_on_ta_dead(agent, ta_checker.req);
         }
 
         if (!rebooting)
         {
             ta_checker.req->message->error =
-                remain_dead ? TE_ETADEAD : 0;
+                is_dead ? TE_ETADEAD : 0;
 
             rcf_answer_user_request(ta_checker.req);
             ta_checker.req = NULL;
