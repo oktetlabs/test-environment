@@ -211,6 +211,7 @@ process_tester_proc_info(const log_msg_view *msg)
     te_errno      rc;
     te_string     body = TE_STRING_INIT;
     json_t       *json;
+    json_t       *ignored;
     json_error_t  err;
 
     start_ts = msg->ts_sec + msg->ts_usec / 1000000;
@@ -231,7 +232,9 @@ process_tester_proc_info(const log_msg_view *msg)
         return TE_EFAIL;
     }
 
-    ret = json_unpack_ex(json, &err, JSON_STRICT, "{s:i}",
+    ret = json_unpack_ex(json, &err, JSON_STRICT, "{s:o, s:o, s:i}",
+                         "type", &ignored,
+                         "version", &ignored,
                          "pid", &tester_pid);
     json_decref(json);
     if (ret == -1)

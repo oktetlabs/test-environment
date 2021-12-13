@@ -965,7 +965,9 @@ tester_log_proc_info(void)
     json_t *msg;
     char   *txt;
 
-    msg = json_pack("{s:i}",
+    msg = json_pack("{s:s, s:i, s:i}",
+                    "type", "tester_pid",
+                    "version", 1,
                     "pid", getpid());
     if (msg == NULL)
     {
