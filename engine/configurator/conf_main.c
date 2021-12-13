@@ -1086,7 +1086,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
     cfg_handle    handle = msg->handle;
     cfg_instance *inst;
     cfg_object   *obj;
-    char         *val_str = "";
+    char         *val_str = NULL;
     cfg_inst_val  val;
     cfg_inst_val  old_val;
 
@@ -1133,21 +1133,17 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         (msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local)) != 0)
     {
         ERROR("Failed to add command in DH: error=%r", msg->rc);
-        cfg_types[obj->type].free(val);
-        cfg_types[obj->type].free(old_val);
         cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
-        return;
+        goto cleanup;
     }
 
     if ((msg->rc = cfg_db_set(handle, val)) != 0)
     {
         ERROR("Failed to set new value in DB: error=%r", msg->rc);
-        cfg_types[obj->type].free(val);
-        cfg_types[obj->type].free(old_val);
         if (update_dh)
             cfg_dh_delete_last_command();
         cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
-        return;
+        goto cleanup;
     }
 
     if (strcmp_start(CFG_TA_PREFIX, inst->oid) != 0)
@@ -1160,9 +1156,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
             cfg_db_set(handle, old_val);
             cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
         }
-        cfg_types[obj->type].free(val);
-        cfg_types[obj->type].free(old_val);
-        return;
+        goto cleanup;
     }
 
     /* Agents subtree modification */
@@ -1170,7 +1164,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
     if (msg->local)
     {
         /* Local set operation */
-        return;
+        goto cleanup;
     }
 
     while (inst->father != &cfg_inst_root)
@@ -1208,9 +1202,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
              * assumes that there cannot be non-local command between any two
              * local commands.
              */
-            cfg_types[obj->type].free(val);
-            cfg_types[obj->type].free(old_val);
-            return;
+            goto cleanup;
         }
     }
 
@@ -1228,10 +1220,10 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
 
     cfg_conf_delay_update(CFG_GET_INST(handle)->oid);
 
+cleanup:
     cfg_types[obj->type].free(old_val);
     cfg_types[obj->type].free(val);
-    if (obj->type != CVT_NONE)
-        free(val_str);
+    free(val_str);
 }
 
 /**
