@@ -994,6 +994,8 @@ tester_assemble_plan(tester_run_data *data, const tester_cfg_walk *cbs, const te
     const testing_act   *orig_act;
     unsigned int         orig_act_id;
     tester_cfg_walk_ctl  ctl;
+    json_t              *json;
+    json_error_t         err;
 
     orig_flags  = data->flags;
     data->flags |= TESTER_ASSEMBLE_PLAN | TESTER_NO_TRC | TESTER_NO_CS |
@@ -1022,8 +1024,20 @@ tester_assemble_plan(tester_run_data *data, const tester_cfg_walk *cbs, const te
         return TE_RC(TE_TESTER, TE_EFAULT);
     }
 
-    plan_text = json_dumps(data->plan.root, JSON_COMPACT);
-    json_decref(data->plan.root);
+    json = json_pack_ex(&err, 0, "{s:s, s:i, s:o}",
+                        "type", "test_plan",
+                        "version", 1,
+                        "plan", data->plan.root);
+    if (json == NULL)
+    {
+        ERROR("Failed to form execution plan MI message: %s", err.text);
+        json_decref(data->plan.root);
+        data->plan.root = NULL;
+        return TE_RC(TE_TESTER, TE_EFAULT);
+    }
+
+    plan_text = json_dumps(json, JSON_COMPACT);
+    json_decref(json);
     data->plan.root = NULL;
     if (plan_text == NULL)
     {

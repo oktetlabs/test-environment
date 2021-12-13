@@ -302,6 +302,7 @@ process_plan(const log_msg_view *plan)
     size_t         i;
     te_errno       rc;
     te_string      plan_str = TE_STRING_INIT;
+    json_t        *msg;
     json_t        *metadata;
     json_t        *meta = NULL;
     json_t        *plan_obj;
@@ -314,14 +315,24 @@ process_plan(const log_msg_view *plan)
         return TE_EFAIL;
     }
 
-    plan_obj = json_loads(plan_str.ptr, 0, &err);
+    msg = json_loads(plan_str.ptr, 0, &err);
     te_string_free(&plan_str);
-    if (plan_obj == NULL)
+    if (msg == NULL)
     {
         ERROR("Error parsing execution plan: %s (line %d, column %d)",
               err.text, err.line, err.column);
         return TE_EFAIL;
     }
+
+    plan_obj = json_object_get(msg, "plan");
+    if (plan_obj == NULL)
+    {
+        ERROR("Failed to extract execution plan from MI message");
+        return TE_EFAIL;
+    }
+
+    json_incref(plan_obj);
+    json_decref(msg);
 
     if (metafile_path != NULL)
     {
