@@ -79,7 +79,7 @@ extern int cfg_dh_restore_backup(char *filename, te_bool hard_check);
 extern int cfg_dh_restore_backup_on_shutdown();
 
 /**
- * Add a command to the history.
+ * Push a command to the history.
  *
  * @param msg     message with set, add or delete user request.
  * @param local   whether this command is local or not.
@@ -88,8 +88,8 @@ extern int cfg_dh_restore_backup_on_shutdown();
  *
  * @return 0 (success) or TE_ENOMEM
  */
-extern int cfg_dh_add_command(cfg_msg *msg, te_bool local,
-                              const cfg_inst_val *old_val);
+extern int cfg_dh_push_command(cfg_msg *msg, te_bool local,
+                               const cfg_inst_val *old_val);
 
 /**
  * Notify history DB about successfull commit operation.

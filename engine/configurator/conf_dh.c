@@ -1469,7 +1469,7 @@ cfg_dh_restore_backup_on_shutdown()
 
 
 /**
- * Add a command to the history.
+ * Push a command to the history.
  *
  * @param msg     message with set, add or delete user request.
  * @param local   whether this command is local or not.
@@ -1483,7 +1483,7 @@ cfg_dh_restore_backup_on_shutdown()
  *                      history
  */
 int
-cfg_dh_add_command(cfg_msg *msg, te_bool local, const cfg_inst_val *old_val)
+cfg_dh_push_command(cfg_msg *msg, te_bool local, const cfg_inst_val *old_val)
 {
     cfg_dh_entry *entry = (cfg_dh_entry *)calloc(sizeof(cfg_dh_entry), 1);
 

@@ -970,7 +970,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
 
         if (update_dh)
         {
-            msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local, NULL);
+            msg->rc = cfg_dh_push_command((cfg_msg *)msg, msg->local, NULL);
             if (msg->rc != 0)
             {
                 ERROR("Failed to add a new instance %s in DH: %r",
@@ -996,7 +996,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     {
         if (update_dh)
         {
-            msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local, NULL);
+            msg->rc = cfg_dh_push_command((cfg_msg *)msg, msg->local, NULL);
             if (msg->rc != 0)
             {
                 ERROR("Failed to add a new instance %s in DH: %r",
@@ -1079,7 +1079,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
 
     if (update_dh)
     {
-        msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local, NULL);
+        msg->rc = cfg_dh_push_command((cfg_msg *)msg, msg->local, NULL);
         if (msg->rc != 0)
         {
             te_errno rc;
@@ -1233,7 +1233,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
 
         if (update_dh)
         {
-            msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local, &old_val);
+            msg->rc = cfg_dh_push_command((cfg_msg *)msg, msg->local, &old_val);
             if (msg->rc != 0)
             {
                 ERROR("Failed to add command in DH: %r", msg->rc);;
@@ -1252,7 +1252,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
     {
         if (update_dh)
         {
-            msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local, &old_val);
+            msg->rc = cfg_dh_push_command((cfg_msg *)msg, msg->local, &old_val);
             if (msg->rc != 0)
             {
                 ERROR("Failed to add command in DH: %r", msg->rc);;
@@ -1331,7 +1331,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
     {
         cfg_types[obj->type].put_to_msg(CFG_GET_INST(handle)->val,
                                         (cfg_msg *)msg);
-        msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local, &old_val);
+        msg->rc = cfg_dh_push_command((cfg_msg *)msg, msg->local, &old_val);
         if (msg->rc != 0)
         {
             te_errno rc;
@@ -1411,8 +1411,8 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
 
     if (update_dh &&
-        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local,
-                                      &(inst->val))) != 0)
+        (msg->rc = cfg_dh_push_command((cfg_msg *)msg, msg->local,
+                                       &(inst->val))) != 0)
     {
         ERROR("%s: Failed to add into DH errno %r",
               __FUNCTION__, msg->rc);
@@ -2379,7 +2379,7 @@ static void
 process_reboot(cfg_reboot_msg *msg, te_bool update_dh)
 {
     if (update_dh &&
-        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, FALSE, NULL)) != 0)
+        (msg->rc = cfg_dh_push_command((cfg_msg *)msg, FALSE, NULL)) != 0)
         return;
 
     msg->rc = rcf_ta_reboot(msg->ta_name, NULL, NULL);
@@ -2404,7 +2404,7 @@ process_register(cfg_register_msg *msg, te_bool update_dh)
 
     if (update_dh)
     {
-        if ((msg->rc = cfg_dh_add_command((cfg_msg *)msg, FALSE, NULL)) != 0)
+        if ((msg->rc = cfg_dh_push_command((cfg_msg *)msg, FALSE, NULL)) != 0)
             return;
     }
 
