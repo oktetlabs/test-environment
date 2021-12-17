@@ -147,6 +147,18 @@ te_ta_signature_local()
                 done
                 IFS=${OLD_IFS}
                 ;;
+            os-version)
+                local OS_VERSION
+                if [ -f /etc/os-release ]; then
+                    OS_VERSION=`. /etc/os-release; echo $ID$VERSION_ID`
+                else
+                    # Fixme: Add something here if/when we need to support
+                    # non-systemd OSes.  All Linux distros (even
+                    # non-systemd ones) have this /etc/os-release file.
+                    OS_VERSION=
+                fi
+                echo -n $OS_VERSION
+                ;;
             *)
                 echo "Unknown TA signature field: '${FIELD}'" >&2
                 exit 1
