@@ -314,6 +314,15 @@ tester_handle_serial_event(const char *event_name)
                                               executes */
     te_bool                     fail = FALSE;
 
+    if (event_name == NULL || *event_name == '\0')
+    {
+        /*
+         * There is no associated Tester event, Tester should not do
+         * anything.
+         */
+        return 0;
+    }
+
     if ((rc = tester_serial_get_handlers(event_name, &hh)) != 0)
     {
         ERROR("Couldn't get handlers list of event %s: %r", event_name, rc);

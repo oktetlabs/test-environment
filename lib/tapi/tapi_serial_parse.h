@@ -178,6 +178,8 @@ extern te_errno tapi_serial_logging_disable(tapi_parser_id *id);
  * @param name          The parser event name
  * @param t_name        The Tester event name. Use a name of one of the
  *                      events declarated in the Tester subtree.
+ *                      Use empty string if you do not need any processing
+ *                      on Tester
  *
  * @return Status code
  */
