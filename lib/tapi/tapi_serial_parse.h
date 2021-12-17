@@ -228,6 +228,18 @@ extern void tapi_serial_parser_pattern_del(tapi_parser_id *id,
  */
 extern te_errno tapi_serial_parser_reset(tapi_parser_id *id);
 
+/**
+ * Get number of times that a given parser event occurred.
+ *
+ * @param id        Location of the parser ID
+ * @param e_name    Event name
+ * @param count     Where to save the requested number
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_serial_parser_event_get_count(const tapi_parser_id *id,
+                                                   const char *e_name,
+                                                   int *count);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -454,3 +454,16 @@ tapi_serial_handler_del(const char *ev_name, const char *h_name)
         WARN("Couldn't delete serial handler %s from event %s",
              h_name, ev_name);
 }
+
+/* See description in the tapi_serial_parser.h */
+te_errno
+tapi_serial_parser_event_get_count(const tapi_parser_id *id,
+                                   const char *e_name,
+                                   int *count)
+{
+    cfg_val_type type = CVT_INTEGER;
+
+    return cfg_get_instance_sync_fmt(&type, count,
+                                     TE_SERIAL_EVENT "/counter:",
+                                     id->ta, id->name, e_name);
+}
