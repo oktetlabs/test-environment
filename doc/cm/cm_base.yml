@@ -604,6 +604,15 @@
          Name:  none
          Value: Descriptor count, or -1 if the feature is unsupported
 
+    - oid: "/agent/interface/msglvl"
+      access: read_write
+      type: uint64
+      d: |
+         Driver message level.
+
+         Name:  none
+         Value: a number containing message level bitmask
+
     - oid: "/agent/interface/deviceinfo"
       access: read_only
       type: none

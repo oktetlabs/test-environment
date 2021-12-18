@@ -247,6 +247,64 @@ extern te_errno tapi_cfg_if_flags_set(const char *ta, const char *ifname,
  */
 extern te_errno tapi_cfg_if_reset(const char *ta, const char *ifname);
 
+/**
+ * Network interface driver message level flags. Values should be the same
+ * as values of corresponding NETIF_MSG* flags from
+ * include/linux/netdevice.h in linux kernel sources.
+ */
+typedef enum {
+    TAPI_NETIF_MSG_DRV = 0x0001,
+    TAPI_NETIF_MSG_PROBE = 0x0002,
+    TAPI_NETIF_MSG_LINK = 0x0004,
+    TAPI_NETIF_MSG_TIMER = 0x0008,
+    TAPI_NETIF_MSG_IFDOWN = 0x0010,
+    TAPI_NETIF_MSG_IFUP = 0x0020,
+    TAPI_NETIF_MSG_RX_ERR = 0x0040,
+    TAPI_NETIF_MSG_TX_ERR = 0x0080,
+    TAPI_NETIF_MSG_TX_QUEUED = 0x0100,
+    TAPI_NETIF_MSG_INTR = 0x0200,
+    TAPI_NETIF_MSG_TX_DONE = 0x0400,
+    TAPI_NETIF_MSG_RX_STATUS = 0x0800,
+    TAPI_NETIF_MSG_PKTDATA = 0x1000,
+    TAPI_NETIF_MSG_HW = 0x2000,
+    TAPI_NETIF_MSG_WOL = 0x4000,
+} tapi_netif_msg_level;
+
+/** All flags from te_netif_msg_level */
+#define TAPI_NETIF_MSG_ALL \
+    (TAPI_NETIF_MSG_DRV | TAPI_NETIF_MSG_PROBE |\
+     TAPI_NETIF_MSG_LINK | TAPI_NETIF_MSG_TIMER |\
+     TAPI_NETIF_MSG_IFDOWN | TAPI_NETIF_MSG_IFUP |\
+     TAPI_NETIF_MSG_RX_ERR | TAPI_NETIF_MSG_TX_ERR |\
+     TAPI_NETIF_MSG_TX_QUEUED | TAPI_NETIF_MSG_INTR |\
+     TAPI_NETIF_MSG_TX_DONE | TAPI_NETIF_MSG_RX_STATUS |\
+     TAPI_NETIF_MSG_PKTDATA | TAPI_NETIF_MSG_HW |\
+     TAPI_NETIF_MSG_WOL)
+
+/**
+ * Get current network interface driver message level.
+ *
+ * @param ta        Test Agent name
+ * @param ifname    Interface name
+ * @param msglvl    Where to save driver message level
+ *                  (see tapi_netif_msg_level)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_msglvl_get(const char *ta, const char *ifname,
+                                       uint64_t *msglvl);
+
+/**
+ * Set current network interface driver message level.
+ *
+ * @param ta        Test Agent name
+ * @param ifname    Interface name
+ * @param msglvl    Driver message level to set (see te_netif_msg_level)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_msglvl_set(const char *ta, const char *ifname,
+                                       uint64_t msglvl);
 
 #ifdef __cplusplus
 } /* extern "C" */

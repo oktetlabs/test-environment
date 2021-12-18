@@ -322,3 +322,23 @@ tapi_cfg_if_reset(const char *ta, const char *ifname)
 {
     return tapi_cfg_if_common_set(ta, ifname, "reset", 1);
 }
+
+/* See description in the tapi_cfg_if.h */
+te_errno
+tapi_cfg_if_msglvl_get(const char *ta, const char *ifname, uint64_t *msglvl)
+{
+    cfg_val_type v_type = CVT_UINT64;
+
+    return cfg_get_instance_fmt(&v_type, msglvl,
+                                "/agent:%s/interface:%s/msglvl:",
+                                ta, ifname);
+}
+
+/* See description in the tapi_cfg_if.h */
+te_errno
+tapi_cfg_if_msglvl_set(const char *ta, const char *ifname, uint64_t msglvl)
+{
+    return cfg_set_instance_fmt(CFG_VAL(UINT64, msglvl),
+                                "/agent:%s/interface:%s/msglvl:",
+                                ta, ifname);
+}

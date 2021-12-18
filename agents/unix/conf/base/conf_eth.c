@@ -846,6 +846,76 @@ eth_ring_rx_current_set(unsigned int  gid,
     return 0;
 }
 
+/* Get driver message level */
+static te_errno
+eth_msglvl_get(unsigned int gid, const char *oid_str,
+               char *value, const char *ifname)
+{
+    struct ethtool_value eval;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid_str);
+
+    memset(&eval, 0, sizeof(eval));
+    eval.cmd = ETHTOOL_GMSGLVL;
+
+    rc = eth_feature_ioctl_send(ifname, &eval);
+    if (rc != 0)
+    {
+        /*
+         * ENOENT will make Configurator hide this node instead of
+         * failing if it is not supported.
+         */
+        if (rc == TE_EOPNOTSUPP)
+            rc = TE_ENOENT;
+
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    rc = te_snprintf(value, RCF_MAX_VAL, "%u", eval.data);
+    if (rc != 0)
+    {
+        ERROR("%s(): te_snprintf() failed: %r", __FUNCTION__, rc);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return 0;
+}
+
+/* Set driver message level */
+static te_errno
+eth_msglvl_set(unsigned int gid, const char *oid_str,
+               char *value, const char *ifname)
+{
+    unsigned long int parsed_val;
+    struct ethtool_value eval;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid_str);
+
+    rc = te_strtoul(value, 0, &parsed_val);
+    if (rc != 0)
+    {
+        ERROR("%s(): invalid value '%s': %r", __FUNCTION__, value, rc);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+    else if (parsed_val > UINT_MAX)
+    {
+        ERROR("%s(): too big value '%s'", __FUNCTION__, value);
+        return TE_RC(TE_TA_UNIX, TE_ERANGE);
+    }
+
+    memset(&eval, 0, sizeof(eval));
+    eval.cmd = ETHTOOL_SMSGLVL;
+    eval.data = parsed_val;
+
+    rc = eth_feature_ioctl_send(ifname, &eval);
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+
 RCF_PCH_CFG_NODE_RO(firmwareversion, "firmwareversion", NULL, NULL,
                     eth_firmwareversion_get);
 
@@ -877,7 +947,10 @@ RCF_PCH_CFG_NODE_NA(eth_ring_rx, "rx", &eth_ring_rx_current, NULL);
 
 RCF_PCH_CFG_NODE_NA(eth_ring, "ring", &eth_ring_rx, &eth_feature);
 
-RCF_PCH_CFG_NODE_RW(eth_reset, "reset", NULL, &eth_ring,
+RCF_PCH_CFG_NODE_RW(eth_msglvl, "msglvl", NULL, &eth_ring,
+                    eth_msglvl_get, eth_msglvl_set);
+
+RCF_PCH_CFG_NODE_RW(eth_reset, "reset", NULL, &eth_msglvl,
                     eth_reset_get, eth_reset_set);
 
 /**
