@@ -126,7 +126,7 @@ extern int test_path_str_pos;
                             }
                             return HASH_STR;
                         }
-[-_[:alnum:].]+         {
+[-_[:alnum:].|]+        {
                             yylval->str = strdup(yytext);
                             if (yylval->str == NULL)
                             {
