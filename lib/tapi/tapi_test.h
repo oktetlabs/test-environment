@@ -22,6 +22,7 @@
 
 #ifdef STDC_HEADERS
 #include <stdlib.h>
+#include <ctype.h>
 #endif
 #if HAVE_SIGNAL_H
 #include <signal.h>
