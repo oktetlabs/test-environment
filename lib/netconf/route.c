@@ -571,11 +571,11 @@ netconf_route_get_entry_for_addr(netconf_handle nh,
     rtm->rtm_dst_len = sizeof(in_addr_t);
     rtm->rtm_src_len = 0;
     rtm->rtm_tos = 0;
-    rtm->rtm_table = RT_TABLE_UNSPEC;
+    rtm->rtm_table = RT_TABLE_MAIN;
     rtm->rtm_protocol = RTPROT_UNSPEC;
     rtm->rtm_scope = RT_SCOPE_UNIVERSE;
     rtm->rtm_type = RTN_UNSPEC;
-    rtm->rtm_flags = RTM_F_LOOKUP_TABLE;
+    rtm->rtm_flags = 0;
 
     netconf_append_rta(h, &(SIN(dst_addr)->sin_addr.s_addr),
                        sizeof(in_addr_t), RTA_DST);
