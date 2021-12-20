@@ -1202,6 +1202,12 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
             if (update_dh)
                 cfg_dh_delete_last_command();
             cfg_db_set(handle, old_val);
+            /*
+             * Note that the cfg_wipe_cmd_error() function is missing here.
+             * Perhaps this is due to the fact that the configurator model
+             * assumes that there cannot be non-local command between any two
+             * local commands.
+             */
             cfg_types[obj->type].free(val);
             cfg_types[obj->type].free(old_val);
             return;
