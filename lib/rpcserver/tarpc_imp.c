@@ -8153,18 +8153,6 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
             else
                 len = 0;
         }
-        else if (len == 0)
-        {
-            /*
-             * For SOCK_STREAM socket this means that peer performed
-             * shutdown and no more data is expected.
-             * For SOCK_DGRAM this should not happen when pattern_sender()
-             * sends data from peer.
-             */
-
-            RING("Stopping pattern_receiver() because recv() returns zero");
-            break;
-        }
         else
         {
             if ((rc = pattern_gen_func(check_buf, len, &in->gen_arg)) != 0)
