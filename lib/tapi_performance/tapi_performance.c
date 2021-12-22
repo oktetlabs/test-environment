@@ -31,6 +31,7 @@
 static void
 app_init(tapi_perf_app *app, const tapi_perf_opts *options)
 {
+    app->factory = NULL;
     app->job = NULL;
     app->out_filter = NULL;
     app->err_filter = NULL;

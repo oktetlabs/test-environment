@@ -180,6 +180,8 @@ perf_client_create(tapi_perf_client *client, tapi_job_factory_t *factory)
 
     client->methods->build_args(&args, &client->app.opts);
     rc = perf_app_create_job_from_args(factory, &args, &client->app);
+    if (rc == 0)
+        client->app.factory = factory;
 
     te_vec_deep_free(&args);
 
@@ -195,6 +197,8 @@ perf_server_create(tapi_perf_server *server, tapi_job_factory_t *factory)
 
     server->methods->build_args(&args, &server->app.opts);
     rc = perf_app_create_job_from_args(factory, &args, &server->app);
+    if (rc == 0)
+        server->app.factory = factory;
 
     te_vec_deep_free(&args);
 

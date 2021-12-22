@@ -295,7 +295,7 @@ typedef struct tapi_perf_opts {
 typedef struct tapi_perf_app {
     tapi_perf_bench bench;              /**< Tool's sort */
     tapi_perf_opts opts;                /**< Tool's options */
-    tapi_job_factory_t *factory;               /**< RPC server handle */
+    const tapi_job_factory_t *factory;  /**< RPC server handle */
     tapi_job_t *job;                    /**< Agent job control */
     tapi_job_channel_t *out_filter;     /**< Filters of stdout message */
     tapi_job_channel_t *err_filter;     /**< Filters of stderr message */
