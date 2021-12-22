@@ -11,6 +11,15 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
+ * @section tapi_performance_notes Notes
+ *
+ * @note Throughput value should be obtained from receiver (usually it is
+ * a server instance until it is changed by traffic direction options)
+ *
+ * @note You have to restart a server along with a client if you need to
+ * perform a few measurements in a row, otherwise the server returns a report
+ * of the first measurement all the time (until restarting or destroying)
+ *
  * @section tapi_performance_example Example of usage
  *
  * Lets assume we need to send @attr_val{UDP} traffic with iperf.
