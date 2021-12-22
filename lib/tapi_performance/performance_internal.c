@@ -209,6 +209,7 @@ perf_server_create(tapi_perf_server *server, tapi_job_factory_t *factory)
 te_errno
 perf_app_start(tapi_perf_app *app)
 {
+    te_errno rc;
 
     if (app->job == NULL)
     {
@@ -218,6 +219,17 @@ perf_app_start(tapi_perf_app *app)
     {
         return TE_RC(TE_TAPI, TE_EINPROGRESS);
     }
+
+    /*
+     * Reset message accumulators (possible abandoned by the previous run).
+     * It allows to have an actual report if start-stop sequence is called
+     * a few times in a row without destroying app instance.
+     */
+    te_string_free(&app->stdout);
+    te_string_free(&app->stderr);
+    rc = tapi_job_clear(TAPI_JOB_CHANNEL_SET(app->out_filter, app->err_filter));
+    if (rc != 0)
+        return rc;
 
     RING("Run \"%s\" on %s", app->cmd, tapi_job_factory_ta(app->factory));
 
