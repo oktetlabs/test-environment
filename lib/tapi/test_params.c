@@ -68,10 +68,10 @@ te_test_sig_handler(int signum)
     }
     else if (signum == SIGUSR2)
     {
-        if (getenv("TE_TEST_SIGUSR2_VERDICT") != NULL)
-            RING_VERDICT("Test is stopped by SIGUSR2");
-        else
+        if (getenv("TE_TEST_SIGUSR2_STOP") != NULL)
             exit(TE_EXIT_SIGUSR2);
+        else
+            RING_VERDICT("Test caught the SIGUSR2 signal");
     }
 }
 

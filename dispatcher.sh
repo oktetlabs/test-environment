@@ -181,8 +181,9 @@ Generic options:
                                 - unexpected (stop test if obtained
                                   result is the one that declared in TRC)
 
-  --test-sigusr2-verdict        Handle the SIGUSR2 signal in test and stop it by TEST_VERDICT.
-                                By default the SIGUSR2 handled like SIGINT, it stops testing.
+  --test-sigusr2-stop           Stop all the testing when SIGUSR2 signal is received.
+                                The default behaviour is to print a verdict in the
+                                current test.
   --test-wof                    Wait before jump to cleanup on test failure. Useful to
                                 take a look at what's configured etc. Requires some
                                 nodes in the /local:/test: tree.
@@ -598,9 +599,8 @@ process_opts()
                 opt_str="--${opt_name#--tester-}=\"${1#${opt_name}=}\""
                 TESTER_OPTS="${TESTER_OPTS} ${opt_str}" ;;
             --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
-            --test-sigusr2-verdict*)
-                TE_TEST_SIGUSR2_VERDICT=1
-                export TE_TEST_SIGUSR2_VERDICT
+            --test-sigusr2-stop*)
+                export TE_TEST_SIGUSR2_STOP=1
                 ;;
             --test-wof)
                 export TE_TEST_BEHAVIOUR_WAIT_ON_FAIL=1
