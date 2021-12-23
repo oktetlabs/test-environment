@@ -45,6 +45,15 @@ typedef struct pause_filters {
     tapi_job_channel_t *tx; /**< Whether Tx pause frames are enabled */
 } pause_filters;
 
+/**
+ * Filters used to parse ethtool output when --show-ring command
+ * is supplied
+ */
+typedef struct ring_filters {
+    tapi_job_channel_t *rx; /**< Get RX ring size */
+    tapi_job_channel_t *tx; /**< Get TX ring size */
+} ring_filters;
+
 /** Main structure describing ethtool command */
 typedef struct tapi_ethtool_app {
     tapi_ethtool_cmd cmd; /**< Ethtool command */
@@ -59,6 +68,7 @@ typedef struct tapi_ethtool_app {
         tapi_job_channel_t *line_filter; /**< Filter extracting output
                                               line by line */
         pause_filters pause; /**< Filters for pause parameters */
+        ring_filters ring; /**< Filters for ring parameters */
     } out_filters; /**< Filters for parsing stdout */
 } tapi_ethtool_app;
 
@@ -104,6 +114,10 @@ fill_cmd_arg(const void *value, te_vec *args)
 
         case TAPI_ETHTOOL_CMD_SHOW_PAUSE:
             cmd_str = "--show-pause";
+            break;
+
+        case TAPI_ETHTOOL_CMD_SHOW_RING:
+            cmd_str = "--show-ring";
             break;
 
         default:
@@ -244,6 +258,28 @@ attach_pause_filters(tapi_ethtool_app *app)
 }
 
 /**
+ * Attach filters used to parse ethtool output when it is run
+ * with --show-ring command.
+ *
+ * @param app     Ethtool application structure
+ *
+ * @return Status code.
+ */
+static te_errno
+attach_ring_filters(tapi_ethtool_app *app)
+{
+    te_errno rc;
+
+    rc = add_value_filter(app, "Rx size",
+                          &app->out_filters.ring.rx, "RX");
+    if (rc != 0)
+        return rc;
+
+    return add_value_filter(app, "Tx size",
+                            &app->out_filters.ring.tx, "TX");
+}
+
+/**
  * Attach filters used to parse ethtool output.
  * Filters are chosen depending on specific ethtool command.
  *
@@ -264,6 +300,9 @@ attach_filters(tapi_ethtool_app *app)
 
         case TAPI_ETHTOOL_CMD_SHOW_PAUSE:
             return attach_pause_filters(app);
+
+        case TAPI_ETHTOOL_CMD_SHOW_RING:
+            return attach_ring_filters(app);
 
         default:
             return 0;
@@ -526,6 +565,66 @@ get_pause(tapi_ethtool_app *app, tapi_ethtool_pause *pause)
 }
 
 /**
+ * Get current value and preset maximum value from a filter
+ *
+ * @param filter      Filter to read from
+ * @param value       Will be set to current ring size
+ * @param max_value   Will be set to maximum ring size
+ *
+ * @return Status code.
+ */
+static te_errno
+get_ring_size_value(tapi_job_channel_t *filter,
+                    int *value, int *max_value)
+{
+    te_errno rc = 0;
+    tapi_job_buffer_t val_max = TAPI_JOB_BUFFER_INIT;
+    te_string str_val = TE_STRING_INIT;
+
+    tapi_job_simple_receive(TAPI_JOB_CHANNEL_SET(filter),
+                            TAPI_ETHTOOL_TERM_TIMEOUT_MS, &val_max);
+
+    rc = tapi_job_receive_single(filter, &str_val,
+                                 TAPI_ETHTOOL_TERM_TIMEOUT_MS);
+    if (rc != 0)
+        goto out;
+
+    rc = te_strtoi(str_val.ptr, 10, value);
+    rc = te_strtoi(val_max.data.ptr, 10, max_value);
+
+out:
+
+    te_string_free(&val_max.data);
+    te_string_free(&str_val);
+    return rc;
+}
+
+/**
+ * Obtain ring sizes from ethtool output via filters.
+ *
+ * @param app      Ethtool application structure
+ * @param ring     Where to save parsed parameters
+ *
+ * @return Status code.
+ */
+static te_errno
+get_ring(tapi_ethtool_app *app, tapi_ethtool_ring *ring)
+{
+    te_errno rc;
+
+    memset(ring, 0, sizeof(*ring));
+
+    rc = get_ring_size_value(app->out_filters.ring.rx,
+                             &ring->rx, &ring->rx_max);
+    if (rc != 0)
+        return rc;
+
+    rc = get_ring_size_value(app->out_filters.ring.tx,
+                             &ring->tx, &ring->tx_max);
+    return rc;
+}
+
+/**
  * Get data parsed from ethtool output.
  *
  * @param app       Pointer to application structure
@@ -553,6 +652,9 @@ get_report(tapi_ethtool_app *app,
 
         case TAPI_ETHTOOL_CMD_SHOW_PAUSE:
             return get_pause(app, &report->data.pause);
+
+        case TAPI_ETHTOOL_CMD_SHOW_RING:
+            return get_ring(app, &report->data.ring);
 
         default:
             ERROR("%s(): no report is defined for the current command",

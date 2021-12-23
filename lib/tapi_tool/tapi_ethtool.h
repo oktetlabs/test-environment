@@ -38,6 +38,7 @@ typedef enum tapi_ethtool_cmd {
     TAPI_ETHTOOL_CMD_STATS, /**< Interface statistics */
     TAPI_ETHTOOL_CMD_SHOW_PAUSE, /**< Show pause parameters (--show-pause
                                       command) */
+    TAPI_ETHTOOL_CMD_SHOW_RING, /**< Show ring size (--show-ring command)*/
 } tapi_ethtool_cmd;
 
 /** Command line options for ethtool */
@@ -63,6 +64,14 @@ typedef struct tapi_ethtool_pause {
     te_bool tx; /**< Whether transmission of pause frames is enabled */
 } tapi_ethtool_pause;
 
+/** Ring parameters parsed in case of @c TAPI_ETHTOOL_CMD_SHOW_RING */
+typedef struct tapi_ethtool_ring {
+    int rx_max; /**< RX ring size */
+    int tx_max; /**< TX ring size */
+    int rx; /**< RX ring size */
+    int tx; /**< TX ring size */
+} tapi_ethtool_ring;
+
 /** Structure for storing parsed data from ethtool output */
 typedef struct tapi_ethtool_report {
     tapi_ethtool_cmd cmd; /**< Ethtool command */
@@ -75,6 +84,7 @@ typedef struct tapi_ethtool_report {
                                              when no command is supplied */
         te_kvpair_h stats; /**< Interface statistics */
         tapi_ethtool_pause pause; /**< Pause parameters */
+        tapi_ethtool_ring ring;
     } data; /**< Parsed data */
 } tapi_ethtool_report;
 
