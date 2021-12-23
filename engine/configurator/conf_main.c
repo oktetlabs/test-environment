@@ -1536,10 +1536,21 @@ process_get(cfg_get_msg *msg)
     obj = inst->obj;
 
     if ((obj->vol || msg->sync) &&
-        strcmp_start("/agent", inst->oid) == 0 &&
-        (msg->rc = cfg_ta_sync(inst->oid, FALSE)) != 0)
+        strcmp_start("/agent", inst->oid) == 0)
     {
-        return;
+        msg->rc = cfg_ta_sync(inst->oid, FALSE);
+        if (msg->rc != 0)
+        {
+            ERROR("Failed to synchronize %s: %r", inst->oid, msg->rc);
+            return;
+        }
+
+        /* Volatile objects can be deleted after synchronization */
+        if ((inst = CFG_GET_INST(handle)) == NULL)
+        {
+            msg->rc = TE_ENOENT;
+            return;
+        }
     }
 
     msg->val_type = obj->type;
