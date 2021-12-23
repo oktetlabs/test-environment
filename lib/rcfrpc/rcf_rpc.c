@@ -208,7 +208,15 @@ rcf_rpc_server_get(const char *ta, const char *name,
     {
         rc = cfg_get_instance_fmt(NULL, &sid,
                                   "/agent:%s/rpcserver:%s/sid:", ta, name);
-        if (rc != 0)
+        /*
+         * It's OK if the sid is not found. It could have been deleted
+         * because this RPC server died earlier
+         */
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+        {
+            rc = 0;
+        }
+        else if (rc != 0)
         {
             ERROR("Failed to get existing RPC server %s:%s SID: %r",
                   ta, name, rc);
