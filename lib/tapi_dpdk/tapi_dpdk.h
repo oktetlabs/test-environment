@@ -54,6 +54,8 @@ typedef struct tapi_dpdk_testpmd_job_t {
     tapi_job_channel_t *tx_dbells_skip_filter;
     tapi_job_channel_t *rx_dbells_filter;
     tapi_job_channel_t *rx_dbells_skip_filter;
+    tapi_job_channel_t *rx_pkts_filter;
+    tapi_job_channel_t *rx_bytes_filter;
 } tapi_dpdk_testpmd_job_t;
 
 
@@ -333,7 +335,30 @@ extern te_errno tapi_dpdk_stats_log_tx_dbells(
                                     const tapi_dpdk_testpmd_job_t *testpmd_job,
                                     const te_meas_stats_t *meas_stats_pps);
 
+/**
+ * Attach Rx packets/bytes filters.
+ *
+ * @param[in] testpmd_job       Handle of test-pmd job
+ *
+ * @return Status code
+ */
+extern te_errno tapi_dpdk_attach_rx_pkts_bytes_filters(
+                                          tapi_dpdk_testpmd_job_t *testpmd_job);
 
+/**
+ * Get latest values of Rx packets and bytes from filters attached by
+ * tapi_dpdk_attach_rx_pkts_bytes_filters().
+ *
+ * @param[in]  testpmd_job          Rx job channel handle
+ * @param[out] pkts                 Latest Rx packets
+ * @param[out] bytes                Latest Rx bytes
+ *
+ * @return Status code
+ */
+extern te_errno tapi_dpdk_get_last_rx_pkts_bytes(
+                                           tapi_dpdk_testpmd_job_t *testpmd_job,
+                                           unsigned long *pkts,
+                                           unsigned long *bytes);
 
 #ifdef __cplusplus
 } /* extern "C" */

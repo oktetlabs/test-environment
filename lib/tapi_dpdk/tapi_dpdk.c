@@ -1601,3 +1601,69 @@ tapi_dpdk_stats_log_tx_dbells(const tapi_dpdk_testpmd_job_t *testpmd_job,
                                       testpmd_job->tx_dbells_skip_filter,
                                       meas_stats_pps, "Tx");
 }
+
+te_errno
+tapi_dpdk_attach_rx_pkts_bytes_filters(tapi_dpdk_testpmd_job_t *testpmd_job)
+{
+    tapi_job_simple_desc_t desc = {
+        .job_loc = &testpmd_job->job,
+        .stdout_loc = &testpmd_job->out_channels[0],
+        .stderr_loc = &testpmd_job->out_channels[1],
+        .filters = TAPI_JOB_SIMPLE_FILTERS(
+            {.use_stdout = TRUE,
+             .readable = TRUE,
+             .re = "(?m)RX-packets:\\s*([0-9]+)",
+             .extract = 1,
+             .filter_var = &testpmd_job->rx_pkts_filter,
+            },
+            {.use_stdout = TRUE,
+             .readable = TRUE,
+             .re = "(?m)RX-bytes:\\s*([0-9]+)",
+             .extract = 1,
+             .filter_var = &testpmd_job->rx_bytes_filter,
+            }
+        )
+    };
+
+    return tapi_dpdk_attach_filters(&desc);
+}
+
+te_errno
+tapi_dpdk_get_last_rx_pkts_bytes(tapi_dpdk_testpmd_job_t *testpmd_job,
+                                 unsigned long *pkts, unsigned long *bytes)
+{
+    tapi_job_channel_t *pkts_filter = testpmd_job->rx_pkts_filter;
+    tapi_job_channel_t *bytes_filter = testpmd_job->rx_bytes_filter;
+    tapi_job_buffer_t buf_pkts = TAPI_JOB_BUFFER_INIT;
+    tapi_job_buffer_t buf_bytes = TAPI_JOB_BUFFER_INIT;
+    te_errno rc = 0;
+
+    rc = tapi_job_receive_last(TAPI_JOB_CHANNEL_SET(pkts_filter), 1000,
+                               &buf_pkts);
+    if (rc != 0)
+        goto out;
+    if (buf_pkts.eos)
+    {
+        rc = TE_ENOMSG;
+        goto out;
+    }
+    if ((rc = te_strtoul(buf_pkts.data.ptr, 0, pkts)) != 0)
+        goto out;
+
+    rc = tapi_job_receive_last(TAPI_JOB_CHANNEL_SET(bytes_filter), 1000,
+                               &buf_bytes);
+    if (rc != 0)
+        goto out;
+    if (buf_bytes.eos)
+    {
+        rc = TE_ENOMSG;
+        goto out;
+    }
+    if ((rc = te_strtoul(buf_bytes.data.ptr, 0, bytes)) != 0)
+        goto out;
+
+out:
+    te_string_free(&buf_pkts.data);
+    te_string_free(&buf_bytes.data);
+    return rc;
+}
