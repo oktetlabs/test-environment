@@ -1455,24 +1455,55 @@ pci_current_num_vfs_get(const pci_device *dev, unsigned int *num)
 }
 
 static te_errno
+pci_current_num_vfs_set_try(FILE *fd, unsigned int num)
+{
+    int n_required;
+    int n_printed;
+
+    n_required = snprintf(NULL, 0, "%u", num);
+    n_printed = fprintf(fd, "%u", num);
+    if (n_printed < 0)
+    {
+        ERROR("%s: write failed: %r", __FUNCTION__, te_rc_os2te(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    else if (n_required != n_printed)
+    {
+        ERROR("%s: tried to write %d bytes (value %u), but only %d bytes were actually written",
+              __FUNCTION__, n_required, num, n_printed);
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    return 0;
+}
+
+static te_errno
 pci_current_num_vfs_set(const pci_device *dev, unsigned int num)
 {
     te_errno rc;
     FILE *fd;
-    int n_required;
-    int n_printed;
 
     rc = pci_current_num_vfs_fopen(dev, "w", &fd);
     if (rc != 0)
         return rc;
 
-    n_required = snprintf(NULL, 0, "%u", num);
-    n_printed = fprintf(fd, "%u", num);
+    /* Disable buffering to be able to handle write errors */
+    setvbuf (fd, NULL, _IONBF, 0);
+
+    rc = pci_current_num_vfs_set_try(fd, num);
+    if (TE_RC_GET_ERROR(rc) == TE_EBUSY)
+    {
+        /*
+         * It's possible that the number of VFs cannot be changed from non-zero
+         * to non-zero. In these cases, the number of VFs needs to be set to
+         * zero first.
+         */
+        rc = pci_current_num_vfs_set_try(fd, 0);
+        if (rc == 0)
+            rc = pci_current_num_vfs_set_try(fd, num);
+    }
+
     fclose(fd);
-    if (n_printed < 0)
-        rc = TE_OS_RC(TE_TA_UNIX, errno);
-    else if (n_required != n_printed)
-        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
 
     if (rc != 0)
         ERROR("Cannot set current number of VFs for a PCI device, %r", rc);
