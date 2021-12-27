@@ -140,7 +140,7 @@ static size_t      n_all_devices = 0;
 static pci_device *all_devices = NULL;
 
 /** The list of all vendor IDs in the system */
-static pci_vendors vendor_list;
+static pci_vendors *vendor_list;
 
 /** Whole PCI tree TE resource lock */
 static unsigned global_pci_lock;
@@ -340,11 +340,11 @@ addr_compar(const void *key, const void *item)
 }
 
 static pci_vendor *
-find_vendor(const pci_vendors list, unsigned vendor_id)
+find_vendor(const pci_vendors *list, unsigned vendor_id)
 {
     pci_vendor *vendor;
 
-    LIST_FOREACH(vendor, &list, next)
+    LIST_FOREACH(vendor, list, next)
     {
         if (vendor->id == vendor_id)
             return vendor;
@@ -398,11 +398,14 @@ find_device_by_id(unsigned vendor_id, unsigned device_id, unsigned devno)
 }
 
 static void
-free_vendor_list(pci_vendors list)
+free_vendor_list(pci_vendors *list)
 {
-    while (!LIST_EMPTY(&list))
+    static int callnum = 0;
+    callnum++;
+
+    while (!LIST_EMPTY(list))
     {
-        pci_vendor *vendor = LIST_FIRST(&list);
+        pci_vendor *vendor = LIST_FIRST(list);
 
         LIST_REMOVE(vendor, next);
         while (!LIST_EMPTY(&vendor->vendor_devices))
@@ -420,14 +423,20 @@ free_vendor_list(pci_vendors list)
         }
         free(vendor);
     }
+    free(list);
 }
 
 
-static pci_vendors
+static pci_vendors *
 make_vendor_list(pci_device *devs, size_t n_devs)
 {
-    pci_vendors vendor_list = LIST_HEAD_INITIALIZER(&vendor_list);
+    pci_vendors *vendor_list;
     unsigned i;
+
+    vendor_list = calloc(1, sizeof(*vendor_list));
+    if (vendor_list == NULL)
+        return vendor_list;
+    LIST_INIT(vendor_list);
 
     for (i = 0; i < n_devs; i++)
     {
@@ -440,13 +449,12 @@ make_vendor_list(pci_device *devs, size_t n_devs)
             if (vendor == NULL)
             {
                 free_vendor_list(vendor_list);
-                LIST_INIT(&vendor_list);
-                return vendor_list;
+                return NULL;
             }
 
             vendor->id = devs[i].vendor_id;
             LIST_INIT(&vendor->vendor_devices);
-            LIST_INSERT_HEAD(&vendor_list, vendor, next);
+            LIST_INSERT_HEAD(vendor_list, vendor, next);
         }
 
         vendor_device = find_vendor_device(vendor->vendor_devices,
@@ -457,8 +465,7 @@ make_vendor_list(pci_device *devs, size_t n_devs)
             if (vendor_device == NULL)
             {
                 free_vendor_list(vendor_list);
-                LIST_INIT(&vendor_list);
-                return vendor_list;
+                return NULL;
             }
 
             vendor_device->id = devs[i].device_id;
@@ -482,11 +489,11 @@ find_device_by_addr(const pci_address *addr)
 }
 
 static void
-transfer_locking(pci_vendors dest, pci_vendors src)
+transfer_locking(pci_vendors *dest, pci_vendors *src)
 {
     pci_vendor *src_vendor;
 
-    LIST_FOREACH(src_vendor, &src, next)
+    LIST_FOREACH(src_vendor, src, next)
     {
         pci_vendor *dst_vendor = find_vendor(dest, src_vendor->id);
 
@@ -559,30 +566,37 @@ update_device_list(void)
 {
     size_t n_devs;
     pci_device *devs = scan_pci_bus(&n_devs);
-    pci_vendors vendors;
+    pci_vendors *vendors;
     unsigned int i;
+
+    static int callnum = 0;
+    callnum++;
 
     if (devs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENODEV);
 
     vendors = make_vendor_list(devs, n_devs);
-    if (n_devs > 0 && LIST_EMPTY(&vendors))
+    if (n_devs > 0 && (vendors == NULL || LIST_EMPTY(vendors)))
     {
         free(devs);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    transfer_locking(vendors, vendor_list);
+    if (vendor_list != NULL) {
+        transfer_locking(vendors, vendor_list);
+        free_vendor_list(vendor_list);
+    }
 
-    for (i = 0; i < n_all_devices; i++)
-        free(all_devices[i].net_list);
+    vendor_list = vendors;
 
-    free(all_devices);
+    if (all_devices != NULL) {
+        for (i = 0; i < n_all_devices; i++)
+            free(all_devices[i].net_list);
+        free(all_devices);
+    }
+
     all_devices = devs;
     n_all_devices = n_devs;
-
-    free_vendor_list(vendor_list);
-    vendor_list = vendors;
 
     return 0;
 }
@@ -835,7 +849,7 @@ pci_vendor_list(unsigned int gid, const char *oid,
     UNUSED(unused1);
     UNUSED(unused2);
 
-    LIST_FOREACH(vendor, &vendor_list, next)
+    LIST_FOREACH(vendor, vendor_list, next)
     {
         if (is_vendor_accessible(vendor))
         {
@@ -970,7 +984,7 @@ pci_grab(const char *name)
     {
         pci_vendor *vendor;
 
-        LIST_FOREACH(vendor, &vendor_list, next)
+        LIST_FOREACH(vendor, vendor_list, next)
         {
             if (!check_vendor_lock(vendor, TRUE))
             {
