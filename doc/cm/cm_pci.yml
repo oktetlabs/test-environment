@@ -159,15 +159,6 @@
          Name: device name
          Value: none
 
-    - oid: "/agent/hardware/pci/device/virtfn"
-      access: read_only
-      type: string
-      d: |
-         Device's virtual functions
-
-         Name: virtual function index
-         Value: reference to /agent/hardware/pci/vendor/device/instance
-
     - oid: "/agent/hardware/pci/device/sriov"
       access: read_only
       type: integer
@@ -177,9 +168,18 @@
          Name: none
          Value: max number of allowed VFs for a device
 
+    - oid: "/agent/hardware/pci/device/sriov/num_vfs"
+      access: read_write
+      type: integer
+      d: |
+         Current number of VFs
+
+         Name: none
+         Value: current number of VFs allocated for a device
+
     - oid: "/agent/hardware/pci/device/sriov/pf"
       access: read_only
-      type: none
+      type: string
       d: |
          An OID of a parent physical function
 
@@ -189,6 +189,8 @@
     - oid: "/agent/hardware/pci/device/sriov/vf"
       access: read_create
       type: string
+      depends:
+        - oid: "/agent/hardware/pci/device/sriov/num_vfs"
       d: |
          An OID (/agent/hardware/pci/device) of a virtual function allocated
          for a given PF.
@@ -432,6 +434,8 @@
     - oid: "/agent/hardware/pci/vendor/device"
       access: read_only
       type: none
+      depends:
+        - oid: "/agent/hardware/pci/device/sriov/num_vfs"
       d: |
          List of PCI devices IDs for a given vendor for installed devices
 

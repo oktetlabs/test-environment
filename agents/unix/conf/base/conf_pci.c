@@ -2264,6 +2264,210 @@ pci_net_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
+static te_errno
+pci_numa_node_get(unsigned int gid, const char *oid, char *value,
+               const char *unused1, const char *unused2,
+               const char *addr_str)
+{
+    te_errno rc;
+    int result;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+    rc = read_pci_int_attr(addr_str, "numa_node", &result);
+    if (rc != 0 || result < 0)
+    {
+        /* Default to empty value (no defined NUMA node) on failure */
+        value[0] = '\0';
+        return 0;
+    }
+
+    snprintf(value, RCF_MAX_VAL, "/agent:%s/hardware:/node:%d", ta_name,
+             result);
+    return 0;
+}
+
+static te_errno
+pci_sriov_num_vfs_get(unsigned int gid, const char *oid, char *value,
+                      const char *unused1, const char *unused2,
+                      const char *addr_str)
+{
+    te_errno rc;
+    int result;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+    rc = read_pci_int_attr(addr_str, "sriov_numvfs", &result);
+    if (rc != 0)
+        return rc;
+
+    snprintf(value, RCF_MAX_VAL, "%d", result);
+    return 0;
+}
+
+static te_errno
+pci_sriov_num_vfs_set(unsigned int gid, const char *oid, char *value,
+                      const char *unused1, const char *unused2,
+                      const char *addr_str)
+{
+    te_errno rc;
+    unsigned int n_vfs;
+    const pci_device *dev;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+    rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
+    if (rc != 0)
+        return rc;
+
+    rc = te_strtoui(value, 10, &n_vfs);
+    if (rc != 0)
+        return rc;
+
+    rc = pci_current_num_vfs_set(dev, n_vfs);
+    if (rc != 0)
+        return rc;
+
+    rc = update_device_list();
+    if (rc != 0) {
+        ERROR("%s(%s): failed to update device list: %r", __func__, addr_str, rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+static te_errno
+pci_sriov_pf_get(unsigned int gid, const char *oid, char *value,
+                 const char *unused1, const char *unused2,
+                 const char *addr_str)
+{
+    char *base;
+    te_errno rc;
+    te_string buf = TE_STRING_INIT;
+    char link[PATH_MAX] = "";
+    const pci_device *dev;
+
+    rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
+    if (rc != 0)
+        return rc;
+
+    rc = format_sysfs_device_name(&buf, dev, "/physfn");
+    if (rc != 0)
+    {
+        te_string_free(&buf);
+        return rc;
+    }
+
+    if (readlink(buf.ptr, link, sizeof(link) - 1) < 0)
+    {
+        int rc = errno;
+        te_string_free(&buf);
+
+        if (rc == ENOENT)
+        {
+            *value = '\0';
+            return 0;
+        }
+
+        return TE_OS_RC(TE_TA_UNIX, rc);
+    }
+    te_string_free(&buf);
+
+    base = strrchr(link, '/');
+    if (base == NULL)
+        base = link;
+    else
+        base++;
+
+    snprintf(value, RCF_MAX_VAL, "/agent:%s/hardware:/pci:/device:%s", ta_name,
+             base);
+    return 0;
+}
+
+static te_errno
+pci_sriov_vf_get(unsigned int gid, const char *oid, char *value,
+                 const char *unused1, const char *unused2,
+                 const char *addr_str, const char *unused3,
+                 const char *virtfn_id)
+{
+    te_string buf = TE_STRING_INIT;
+    char link[PATH_MAX] = "";
+    char *vf_addr;
+    const pci_device *dev;
+    const pci_device *vf;
+    te_errno rc;
+    char *agent;
+    int n;
+
+    UNUSED(gid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+    UNUSED(unused3);
+
+    rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
+    if (rc != 0)
+        return rc;
+
+    rc = format_sysfs_device_name(&buf, dev, "/");
+    if (rc != 0)
+    {
+        te_string_free(&buf);
+        return rc;
+    }
+
+    rc = te_string_append(&buf, PCI_VIRTFN_PREFIX "%s", virtfn_id);
+    if (rc != 0)
+    {
+        te_string_free(&buf);
+        return rc;
+    }
+
+    rc = readlink(buf.ptr, link, sizeof(link) - 1);
+    te_string_free(&buf);
+    if (rc < 0)
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+
+    vf_addr = te_basename(link);
+    if (vf_addr == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    /*
+     * Caller may not have a permission to access a VF (it requires grabbing
+     * it as a resource). But the information that a VF exists might be
+     * provided (it does not grant any permissions to access the VF,
+     * subsequent resource grab is required).
+     */
+    rc = find_device_by_addr_str_ignore_permission(vf_addr, (pci_device **)&vf);
+    if (rc != 0) {
+        free(vf_addr);
+        return rc;
+    }
+    free(vf_addr);
+
+    agent = cfg_oid_str_get_inst_name(oid, 1);
+    if (agent == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    n = snprintf(value, RCF_MAX_VAL,
+                 "/agent:%s/hardware:/pci:/vendor:%04x/device:%04x/instance:%u",
+                 agent, vf->vendor_id, vf->device_id, vf->devno);
+    free(agent);
+    if (n < 0 || n >= RCF_MAX_VAL)
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+
+    return 0;
+}
+
 static int
 filter_virtfn(const struct dirent *de)
 {
@@ -2271,9 +2475,9 @@ filter_virtfn(const struct dirent *de)
 }
 
 static te_errno
-pci_virtfn_list(unsigned int gid, const char *oid, const char *sub_id,
-                char **list, const char *unused1, const char *unused2,
-                const char *addr_str)
+pci_sriov_vf_list(unsigned int gid, const char *oid, const char *sub_id,
+                  char **list, const char *unused1, const char *unused2,
+                  const char *addr_str)
 {
     size_t result_size = RCF_MAX_VAL;
     te_string buf = TE_STRING_INIT;
@@ -2352,79 +2556,9 @@ out:
 }
 
 static te_errno
-pci_virtfn_get(unsigned int gid, const char *oid, char *value,
-               const char *unused1, const char *unused2,
-               const char *addr_str, const char *virtfn_id)
-{
-    te_string buf = TE_STRING_INIT;
-    char link[PATH_MAX] = "";
-    char *vf_addr;
-    const pci_device *dev;
-    const pci_device *vf;
-    te_errno rc;
-    char *agent;
-    int n;
-
-    UNUSED(gid);
-    UNUSED(unused1);
-    UNUSED(unused2);
-
-    rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
-    if (rc != 0)
-        return rc;
-
-    rc = format_sysfs_device_name(&buf, dev, "/");
-    if (rc != 0)
-    {
-        te_string_free(&buf);
-        return rc;
-    }
-
-    rc = te_string_append(&buf, PCI_VIRTFN_PREFIX "%s", virtfn_id);
-    if (rc != 0)
-    {
-        te_string_free(&buf);
-        return rc;
-    }
-
-    rc = readlink(buf.ptr, link, sizeof(link) - 1);
-    te_string_free(&buf);
-    if (rc < 0)
-        return TE_RC(TE_TA_UNIX, TE_EFAIL);
-
-    vf_addr = te_basename(link);
-    if (vf_addr == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    /*
-     * Caller may not have a permission to access a VF (it requires grabbing
-     * it as a resource). But the information that a VF exists might be
-     * provided (it does not grant any permissions to access the VF,
-     * subsequent resource grab is required).
-     */
-    rc = find_device_by_addr_str_ignore_permission(vf_addr, (pci_device **)&vf);
-    free(vf_addr);
-    if (rc != 0)
-        return rc;
-
-    agent = cfg_oid_str_get_inst_name(oid, 1);
-    if (agent == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    n = snprintf(value, RCF_MAX_VAL,
-                 "/agent:%s/hardware:/pci:/vendor:%04x/device:%04x/instance:%u",
-                 agent, vf->vendor_id, vf->device_id, vf->devno);
-    free(agent);
-    if (n < 0 || n >= RCF_MAX_VAL)
-        return TE_RC(TE_TA_UNIX, TE_EFAIL);
-
-    return 0;
-}
-
-static te_errno
-pci_numa_node_get(unsigned int gid, const char *oid, char *value,
-               const char *unused1, const char *unused2,
-               const char *addr_str)
+pci_sriov_get(unsigned int gid, const char *oid, char *value,
+              const char *unused1, const char *unused2,
+              const char *addr_str)
 {
     te_errno rc;
     int result;
@@ -2434,27 +2568,21 @@ pci_numa_node_get(unsigned int gid, const char *oid, char *value,
     UNUSED(unused1);
     UNUSED(unused2);
 
-    rc = read_pci_int_attr(addr_str, "numa_node", &result);
-    if (rc != 0 || result < 0)
-    {
-        /* Default to empty value (no defined NUMA node) on failure */
-        value[0] = '\0';
-        return 0;
-    }
+    rc = read_pci_int_attr(addr_str, "sriov_totalvfs", &result);
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+        result = -1;
+    else if (rc != 0)
+        return rc;
 
-    snprintf(value, RCF_MAX_VAL, "/agent:%s/hardware:/node:%d", ta_name,
-             result);
+    snprintf(value, RCF_MAX_VAL, "%d", result);
     return 0;
 }
 
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_dev, "dev",
                                NULL, NULL,
                                NULL, pci_dev_list);
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_virtfn, "virtfn",
-                               NULL, &node_pci_dev,
-                               pci_virtfn_get, pci_virtfn_list);
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_net, "net",
-                               NULL, &node_pci_virtfn,
+                               NULL, &node_pci_dev,
                                pci_net_get, pci_net_list);
 RCF_PCH_CFG_NODE_RO(node_pci_numa_node, "node",
                     NULL, &node_pci_net,
@@ -2462,6 +2590,19 @@ RCF_PCH_CFG_NODE_RO(node_pci_numa_node, "node",
 RCF_PCH_CFG_NODE_RW(node_pci_driver, "driver",
                     NULL, &node_pci_numa_node,
                     pci_driver_get, pci_driver_set);
+
+RCF_PCH_CFG_NODE_RW(node_pci_sriov_numvfs, "num_vfs",
+                    NULL, NULL,
+                    pci_sriov_num_vfs_get, pci_sriov_num_vfs_set);
+RCF_PCH_CFG_NODE_RO(node_pci_sriov_pf, "pf",
+                    NULL, &node_pci_sriov_numvfs,
+                    pci_sriov_pf_get);
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_sriov_vf, "vf",
+                               NULL, &node_pci_sriov_pf,
+                               pci_sriov_vf_get, pci_sriov_vf_list);
+RCF_PCH_CFG_NODE_RO(node_pci_sriov, "sriov",
+                    &node_pci_sriov_vf, &node_pci_driver,
+                    pci_sriov_get);
 
 
 #define PCI_ID_NODE_RO(_name, _field, _fmt, _sibling)                   \
@@ -2490,7 +2631,7 @@ RCF_PCH_CFG_NODE_RW(node_pci_driver, "driver",
                         (_sibling),                                     \
                         pci_##_name##_get)
 
-PCI_ID_NODE_RO(class, device_class, "%08x", &node_pci_driver);
+PCI_ID_NODE_RO(class, device_class, "%08x", &node_pci_sriov);
 PCI_ID_NODE_RO(subsystem_device, subsystem_device, "%04x", &node_pci_class);
 PCI_ID_NODE_RO(subsystem_vendor, subsystem_vendor, "%04x",
                &node_pci_subsystem_device);

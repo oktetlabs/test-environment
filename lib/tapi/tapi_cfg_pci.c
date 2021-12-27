@@ -67,6 +67,18 @@ tapi_cfg_pci_get_pci_vendor_device(const char *ta, const char *pci_addr,
 }
 
 te_errno
+tapi_cfg_pci_get_max_vfs_of_pf(const char *pf_oid, unsigned int *n_vfs)
+{
+    te_errno rc;
+    cfg_val_type type = CVT_INTEGER;
+
+    rc = cfg_get_instance_fmt(&type, n_vfs, "%s/sriov:", pf_oid);
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        ERROR("Failed to get virtual functions of a device: %r", rc);
+    return rc;
+}
+
+te_errno
 tapi_cfg_pci_get_vfs_of_pf(const char *pf_oid, te_bool pci_device,
                            unsigned int *n_pci_vfs, cfg_oid ***pci_vfs,
                            unsigned int **pci_vf_ids)
@@ -84,7 +96,7 @@ tapi_cfg_pci_get_vfs_of_pf(const char *pf_oid, te_bool pci_device,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    rc = cfg_find_pattern_fmt(&n_vfs, &vfs, "%s/virtfn:*", pf_oid);
+    rc = cfg_find_pattern_fmt(&n_vfs, &vfs, "%s/sriov:/vf:*", pf_oid);
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
@@ -117,7 +129,7 @@ tapi_cfg_pci_get_vfs_of_pf(const char *pf_oid, te_bool pci_device,
             goto out;
         }
 
-        rc = te_strtoui(CFG_OID_GET_INST_NAME(vf_ref_oid, 5), 10, &ids[i]);
+        rc = te_strtoui(CFG_OID_GET_INST_NAME(vf_ref_oid, 6), 10, &ids[i]);
         cfg_free_oid(vf_ref_oid);
         if (rc != 0)
         {
@@ -175,6 +187,18 @@ out:
     if (rc != 0 || pci_vf_ids == NULL)
         free(ids);
 
+    return rc;
+}
+
+te_errno
+tapi_cfg_pci_enable_vfs_of_pf(const char *pf_oid, unsigned int n_vfs)
+{
+    te_errno rc;
+
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, n_vfs),
+                              "%s/sriov:/num_vfs:", pf_oid);
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        ERROR("Failed to set the number of VFs for a device: %r", rc);
     return rc;
 }
 

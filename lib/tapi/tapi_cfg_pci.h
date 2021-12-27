@@ -65,6 +65,17 @@ extern te_errno tapi_cfg_pci_devices_by_vendor_device(const char *ta,
                                                       char ***pci_oids);
 
 /**
+ * Get maximum possible number of VFs by a PCI PF object identifier.
+ *
+ * @param[in]  pf_oid        PF OID in string representation
+ * @param[out] n_vfs         Number of discovered VFs (must not be @c NULL)
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_get_max_vfs_of_pf(const char *pf_oid,
+                                               unsigned int *n_vfs);
+
+/**
  * Get VFs by a PCI PF object identifier.
  *
  * @param[in]  pf_oid        PF OID in string representation
@@ -83,6 +94,17 @@ extern te_errno tapi_cfg_pci_get_vfs_of_pf(const char *pf_oid,
                                            unsigned int *n_pci_vfs,
                                            cfg_oid ***pci_vfs,
                                            unsigned int **pci_vf_ids);
+
+/**
+ * Set number of VFs by a PCI PF object identifier.
+ *
+ * @param[in]  pf_oid        PF OID in string representation
+ * @param[out] n_vfs         Requested number of VFs
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_enable_vfs_of_pf(const char *pf_oid,
+                                              unsigned int n_vfs);
 
 /**
  * Get PCI address (BDF notation) by PCI device OID (/agent/hardware/pci/device)
