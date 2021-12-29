@@ -801,6 +801,12 @@ rcfunix_start(const char *ta_name, const char *ta_type,
                                    rcfunix_ta_sudo(ta));
 
     /*
+     * Run TA in /bin/bash
+     */
+    if (rc == 0)
+        rc = te_string_append(&cmd, "/bin/bash -c '");
+
+    /*
      * Add directory with agent to the PATH
      */
     if (rc == 0)
@@ -847,6 +853,12 @@ rcfunix_start(const char *ta_name, const char *ta_type,
                 "%s/ta %s %s %s",
                 ta->run_dir, ta->ta_name, ta->port,
                 (cfg_str.ptr == NULL) ? "" : cfg_str.ptr);
+
+    /*
+     * We are run TA in /bin/bash and this is the final quote
+     */
+    if (rc == 0)
+        rc = te_string_append(&cmd, "'");
 
     if (rc == 0)
         rc = te_string_append(&cmd,
