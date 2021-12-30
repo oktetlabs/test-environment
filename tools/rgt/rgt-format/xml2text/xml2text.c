@@ -43,6 +43,9 @@ const char *rgt_line_separator = "\n";
 int detailed_packets = 0;
 /* Print raw MI artifacts, not post-processed */
 int mi_raw = 0;
+/* Reasonable timeout for grouping log entires would be 300ms by default,
+ * but let's keep it 0 for backward compatibility. */
+long timeout_ms = 0;
 
 /**
  * Flag turning on printing a prefix before each line of the message
@@ -197,6 +200,8 @@ struct poptOption rgt_options_table[] = {
       "Do not print any prefix or header before messages", NULL },
     { "mi-raw", 'M', POPT_ARG_NONE, &mi_raw, 0,
       "Include raw MI artifacts instead of post-processed", NULL },
+    { "timeout", 't', POPT_ARG_INT, &timeout_ms, 0,
+      "Timeout to use for groupping similar log entries together", "<ms>"},
     POPT_TABLEEND
 };
 
@@ -472,6 +477,72 @@ DEF_FUNC_WITHOUT_ATTRS(proc_log_msg_br, BR)
 DEF_FUNC_WITH_ATTRS(proc_log_msg_file_start, LOG_MSG_FILE_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_log_msg_file_end, LOG_MSG_FILE_END)
 
+/**
+ * Determine whether the 2 log entries are similar: time is close (see
+ * timeout_ms) and all other attributes match.
+ *
+ * @param prev_attrs    Attributes of the previous message.
+ * @param new_attrs     Attributes of the current message.
+ *
+ * @returns True if they are similar.
+ */
+static bool
+attrs_similar(rgt_attrs_t *prev_attrs, rgt_attrs_t *new_attrs)
+{
+    int i;
+
+    for (i = 0; prev_attrs[i].type != RGT_ATTR_TYPE_UNKNOWN; i++)
+    {
+        if (prev_attrs[i].type != new_attrs[i].type)
+            return false;
+        if ((prev_attrs[i].name == NULL) != (new_attrs[i].name == NULL))
+            return false;
+        if (prev_attrs[i].name != NULL &&
+            strcmp(prev_attrs[i].name, new_attrs[i].name) != 0)
+            return false;
+        switch (prev_attrs[i].type)
+        {
+            case RGT_ATTR_TYPE_STR:
+                /* Read the ts_val value and apply timeout_ms */
+                if (strcmp(prev_attrs[i].name, "ts_val") == 0 )
+                {
+                    double prev, new;
+                    int rc;
+
+                    rc = sscanf(prev_attrs[i].str_val, "%lf", &prev);
+                    assert(rc == 1);
+                    rc = sscanf(new_attrs[i].str_val, "%lf", &new);
+                    assert(rc == 1);
+
+                    if( (new - prev) * 1000 > timeout_ms )
+                        return false;
+                }
+                /*
+                 * All other parameters except the timestamp string
+                 * should match
+                 */
+                else if (strcmp(prev_attrs[i].name, "ts") != 0)
+                {
+                    if (strcmp(prev_attrs[i].str_val, new_attrs[i].str_val) != 0)
+                        return false;
+                }
+                break;
+
+            case RGT_ATTR_TYPE_UINT32:
+                if (prev_attrs[i].uint32_val != new_attrs[i].uint32_val)
+                    return false;
+                break;
+
+            case RGT_ATTR_TYPE_UNKNOWN:
+                /* we detect the end of array in the for() condition above */
+                assert(0);
+                return false;
+        }
+    }
+
+    return true;
+}
+
 RGT_DEF_FUNC(proc_log_msg_start)
 {
     const char *level = rgt_tmpls_xml_attrs_get(xml_attrs, "level");
@@ -502,8 +573,23 @@ RGT_DEF_FUNC(proc_log_msg_start)
         }
         else
         {
-            fprintf(fd, "\n");
-            rgt_tmpls_output(fd, &xml2fmt_tmpls[LOG_MSG_START], attrs);
+            static rgt_attrs_t *prev_attrs = NULL;
+            bool new_msg = true;
+
+            if (timeout_ms != 0)
+            {
+                if (prev_attrs != NULL && attrs_similar(prev_attrs, attrs))
+                    new_msg = false;
+
+                if (new_msg)
+                    prev_attrs = rgt_tmpls_attrs_save(attrs);
+            }
+
+            if (new_msg)
+            {
+                fprintf(fd, "\n");
+                rgt_tmpls_output(fd, &xml2fmt_tmpls[LOG_MSG_START], attrs);
+            }
         }
 
         rgt_tmpls_attrs_free(attrs);
