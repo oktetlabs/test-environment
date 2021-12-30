@@ -135,6 +135,29 @@ extern rgt_attrs_t *rgt_tmpls_attrs_new(const char **xml_attrs);
 extern void rgt_tmpls_attrs_free(rgt_attrs_t *attrs);
 
 /**
+ * Save a copy of rgt attribute list
+ *
+ * @param attrs  Rgt attributes to save
+ *
+ * @return Pointer to the saved list
+ *
+ * @note Similar to rgt_tmpls_attrs_new() above, there can be only one copy
+ * of saved attributes.
+ *
+ * @sa rgt_tmpls_attrs_saved_free
+ */
+extern rgt_attrs_t * rgt_tmpls_attrs_save(rgt_attrs_t *attrs);
+
+/**
+ * Free the saved copy of rgt attribute list
+ *
+ * @param attrs  Saved copy of rgt attributes
+ *
+ * @sa rgt_tmpls_attrs_save
+ */
+extern void rgt_tmpls_attrs_saved_free(rgt_attrs_t *attrs);
+
+/**
  * Add a new string attribute into the list of rgt attributes.
  * 
  * @param attrs    Rgt attributes list

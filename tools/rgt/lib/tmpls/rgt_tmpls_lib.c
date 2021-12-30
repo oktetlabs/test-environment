@@ -44,6 +44,9 @@ static const char *rgt_line_separator = NULL;
 static rgt_attrs_t global_attrs[32];
 #define ATTR_NUM (sizeof(global_attrs) / sizeof(global_attrs[0]))
 
+/** Array of saved Rgt attributes */
+static rgt_attrs_t saved_attrs[ATTR_NUM];
+
 /** The number of attributes in attribute array */
 static unsigned int global_attr_num = 0;
 /** Wheter the attribute array is currently used or not */
@@ -106,6 +109,41 @@ rgt_tmpls_attrs_free(rgt_attrs_t *attrs)
     assert(attrs == global_attrs);
     cur_buf = 0;
     attr_locked = FALSE;
+}
+
+/* The description see in rgt_tmpls_lib.h */
+rgt_attrs_t *
+rgt_tmpls_attrs_save(rgt_attrs_t *attrs)
+{
+    int i;
+
+    assert(attrs == global_attrs);
+
+    for (i = 0; i < ATTR_NUM; i++)
+    {
+        saved_attrs[i] = attrs[i];
+        if (attrs[i].type == RGT_ATTR_TYPE_UNKNOWN)
+            break;
+        if (attrs[i].type == RGT_ATTR_TYPE_STR && attrs[i].str_val != NULL)
+            saved_attrs[i].str_val = strdup(attrs[i].str_val);
+    }
+
+    return saved_attrs;
+}
+
+/* The description see in rgt_tmpls_lib.h */
+void
+rgt_tmpls_attrs_saved_free(rgt_attrs_t *attrs)
+{
+    int i;
+
+    assert(attrs == saved_attrs);
+
+    for (i = 0; i < ATTR_NUM && attrs[i].type != RGT_ATTR_TYPE_UNKNOWN; i++)
+    {
+        if (attrs[i].type == RGT_ATTR_TYPE_STR)
+            free((void*)attrs[i].str_val);
+    }
 }
 
 /**
