@@ -502,6 +502,7 @@ RGT_DEF_FUNC(proc_log_msg_start)
         }
         else
         {
+            fprintf(fd, "\n");
             rgt_tmpls_output(fd, &xml2fmt_tmpls[LOG_MSG_START], attrs);
         }
 
@@ -844,10 +845,7 @@ RGT_DEF_FUNC(proc_log_msg_end)
         te_dbuf_reset(&user_ctx->json_data);
     }
 
-    if (line_prefix || no_prefix)
-        fprintf(fd, "\n");
-    else
-        fprintf(fd, "\n\n");
+    fprintf(fd, "\n");
 
     user_ctx->msg_prefix_len = 0;
 }
