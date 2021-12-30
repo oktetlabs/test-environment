@@ -58,7 +58,6 @@ cfg_rcfunix_make_confstr(te_string *confstr, cfg_instance *ta)
         { "kill_timeout", FALSE,  TRUE  },
         { "notcopy",      FALSE,  FALSE },
         { "sudo",         FALSE,  FALSE },
-        { "su",           FALSE,  FALSE },
         { "connect",      FALSE,  TRUE  },
         { "opaque",       FALSE,  TRUE  },
         { NULL,           FALSE,  FALSE },

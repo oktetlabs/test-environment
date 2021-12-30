@@ -112,13 +112,6 @@
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:enumeration>
-            <xsd:enumeration value="su">
-                <xsd:annotation>
-                    <xsd:documentation>
-                        Option used when we need to run agent under su
-                    </xsd:documentation>
-                </xsd:annotation>
-            </xsd:enumeration>
             <xsd:enumeration value="shell">
                 <xsd:annotation>
                     <xsd:documentation>

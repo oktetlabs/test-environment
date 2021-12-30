@@ -28,7 +28,7 @@
  * [:@attr_name{copy_timeout}=@attr_val{<timeout>}]
  * [:@attr_name{copy_tries}=@attr_val{<number_of_tries>}]
  * [:@attr_name{kill_timeout}=@attr_val{<timeout>}]
- * [:@attr_val{sudo|su}][:@attr_val{<shell>}][:@attr_val{<parameters>}]
+ * [:@attr_val{sudo}][:@attr_val{<shell>}][:@attr_val{<parameters>}]
  * </pre>
  *
  * where elements in square brackets are optional and may be skipped.
@@ -60,8 +60,8 @@
  *   start-up procedure fails;
  * - @attr_name{kill_timeout} - specifies the maximum time duration
  *   (in seconds) that is allowed for Test Agent termination procedure;
- * - @attr_val{sudo|su} - specify this option when we need to run agent under
- *   @prog{sudo|su} (with root privileges). This can be necessary if Test Agent
+ * - @attr_val{sudo} - specify this option when we need to run agent under
+ *   @prog{sudo} (with root privileges). This can be necessary if Test Agent
  *   access resources that require privileged permissions (for example
  *   network interface configuration);
  * - @attr_val{<shell>} - is usually used to run the Test Agent under
@@ -204,7 +204,7 @@
  * [[user@]<IP address or hostname>]:<port>
  *     [:key=<ssh private key file>][:ssh_port=<port>][:ssh_proxy=<hostname>]
  *     [:copy_timeout=<timeout>][:kill_timeout=<timeout>]
- *     [:sudo|su][:<shell>][:parameters]
+ *     [:sudo][:<shell>][:parameters]
  *
  * If host is not specified, the Test Agent is started on the local
  * host.  It is assumed that user starting Dispatcher may use ssh/scp
@@ -262,7 +262,6 @@ typedef struct unix_ta {
     unsigned int    kill_timeout;   /**< TA kill timeout */
 
     te_bool sudo;       /**< Manipulate process using sudo */
-    te_bool su;         /**< Run process using "su -c" */
     te_bool is_local;   /**< TA is started on the local PC */
 
     te_bool ext_rcf_listener;  /**< Listener socket used to accept RCF
@@ -640,10 +639,6 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     else
     {
         ta->sudo = FALSE;
-        if ((val = te_kvpairs_get(conf, "su")) != NULL)
-            ta->su = TRUE;
-        else
-            ta->su = FALSE;
     }
 
     if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "connect")))
@@ -804,8 +799,6 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     if (rc == 0)
         rc = te_string_append(&cmd, "%s",
                                    rcfunix_ta_sudo(ta));
-    if (rc == 0 && ta->su)
-        rc = te_string_append(&cmd, "su -c ");
 
     /*
      * Add directory with agent to the PATH
@@ -854,9 +847,6 @@ rcfunix_start(const char *ta_name, const char *ta_type,
                 "%s/ta %s %s %s",
                 ta->run_dir, ta->ta_name, ta->port,
                 (cfg_str.ptr == NULL) ? "" : cfg_str.ptr);
-
-    if (rc == 0 && ta->su)
-        rc = te_string_append(&cmd, "'");
 
     if (rc == 0)
         rc = te_string_append(&cmd,
