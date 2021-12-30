@@ -23,6 +23,7 @@ txt_path=
 junit_path=
 line_prefix=
 no_prefix=
+txt_timeout=
 mi_raw=
 mi_only=false
 
@@ -65,6 +66,7 @@ Usage: te_proc_raw_log.sh [<options>]
                                 --conf-dir, --cfg, --opts), you'd better
                                 pass --sniff-log-dir to this script.
   --sniff-log-dir=<dirpath>     Path to the *TEN* side capture files.
+  --txt-timeout=<timeout_ms>    Timeout to group text entries together
   --txt-detailed-packets        Print more detailed packet dumps in text log.
   --txt-line-prefix             Add a prefix before every message line in text log.
   --txt-no-prefix               Print only message bodies without any prefixes
@@ -116,6 +118,7 @@ function print_warn() {
 #   junit_path
 #   line_prefix
 #   no_prefix
+#   txt_timeout
 #   mi_raw
 #   mi_only
 #   sniff_detailed_packets
@@ -144,6 +147,7 @@ function process_opts() {
 
             --txt-line-prefix) line_prefix="-L" ;;
             --txt-no-prefix) no_prefix="-N" ;;
+            --txt-timeout=*) txt_timeout="-t ${1#--txt-timeout=}" ;;
 
             --txt-detailed-packets)
                 sniff_detailed_packets="--detailed-packets"
@@ -316,8 +320,8 @@ function main() {
             if [[ -n "${txt_path}" ]] ; then
                 "${BINDIR}"/rgt-xml2text -f "${log_xml_merged}" \
                     -o "${txt_path}" \
-                    ${line_prefix} ${no_prefix} ${mi_raw} \
-                    ${sniff_detailed_packets}
+                    ${line_prefix} ${no_prefix} ${txt_timeout} \
+                    ${mi_raw} ${sniff_detailed_packets}
             fi
 
             if [[ -n "${plain_html_path}" ]] ; then

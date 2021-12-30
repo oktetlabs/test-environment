@@ -50,6 +50,11 @@ cat <<EOF
   -P, --detailed-packets        Print more detailed packet dumps.
   --html                        Generate log in html format (instead of text).
   --mi                          Generate a stream of MIs
+  -t <timeout_ms>               Same as:
+  --txt-timeout=<timeout_ms>        When creating a test log, group similar
+                                messages under one header if they have the
+                                same non-timestamp fields and timestamp
+                                differ less than the specified timeout
 EOF
 else
 cat <<EOF
@@ -86,6 +91,15 @@ process_opts()
                 SNIFF_LOG_DIR="${1#--sniff-log-dir=}"
                 PROC_OPTS+=("$1")
                 ;;
+
+            -t)
+                shift
+                PROC_OPTS+=("--txt-timeout=$1")
+                ;;
+            --txt-timeout)
+                PROC_OPTS+=("$1")
+                ;;
+
             --txt-*)
                 PROC_OPTS+=("$1")
                 ;;
