@@ -299,14 +299,15 @@ rcfunix_ta_free(unix_ta *ta)
  * Execute the command without forever blocking.
  *
  * @param timeout       timeout in seconds
+ * @param out           where to store stdout (if not NULL)
  * @param fmt           format string of the command to be executed
  *
  * @return Status code.
  * @return TE_ETIMEDOUT    Command timed out
  */
 static te_errno
-__attribute__((format(printf, 2, 3)))
-system_with_timeout(int timeout, const char *fmt, ...)
+__attribute__((format(printf, 3, 4)))
+system_with_timeout(int timeout, te_string *out, const char *fmt, ...)
 {
     va_list         ap;
     char           *cmd;
@@ -339,6 +340,7 @@ system_with_timeout(int timeout, const char *fmt, ...)
     {
         struct timeval tv;
         fd_set set;
+        ssize_t read_rc;
 
         tv.tv_sec = timeout;
         tv.tv_usec = 0;
@@ -362,7 +364,8 @@ system_with_timeout(int timeout, const char *fmt, ...)
             return TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT);
         }
 
-        if (read(fd, buf, sizeof(buf)) == 0)
+        memset(buf, 0, sizeof(buf));
+        if ((read_rc = read(fd, buf, sizeof(buf) - 1)) == 0)
         {
             if (close(fd) != 0)
                 ERROR("Failed to close() pipe from stdout of the shell "
@@ -394,6 +397,16 @@ system_with_timeout(int timeout, const char *fmt, ...)
 
             free(cmd);
             return 0;
+        }
+        else if (read_rc > 0 && out != NULL)
+        {
+            if ((rc = te_string_append(out, "%s", buf)) != 0)
+            {
+                ERROR("te_string_append() failed to add '%s' with error: %r",
+                      buf, rc);
+                free(cmd);
+                return rc;
+            }
         }
     }
 
@@ -495,6 +508,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     const char *val;
     char       *ta_list_file;
     const char *ld_preload = NULL;
+    te_bool     shell_is_bash = TRUE;
 
     unsigned int timestamp;
 
@@ -772,7 +786,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
         for (rc = TE_RC(TE_RCF_UNIX, TE_EFAIL), i = 0; i < ta->copy_tries; i++)
         {
-            rc = system_with_timeout(ta->copy_timeout, "%s", cmd.ptr);
+            rc = system_with_timeout(ta->copy_timeout, NULL, "%s", cmd.ptr);
             if (rc == 0)
                 break;
             te_sleep(sleep_sec);
@@ -791,6 +805,56 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         }
     }
 
+    /*
+     * Detect shell name for a non-local TA
+     */
+    if (!ta->is_local)
+    {
+        /* Expected string is '/bin/shell_name' and 32 bytes is enough */
+        te_string cmd_stdout = TE_STRING_INIT_STATIC(32);
+
+        te_string_reset(&cmd);
+        /*
+         * We need two backslashes here: the first is C escape sequence,
+         * the second is to avoid processing variable on the engine side.
+         */
+        rc = te_string_append(&cmd, "%secho -n \\$SHELL%s",
+                              ta->start_prefix.ptr, ta->cmd_suffix);
+        if (rc != 0)
+        {
+            ERROR("Failed to compose command to detect shell name: %r", rc);
+            te_string_free(&cfg_str);
+            te_string_free(&cmd);
+            rcfunix_ta_free(ta);
+            return rc;
+        }
+
+        RING("Command to detect shell name: %s", cmd.ptr);
+        if (!(*flags & TA_FAKE))
+        {
+            /*
+             * Limit the command execution time to 'copy_timeout' value: we
+             * need to make sure that the command will not be executed forever.
+             * To do this, it makes no sense to introduce an additional
+             * configuration parameter for TA.
+             */
+            rc = system_with_timeout(ta->copy_timeout, &cmd_stdout,
+                                     "%s", cmd.ptr);
+            if (rc != 0)
+            {
+                ERROR("Failed to detect shell name: %r", rc);
+                te_string_free(&cfg_str);
+                te_string_free(&cmd);
+                rcfunix_ta_free(ta);
+                return rc;
+            }
+
+            RING("Shell is: %s", cmd_stdout.ptr);
+            if (strcmp(cmd_stdout.ptr, "/bin/bash") != 0)
+                shell_is_bash = FALSE;
+        }
+    }
+
     /* Clean up command string */
     te_string_reset(&cmd);
 
@@ -799,6 +863,12 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     if (rc == 0)
         rc = te_string_append(&cmd, "%s",
                                    rcfunix_ta_sudo(ta));
+
+    /*
+     * Run non-local TA in /bin/bash if it is needed
+     */
+    if (rc == 0 && !ta->is_local && !shell_is_bash)
+        rc = te_string_append(&cmd, "/bin/bash -c '");
 
     /*
      * Add directory with agent to the PATH
@@ -847,6 +917,12 @@ rcfunix_start(const char *ta_name, const char *ta_type,
                 "%s/ta %s %s %s",
                 ta->run_dir, ta->ta_name, ta->port,
                 (cfg_str.ptr == NULL) ? "" : cfg_str.ptr);
+
+    /*
+     * Add the final single quote if /bin/bash is used
+     */
+    if (rc == 0 && !ta->is_local && !shell_is_bash)
+        rc = te_string_append(&cmd, "'");
 
     if (rc == 0)
         rc = te_string_append(&cmd,
@@ -946,14 +1022,14 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         }
         else
         {
-            rc = system_with_timeout(ta->kill_timeout,
+            rc = system_with_timeout(ta->kill_timeout, NULL,
                      "%s%skill %d%s " RCFUNIX_REDIRECT,
                      ta->cmd_prefix.ptr, rcfunix_ta_sudo(ta), ta->pid,
                      ta->cmd_suffix);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 goto done;
 
-            rc = system_with_timeout(ta->kill_timeout,
+            rc = system_with_timeout(ta->kill_timeout, NULL,
                      "%s%skill -9 %d%s " RCFUNIX_REDIRECT,
                      ta->cmd_prefix.ptr, rcfunix_ta_sudo(ta), ta->pid,
                      ta->cmd_suffix);
@@ -961,14 +1037,14 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
                 goto done;
         }
 
-        rc = system_with_timeout(ta->kill_timeout,
+        rc = system_with_timeout(ta->kill_timeout, NULL,
                  "%s%skillall %s/ta%s " RCFUNIX_REDIRECT,
                  ta->cmd_prefix.ptr, rcfunix_ta_sudo(ta), ta->run_dir,
                  ta->cmd_suffix);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             goto done;
 
-        rc = system_with_timeout(ta->kill_timeout,
+        rc = system_with_timeout(ta->kill_timeout, NULL,
                  "%s%skillall -9 %s/ta%s " RCFUNIX_REDIRECT,
                  ta->cmd_prefix.ptr, rcfunix_ta_sudo(ta),
                  ta->run_dir, ta->cmd_suffix);
@@ -991,7 +1067,7 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
     }
 
     RING("CMD to remove: %s", cmd.ptr);
-    rc = system_with_timeout(ta->kill_timeout, "%s", cmd.ptr);
+    rc = system_with_timeout(ta->kill_timeout, NULL, "%s", cmd.ptr);
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         goto done;
 
