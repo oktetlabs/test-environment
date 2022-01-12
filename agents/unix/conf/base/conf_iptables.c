@@ -202,8 +202,8 @@ iptables_perif_chain_is_enabled(const char *ifname, const char *table,
     INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
 
     TE_SPRINTF(buf,
-        IPTABLES_TOOL " %s -t %s -S %s | grep '^-A %s -%c %s -j %s_%s'",
-        iptables_tool_options, table, chain, chain,
+        IPTABLES_TOOL " %s -t %s -S %s_%s | grep '^-A %s -%c %s -j %s_%s'",
+        iptables_tool_options, table, chain, ifname, chain,
         iptables_is_chain_output(chain) ? 'o' : 'i',
         ifname, chain, ifname);
     VERB("Invoke: %s", buf);
