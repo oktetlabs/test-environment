@@ -1372,6 +1372,98 @@ tapi_cfg_net_nodes_switch_pci_fn_to_interface(enum net_node_type type)
     return tapi_cfg_net_nodes_update_pci_fn_to_interface(type);
 }
 
+static te_errno
+tapi_cfg_net_node_get_pci_info(cfg_net_t *net, cfg_net_node_t *node,
+                               const char *oid_str, cfg_oid *oid, void *cookie)
+{
+    cfg_net_pci_info_t *pci_info;
+    char **pci_oids;
+    unsigned int n_pci = 0;
+    unsigned int i;
+    te_errno rc;
+    const char *agent;
+    cfg_val_type type;
+    char *domain = NULL;
+    char *bus = NULL;
+    char *slot = NULL;
+    int fn;
+
+    UNUSED(net);
+    UNUSED(oid_str);
+
+    if (cookie == NULL)
+    {
+        ERROR("Invalid cookie passed to get node PCI info");
+        return TE_RC(TE_CONF_API, TE_EINVAL);
+    }
+    pci_info = (cfg_net_pci_info_t *)cookie;
+
+    if (pci_info->node_type != node->type)
+        return 0;
+
+    tapi_cfg_net_get_node_rsrc_type(node);
+    rc = tapi_cfg_net_node_get_pci_oids(node, &n_pci, &pci_oids);
+    if (rc != 0)
+        goto fail_get_pci_oids;
+
+    type = CVT_STRING;
+    rc = cfg_get_instance_fmt(&type, &domain, "%s/domain:", *pci_oids);
+    if (rc != 0)
+        goto fail_get_domain;
+
+    rc = cfg_get_instance_fmt(&type, &bus, "%s/bus:", *pci_oids);
+    if (rc != 0)
+        goto fail_get_bus;
+
+    rc = cfg_get_instance_fmt(&type, &slot, "%s/slot:", *pci_oids);
+    if (rc != 0)
+        goto fail_get_slot;
+
+    type = CVT_INTEGER;
+    rc = cfg_get_instance_fmt(&type, &fn, "%s/fn:", *pci_oids);
+    if (rc != 0)
+        goto fail_get_fn;
+
+    pci_info->pci_addr = TE_ALLOC(16);
+    if (pci_info->pci_addr == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto fail_alloc_pci_addr;
+    }
+    snprintf(pci_info->pci_addr, 16, "%s:%s:%s.%d", domain, bus, slot, fn);
+
+    agent = CFG_OID_GET_INST_NAME(oid, 1);
+    rc = tapi_cfg_pci_get_ta_driver(agent, NET_DRIVER_TYPE_NET,
+                                    &pci_info->ta_driver);
+    if (rc != 0)
+        goto fail_get_driver;
+
+    return 0;
+
+fail_get_driver:
+    tapi_cfg_net_free_pci_info(pci_info);
+fail_alloc_pci_addr:
+fail_get_fn:
+    free(slot);
+fail_get_slot:
+    free(bus);
+fail_get_bus:
+    free(domain);
+fail_get_domain:
+    for (i = 0; i < n_pci; i++)
+        free(pci_oids[i]);
+fail_get_pci_oids:
+    return rc;
+}
+
+te_errno
+tapi_cfg_net_get_iut_if_pci_info(cfg_net_pci_info_t *iut_if_pci_info)
+{
+    tapi_cfg_net_init_pci_info(iut_if_pci_info);
+    iut_if_pci_info->node_type = NET_NODE_TYPE_NUT;
+    return tapi_cfg_net_foreach_node(tapi_cfg_net_node_get_pci_info,
+                                     iut_if_pci_info);
+}
 
 static tapi_cfg_net_node_cb tapi_cfg_net_node_reserve;
 
@@ -2487,4 +2579,18 @@ tapi_cfg_net_node_get_pci_oids(const cfg_net_node_t *node, unsigned int *n_pci,
     free(node_oid);
 
     return rc;
+}
+
+void
+tapi_cfg_net_init_pci_info(cfg_net_pci_info_t *pci_info)
+{
+    pci_info->pci_addr = NULL;
+    pci_info->ta_driver = NULL;
+}
+
+void
+tapi_cfg_net_free_pci_info(cfg_net_pci_info_t *pci_info)
+{
+    free(pci_info->pci_addr);
+    free(pci_info->ta_driver);
 }

@@ -72,6 +72,27 @@ typedef struct cfg_nets_t {
     cfg_net_t      *nets;       /**< Array with nets */
 } cfg_nets_t;
 
+/** PCI device of node description structure */
+typedef struct cfg_net_pci_info_t {
+    enum net_node_type  node_type;
+    char               *pci_addr;
+    char               *ta_driver;
+} cfg_net_pci_info_t;
+
+/**
+ * Initialize PCI device info structure.
+ *
+ * @param pci_info      Pointer to PCI info structure.
+ */
+extern void tapi_cfg_net_init_pci_info(cfg_net_pci_info_t *pci_info);
+
+/**
+ * Free resources allocated for info of PCI device.
+ *
+ * @param pci_info      Pointer to PCI info structure.
+ */
+extern void tapi_cfg_net_free_pci_info(cfg_net_pci_info_t *pci_info);
+
 /**
  * Get type of the network node resource.
  *
@@ -279,6 +300,15 @@ extern te_errno tapi_cfg_net_foreach_node(tapi_cfg_net_node_cb *cb,
 extern te_errno tapi_cfg_net_bind_driver_by_node(enum net_node_type node_type,
                                             enum tapi_cfg_driver_type driver);
 
+/**
+ * Fill PCI device info of IUT node.
+ *
+ * @param iut_if_pci_info       Pointer to PCI info structure of IUT node.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_get_iut_if_pci_info(
+                                    cfg_net_pci_info_t *iut_if_pci_info);
 /**
  * Update network nodes specified in terms of PCI function and bound to
  * network driver to refer to corresponding network interfaces.
