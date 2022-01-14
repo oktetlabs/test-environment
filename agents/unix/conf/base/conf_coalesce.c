@@ -206,7 +206,7 @@ coalesce_param_get(unsigned int gid,
     UNUSED(oid);
     UNUSED(coalesce_name);
 
-    rc = get_ethtool_value(if_name, gid, ETHTOOL_GCOALESCE,
+    rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_COALESCE,
                            &ecmd, (void **)&eptr, FALSE);
     if (rc != 0)
         return rc;
@@ -255,7 +255,7 @@ coalesce_param_set(unsigned int gid,
     UNUSED(oid);
     UNUSED(coalesce_name);
 
-    rc = get_ethtool_value(if_name, gid, ETHTOOL_GCOALESCE,
+    rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_COALESCE,
                            &ecmd, (void **)&eptr, TRUE);
     if (rc != 0)
         return rc;
@@ -293,7 +293,7 @@ if_coalesce_commit(unsigned int gid, const cfg_oid *p_oid)
     UNUSED(gid);
     if_name = CFG_OID_GET_INST_NAME(p_oid, 2);
 
-    return commit_ethtool_value(if_name, ETHTOOL_SCOALESCE);
+    return commit_ethtool_value(if_name, TA_ETHTOOL_COALESCE);
 }
 
 /* Predeclaration */

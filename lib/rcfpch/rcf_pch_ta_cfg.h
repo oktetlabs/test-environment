@@ -284,6 +284,11 @@ extern void ta_cfg_obj_log(const ta_cfg_obj_t *obj);
  */
 #define TA_OBJ_TYPE_IF_PAUSE "if_pause"
 
+/**
+ * Name for the object type of network interface link settings
+ */
+#define TA_OBJ_TYPE_IF_LINK_SETS "if_link_sets"
+
 /** System-independent route types */
 typedef enum ta_route_type {
     TA_RT_TYPE_UNSPECIFIED,

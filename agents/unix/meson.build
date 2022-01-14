@@ -1,5 +1,7 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
+conf_data = configuration_data()
+
 name = get_option('agent-unix-name')
 ta_platform = get_option('agent-unix-platform')
 tadir = join_paths(get_option('agentsdir'), name)
@@ -212,6 +214,191 @@ endif
 foreach l : ta_non_symtbl_libs + ta_symtbl_libs
     deps += [ get_variable('dep_lib_static_' + l) ]
 endforeach
+
+#
+# Check ethtool-related things.
+#
+
+conf_data.set('TA_ETHTOOL_LINK_MODE_UNDEF', '0xffff',
+              description: 'Link mode is not defined in ethtool.h')
+
+link_modes = [
+    'ETHTOOL_LINK_MODE_10baseT_Half_BIT',
+    'ETHTOOL_LINK_MODE_10baseT_Full_BIT',
+    'ETHTOOL_LINK_MODE_100baseT_Half_BIT',
+    'ETHTOOL_LINK_MODE_100baseT_Full_BIT',
+    'ETHTOOL_LINK_MODE_1000baseT_Half_BIT',
+    'ETHTOOL_LINK_MODE_1000baseT_Full_BIT',
+    'ETHTOOL_LINK_MODE_Autoneg_BIT',
+    'ETHTOOL_LINK_MODE_TP_BIT',
+    'ETHTOOL_LINK_MODE_AUI_BIT',
+    'ETHTOOL_LINK_MODE_MII_BIT',
+    'ETHTOOL_LINK_MODE_FIBRE_BIT',
+    'ETHTOOL_LINK_MODE_BNC_BIT',
+    'ETHTOOL_LINK_MODE_10000baseT_Full_BIT',
+    'ETHTOOL_LINK_MODE_Pause_BIT',
+    'ETHTOOL_LINK_MODE_Asym_Pause_BIT',
+    'ETHTOOL_LINK_MODE_2500baseX_Full_BIT',
+    'ETHTOOL_LINK_MODE_Backplane_BIT',
+    'ETHTOOL_LINK_MODE_1000baseKX_Full_BIT',
+    'ETHTOOL_LINK_MODE_10000baseKX4_Full_BIT',
+    'ETHTOOL_LINK_MODE_10000baseKR_Full_BIT',
+    'ETHTOOL_LINK_MODE_10000baseR_FEC_BIT',
+    'ETHTOOL_LINK_MODE_20000baseMLD2_Full_BIT',
+    'ETHTOOL_LINK_MODE_20000baseKR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_40000baseKR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_40000baseCR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_40000baseSR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_40000baseLR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_56000baseKR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_56000baseCR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_56000baseSR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_56000baseLR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_25000baseCR_Full_BIT',
+    'ETHTOOL_LINK_MODE_25000baseKR_Full_BIT',
+    'ETHTOOL_LINK_MODE_25000baseSR_Full_BIT',
+    'ETHTOOL_LINK_MODE_50000baseCR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_50000baseKR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseKR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseSR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseCR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseLR4_ER4_Full_BIT',
+    'ETHTOOL_LINK_MODE_50000baseSR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_1000baseX_Full_BIT',
+    'ETHTOOL_LINK_MODE_10000baseCR_Full_BIT',
+    'ETHTOOL_LINK_MODE_10000baseSR_Full_BIT',
+    'ETHTOOL_LINK_MODE_10000baseLR_Full_BIT',
+    'ETHTOOL_LINK_MODE_10000baseLRM_Full_BIT',
+    'ETHTOOL_LINK_MODE_10000baseER_Full_BIT',
+    'ETHTOOL_LINK_MODE_2500baseT_Full_BIT',
+    'ETHTOOL_LINK_MODE_5000baseT_Full_BIT',
+    'ETHTOOL_LINK_MODE_FEC_NONE_BIT',
+    'ETHTOOL_LINK_MODE_FEC_RS_BIT',
+    'ETHTOOL_LINK_MODE_FEC_BASER_BIT',
+    'ETHTOOL_LINK_MODE_50000baseKR_Full_BIT',
+    'ETHTOOL_LINK_MODE_50000baseSR_Full_BIT',
+    'ETHTOOL_LINK_MODE_50000baseCR_Full_BIT',
+    'ETHTOOL_LINK_MODE_50000baseLR_ER_FR_Full_BIT',
+    'ETHTOOL_LINK_MODE_50000baseDR_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseKR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseSR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseCR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseLR2_ER2_FR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseDR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_200000baseKR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_200000baseSR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_200000baseLR4_ER4_FR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_200000baseDR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_200000baseCR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_100baseT1_Full_BIT',
+    'ETHTOOL_LINK_MODE_1000baseT1_Full_BIT',
+    'ETHTOOL_LINK_MODE_400000baseKR8_Full_BIT',
+    'ETHTOOL_LINK_MODE_400000baseSR8_Full_BIT',
+    'ETHTOOL_LINK_MODE_400000baseLR8_ER8_FR8_Full_BIT',
+    'ETHTOOL_LINK_MODE_400000baseDR8_Full_BIT',
+    'ETHTOOL_LINK_MODE_400000baseCR8_Full_BIT',
+    'ETHTOOL_LINK_MODE_FEC_LLRS_BIT',
+    'ETHTOOL_LINK_MODE_100000baseKR_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseSR_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseLR_ER_FR_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseCR_Full_BIT',
+    'ETHTOOL_LINK_MODE_100000baseDR_Full_BIT',
+    'ETHTOOL_LINK_MODE_200000baseKR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_200000baseSR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_200000baseLR2_ER2_FR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_200000baseDR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_200000baseCR2_Full_BIT',
+    'ETHTOOL_LINK_MODE_400000baseKR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_400000baseSR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_400000baseLR4_ER4_FR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_400000baseDR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_400000baseCR4_Full_BIT',
+    'ETHTOOL_LINK_MODE_100baseFX_Half_BIT',
+    'ETHTOOL_LINK_MODE_100baseFX_Full_BIT',
+    'SUPPORTED_10baseT_Half',
+    'SUPPORTED_10baseT_Full',
+    'SUPPORTED_100baseT_Half',
+    'SUPPORTED_100baseT_Full',
+    'SUPPORTED_1000baseT_Half',
+    'SUPPORTED_1000baseT_Full',
+    'SUPPORTED_Autoneg',
+    'SUPPORTED_TP',
+    'SUPPORTED_AUI',
+    'SUPPORTED_MII',
+    'SUPPORTED_FIBRE',
+    'SUPPORTED_BNC',
+    'SUPPORTED_10000baseT_Full',
+    'SUPPORTED_Pause',
+    'SUPPORTED_Asym_Pause',
+    'SUPPORTED_2500baseX_Full',
+    'SUPPORTED_Backplane',
+    'SUPPORTED_1000baseKX_Full',
+    'SUPPORTED_10000baseKX4_Full',
+    'SUPPORTED_10000baseKR_Full',
+    'SUPPORTED_10000baseR_FEC',
+    'SUPPORTED_20000baseMLD2_Full',
+    'SUPPORTED_20000baseKR2_Full',
+    'SUPPORTED_40000baseKR4_Full',
+    'SUPPORTED_40000baseCR4_Full',
+    'SUPPORTED_40000baseSR4_Full',
+    'SUPPORTED_40000baseLR4_Full',
+    'SUPPORTED_56000baseKR4_Full',
+    'SUPPORTED_56000baseCR4_Full',
+    'SUPPORTED_56000baseSR4_Full',
+    'SUPPORTED_56000baseLR4_Full',
+    'ADVERTISED_10baseT_Half',
+    'ADVERTISED_10baseT_Full',
+    'ADVERTISED_100baseT_Half',
+    'ADVERTISED_100baseT_Full',
+    'ADVERTISED_1000baseT_Half',
+    'ADVERTISED_1000baseT_Full',
+    'ADVERTISED_Autoneg',
+    'ADVERTISED_TP',
+    'ADVERTISED_AUI',
+    'ADVERTISED_MII',
+    'ADVERTISED_FIBRE',
+    'ADVERTISED_BNC',
+    'ADVERTISED_10000baseT_Full',
+    'ADVERTISED_Pause',
+    'ADVERTISED_Asym_Pause',
+    'ADVERTISED_2500baseX_Full',
+    'ADVERTISED_Backplane',
+    'ADVERTISED_1000baseKX_Full',
+    'ADVERTISED_10000baseKX4_Full',
+    'ADVERTISED_10000baseKR_Full',
+    'ADVERTISED_10000baseR_FEC',
+    'ADVERTISED_20000baseMLD2_Full',
+    'ADVERTISED_20000baseKR2_Full',
+    'ADVERTISED_40000baseKR4_Full',
+    'ADVERTISED_40000baseCR4_Full',
+    'ADVERTISED_40000baseSR4_Full',
+    'ADVERTISED_40000baseLR4_Full',
+    'ADVERTISED_56000baseKR4_Full',
+    'ADVERTISED_56000baseCR4_Full',
+    'ADVERTISED_56000baseSR4_Full',
+    'ADVERTISED_56000baseLR4_Full',
+]
+
+#
+# This code will define any link mode not found in ethtool.h
+# to incorrect value 0xffff, so that TA code will be able to
+# check whether a given link mode is known without using #ifdef.
+# It will make the code much simpler, because macros cannot
+# include #ifdef.
+#
+
+foreach d : link_modes
+    if not cc.has_header_symbol('linux/ethtool.h', d)
+        conf_data.set(d, 'TA_ETHTOOL_LINK_MODE_UNDEF')
+    endif
+endforeach
+
+#
+# Without input template, meson will generate defines for all
+# things from conf_data automatically.
+#
+configure_file(output: 'config.h',
+               configuration: conf_data)
 
 generated_sources = []
 
