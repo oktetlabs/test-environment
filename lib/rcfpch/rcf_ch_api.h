@@ -1128,6 +1128,39 @@ typedef struct rcf_pch_cfg_object {
         }
 
 /**
+ * Define node collection that can be set.
+ * Unlike RCF_PCH_CFG_NODE_RW_COLLECTION(), this macro allows to
+ * specify a parent with commit function instead of commit function
+ * for the current node.
+ *
+ * @param _name     name of the declared node variable
+ * @param _subid    subidentifier name (const char *)
+ * @param _son      pointer to the first son node
+ * @param _brother  pointer to the next brother node
+ * @param _f_get    get accessor
+ * @param _f_set    set accessor
+ * @param _f_add    add accessor
+ * @param _f_del    delete accessor
+ * @param _f_list   list accessor
+ * @param _commit   parent with commit function
+ */
+#define RCF_PCH_CFG_NODE_RWC_COLLECTION(_name, _subid, _son, _brother,   \
+                                       _f_get,  _f_set,                 \
+                                       _f_add, _f_del, _f_list,         \
+                                       _commit)                         \
+    static rcf_pch_cfg_object _name = {                     \
+         .sub_id = _subid,                                  \
+         .son = _son,                                       \
+         .brother = _brother,                               \
+         .get = (rcf_ch_cfg_get)_f_get,                     \
+         .set = (rcf_ch_cfg_set)_f_set,                     \
+         .add = (rcf_ch_cfg_add)_f_add,                     \
+         .del = (rcf_ch_cfg_del)_f_del,                     \
+         .list = (rcf_ch_cfg_list)_f_list,                  \
+         .commit_parent = _commit,                          \
+        }
+
+/**
  * Define node collection that can be set with an array of substitutions
  *
  * @param _name     node name (rcf_pch_cfg_object)
