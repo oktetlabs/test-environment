@@ -36,8 +36,35 @@ typedef enum daemon_action {
 } daemon_action;
 
 /**
+ * Try to find systemctl binary.
+ *
+ * @note When systemctl is present, then:
+ * (1) service works via systemctl;
+ * (2) systemctl/service show the end of log, which takes up to 30s;
+ * (3) systemctl has a parameter to stop reading log and exist immediately.
+ * So systemctl is the preferred way to manipulate the services.
+ *
+ * @return Pathname to the service binary or @c NULL
+ */
+static const char *
+systemctl_app(void)
+{
+    const char *systemctl;
+
+    systemctl = "/usr/bin/systemctl";
+    if (file_exists((char *)systemctl))
+        return systemctl;
+
+    systemctl = "/bin/systemctl";
+    if (file_exists((char *)systemctl))
+        return systemctl;
+
+    return NULL;
+}
+
+/**
  * Try to find service binary.
- * 
+ *
  * @return Pathname to the service binary or @c NULL
  */
 static const char *
@@ -69,7 +96,8 @@ ntpd_apply_action(daemon_action act, te_bool *status)
 {
     const char *act_str = NULL;
     char cmd[RCF_MAX_PATH] = {0,};
-    const char *service = NULL;
+    const char *service = service_app();
+    const char *systemctl = systemctl_app();
     int res;
     int i;
 
@@ -92,8 +120,6 @@ ntpd_apply_action(daemon_action act, te_bool *status)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    service = service_app();
-
 #define CHECK_PRINTF_ERR(_res) \
 do {                                                                    \
     if (_res < 0 || _res > RCF_MAX_PATH)                                \
@@ -109,7 +135,14 @@ do {                                                                    \
 
     for (i = 0; (size_t)i < sizeof(ntpd_names)/sizeof(*ntpd_names); i++)
     {
-        if (service != NULL)
+        if (systemctl != NULL)
+        {
+            res = snprintf(cmd, RCF_MAX_PATH,
+                           "%s -n0 --no-pager %s %s " ">/dev/null 2>&1",
+                           systemctl, act_str, ntpd_names[i]);
+            CHECK_PRINTF_ERR(res);
+        }
+        else if (service != NULL)
         {
             res = snprintf(cmd, RCF_MAX_PATH, "%s %s %s >/dev/null 2>&1",
                            service, ntpd_names[i], act_str);
@@ -135,7 +168,7 @@ do {                                                                    \
         else
             continue;
 
-        if (service != NULL && res != 0 && res != 3)
+        if ((systemctl != NULL || service != NULL) && res != 0 && res != 3)
             continue;
 
         if (act == ACT_STATUS)
