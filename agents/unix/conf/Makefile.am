@@ -21,6 +21,7 @@ EXTRA_DIST=daemons/ldap/slapd.conf daemons/ldap/slapd_run.sh
 noinst_HEADERS = \
 	base/conf_netconf.h \
 	base/conf_common.h \
+	base/conf_ethtool.h \
 	ovs/conf_ovs.h \
 	process/conf_process.h \
 	route/conf_route.h \
@@ -54,6 +55,7 @@ libconf_a_SOURCES = \
 	base/conf_bridge.c \
 	base/conf_rlimits.c \
 	base/conf_block.c \
+	base/conf_ethtool.c \
 	process/conf_process.c \
 	route/conf_route.c \
 	route/conf_route_libnetconf.c \
