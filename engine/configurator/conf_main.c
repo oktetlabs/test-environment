@@ -2518,15 +2518,10 @@ restore_backup(const char *name)
  * Process reboot user request.
  *
  * @param msg           message pointer
- * @param update_dh     if true, add the command to dynamic history
  */
 static void
-process_reboot(cfg_reboot_msg *msg, te_bool update_dh)
+process_reboot(cfg_reboot_msg *msg)
 {
-    if (update_dh &&
-        (msg->rc = cfg_dh_push_command((cfg_msg *)msg, FALSE, NULL)) != 0)
-        return;
-
     msg->rc = rcf_ta_reboot(msg->ta_name, NULL, NULL,
                             msg->reboot_type);
 
@@ -2680,7 +2675,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             break;
 
         case CFG_REBOOT:
-            process_reboot((cfg_reboot_msg *)(*msg), update_dh);
+            process_reboot((cfg_reboot_msg *)(*msg));
             break;
 
         case CFG_BACKUP:

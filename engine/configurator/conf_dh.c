@@ -1522,7 +1522,6 @@ cfg_dh_push_command(cfg_msg *msg, te_bool local, const cfg_inst_val *old_val)
     {
         case CFG_REGISTER:
         case CFG_ADD:
-        case CFG_REBOOT:
             entry->type = CVT_NONE;
             break;
 
@@ -1569,12 +1568,6 @@ cfg_dh_push_command(cfg_msg *msg, te_bool local, const cfg_inst_val *old_val)
         entry->seq = last->seq + 1;
         entry->prev = last;
         last = entry;
-    }
-
-    if (msg->type == CFG_REBOOT)
-    {
-        for (entry = first; entry != NULL; entry = entry->next)
-            free_entry_backup(entry);
     }
 
     VERB("Add command %d", last->seq);
