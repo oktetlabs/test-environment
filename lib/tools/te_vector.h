@@ -161,8 +161,29 @@ te_vec_size(const te_vec *vec)
  *
  * @return Pointer to element
  */
+#if __STDC_VERSION__ >= 201112L
+#define te_vec_get(_vec, _index)                                \
+    (_Generic((_vec),                                            \
+             te_vec*: te_vec_get_mutable,                        \
+             const te_vec*: te_vec_get_immutable)(_vec, _index))
+#else
+#define te_vec_get(_vec, _index)                                        \
+    (__builtin_choose_expr(                                             \
+        __builtin_types_compatible_p(__typeof__(_vec), const te_vec *), \
+                                     te_vec_get_immutable,              \
+                                     te_vec_get_mutable)(_vec, _index))
+#endif
+
+static inline const void *
+te_vec_get_immutable(const te_vec *vec, size_t index)
+{
+    assert(vec != NULL);
+    assert(index < te_vec_size(vec));
+    return vec->data.ptr + index * vec->element_size;
+}
+
 static inline void *
-te_vec_get(te_vec *vec, size_t index)
+te_vec_get_mutable(te_vec *vec, size_t index)
 {
     assert(vec != NULL);
     assert(index < te_vec_size(vec));
@@ -178,8 +199,31 @@ te_vec_get(te_vec *vec, size_t index)
  *
  * @return Pointer to element
  */
+#if __STDC_VERSION__ >= 201112L
+#define te_vec_get_safe(_vec, _index, _element_size) \
+    (_Generic((_vec),                                  \
+             te_vec*: te_vec_get_safe_mutable,         \
+             const te_vec*: te_vec_get_safe_immutable) \
+             (_vec, _index, _element_size))
+#else
+#define te_vec_get_safe(_vec, _index, _element_size) \
+    (__builtin_choose_expr(                    \
+        __builtin_types_compatible_p(          \
+            __typeof__(_vec), const te_vec *), \
+            te_vec_get_safe_immutable,         \
+            te_vec_get_safe_mutable)(_vec, _index, _element_size))
+#endif
+
+static inline const void *
+te_vec_get_safe_immutable(const te_vec *vec, size_t index, size_t element_size)
+{
+    assert(vec != NULL);
+    assert(element_size == vec->element_size);
+    return te_vec_get(vec, index);
+}
+
 static inline void *
-te_vec_get_safe(te_vec *vec, size_t index, size_t element_size)
+te_vec_get_safe_mutable(te_vec *vec, size_t index, size_t element_size)
 {
     assert(vec != NULL);
     assert(element_size == vec->element_size);
