@@ -49,6 +49,9 @@
 /* iptables tool extra options */
 static char iptables_tool_options[RCF_MAX_VAL];
 
+/* List of available tables. */
+static te_string table_list = TE_STRING_INIT;
+
 /*
  * Methods
  */
@@ -125,6 +128,26 @@ RCF_PCH_CFG_NODE_COLLECTION(node_iptables_table, "table",
 RCF_PCH_CFG_NODE_NA(node_iptables, "iptables",
                     &node_iptables_table, NULL);
 
+/** Get the list of iptables tables available in the system. */
+static void
+iptables_obtain_table_list()
+{
+    const char *tables[] = {"filter", "mangle", "nat", "raw"};
+    size_t i;
+
+    te_string_reset(&table_list);
+
+    for (i = 0; i < TE_ARRAY_LEN(tables); i++)
+    {
+        int rc;
+
+        rc = ta_system_fmt(IPTABLES_TOOL " -t %s -L >/dev/null", tables[i]);
+        if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
+            continue;
+
+        te_string_append(&table_list, "%s ", tables[i]);
+    }
+}
 
 /**
  * Obtain list of built-in iptables tables.
@@ -142,22 +165,12 @@ iptables_table_list(unsigned int  gid, const char *oid,
                     const char *sub_id, char **list,
                     const char *ifname)
 {
-    static char *table_list = "filter mangle nat raw";
-
-    INFO("%s started", __FUNCTION__);
-
     UNUSED(sub_id);
-
-    *list = strdup(table_list);
-    if (*list == NULL)
-    {
-        ERROR("out of memory");
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(ifname);
+
+    *list = strdup(table_list.ptr);
 
     return 0;
 }
@@ -1040,6 +1053,7 @@ RCF_PCH_CFG_NODE_RW(node_iptables_tool_opts, "iptables_tool_opts",
 extern te_errno
 ta_unix_conf_iptables_init(void)
 {
+    iptables_obtain_table_list();
     rcf_pch_add_node("/agent", &node_iptables_tool_opts);
     return rcf_pch_add_node("/agent/interface", &node_iptables);
 }
