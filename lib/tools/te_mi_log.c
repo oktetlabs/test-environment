@@ -480,7 +480,7 @@ te_mi_meas_view_line_graph_str_append(const te_mi_meas_view *view,
 {
     const te_mi_meas_view_line_graph *line_graph = NULL;
     te_errno rc = 0;
-    te_mi_meas_ref *ref;
+    const te_mi_meas_ref *ref;
 
     line_graph = &view->data.line_graph;
 
@@ -501,7 +501,7 @@ te_mi_meas_view_line_graph_str_append(const te_mi_meas_view *view,
     if (rc == 0 && te_vec_size(&line_graph->axis_y) > 0)
     {
         rc = te_string_append(str, "\"axis_y\":[");
-        TE_VEC_FOREACH((te_vec *)&line_graph->axis_y, ref)
+        TE_VEC_FOREACH(&line_graph->axis_y, ref)
         {
             if (rc == 0)
                 rc = te_mi_meas_ref_str_append(ref, str);

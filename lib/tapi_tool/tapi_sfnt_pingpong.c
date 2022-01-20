@@ -119,14 +119,14 @@ static te_errno
 create_optional_sizes(const void *value, te_vec *args)
 {
     const te_vec  **sizes = (const te_vec **)value;
-    int           *elem;
+    const int     *elem;
     te_errno       rc;
     te_string      tmp = TE_STRING_INIT;
 
     if (*sizes == NULL)
         return TE_ENOENT;
 
-    TE_VEC_FOREACH((te_vec *)*sizes, elem)
+    TE_VEC_FOREACH(*sizes, elem)
     {
         rc = te_string_append(&tmp, "%d,", *elem);
         if (rc != 0)

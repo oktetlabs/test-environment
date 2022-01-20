@@ -473,7 +473,7 @@ initiator_dev_info_get(rcf_rpc_server *rpcs, const initiator_dev *dev,
 }
 
 static te_bool
-initiator_dev_equal(initiator_dev *first, initiator_dev *second)
+initiator_dev_equal(const initiator_dev *first, const initiator_dev *second)
 {
     return first->admin_index == second->admin_index &&
            first->controller_index == second->controller_index &&
@@ -481,11 +481,11 @@ initiator_dev_equal(initiator_dev *first, initiator_dev *second)
 }
 
 static te_bool
-initiator_dev_contains(const te_vec *devs, initiator_dev *dev)
+initiator_dev_contains(const te_vec *devs, const initiator_dev *dev)
 {
-    initiator_dev *current_dev;
+    const initiator_dev *current_dev;
 
-    TE_VEC_FOREACH((te_vec *)devs, current_dev)
+    TE_VEC_FOREACH(devs, current_dev)
     {
         if (initiator_dev_equal(current_dev, dev))
             return TRUE;
@@ -498,9 +498,9 @@ static te_errno
 initiator_dev_list_diff(const te_vec *first, const te_vec *second, te_vec *diff)
 {
     te_errno rc;
-    initiator_dev *dev;
+    const initiator_dev *dev;
 
-    TE_VEC_FOREACH((te_vec *)first, dev)
+    TE_VEC_FOREACH(first, dev)
     {
         if (initiator_dev_contains(second, dev))
             continue;
@@ -509,7 +509,7 @@ initiator_dev_list_diff(const te_vec *first, const te_vec *second, te_vec *diff)
             return rc;
     }
 
-    TE_VEC_FOREACH((te_vec *)second, dev)
+    TE_VEC_FOREACH(second, dev)
     {
         if (initiator_dev_contains(first, dev))
             continue;
