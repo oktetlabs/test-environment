@@ -2676,16 +2676,20 @@ process_user_request(usrreq *req)
         return;
     }
 
-    if (agent->flags & TA_DEAD)
+    if (agent->flags & TA_UNRECOVER)
+    {
+        ERROR("Request '%s' to unrecoverably dead TA '%s'",
+              rcf_op_to_string(msg->opcode), msg->ta);
+        msg->error = TE_RC(TE_RCF, TE_ETAFATAL);
+        rcf_answer_user_request(req);
+        return;
+    }
+
+    if (agent->flags & TA_DEAD && msg->opcode != RCFOP_REBOOT)
     {
         ERROR("Request '%s' to dead TA '%s'",
               rcf_op_to_string(msg->opcode), msg->ta);
-
-        if (agent->flags & TA_UNRECOVER)
-            msg->error = TE_RC(TE_RCF, TE_ETAFATAL);
-        else
-            msg->error = TE_RC(TE_RCF, TE_ETADEAD);
-
+        msg->error = TE_RC(TE_RCF, TE_ETADEAD);
         rcf_answer_user_request(req);
         return;
     }
