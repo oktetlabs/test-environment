@@ -407,6 +407,7 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
     cfg_val_type  cvt = CVT_STRING;
     cfg_val_type  cvt_int = CVT_INTEGER;
     char         *ta_dir;
+    char         *current_filename = NULL;
     int           loaded;
     te_errno      rc;
 
@@ -467,6 +468,23 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
 
     if (loaded)
     {
+        rc = cfg_get_instance_fmt(&cvt, &current_filename,
+                                  "/agent:%s/module:%s/filename:",
+                                  ta_name, module_name);
+        if (rc != 0)
+        {
+            ERROR("Failed to get the module '%s' 'filename' property on %s: %r",
+                  module_name, ta_name, rc);
+            goto out;
+        }
+
+        if (strcmp(current_filename, module_path.ptr) == 0)
+        {
+            /* Required module already loaded, nothing to do */
+            rc = 0;
+            goto out;
+        }
+
         rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                   "/agent:%s/module:%s/unload_holders:",
                                   ta_name, module_name);
@@ -536,6 +554,7 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
 out:
     te_string_free(&module_path);
     free(ta_dir);
+    free(current_filename);
 
     return TE_RC(TE_TAPI, rc);
 }
