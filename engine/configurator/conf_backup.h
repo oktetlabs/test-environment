@@ -25,13 +25,16 @@ extern "C" {
 /**
  * Process "backup" configuration file or backup file.
  *
- * @param node    <backup> node pointer
- * @param restore if TRUE, the configuration should be restored after
- *                unsuccessful dynamic history restoring
+ * @param node     <backup> node pointer
+ * @param restore  if TRUE, the configuration should be restored after
+ *                 unsuccessful dynamic history restoring
+ * @param subtrees Vector of the subtrees to restore. May be @c NULL for
+ *                 the root.
  *
  * @return status code (errno.h)
  */
-extern int cfg_backup_process_file(xmlNodePtr node, te_bool restore);
+extern int cfg_backup_process_file(xmlNodePtr node, te_bool restore,
+                                   const te_vec *subtrees);
 
 /**
  * Save current version of the TA subtree,

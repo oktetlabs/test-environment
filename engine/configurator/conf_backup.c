@@ -423,19 +423,49 @@ topo_qsort_predicate(const void *arg1, const void *arg2)
            cfg_all_inst[idx1]->obj->ordinal_number;
 }
 
+/**
+ * Check that oid belongs to subtree from vector of the subtrees
+ *
+ * @param subtrees Vector of the subtreees.
+ * @param oid      Instance oid to check.
+ *
+ * @return @c TRUE if oid belongs to subtree
+ */
+static te_bool
+check_oid_contains_subtrees(const te_vec *subtrees, const char *oid)
+{
+    char * const *subtree;
+
+    if (subtrees == NULL || te_vec_size(subtrees) == 0)
+    {
+        if (strcmp_start("/", oid) == 0)
+            return TRUE;
+        else
+            return FALSE;
+    }
+
+    TE_VEC_FOREACH(subtrees, subtree)
+    {
+        if (strcmp_start(*subtree, oid) == 0)
+            return TRUE;
+    }
+
+    return FALSE;
+}
 
 /**
- * Return all read/create instances, not mentioned in the configuration
- * file.
+ * Delete all instances from CS not mentioned in the configuration file
  *
- * @param root  root of subtree for which excessive entries should
- *              be removed
- * @param list  list of instances mentioned in the configuration file
+ * @param list          list of instances mentioned in the configuration file
+ * @param[out] has_deps @c TRUE, if there are objects that depend on
+ *                      at least one object from the @p list
+ * @param subtrees      Vector of the subtrees to delete. May be @c NULL
+ *                      for the root subtree.
  *
  * @return status code (see te_errno.h)
  */
 static int
-remove_excessive(char *root, cfg_instance *list, te_bool *has_deps)
+remove_excessive(cfg_instance *list, te_bool *has_deps, const te_vec *subtrees)
 {
     int rc;
     int n_deletable;
@@ -454,7 +484,7 @@ remove_excessive(char *root, cfg_instance *list, te_bool *has_deps)
         if (cfg_all_inst[i] == NULL ||
             !cfg_all_inst[i]->added ||
             cfg_all_inst[i]->obj->access != CFG_READ_CREATE ||
-            strncmp(cfg_all_inst[i]->oid, root, strlen(root)) != 0)
+            !check_oid_contains_subtrees(subtrees, cfg_all_inst[i]->oid))
         {
             continue;
         }
@@ -655,12 +685,14 @@ topo_sort_instances(cfg_instance *list)
 /**
  * Add/update entries, mentioned in the configuration file.
  *
- * @param list  list of instances mentioned in the configuration file
+ * @param list     list of instances mentioned in the configuration file
+ * @param subtrees Vector of the subtrees to restore. May be @c NULL for
+ *                 the root subtree.
  *
  * @return status code (see te_errno.h)
  */
 static int
-restore_entries(cfg_instance *list)
+restore_entries(cfg_instance *list, const te_vec *subtrees)
 {
     int           rc;
     int           n_processed     = 0;
@@ -674,7 +706,7 @@ restore_entries(cfg_instance *list)
     while (deps_might_fire)
     {
         deps_might_fire = FALSE;
-        if ((rc = remove_excessive("/", list, &deps_might_fire)) != 0)
+        if ((rc = remove_excessive(list, &deps_might_fire, subtrees)) != 0)
         {
             ERROR("Failed to remove excessive entries");
             free_instances(list);
@@ -733,14 +765,17 @@ restore_entries(cfg_instance *list)
 /**
  * Process "backup" configuration file or backup file.
  *
- * @param node    <backup> node pointer
- * @param restore if TRUE, the configuration should be restored after
- *                unsuccessful dynamic history restoring
+ * @param node     <backup> node pointer
+ * @param restore  if TRUE, the configuration should be restored after
+ *                 unsuccessful dynamic history restoring
+ * @param subtrees Vector of the subtrees to restore. May be @c NULL for
+ *                 the root.
  *
  * @return status code (errno.h)
  */
 int
-cfg_backup_process_file(xmlNodePtr node, te_bool restore)
+cfg_backup_process_file(xmlNodePtr node, te_bool restore,
+                        const te_vec *subtrees)
 {
     cfg_instance *list;
     xmlNodePtr    cur         = node->xmlChildrenNode;
@@ -766,7 +801,7 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore)
         }
     }
 
-    return restore_entries(list);
+    return restore_entries(list, subtrees);
 }
 
 /**
@@ -833,7 +868,7 @@ cfg_backup_restore_ta(char *ta)
         prev = tmp;
     }
 
-    return restore_entries(list);
+    return restore_entries(list, NULL);
 }
 
 /**

@@ -403,11 +403,14 @@ parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
  *                      substitutions
  * @param history       if TRUE, the configuration file must be a history,
  *                      otherwise, it must be a backup
+ * @param subtrees      Vector of the subtrees to execute the configuration
+ *                      file.
  *
  * @return status code (see te_errno.h)
  */
 static int
-parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool history)
+parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool history,
+                 const te_vec *subtrees)
 {
     xmlDocPtr   doc;
     xmlNodePtr  root;
@@ -468,7 +471,7 @@ parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool history)
         }
         else
         {
-            rc = cfg_backup_process_file(root, TRUE);
+            rc = cfg_backup_process_file(root, TRUE, subtrees);
         }
     }
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
@@ -2355,7 +2358,7 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
                 break;
             }
 
-            msg->rc = parse_config_xml(backup.ptr, NULL, FALSE);
+            msg->rc = parse_config_xml(backup.ptr, NULL, FALSE, &subtrees_vec);
             rcf_log_cfg_changes(FALSE);
 
             if (release_dh)
@@ -2945,7 +2948,7 @@ parse_config(const char *fname, te_kvpair_h *expand_vars)
     fclose(f);
 
     if (strcmp(str, "<?xml") == 0)
-        return parse_config_xml(fname, expand_vars, TRUE);
+        return parse_config_xml(fname, expand_vars, TRUE, NULL);
 #if WITH_CONF_YAML
     else if (strcmp(str, "---") == 0)
         return parse_config_yaml(fname, expand_vars, NULL);
@@ -3037,7 +3040,7 @@ main(int argc, char **argv)
     }
 
     if (cs_sniff_cfg_file != NULL &&
-        (rc = parse_config_xml(cs_sniff_cfg_file, NULL, TRUE)) != 0)
+        (rc = parse_config_xml(cs_sniff_cfg_file, NULL, TRUE, NULL)) != 0)
     {
         ERROR("Fatal error during sniffer configuration file parsing");
         goto exit;
