@@ -326,4 +326,20 @@ extern te_errno agent_alloc_l4_port(int socket_family, int socket_type,
  */
 extern void agent_free_l4_port(uint16_t port);
 
+/**
+ * Allocate the specified TCP/UDP port for TA.
+ *
+ * @param socket_family     Socket family to use, @c AF_INET
+ *                          for IPv4, @c AF_INET6 for IPv6 or @c 0 for IPv6
+ *                          with fallback to IPv4 if IPv6 is not supported.
+ * @param socket_type       Socket type to use, @c SOCK_STREAM, @c SOCK_DGRAM,
+ *                          or @c 0 to check both.
+ * @param port              Port number in host endian
+ *
+ * @return                  Status code
+ */
+extern te_errno agent_alloc_l4_specified_port(int socket_family,
+                                              int socket_type,
+                                              uint16_t port);
+
 #endif /* __TE_AGENTLIB_H__ */

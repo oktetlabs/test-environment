@@ -243,3 +243,28 @@ agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
 
     return TRUE;
 }
+
+te_errno
+agent_alloc_l4_specified_port(int socket_family, int socket_type,
+                              uint16_t port)
+{
+    pthread_mutex_lock(&alloc_lock);
+
+    if (port > MAX_AVAILABLE_PORT && port < MIN_AVAILABLE_PORT)
+    {
+        ERROR("Invalid port nubmer");
+        return TE_EINVAL;
+    }
+
+    if (!agent_check_l4_port_is_free(socket_family, socket_type, port))
+    {
+        ERROR("The port %s is busy");
+        return TE_EBUSY;
+    }
+
+    allocated_ports++;
+
+    pthread_mutex_unlock(&alloc_lock);
+
+    return 0;
+}

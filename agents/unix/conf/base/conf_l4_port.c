@@ -170,8 +170,12 @@ l4_port_allocated_add(unsigned int gid, const char *oid, const char *value,
 
     if ((int32_t)port != last_allocated_port)
     {
-        ERROR("Failed to add not the previously allocated port");
-        return TE_RC(TE_TA_UNIX, TE_EPERM);
+        if (agent_alloc_l4_specified_port(socket_type, socket_family,
+                                          port) != 0)
+        {
+            ERROR("Failed to add a new port");
+            return TE_RC(TE_TA_UNIX, TE_EPERM);
+        }
     }
 
     if (l4_port_allocated_find(port) >= 0)
