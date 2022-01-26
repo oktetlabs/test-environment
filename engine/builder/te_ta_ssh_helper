@@ -40,6 +40,7 @@ fail() {
 
 #######################################
 # Build TE_SSH_ARGS array variable for a test agent.
+# Do nothing but return 1 if ${ta}_BUILD is "local".
 #
 # Globals:
 #   TE_SSH_ARGS_DEF
@@ -136,14 +137,15 @@ te_ta_list_get_used() {
 te_ta_detect_type() {
     local ta="$1"; shift
 
+    local ssh_args=()
     local kname
     local ta_type
 
-    # Get TE_SSH_ARGS and TE_SSH_HOST for the TA
+    # Get TE_SSH_ARGS and TE_SSH_HOST for the TA, or signal if TA is local
     te_ta_ssh_args "${ta}" \
-        || fail "Cannot detect type because ${ta} is built locally"
+        && ssh_args=("${TE_SSH_ARGS[@]}")
 
-    kname="$(ssh "${TE_SSH_ARGS[@]}" uname -s)" \
+    kname="$(${ssh_args:+ssh "${ssh_args[@]}"} uname -s)" \
         || fail "Failed to get ${ta} (${TE_SSH_HOST}) kernel name"
     # Base TA type is just lowercase kernel name by default
     ta_type="${kname,,}"
@@ -197,20 +199,26 @@ te_ta_type_add_signature() {
     local cflags_extra="${ta}_CFLAGS_VAR"
     local ta_signature_var="${ta}_TA_SIGNATURE"
     local ta_signature
+    local ssh_args=()
+    local cc_args=("${!cc:-gcc} ${!cflags} ${!cflags_extra}")
 
     test -n "${!ta_type_var}" \
         || fail "Base TA type ${ta_type_var} is unspecified"
 
-    # Get TE_SSH_ARGS for the TA
+    # Get TE_SSH_ARGS for the TA, or signal if TA is local
     te_ta_ssh_args "${ta}" \
-        || fail "Cannot get signature because ${ta} is built locally"
+        && ssh_args=("${TE_SSH_ARGS[*]}")
 
     # Get signature for the TA host
     ta_signature="${!ta_signature_var}"
     if test -z "${ta_signature}" ; then
-        ta_signature="$(te_ta_signature "${TE_SSH_ARGS[*]}" \
-            "${!cc:-gcc} ${!cflags} ${!cflags_extra}")" \
-            || fail "Failed to get ${ta} (${TE_SSH_ARGS[*]}) signature"
+        if test ${#ssh_args[@]} -gt 0 ; then
+            ta_signature="$(te_ta_signature "${ssh_args[*]}" "${cc_args[*]}")" \
+                || fail "Failed to get ${ta} (${ssh_args[*]}) signature"
+        else
+            ta_signature="$(te_ta_signature_local "${cc_args[*]}")" \
+                || fail "Failed to get ${ta} signature"
+        fi
     fi
 
     export ${ta_type_var}="${!ta_type_var}_${ta_signature}"
