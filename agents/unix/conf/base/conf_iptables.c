@@ -49,9 +49,6 @@
 /* iptables tool extra options */
 static char iptables_tool_options[RCF_MAX_VAL];
 
-/* List of available tables. */
-static te_string table_list = TE_STRING_INIT;
-
 /*
  * Methods
  */
@@ -128,14 +125,19 @@ RCF_PCH_CFG_NODE_COLLECTION(node_iptables_table, "table",
 RCF_PCH_CFG_NODE_NA(node_iptables, "iptables",
                     &node_iptables_table, NULL);
 
-/** Get the list of iptables tables available in the system. */
+/**
+ * Get the list of iptables tables available in the system.
+ *
+ * @param table_list    Output string containing available tables separated
+ *                      with spaces.
+ */
 static void
-iptables_obtain_table_list()
+iptables_obtain_table_list(te_string *table_list)
 {
     const char *tables[] = {"filter", "mangle", "nat", "raw"};
     size_t i;
 
-    te_string_reset(&table_list);
+    te_string_reset(table_list);
 
     for (i = 0; i < TE_ARRAY_LEN(tables); i++)
     {
@@ -145,7 +147,7 @@ iptables_obtain_table_list()
         if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
             continue;
 
-        te_string_append(&table_list, "%s ", tables[i]);
+        te_string_append(table_list, "%s ", tables[i]);
     }
 }
 
@@ -165,10 +167,15 @@ iptables_table_list(unsigned int  gid, const char *oid,
                     const char *sub_id, char **list,
                     const char *ifname)
 {
+    static te_string table_list = TE_STRING_INIT;
+
     UNUSED(sub_id);
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(ifname);
+
+    if (table_list.len == 0)
+        iptables_obtain_table_list(&table_list);
 
     *list = strdup(table_list.ptr);
 
@@ -1053,7 +1060,6 @@ RCF_PCH_CFG_NODE_RW(node_iptables_tool_opts, "iptables_tool_opts",
 extern te_errno
 ta_unix_conf_iptables_init(void)
 {
-    iptables_obtain_table_list();
     rcf_pch_add_node("/agent", &node_iptables_tool_opts);
     return rcf_pch_add_node("/agent/interface", &node_iptables);
 }
