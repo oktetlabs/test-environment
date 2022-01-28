@@ -2601,7 +2601,7 @@ pci_sriov_get(unsigned int gid, const char *oid, char *value,
 
     rc = read_pci_int_attr(addr_str, "sriov_totalvfs", &result);
     if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-        result = -1;
+        result = 0;
     else if (rc != 0)
         return rc;
 
