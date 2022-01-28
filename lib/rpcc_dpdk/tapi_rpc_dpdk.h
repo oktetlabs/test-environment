@@ -36,6 +36,18 @@ extern "C" {
 extern int rpc_dpdk_find_representors(rcf_rpc_server *rpcs, unsigned int *n_rep,
                                       uint16_t **rep_port_ids);
 
+/**
+ * Get DPDK representor info.
+ *
+ * @param[in]  port_id          Port id of backing device
+ * @param[out] info             Representor info structure
+ *
+ * @return Number of representors, error if negative
+ */
+extern int rpc_rte_eth_representor_info_get(rcf_rpc_server *rpcs,
+                                            uint16_t port_id,
+                                            struct tarpc_rte_eth_representor_info *info);
+
 /**@} <!-- END te_lib_rpc_dpdk --> */
 
 #ifdef __cplusplus

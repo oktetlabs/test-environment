@@ -104,3 +104,74 @@ exit:
     out->retval = 0;
 #endif /* RTE_ETH_DEV_REPRESENTOR */
 })
+
+TARPC_FUNC(rte_eth_representor_info_get, {},
+{
+    int rc = 0;
+    int ret;
+    size_t copied;
+    uint32_t i;
+    struct rte_eth_representor_info *info = NULL;
+    struct tarpc_rte_eth_representor_range *ranges = NULL;
+    unsigned int n_ranges;
+
+    if (in->info.info_len == 0)
+    {
+        MAKE_CALL(ret = func(in->port_id, NULL));
+        rc = ret;
+        goto exit;
+    }
+
+    n_ranges = in->info.info_val[0].ranges.ranges_len;
+    info = TE_ALLOC(sizeof(*info) + n_ranges * sizeof(info->ranges[0]));
+    if (info == NULL)
+    {
+        rc = -ENOMEM;
+        goto exit;
+    }
+    info->nb_ranges_alloc = n_ranges;
+
+    MAKE_CALL(ret = func(in->port_id, info));
+
+    memset(&out->info, 0, sizeof(out->info));
+    if (ret >= 0)
+    {
+        out->info.controller = info->controller;
+        out->info.pf = info->pf;
+        out->info.nb_ranges = info->nb_ranges;
+
+        ranges = TE_ALLOC(info->nb_ranges * sizeof(*ranges));
+        if (ranges == NULL)
+        {
+            rc = -ENOMEM;
+            goto exit;
+        }
+
+        for (i = 0; i < info->nb_ranges; i++)
+        {
+            ranges[i].type = info->ranges[i].type;
+            ranges[i].controller = info->ranges[i].controller;
+            ranges[i].pf = info->ranges[i].pf;
+            ranges[i].vfsf = info->ranges[i].vf;
+            ranges[i].id_base = info->ranges[i].id_base;
+            ranges[i].id_end = info->ranges[i].id_end;
+            copied = te_strlcpy(ranges[i].name, info->ranges[i].name,
+                                TARPC_RTE_DEV_NAME_MAX_LEN);
+            if (copied >= TARPC_RTE_DEV_NAME_MAX_LEN)
+            {
+                rc = -ENAMETOOLONG;
+                goto exit;
+            }
+        }
+
+        out->info.ranges.ranges_len = info->nb_ranges;
+        out->info.ranges.ranges_val = ranges;
+    }
+    rc = ret;
+
+exit:
+    free(info);
+    out->retval = rc;
+    neg_errno_h2rpc(&out->retval);
+})
+

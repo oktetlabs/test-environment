@@ -51,3 +51,100 @@ rpc_dpdk_find_representors(rcf_rpc_server *rpcs, unsigned int *n_rep,
 
     RETVAL_ZERO_INT(dpdk_find_representors, out.retval);
 }
+
+static const char *
+tarpc_rte_eth_representor_type2str(enum tarpc_rte_eth_representor_type type)
+{
+    switch (type)
+    {
+        case TARPC_RTE_ETH_REPRESENTOR_NONE:
+            return "NONE";
+        case TARPC_RTE_ETH_REPRESENTOR_VF:
+            return "VF";
+        case TARPC_RTE_ETH_REPRESENTOR_SF:
+            return "SF";
+        case TARPC_RTE_ETH_REPRESENTOR_PF:
+            return "PF";
+        default:
+            return "<UNKNOWN>";
+    }
+}
+
+static const char *
+tarpc_rte_eth_representor_info2str(te_log_buf *tlbp,
+                        const struct tarpc_rte_eth_representor_info *info)
+{
+    unsigned int i;
+
+    te_log_buf_append(tlbp, "{ ");
+
+    te_log_buf_append(tlbp, "controller=%d, pf=%d, n_ranges=%d",
+                      info->controller, info->pf, info->ranges.ranges_len);
+
+    te_log_buf_append(tlbp, ", ranges={ ");
+
+    for (i = 0; i < info->ranges.ranges_len; i++)
+    {
+        struct tarpc_rte_eth_representor_range *range =
+            &info->ranges.ranges_val[i];
+
+        te_log_buf_append(tlbp, "{ type=%s, controller=%d, pf=%d, vfsf=%d, "
+                          "id_base=%u, id_end=%u, name=%s }%s ",
+                          tarpc_rte_eth_representor_type2str(range->type),
+                          range->controller, range->pf, range->vfsf,
+                          range->id_base, range->id_end, range->name,
+                          (i == info->ranges.ranges_len - 1) ? "" : ",");
+    }
+
+
+    te_log_buf_append(tlbp, "} }");
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_eth_representor_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
+                                 struct tarpc_rte_eth_representor_info *info)
+{
+    struct tarpc_rte_eth_representor_info_get_in   in;
+    struct tarpc_rte_eth_representor_info_get_out  out;
+    te_log_buf                                    *tlbp = NULL;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    if (info != NULL)
+    {
+        in.info.info_len = 1;
+        in.info.info_val = info;
+    }
+
+    rcf_rpc_call(rpcs, "rte_eth_representor_info_get", &in, &out);
+
+    /*
+     * No need to check return value since all values are allowed
+     * (negative errno, 0 or more for the number of representor ranges)
+     */
+
+    if (RPC_IS_CALL_OK(rpcs) && out.retval >= 0 && info != NULL)
+    {
+        info->controller = out.info.controller;
+        info->pf = out.info.pf;
+        info->nb_ranges = out.info.nb_ranges;
+        memcpy(info->ranges.ranges_val, out.info.ranges.ranges_val,
+               info->nb_ranges * sizeof(*info->ranges.ranges_val));
+
+        tlbp = te_log_buf_alloc();
+    }
+
+    TAPI_RPC_LOG(rpcs, rte_eth_representor_info_get,
+                 "%hu %p",
+                 NEG_ERRNO_FMT", info=%s",
+                 port_id, info,
+                 NEG_ERRNO_ARGS(out.retval), tlbp != NULL ?
+                 tarpc_rte_eth_representor_info2str(tlbp, info) : "N/A");
+
+    te_log_buf_free(tlbp);
+
+    RETVAL_INT(rte_eth_representor_info_get, out.retval);
+}

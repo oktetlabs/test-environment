@@ -1777,6 +1777,48 @@ struct tarpc_rte_eth_dev_tx_offload_name_out {
     string               retval<>;
 };
 
+enum tarpc_rte_dev_name_max_len {
+    TARPC_RTE_DEV_NAME_MAX_LEN = 64
+};
+
+/** rte_eth_representor_info_get() */
+enum tarpc_rte_eth_representor_type {
+    TARPC_RTE_ETH_REPRESENTOR_NONE,
+    TARPC_RTE_ETH_REPRESENTOR_VF,
+    TARPC_RTE_ETH_REPRESENTOR_SF,
+    TARPC_RTE_ETH_REPRESENTOR_PF
+};
+
+struct tarpc_rte_eth_representor_range {
+    enum tarpc_rte_eth_representor_type type;
+    tarpc_int                           controller;
+    tarpc_int                           pf;
+    tarpc_int                           vfsf;
+    uint32_t                            id_base;
+    uint32_t                            id_end;
+    char                                name[TARPC_RTE_DEV_NAME_MAX_LEN];
+};
+
+struct tarpc_rte_eth_representor_info {
+    uint16_t controller;
+    uint16_t pf;
+
+    tarpc_uint                             nb_ranges;
+    struct tarpc_rte_eth_representor_range ranges<>;
+};
+
+struct tarpc_rte_eth_representor_info_get_in {
+    struct tarpc_out_arg           common;
+    uint16_t                       port_id;
+    tarpc_rte_eth_representor_info info<>;
+};
+
+struct tarpc_rte_eth_representor_info_get_out {
+    struct tarpc_out_arg           common;
+    tarpc_rte_eth_representor_info info;
+    tarpc_int                      retval;
+};
+
 /**
  * rte_flow API
  */
@@ -2118,6 +2160,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_get_name_by_port)
         RPC_DEF(rte_eth_dev_rx_offload_name)
         RPC_DEF(rte_eth_dev_tx_offload_name)
+        RPC_DEF(rte_eth_representor_info_get)
 
         RPC_DEF(rte_mk_flow_rule_components)
         RPC_DEF(rte_insert_flow_rule_items)
