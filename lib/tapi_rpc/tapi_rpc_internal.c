@@ -136,9 +136,17 @@ tapi_rpc_namespace_get(rcf_rpc_server *rpcs, rpc_ptr ptr)
         if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
         {
             char *ns = NULL;
+            te_errno rc;
 
-            if (rpcs_get_namespace(rpcs, id, &ns) == 0)
+            if ((rc = rpcs_get_namespace(rpcs, id, &ns)) == 0)
+            {
                 return ns;
+            }
+            else
+            {
+                TEST_FAIL("rpcs_get_namespace(id: %u) failed with error %r",
+                          id, rc);
+            }
         }
     }
 
