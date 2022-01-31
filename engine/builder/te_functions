@@ -157,7 +157,7 @@ te_ta_signature_local()
                     # non-systemd ones) have this /etc/os-release file.
                     OS_VERSION=
                 fi
-                echo -n $OS_VERSION
+                echo -n "${SEPARATOR}${OS_VERSION}"
                 ;;
             *)
                 echo "Unknown TA signature field: '${FIELD}'" >&2
