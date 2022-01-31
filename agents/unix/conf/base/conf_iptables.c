@@ -130,8 +130,10 @@ RCF_PCH_CFG_NODE_NA(node_iptables, "iptables",
  *
  * @param table_list    Output string containing available tables separated
  *                      with spaces.
+ *
+ * @return Status code
  */
-static void
+static te_errno
 iptables_obtain_table_list(te_string *table_list)
 {
     const char *tables[] = {"filter", "mangle", "nat", "raw"};
@@ -142,13 +144,18 @@ iptables_obtain_table_list(te_string *table_list)
     for (i = 0; i < TE_ARRAY_LEN(tables); i++)
     {
         int rc;
+        te_errno te_rc;
 
         rc = ta_system_fmt(IPTABLES_TOOL " -t %s -L >/dev/null", tables[i]);
         if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
             continue;
 
-        te_string_append(table_list, "%s ", tables[i]);
+        te_rc = te_string_append(table_list, "%s ", tables[i]);
+        if (te_rc != 0)
+            return te_rc;
     }
+
+    return 0;
 }
 
 /**
@@ -175,7 +182,17 @@ iptables_table_list(unsigned int  gid, const char *oid,
     UNUSED(ifname);
 
     if (table_list.len == 0)
-        iptables_obtain_table_list(&table_list);
+    {
+        te_errno rc = iptables_obtain_table_list(&table_list);
+
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to obtain iptables table list (%r)",
+                  __FUNCTION__, rc);
+            te_string_reset(&table_list);
+            return rc;
+        }
+    }
 
     *list = strdup(table_list.ptr);
 
