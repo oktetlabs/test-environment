@@ -66,7 +66,7 @@ Assume we would like to add RPC call for function **foobar()** that have the fol
 
 	int foobar(struct foobar_type1 *param1, const char *param2, int param3, int *param4_out);
 
-
+Functions with array parameters are discussed in :ref:`Using arrays of variable length as in/out parameters of RPC calls<doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_framework_more_samples>`.
 
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_framework_engine_side:
 
@@ -397,6 +397,8 @@ TAPI implementation for our foo() function may look like the following:
 	}
 
 Please note the following:
+
+* we do not make a copy of ``in_buf``, we just pass a pointer to its beginning, since it won't be changed or freed by the following functions;
 
 * we encode ``rout_buf_len`` bytes of ``out_buf`` buffer to transfer between RPC client and server;
 
