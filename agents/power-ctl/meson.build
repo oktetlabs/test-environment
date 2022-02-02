@@ -39,6 +39,7 @@ endforeach
 
 netsnmp_deps = dependency('netsnmp', required : false)
 if netsnmp_deps.found()
+    deps += netsnmp_deps
     check_headers = [
         'net-snmp/session_api.h',
         'net-snmp/net-snmp-config.h',
@@ -67,7 +68,6 @@ if netsnmp_deps.found()
         'ta_snmp.c'
     )
 
-    deps += netsnmp_deps
 endif
 
 

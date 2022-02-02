@@ -433,8 +433,8 @@ init_cold_reboot(char *param)
 #else
         fprintf(stderr, "Cold reboot via SNMP is not supported");
         rc = -1;
-    }
 #endif
+    }
 
     return rc;
 }
