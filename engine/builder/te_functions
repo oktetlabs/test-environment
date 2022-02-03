@@ -32,76 +32,84 @@ te_ta_signature_local()
         local TE_TA_SIGNATURE_FIELDS="gcc-target libc-version"
     fi
 
-    # Use option '-print-multiarch' with different gcc versions
-    # gives different results:
-    #  - exit code @c 1 with message on stderr (for old gcc version in
-    #    RHEL 6, Debian 6)
-    #  - exit code @c 0 with empty message (for RHEL 7)
-    #  - exit code @c 0 with correct triplet on stdout (for Ubuntu 14.04,
-    #    Debian 7 or 8)
-    local GCC_TARGET=$($CC -print-multiarch 2>/dev/null)
-    if test -z "$GCC_TARGET" ; then
-        # '-dumpmachine' returns triplet independently on options
-        # '-m32' and '-m64'
-        GCC_TARGET=$($CC -dumpmachine)
+    if te_is_in_list "gcc-target" ${TE_TA_SIGNATURE_FIELDS} ||
+       te_is_in_list "libc-version" ${TE_TA_SIGNATURE_FIELDS} ||
+       te_is_in_list "header-version" ${TE_TA_SIGNATURE_FIELDS}; then
+        # Use option '-print-multiarch' with different gcc versions
+        # gives different results:
+        #  - exit code @c 1 with message on stderr (for old gcc version in
+        #    RHEL 6, Debian 6)
+        #  - exit code @c 0 with empty message (for RHEL 7)
+        #  - exit code @c 0 with correct triplet on stdout (for Ubuntu 14.04,
+        #    Debian 7 or 8)
+        local GCC_TARGET=$($CC -print-multiarch 2>/dev/null)
+        if test -z "$GCC_TARGET" ; then
+            # '-dumpmachine' returns triplet independently on options
+            # '-m32' and '-m64'
+            GCC_TARGET=$($CC -dumpmachine)
 
-        # Determine architecture manually
-        local march=i386
-        if echo | $CC -E -dM - |
-            grep -q '^#define\s*__x86_64__\s*1$' ; then
-            march=x86_64
+            # Determine architecture manually
+            local march=i386
+            if echo | $CC -E -dM - |
+                grep -q '^#define\s*__x86_64__\s*1$' ; then
+                march=x86_64
+            fi
+
+            # Fix the triplet if it is necessary
+            case "$GCC_TARGET:$march" in
+                x86_64-*:x86_64 ) ;;
+                x86_64-*:i386 )   GCC_TARGET="i386-${GCC_TARGET#*-}" ;;
+                *:x86_64 )        GCC_TARGET="x86_64-${GCC_TARGET#*-}" ;;
+                *:* )             ;;
+            esac
         fi
+    fi
 
-        # Fix the triplet if it is necessary
-        case "$GCC_TARGET:$march" in
-            x86_64-*:x86_64 ) ;;
-            x86_64-*:i386 )   GCC_TARGET="i386-${GCC_TARGET#*-}" ;;
-            *:x86_64 )        GCC_TARGET="x86_64-${GCC_TARGET#*-}" ;;
-            *:* )             ;;
+    if te_is_in_list "libc-version" ${TE_TA_SIGNATURE_FIELDS} ||
+       te_is_in_list "header-version" ${TE_TA_SIGNATURE_FIELDS}; then
+        case "$GCC_TARGET" in
+            *-linux-gnu* | \
+            *-redhat-linux )
+                local TEMP_IN="$(mktemp /tmp/tmp.XXXXXXXXXX.c)"
+                echo '
+                    #include <stdio.h>
+                    #include <linux/version.h>
+                    int main() {
+                        printf("%i.%i.%i",
+                            LINUX_VERSION_CODE/0x10000,
+                            LINUX_VERSION_CODE/0x100  %0x100,
+                            LINUX_VERSION_CODE        %0x100);
+                        return 0;
+                    }
+                ' >$TEMP_IN
+                local TEMP_OUT=$(mktemp)
+                $CC $TEMP_IN -o $TEMP_OUT
+                if test $? -ne 0; then
+                    echo "Cannot build application to get variable"\
+                        "LINUX_VERSION_CODE" >&2
+                    exit 1
+                fi
+                local LIBC=`ldd $TEMP_OUT |
+                    sed -n "s/^\s*libc.so.6 => \(.*\)(0x[0-9a-f]*)$/\1/p"`
+                local LD_LINUX=`ldd $TEMP_OUT |
+                    sed -n "s/^\s*\(\/.*\/ld-linux.*\)\s(.*)$/\1/p"`
+                local LINUX_VERSION_CODE=`$TEMP_OUT`
+                rm -f $TEMP_OUT
+                rm -f $TEMP_IN
+
+                local LIBC_VERSION
+                if test -x $LIBC; then
+                    LIBC_VERSION=`$LIBC | head -n 1`
+                else
+                    LIBC_VERSION=`$LD_LINUX --version | head -n 1`
+                fi
+                LIBC_VERSION=`echo $LIBC_VERSION |
+                    sed -n "s/.*version \(\(\.\?[0-9]\+\)*\).*/\1/p;q"`
+                ;;
+
+            * ) ;;
         esac
     fi
-    case "$GCC_TARGET" in
-        *-linux-gnu* | \
-        *-redhat-linux )
-            local TEMP_IN="$(mktemp /tmp/tmp.XXXXXXXXXX.c)"
-            echo '
-                #include <stdio.h>
-                #include <linux/version.h>
-                int main() {
-                    printf("%i.%i.%i",
-                        LINUX_VERSION_CODE/0x10000,
-                        LINUX_VERSION_CODE/0x100  %0x100,
-                        LINUX_VERSION_CODE        %0x100);
-                    return 0;
-                }
-            ' >$TEMP_IN
-            local TEMP_OUT=$(mktemp)
-            $CC $TEMP_IN -o $TEMP_OUT
-            if test $? -ne 0; then
-                echo "Cannot build application to get variable"\
-                    "LINUX_VERSION_CODE" >&2
-                exit 1
-            fi
-            local LIBC=`ldd $TEMP_OUT |
-                sed -n "s/^\s*libc.so.6 => \(.*\)(0x[0-9a-f]*)$/\1/p"`
-            local LD_LINUX=`ldd $TEMP_OUT |
-                sed -n "s/^\s*\(\/.*\/ld-linux.*\)\s(.*)$/\1/p"`
-            local LINUX_VERSION_CODE=`$TEMP_OUT`
-            rm -f $TEMP_OUT
-            rm -f $TEMP_IN
-
-            local LIBC_VERSION
-            if test -x $LIBC; then
-                LIBC_VERSION=`$LIBC | head -n 1`
-            else
-                LIBC_VERSION=`$LD_LINUX --version | head -n 1`
-            fi
-            LIBC_VERSION=`echo $LIBC_VERSION |
-                sed -n "s/.*version \(\(\.\?[0-9]\+\)*\).*/\1/p;q"`
-            ;;
-
-        * ) ;;
-    esac
 
     local SEPARATOR=""
     for FIELD in $TE_TA_SIGNATURE_FIELDS; do
