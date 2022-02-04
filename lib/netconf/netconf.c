@@ -10,6 +10,8 @@
 
 #include "netconf.h"
 #include "netconf_internal.h"
+#include "logger_api.h"
+#include "te_alloc.h"
 
 /**
  * Free memory used by node.
@@ -19,7 +21,7 @@
 static void netconf_node_free(netconf_node *node);
 
 int
-netconf_open(netconf_handle *nh)
+netconf_open(netconf_handle *nh, int netlink_family)
 {
     int                 netlink_socket;
     struct sockaddr_nl  local_addr;
@@ -35,7 +37,7 @@ netconf_open(netconf_handle *nh)
     }
 
     /* Create netlink socket */
-    netlink_socket = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+    netlink_socket = socket(AF_NETLINK, SOCK_RAW, netlink_family);
     if (netlink_socket < 0)
     {
         return -1;
@@ -345,6 +347,14 @@ netconf_node_free(netconf_node *node)
             netconf_port_node_free(node);
             break;
 
+        case NETCONF_NODE_DEVLINK_INFO:
+            netconf_devlink_info_node_free(node);
+            break;
+
+        case NETCONF_NODE_DEVLINK_PARAM:
+            netconf_devlink_param_node_free(node);
+            break;
+
         default:
             NETCONF_ASSERT(0);
             free(node);
@@ -571,3 +581,154 @@ netconf_parse_link(struct nlmsghdr *h, struct rtattr **rta_arr, int max)
     netconf_parse_rtattr(rta_link, len, rta_arr, max);
 }
 
+/* See description in netconf_internal.h */
+te_errno
+netconf_append_attr(char *req, size_t max_len,
+                    uint16_t attr_type, const void *data, size_t len)
+{
+    struct nlmsghdr *h;
+    struct nlattr *na;
+    size_t attr_len;
+    size_t new_len;
+
+    h = (struct nlmsghdr *)req;
+    na = (struct nlattr *)((void *)h + h->nlmsg_len);
+
+    attr_len = NLA_HDRLEN + len;
+    new_len = NLMSG_LENGTH((void *)na - NLMSG_DATA(h) +
+                           NLA_ALIGN(attr_len));
+    if (max_len < new_len)
+    {
+        ERROR("%s(): not enough space for a new attribute", __FUNCTION__);
+        return TE_ENOBUFS;
+    }
+
+    memset(na, 0, sizeof(*na));
+    na->nla_len = attr_len;
+    na->nla_type = attr_type;
+
+    if (len > 0)
+        memcpy((void *)na + NLA_HDRLEN, data, len);
+
+    h->nlmsg_len = new_len;
+    return 0;
+}
+
+/* See description in netconf_internal.h */
+te_errno
+netconf_get_str_attr(struct nlattr *na, char **value)
+{
+    int len;
+
+    if (na->nla_len < NLA_HDRLEN)
+    {
+        ERROR("%s(): attribute of type %d has incorrect length",
+              __FUNCTION__, (int)(na->nla_type));
+        return TE_EINVAL;
+    }
+    else if (na->nla_len == NLA_HDRLEN)
+    {
+        *value = strdup("");
+        if (*value == NULL)
+        {
+            ERROR("%s(): not enough memory", __FUNCTION__);
+            return TE_ENOMEM;
+        }
+
+        return 0;
+    }
+
+    len = na->nla_len - NLA_HDRLEN;
+    /*
+     * Include '\0' at the end for the case when attribute is not
+     * null-terminated
+     */
+    len++;
+
+    *value = TE_ALLOC(len);
+    if (*value == NULL)
+        return TE_ENOMEM;
+
+    memcpy(*value, (void *)na + NLA_HDRLEN, len - 1);
+    return 0;
+}
+
+/* Get value of an attribute of integer type */
+#define GET_INT_ATTR(_res, _na, _type) \
+    do {                                                                \
+        if (_na == NULL)                                                \
+        {                                                               \
+            ERROR("%s(): attribute pointer cannot be NULL",             \
+                  __FUNCTION__);                                        \
+            return TE_EINVAL;                                           \
+        }                                                               \
+        if (_na->nla_len < NLA_HDRLEN + sizeof(_type))                  \
+        {                                                               \
+            ERROR("%s(): attribute of type %d has incorrect length",    \
+                  __FUNCTION__, (int)(_na->nla_type));                  \
+            return TE_EINVAL;                                           \
+        }                                                               \
+                                                                        \
+        *_res = *(_type *)((void *)_na + NLA_HDRLEN);                   \
+    } while (0)
+
+/* See description in netconf_internal.h */
+te_errno
+netconf_get_uint8_attr(struct nlattr *na, uint8_t *value)
+{
+    GET_INT_ATTR(value, na, uint8_t);
+    return 0;
+}
+
+/* See description in netconf_internal.h */
+te_errno
+netconf_get_uint16_attr(struct nlattr *na, uint16_t *value)
+{
+    GET_INT_ATTR(value, na, uint16_t);
+    return 0;
+}
+
+/* See description in netconf_internal.h */
+te_errno
+netconf_get_uint32_attr(struct nlattr *na, uint32_t *value)
+{
+    GET_INT_ATTR(value, na, uint32_t);
+    return 0;
+}
+
+/* See description in netconf_internal.h */
+te_errno
+netconf_get_uint64_attr(struct nlattr *na, uint64_t *value)
+{
+    GET_INT_ATTR(value, na, uint64_t);
+    return 0;
+}
+
+/* See description in netconf_internal.h */
+const char *
+netconf_nla_type2str(netconf_nla_type nla_type)
+{
+    switch (nla_type)
+    {
+        case NETCONF_NLA_U8:
+            return "u8";
+
+        case NETCONF_NLA_U16:
+            return "u16";
+
+        case NETCONF_NLA_U32:
+            return "u32";
+
+        case NETCONF_NLA_U64:
+            return "u64";
+
+        case NETCONF_NLA_STRING:
+            return "string";
+
+        case NETCONF_NLA_FLAG:
+            return "flag";
+
+        default:
+            return "<UNKNOWN>";
+    }
+}

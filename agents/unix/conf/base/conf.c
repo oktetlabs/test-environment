@@ -1233,7 +1233,7 @@ rcf_ch_conf_init(void)
     if (!init)
     {
 #ifdef USE_LIBNETCONF
-        if (netconf_open(&nh) != 0)
+        if (netconf_open(&nh, NETLINK_ROUTE) != 0)
         {
             ERROR("Failed to open netconf session");
             return -1;

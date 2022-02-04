@@ -366,7 +366,7 @@ netns_unset_interface_process(const char *ns_name, const char *if_name)
         exit(EXIT_FAILURE);
     }
 
-    if (netconf_open(&nch) < 0)
+    if (netconf_open(&nch, NETLINK_ROUTE) < 0)
     {
         ERROR("Cannot open netconf session: %s", strerror(errno));
         exit(EXIT_FAILURE);

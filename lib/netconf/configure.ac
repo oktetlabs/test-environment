@@ -12,6 +12,8 @@ AC_CONFIG_MACRO_DIR([../../auxdir])
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 TE_SETUP_AR
 
+AC_CONFIG_HEADERS([config.h])
+
 # Checks for programs.
 AC_PROG_CC
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
@@ -39,6 +41,14 @@ dnl Check for Geneve IPv6 address attribute support
 dnl
 AC_CHECK_DECLS([IFLA_GENEVE_REMOTE6], [], [], [
 #include <linux/if_link.h>
+])
+
+AC_CHECK_HEADERS([linux/genetlink.h linux/devlink.h], [], [], [])
+
+AC_CHECK_DECLS([DEVLINK_CMD_INFO_GET,
+                DEVLINK_CMD_PARAM_GET,
+                DEVLINK_CMD_PARAM_SET], [], [], [
+#include <linux/devlink.h>
 ])
 
 AC_CONFIG_FILES([Makefile])

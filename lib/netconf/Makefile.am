@@ -21,7 +21,8 @@ libnetconf_a_SOURCES = netconf.c \
 	udp_tunnel.c \
         geneve.c \
 	vxlan.c \
-	bridge.c
+	bridge.c \
+	devlink.c
 
 install-exec-hook:
 	touch -c -r libnetconf.a $(DESTDIR)/$(libdir)/libnetconf.a

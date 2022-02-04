@@ -271,6 +271,121 @@ typedef struct netconf_bridge_port {
     char   *name;       /**< Interface name */
 } netconf_bridge_port;
 
+/** Information about device from devlink */
+typedef struct netconf_devlink_info {
+    char *bus_name;       /**< Bus name */
+    char *dev_name;       /**< Device name (PCI address for PCI device) */
+    char *driver_name;    /**< Driver name */
+    char *serial_number;  /**< Device serial number */
+} netconf_devlink_info;
+
+/**
+ * Parameter types from DEVLINK_ATTR_PARAM_TYPE.
+ *
+ * These must have the same values as NLA_* constants defined
+ * in include/net/netlink.h in Linux kernel sources. I have no
+ * idea why they are not defined in any header which can be
+ * included from here or why netlink_attribute_type enum in
+ * include/linux/netlink.h differs from the list defined in
+ * kernel sources.
+ */
+typedef enum netconf_nla_type {
+    NETCONF_NLA_UNSPEC,
+    NETCONF_NLA_U8,
+    NETCONF_NLA_U16,
+    NETCONF_NLA_U32,
+    NETCONF_NLA_U64,
+    NETCONF_NLA_STRING,
+    NETCONF_NLA_FLAG,
+} netconf_nla_type;
+
+/**
+ * Get string name of netlink attribute type.
+ *
+ * @param nla_type      Attribute type
+ *
+ * @return Pointer to statically allocated string with attribute name.
+ */
+extern const char *netconf_nla_type2str(netconf_nla_type nla_type);
+
+/** Device parameter value data */
+typedef union netconf_devlink_param_value_data {
+    uint8_t u8;   /**< uint8 value */
+    uint16_t u16; /**< uint16 value */
+    uint32_t u32; /**< uint32 value */
+    uint64_t u64; /**< uint64 value */
+    char *str;    /**< string value */
+    te_bool flag; /**< flag */
+} netconf_devlink_param_value_data;
+
+/**
+ * Move parameter value data from one structure to another one.
+ * This function releases memory allocated for old value if necessary.
+ *
+ * @param nla_type        Parameter type
+ * @param dst             Destination structure
+ * @param src             Source structure
+ */
+extern void netconf_devlink_param_value_data_mv(
+                        netconf_nla_type nla_type,
+                        netconf_devlink_param_value_data *dst,
+                        netconf_devlink_param_value_data *src);
+
+/** Device parameter value */
+typedef struct netconf_devlink_param_value {
+    te_bool defined; /**< @c TRUE if value is defined */
+    netconf_devlink_param_value_data data; /**< Value */
+} netconf_devlink_param_value;
+
+/** Configuration mode for device parameter value */
+typedef enum netconf_devlink_param_cmode {
+    NETCONF_DEVLINK_PARAM_CMODE_RUNTIME, /**< Value is applied at runtime */
+    NETCONF_DEVLINK_PARAM_CMODE_DRIVERINIT, /**< Value is applied when
+                                                 driver is initialized */
+    NETCONF_DEVLINK_PARAM_CMODE_PERMANENT,  /**< Value is stored in
+                                                 device non-volatile memory,
+                                                 hard reset is required to
+                                                 apply new value */
+
+    /* This should be the last in enum */
+    NETCONF_DEVLINK_PARAM_CMODE_UNDEF,      /**< Not defined */
+} netconf_devlink_param_cmode;
+
+/** Number of supported device parameter configuration modes */
+#define NETCONF_DEVLINK_PARAM_CMODES NETCONF_DEVLINK_PARAM_CMODE_UNDEF
+
+/**
+ * Get string name of device parameter configuration mode.
+ *
+ * @param cmode       Configuration mode
+ *
+ * @return Pointer to statically allocated string.
+ */
+extern const char *devlink_param_cmode_netconf2str(
+                          netconf_devlink_param_cmode cmode);
+
+/**
+ * Parse name of device parameter configuration mode.
+ *
+ * @param cmode       Name to parse
+ *
+ * @return One of the values from netconf_devlink_param_cmode.
+ */
+extern netconf_devlink_param_cmode devlink_param_cmode_str2netconf(
+                                                      const char *cmode);
+
+/** Information about device parameter obtained from devlink */
+typedef struct netconf_devlink_param {
+    char *bus_name;         /**< Bus name */
+    char *dev_name;         /**< Device name */
+    char *name;             /**< Parameter name */
+    te_bool generic;        /**< Is parameter generic or driver-specific */
+    netconf_nla_type type;  /**< Parameter type */
+
+    /** Parameter values in different configuration modes */
+    netconf_devlink_param_value values[NETCONF_DEVLINK_PARAM_CMODES];
+} netconf_devlink_param;
+
 /** Type of nodes in the list */
 typedef enum netconf_node_type {
     NETCONF_NODE_UNSPEC,                /**< Unspecified */
@@ -288,6 +403,11 @@ typedef enum netconf_node_type {
     NETCONF_NODE_VXLAN,                 /**< VXLAN interface */
     NETCONF_NODE_BRIDGE,                /**< Bridge interface */
     NETCONF_NODE_BRIDGE_PORT,           /**< Bridge port interface */
+
+    NETCONF_NODE_DEVLINK_INFO,          /**< Device information obtained
+                                             from devlink */
+    NETCONF_NODE_DEVLINK_PARAM,         /**< Device parameters data obtained
+                                             from devlink */
 } netconf_node_type;
 
 typedef te_conf_ip_rule netconf_rule;
@@ -309,6 +429,9 @@ typedef struct netconf_node {
         netconf_vxlan            vxlan;
         netconf_bridge           bridge;
         netconf_bridge_port      bridge_port;
+
+        netconf_devlink_info     devlink_info;
+        netconf_devlink_param    devlink_param;
     } data;                             /**< Network data */
     struct netconf_node  *next;         /**< Next node of the list */
     struct netconf_node  *prev;         /**< Previous node of the list */
@@ -342,11 +465,12 @@ typedef struct netconf_handle_s *netconf_handle;
  * Open the netconf session and get handle of it on success. This
  * function should be called before any other in this library.
  *
- * @param nh            Address to store netconf session handle
+ * @param nh                Address to store netconf session handle
+ * @param netlink_family    Netlink family to use
  *
  * @return 0 on success, -1 on error (check errno for details).
  */
-int netconf_open(netconf_handle *nh);
+int netconf_open(netconf_handle *nh, int netlink_family);
 
 /**
  * Get list of all network devices. Free it with netconf_list_free()
@@ -972,6 +1096,61 @@ extern te_errno netconf_port_add(netconf_handle nh, const char *brname,
  * @return Status code.
  */
 extern te_errno netconf_port_del(netconf_handle nh, const char *ifname);
+
+/**
+ * Get device infomation from devlink.
+ *
+ * @note @p bus and @p dev should be either both @c NULL (to retrieve
+ *       information about all devices) or not @c NULL (to retrieve
+ *       information about specific device).
+ *
+ * @param nh        Netconf session handle
+ * @param bus       Bus name
+ * @param dev       Device name (PCI address for PCI device)
+ * @param list      Where to save pointer to the list of retrieved
+ *                  device data (caller should release it)
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_devlink_get_info(netconf_handle nh,
+                                         const char *bus,
+                                         const char *dev,
+                                         netconf_list **list);
+
+/**
+ * Get list of supported device parameters from devlink.
+ *
+ * @param nh        Netconf session handle
+ * @param list      Where to save pointer to the list of retrieved
+ *                  device parameters (caller should release it)
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_devlink_param_dump(netconf_handle nh,
+                                           netconf_list **list);
+
+/**
+ * Set value for a device parameter in some configuration mode
+ * via devlink.
+ *
+ * @param nh          Netconf session handle
+ * @param bus         Bus name
+ * @param dev         Device name (PCI address for PCI device)
+ * @param param_name  Parameter name
+ * @param nla_type    Parameter type
+ * @param cmode       Configuration mode in which to set value
+ * @param value       Value to set
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_devlink_param_set(
+                            netconf_handle nh,
+                            const char *bus,
+                            const char *dev,
+                            const char *param_name,
+                            netconf_nla_type nla_type,
+                            netconf_devlink_param_cmode cmode,
+                            const netconf_devlink_param_value_data *value);
 
 #ifdef __cplusplus
 }

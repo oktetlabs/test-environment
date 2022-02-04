@@ -122,6 +122,74 @@ netconf_list *netconf_dump_request(netconf_handle nh, uint16_t type,
 int netconf_list_extend(netconf_list *list, netconf_node_type type);
 
 /**
+ * Append generic attribute structure (struct nlattr) to the end
+ * of netlink message, update length in its header.
+ *
+ * @param req         Netlink message
+ * @param max_len     Maximum length available for the message
+ * @param attr_type   Attribute type
+ * @param data        Data stored in attribute
+ * @param len         Length of the data
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_append_attr(char *req, size_t max_len,
+                                    uint16_t attr_type, const void *data,
+                                    size_t len);
+
+/**
+ * Get string value from netlink attribute.
+ *
+ * @param na      Pointer to the attribute
+ * @param value   Where to save the value (dynamically allocated
+ *                null-terminated string which the caller should
+ *                release)
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_get_str_attr(struct nlattr *na, char **value);
+
+/**
+ * Get uint8_t value from netlink attribute.
+ *
+ * @param na      Pointer to the attribute
+ * @param value   Where to save obtained value
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_get_uint8_attr(struct nlattr *na, uint8_t *value);
+
+/**
+ * Get uint16_t value from netlink attribute.
+ *
+ * @param na      Pointer to the attribute
+ * @param value   Where to save obtained value
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_get_uint16_attr(struct nlattr *na, uint16_t *value);
+
+/**
+ * Get uint32_t value from netlink attribute.
+ *
+ * @param na      Pointer to the attribute
+ * @param value   Where to save obtained value
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_get_uint32_attr(struct nlattr *na, uint32_t *value);
+
+/**
+ * Get uint64_t value from netlink attribute.
+ *
+ * @param na      Pointer to the attribute
+ * @param value   Where to save obtained value
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_get_uint64_attr(struct nlattr *na, uint64_t *value);
+
+/**
  * Append routing attribute to existing nlmsg. There should be enough
  * memory after the message.
  *
@@ -287,6 +355,20 @@ extern void netconf_bridge_node_free(netconf_node *node);
  * @param node  Node to free
  */
 extern void netconf_port_node_free(netconf_node *node);
+
+/**
+ * Free memory used by a devlink device information node.
+ *
+ * @param node  Node to free
+ */
+extern void netconf_devlink_info_node_free(netconf_node *node);
+
+/**
+ * Free memory used by a devlink device parameter node.
+ *
+ * @param node  Node to free
+ */
+extern void netconf_devlink_param_node_free(netconf_node *node);
 
 /**
  * Send request to kernel and receive response.
