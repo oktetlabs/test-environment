@@ -304,6 +304,7 @@ extern te_errno ta_unix_conf_aggr_init(void);
 
 #ifdef ENABLE_PCI_SUPPORT
 extern te_errno ta_unix_conf_pci_init(void);
+extern te_errno ta_unix_conf_pci_cleanup(void);
 #endif
 
 extern te_errno ta_unix_conf_cpu_init(void);
@@ -1561,6 +1562,10 @@ rcf_ch_conf_fini(void)
 #ifdef WITH_BPF
     ta_unix_conf_if_xdp_cleanup();
     ta_unix_conf_bpf_cleanup();
+#endif
+
+#ifdef ENABLE_PCI_SUPPORT
+    ta_unix_conf_pci_cleanup();
 #endif
 
    (void)ta_unix_conf_sys_tree_fini();

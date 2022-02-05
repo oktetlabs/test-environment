@@ -198,6 +198,49 @@
          Name: ordinal number of a VF
          Value: an OID of a VF
 
+    - oid: "/agent/hardware/pci/device/param"
+      access: read_only
+      type: none
+      d: |
+         Device parameter
+
+         Name: parameter name
+         Value: none
+
+    - oid: "/agent/hardware/pci/device/param/driver_specific"
+      access: read_only
+      type: integer
+      d: |
+         Is parameter driver-specific or generic?
+
+         Name: name
+         Value: 0 - generic parameter
+                1 - driver-specific parameter
+
+    - oid: "/agent/hardware/pci/device/param/type"
+      access: read_only
+      type: string
+      d: |
+         Type of parameter
+
+         Name: none
+         Value: name of the type
+                - flag
+                - u8
+                - u16
+                - u32
+                - u64
+                - string
+
+    - oid: "/agent/hardware/pci/device/param/value"
+      access: read_write
+      type: string
+      d: |
+         Parameter value
+
+         Name: configuration mode (runtime, driverinit, permanent)
+         Value: value of the parameter set in given configuration mode
+
     - oid: "/agent/hardware/pci/device/serialno"
       access: read_only
       type: string

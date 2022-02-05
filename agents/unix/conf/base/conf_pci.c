@@ -72,6 +72,10 @@
 #include "conf_common.h"
 #include "te_alloc.h"
 
+#ifdef USE_LIBNETCONF
+#include "netconf.h"
+#endif
+
 #define PCI_VIRTFN_PREFIX "virtfn"
 
 /** PCI device address */
@@ -144,6 +148,77 @@ static pci_vendors *vendor_list;
 
 /** Whole PCI tree TE resource lock */
 static unsigned global_pci_lock;
+
+#ifdef USE_LIBNETCONF
+
+/*
+ * Netconf session used to work with devlink over
+ * Generic Netlink API
+ */
+static netconf_handle nh_genl = NULL;
+/* Cache of device parameters */
+static netconf_list *dev_params = NULL;
+/* Group ID for which the cache of parameters was obtained */
+static unsigned int dev_params_gid = 0;
+
+/* Update device parameters cache */
+static te_errno
+update_dev_params(unsigned int gid)
+{
+    te_errno rc = 0;
+
+    if (dev_params != NULL)
+    {
+        if (gid != dev_params_gid)
+        {
+            netconf_list_free(dev_params);
+            dev_params = NULL;
+        }
+    }
+
+    if (dev_params == NULL)
+    {
+        rc = netconf_devlink_param_dump(nh_genl, &dev_params);
+        if (rc == TE_ENODEV)
+            rc = TE_ENOENT;
+    }
+
+    if (rc == 0)
+        dev_params_gid = gid;
+
+    return rc;
+}
+
+/* Retrieve device parameter by PCI address and parameter name */
+static te_errno
+find_dev_param(unsigned int gid, const char *pci_addr,
+               const char *param_name,
+               netconf_devlink_param **param_out)
+{
+    te_errno rc;
+    netconf_node *node;
+    netconf_devlink_param *param;
+
+    rc = update_dev_params(gid);
+    if (rc != 0)
+        return rc;
+
+    for (node = dev_params->head; node != NULL; node = node->next)
+    {
+        param = &node->data.devlink_param;
+        if (strcmp(param->bus_name, "pci") == 0 &&
+            strcmp(param->dev_name, pci_addr) == 0 &&
+            strcmp(param->name, param_name) == 0)
+        {
+            *param_out = param;
+            return 0;
+        }
+    }
+
+    return TE_ENOENT;
+}
+
+#endif
 
 static te_errno
 parse_pci_address(const char *str, pci_address *addr)
@@ -560,6 +635,22 @@ transfer_locking(pci_vendors *dest, pci_vendors *src)
     }
 }
 
+/* Release memory allocated by list of devices */
+static void
+free_device_list(void)
+{
+    size_t i;
+
+    if (all_devices == NULL)
+        return;
+
+    for (i = 0; i < n_all_devices; i++)
+        free(all_devices[i].net_list);
+
+    free(all_devices);
+    all_devices = NULL;
+    n_all_devices = 0;
+}
 
 static te_errno
 update_device_list(void)
@@ -567,7 +658,6 @@ update_device_list(void)
     size_t n_devs;
     pci_device *devs = scan_pci_bus(&n_devs);
     pci_vendors *vendors;
-    unsigned int i;
 
     static int callnum = 0;
     callnum++;
@@ -589,11 +679,7 @@ update_device_list(void)
 
     vendor_list = vendors;
 
-    if (all_devices != NULL) {
-        for (i = 0; i < n_all_devices; i++)
-            free(all_devices[i].net_list);
-        free(all_devices);
-    }
+    free_device_list();
 
     all_devices = devs;
     n_all_devices = n_devs;
@@ -2609,8 +2695,468 @@ pci_sriov_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_dev, "dev",
+/* Obtain PCI device serial number */
+static te_errno
+pci_serialno_get(unsigned int gid, const char *oid, char *value,
+                 const char *unused1, const char *unused2,
+                 const char *addr_str)
+{
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+#ifndef USE_LIBNETCONF
+    UNUSED(gid);
+    UNUSED(addr_str);
+
+    *value = '\0';
+    return 0;
+#else
+    te_errno rc = 0;
+    netconf_list *list = NULL;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+    rc = netconf_devlink_get_info(nh_genl, "pci", addr_str, &list);
+    if (rc != 0)
+    {
+        if (rc == TE_ENODEV || rc == TE_ENOENT)
+        {
+            *value = '\0';
+            return 0;
+        }
+
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (list->length == 0)
+    {
+        *value = '\0';
+        goto out;
+    }
+
+    rc = te_snprintf(value, RCF_MAX_VAL, "%s",
+                     list->tail->data.devlink_info.serial_number);
+    if (rc != 0)
+    {
+        ERROR("%s(): te_snprintf() failed, rc=%r", __FUNCTION__, rc);
+        rc = TE_RC(TE_TA_UNIX, rc);
+    }
+
+out:
+
+    netconf_list_free(list);
+    return rc;
+#endif
+}
+
+/* List parameter names of a PCI device */
+static te_errno
+pci_param_list(unsigned int gid, const char *oid,
+               const char *sub_id, char **list,
+               const char *unused1, const char *unused2,
+               const char *addr_str)
+{
+    UNUSED(oid);
+    UNUSED(sub_id);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+#ifndef USE_LIBNETCONF
+    UNUSED(gid);
+    UNUSED(addr_str);
+
+    *list = NULL;
+    return 0;
+#else
+    te_errno rc = 0;
+    netconf_node *node;
+    netconf_devlink_param *param;
+    te_string str = TE_STRING_INIT;
+
+    rc = update_dev_params(gid);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    for (node = dev_params->head; node != NULL; node = node->next)
+    {
+        param = &node->data.devlink_param;
+        if (strcmp(param->bus_name, "pci") != 0 ||
+            strcmp(param->dev_name, addr_str) != 0)
+            continue;
+
+        rc = te_string_append(&str, "%s ", param->name);
+        if (rc != 0)
+            goto cleanup;
+    }
+
+cleanup:
+
+    if (rc != 0)
+        te_string_free(&str);
+    else
+        *list = str.ptr;
+
+    return rc;
+#endif
+}
+
+/* Show whether device parameter is driver-specific or generic */
+static te_errno
+param_drv_specific_get(unsigned int gid, const char *oid, char *value,
+                       const char *unused1, const char *unused2,
+                       const char *addr_str, const char *param_name)
+{
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+#ifndef USE_LIBNETCONF
+    UNUSED(gid);
+    UNUSED(value);
+    UNUSED(addr_str);
+    UNUSED(param_name);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#else
+    te_errno rc;
+    netconf_devlink_param *param;
+
+    rc = find_dev_param(gid, addr_str, param_name, &param);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    rc = te_snprintf(value, RCF_MAX_VAL, "%d",
+                     (param->generic ? 0 : 1));
+    if (rc != 0)
+    {
+        ERROR("%s(): te_snprintf() failed, rc=%r", __FUNCTION__, rc);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return 0;
+#endif
+}
+
+/* Get type of device parameter */
+static te_errno
+param_type_get(unsigned int gid, const char *oid, char *value,
+               const char *unused1, const char *unused2,
+               const char *addr_str, const char *param_name)
+{
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+#ifndef USE_LIBNETCONF
+    UNUSED(gid);
+    UNUSED(value);
+    UNUSED(addr_str);
+    UNUSED(param_name);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#else
+    te_errno rc;
+    netconf_devlink_param *param;
+
+    rc = find_dev_param(gid, addr_str, param_name, &param);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    rc = te_snprintf(value, RCF_MAX_VAL, "%s",
+                     netconf_nla_type2str(param->type));
+    if (rc != 0)
+    {
+        ERROR("%s(): te_snprintf() failed, rc=%r", __FUNCTION__, rc);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return 0;
+#endif
+}
+
+/*
+ * List configuration modes for which parameter value is available.
+ * Such as "runtime", "driverinit" and "permanent".
+ */
+static te_errno
+param_value_list(unsigned int gid, const char *oid,
+                 const char *sub_id, char **list,
+                 const char *unused1, const char *unused2,
+                 const char *addr_str, const char *param_name)
+{
+    UNUSED(oid);
+    UNUSED(sub_id);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+#ifndef USE_LIBNETCONF
+    UNUSED(gid);
+    UNUSED(addr_str);
+    UNUSED(param_name);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#else
+    te_errno rc;
+    netconf_devlink_param *param;
+    te_string str = TE_STRING_INIT;
+    int i;
+
+    rc = find_dev_param(gid, addr_str, param_name, &param);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    for (i = 0; i < NETCONF_DEVLINK_PARAM_CMODES; i++)
+    {
+        if (param->values[i].defined)
+        {
+            rc = te_string_append(&str, "%s ",
+                                  devlink_param_cmode_netconf2str(i));
+            if (rc != 0)
+                goto cleanup;
+        }
+    }
+
+cleanup:
+
+    if (rc != 0)
+        te_string_free(&str);
+    else
+        *list = str.ptr;
+
+    return rc;
+#endif
+}
+
+/* Get device parameter value stored in specified configuration mode */
+static te_errno
+param_value_get(unsigned int gid, const char *oid, char *value,
+                const char *unused1, const char *unused2,
+                const char *addr_str, const char *param_name,
+                const char *cmode_name)
+{
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+#ifndef USE_LIBNETCONF
+    UNUSED(gid);
+    UNUSED(addr_str);
+    UNUSED(param_name);
+    UNUSED(cmode_name);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#else
+    te_errno rc;
+    netconf_devlink_param *param;
+    netconf_devlink_param_value *param_value;
+    netconf_devlink_param_cmode cmode;
+
+    rc = find_dev_param(gid, addr_str, param_name, &param);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    cmode = devlink_param_cmode_str2netconf(cmode_name);
+    if (cmode == NETCONF_DEVLINK_PARAM_CMODE_UNDEF)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    param_value = &param->values[cmode];
+
+    if (!param_value->defined)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    switch (param->type)
+    {
+        case NETCONF_NLA_FLAG:
+            rc = te_snprintf(value, RCF_MAX_VAL, "%d",
+                             param_value->data.flag ? 1 : 0);
+            break;
+
+        case NETCONF_NLA_U8:
+            rc = te_snprintf(value, RCF_MAX_VAL, "%u",
+                             (unsigned int)(param_value->data.u8));
+            break;
+
+        case NETCONF_NLA_U16:
+            rc = te_snprintf(value, RCF_MAX_VAL, "%u",
+                             (unsigned int)(param_value->data.u16));
+            break;
+
+        case NETCONF_NLA_U32:
+            rc = te_snprintf(value, RCF_MAX_VAL, "%u",
+                             (unsigned int)(param_value->data.u32));
+            break;
+
+        case NETCONF_NLA_U64:
+            rc = te_snprintf(
+                     value, RCF_MAX_VAL, "%llu",
+                     (long long unsigned int)(param_value->data.u64));
+            break;
+
+        case NETCONF_NLA_STRING:
+            rc = te_snprintf(value, RCF_MAX_VAL, "%s",
+                             param_value->data.str);
+            break;
+
+        default:
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (rc != 0)
+    {
+        ERROR("%s(): te_snprintf() failed, rc=%r", __FUNCTION__, rc);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return 0;
+#endif
+}
+
+/* Set parameter value in specified configuration mode */
+static te_errno
+param_value_set(unsigned int gid, const char *oid, const char *value,
+                const char *unused1, const char *unused2,
+                const char *addr_str, const char *param_name,
+                const char *cmode_name)
+{
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+#ifndef USE_LIBNETCONF
+    UNUSED(gid);
+    UNUSED(addr_str);
+    UNUSED(param_name);
+    UNUSED(cmode_name);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#else
+    te_errno rc;
+    netconf_devlink_param *param;
+    netconf_devlink_param_cmode cmode;
+    netconf_devlink_param_value_data value_data;
+    uint64_t uint_val;
+    char *str_val = NULL;
+
+    rc = find_dev_param(gid, addr_str, param_name, &param);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    cmode = devlink_param_cmode_str2netconf(cmode_name);
+    if (cmode == NETCONF_DEVLINK_PARAM_CMODE_UNDEF)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    memset(&value_data, 0, sizeof(value_data));
+
+    if (param->type == NETCONF_NLA_STRING)
+    {
+        str_val = strdup(value);
+        if (str_val == NULL)
+        {
+            ERROR("%s(): out of memory", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        }
+
+        value_data.str = str_val;
+    }
+    else if (param->type == NETCONF_NLA_U8 ||
+             param->type == NETCONF_NLA_U16 ||
+             param->type == NETCONF_NLA_U32 ||
+             param->type == NETCONF_NLA_U64 ||
+             param->type == NETCONF_NLA_FLAG)
+    {
+        rc = te_strtoul(value, 10, &uint_val);
+        if (rc != 0)
+        {
+            ERROR("%s(): invalid value '%s'", __FUNCTION__, value);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        if ((param->type == NETCONF_NLA_U8 && uint_val > UINT8_MAX) ||
+            (param->type == NETCONF_NLA_U16 && uint_val > UINT16_MAX) ||
+            (param->type == NETCONF_NLA_U32 && uint_val > UINT32_MAX) ||
+            (param->type == NETCONF_NLA_FLAG && uint_val > 1))
+        {
+            ERROR("%s(): too big value '%s'", __FUNCTION__, value);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        switch (param->type)
+        {
+            case NETCONF_NLA_U8:
+                value_data.u8 = uint_val;
+                break;
+
+            case NETCONF_NLA_U16:
+                value_data.u16 = uint_val;
+                break;
+
+            case NETCONF_NLA_U32:
+                value_data.u32 = uint_val;
+                break;
+
+            case NETCONF_NLA_U64:
+                value_data.u64 = uint_val;
+                break;
+
+            case NETCONF_NLA_FLAG:
+                value_data.flag = (uint_val != 0);
+                break;
+
+            default:
+                break;
+        }
+    }
+    else
+    {
+        ERROR("%s(): not supported parameter type %d", __FUNCTION__,
+              param->type);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = netconf_devlink_param_set(nh_genl, "pci", addr_str,
+                                   param_name, param->type,
+                                   cmode, &value_data);
+    if (rc != 0)
+    {
+        free(str_val);
+        return rc;
+    }
+
+    /* Update cached parameter value after successful change */
+    netconf_devlink_param_value_data_mv(param->type,
+                                        &param->values[cmode].data,
+                                        &value_data);
+    return 0;
+#endif
+}
+
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_pci_param_value, "value",
                                NULL, NULL,
+                               param_value_get,
+                               param_value_set,
+                               NULL, NULL, param_value_list,
+                               NULL);
+
+RCF_PCH_CFG_NODE_RO(node_pci_param_type, "type",
+                    NULL, &node_pci_param_value, param_type_get);
+
+RCF_PCH_CFG_NODE_RO(node_pci_param_drv_spec, "driver_specific",
+                    NULL, &node_pci_param_type,
+                    param_drv_specific_get);
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_param, "param",
+                               &node_pci_param_drv_spec, NULL,
+                               NULL, pci_param_list);
+
+RCF_PCH_CFG_NODE_RO(node_pci_serialno, "serialno",
+                    NULL, &node_pci_param, pci_serialno_get);
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_dev, "dev",
+                               NULL, &node_pci_serialno,
                                NULL, pci_dev_list);
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_net, "net",
                                NULL, &node_pci_dev,
@@ -2694,6 +3240,16 @@ ta_unix_conf_pci_init()
     if (rc != 0)
         return rc;
 
+#ifdef USE_LIBNETCONF
+    if (netconf_open(&nh_genl, NETLINK_GENERIC) != 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("%s(): failed to open netconf session, errno=%r",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+#endif
+
     rcf_pch_rsrc_info("/agent/hardware/pci",
                       pci_grab,
                       pci_release);
@@ -2711,4 +3267,27 @@ ta_unix_conf_pci_init()
                       pci_device_release);
 
     return rcf_pch_add_node("/agent/hardware", &node_pci);
+}
+
+/* Release resources */
+te_errno
+ta_unix_conf_pci_cleanup(void)
+{
+#ifdef USE_LIBNETCONF
+    if (nh_genl != NULL)
+    {
+        netconf_close(nh_genl);
+        nh_genl = NULL;
+    }
+
+    if (dev_params != NULL)
+    {
+        netconf_list_free(dev_params);
+        dev_params = NULL;
+    }
+#endif
+
+    free_device_list();
+
+    return 0;
 }
