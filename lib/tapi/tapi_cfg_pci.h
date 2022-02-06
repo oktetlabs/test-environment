@@ -238,6 +238,20 @@ extern te_errno tapi_cfg_pci_bind_ta_driver_on_device(const char *ta,
 extern te_errno tapi_cfg_pci_get_net_if(const char *pci_oid, char **interface);
 
 /**
+ * Find out PCI device for a given network interface.
+ *
+ * @param ta          Test Agent name
+ * @param if_name     Interface name
+ * @param pci_oid     Where to save pointer to OID of PCI device (should be
+ *                    released by caller)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_pci_oid_by_net_if(const char *ta,
+                                           const char *if_name,
+                                           char **pci_oid);
+
+/**
  * Get assigned NUMA node of a PCI device.
  *
  * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device)

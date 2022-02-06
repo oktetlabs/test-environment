@@ -437,6 +437,55 @@ tapi_cfg_pci_get_net_if(const char *pci_oid, char **interface)
     return rc;
 }
 
+/* See description in tapi_cfg_pci.h */
+te_errno
+tapi_cfg_pci_oid_by_net_if(const char *ta, const char *if_name,
+                           char **pci_oid)
+{
+    unsigned int names_count;
+    cfg_handle *name_handles = NULL;
+    te_errno rc;
+    unsigned int i;
+
+    cfg_val_type val_type = CVT_STRING;
+    char *val_str;
+
+    rc = cfg_find_pattern_fmt(&names_count, &name_handles,
+                              CFG_PCI_TA_DEVICE_FMT "/net:*", ta, "*");
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < names_count; i++)
+    {
+        rc = cfg_get_instance(name_handles[i], &val_type, &val_str);
+        if (rc != 0)
+            goto out;
+
+        if (strcmp(val_str, if_name) == 0)
+        {
+            cfg_handle pci_handle;
+
+            free(val_str);
+
+            rc = cfg_get_father(name_handles[i], &pci_handle);
+            if (rc != 0)
+                goto out;
+
+            rc = cfg_get_oid_str(pci_handle, pci_oid);
+            goto out;
+        }
+
+        free(val_str);
+    }
+
+    rc = TE_ENOENT;
+
+out:
+
+    free(name_handles);
+    return rc;
+}
+
 te_errno
 tapi_cfg_pci_get_numa_node(const char *pci_oid, char **numa_node)
 {
