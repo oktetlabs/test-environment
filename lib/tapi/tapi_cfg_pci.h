@@ -327,6 +327,94 @@ extern te_errno tapi_cfg_pci_get_driver_by_vend_dev_inst(const char *ta,
                                                          const char *device,
                                                          unsigned int instance,
                                                          char **driver);
+
+/**
+ * Get PCI serial number.
+ *
+ * @param pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param serialno     Where to save PCI serial number (should be released
+ *                     by the caller)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_pci_get_serialno(const char *pci_oid,
+                                          char **serialno);
+
+/** Device parameter configuration mode */
+typedef enum tapi_cfg_pci_param_cmode {
+    TAPI_CFG_PCI_PARAM_RUNTIME,     /**< Value is applied at runtime */
+    TAPI_CFG_PCI_PARAM_DRIVERINIT,  /**< Value is applied when driver
+                                         is initialized */
+    TAPI_CFG_PCI_PARAM_PERMANENT,   /**< Value is stored in device
+                                         non-volatile memory, hard
+                                         reset is required to apply it */
+} tapi_cfg_pci_param_cmode;
+
+/**
+ * Get device parameter value of string type.
+ *
+ * @param pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param param_name   Parameter name
+ * @param cmode        Configuration mode of the value of interest
+ * @param value        Where to save obtained value (should be released
+ *                     by the caller)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_pci_get_param_str(const char *pci_oid,
+                                           const char *param_name,
+                                           tapi_cfg_pci_param_cmode cmode,
+                                           char **value);
+
+/**
+ * Get device parameter value of unsigned integer type
+ * (this includes u8, u16, u32, u64 and flag parameters).
+ *
+ * @param pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param param_name   Parameter name
+ * @param cmode        Configuration mode of the value of interest
+ * @param value        Where to save obtained value
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_pci_get_param_uint(const char *pci_oid,
+                                            const char *param_name,
+                                            tapi_cfg_pci_param_cmode cmode,
+                                            uint64_t *value);
+
+/**
+ * Set device parameter value of string type.
+ *
+ * @param pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param param_name   Parameter name
+ * @param cmode        Configuration mode of the value of interest
+ * @param value        Value to set
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_pci_set_param_str(const char *pci_oid,
+                                           const char *param_name,
+                                           tapi_cfg_pci_param_cmode cmode,
+                                           const char *value);
+
+/**
+ * Set device parameter value of unsigned integer type
+ * (can be used for any unsigned integer type, including flag type,
+ * it will fail if provided value is too big for the actual parameter
+ * type).
+ *
+ * @param pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param param_name   Parameter name
+ * @param cmode        Configuration mode of the value of interest
+ * @param value        Value to set
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_pci_set_param_uint(const char *pci_oid,
+                                            const char *param_name,
+                                            tapi_cfg_pci_param_cmode cmode,
+                                            uint64_t value);
+
 /**@} <!-- END tapi_conf_pci --> */
 
 #ifdef __cplusplus

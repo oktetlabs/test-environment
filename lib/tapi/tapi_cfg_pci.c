@@ -760,3 +760,93 @@ out:
     free(pci_oidstr);
     return rc;
 }
+
+/* See description in tapi_cfg_pci.h */
+te_errno
+tapi_cfg_pci_get_serialno(const char *pci_oid, char **serialno)
+{
+    cfg_val_type type = CVT_STRING;
+
+    return cfg_get_instance_fmt(&type, serialno, "%s/serialno:", pci_oid);
+}
+
+/* Convert configuration mode constant to string name */
+static const char *
+cmode_to_str(tapi_cfg_pci_param_cmode cmode)
+{
+    switch (cmode)
+    {
+        case TAPI_CFG_PCI_PARAM_RUNTIME:
+            return "runtime";
+
+        case TAPI_CFG_PCI_PARAM_DRIVERINIT:
+            return "driverinit";
+
+        case TAPI_CFG_PCI_PARAM_PERMANENT:
+            return "permanent";
+    }
+
+    return "<unknown>";
+}
+
+/* See description in tapi_cfg_pci.h */
+te_errno
+tapi_cfg_pci_get_param_str(const char *pci_oid,
+                           const char *param_name,
+                           tapi_cfg_pci_param_cmode cmode,
+                           char **value)
+{
+    cfg_val_type type = CVT_STRING;
+
+    return cfg_get_instance_fmt(&type, value, "%s/param:%s/value:%s",
+                                pci_oid, param_name, cmode_to_str(cmode));
+}
+
+/* See description in tapi_cfg_pci.h */
+te_errno
+tapi_cfg_pci_get_param_uint(const char *pci_oid, const char *param_name,
+                            tapi_cfg_pci_param_cmode cmode,
+                            uint64_t *value)
+{
+    char *val_str;
+    te_errno rc;
+
+    rc = tapi_cfg_pci_get_param_str(pci_oid, param_name, cmode, &val_str);
+    if (rc != 0)
+        return rc;
+
+    rc = te_str_to_uint64(val_str, 10, value);
+    free(val_str);
+    return rc;
+}
+
+/* See description in tapi_cfg_pci.h */
+te_errno
+tapi_cfg_pci_set_param_str(const char *pci_oid,
+                           const char *param_name,
+                           tapi_cfg_pci_param_cmode cmode,
+                           const char *value)
+{
+    return cfg_set_instance_fmt(CFG_VAL(STRING, value),
+                                "%s/param:%s/value:%s",
+                                pci_oid, param_name,
+                                cmode_to_str(cmode));
+}
+
+/* See description in tapi_cfg_pci.h */
+te_errno
+tapi_cfg_pci_set_param_uint(const char *pci_oid,
+                            const char *param_name,
+                            tapi_cfg_pci_param_cmode cmode,
+                            uint64_t value)
+{
+    char val_str[RCF_MAX_VAL] = "";
+    te_errno rc;
+
+    rc = te_snprintf(val_str, sizeof(val_str), "%" TE_PRINTF_64 "u",
+                     value);
+    if (rc != 0)
+        return rc;
+
+    return tapi_cfg_pci_set_param_str(pci_oid, param_name, cmode, val_str);
+}
