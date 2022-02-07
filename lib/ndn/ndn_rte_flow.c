@@ -60,9 +60,8 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"of-pop-vlan", NDN_FLOW_ACTION_TYPE_OF_POP_VLAN},
     {"of-push-vlan", NDN_FLOW_ACTION_TYPE_OF_PUSH_VLAN},
     {"of-set-vlan-vid", NDN_FLOW_ACTION_TYPE_OF_SET_VLAN_VID},
-    {"port-id", NDN_FLOW_ACTION_TYPE_PORT_ID},
-    {"vf", NDN_FLOW_ACTION_TYPE_VF},
-    {"phy-port", NDN_FLOW_ACTION_TYPE_PHY_PORT},
+    {"port-representor", NDN_FLOW_ACTION_TYPE_PORT_REPRESENTOR},
+    {"represented-port", NDN_FLOW_ACTION_TYPE_REPRESENTED_PORT},
     {"jump", NDN_FLOW_ACTION_TYPE_JUMP},
 };
 
@@ -192,23 +191,6 @@ asn_type ndn_rte_flow_action_conf_count_s = {
 const asn_type * const ndn_rte_flow_action_conf_count =
     &ndn_rte_flow_action_conf_count_s;
 
-static asn_named_entry_t _ndn_rte_flow_action_conf_id_original_ne_array[] = {
-    { "id", &asn_base_uint32_s,
-      { PRIVATE, NDN_FLOW_ACTION_CONF_IO_ID } },
-    { "original", &asn_base_boolean_s,
-      { PRIVATE, NDN_FLOW_ACTION_CONF_IO_ORIGINAL } },
-};
-
-asn_type ndn_rte_flow_action_conf_id_original_s = {
-    "Action-Conf-ID-Original", { PRIVATE, NDN_FLOW_ACTION_CONF_ID_ORIGINAL },
-    SEQUENCE,
-    TE_ARRAY_LEN(_ndn_rte_flow_action_conf_id_original_ne_array),
-    {_ndn_rte_flow_action_conf_id_original_ne_array}
-};
-
-const asn_type * const ndn_rte_flow_action_conf_port =
-    &ndn_rte_flow_action_conf_id_original_s;
-
 static asn_named_entry_t _ndn_rte_flow_action_conf_ne_array[] = {
     { "index", &asn_base_int16_s,
         {PRIVATE, NDN_FLOW_ACTION_QID} },
@@ -224,12 +206,8 @@ static asn_named_entry_t _ndn_rte_flow_action_conf_ne_array[] = {
         {PRIVATE, NDN_FLOW_ACTION_OF_PUSH_VLAN_ETHERTYPE} },
     { "vlan-id", &asn_base_int16_s,
         {PRIVATE, NDN_FLOW_ACTION_OF_SET_VLAN_VID} },
-    { "port-id", &ndn_rte_flow_action_conf_id_original_s,
-        {PRIVATE, NDN_FLOW_ACTION_CONF_PORT_ID} },
-    { "vf", &ndn_rte_flow_action_conf_id_original_s,
-        {PRIVATE, NDN_FLOW_ACTION_CONF_VF} },
-    { "phy-port", &ndn_rte_flow_action_conf_id_original_s,
-        {PRIVATE, NDN_FLOW_ACTION_CONF_PHY_PORT} },
+    { "ethdev-port-id", &asn_base_uint32_s,
+        {PRIVATE, NDN_FLOW_ACTION_ETHDEV_PORT_ID} },
     { "group", &asn_base_int32_s,
         {PRIVATE, NDN_FLOW_ACTION_GROUP} },
 };
@@ -265,10 +243,8 @@ asn_type ndn_rte_flow_actions_s = {
 const asn_type * const ndn_rte_flow_actions = &ndn_rte_flow_actions_s;
 
 static asn_named_entry_t _ndn_rte_flow_item_conf_ne_array[] = {
-    { "id", &ndn_data_unit_uint32_s,
-        {PRIVATE, NDN_FLOW_ITEM_CONF_PORT_ID_ID} },
-    { "index", &ndn_data_unit_uint32_s,
-        {PRIVATE, NDN_FLOW_ITEM_CONF_PHY_PORT_INDEX} },
+    { "ethdev-port-id", &asn_base_uint32_s,
+        {PRIVATE, NDN_FLOW_ITEM_CONF_ETHDEV_PORT_ID} },
 };
 
 asn_type ndn_rte_flow_item_conf_s = {
@@ -280,8 +256,8 @@ asn_type ndn_rte_flow_item_conf_s = {
 const asn_type * const ndn_rte_flow_item_conf = &ndn_rte_flow_item_conf_s;
 
 asn_enum_entry_t _ndn_rte_flow_item_type_enum_entries[] = {
-    {"port-id", NDN_FLOW_ITEM_TYPE_PORT_ID},
-    {"phy-port", NDN_FLOW_ITEM_TYPE_PHY_PORT},
+    {"port-representor", NDN_FLOW_ITEM_TYPE_PORT_REPRESENTOR},
+    {"represented-port", NDN_FLOW_ITEM_TYPE_REPRESENTED_PORT},
 };
 
 asn_type ndn_rte_flow_item_type_s = {

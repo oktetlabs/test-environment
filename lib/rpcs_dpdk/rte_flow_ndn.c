@@ -81,7 +81,6 @@
 #define RTE_FLOW_GRE_SEQN_OFFSET 12
 #define RTE_FLOW_GRE_VER_LEN 3
 #define RTE_FLOW_PORT_ID_LEN 32
-#define RTE_FLOW_PHY_PORT_LEN 32
 
 
 static te_errno
@@ -2159,135 +2158,43 @@ rte_flow_action_of_set_vlan_vid_from_pdu(const asn_value *conf_pdu,
 }
 
 static te_errno
-rte_flow_action_port_from_pdu(const asn_value *conf_pdu,
-                              ndn_rte_flow_action_conf_t ndn_type,
-                              const char *value_field_label,
-                              te_bool *originalp,
-                              uint32_t *idp)
+rte_flow_action_port_from_pdu(const asn_value *pdu, struct rte_flow_action *out)
 {
-    asn_value *conf_pdu_choice;
-    asn_value *original_asn;
-    asn_tag_value tag;
-    te_bool original;
-    uint32_t id;
-    size_t len;
-    int rc;
-
-    if (conf_pdu == NULL)
-        return TE_EINVAL;
-
-    rc = asn_get_choice_value(conf_pdu, &conf_pdu_choice, NULL, &tag);
-    if (rc != 0)
-        return rc;
-    else if (tag != ndn_type)
-        return TE_EINVAL;
-
-    len = sizeof(*idp);
-    rc = asn_read_value_field(conf_pdu, &id, &len, value_field_label);
-    if (rc != 0)
-        return rc;
-
-    rc = asn_get_subvalue(conf_pdu_choice, &original_asn, "original");
-    if (rc == TE_EASNINCOMPLVAL)
-    {
-        original = FALSE;
-    }
-    else if (rc != 0)
-    {
-        return rc;
-    }
-    else
-    {
-        rc = asn_read_bool(original_asn, &original, "");
-        if (rc != 0)
-            return rc;
-    }
-
-    *idp = id;
-    *originalp = original;
-
-    return 0;
-}
-
-static te_errno
-rte_flow_action_port_id_from_pdu(const asn_value *conf_pdu,
-                                 struct rte_flow_action *action)
-{
-    struct rte_flow_action_port_id *conf = NULL;
+    struct rte_flow_action_ethdev *conf;
     te_errno rc;
-    te_bool original;
+    size_t sz;
 
     conf = TE_ALLOC(sizeof(*conf));
     if (conf == NULL)
         return TE_ENOMEM;
 
-    rc = rte_flow_action_port_from_pdu(conf_pdu, NDN_FLOW_ACTION_CONF_PORT_ID,
-                                       "#port-id.id", &original, &conf->id);
+    sz = sizeof(conf->port_id);
+    rc = asn_read_value_field(pdu, &conf->port_id, &sz, "#ethdev-port-id");
     if (rc != 0)
     {
         free(conf);
         return rc;
     }
 
-    conf->original = original ? 1 : 0;
-    action->conf = conf;
-    action->type = RTE_FLOW_ACTION_TYPE_PORT_ID;
+    out->conf = conf;
 
     return 0;
 }
 
 static te_errno
-rte_flow_action_vf_from_pdu(const asn_value *conf_pdu,
-                                 struct rte_flow_action *action)
+rte_flow_action_port_representor_from_pdu(const asn_value *pdu,
+                                          struct rte_flow_action *out)
 {
-    struct rte_flow_action_vf *conf = NULL;
-    te_errno rc;
-    te_bool original;
-
-    conf = TE_ALLOC(sizeof(*conf));
-    if (conf == NULL)
-        return TE_ENOMEM;
-
-    rc = rte_flow_action_port_from_pdu(conf_pdu, NDN_FLOW_ACTION_CONF_VF,
-                                       "#vf.id", &original, &conf->id);
-    if (rc != 0)
-    {
-        free(conf);
-        return rc;
-    }
-
-    conf->original = original ? 1 : 0;
-    action->conf = conf;
-    action->type = RTE_FLOW_ACTION_TYPE_VF;
-
-    return 0;
+    out->type = RTE_FLOW_ACTION_TYPE_PORT_REPRESENTOR;
+    return rte_flow_action_port_from_pdu(pdu, out);
 }
 
 static te_errno
-rte_flow_action_phy_port_from_pdu(const asn_value *conf_pdu,
-                             struct rte_flow_action *action)
+rte_flow_action_represented_port_from_pdu(const asn_value *pdu,
+                                          struct rte_flow_action *out)
 {
-    struct rte_flow_action_phy_port *conf = NULL;
-    te_errno rc;
-    te_bool original;
-
-    conf = TE_ALLOC(sizeof(*conf));
-    if (conf == NULL)
-        return TE_ENOMEM;
-
-    rc = rte_flow_action_port_from_pdu(conf_pdu, NDN_FLOW_ACTION_CONF_PHY_PORT,
-                                       "#phy-port.id", &original, &conf->index);
-    if (rc != 0)
-    {
-        free(conf);
-        return rc;
-    }
-
-    conf->original = original ? 1 : 0;
-    action->conf = conf;
-    action->type = RTE_FLOW_ACTION_TYPE_PHY_PORT;
-
-    return 0;
+    out->type = RTE_FLOW_ACTION_TYPE_REPRESENTED_PORT;
+    return rte_flow_action_port_from_pdu(pdu, out);
 }
 
 static te_errno
@@ -2374,9 +2281,10 @@ static const struct rte_flow_action_types_mapping {
       rte_flow_action_of_push_vlan_from_pdu },
     { NDN_FLOW_ACTION_TYPE_OF_SET_VLAN_VID,
       rte_flow_action_of_set_vlan_vid_from_pdu },
-    { NDN_FLOW_ACTION_TYPE_PORT_ID, rte_flow_action_port_id_from_pdu },
-    { NDN_FLOW_ACTION_TYPE_VF, rte_flow_action_vf_from_pdu },
-    { NDN_FLOW_ACTION_TYPE_PHY_PORT, rte_flow_action_phy_port_from_pdu },
+    { NDN_FLOW_ACTION_TYPE_PORT_REPRESENTOR,
+      rte_flow_action_port_representor_from_pdu },
+    { NDN_FLOW_ACTION_TYPE_REPRESENTED_PORT,
+      rte_flow_action_represented_port_from_pdu },
     { NDN_FLOW_ACTION_TYPE_JUMP, rte_flow_action_jump_from_pdu },
 };
 
@@ -2850,25 +2758,28 @@ TARPC_FUNC_STANDALONE(rte_flow_isolate, {},
 })
 
 static te_errno
-rte_flow_item_port_id_from_asn(struct rte_flow_item *item,
-                               const asn_value *conf_port_id)
+rte_flow_item_port_from_pdu(const asn_value *pdu, struct rte_flow_item *out)
 {
-    struct rte_flow_item_port_id *spec = NULL;
-    struct rte_flow_item_port_id *last = NULL;
-    struct rte_flow_item_port_id *mask = NULL;
+    struct rte_flow_item_ethdev *spec;
+    struct rte_flow_item_ethdev *mask;
+    struct rte_flow_item_ethdev *last;
+    uint32_t spec_port_id;
+    uint32_t mask_port_id;
+    uint32_t last_port_id;
     uint32_t last_id;
     te_errno rc;
 
     rc = rte_alloc_mem_for_flow_item((void **)&spec,
                                      (void **)&mask,
                                      (void **)&last,
-                                     sizeof(struct rte_flow_item_port_id));
+                                     sizeof(struct rte_flow_item_ethdev));
     if (rc != 0)
         return rc;
 
-    rc = asn_read_int_field_with_offset(conf_port_id, "id",
+    rc = asn_read_int_field_with_offset(pdu, "ethdev-port-id",
                                         RTE_FLOW_PORT_ID_LEN, 0,
-                                        &spec->id, &mask->id, &last->id);
+                                        &spec_port_id, &mask_port_id,
+                                        &last_port_id);
     if (rc != 0)
     {
         free(spec);
@@ -2877,63 +2788,42 @@ rte_flow_item_port_id_from_asn(struct rte_flow_item *item,
         return rc;
     }
 
-    rc = asn_read_uint32(conf_port_id, &last_id, "id.#range.last");
+    if (spec_port_id > UINT16_MAX || mask_port_id > UINT16_MAX ||
+        last_port_id > UINT16_MAX)
+        return TE_EOVERFLOW;
+
+    spec->port_id = spec_port_id;
+    mask->port_id = mask_port_id;
+    last->port_id = last_port_id;
+
+    rc = asn_read_uint32(pdu, &last_id, "ethdev-port-id.#range.last");
     if (rc == TE_EASNOTHERCHOICE)
     {
         free(last);
         last = NULL;
     }
 
-    item->type = RTE_FLOW_ITEM_TYPE_PORT_ID;
-    item->spec = spec;
-    item->last = last;
-    item->mask = mask;
+    out->spec = spec;
+    out->mask = mask;
+    out->last = last;
 
     return 0;
 }
 
 static te_errno
-rte_flow_item_phy_port_from_asn(struct rte_flow_item *item,
-                                const asn_value *conf_phy_port)
+rte_flow_item_port_representor_from_pdu(const asn_value *pdu,
+                                        struct rte_flow_item *out)
 {
-    struct rte_flow_item_phy_port *spec = NULL;
-    struct rte_flow_item_phy_port *last = NULL;
-    struct rte_flow_item_phy_port *mask = NULL;
-    uint32_t last_id;
-    te_errno rc;
+    out->type = RTE_FLOW_ITEM_TYPE_PORT_REPRESENTOR;
+    return rte_flow_item_port_from_pdu(pdu, out);
+}
 
-    rc = rte_alloc_mem_for_flow_item((void **)&spec,
-                                     (void **)&mask,
-                                     (void **)&last,
-                                     sizeof(struct rte_flow_item_phy_port));
-    if (rc != 0)
-        return rc;
-
-    rc = asn_read_int_field_with_offset(conf_phy_port, "index",
-                                        RTE_FLOW_PHY_PORT_LEN, 0,
-                                        &spec->index, &mask->index,
-                                        &last->index);
-    if (rc != 0)
-    {
-        free(spec);
-        free(mask);
-        free(last);
-        return rc;
-    }
-
-    rc = asn_read_uint32(conf_phy_port, &last_id, "index.#range.last");
-    if (rc == TE_EASNOTHERCHOICE)
-    {
-        free(last);
-        last = NULL;
-    }
-
-    item->type = RTE_FLOW_ITEM_TYPE_PHY_PORT;
-    item->spec = spec;
-    item->last = last;
-    item->mask = mask;
-
-    return 0;
+static te_errno
+rte_flow_item_represented_port_from_pdu(const asn_value *pdu,
+                                        struct rte_flow_item *out)
+{
+    out->type = RTE_FLOW_ITEM_TYPE_REPRESENTED_PORT;
+    return rte_flow_item_port_from_pdu(pdu, out);
 }
 
 static te_errno
@@ -2999,14 +2889,14 @@ insert_flow_rule_items(struct rte_flow_item **pattern_out,
 
         switch (type)
         {
-            case NDN_FLOW_ITEM_TYPE_PORT_ID:
-                rc = rte_flow_item_port_id_from_asn(new_item, conf);
+            case NDN_FLOW_ITEM_TYPE_PORT_REPRESENTOR:
+                rc = rte_flow_item_port_representor_from_pdu(conf, new_item);
                 if (rc != 0)
                     goto fail;
                 break;
 
-            case NDN_FLOW_ITEM_TYPE_PHY_PORT:
-                rc = rte_flow_item_phy_port_from_asn(new_item, conf);
+            case NDN_FLOW_ITEM_TYPE_REPRESENTED_PORT:
+                rc = rte_flow_item_represented_port_from_pdu(conf, new_item);
                 if (rc != 0)
                     goto fail;
                 break;

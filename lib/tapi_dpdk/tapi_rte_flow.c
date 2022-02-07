@@ -148,41 +148,26 @@ tapi_rte_flow_add_ndn_action_of_set_vlan_vid(asn_value *ndn_actions,
 }
 
 void
-tapi_rte_flow_add_ndn_action_port(asn_value *ndn_actions,
-                                  ndn_rte_flow_action_type_t type,
-                                  int action_index,
-                                  uint32_t id,
-                                  te_bool original)
+tapi_rte_flow_add_ndn_action_port(ndn_rte_flow_action_type_t type,
+                                  uint32_t ethdev_port_id,
+                                  asn_value *actions,
+                                  int entry_idx)
 {
-    asn_value *action;
-    const char *label;
+    asn_value *entry;
 
-    switch (type)
-    {
-        case NDN_FLOW_ACTION_TYPE_PORT_ID:
-            label = "conf.#port-id";
-            break;
+    if (type != NDN_FLOW_ACTION_TYPE_PORT_REPRESENTOR &&
+        type != NDN_FLOW_ACTION_TYPE_REPRESENTED_PORT)
+        CHECK_RC(TE_EINVAL);
 
-        case NDN_FLOW_ACTION_TYPE_VF:
-            label = "conf.#vf";
-            break;
+    CHECK_NOT_NULL(entry = asn_init_value(ndn_rte_flow_action));
 
-        case NDN_FLOW_ACTION_TYPE_PHY_PORT:
-            label = "conf.#phy-port";
-            break;
+    CHECK_RC(asn_write_int32(entry, type, "type"));
 
-        default:
-            CHECK_RC(TE_EINVAL);
-    }
+    CHECK_RC(asn_write_value_field_fmt(entry, &ethdev_port_id,
+                                       sizeof(ethdev_port_id),
+                                       "conf.#ethdev-port-id"));
 
-    CHECK_NOT_NULL(action = asn_init_value(ndn_rte_flow_action));
-    CHECK_RC(asn_write_int32(action, type, "type"));
-    CHECK_RC(asn_write_value_field_fmt(action, &id, sizeof(id),
-                                       "%s.id", label));
-    CHECK_RC(asn_write_value_field_fmt(action, &original, sizeof(original),
-                                       "%s.original", label));
-
-    CHECK_RC(asn_insert_indexed(ndn_actions, action, action_index, ""));
+    CHECK_RC(asn_insert_indexed(actions, entry, entry_idx, ""));
 }
 
 void
@@ -201,33 +186,22 @@ tapi_rte_flow_add_ndn_action_jump(asn_value *ndn_actions,
 }
 
 void
-tapi_rte_flow_add_ndn_item_port_id(asn_value *ndn_items,
-                                   int item_index,
-                                   uint32_t port_id)
+tapi_rte_flow_add_ndn_item_port(ndn_rte_flow_item_type_t type,
+                                uint32_t ethdev_port_id,
+                                asn_value *items,
+                                int entry_idx)
 {
-    asn_value *item;
+    asn_value *entry;
 
-    CHECK_NOT_NULL(item = asn_init_value(ndn_rte_flow_item));
-    CHECK_RC(asn_write_int32(item, NDN_FLOW_ITEM_TYPE_PORT_ID, "type"));
-    CHECK_RC(asn_write_value_field(item, &port_id, sizeof(port_id),
-                                   "conf.#id.#plain"));
+    CHECK_NOT_NULL(entry = asn_init_value(ndn_rte_flow_item));
 
-    CHECK_RC(asn_insert_indexed(ndn_items, item, item_index, ""));
-}
+    CHECK_RC(asn_write_int32(entry, type, "type"));
 
-void
-tapi_rte_flow_add_ndn_item_phy_port(asn_value *ndn_items,
-                                    int item_index,
-                                    uint32_t phy_port)
-{
-    asn_value *item;
+    CHECK_RC(asn_write_value_field(entry, &ethdev_port_id,
+                                   sizeof(ethdev_port_id),
+                                   "conf.#ethdev-port-id.#plain"));
 
-    CHECK_NOT_NULL(item = asn_init_value(ndn_rte_flow_item));
-    CHECK_RC(asn_write_int32(item, NDN_FLOW_ITEM_TYPE_PHY_PORT, "type"));
-    CHECK_RC(asn_write_value_field(item, &phy_port, sizeof(phy_port),
-                                   "conf.#index.#plain"));
-
-    CHECK_RC(asn_insert_indexed(ndn_items, item, item_index, ""));
+    CHECK_RC(asn_insert_indexed(items, entry, entry_idx, ""));
 }
 
 rpc_rte_flow_p

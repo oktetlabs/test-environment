@@ -116,18 +116,17 @@ extern void tapi_rte_flow_add_ndn_action_of_set_vlan_vid(asn_value *ndn_actions,
                                                          uint16_t vlan_vid);
 
 /**
- * Add a PORT ID action to an action list at specified index.
+ * Add an action of type PORT_REPRESENTOR / REPRESENTED_PORT to the action list.
  *
- * @param[inout]  ndn_actions       Action list
- * @param[in]     action_index      Index at which the action is put to list
- * @param[in]     port_id           DPDK port id
- * @param[in]     original          Use original DPDK port ID if possible
+ * @param[in]     type            The action type
+ * @param[in]     ethdev_port_id  The representor's ethdev port ID
+ * @param[inout]  actions         The list of actions
+ * @param[in]     entry_idx       The entry index
  */
-extern void tapi_rte_flow_add_ndn_action_port(asn_value *ndn_actions,
-                                              ndn_rte_flow_action_type_t type,
-                                              int action_index,
-                                              uint32_t id,
-                                              te_bool original);
+extern void tapi_rte_flow_add_ndn_action_port(ndn_rte_flow_action_type_t type,
+                                              uint32_t ethdev_port_id,
+                                              asn_value *actions,
+                                              int entry_idx);
 
 /**
  * Add a JUMP action to an action list at specified index.
@@ -141,26 +140,17 @@ extern void tapi_rte_flow_add_ndn_action_jump(asn_value *ndn_actions,
                                               uint32_t group);
 
 /**
- * Add a PORT ID item to an item list at specified index.
+ * Add an item of type PORT_REPRESENTOR / REPRESENTED_PORT to the item list.
  *
- * @param[inout]  ndn_items         Item list
- * @param[in]     item_index        Index at which the item is put to list
- * @param[in]     port_id           DPDK port id
+ * @param[in]     type            The item type
+ * @param[in]     ethdev_port_id  The representor's ethdev port ID
+ * @param[inout]  items           The list of items
+ * @param[in]     entry_idx       The entry index
  */
-extern void tapi_rte_flow_add_ndn_item_port_id(asn_value *ndn_items,
-                                               int item_index,
-                                               uint32_t port_id);
-
-/**
- * Add a PHY_PORT item to an item list at specified index.
- *
- * @param[inout]  ndn_items         Item list
- * @param[in]     item_index        Index at which the item is put to list
- * @param[in]     phy_port          Physical port number
- */
-extern void tapi_rte_flow_add_ndn_item_phy_port(asn_value *ndn_items,
-                                                int item_index,
-                                                uint32_t phy_port);
+extern void tapi_rte_flow_add_ndn_item_port(ndn_rte_flow_item_type_t type,
+                                            uint32_t ethdev_port_id,
+                                            asn_value *items,
+                                            int entry_idx);
 
 /**
  * Convert an ASN value representing a flow rule pattern into
