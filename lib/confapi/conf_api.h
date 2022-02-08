@@ -631,6 +631,28 @@ extern te_errno cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
                                      const char *oid_fmt, ...)
                                      __attribute__((format(printf, 3, 4)));
 
+/** Type-safe version of cfg_get_instance_fmt() for integer values */
+extern te_errno cfg_get_instance_int_fmt(int *val, const char *oid_fmt, ...)
+                                         __attribute__((format(printf, 2, 3)));
+
+/** Type-safe version of cfg_get_instance_fmt() for values of uint64_t type */
+extern te_errno cfg_get_instance_uint64_fmt(uint64_t *val,
+                                            const char *oid_fmt, ...)
+                                        __attribute__((format(printf, 2, 3)));
+
+/** Type-safe version of cfg_get_instance_fmt() for string values */
+extern te_errno cfg_get_instance_string_fmt(char **val,
+                                            const char *oid_fmt, ...)
+                                          __attribute__((format(printf, 2, 3)));
+
+/**
+ * Type-safe version of cfg_get_instance_fmt() for values of
+ * struct sockaddr type
+ */
+extern te_errno cfg_get_instance_addr_fmt(struct sockaddr *val,
+                                          const char *oid_fmt, ...)
+                                        __attribute__((format(printf, 2, 3)));
+
 /**
  * Get instance by the OID string.
  *
@@ -664,6 +686,31 @@ extern te_errno cfg_get_instance_sync(cfg_handle handle,
 extern te_errno cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
                                           const char *oid_fmt, ...)
                                           __attribute__((format(printf, 3, 4)));
+
+/** Type-safe version of cfg_get_instance_sync_fmt() for integer values */
+extern te_errno cfg_get_instance_int_sync_fmt(int *val,
+                                              const char *oid_fmt, ...)
+                                        __attribute__((format(printf, 2, 3)));
+
+/**
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of uint64_t type
+ */
+extern te_errno cfg_get_instance_uint64_sync_fmt(uint64_t *val,
+                                                 const char *oid_fmt, ...)
+                                        __attribute__((format(printf, 2, 3)));
+
+/** Type-safe version of cfg_get_instance_sync_fmt() for string values */
+extern te_errno cfg_get_instance_string_sync_fmt(char **val,
+                                                 const char *oid_fmt, ...)
+                                        __attribute__((format(printf, 2, 3)));
+
+/**
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of
+ * struct sockaddr type
+ */
+extern te_errno cfg_get_instance_addr_sync_fmt(struct sockaddr *val,
+                                               const char *oid_fmt, ...)
+                                        __attribute__((format(printf, 2, 3)));
 
 /**@}*/
 
