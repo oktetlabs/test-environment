@@ -18,6 +18,8 @@ RUN_DIR="${PWD}"
 : ${HTML_OPTION:=true}
 : ${EXEC_NAME:=$0}
 
+export TMPDIR="${TMPDIR:-${TE_TMP:-/tmp/}}"
+
 declare -a UNKNOWN_OPTS
 
 CONF_LOGGER="${CONFDIR}"/logger.conf
@@ -27,11 +29,22 @@ OUTPUT_LOCATION=
 OUTPUT_TXT=true
 OUTPUT_HTML=false
 OUTPUT_STDOUT=false
+TMP_LOG_FILE=
+INPUT_FILE=
+
+cleanup() {
+    if [[ -n "${TMP_LOG_FILE}" ]] ; then
+        rm "${TMP_LOG_FILE}"
+        TMP_LOG_FILE=
+    fi
+}
+
+trap cleanup EXIT INT TERM
 
 usage()
 {
 cat <<EOF
-Usage: `basename "${EXEC_NAME}"` [<options>]
+Usage: `basename "${EXEC_NAME}"` [<options>] [raw log or bundle file]
   --sniff-log-dir=<path>        Path to the *TEN* side capture files.
   --output-to=<path>            Location where you want the log to be stored.
 EOF
@@ -66,8 +79,6 @@ cat <<EOF
 
 EOF
 }
-
-PROC_OPTS=("--raw-log=${TE_LOG_RAW}")
 
 process_opts()
 {
@@ -116,8 +127,18 @@ process_opts()
                 OUTPUT_TXT=false
                 ;;
 
-            *) echo "WARNING: unknown option $1 will be passed to rgt-proc-raw-log" >&2;
+            -*) ;&
+            --*)
+                echo "WARNING: unknown option $1 will be passed to rgt-proc-raw-log" >&2;
                 UNKNOWN_OPTS+=("$1")
+                ;;
+
+            *)
+                if [[ -n "${INPUT_FILE}" ]] ; then
+                    echo "ERROR: more than one input file is specified" >&2;
+                    exit 1
+                fi
+                INPUT_FILE=$1
                 ;;
         esac
         shift 1
@@ -126,6 +147,24 @@ process_opts()
 
 
 process_opts "$@"
+
+if [[ -z "${INPUT_FILE}" ]] ; then
+    PROC_OPTS+=("--raw-log=${TE_LOG_RAW}")
+else
+    if [[ "${INPUT_FILE}" == *.tpxz ]] ; then
+        TMP_LOG_FILE="$(mktemp "${TMPDIR}/log_XXXXXX.raw")"
+
+        rgt-log-bundle-get-original --bundle="${INPUT_FILE}" \
+            --output="${TMP_LOG_FILE}"
+        if [[ $? -ne 0 ]] ; then
+            echo "ERROR: failed to get RAW log from bundle" >&2
+            exit 1
+        fi
+        INPUT_FILE="${TMP_LOG_FILE}"
+    fi
+
+    PROC_OPTS+=("--raw-log=${INPUT_FILE}")
+fi
 
 # Check the output location for consistency and create path, if necessary.
 if test -z "${OUTPUT_LOCATION}" ; then
