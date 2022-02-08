@@ -31,6 +31,7 @@
 #include "rcf_pch.h"
 #include "ta_common.h"
 #include "power_ctl_internal.h"
+#include "agentlib.h"
 
 
 const char *ta_name = "(power-ctl)";
@@ -460,6 +461,13 @@ main(int argc, char **argv)
     }
 
     ta_name = argv[1];
+
+    rc = ta_process_mgmt_init();
+    if (rc != 0)
+    {
+        LOG_PRINT("Cannot initialize process management: %d", rc);
+        return rc;
+    }
 
     if ((rc = ta_log_init(ta_name)) != 0)
     {

@@ -35,15 +35,44 @@ te_errno
 ta_shell_cold_reboot(char *id)
 {
     char buf[RCF_MAX_PATH];
-    int rc;
+    te_errno rc;
+    pid_t pid, rv_pid;
+    int status;
 
     snprintf(buf, RCF_MAX_PATH, cmd_to_cold_reboot, id);
 
     RING("Reboot '%s' with '%s'", id, buf);
-    rc = ta_system(buf);
-    if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
+
+    pid = te_shell_cmd(buf, -1, NULL, NULL, NULL);
+    if (pid <= 0)
     {
-        ERROR("Failed to cold reboot '%s', rc=%r", id, rc);
+        ERROR("Failed to cold reboot '%s'", id);
+        return TE_EFAIL;
+    }
+
+    rv_pid = ta_waitpid(pid, &status, WNOHANG);
+    if (rv_pid == pid)
+    {
+        if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
+        {
+            ERROR("Command %s exited with status %d", buf,
+                  WEXITSTATUS(status));
+            return TE_EFAIL;
+        }
+        else if (WIFSTOPPED(status))
+        {
+            ERROR("Cold reboot stopped by signal %d", WSTOPSIG(status));
+            return TE_EFAIL;
+        }
+        else if (WIFSIGNALED(status))
+        {
+            ERROR("Cold reboot killed by signal %d", WTERMSIG(status));
+            return TE_EFAIL;
+        }
+    }
+    else if (rv_pid == -1)
+    {
+        ERROR("Failed to cold reboot '%s'", id);
         return TE_EFAIL;
     }
 
