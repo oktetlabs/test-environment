@@ -63,6 +63,7 @@ typedef enum testpmd_param_enum {
     TESTPMD_PARAM_FLOW_CTRL_AUTONEG,
     TESTPMD_PARAM_FLOW_CTRL_RX,
     TESTPMD_PARAM_FLOW_CTRL_TX,
+    TESTPMD_PARAM_TXONLY_TSO_MSS,
 } testpmd_param_enum;
 
 /*
@@ -114,6 +115,9 @@ static const testpmd_param default_testpmd_params[] = {
     [TESTPMD_PARAM_FLOW_CTRL_TX] = {
         .key = MAKE_TESTPMD_CMD("flow_ctrl_tx"),
         .type = TESTPMD_PARAM_TYPE_STRING, .str_val = "on"},
+    [TESTPMD_PARAM_TXONLY_TSO_MSS] = {
+        .key = MAKE_TESTPMD_ARG("txonly_tso_mss"),
+        .type = TESTPMD_PARAM_TYPE_UINT64, .val = 0},
 };
 
 static size_t
@@ -456,8 +460,13 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
         }
     }
 
-    if ((rc = get_txpkts_size(params[TESTPMD_PARAM_TXPKTS].str_val,
-                              &txpkts_size)) != 0)
+    if (param_is_set[TESTPMD_PARAM_TXONLY_TSO_MSS])
+    {
+        txpkts_size = TAPI_DPDK_TESTPMD_TSO_MSS_HDRS_LEN +
+                      params[TESTPMD_PARAM_TXONLY_TSO_MSS].val;
+    }
+    else if ((rc = get_txpkts_size(params[TESTPMD_PARAM_TXPKTS].str_val,
+                                   &txpkts_size)) != 0)
     {
         free(params);
         free(param_is_set);

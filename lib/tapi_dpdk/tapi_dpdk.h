@@ -36,6 +36,8 @@ extern "C" {
 #define TAPI_DPDK_TESTPMD_COMMAND_PREFIX TAPI_DPDK_TESTPMD_NAME "_command_"
 #define TAPI_DPDK_TESTPMD_TERM_TIMEOUT_MS 60000
 #define TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS 60000
+#define TAPI_DPDK_TESTPMD_TSO_MSS_HDRS_LEN \
+            (ETHER_HDR_LEN + TAD_IP4_HDR_LEN + TAD_TCP_HDR_LEN)
 
 typedef struct tapi_dpdk_testpmd_job_t {
     char *ta;
