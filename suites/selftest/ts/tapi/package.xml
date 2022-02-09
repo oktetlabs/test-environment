@@ -12,8 +12,10 @@
             <package name="tool"/>
         </run>
 
+    <!-- FIXME. Bug11561: Broken with Debian 11
         <run>
             <package name="upnp"/>
         </run>
+    -->
     </session>
 </package>

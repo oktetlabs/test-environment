@@ -34,7 +34,6 @@ te_libs = [
     'asn',
     'ndn',
     'tapi_tool',
-    'tapi_upnp',
     'tapi_job',
 ]
 
