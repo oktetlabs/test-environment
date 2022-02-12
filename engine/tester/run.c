@@ -2633,13 +2633,6 @@ run_verify_cfg_backup(tester_ctx *ctx, unsigned int track_conf)
         {
             ctx->backup_ok = TRUE;
         }
-
-        /*
-         * FIXME: why is it done here and only in case of
-         * "nohistory"?
-         */
-        if (~track_conf & TESTER_TRACK_CONF_ROLLBACK_HISTORY)
-            cfg_synchronize("/:", TRUE);
     }
 }
 
