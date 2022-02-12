@@ -881,28 +881,31 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
     s = xmlGetProp(node, CONST_CHAR2XML("track_conf"));
     if (s != NULL)
     {
+        attrs->track_conf = TESTER_TRACK_CONF_DEF;
+
         if (xmlStrcmp(s, CONST_CHAR2XML("yes")) == 0 ||
             xmlStrcmp(s, CONST_CHAR2XML("barf")) == 0)
         {
-            attrs->track_conf = TESTER_TRACK_CONF_YES;
+            /* Nothing to do */
         }
         else if (xmlStrcmp(s, CONST_CHAR2XML("barf_nohistory")) == 0 ||
                  xmlStrcmp(s, CONST_CHAR2XML("yes_nohistory")) == 0)
         {
-            attrs->track_conf = TESTER_TRACK_CONF_YES_NOHISTORY;
+            attrs->track_conf &= ~TESTER_TRACK_CONF_ROLLBACK_HISTORY;
         }
         else if (xmlStrcmp(s, CONST_CHAR2XML("no")) == 0)
         {
-            attrs->track_conf = TESTER_TRACK_CONF_NO;
+            attrs->track_conf &= ~TESTER_TRACK_CONF_ENABLED;
         }
         else if (xmlStrcmp(s, CONST_CHAR2XML("silent")) == 0)
         {
-            attrs->track_conf = TESTER_TRACK_CONF_SILENT;
+            attrs->track_conf &= ~TESTER_TRACK_CONF_MARK_DIRTY;
         }
         else if (xmlStrcmp(s, CONST_CHAR2XML("nohistory")) == 0 ||
                  xmlStrcmp(s, CONST_CHAR2XML("silent_nohistory")) == 0)
         {
-            attrs->track_conf = TESTER_TRACK_CONF_NOHISTORY;
+            attrs->track_conf &= ~(TESTER_TRACK_CONF_ROLLBACK_HISTORY |
+                                   TESTER_TRACK_CONF_MARK_DIRTY);
         }
         else
         {
@@ -1819,7 +1822,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
             TESTER_TRACK_CONF_UNSPEC)
         {
             test_get_attrs(session->prologue)->track_conf =
-                TESTER_TRACK_CONF_NO;
+                TESTER_TRACK_CONF_SPECIFIED;
         }
 
         node = xmlNodeNext(node);
@@ -1839,7 +1842,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
             TESTER_TRACK_CONF_UNSPEC)
         {
             test_get_attrs(session->epilogue)->track_conf =
-                TESTER_TRACK_CONF_NO;
+                TESTER_TRACK_CONF_SPECIFIED;
         }
 
         node = xmlNodeNext(node);

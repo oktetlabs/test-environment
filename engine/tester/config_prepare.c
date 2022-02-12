@@ -62,7 +62,7 @@ typedef struct config_prepare_ctx {
 
     run_item           *exception;  /**< Current exception handler */
     run_item           *keepalive;  /**< Current keep-alive handler */
-    tester_track_conf   track_conf; /**< Current track_conf attribute */
+    unsigned int        track_conf; /**< Current track_conf attribute */
 
 } config_prepare_ctx;
 

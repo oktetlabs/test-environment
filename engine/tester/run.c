@@ -2550,10 +2550,10 @@ run_script(run_item *ri, test_script *script,
  * @note Status code in context is updated as well.
  */
 static te_errno
-run_create_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
+run_create_cfg_backup(tester_ctx *ctx, unsigned int track_conf)
 {
     if ((~ctx->flags & TESTER_NO_CFG_TRACK) &&
-        (track_conf != TESTER_TRACK_CONF_NO))
+        (track_conf & TESTER_TRACK_CONF_ENABLED))
     {
         te_errno rc;
 
@@ -2581,7 +2581,7 @@ run_create_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
  * @note Status code in context is updated in the case of failure.
  */
 static void
-run_verify_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
+run_verify_cfg_backup(tester_ctx *ctx, unsigned int track_conf)
 {
     te_errno    rc;
 
@@ -2592,24 +2592,21 @@ run_verify_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
         if (TE_RC_GET_ERROR(rc) == TE_EBACKUP ||
             TE_RC_GET_ERROR(rc) == TE_ETADEAD)
         {
-            if (track_conf == TESTER_TRACK_CONF_YES ||
-                track_conf == TESTER_TRACK_CONF_YES_NOHISTORY)
+            if (track_conf & TESTER_TRACK_CONF_MARK_DIRTY)
             {
                 /* If backup is not OK, restore it */
                 WARN("Current configuration differs from backup - "
                      "restore");
             }
-            rc = (track_conf == TESTER_TRACK_CONF_NOHISTORY || 
-                  track_conf == TESTER_TRACK_CONF_YES_NOHISTORY ? 
-                  cfg_restore_backup_nohistory(ctx->backup) :
-                  cfg_restore_backup(ctx->backup));
+            rc = (track_conf & TESTER_TRACK_CONF_ROLLBACK_HISTORY) ?
+                  cfg_restore_backup(ctx->backup) :
+                  cfg_restore_backup_nohistory(ctx->backup);
             if (rc != 0)
             {
                 ERROR("Cannot restore configuration backup: %r", rc);
                 ctx->current_result.status = TESTER_TEST_ERROR;
             }
-            else if (track_conf == TESTER_TRACK_CONF_YES || 
-                     track_conf == TESTER_TRACK_CONF_YES_NOHISTORY)
+            else if (track_conf & TESTER_TRACK_CONF_MARK_DIRTY)
             {
                 RING("Configuration successfully restored using backup");
                 if (ctx->current_result.status < TESTER_TEST_DIRTY)
@@ -2629,7 +2626,12 @@ run_verify_cfg_backup(tester_ctx *ctx, tester_track_conf track_conf)
         {
             ctx->backup_ok = TRUE;
         }
-        if (track_conf == TESTER_TRACK_CONF_NOHISTORY)
+
+        /*
+         * FIXME: why is it done here and only in case of
+         * "nohistory"?
+         */
+        if (~track_conf & TESTER_TRACK_CONF_ROLLBACK_HISTORY)
             cfg_synchronize("/:", TRUE);
     }
 }

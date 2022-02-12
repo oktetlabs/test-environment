@@ -127,25 +127,34 @@ typedef enum tester_handdown {
 /** Default value of the executable handdown attribute */
 #define TESTER_HANDDOWN_DEF TESTER_HANDDOWN_DESCENDANTS
 
-
-/** Types of Tester configuration tracking */
-typedef enum tester_track_conf {
-    TESTER_TRACK_CONF_UNSPEC,
-    TESTER_TRACK_CONF_YES,
-    TESTER_TRACK_CONF_NO,
-    TESTER_TRACK_CONF_SILENT,
-    TESTER_TRACK_CONF_NOHISTORY,
-    TESTER_TRACK_CONF_YES_NOHISTORY
-} tester_track_conf;
+/**
+ * Flags describing how Tester tracks configuration changes.
+ */
+typedef enum tester_track_conf_flags {
+    TESTER_TRACK_CONF_SPECIFIED = 1 << 0,  /**< Attribute is specified */
+    TESTER_TRACK_CONF_ENABLED = 1 << 1,    /**< Configuration changes
+                                                tracking is enabled */
+    TESTER_TRACK_CONF_MARK_DIRTY = 1 << 2, /**< Set test result to DIRTY in
+                                                case of unexpected
+                                                configuration changes */
+    TESTER_TRACK_CONF_ROLLBACK_HISTORY = 1 << 3, /**< Try to restore
+                                                      configuration by
+                                                      history rollback */
+} tester_track_conf_flags;
 
 /** Default value of the track_conf attribute */
-#define TESTER_TRACK_CONF_DEF   TESTER_TRACK_CONF_YES
+#define TESTER_TRACK_CONF_DEF   (TESTER_TRACK_CONF_SPECIFIED | \
+                                 TESTER_TRACK_CONF_ENABLED | \
+                                 TESTER_TRACK_CONF_MARK_DIRTY | \
+                                 TESTER_TRACK_CONF_ROLLBACK_HISTORY)
 
+/** This value means track_conf attribute is not specified */
+#define TESTER_TRACK_CONF_UNSPEC 0
 
 /** Attributes of any test (script, session) */
 typedef struct test_attrs {
     struct timeval      timeout;        /**< Execution timeout */
-    tester_track_conf   track_conf;     /**< Type of configurations
+    unsigned int        track_conf;     /**< Type of configurations
                                              changes tracking */
     tester_handdown     track_conf_hd;  /**< Inheritance of 'track_conf'
                                              attribute */
