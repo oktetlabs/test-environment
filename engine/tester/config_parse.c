@@ -846,6 +846,78 @@ get_requirements(xmlNodePtr *node, test_requirements *reqs,
     return 0;
 }
 
+/* Parse track_conf attribute value */
+static te_errno
+parse_track_conf(const char *str, unsigned int *result)
+{
+    unsigned int parsed_val;
+    char *str_copy = NULL;
+    char *saveptr = NULL;
+    char *token = NULL;
+    te_errno rc = 0;
+
+    if (str == NULL || *str == '\0')
+    {
+        *result = TESTER_TRACK_CONF_UNSPEC;
+        return 0;
+    }
+
+    str_copy = strdup(str);
+    if (str_copy == NULL)
+    {
+        ERROR("%s(): out of memory", __FUNCTION__);
+        return TE_ENOMEM;
+    }
+
+    parsed_val = TESTER_TRACK_CONF_DEF;
+
+    token = strtok_r(str_copy, "|", &saveptr);
+    while (token != NULL)
+    {
+        if (strcmp(token, "yes") == 0 || strcmp(token, "barf") == 0)
+        {
+            /* Nothing to do */
+        }
+        else if (strcmp(token, "barf_nohistory") == 0 ||
+                 strcmp(token, "yes_nohistory") == 0)
+        {
+            parsed_val &= ~TESTER_TRACK_CONF_ROLLBACK_HISTORY;
+        }
+        else if (strcmp(token, "no") == 0)
+        {
+            parsed_val &= ~TESTER_TRACK_CONF_ENABLED;
+        }
+        else if (strcmp(token, "silent") == 0)
+        {
+            parsed_val &= ~TESTER_TRACK_CONF_MARK_DIRTY;
+        }
+        else if (strcmp(token, "nohistory") == 0 ||
+                 strcmp(token, "silent_nohistory") == 0)
+        {
+
+            parsed_val &= ~(TESTER_TRACK_CONF_ROLLBACK_HISTORY |
+                            TESTER_TRACK_CONF_MARK_DIRTY);
+        }
+        else
+        {
+            ERROR("%s(): invalid name '%s' in 'track_conf' property",
+                  __FUNCTION__, token);
+            rc = TE_EINVAL;
+            goto out;
+        }
+
+        token = strtok_r(NULL, "|", &saveptr);
+    }
+
+out:
+
+    free(str_copy);
+
+    if (rc == 0)
+        *result = parsed_val;
+
+    return rc;
+}
 
 /**
  * Get attributes common for all run items.
@@ -881,38 +953,13 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
     s = xmlGetProp(node, CONST_CHAR2XML("track_conf"));
     if (s != NULL)
     {
-        attrs->track_conf = TESTER_TRACK_CONF_DEF;
-
-        if (xmlStrcmp(s, CONST_CHAR2XML("yes")) == 0 ||
-            xmlStrcmp(s, CONST_CHAR2XML("barf")) == 0)
-        {
-            /* Nothing to do */
-        }
-        else if (xmlStrcmp(s, CONST_CHAR2XML("barf_nohistory")) == 0 ||
-                 xmlStrcmp(s, CONST_CHAR2XML("yes_nohistory")) == 0)
-        {
-            attrs->track_conf &= ~TESTER_TRACK_CONF_ROLLBACK_HISTORY;
-        }
-        else if (xmlStrcmp(s, CONST_CHAR2XML("no")) == 0)
-        {
-            attrs->track_conf &= ~TESTER_TRACK_CONF_ENABLED;
-        }
-        else if (xmlStrcmp(s, CONST_CHAR2XML("silent")) == 0)
-        {
-            attrs->track_conf &= ~TESTER_TRACK_CONF_MARK_DIRTY;
-        }
-        else if (xmlStrcmp(s, CONST_CHAR2XML("nohistory")) == 0 ||
-                 xmlStrcmp(s, CONST_CHAR2XML("silent_nohistory")) == 0)
-        {
-            attrs->track_conf &= ~(TESTER_TRACK_CONF_ROLLBACK_HISTORY |
-                                   TESTER_TRACK_CONF_MARK_DIRTY);
-        }
-        else
+        rc = parse_track_conf(XML2CHAR(s), &attrs->track_conf);
+        if (rc != 0)
         {
             ERROR("Invalid value '%s' of 'track_conf' property",
                   XML2CHAR(s));
             xmlFree(s);
-            return TE_RC(TE_TESTER, TE_EINVAL);
+            return TE_RC(TE_TESTER, rc);
         }
         xmlFree(s);
 
