@@ -2587,6 +2587,13 @@ run_verify_cfg_backup(tester_ctx *ctx, unsigned int track_conf)
 
     if (!ctx->backup_ok && ctx->backup != NULL)
     {
+        /*
+         * Syncing is time-consuming, so it is not enabled by
+         * default for all tests.
+         */
+        if (track_conf & TESTER_TRACK_CONF_SYNC)
+            cfg_synchronize("/:", TRUE);
+
         /* Check configuration backup */
         rc = cfg_verify_backup(ctx->backup);
         if (TE_RC_GET_ERROR(rc) == TE_EBACKUP ||

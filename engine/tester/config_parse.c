@@ -898,6 +898,10 @@ parse_track_conf(const char *str, unsigned int *result)
             parsed_val &= ~(TESTER_TRACK_CONF_ROLLBACK_HISTORY |
                             TESTER_TRACK_CONF_MARK_DIRTY);
         }
+        else if (strcmp(token, "sync") == 0)
+        {
+            parsed_val |= TESTER_TRACK_CONF_SYNC;
+        }
         else
         {
             ERROR("%s(): invalid name '%s' in 'track_conf' property",

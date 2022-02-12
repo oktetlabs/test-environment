@@ -140,6 +140,9 @@ typedef enum tester_track_conf_flags {
     TESTER_TRACK_CONF_ROLLBACK_HISTORY = 1 << 3, /**< Try to restore
                                                       configuration by
                                                       history rollback */
+    TESTER_TRACK_CONF_SYNC = 1 << 4,       /**< Synchronize configuration
+                                                tree before checking whether
+                                                it differs from backup */
 } tester_track_conf_flags;
 
 /** Default value of the track_conf attribute */
