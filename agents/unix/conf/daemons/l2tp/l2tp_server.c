@@ -3799,7 +3799,9 @@ l2tp_release(const char *name)
     }
 
     free(l2tp->conf_file);
+    l2tp->conf_file = NULL;
     free(l2tp->pid_file);
+    l2tp->pid_file = NULL;
 
 #undef ASSIGN_RETVAL
 
