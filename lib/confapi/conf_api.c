@@ -1874,7 +1874,6 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
         return ret_val;
     }
 
-#if 0
     if (type != NULL && *type != CVT_UNSPECIFIED && *type != msg->val_type)
     {
 #ifdef HAVE_PTHREAD_H
@@ -1882,7 +1881,7 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
 #endif
         return TE_EBADTYPE;
     }
-#endif
+
     va_start(list, type);
     switch (msg->val_type)
     {
