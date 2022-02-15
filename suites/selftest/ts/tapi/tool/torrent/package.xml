@@ -5,6 +5,9 @@
 
     <author mailto="Andrey.Izrailev@oktetlabs.ru"/>
 
+    <!-- bttrack is not maintained by its developers anymore -->
+    <req id="BROKEN"/>
+
     <session track_conf="silent">
         <prologue>
             <script name="ctorrent_prologue"/>
