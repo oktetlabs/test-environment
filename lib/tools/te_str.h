@@ -229,11 +229,35 @@ extern te_errno te_snprintf(char *dst, size_t size, const char *fmt, ...)
 extern char *te_str_strip_spaces(const char *str);
 
 /**
- * Wrapper over strtoul().
+ * Wrapper over strtoumax().
  *
  * @param str       String to convert.
  * @param base      Base of a numeral system.
  * @param value     Where to save conversion result.
+ *
+ * @return Status code.
+ */
+extern te_errno te_strtoumax(const char *str, int base,
+                             uintmax_t *value);
+
+/**
+ * Wrapper over te_strtoumax() with overflow check.
+ *
+ * @param str       String to convert
+ * @param base      Base of a numeral system
+ * @param value     Where to save conversion result
+ *
+ * @return Status code.
+ */
+extern te_errno te_str_to_uint64(const char *str, int base,
+                                 uint64_t *value);
+
+/**
+ * Wrapper over te_strtoumax() with overflow check.
+ *
+ * @param str       String to convert
+ * @param base      Base of a numeral system
+ * @param value     Where to save conversion result
  *
  * @return Status code.
  */
@@ -252,7 +276,7 @@ extern te_errno te_strtoul(const char *str, int base,
 extern te_errno te_strtoi(const char *str, int base, int *value);
 
 /**
- * Wrapper for te_strtoul() with overflow check.
+ * Wrapper for te_strtoumax() with overflow check.
  *
  * @param str   String to convert
  * @param base  Base of the numeral system

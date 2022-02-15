@@ -22,6 +22,9 @@
 #ifdef HAVE_BSD_STRING_H
 #include <bsd/string.h>
 #endif
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
 
 #include "logger_api.h"
 #include "te_string.h"
@@ -228,7 +231,7 @@ te_str_strip_spaces(const char *str)
 
 /* See description in te_str.h */
 te_errno
-te_strtoul(const char *str, int base, unsigned long int *value)
+te_strtoumax(const char *str, int base, uintmax_t *value)
 {
     char     *endptr = NULL;
     te_errno  rc = 0;
@@ -242,15 +245,15 @@ te_strtoul(const char *str, int base, unsigned long int *value)
     }
 
     errno = 0;
-    *value = strtoul(str, &endptr, base);
+    *value = strtoumax(str, &endptr, base);
     new_errno = errno;
     errno = saved_errno;
 
-    if ((new_errno == ERANGE && *value == ULONG_MAX) ||
+    if ((new_errno == ERANGE && *value == UINTMAX_MAX) ||
         (new_errno != 0 && *value == 0))
     {
         rc = te_rc_os2te(new_errno);
-        ERROR("%s(): strtoul() failed with errno %r", __FUNCTION__, rc);
+        ERROR("%s(): strtoumax() failed with errno %r", __FUNCTION__, rc);
         return rc;
     }
 
@@ -260,6 +263,50 @@ te_strtoul(const char *str, int base, unsigned long int *value)
         return TE_EINVAL;
     }
 
+    return 0;
+}
+
+/* See description in te_str.h */
+te_errno
+te_strtoul(const char *str, int base, unsigned long int *value)
+{
+    uintmax_t value_um;
+    te_errno rc;
+
+    rc = te_strtoumax(str, base, &value_um);
+    if (rc != 0)
+        return rc;
+
+    if (value_um > ULONG_MAX)
+    {
+        ERROR("%s(): the value '%s' is too big", __FUNCTION__, str);
+        return TE_EOVERFLOW;
+    }
+
+    *value = value_um;
+
+    return 0;
+}
+
+
+/* See description in te_str.h */
+te_errno
+te_str_to_uint64(const char *str, int base, uint64_t *value)
+{
+    uintmax_t value_um;
+    te_errno rc;
+
+    rc = te_strtoumax(str, base, &value_um);
+    if (rc != 0)
+        return rc;
+
+    if (value_um > UINT64_MAX)
+    {
+        ERROR("%s(): the value '%s' is too big", __FUNCTION__, str);
+        return TE_EOVERFLOW;
+    }
+
+    *value = value_um;
     return 0;
 }
 
@@ -289,20 +336,20 @@ te_strtoui(const char   *str,
            int           base,
            unsigned int *value)
 {
-    unsigned long int value_long;
-    te_errno          rc;
+    uintmax_t value_um;
+    te_errno rc;
 
-    rc = te_strtoul(str, base, &value_long);
+    rc = te_strtoumax(str, base, &value_um);
     if (rc != 0)
         return rc;
 
-    if (value_long > UINT_MAX)
+    if (value_um > UINT_MAX)
     {
         ERROR("%s(): the value '%s' is too big", __FUNCTION__, str);
         return TE_EOVERFLOW;
     }
 
-    *value = value_long;
+    *value = value_um;
 
     return 0;
 }
