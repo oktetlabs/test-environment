@@ -563,6 +563,28 @@ l2tp_secrets_copy(FILE *dst, const char *src)
 }
 
 /**
+ * Move source file to destination file.
+ *
+ * @param src       Source file name to copy from.
+ * @param dst       Destination file name to copy to.
+ *
+ * @return Status code.
+ */
+static te_errno
+l2tp_move_file(const char *src, const char *dst)
+{
+    ENTRY("Move file %s to %s", src, dst);
+
+    if (ta_system_fmt("mv %s %s", src, dst) != 0)
+    {
+        ERROR("Command 'mv %s %s' failed", src, dst);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    return 0;
+}
+
+/**
  * Recover the original CHAP|PAP secrets file.
  *
  * @param filename      Name of file to recover: either @c L2TP_CHAP_SECRETS or
@@ -598,12 +620,7 @@ l2tp_secrets_recover(const char *filename)
     RETURN_ON_ERROR(rc);
 
     /* Rename the temporary file to the destination one */
-    if (rename(tmp_fname, filename) != 0)
-    {
-        ERROR("Failed to rename %s to %s: %s", tmp_fname, filename,
-              strerror(errno));
-        rc = TE_OS_RC(TE_TA_UNIX, errno);
-    }
+    rc = l2tp_move_file(tmp_fname, filename);
 #undef RETURN_ON_ERROR
 
     free(tmp_fname);
@@ -678,16 +695,11 @@ l2tp_secrets_tmp_close(const char *secrets_fname, char *fname, FILE *file,
         if (error == 0)
         {
             INFO("rename %s to %s", fname, secrets_fname);
-            if (rename(fname, secrets_fname) == 0)
-            {
+
+            error = l2tp_move_file(fname, secrets_fname);
+
+            if (error == 0)
                 *secrets_changed = TRUE;
-            }
-            else
-            {
-                ERROR("Failed to rename %s to %s: %s",
-                      fname, secrets_fname, strerror(errno));
-                error = TE_OS_RC(TE_TA_UNIX, errno);
-            }
         }
     }
 
