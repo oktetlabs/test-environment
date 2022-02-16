@@ -190,6 +190,36 @@ extern te_errno tapi_cfg_if_flags_get(const char *ta, const char *ifname,
                                       int *flags);
 
 /**
+ * Get network interface Rx or Tx ring size
+ *
+ * @param is_rx         Rx or Tx option
+ * @param ta            Test agent name
+ * @param ifname        Interface name
+ * @param ring_size     Location for the ring size
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_if_get_ring_size(const char *ta,
+                                          const char *ifname,
+                                          bool is_rx,
+                                          int *ring_size);
+
+/**
+ * Get network interface Rx or Tx preset maximum ring size
+ *
+ * @param is_rx             Rx or Tx option
+ * @param ta                Test agent name
+ * @param ifname            Interface name
+ * @param max_ring_size     Location for the ring size
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_if_get_max_ring_size(const char *ta,
+                                              const char *ifname,
+                                              bool is_rx,
+                                              int *max_ring_size);
+
+/**
  * Set GRO value of an ethernet interface
  *
  * @param ta        Test agent name
@@ -236,6 +266,19 @@ extern te_errno tapi_cfg_if_tso_set(const char *ta, const char *ifname,
  */
 extern te_errno tapi_cfg_if_flags_set(const char *ta, const char *ifname,
                                       int flags);
+
+/**
+ * Set network interface Rx or Tx ring size
+ *
+ * @param is_rx         Rx or Tx option
+ * @param ta            Test agent name
+ * @param ifname        Interface name
+ * @param ring_size     New ring size to set
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_if_set_ring_size(const char *ta, const char *ifname,
+                                          bool is_rx, int ring_size);
 
 /**
  * Reset an ethernet interface

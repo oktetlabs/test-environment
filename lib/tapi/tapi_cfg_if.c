@@ -259,6 +259,30 @@ tapi_cfg_if_flags_get(const char *ta, const char *ifname, int *flags)
     return tapi_cfg_if_common_get(ta, ifname, "flags", flags);
 }
 
+/* See description in the tapi_cfg_if.h */
+te_errno
+tapi_cfg_if_get_ring_size(const char *ta, const char *ifname,
+                          bool is_rx, int *ring_size)
+{
+    const char *path;
+
+    path = is_rx ? "ring:/rx:/current" : "ring:/tx:/current";
+
+    return tapi_cfg_if_common_get(ta, ifname, path, ring_size);
+}
+
+/* See description in the tapi_cfg_if.h */
+te_errno
+tapi_cfg_if_get_max_ring_size(const char *ta, const char *ifname,
+                              bool is_rx, int *max_ring_size)
+{
+    const char *path;
+
+    path = is_rx ? "ring:/rx:/max" : "ring:/tx:/max";
+
+    return tapi_cfg_if_common_get(ta, ifname, path, max_ring_size);
+}
+
 /**
  * Set integer value of an interface field
  *
@@ -309,6 +333,18 @@ te_errno
 tapi_cfg_if_flags_set(const char *ta, const char *ifname, int flags)
 {
     return tapi_cfg_if_common_set(ta, ifname, "flags", flags);
+}
+
+/* See description in the tapi_cfg_if.h */
+te_errno
+tapi_cfg_if_set_ring_size(const char *ta, const char *ifname,
+                          bool is_rx, int ring_size)
+{
+    const char *path;
+
+    path = is_rx ? "ring:/rx:/current" : "ring:/tx:/current";
+
+    return tapi_cfg_if_common_set(ta, ifname, path, ring_size);
 }
 
 /* See description in the tapi_cfg_if.h */
