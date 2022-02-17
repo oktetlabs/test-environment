@@ -187,7 +187,6 @@ AC_CHECK_HEADERS([security/pam_appl.h])
 
 AC_CHECK_HEADERS([sys/klog.h])
 AC_CHECK_HEADERS([linux/if_vlan.h])
-AC_CHECK_HEADERS([search.h])
 
 dnl
 dnl Asynchronous I/O:

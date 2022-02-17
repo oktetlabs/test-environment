@@ -162,6 +162,7 @@ rpc/auth.h \
 rpc/clnt.h \
 rpc/pmap_clnt.h \
 scsi/sg.h \
+search.h \
 semaphore.h \
 setjmp.h \
 signal.h \

@@ -179,6 +179,9 @@
 /* Define to 1 if you have the <scsi/sg.h> header file. */
 #mesondefine HAVE_SCSI_SG_H
 
+/* Define to 1 if you have the <search.h> header file. */
+#mesondefine HAVE_SEARCH_H
+
 /* Define to 1 if you have the <semaphore.h> header file. */
 #mesondefine HAVE_SEMAPHORE_H
 

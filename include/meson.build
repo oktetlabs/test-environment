@@ -66,6 +66,7 @@ check_headers = [
     'pwd.h',
     'regex.h',
     'scsi/sg.h',
+    'search.h',
     'semaphore.h',
     'setjmp.h',
     'signal.h',
