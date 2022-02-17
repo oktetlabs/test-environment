@@ -302,6 +302,82 @@ ps_get_envp(struct ps_entry *ps, char ***envp)
 }
 
 static te_errno
+generate_filter_names(struct ps_entry *ps, char **stdout_filter_name,
+                      char **stderr_filter_name)
+{
+    char *stdout_name;
+    char *stderr_name;
+
+    stdout_name = te_string_fmt("%s stdout", ps->name);
+    if (stdout_name == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    stderr_name = te_string_fmt("%s stderr", ps->name);
+    if (stderr_name == NULL)
+    {
+        free(stdout_name);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    *stdout_filter_name = stdout_name;
+    *stderr_filter_name = stderr_name;
+
+    return 0;
+}
+
+static te_errno
+ps_enable_stdout_and_stderr_logging(struct ps_entry *ps)
+{
+    te_errno rc;
+    struct ps_ta_job *ta_job = &ps->ta_job;
+    unsigned int channel_ids[2]; /* stdout and stderr */
+    char *stdout_filter_name = NULL;
+    char *stderr_filter_name = NULL;
+
+    rc = ta_job_allocate_channels(manager, ta_job->id, FALSE, 2, channel_ids);
+    if (rc != 0)
+    {
+        ERROR("Failed to allocate output channels for TA job corresponding "
+              "to process '%s', error: %r", ps->name, rc);
+        return rc;
+    }
+
+    rc = generate_filter_names(ps, &stdout_filter_name, &stderr_filter_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to generate names for filters to be attached to TA job "
+              "corresponding to process '%s', error: %r", ps->name, rc);
+        return rc;
+    }
+
+    /* Attach stdout filter */
+    rc = ta_job_attach_filter(manager, stdout_filter_name, 1, &channel_ids[0],
+                              FALSE, TE_LL_RING, NULL);
+    if (rc != 0)
+    {
+        ERROR("Failed to attach stdout filter for TA job corresponding to "
+              "process '%s', error: %r", ps->name, rc);
+        goto out;
+    }
+
+    /* Attach stderr filter */
+    rc = ta_job_attach_filter(manager, stderr_filter_name, 1, &channel_ids[1],
+                              FALSE, TE_LL_WARN, NULL);
+    if (rc != 0)
+    {
+        ERROR("Failed to attach stderr filter for TA job corresponding to "
+              "process '%s', error: %r", ps->name, rc);
+        goto out;
+    }
+
+out:
+    free(stdout_filter_name);
+    free(stderr_filter_name);
+
+    return rc;
+}
+
+static te_errno
 ps_ta_job_reconfigure(struct ps_entry *ps)
 {
     te_errno rc;
@@ -347,7 +423,7 @@ ps_ta_job_reconfigure(struct ps_entry *ps)
 
     ta_job->created = TRUE;
 
-    return 0;
+    return ps_enable_stdout_and_stderr_logging(ps);
 }
 
 static te_errno
