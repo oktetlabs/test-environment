@@ -23,6 +23,10 @@
 #include "te_errno.h"
 #include "te_string.h"
 
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
