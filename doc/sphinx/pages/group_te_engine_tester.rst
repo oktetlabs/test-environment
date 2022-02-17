@@ -281,6 +281,79 @@ This package description file has:
 
 
 
+.. _doxid-group__te__engine__tester_1te_engine_tester_track_conf:
+
+Tracking and rolling back configuration changes
+-----------------------------------------------
+
+By default Tester saves current configuration tree state before starting
+a test; after termination of the test, it then checks whether configuration
+state changed. If it changed, it restores previous configuration state and
+sets test result to **DIRTY**. Note that this does not apply to prologues;
+configuration changes made by a prologue are rolled back at the end of
+the corresponding session (including epilogue if it is present).
+
+So, by default it is assumed that tests do not change configuration.
+
+Default behaviour can be changed with help of **track_conf** attribute which
+can be specified in package description file like this
+
+.. ref-code-block:: xml
+
+    <run>
+      <script name="some_tcp_test" track_conf="silent">
+        <req id="SOCK_STREAM"/>
+      </script>
+    </run>
+
+
+**track_conf** can have the following values:
+  * **no**. Tester does not track configuration changes at all, so it does not
+    try to restore configuration state if it was changed.
+  * **yes** or **barf**. This is the default behaviour described above.
+  * **yes_nohistory** or **barf_nohistory**. This differs from the default
+    behaviour only in that Tester does not try to roll configuration
+    changes back by executing configuration commands stored in history in
+    reverse order. Instead it jumps directly to restoring configuration
+    by changing only those configuration objects whose state differs from
+    configuration backup (normally this is done only if restoring
+    configuration from history fails).
+  * **silent**. Tester tracks and restores configuration state as usual, but
+    it does not set to **DIRTY** results of the tests which changed
+    configuration. This is convenient if you do not want to undo all
+    changes manually in tests cleanup but instead rely on Tester to do it
+    for you.
+  * **nohistory** or **silent_nohistory**. Works like **silent** but also does
+    not try to restore configuration from history like **yes_nohistory**.
+
+There is also **sync** flag which can be added to these values (for **no**
+it makes no sense though), like **nohistory|sync**. When the flag is set,
+Tester synchronizes configuration state with Test Agents before checking
+whether it is changed. This way it can catch fully unexpected changes
+(like side effects of commands such as ioctl(SIOCETHTOOL/ETHTOOL_RESET)).
+However synchronizing configuration with all Test Agents takes extra time.
+That's why it is not done by default and extra flag is required to
+enable it.
+
+**track_conf** attribute can be specified not only for **<script>** but also
+for **<session>** and **<run>**. In that case it can be used together with
+**track_conf_handdown** attribute which specifies how **track_conf** attribute
+is inherited by descendants.
+
+.. ref-code-block:: xml
+
+    <session track_conf="silent" track_conf_handdown="descendants">
+      ...
+    </session>
+
+
+**track_conf_handdown** can have the following values:
+  * **none**. **track_conf** is not inherited by any children.
+  * **children**. **track_conf** is inherited by direct children only.
+  * **descendants**. **track_conf** is inherited by all descendants.
+
+By default **track_conf** is inherited by all descendants of **<run>** item
+but only by direct children of **<session>** due to historical reasons.
 
 
 .. _doxid-group__te__engine__tester_1te_engine_tester_package_syntax:
