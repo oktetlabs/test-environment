@@ -56,7 +56,7 @@ rpc_if_nametoindex(rcf_rpc_server *rpcs,
     if (rpcs->errno_change_check && out.common.errno_changed)
         ERROR("Function if_nametoindex() changed errno to %s",
               errno_rpc2str(RPC_ERRNO(rpcs)));
-    CHECK_RETVAL_VAR(if_nametoindex, out.ifindex, FALSE, out.ifindex);
+    CHECK_RETVAL_VAR(if_nametoindex, out.ifindex, FALSE, 0);
     TAPI_RPC_LOG(rpcs, if_nametoindex, "%s", "%u",
                  ifname == NULL ? "" : ifname, out.ifindex);
     RETVAL_INT(if_nametoindex, out.ifindex);
