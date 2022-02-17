@@ -136,9 +136,11 @@ copy_default_testpmd_params(testpmd_param **param)
 }
 
 static te_errno
-get_txpkts_size(const char *txpkts, uint64_t *txpkts_size)
+get_txpkts_and_maxseg_size(const char *txpkts, uint64_t *txpkts_size,
+                            uint64_t *maxseg_size)
 {
-    uint64_t result = 0;
+    uint64_t txpkts_result = 0;
+    uint64_t maxseg_result = 0;
     uint64_t value;
     char **str_array = NULL;
     te_errno rc = 0;
@@ -160,10 +162,12 @@ get_txpkts_size(const char *txpkts, uint64_t *txpkts_size)
             rc = TE_RC(TE_TAPI, TE_EINVAL);
             goto out;
         }
-        result += value;
+        txpkts_result += value;
+        maxseg_result = MAX(maxseg_result, value);
     }
 
-    *txpkts_size = result;
+    *txpkts_size = txpkts_result;
+    *maxseg_size = maxseg_result;
 
 out:
     if (str_array != NULL)
@@ -411,6 +415,7 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
     testpmd_param *params;
     te_bool *param_is_set;
     uint64_t txpkts_size;
+    uint64_t maxseg_size;
     unsigned int mbuf_size;
     unsigned int mtu;
     size_t params_len;
@@ -460,17 +465,18 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
         }
     }
 
-    if (param_is_set[TESTPMD_PARAM_TXONLY_TSO_MSS])
-    {
-        txpkts_size = TAPI_DPDK_TESTPMD_TSO_MSS_HDRS_LEN +
-                      params[TESTPMD_PARAM_TXONLY_TSO_MSS].val;
-    }
-    else if ((rc = get_txpkts_size(params[TESTPMD_PARAM_TXPKTS].str_val,
-                                   &txpkts_size)) != 0)
+    if ((rc = get_txpkts_and_maxseg_size(params[TESTPMD_PARAM_TXPKTS].str_val,
+                                         &txpkts_size, &maxseg_size)) != 0)
     {
         free(params);
         free(param_is_set);
         return rc;
+    }
+
+    if (param_is_set[TESTPMD_PARAM_TXONLY_TSO_MSS])
+    {
+        txpkts_size = TAPI_DPDK_TESTPMD_TSO_MSS_HDRS_LEN +
+                      params[TESTPMD_PARAM_TXONLY_TSO_MSS].val;
     }
 
     if (!param_is_set[TESTPMD_PARAM_MBUF_COUNT])
@@ -495,8 +501,14 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
         tapi_dpdk_append_argument(value, argc_out, argv_out);
         free(value);
     }
+    /*
+     * For Tx side it could be correct to use maximum segment size. But since
+     * RxQ is set for Tx side too, mbuf_size must be set with respect to it,
+     * i.e. we should consider packet size.
+     */
     if (!param_is_set[TESTPMD_PARAM_MBUF_SIZE] &&
-        tapi_dpdk_mbuf_size_by_pkt_size(txpkts_size, &mbuf_size))
+        tapi_dpdk_mbuf_size_by_pkt_size(MAX(maxseg_size, txpkts_size),
+                                        &mbuf_size))
     {
         char *value;
 
