@@ -404,6 +404,11 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
  * 2) Modify parameters that are not set by the test, but must be modified
  *    in order to run testpmd packet forwarding, based on parameters that were
  *    obtained in the first step.
+ *
+ * Note: In Rx case here we have no information about size of packets to be sent
+ *       and received, so, we can't calculate required size of mbuf and required
+ *       MTU correctly. Tests have the information and should adjust these
+ *       settings itself.
  */
 static te_errno
 adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
