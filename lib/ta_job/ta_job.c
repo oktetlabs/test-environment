@@ -61,6 +61,13 @@
 #define CTRL_PIPE_INITIALIZER {-1, -1}
 #define CTRL_MESSAGE ("c\n")
 
+/**
+ * Major and minor versions of PCRE required for partial matching
+ * <https://www.pcre.org/original/doc/html/pcrepartial.html#SEC9>
+ */
+#define TA_JOB_PCRE_PARTIAL_MATCHING_MAJOR 8
+#define TA_JOB_PCRE_PARTIAL_MATCHING_MINOR 33
+
 typedef struct message_t {
     TAILQ_ENTRY(message_t) entry;
 
@@ -208,6 +215,12 @@ static const ta_job_manager_t ta_job_manager_initializer = {
     .ctrl_pipe = CTRL_PIPE_INITIALIZER,
     .thread_is_running = FALSE,
 };
+
+/** Whether currently used PCRE version supports parial matching */
+static const te_bool ta_job_pcre_partial_matching_supported =
+    (PCRE_MAJOR > TA_JOB_PCRE_PARTIAL_MATCHING_MAJOR) ||
+    (PCRE_MAJOR == TA_JOB_PCRE_PARTIAL_MATCHING_MAJOR &&
+     PCRE_MINOR >= TA_JOB_PCRE_PARTIAL_MATCHING_MINOR);
 
 /* See description in ta_job.h */
 te_errno
@@ -1054,6 +1067,29 @@ match_callback(ta_job_manager_t *manager, filter_t *filter,
     return 0;
 }
 
+/**
+ * Produce a warning if PCRE partial matching is not supported.
+ * The warning will be produced only once.
+ */
+static void
+warn_on_unsupported_pcre_partial_matching(void)
+{
+    static te_bool checked = FALSE;
+
+    if (!checked)
+    {
+        checked = TRUE;
+
+        if (!ta_job_pcre_partial_matching_supported)
+        {
+            WARN("PCRE partial matching is not supported by currently used "
+                 "version %u.%u, the least required version is %u.%u",
+                 PCRE_MAJOR, PCRE_MINOR, TA_JOB_PCRE_PARTIAL_MATCHING_MAJOR,
+                 TA_JOB_PCRE_PARTIAL_MATCHING_MINOR);
+        }
+    }
+}
+
 static te_errno
 filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
                    unsigned int channel_id, pid_t pid, int segment_length,
@@ -1077,6 +1113,8 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
      */
     int future_start_offset;
 
+    warn_on_unsupported_pcre_partial_matching();
+
     te_rc = te_string_append(&filter->saved_string, "%.*s",
                              segment_length, segment);
     if (te_rc != 0)
@@ -1093,7 +1131,8 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
     {
         char *substring_start;
         size_t substring_length;
-        int options = eos ? 0 : PCRE_PARTIAL_HARD; /* Enable partial matching */
+        int options = (!eos && ta_job_pcre_partial_matching_supported) ?
+                       PCRE_PARTIAL_HARD : 0; /* Enable partial matching */
 
         if (!filter->line_begin)
             options |= PCRE_NOTBOL;
