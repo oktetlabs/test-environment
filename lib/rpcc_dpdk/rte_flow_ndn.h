@@ -131,6 +131,50 @@ extern int rpc_rte_insert_flow_rule_items(rcf_rpc_server *rpcs,
                                           const asn_value *items,
                                           int index);
 
+/**
+ * Concatenate the given flow action arrays in a newly allocated one
+ *
+ * @param[in]   flow_actions       RPC pointer to an END-terminated action array
+ * @param[in]   opaque_actions     RPC pointer to an array of opaque actions
+ * @param[in]   nb_opaque_actions  The number of the opaque actions
+ * @param[out]  united_actions     Location for the result
+ *
+ * @return Status code; jumps out on error (negative value)
+ */
+extern int rpc_rte_flow_prepend_opaque_actions(
+                                      rcf_rpc_server         *rpcs,
+                                      rpc_rte_flow_action_p   flow_actions,
+                                      rpc_rte_flow_action_p   opaque_actions,
+                                      unsigned int            nb_opaque_actions,
+                                      rpc_rte_flow_action_p  *united_actions);
+
+/** Cleanup counterpart for @p rpc_rte_flow_prepend_opaque_actions() */
+extern void rpc_rte_flow_release_united_actions(
+                                        rcf_rpc_server         *rpcs,
+                                        rpc_rte_flow_action_p   united_actions);
+
+/**
+ * Concatenate the given flow item arrays in a newly allocated one
+ *
+ * @param[in]   flow_items       RPC pointer to an END-terminated item array
+ * @param[in]   opaque_items     RPC pointer to an array of opaque items
+ * @param[in]   nb_opaque_items  The number of the opaque items
+ * @param[out]  united_items     Location for the result
+ *
+ * @return Status code; jumps out on error (negative value)
+ */
+extern int rpc_rte_flow_prepend_opaque_items(
+                                          rcf_rpc_server       *rpcs,
+                                          rpc_rte_flow_item_p   flow_items,
+                                          rpc_rte_flow_item_p   opaque_items,
+                                          unsigned int          nb_opaque_items,
+                                          rpc_rte_flow_item_p  *united_items);
+
+/** Cleanup counterpart for @p rpc_rte_flow_prepend_opaque_items() */
+extern void rpc_rte_flow_release_united_items(
+                                            rcf_rpc_server       *rpcs,
+                                            rpc_rte_flow_item_p   united_items);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

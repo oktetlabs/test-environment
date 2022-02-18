@@ -3248,3 +3248,125 @@ TARPC_FUNC(rte_flow_tunnel_item_release, {},
 
     neg_errno_h2rpc(&out->retval);
 })
+
+TARPC_FUNC_STANDALONE(rte_flow_prepend_opaque_actions, {},
+{
+    unsigned int             nb_united_actions;
+    struct rte_flow_action  *united_actions;
+    struct rte_flow_action  *opaque_actions;
+    struct rte_flow_action  *flow_actions;
+    struct rte_flow_action  *action;
+    unsigned int             i;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        opaque_actions = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->opaque_actions, ns);
+        flow_actions = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->flow_actions, ns);
+    });
+
+    if (opaque_actions == NULL || flow_actions == NULL)
+    {
+        out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
+        goto done;
+    }
+
+    for (nb_united_actions = in->nb_opaque_actions + 1, action = flow_actions;
+         action->type != RTE_FLOW_ACTION_TYPE_END; ++action)
+        ++nb_united_actions;
+
+    united_actions = TE_ALLOC(sizeof(*action) * nb_united_actions);
+    if (united_actions == NULL)
+    {
+        out->retval = -TE_RC(TE_RPCS, TE_ENOMEM);
+        goto done;
+    }
+
+    for (action = united_actions, i = 0; i < in->nb_opaque_actions; ++i)
+        *(action++) = opaque_actions[i];
+
+    for (; flow_actions->type != RTE_FLOW_ACTION_TYPE_END; ++flow_actions)
+        *(action++) = *flow_actions;
+
+    action->type = RTE_FLOW_ACTION_TYPE_END;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        out->united_actions = RCF_PCH_MEM_INDEX_ALLOC(united_actions, ns);
+    });
+
+    out->retval = 0;
+
+done:
+    ;
+})
+
+TARPC_FUNC_STANDALONE(rte_flow_release_united_actions, {},
+{
+    struct rte_flow_action  *united_actions;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        united_actions = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->united_actions, ns);
+        RCF_PCH_MEM_INDEX_FREE(in->united_actions, ns);
+    });
+
+    free(united_actions);
+})
+
+TARPC_FUNC_STANDALONE(rte_flow_prepend_opaque_items, {},
+{
+    unsigned int           nb_united_items;
+    struct rte_flow_item  *united_items;
+    struct rte_flow_item  *opaque_items;
+    struct rte_flow_item  *flow_items;
+    struct rte_flow_item  *item;
+    unsigned int           i;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        opaque_items = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->opaque_items, ns);
+        flow_items = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->flow_items, ns);
+    });
+
+    if (opaque_items == NULL || flow_items == NULL)
+    {
+        out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
+        goto done;
+    }
+
+    for (nb_united_items = in->nb_opaque_items + 1, item = flow_items;
+         item->type != RTE_FLOW_ITEM_TYPE_END; ++item)
+        ++nb_united_items;
+
+    united_items = TE_ALLOC(sizeof(*item) * nb_united_items);
+    if (united_items == NULL)
+    {
+        out->retval = -TE_RC(TE_RPCS, TE_ENOMEM);
+        goto done;
+    }
+
+    for (item = united_items, i = 0; i < in->nb_opaque_items; ++i)
+        *(item++) = opaque_items[i];
+
+    for (; flow_items->type != RTE_FLOW_ITEM_TYPE_END; ++flow_items)
+        *(item++) = *flow_items;
+
+    item->type = RTE_FLOW_ITEM_TYPE_END;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        out->united_items = RCF_PCH_MEM_INDEX_ALLOC(united_items, ns);
+    });
+
+    out->retval = 0;
+
+done:
+    ;
+})
+
+TARPC_FUNC_STANDALONE(rte_flow_release_united_items, {},
+{
+    struct rte_flow_item  *united_items;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        united_items = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->united_items, ns);
+        RCF_PCH_MEM_INDEX_FREE(in->united_items, ns);
+    });
+
+    free(united_items);
+})

@@ -739,3 +739,108 @@ rpc_rte_flow_tunnel_item_release(rcf_rpc_server               *rpcs,
 
     RETVAL_ZERO_INT(rte_flow_tunnel_item_release, out.retval);
 }
+
+int
+rpc_rte_flow_prepend_opaque_actions(rcf_rpc_server         *rpcs,
+                                    rpc_rte_flow_action_p   flow_actions,
+                                    rpc_rte_flow_action_p   opaque_actions,
+                                    unsigned int            nb_opaque_actions,
+                                    rpc_rte_flow_action_p  *united_actions)
+{
+    tarpc_rte_flow_prepend_opaque_actions_out  out = {};
+    tarpc_rte_flow_prepend_opaque_actions_in   in = {};
+
+    if (flow_actions == RPC_NULL || opaque_actions == RPC_NULL ||
+        nb_opaque_actions == 0 || united_actions == NULL)
+        RETVAL_ZERO_INT(rte_flow_prepend_opaque_actions, -EINVAL);
+
+    in.nb_opaque_actions = nb_opaque_actions;
+    in.opaque_actions = opaque_actions;
+    in.flow_actions = flow_actions;
+
+    rcf_rpc_call(rpcs, "rte_flow_prepend_opaque_actions", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_flow_prepend_opaque_actions,
+                 "flow_actions=" RPC_PTR_FMT ", "
+                 "opaque_actions=" RPC_PTR_FMT ", nb_opaque_actions=%u",
+                 RPC_PTR_FMT "; " NEG_ERRNO_FMT, RPC_PTR_VAL(in.flow_actions),
+                 RPC_PTR_VAL(in.opaque_actions), in.nb_opaque_actions,
+                 RPC_PTR_VAL(out.united_actions), NEG_ERRNO_ARGS(out.retval));
+
+    *united_actions = out.united_actions;
+
+    RETVAL_ZERO_INT(rte_flow_prepend_opaque_actions, out.retval);
+}
+
+void
+rpc_rte_flow_release_united_actions(rcf_rpc_server         *rpcs,
+                                    rpc_rte_flow_action_p   united_actions)
+{
+    tarpc_rte_flow_release_united_actions_out  out = {};
+    tarpc_rte_flow_release_united_actions_in   in = {};
+
+    if (united_actions == RPC_NULL)
+        RETVAL_VOID(rte_flow_release_united_actions);
+
+    in.united_actions = united_actions;
+
+    rcf_rpc_call(rpcs, "rte_flow_release_united_actions", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_flow_release_united_actions,
+                 RPC_PTR_FMT, "", RPC_PTR_VAL(in.united_actions));
+
+    RETVAL_VOID(rte_flow_release_united_actions);
+}
+
+int
+rpc_rte_flow_prepend_opaque_items(rcf_rpc_server       *rpcs,
+                                  rpc_rte_flow_item_p   flow_items,
+                                  rpc_rte_flow_item_p   opaque_items,
+                                  unsigned int          nb_opaque_items,
+                                  rpc_rte_flow_item_p  *united_items)
+{
+    tarpc_rte_flow_prepend_opaque_items_out  out = {};
+    tarpc_rte_flow_prepend_opaque_items_in   in = {};
+
+    if (flow_items == RPC_NULL || opaque_items == RPC_NULL ||
+        nb_opaque_items == 0 || united_items == NULL)
+        RETVAL_ZERO_INT(rte_flow_prepend_opaque_items, -EINVAL);
+
+    in.nb_opaque_items = nb_opaque_items;
+    in.opaque_items = opaque_items;
+    in.flow_items = flow_items;
+
+    rcf_rpc_call(rpcs, "rte_flow_prepend_opaque_items", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_flow_prepend_opaque_items,
+                 "flow_items=" RPC_PTR_FMT ", "
+                 "opaque_items=" RPC_PTR_FMT ", nb_opaque_items=%u",
+                 "united_items=" RPC_PTR_FMT "; " NEG_ERRNO_FMT,
+                 RPC_PTR_VAL(in.flow_items), RPC_PTR_VAL(in.opaque_items),
+                 in.nb_opaque_items, RPC_PTR_VAL(out.united_items),
+                 NEG_ERRNO_ARGS(out.retval));
+
+    *united_items = out.united_items;
+
+    RETVAL_ZERO_INT(rte_flow_prepend_opaque_items, out.retval);
+}
+
+void
+rpc_rte_flow_release_united_items(rcf_rpc_server       *rpcs,
+                                  rpc_rte_flow_item_p   united_items)
+{
+    tarpc_rte_flow_release_united_items_out  out = {};
+    tarpc_rte_flow_release_united_items_in   in = {};
+
+    if (united_items == RPC_NULL)
+        RETVAL_VOID(rte_flow_release_united_items);
+
+    in.united_items = united_items;
+
+    rcf_rpc_call(rpcs, "rte_flow_release_united_items", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_flow_release_united_items,
+                 RPC_PTR_FMT, "", RPC_PTR_VAL(in.united_items));
+
+    RETVAL_VOID(rte_flow_release_united_items);
+}

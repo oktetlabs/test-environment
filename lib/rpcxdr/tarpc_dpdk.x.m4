@@ -2121,6 +2121,56 @@ struct tarpc_rte_flow_tunnel_item_release_out {
     struct tarpc_rte_flow_error  error;
 };
 
+/** rte_flow_prepend_opaque_actions() */
+struct tarpc_rte_flow_prepend_opaque_actions_in {
+    struct tarpc_in_arg    common;
+
+    tarpc_rte_flow_action  flow_actions;
+    tarpc_rte_flow_action  opaque_actions;
+    unsigned int           nb_opaque_actions;
+};
+
+struct tarpc_rte_flow_prepend_opaque_actions_out {
+    struct tarpc_out_arg   common;
+
+    tarpc_int              retval;
+    tarpc_rte_flow_action  united_actions;
+};
+
+/** rte_flow_release_united_actions() */
+struct tarpc_rte_flow_release_united_actions_in {
+    struct tarpc_in_arg    common;
+
+    tarpc_rte_flow_action  united_actions;
+};
+
+typedef struct tarpc_void_out tarpc_rte_flow_release_united_actions_out;
+
+/** rte_flow_prepend_opaque_items() */
+struct tarpc_rte_flow_prepend_opaque_items_in {
+    struct tarpc_in_arg  common;
+
+    tarpc_rte_flow_item  flow_items;
+    tarpc_rte_flow_item  opaque_items;
+    unsigned int         nb_opaque_items;
+};
+
+struct tarpc_rte_flow_prepend_opaque_items_out {
+    struct tarpc_out_arg  common;
+
+    tarpc_int             retval;
+    tarpc_rte_flow_item   united_items;
+};
+
+/** rte_flow_release_united_items() */
+struct tarpc_rte_flow_release_united_items_in {
+    struct tarpc_in_arg  common;
+
+    tarpc_rte_flow_item  united_items;
+};
+
+typedef struct tarpc_void_out tarpc_rte_flow_release_united_items_out;
+
 
 /**
  * Handmade DPDK utility RPCs
@@ -2307,6 +2357,10 @@ program dpdk
         RPC_DEF(rte_flow_get_restore_info)
         RPC_DEF(rte_flow_tunnel_action_decap_release)
         RPC_DEF(rte_flow_tunnel_item_release)
+        RPC_DEF(rte_flow_prepend_opaque_actions)
+        RPC_DEF(rte_flow_release_united_actions)
+        RPC_DEF(rte_flow_prepend_opaque_items)
+        RPC_DEF(rte_flow_release_united_items)
 
         RPC_DEF(dpdk_eth_await_link_up)
         RPC_DEF(dpdk_get_version)
