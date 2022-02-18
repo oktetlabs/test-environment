@@ -351,6 +351,20 @@ typedef enum tapi_cfg_pci_param_cmode {
 } tapi_cfg_pci_param_cmode;
 
 /**
+ * Check whether device parameter is present.
+ *
+ * @param pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param param_name   Parameter name
+ * @param present      Will be set to @c TRUE if device parameter is
+ *                     present, to @c FALSE otherwise
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_pci_param_is_present(const char *pci_oid,
+                                              const char *param_name,
+                                              te_bool *present);
+
+/**
  * Get device parameter value of string type.
  *
  * @param pci_oid      PCI device OID (/agent/hardware/pci/device)

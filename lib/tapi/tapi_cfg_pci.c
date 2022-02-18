@@ -791,6 +791,30 @@ cmode_to_str(tapi_cfg_pci_param_cmode cmode)
 
 /* See description in tapi_cfg_pci.h */
 te_errno
+tapi_cfg_pci_param_is_present(const char *pci_oid,
+                              const char *param_name,
+                              te_bool *present)
+{
+    cfg_handle handle;
+    te_errno rc;
+
+    rc = cfg_find_fmt(&handle, "%s/param:%s", pci_oid, param_name);
+    if (rc == 0)
+    {
+        *present = TRUE;
+    }
+    else if (rc == TE_RC(TE_CS, TE_ENOENT))
+    {
+        *present = FALSE;
+        rc = 0;
+    }
+
+    return rc;
+}
+
+
+/* See description in tapi_cfg_pci.h */
+te_errno
 tapi_cfg_pci_get_param_str(const char *pci_oid,
                            const char *param_name,
                            tapi_cfg_pci_param_cmode cmode,
