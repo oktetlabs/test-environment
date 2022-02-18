@@ -2015,6 +2015,112 @@ struct tarpc_rte_flow_isolate_in {
 
 typedef struct tarpc_rte_flow_validate_out tarpc_rte_flow_isolate_out;
 
+struct tarpc_rte_flow_tunnel {
+    enum tarpc_rte_eth_tunnel_type  type;
+    uint64_t                        tun_id;
+};
+
+enum tarpc_rte_flow_restore_info_bits {
+    TARPC_RTE_FLOW_RESTORE_INFO_TUNNEL_BIT        = 0,
+    TARPC_RTE_FLOW_RESTORE_INFO_ENCAPSULATED_BIT,
+    TARPC_RTE_FLOW_RESTORE_INFO_GROUP_ID_BIT,
+
+    TARPC_RTE_FLOW_RESTORE_INFO__UNKNOWN_BIT      = 63
+};
+
+struct tarpc_rte_flow_restore_info {
+    uint64_t                      flags;
+    uint32_t                      group_id;
+    struct tarpc_rte_flow_tunnel  tunnel;
+};
+
+/** rte_flow_tunnel_decap_set() */
+struct tarpc_rte_flow_tunnel_decap_set_in {
+    struct tarpc_in_arg           common;
+
+    uint16_t                      port_id;
+    struct tarpc_rte_flow_tunnel  tunnel<>;
+    tarpc_rte_flow_action         actions<>;
+    uint32_t                      num_of_actions<>;
+};
+
+struct tarpc_rte_flow_tunnel_decap_set_out {
+    struct tarpc_out_arg         common;
+
+    tarpc_int                    retval;
+    tarpc_rte_flow_action        actions<>;
+    uint32_t                     num_of_actions<>;
+    struct tarpc_rte_flow_error  error;
+};
+
+/** rte_flow_tunnel_match() */
+struct tarpc_rte_flow_tunnel_match_in {
+    struct tarpc_in_arg           common;
+
+    uint16_t                      port_id;
+    struct tarpc_rte_flow_tunnel  tunnel<>;
+    tarpc_rte_flow_item           items<>;
+    uint32_t                      num_of_items<>;
+};
+
+struct tarpc_rte_flow_tunnel_match_out {
+    struct tarpc_out_arg         common;
+
+    tarpc_int                    retval;
+    tarpc_rte_flow_item          items<>;
+    uint32_t                     num_of_items<>;
+    struct tarpc_rte_flow_error  error;
+};
+
+/** rte_flow_get_restore_info() */
+struct tarpc_rte_flow_get_restore_info_in {
+    struct tarpc_in_arg                 common;
+
+    uint16_t                            port_id;
+    tarpc_rte_mbuf                      m;
+    struct tarpc_rte_flow_restore_info  info<>;
+};
+
+struct tarpc_rte_flow_get_restore_info_out {
+    struct tarpc_out_arg                common;
+
+    tarpc_int                           retval;
+    struct tarpc_rte_flow_restore_info  info<>;
+    struct tarpc_rte_flow_error         error;
+};
+
+/** rte_flow_tunnel_action_decap_release() */
+struct tarpc_rte_flow_tunnel_action_decap_release_in {
+    struct tarpc_in_arg          common;
+
+    uint16_t                     port_id;
+    tarpc_rte_flow_action        actions;
+    uint32_t                     num_of_actions;
+};
+
+struct tarpc_rte_flow_tunnel_action_decap_release_out {
+    struct tarpc_out_arg         common;
+
+    tarpc_int                    retval;
+    struct tarpc_rte_flow_error  error;
+};
+
+/** rte_flow_tunnel_item_release() */
+struct tarpc_rte_flow_tunnel_item_release_in {
+    struct tarpc_in_arg          common;
+
+    uint16_t                     port_id;
+    tarpc_rte_flow_item          items;
+    uint32_t                     num_of_items;
+};
+
+struct tarpc_rte_flow_tunnel_item_release_out {
+    struct tarpc_out_arg         common;
+
+    tarpc_int                    retval;
+    struct tarpc_rte_flow_error  error;
+};
+
 
 /**
  * Handmade DPDK utility RPCs
@@ -2196,6 +2302,11 @@ program dpdk
         RPC_DEF(rte_flow_query)
         RPC_DEF(rte_flow_flush)
         RPC_DEF(rte_flow_isolate)
+        RPC_DEF(rte_flow_tunnel_decap_set)
+        RPC_DEF(rte_flow_tunnel_match)
+        RPC_DEF(rte_flow_get_restore_info)
+        RPC_DEF(rte_flow_tunnel_action_decap_release)
+        RPC_DEF(rte_flow_tunnel_item_release)
 
         RPC_DEF(dpdk_eth_await_link_up)
         RPC_DEF(dpdk_get_version)

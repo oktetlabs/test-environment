@@ -757,6 +757,8 @@ extern int rpc_rte_eth_rx_metadata_negotiate(rcf_rpc_server  *rpcs,
                                              uint16_t         port_id,
                                              uint64_t        *features);
 
+extern const char *tarpc_rte_eth_tunnel_type2str(
+                                    enum tarpc_rte_eth_tunnel_type tunnel_type);
 
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 

@@ -3014,7 +3014,7 @@ rpc_rte_eth_dev_fw_version_get(rcf_rpc_server *rpcs,
     RETVAL_INT(rte_eth_dev_fw_version_get, out.retval);
 }
 
-static const char *
+const char *
 tarpc_rte_eth_tunnel_type2str(enum tarpc_rte_eth_tunnel_type tunnel_type)
 {
     const char *type;

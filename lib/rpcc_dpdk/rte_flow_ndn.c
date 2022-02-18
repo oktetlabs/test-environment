@@ -21,6 +21,7 @@
 
 #include "tarpc.h"
 
+#include "tapi_rpc_rte_ethdev.h"
 #include "tapi_rpc_rte_flow.h"
 #include "rte_flow_ndn.h"
 #include "rpcc_dpdk.h"
@@ -444,4 +445,297 @@ rpc_rte_insert_flow_rule_items(rcf_rpc_server *rpcs,
         *pattern = out.pattern;
 
     RETVAL_ZERO_INT(rte_insert_flow_rule_items, out.retval);
+}
+
+static const char *
+tarpc_rte_flow_tunnel2str(te_log_buf                          *lb,
+                          const struct tarpc_rte_flow_tunnel  *tunnel)
+{
+    te_log_buf_append(lb, "{ type=%s, tun_id=0x%" PRIx64 " }",
+                      tarpc_rte_eth_tunnel_type2str(tunnel->type),
+                      tunnel->tun_id);
+
+    return te_log_buf_get(lb);
+}
+
+static const char *
+tarpc_memidx_to_str(te_log_buf     *lb,
+                    const rpc_ptr  *ptr)
+{
+    te_log_buf_append(lb, "(%#x)", *ptr);
+
+    return te_log_buf_get(lb);
+}
+
+static const char *
+tarpc_uint32_to_str(te_log_buf      *lb,
+                    const uint32_t  *val)
+{
+    te_log_buf_append(lb, "%" PRIu32, *val);
+
+    return te_log_buf_get(lb);
+}
+
+int
+rpc_rte_flow_tunnel_decap_set(
+                            rcf_rpc_server                      *rpcs,
+                            uint16_t                             port_id,
+                            const struct tarpc_rte_flow_tunnel  *tunnel,
+                            rpc_rte_flow_action_p               *actions,
+                            uint32_t                            *num_of_actions,
+                            struct tarpc_rte_flow_error         *error)
+{
+    te_log_buf                           *lb_num_of_actions;
+    te_log_buf                           *lb_actions;
+    te_log_buf                           *lb_tunnel;
+    te_log_buf                           *lb_error;
+    tarpc_rte_flow_tunnel_decap_set_out   out = {};
+    tarpc_rte_flow_tunnel_decap_set_in    in = {};
+
+    TAPI_RPC_SET_IN_ARG_IF_PTR_NOT_NULL(num_of_actions);
+    TAPI_RPC_SET_IN_ARG_IF_PTR_NOT_NULL(actions);
+    TAPI_RPC_SET_IN_ARG_IF_PTR_NOT_NULL(tunnel);
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_flow_tunnel_decap_set", &in, &out);
+
+    TAPI_RPC_CHECK_OUT_ARG_SINGLE_PTR(rte_flow_tunnel_decap_set, actions);
+    TAPI_RPC_CHECK_OUT_ARG_SINGLE_PTR(rte_flow_tunnel_decap_set,
+                                      num_of_actions);
+
+    lb_num_of_actions = te_log_buf_alloc();
+    lb_actions = te_log_buf_alloc();
+    lb_tunnel = te_log_buf_alloc();
+    lb_error = te_log_buf_alloc();
+
+    TAPI_RPC_LOG(rpcs, rte_flow_tunnel_decap_set, "port_id=%" PRIu16 ", "
+                 "tunnel=%s", "actions=%s, num_of_actions=%s; "
+                 NEG_ERRNO_FMT "%s", in.port_id,
+                 TAPI_RPC_LOG_ARG_TO_STR(in, tunnel, lb_tunnel,
+                                         tarpc_rte_flow_tunnel2str),
+                 TAPI_RPC_LOG_ARG_TO_STR(out, actions, lb_actions,
+                                         tarpc_memidx_to_str),
+                 TAPI_RPC_LOG_ARG_TO_STR(out, num_of_actions, lb_num_of_actions,
+                                         tarpc_uint32_to_str),
+                 NEG_ERRNO_ARGS(out.retval),
+                 (error != NULL) ?
+                     tarpc_rte_flow_error2str(lb_error, &out.error) : "");
+
+    te_log_buf_free(lb_num_of_actions);
+    te_log_buf_free(lb_actions);
+    te_log_buf_free(lb_tunnel);
+    te_log_buf_free(lb_error);
+
+    TAPI_RPC_COPY_OUT_ARG_IF_PTR_NOT_NULL(num_of_actions);
+    TAPI_RPC_COPY_OUT_ARG_IF_PTR_NOT_NULL(actions);
+
+    if (error != NULL)
+        *error = out.error;
+
+    RETVAL_ZERO_INT(rte_flow_tunnel_decap_set, out.retval);
+}
+
+int
+rpc_rte_flow_tunnel_match(rcf_rpc_server                      *rpcs,
+                          uint16_t                             port_id,
+                          const struct tarpc_rte_flow_tunnel  *tunnel,
+                          rpc_rte_flow_item_p                *items,
+                          uint32_t                            *num_of_items,
+                          struct tarpc_rte_flow_error         *error)
+{
+    te_log_buf                       *lb_num_of_items;
+    te_log_buf                       *lb_tunnel;
+    te_log_buf                       *lb_items;
+    te_log_buf                       *lb_error;
+    tarpc_rte_flow_tunnel_match_out   out = {};
+    tarpc_rte_flow_tunnel_match_in    in = {};
+
+    TAPI_RPC_SET_IN_ARG_IF_PTR_NOT_NULL(num_of_items);
+    TAPI_RPC_SET_IN_ARG_IF_PTR_NOT_NULL(tunnel);
+    TAPI_RPC_SET_IN_ARG_IF_PTR_NOT_NULL(items);
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_flow_tunnel_match", &in, &out);
+
+    TAPI_RPC_CHECK_OUT_ARG_SINGLE_PTR(rte_flow_tunnel_match, num_of_items);
+    TAPI_RPC_CHECK_OUT_ARG_SINGLE_PTR(rte_flow_tunnel_match, items);
+
+    lb_num_of_items = te_log_buf_alloc();
+    lb_tunnel = te_log_buf_alloc();
+    lb_items = te_log_buf_alloc();
+    lb_error = te_log_buf_alloc();
+
+    TAPI_RPC_LOG(rpcs, rte_flow_tunnel_match, "port_id=%" PRIu16 ", "
+                 "tunnel=%s", "items=%s, num_of_items=%s; "
+                 NEG_ERRNO_FMT "%s", in.port_id,
+                 TAPI_RPC_LOG_ARG_TO_STR(in, tunnel, lb_tunnel,
+                                         tarpc_rte_flow_tunnel2str),
+                 TAPI_RPC_LOG_ARG_TO_STR(out, items, lb_items,
+                                         tarpc_memidx_to_str),
+                 TAPI_RPC_LOG_ARG_TO_STR(out, num_of_items, lb_num_of_items,
+                                         tarpc_uint32_to_str),
+                 NEG_ERRNO_ARGS(out.retval),
+                 (error != NULL) ?
+                     tarpc_rte_flow_error2str(lb_error, &out.error) : "");
+
+    te_log_buf_free(lb_num_of_items);
+    te_log_buf_free(lb_tunnel);
+    te_log_buf_free(lb_items);
+    te_log_buf_free(lb_error);
+
+    TAPI_RPC_COPY_OUT_ARG_IF_PTR_NOT_NULL(num_of_items);
+    TAPI_RPC_COPY_OUT_ARG_IF_PTR_NOT_NULL(items);
+
+    if (error != NULL)
+        *error = out.error;
+
+    RETVAL_ZERO_INT(rte_flow_tunnel_match, out.retval);
+}
+
+static const char *
+tarpc_rte_flow_restore_info2str(te_log_buf                          *lb,
+                                struct tarpc_rte_flow_restore_info  *info)
+{
+    const struct te_log_buf_bit2str  bit2str[] = {
+
+#define TARPC_RTE_FLOW_RESTORE_INFO_BIT2STR(_bit)           \
+        { TARPC_RTE_FLOW_RESTORE_INFO_##_bit##_BIT, #_bit }
+
+        TARPC_RTE_FLOW_RESTORE_INFO_BIT2STR(ENCAPSULATED),
+        TARPC_RTE_FLOW_RESTORE_INFO_BIT2STR(GROUP_ID),
+        TARPC_RTE_FLOW_RESTORE_INFO_BIT2STR(TUNNEL),
+
+#undef TARPC_RTE_FLOW_RESTORE_INFO_BIT2STR
+
+        { 0, NULL }
+    };
+
+    te_log_buf_append(lb, "{ flags=");
+
+    te_bit_mask2log_buf(lb, info->flags, bit2str);
+
+    te_log_buf_append(lb, ", group_id=%" PRIu32 ", tunnel=", info->group_id);
+
+    tarpc_rte_flow_tunnel2str(lb, &info->tunnel);
+
+    te_log_buf_append(lb, " }");
+
+    return te_log_buf_get(lb);
+}
+
+int
+rpc_rte_flow_get_restore_info(rcf_rpc_server                      *rpcs,
+                              uint16_t                             port_id,
+                              rpc_rte_mbuf_p                       m,
+                              struct tarpc_rte_flow_restore_info  *info,
+                              struct tarpc_rte_flow_error         *error)
+{
+    te_log_buf                           *lb_error;
+    te_log_buf                           *lb_info;
+    tarpc_rte_flow_get_restore_info_out   out = {};
+    tarpc_rte_flow_get_restore_info_in    in = {};
+
+    TAPI_RPC_SET_IN_ARG_IF_PTR_NOT_NULL(info);
+
+    in.port_id = port_id;
+    in.m = m;
+
+    rcf_rpc_call(rpcs, "rte_flow_get_restore_info", &in, &out);
+
+    TAPI_RPC_CHECK_OUT_ARG_SINGLE_PTR(rte_flow_get_restore_info, info);
+
+    lb_error = te_log_buf_alloc();
+    lb_info = te_log_buf_alloc();
+
+    TAPI_RPC_LOG(rpcs, rte_flow_get_restore_info, "port_id=%" PRIu16 ", "
+                 "m=" RPC_PTR_FMT, "info=%s; " NEG_ERRNO_FMT "%s",
+                 in.port_id, RPC_PTR_VAL(in.m),
+                 TAPI_RPC_LOG_ARG_TO_STR(out, info, lb_info,
+                                         tarpc_rte_flow_restore_info2str),
+                 NEG_ERRNO_ARGS(out.retval),
+                 (error != NULL) ?
+                     tarpc_rte_flow_error2str(lb_error, &out.error) : "");
+
+    te_log_buf_free(lb_error);
+    te_log_buf_free(lb_info);
+
+    TAPI_RPC_COPY_OUT_ARG_IF_PTR_NOT_NULL(info);
+
+    if (error != NULL)
+        *error = out.error;
+
+    return out.retval;
+}
+
+int
+rpc_rte_flow_tunnel_action_decap_release(
+                                   rcf_rpc_server               *rpcs,
+                                   uint16_t                      port_id,
+                                   rpc_rte_flow_action_p         actions,
+                                   uint32_t                      num_of_actions,
+                                   struct tarpc_rte_flow_error  *error)
+{
+    te_log_buf                                      *lb_error;
+    tarpc_rte_flow_tunnel_action_decap_release_out   out = {};
+    tarpc_rte_flow_tunnel_action_decap_release_in    in = {};
+
+    in.num_of_actions = num_of_actions;
+    in.actions = actions;
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_flow_tunnel_action_decap_release", &in, &out);
+
+    lb_error = te_log_buf_alloc();
+
+    TAPI_RPC_LOG(rpcs, rte_flow_tunnel_action_decap_release,
+                 "port_id=%" PRIu16 ", actions=" RPC_PTR_FMT ", "
+                 "num_of_actions=%" PRIu32, "; " NEG_ERRNO_FMT "%s",
+                 in.port_id, RPC_PTR_VAL(in.actions), in.num_of_actions,
+                 NEG_ERRNO_ARGS(out.retval),
+                 (error != NULL) ?
+                     tarpc_rte_flow_error2str(lb_error, &out.error) : "");
+
+    te_log_buf_free(lb_error);
+
+    if (error != NULL)
+        *error = out.error;
+
+    RETVAL_ZERO_INT(rte_flow_tunnel_action_decap_release, out.retval);
+}
+
+int
+rpc_rte_flow_tunnel_item_release(rcf_rpc_server               *rpcs,
+                                 uint16_t                      port_id,
+                                 rpc_rte_flow_item_p          items,
+                                 uint32_t                      num_of_items,
+                                 struct tarpc_rte_flow_error  *error)
+{
+    te_log_buf                              *lb_error;
+    tarpc_rte_flow_tunnel_item_release_out   out = {};
+    tarpc_rte_flow_tunnel_item_release_in    in = {};
+
+    in.num_of_items = num_of_items;
+    in.port_id = port_id;
+    in.items = items;
+
+    rcf_rpc_call(rpcs, "rte_flow_tunnel_item_release", &in, &out);
+
+    lb_error = te_log_buf_alloc();
+
+    TAPI_RPC_LOG(rpcs, rte_flow_tunnel_item_release,
+                 "port_id=%" PRIu16 ", items=" RPC_PTR_FMT ", "
+                 "num_of_items=%" PRIu32, "; " NEG_ERRNO_FMT "%s",
+                 in.port_id, RPC_PTR_VAL(in.items), in.num_of_items,
+                 NEG_ERRNO_ARGS(out.retval),
+                 (error != NULL) ?
+                     tarpc_rte_flow_error2str(lb_error, &out.error) : "");
+
+    te_log_buf_free(lb_error);
+
+    if (error != NULL)
+        *error = out.error;
+
+    RETVAL_ZERO_INT(rte_flow_tunnel_item_release, out.retval);
 }

@@ -19,6 +19,7 @@
 
 #include "te_config.h"
 #include "te_alloc.h"
+#include "te_errno.h"
 
 #include "rte_config.h"
 #include "rte_flow.h"
@@ -2956,4 +2957,294 @@ TARPC_FUNC_STANDALONE(rte_insert_flow_rule_items, {},
 exit:
 
     out->retval = -TE_RC(TE_RPCS, rc);
+})
+
+static te_errno
+tarpc_rte_flow_tunnel_rpc2rte(struct tarpc_rte_flow_tunnel  *rpc,
+                              struct rte_flow_tunnel        *rte)
+{
+    switch (rpc->type)
+    {
+        case TARPC_RTE_TUNNEL_TYPE_VXLAN:
+            rte->type = RTE_FLOW_ITEM_TYPE_VXLAN;
+            break;
+
+        case TARPC_RTE_TUNNEL_TYPE_GENEVE:
+            rte->type = RTE_FLOW_ITEM_TYPE_GENEVE;
+            break;
+
+        case TARPC_RTE_TUNNEL_TYPE_NVGRE:
+            rte->type = RTE_FLOW_ITEM_TYPE_NVGRE;
+            break;
+
+        default:
+            return TE_EINVAL;
+    }
+
+    rte->tun_id = rpc->tun_id;
+
+    return 0;
+}
+
+TARPC_FUNC(rte_flow_tunnel_decap_set,
+{
+    COPY_ARG(num_of_actions);
+    COPY_ARG(actions);
+},
+{
+    uint32_t                 *num_of_actionsp = NULL;
+    struct rte_flow_action  **actionsp = NULL;
+    struct rte_flow_tunnel   *tunnelp = NULL;
+    struct rte_flow_tunnel    tunnel = {};
+    struct rte_flow_error     error = {};
+    struct rte_flow_action   *actions;
+
+    CHECK_ARG_SINGLE_PTR(out, num_of_actions);
+    CHECK_ARG_SINGLE_PTR(out, actions);
+    CHECK_ARG_SINGLE_PTR(in, tunnel);
+
+    if (in->tunnel.tunnel_len != 0)
+    {
+        te_errno  rc;
+
+        tunnelp = &tunnel;
+
+        rc = tarpc_rte_flow_tunnel_rpc2rte(in->tunnel.tunnel_val, tunnelp);
+        if (rc != 0)
+        {
+            out->retval = -TE_RC(TE_RPCS, rc);
+            goto done;
+        }
+    }
+
+    if (out->num_of_actions.num_of_actions_len != 0)
+        num_of_actionsp = out->num_of_actions.num_of_actions_val;
+
+    if (out->actions.actions_len != 0)
+        actionsp = &actions;
+
+    MAKE_CALL(out->retval = func(in->port_id, tunnelp, actionsp,
+                                 num_of_actionsp, &error));
+
+    if (out->retval == 0 && out->actions.actions_len != 0)
+    {
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+            *out->actions.actions_val = RCF_PCH_MEM_INDEX_ALLOC(actions, ns);
+        });
+    }
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
+
+TARPC_FUNC(rte_flow_tunnel_match,
+{
+    COPY_ARG(num_of_items);
+    COPY_ARG(items);
+},
+{
+    uint32_t                 *num_of_itemsp = NULL;
+    struct rte_flow_tunnel   *tunnelp = NULL;
+    struct rte_flow_item    **itemsp = NULL;
+    struct rte_flow_tunnel    tunnel = {};
+    struct rte_flow_error     error = {};
+    struct rte_flow_item     *items;
+
+    CHECK_ARG_SINGLE_PTR(out, num_of_items);
+    CHECK_ARG_SINGLE_PTR(out, items);
+    CHECK_ARG_SINGLE_PTR(in, tunnel);
+
+    if (in->tunnel.tunnel_len != 0)
+    {
+        te_errno  rc;
+
+        tunnelp = &tunnel;
+
+        rc = tarpc_rte_flow_tunnel_rpc2rte(in->tunnel.tunnel_val, tunnelp);
+        if (rc != 0)
+        {
+            out->retval = -TE_RC(TE_RPCS, rc);
+            goto done;
+        }
+    }
+
+    if (out->num_of_items.num_of_items_len != 0)
+        num_of_itemsp = out->num_of_items.num_of_items_val;
+
+    if (out->items.items_len != 0)
+        itemsp = &items;
+
+    MAKE_CALL(out->retval = func(in->port_id, tunnelp, itemsp,
+                                 num_of_itemsp, &error));
+
+    if (out->retval == 0 && out->items.items_len != 0)
+    {
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+            *out->items.items_val = RCF_PCH_MEM_INDEX_ALLOC(items, ns);
+        });
+    }
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
+
+static void
+tarpc_rte_flow_tunnel_rte2rpc(struct rte_flow_tunnel        *rte,
+                              struct tarpc_rte_flow_tunnel  *rpc)
+{
+    switch (rte->type)
+    {
+        case RTE_FLOW_ITEM_TYPE_VXLAN:
+            rpc->type = TARPC_RTE_TUNNEL_TYPE_VXLAN;
+            break;
+
+        case RTE_FLOW_ITEM_TYPE_GENEVE:
+            rpc->type = TARPC_RTE_TUNNEL_TYPE_GENEVE;
+            break;
+
+        case RTE_FLOW_ITEM_TYPE_NVGRE:
+            rpc->type = TARPC_RTE_TUNNEL_TYPE_NVGRE;
+            break;
+
+        default:
+            rpc->type = TARPC_RTE_TUNNEL_TYPE__UNKNOWN;
+            break;
+    }
+
+    rpc->tun_id = rte->tun_id;
+}
+
+static void
+tarpc_rte_flow_restore_info_rte2rpc(struct rte_flow_restore_info        *rte,
+                                    struct tarpc_rte_flow_restore_info  *rpc)
+{
+    rpc->flags = 0;
+
+#define RTE_FLOW_RESTORE_INFO_FLAG_BIT_RTE2RPC(_bit)                          \
+    do {                                                                      \
+        uint64_t  flag = RTE_FLOW_RESTORE_INFO_##_bit;                        \
+                                                                              \
+        if (rte->flags & flag)                                                \
+        {                                                                     \
+            rte->flags &= ~flag;                                              \
+            rpc->flags |= (1ULL << TARPC_RTE_FLOW_RESTORE_INFO_##_bit##_BIT); \
+        }                                                                     \
+    } while (0)
+
+#ifdef RTE_FLOW_RESTORE_INFO_ENCAPSULATED
+    RTE_FLOW_RESTORE_INFO_FLAG_BIT_RTE2RPC(ENCAPSULATED);
+#endif /* RTE_FLOW_RESTORE_INFO_ENCAPSULATED */
+
+#ifdef RTE_FLOW_RESTORE_INFO_GROUP_ID
+    RTE_FLOW_RESTORE_INFO_FLAG_BIT_RTE2RPC(GROUP_ID);
+#endif /* RTE_FLOW_RESTORE_INFO_GROUP_ID */
+
+#ifdef RTE_FLOW_RESTORE_INFO_TUNNEL
+    RTE_FLOW_RESTORE_INFO_FLAG_BIT_RTE2RPC(TUNNEL);
+#endif /* RTE_FLOW_RESTORE_INFO_TUNNEL */
+
+#undef RTE_FLOW_RESTORE_INFO_FLAG_BIT_RTE2RPC
+
+    if (rte->flags != 0)
+        rpc->flags |= (1ULL << TARPC_RTE_FLOW_RESTORE_INFO__UNKNOWN_BIT);
+
+    tarpc_rte_flow_tunnel_rte2rpc(&rte->tunnel, &rpc->tunnel);
+
+    rpc->group_id = rte->group_id;
+}
+
+TARPC_FUNC(rte_flow_get_restore_info,
+{
+    COPY_ARG(info);
+},
+{
+    struct rte_flow_restore_info  *infop = NULL;
+    struct rte_flow_error          error = {};
+    struct rte_flow_restore_info   info = {};
+    struct rte_mbuf               *m = NULL;
+
+    CHECK_ARG_SINGLE_PTR(out, info);
+
+    if (in->m != RPC_NULL)
+    {
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+            m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+        });
+    }
+
+    if (out->info.info_len != 0)
+        infop = &info;
+
+    MAKE_CALL(out->retval = func(in->port_id, m, infop, &error));
+
+    if (out->info.info_len != 0)
+        tarpc_rte_flow_restore_info_rte2rpc(infop, out->info.info_val);
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
+
+TARPC_FUNC(rte_flow_tunnel_action_decap_release, {},
+{
+    struct rte_flow_action  *actions = NULL;
+    struct rte_flow_error    error = {};
+
+    if (in->actions != RPC_NULL)
+    {
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+            actions = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->actions, ns);
+        });
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, actions, in->num_of_actions,
+                                 &error));
+
+    if (out->retval == 0 && in->actions != RPC_NULL)
+    {
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+            RCF_PCH_MEM_INDEX_FREE(in->actions, ns);
+        });
+    }
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+
+    neg_errno_h2rpc(&out->retval);
+})
+
+TARPC_FUNC(rte_flow_tunnel_item_release, {},
+{
+    struct rte_flow_item   *items = NULL;
+    struct rte_flow_error   error = {};
+
+    if (in->items != RPC_NULL)
+    {
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+            items = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->items, ns);
+        });
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, items, in->num_of_items, &error));
+
+    if (out->retval == 0 && in->items != RPC_NULL)
+    {
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+            RCF_PCH_MEM_INDEX_FREE(in->items, ns);
+        });
+    }
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+
+    neg_errno_h2rpc(&out->retval);
 })

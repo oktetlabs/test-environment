@@ -124,6 +124,68 @@ extern int rpc_rte_flow_isolate(rcf_rpc_server              *rpcs,
                                 int                          set,
                                 struct tarpc_rte_flow_error *error);
 
+/**
+ * @b rte_flow_tunnel_decap_set() RPC
+ *
+ * @return @c 0 on success; jumps out on error (negative value)
+ */
+extern int rpc_rte_flow_tunnel_decap_set(
+                            rcf_rpc_server                      *rpcs,
+                            uint16_t                             port_id,
+                            const struct tarpc_rte_flow_tunnel  *tunnel,
+                            rpc_rte_flow_action_p               *actions,
+                            uint32_t                            *num_of_actions,
+                            struct tarpc_rte_flow_error         *error);
+
+/**
+ * @b rte_flow_tunnel_match() RPC
+ *
+ * @return @c 0 on success; jumps out on error (negative value)
+ */
+extern int rpc_rte_flow_tunnel_match(
+                              rcf_rpc_server                      *rpcs,
+                              uint16_t                             port_id,
+                              const struct tarpc_rte_flow_tunnel  *tunnel,
+                              rpc_rte_flow_item_p                *items,
+                              uint32_t                            *num_of_items,
+                              struct tarpc_rte_flow_error         *error);
+
+/**
+ * @b rte_flow_get_restore_info() RPC
+ *
+ * @return @c 0 on success
+ */
+extern int rpc_rte_flow_get_restore_info(
+                                   rcf_rpc_server                      *rpcs,
+                                   uint16_t                             port_id,
+                                   rpc_rte_mbuf_p                       m,
+                                   struct tarpc_rte_flow_restore_info  *info,
+                                   struct tarpc_rte_flow_error         *error);
+
+/**
+ * @b rte_flow_tunnel_action_decap_release() RPC
+ *
+ * @return @c 0 on success; jumps out on error (negative value)
+ */
+extern int rpc_rte_flow_tunnel_action_decap_release(
+                                   rcf_rpc_server               *rpcs,
+                                   uint16_t                      port_id,
+                                   rpc_rte_flow_action_p         actions,
+                                   uint32_t                      num_of_actions,
+                                   struct tarpc_rte_flow_error  *error);
+
+/**
+ * @b rte_flow_tunnel_item_release() RPC
+ *
+ * @return @c 0 on success; jumps out on error (negative value)
+ */
+extern int rpc_rte_flow_tunnel_item_release(
+                                     rcf_rpc_server               *rpcs,
+                                     uint16_t                      port_id,
+                                     rpc_rte_flow_item_p          items,
+                                     uint32_t                      num_of_items,
+                                     struct tarpc_rte_flow_error  *error);
+
 /**@} <!-- END te_lib_rpc_rte_flow --> */
 
 #ifdef __cplusplus
