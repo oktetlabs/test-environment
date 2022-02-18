@@ -15,6 +15,7 @@
 #include "te_config.h"
 
 #include "te_alloc.h"
+#include "te_errno.h"
 #include "te_str.h"
 
 #include "rte_config.h"
@@ -2572,3 +2573,113 @@ TARPC_FUNC_STANDALONE(rte_eth_dev_tx_offload_name, {},
 #endif
 })
 
+static te_errno
+tarpc_rte_eth_rx_metadata_bits_rpc2rte(uint64_t  *bits_inout)
+{
+    uint64_t   rpc = *bits_inout;
+    uint64_t  *rte = bits_inout;
+
+    *rte = 0;
+
+#define RTE_ETH_RX_METADATA_BIT_RPC2RTE(_bit)                              \
+    do {                                                                   \
+        uint64_t  flag = (1ULL << TARPC_RTE_ETH_RX_METADATA_##_bit##_BIT); \
+                                                                           \
+        if (rpc & flag)                                                    \
+        {                                                                  \
+            rpc &= ~flag;                                                  \
+            *rte |= RTE_ETH_RX_METADATA_##_bit;                            \
+        }                                                                  \
+    } while (0)
+
+#ifdef RTE_ETH_RX_METADATA_USER_FLAG
+    RTE_ETH_RX_METADATA_BIT_RPC2RTE(USER_FLAG);
+#endif /* RTE_ETH_RX_METADATA_USER_FLAG */
+
+#ifdef RTE_ETH_RX_METADATA_USER_MARK
+    RTE_ETH_RX_METADATA_BIT_RPC2RTE(USER_MARK);
+#endif /* RTE_ETH_RX_METADATA_USER_MARK */
+
+#ifdef RTE_ETH_RX_METADATA_TUNNEL_ID
+    RTE_ETH_RX_METADATA_BIT_RPC2RTE(TUNNEL_ID);
+#endif /* RTE_ETH_RX_METADATA_TUNNEL_ID */
+
+#undef RTE_ETH_RX_METADATA_BIT_RPC2RTE
+
+    if (rpc != 0)
+        return TE_EINVAL;
+
+    return 0;
+}
+
+static void
+tarpc_rte_eth_rx_metadata_bits_rte2rpc(uint64_t  *bits_inout)
+{
+    uint64_t   rte = *bits_inout;
+    uint64_t  *rpc = bits_inout;
+
+    *rpc = 0;
+
+#define RTE_ETH_RX_METADATA_BIT_RTE2RPC(_bit)                         \
+    do {                                                              \
+        uint64_t  flag = RTE_ETH_RX_METADATA_##_bit;                  \
+                                                                      \
+        if (rte & flag)                                               \
+        {                                                             \
+            rte &= ~flag;                                             \
+            *rpc |= (1ULL << TARPC_RTE_ETH_RX_METADATA_##_bit##_BIT); \
+        }                                                             \
+    } while (0)
+
+#ifdef RTE_ETH_RX_METADATA_USER_FLAG
+    RTE_ETH_RX_METADATA_BIT_RTE2RPC(USER_FLAG);
+#endif /* RTE_ETH_RX_METADATA_USER_FLAG */
+
+#ifdef RTE_ETH_RX_METADATA_USER_MARK
+    RTE_ETH_RX_METADATA_BIT_RTE2RPC(USER_MARK);
+#endif /* RTE_ETH_RX_METADATA_USER_MARK */
+
+#ifdef RTE_ETH_RX_METADATA_TUNNEL_ID
+    RTE_ETH_RX_METADATA_BIT_RTE2RPC(TUNNEL_ID);
+#endif /* RTE_ETH_RX_METADATA_TUNNEL_ID */
+
+#undef RTE_ETH_RX_METADATA_BIT_RTE2RPC
+
+    if (rte != 0)
+        *rpc |= (1ULL << TARPC_RTE_ETH_RX_METADATA__UNKNOWN_BIT);
+}
+
+TARPC_FUNC(rte_eth_rx_metadata_negotiate,
+{
+    COPY_ARG(features);
+},
+{
+    uint64_t  *features = NULL;
+
+    CHECK_ARG_SINGLE_PTR(out, features);
+
+    if (out->features.features_len != 0)
+    {
+        te_errno  rc;
+
+        features = out->features.features_val;
+
+        rc = tarpc_rte_eth_rx_metadata_bits_rpc2rte(features);
+        if (rc != 0)
+        {
+            out->retval = -TE_RC(TE_RPCS, rc);
+            *features = 0;
+            goto done;
+        }
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, features));
+
+    if (out->features.features_len != 0)
+        tarpc_rte_eth_rx_metadata_bits_rte2rpc(features);
+
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})

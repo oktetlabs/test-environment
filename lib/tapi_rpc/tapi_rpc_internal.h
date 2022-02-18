@@ -509,6 +509,55 @@ do {                                                    \
 } while (0)
 
 /**
+ * Convenience helper to fill in the "_val / _len" fields
+ * for the single-element buffer @p _arg in the RPC input
+ * structure if the buffer is not @c NULL
+ */
+#define TAPI_RPC_SET_IN_ARG_IF_PTR_NOT_NULL(_arg) \
+    do {                                          \
+        if ((_arg) != NULL)                       \
+        {                                         \
+            in._arg._arg##_val = (void *)(_arg);  \
+            in._arg._arg##_len = 1;               \
+        }                                         \
+    } while (0)
+
+/**
+ * Convenience helper to ensure that the "_val / _len" fields
+ * for @p _arg in the RPC output structure are either unset
+ * or describe a single-element buffer
+ */
+#define TAPI_RPC_CHECK_OUT_ARG_SINGLE_PTR(_func, _arg)        \
+    CHECK_RETVAL_VAR_ERR_COND((_func), out.retval,            \
+                              out._arg._arg##_len > 1 ||      \
+                              (out._arg._arg##_len != 0 &&    \
+                               out._arg._arg##_val == NULL),  \
+                              RETVAL_ECORRUPTED,              \
+                              out._arg._arg##_len > 1 ||      \
+                              (out._arg._arg##_len != 0 &&    \
+                               out._arg._arg##_val == NULL));
+
+/**
+ * Convenience helper to log the single-element output buffer @p _arg
+ *
+ * The custom printout helper, @p _func_arg_to_str, should
+ * accept a log buffer and a the argument buffer pointer.
+ */
+#define TAPI_RPC_LOG_ARG_TO_STR(_in_or_out, _arg, _log_buf, _func_arg_to_str) \
+    ((_in_or_out)._arg._arg##_len != 0) ?                                     \
+    (_func_arg_to_str)((_log_buf), (_in_or_out)._arg._arg##_val) : "(null)"
+
+/**
+ * Convenience helper to pass the single-element buffer @p _arg
+ * from the RPC output structure back to the RPC caller
+ */
+#define TAPI_RPC_COPY_OUT_ARG_IF_PTR_NOT_NULL(_arg)     \
+    do {                                                \
+        if ((_arg) != NULL && out._arg._arg##_len != 0) \
+            *(_arg) = *out._arg._arg##_val;             \
+    } while (0);
+
+/**
  * Check membership of pointer in the namespace @a ns.
  *
  * @param rpcs      RPC server handle

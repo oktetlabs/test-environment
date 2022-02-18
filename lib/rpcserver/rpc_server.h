@@ -1085,6 +1085,23 @@ typedef void (*sighandler_t)(int);
     } while (0)
 
 /**
+ * Convenience helper to ensure that the "_val / _len" fields
+ * for @p _arg in the RPC @p _in_or_out structure are either
+ * unset or describe a single-element buffer
+ */
+#define CHECK_ARG_SINGLE_PTR(_in_or_out, _arg)                  \
+    do {                                                        \
+        if ((_in_or_out)->_arg._arg##_len > 1 ||                \
+            ((_in_or_out)->_arg._arg##_len != 0 &&              \
+             (_in_or_out)->_arg._arg##_val == NULL))            \
+        {                                                       \
+            out->common._errno = TE_RC(TE_RPCS, TE_ECORRUPTED); \
+            out->retval = -out->common._errno;                  \
+            goto done;                                          \
+        }                                                       \
+    } while (0)
+
+/**
  * Entry function for RPC server.
  *
  * @param name    RPC server name

@@ -748,6 +748,15 @@ extern char *rpc_rte_eth_dev_rx_offload_name(rcf_rpc_server *rpcs,
 extern char *rpc_rte_eth_dev_tx_offload_name(rcf_rpc_server *rpcs,
                                              uint64_t        offload);
 
+/**
+ * @b rte_eth_rx_metadata_negotiate() RPC
+ *
+ * @return @c 0 on success; jumps out on error (negative value)
+ */
+extern int rpc_rte_eth_rx_metadata_negotiate(rcf_rpc_server  *rpcs,
+                                             uint16_t         port_id,
+                                             uint64_t        *features);
+
 
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 

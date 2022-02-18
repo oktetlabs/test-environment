@@ -1819,6 +1819,30 @@ struct tarpc_rte_eth_representor_info_get_out {
     tarpc_int                      retval;
 };
 
+enum tarpc_rte_eth_metadata_bits {
+    TARPC_RTE_ETH_RX_METADATA_USER_FLAG_BIT  = 0,
+    TARPC_RTE_ETH_RX_METADATA_USER_MARK_BIT,
+    TARPC_RTE_ETH_RX_METADATA_TUNNEL_ID_BIT,
+
+    TARPC_RTE_ETH_RX_METADATA__UNKNOWN_BIT   = 63
+};
+
+/** rte_eth_rx_metadata_negotiate() */
+struct tarpc_rte_eth_rx_metadata_negotiate_in {
+    struct tarpc_in_arg  common;
+
+    uint16_t             port_id;
+    uint64_t             features<>;
+};
+
+struct tarpc_rte_eth_rx_metadata_negotiate_out {
+    struct tarpc_out_arg  common;
+
+    tarpc_int             retval;
+    uint64_t              features<>;
+};
+
+
 /**
  * rte_flow API
  */
@@ -2161,6 +2185,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_rx_offload_name)
         RPC_DEF(rte_eth_dev_tx_offload_name)
         RPC_DEF(rte_eth_representor_info_get)
+        RPC_DEF(rte_eth_rx_metadata_negotiate)
 
         RPC_DEF(rte_mk_flow_rule_components)
         RPC_DEF(rte_insert_flow_rule_items)

@@ -3234,3 +3234,61 @@ rpc_rte_eth_dev_tx_offload_name(rcf_rpc_server *rpcs,
         return NULL;
 }
 
+static const char *
+tarpc_rte_eth_rx_metadata_bits2str(te_log_buf      *lb,
+                                   const uint64_t  *bits)
+{
+    const struct te_log_buf_bit2str  bit2str[] = {
+
+#define TARPC_RTE_ETH_RX_METADATA_BIT2STR(_bit)           \
+        { TARPC_RTE_ETH_RX_METADATA_##_bit##_BIT, #_bit }
+
+        TARPC_RTE_ETH_RX_METADATA_BIT2STR(USER_FLAG),
+        TARPC_RTE_ETH_RX_METADATA_BIT2STR(USER_MARK),
+        TARPC_RTE_ETH_RX_METADATA_BIT2STR(TUNNEL_ID),
+
+#undef TARPC_RTE_ETH_RX_METADATA_BIT2STR
+
+        { 0, NULL }
+    };
+
+    return te_bit_mask2log_buf(lb, *bits, bit2str);
+}
+
+int
+rpc_rte_eth_rx_metadata_negotiate(rcf_rpc_server  *rpcs,
+                                  uint16_t         port_id,
+                                  uint64_t        *features)
+{
+    tarpc_rte_eth_rx_metadata_negotiate_out   out = {};
+    tarpc_rte_eth_rx_metadata_negotiate_in    in = {};
+    te_log_buf                               *lb_out;
+    te_log_buf                               *lb_in;
+
+    in.port_id = port_id;
+
+    TAPI_RPC_SET_IN_ARG_IF_PTR_NOT_NULL(features);
+
+    rcf_rpc_call(rpcs, "rte_eth_rx_metadata_negotiate", &in, &out);
+
+    TAPI_RPC_CHECK_OUT_ARG_SINGLE_PTR(rte_eth_rx_metadata_negotiate, features);
+
+    lb_out = te_log_buf_alloc();
+    lb_in = te_log_buf_alloc();
+
+    TAPI_RPC_LOG(rpcs, rte_eth_rx_metadata_negotiate,
+                 "port_id=%" PRIu16 ", features=%s",
+                 "features=%s; " NEG_ERRNO_FMT, in.port_id,
+                 TAPI_RPC_LOG_ARG_TO_STR(in, features, lb_in,
+                                         tarpc_rte_eth_rx_metadata_bits2str),
+                 TAPI_RPC_LOG_ARG_TO_STR(out, features, lb_out,
+                                         tarpc_rte_eth_rx_metadata_bits2str),
+                 NEG_ERRNO_ARGS(out.retval));
+
+    te_log_buf_free(lb_out);
+    te_log_buf_free(lb_in);
+
+    TAPI_RPC_COPY_OUT_ARG_IF_PTR_NOT_NULL(features);
+
+    RETVAL_ZERO_INT(rte_eth_rx_metadata_negotiate, out.retval);
+}
