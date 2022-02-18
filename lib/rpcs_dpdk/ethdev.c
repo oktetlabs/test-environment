@@ -33,10 +33,7 @@
 #endif /* ! HAVE_STRUCT_RTE_ETHER_ADDR */
 
 #define CASE_TARPC2RTE(_rte) \
-    case TARPC_##_rte: *rte = (_rte); break
-
-#define CASE_RTE2TARPC(_rte) \
-    case (_rte): *rpc = TARPC_##_rte; break
+    case TARPC_##_rte: *rte = RTE_##_rte; break
 
 static uint64_t
 tarpc_rte_rx_offloads2rpc(uint64_t rte)
@@ -45,7 +42,7 @@ tarpc_rte_rx_offloads2rpc(uint64_t rte)
 
 #define RTE_DEV_RX_OFFLOAD2RPC(_bit) \
     do {                                                            \
-        uint64_t flag = DEV_RX_OFFLOAD_##_bit;                      \
+        uint64_t flag = RTE_ETH_RX_OFFLOAD_##_bit;                  \
                                                                     \
         if (rte & flag)                                             \
         {                                                           \
@@ -132,7 +129,7 @@ tarpc_rte_rx_offloads2rte(uint64_t rpc, uint64_t *rte)
         if (rpc & flag)                                                  \
         {                                                                \
             rpc &= ~flag;                                                \
-            rte_tmp |= DEV_RX_OFFLOAD_##_bit;                            \
+            rte_tmp |= RTE_ETH_RX_OFFLOAD_##_bit;                        \
         }                                                                \
     } while (0)
 
@@ -215,7 +212,7 @@ tarpc_rte_tx_offloads2rpc(uint64_t rte)
 
 #define RTE_DEV_TX_OFFLOAD2RPC(_bit) \
     do {                                                            \
-        uint64_t flag = DEV_TX_OFFLOAD_##_bit;                      \
+        uint64_t flag = RTE_ETH_TX_OFFLOAD_##_bit;                  \
                                                                     \
         if (rte & flag)                                             \
         {                                                           \
@@ -309,7 +306,7 @@ tarpc_rte_tx_offloads2rte(uint64_t rpc, uint64_t *rte)
         if (rpc & flag)                                                  \
         {                                                                \
             rpc &= ~flag;                                                \
-            rte_tmp |= DEV_TX_OFFLOAD_##_bit;                            \
+            rte_tmp |= RTE_ETH_TX_OFFLOAD_##_bit;                        \
         }                                                                \
     } while (0)
 
@@ -427,7 +424,7 @@ tarpc_rte_eth_rss_flow_types2rpc(uint64_t rte)
 
 #define RTE_ETH_FLOW_TYPE2RPC(_bit) \
     do {                                                \
-        uint64_t flag = ETH_RSS_##_bit;                 \
+        uint64_t flag = RTE_ETH_RSS_##_bit;             \
                                                         \
         if (rte & flag)                                 \
         {                                               \
@@ -544,7 +541,7 @@ tarpc_rte_eth_link_speeds2rpc(uint32_t rte)
 
 #define RTE_ETH_LINK_SPEED2RPC(_bit) \
     do {                                                    \
-        uint32_t flag = ETH_LINK_SPEED_##_bit;              \
+        uint32_t flag = RTE_ETH_LINK_SPEED_##_bit;          \
                                                             \
         if (rte & flag)                                     \
         {                                                   \
@@ -808,7 +805,7 @@ rte_rss_hf_rpc2h(tarpc_rss_hash_protos_t rpc, uint64_t *rte)
         if (rpc & proto)                                                     \
         {                                                                    \
             rpc &= ~proto;                                                   \
-            *rte |= ETH_RSS_##_proto;                                        \
+            *rte |= RTE_ETH_RSS_##_proto;                                    \
         }                                                                    \
     } while (0)
     TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV4);
@@ -841,7 +838,7 @@ rte_rss_hf_h2rpc(uint64_t rte)
     tarpc_rss_hash_protos_t rpc = 0;
 #define RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(_hf)                       \
     do {                                                            \
-        uint64_t hf = ETH_RSS_##_hf;                                \
+        uint64_t hf = RTE_ETH_RSS_##_hf;                            \
                                                                     \
         if ((rte & hf) == hf)                                       \
         {                                                           \
@@ -1155,8 +1152,12 @@ tarpc_intr_op2rte(const enum tarpc_rte_intr_op rpc,
 {
     switch (rpc)
     {
-        CASE_TARPC2RTE(RTE_INTR_EVENT_ADD);
-        CASE_TARPC2RTE(RTE_INTR_EVENT_DEL);
+        case TARPC_RTE_INTR_EVENT_ADD:
+            *rte = RTE_INTR_EVENT_ADD;
+            break;
+        case TARPC_RTE_INTR_EVENT_DEL:
+            *rte = RTE_INTR_EVENT_DEL;
+            break;
         default:
             return 0;
     }
@@ -1420,7 +1421,7 @@ tarpc_eth_vlan_offload_mask2rte(uint16_t rpc, uint16_t *rte)
         if (rpc & flag)                                             \
         {                                                           \
             rpc &= ~flag;                                           \
-            *rte |= ETH_VLAN_##_bit##_OFFLOAD;                      \
+            *rte |= RTE_ETH_VLAN_##_bit##_OFFLOAD;                  \
         }                                                           \
     } while (0)
 
@@ -1583,7 +1584,7 @@ rte_eth_vlan_offload_mask2tarpc(int rte, uint16_t *rpc)
 {
 #define RTE_ETH_VLAN_OFFLOAD_BIT2TARPC_BIT(_bit) \
     do {                                                            \
-        uint16_t flag = ETH_VLAN_##_bit##_OFFLOAD;                  \
+        uint16_t flag = RTE_ETH_VLAN_##_bit##_OFFLOAD;              \
                                                                     \
         if (rte & flag)                                             \
         {                                                           \
@@ -1764,10 +1765,18 @@ tarpc_rte_eth_fc_mode2rpc(const enum rte_eth_fc_mode rte,
 {
     switch (rte)
     {
-        CASE_RTE2TARPC(RTE_FC_NONE);
-        CASE_RTE2TARPC(RTE_FC_RX_PAUSE);
-        CASE_RTE2TARPC(RTE_FC_TX_PAUSE);
-        CASE_RTE2TARPC(RTE_FC_FULL);
+        case RTE_ETH_FC_NONE:
+            *rpc = TARPC_RTE_FC_NONE;
+            break;
+        case RTE_ETH_FC_RX_PAUSE:
+            *rpc = TARPC_RTE_FC_RX_PAUSE;
+            break;
+        case RTE_ETH_FC_TX_PAUSE:
+            *rpc = TARPC_RTE_FC_TX_PAUSE;
+            break;
+        case RTE_ETH_FC_FULL:
+            *rpc = TARPC_RTE_FC_FULL;
+            break;
         default:
             return 0;
     }
@@ -1781,10 +1790,18 @@ tarpc_rpc_eth_fc_mode2rte(const enum tarpc_rte_eth_fc_mode rpc,
 {
     switch (rpc)
     {
-        CASE_TARPC2RTE(RTE_FC_NONE);
-        CASE_TARPC2RTE(RTE_FC_RX_PAUSE);
-        CASE_TARPC2RTE(RTE_FC_TX_PAUSE);
-        CASE_TARPC2RTE(RTE_FC_FULL);
+        case TARPC_RTE_FC_NONE:
+            *rte = RTE_ETH_FC_NONE;
+            break;
+        case TARPC_RTE_FC_RX_PAUSE:
+            *rte = RTE_ETH_FC_RX_PAUSE;
+            break;
+        case TARPC_RTE_FC_TX_PAUSE:
+            *rte = RTE_ETH_FC_TX_PAUSE;
+            break;
+        case TARPC_RTE_FC_FULL:
+            *rte = RTE_ETH_FC_FULL;
+            break;
         default:
             return 1;
     }
@@ -2442,14 +2459,30 @@ tarpc_rte_eth_tunnel_type2rte(const enum tarpc_rte_eth_tunnel_type  rpc,
 {
     switch (rpc)
     {
-        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_NONE);
-        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_VXLAN);
-        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_GENEVE);
-        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_TEREDO);
-        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_NVGRE);
-        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_IP_IN_GRE);
-        CASE_TARPC2RTE(RTE_L2_TUNNEL_TYPE_E_TAG);
-        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_MAX);
+        case TARPC_RTE_TUNNEL_TYPE_NONE:
+            *rte = RTE_ETH_TUNNEL_TYPE_NONE;
+            break;
+        case TARPC_RTE_TUNNEL_TYPE_VXLAN:
+            *rte = RTE_ETH_TUNNEL_TYPE_VXLAN;
+            break;
+        case TARPC_RTE_TUNNEL_TYPE_GENEVE:
+            *rte = RTE_ETH_TUNNEL_TYPE_GENEVE;
+            break;
+        case TARPC_RTE_TUNNEL_TYPE_TEREDO:
+            *rte = RTE_ETH_TUNNEL_TYPE_TEREDO;
+            break;
+        case TARPC_RTE_TUNNEL_TYPE_NVGRE:
+            *rte = RTE_ETH_TUNNEL_TYPE_NVGRE;
+            break;
+        case TARPC_RTE_TUNNEL_TYPE_IP_IN_GRE:
+            *rte = RTE_ETH_TUNNEL_TYPE_IP_IN_GRE;
+            break;
+        case TARPC_RTE_L2_TUNNEL_TYPE_E_TAG:
+            *rte = RTE_ETH_L2_TUNNEL_TYPE_E_TAG;
+            break;
+        case TARPC_RTE_TUNNEL_TYPE_MAX:
+            *rte = RTE_ETH_TUNNEL_TYPE_MAX;
+            break;
         default:
             return 0;
     }
