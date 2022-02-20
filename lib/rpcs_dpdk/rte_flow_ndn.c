@@ -2764,9 +2764,9 @@ rte_flow_item_port_from_pdu(const asn_value *pdu, struct rte_flow_item *out)
     struct rte_flow_item_ethdev *spec;
     struct rte_flow_item_ethdev *mask;
     struct rte_flow_item_ethdev *last;
-    uint32_t spec_port_id;
-    uint32_t mask_port_id;
-    uint32_t last_port_id;
+    uint32_t spec_port_id = 0;
+    uint32_t mask_port_id = 0;
+    uint32_t last_port_id = 0;
     uint32_t last_id;
     te_errno rc;
 
@@ -2789,7 +2789,7 @@ rte_flow_item_port_from_pdu(const asn_value *pdu, struct rte_flow_item *out)
         return rc;
     }
 
-    if (spec_port_id > UINT16_MAX || mask_port_id > UINT16_MAX ||
+    if (spec_port_id > UINT16_MAX || mask_port_id > UINT32_MAX ||
         last_port_id > UINT16_MAX)
         return TE_EOVERFLOW;
 

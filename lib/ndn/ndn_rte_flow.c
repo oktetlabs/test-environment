@@ -243,7 +243,7 @@ asn_type ndn_rte_flow_actions_s = {
 const asn_type * const ndn_rte_flow_actions = &ndn_rte_flow_actions_s;
 
 static asn_named_entry_t _ndn_rte_flow_item_conf_ne_array[] = {
-    { "ethdev-port-id", &asn_base_uint32_s,
+    { "ethdev-port-id", &ndn_data_unit_uint32_s,
         {PRIVATE, NDN_FLOW_ITEM_CONF_ETHDEV_PORT_ID} },
 };
 
