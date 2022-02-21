@@ -667,6 +667,18 @@ rebooting_state_cold_reboot_handler(ta *agent)
 {
     te_errno rc = 0;
 
+    if (!agent->reboot_ctx.is_cold_reboot_time_expired)
+    {
+        if (is_timed_out(agent->reboot_ctx.reboot_timestamp,
+                         agent->cold_reboot_timeout))
+        {
+            agent->reboot_ctx.reboot_timestamp = time(NULL);
+            agent->reboot_ctx.is_cold_reboot_time_expired = TRUE;
+        }
+
+        return 0;
+    }
+
     if (is_timed_out(agent->reboot_ctx.reboot_timestamp,
                      agent->cold_reboot_timeout))
     {

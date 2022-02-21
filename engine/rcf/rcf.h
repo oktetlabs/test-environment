@@ -201,6 +201,8 @@ typedef struct ta_reboot_context {
     te_bool is_agent_reboot_msg_sent;
     /** Number of agent restart attempts */
     unsigned int restart_attempt;
+    /** The flag to check that timeout for cold reboot is expired */
+    te_bool is_cold_reboot_time_expired;
 } ta_reboot_context;
 
 /** Structure for one Test Agent */
