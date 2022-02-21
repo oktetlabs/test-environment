@@ -59,6 +59,19 @@ struct tarpc_job_allocate_channels_out {
     tarpc_int retval;
 };
 
+/* job_deallocate_channels */
+struct tarpc_job_deallocate_channels_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint channels<>;
+};
+
+struct tarpc_job_deallocate_channels_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+};
+
 /* job_attach_filter */
 struct tarpc_job_attach_filter_in {
     struct tarpc_in_arg common;
@@ -384,6 +397,7 @@ program job
         RPC_DEF(job_create)
         RPC_DEF(job_start)
         RPC_DEF(job_allocate_channels)
+        RPC_DEF(job_deallocate_channels)
         RPC_DEF(job_attach_filter)
         RPC_DEF(job_filter_add_regexp)
         RPC_DEF(job_filter_add_channels)

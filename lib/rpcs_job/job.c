@@ -75,6 +75,16 @@ job_allocate_channels(unsigned int job_id, te_bool input_channels,
 }
 
 static te_errno
+job_deallocate_channels(unsigned int n_channels, unsigned int *channels)
+{
+    INIT_MANAGER_IF_NEEDED(manager);
+
+    ta_job_deallocate_channels(manager, n_channels, channels);
+
+    return 0;
+}
+
+static te_errno
 job_attach_filter(const char *filter_name, unsigned int n_channels,
                   unsigned int *channels, te_bool readable,
                   te_log_level log_level, unsigned int *filter_id)
@@ -448,6 +458,13 @@ TARPC_FUNC_STATIC(job_allocate_channels,
 {
     MAKE_CALL(out->retval = func(in->job_id, in->input_channels,
                                  in->n_channels, out->channels.channels_val));
+    out->common.errno_changed = FALSE;
+})
+
+TARPC_FUNC_STATIC(job_deallocate_channels, {},
+{
+    MAKE_CALL(out->retval = func(in->channels.channels_len,
+                                 in->channels.channels_val));
     out->common.errno_changed = FALSE;
 })
 

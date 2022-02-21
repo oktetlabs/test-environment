@@ -314,6 +314,17 @@ extern te_errno tapi_job_alloc_output_channels(tapi_job_t *job,
                                                channels[n_channels]);
 
 /**
+ * Deallocate primary channels.
+ *
+ * @note The channels are freed by the function.
+ *
+ * @param channels      Channels to be deallocated.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_job_dealloc_channels(tapi_job_channel_set_t channels);
+
+/**
  * Create a secondary output channel applying a filter to an existing
  * channel.
  *

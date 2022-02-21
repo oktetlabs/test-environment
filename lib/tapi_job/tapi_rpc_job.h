@@ -73,6 +73,19 @@ extern int rpc_job_allocate_channels(rcf_rpc_server *rpcs, unsigned int job_id,
                                      unsigned int *channels);
 
 /**
+ * Deallocate @p n_channels channels.
+ *
+ * @param rpcs            RPC server
+ * @param n_channels      Number of channels to deallocate
+ * @param channels        Channels to deallocate
+ *
+ * @return                Status code
+ */
+extern int rpc_job_deallocate_channels(rcf_rpc_server *rpcs,
+                                       unsigned int n_channels,
+                                       unsigned int *channels);
+
+/**
  * Create a secondary output channel applying a filter to an existing
  * channel.
  *

@@ -165,6 +165,17 @@ extern te_errno ta_job_allocate_channels(ta_job_manager_t *manager,
                                          unsigned int *channels);
 
 /**
+ * Deallocate @p n_channels channels
+ *
+ * @param      manager         Job manager handle
+ * @param      n_channels      Number of channels to deallocate
+ * @param      channels        Array of channels to be deallocated
+ */
+extern void ta_job_deallocate_channels(ta_job_manager_t *manager,
+                                       unsigned int n_channels,
+                                       unsigned int *channels);
+
+/**
  * Attach filter to specified output channels
  *
  * @param[in]  manager         Job manager handle

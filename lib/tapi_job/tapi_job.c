@@ -611,6 +611,43 @@ alloc_id_array_from_channel_set(const tapi_job_channel_set_t channels,
 
 /* See description in tapi_job.h */
 te_errno
+tapi_job_dealloc_channels(tapi_job_channel_set_t channels)
+{
+    te_errno rc;
+    unsigned int i;
+    unsigned int *channel_ids;
+    unsigned int n_channels;
+    rcf_rpc_server *rpcs;
+
+    if ((rc = validate_channel_set(channels)) != 0)
+        return rc;
+
+    for (i = 0; channels[i] != NULL; i++)
+    {
+        if (!is_primary_channel(channels[i]))
+        {
+            ERROR("It is not allowed to deallocate filters, use "
+                  "tapi_job_filter_remove_channels() instead");
+            return TE_RC(TE_TAPI, TE_EPERM);
+        }
+    }
+
+    rpcs = channels[0]->rpcs;
+
+    alloc_id_array_from_channel_set(channels, &n_channels, &channel_ids);
+
+    rc = rpc_job_deallocate_channels(rpcs, n_channels, channel_ids);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; channels[i] != NULL; i++)
+        destroy_channel(channels[i]);
+
+    return 0;
+}
+
+/* See description in tapi_job.h */
+te_errno
 tapi_job_attach_filter(tapi_job_channel_set_t channels, const char *filter_name,
                        te_bool readable, te_log_level log_level,
                        tapi_job_channel_t **filter)

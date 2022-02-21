@@ -1806,6 +1806,36 @@ out:
     return rc;
 }
 
+/* See description in ta_job.h */
+void
+ta_job_deallocate_channels(ta_job_manager_t *manager, unsigned int n_channels,
+                           unsigned int *channels)
+{
+    channel_t *channel;
+    unsigned int i;
+
+    pthread_mutex_lock(&manager->channels_lock);
+
+    for (i = 0; i < n_channels; i++)
+    {
+        channel = get_channel(manager, channels[i]);
+        if (channel == NULL)
+            continue;
+
+        if (channel->fd > -1)
+            close(channel->fd);
+
+        /*
+         * We do not rely on thread_destroy_unused_channels() to do the job
+         * because we need the channel to be removed from the list right now.
+         * Otherwise, it may still be accessible for some time from TA job API.
+         */
+        channel_destroy(channel);
+    }
+
+    pthread_mutex_unlock(&manager->channels_lock);
+}
+
 /** Checks if some filter may be attached to the channel */
 static te_errno
 channel_accepts_filters(channel_t *channel)

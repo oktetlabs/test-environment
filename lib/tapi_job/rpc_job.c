@@ -208,6 +208,35 @@ rpc_job_allocate_channels(rcf_rpc_server *rpcs, unsigned int job_id,
 }
 
 int
+rpc_job_deallocate_channels(rcf_rpc_server *rpcs, unsigned int n_channels,
+                            unsigned int *channels)
+{
+    tarpc_job_deallocate_channels_in  in;
+    tarpc_job_deallocate_channels_out out;
+    te_log_buf *tlbp_channels;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.channels.channels_val = channels;
+    in.channels.channels_len = n_channels;
+
+    rcf_rpc_call(rpcs, "job_deallocate_channels", &in, &out);
+    CHECK_RPC_ERRNO_UNCHANGED(job_deallocate_channels, out.retval);
+
+    tlbp_channels = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, job_deallocate_channels, "%u, {%s}", "%r",
+                 in.channels.channels_len,
+                 tarpc_uint_array2log_buf(tlbp_channels,
+                                          in.channels.channels_len,
+                                          in.channels.channels_val),
+                 out.retval);
+    te_log_buf_free(tlbp_channels);
+
+    RETVAL_INT(job_deallocate_channels, out.retval);
+}
+
+int
 rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
                       unsigned int n_channels, unsigned int *channels,
                       te_bool readable, te_log_level log_level,
