@@ -333,6 +333,7 @@ ps_enable_stdout_and_stderr_logging(struct ps_entry *ps)
     unsigned int channel_ids[2]; /* stdout and stderr */
     char *stdout_filter_name = NULL;
     char *stderr_filter_name = NULL;
+    unsigned int stdout_filter_id;
 
     rc = ta_job_allocate_channels(manager, ta_job->id, FALSE, 2, channel_ids);
     if (rc != 0)
@@ -347,12 +348,12 @@ ps_enable_stdout_and_stderr_logging(struct ps_entry *ps)
     {
         ERROR("Failed to generate names for filters to be attached to TA job "
               "corresponding to process '%s', error: %r", ps->name, rc);
-        return rc;
+        goto out;
     }
 
     /* Attach stdout filter */
     rc = ta_job_attach_filter(manager, stdout_filter_name, 1, &channel_ids[0],
-                              FALSE, TE_LL_RING, NULL);
+                              FALSE, TE_LL_RING, &stdout_filter_id);
     if (rc != 0)
     {
         ERROR("Failed to attach stdout filter for TA job corresponding to "
@@ -367,10 +368,16 @@ ps_enable_stdout_and_stderr_logging(struct ps_entry *ps)
     {
         ERROR("Failed to attach stderr filter for TA job corresponding to "
               "process '%s', error: %r", ps->name, rc);
+
+        (void)ta_job_filter_remove_channels(manager, stdout_filter_id, 1,
+                                            &channel_ids[0]);
         goto out;
     }
 
 out:
+    if (rc != 0)
+        ta_job_deallocate_channels(manager, 2, channel_ids);
+
     free(stdout_filter_name);
     free(stderr_filter_name);
 
