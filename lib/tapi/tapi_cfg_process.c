@@ -16,6 +16,7 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_sigmap.h"
 #include "logger_ten.h"
 #include "conf_api.h"
 
@@ -247,4 +248,57 @@ tapi_cfg_ps_get_autorestart(const char *ta, const char *ps_name,
     }
 
     return rc;
+}
+
+/** @param killpg   If @c TRUE, send signal to process group, else to process */
+static te_errno
+tapi_cfg_ps_kill_common(const char *ta, const char *ps_name, int signo,
+                        te_bool killpg)
+{
+    te_errno rc;
+    char *signame = map_signo_to_name(signo);
+
+    if (signame == NULL)
+    {
+        ERROR("Cannot send signal with number %d (process '%s', TA '%s'): "
+              "invalid signal number specified", signo, ps_name, ta);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (killpg)
+    {
+        rc = cfg_set_instance_fmt(CFG_VAL(STRING, signame),
+                                  TE_CFG_TA_PS "/kill:/group:",
+                                  ta, ps_name);
+    }
+    else
+    {
+        rc = cfg_set_instance_fmt(CFG_VAL(STRING, signame),
+                                  TE_CFG_TA_PS "/kill:/self:",
+                                  ta, ps_name);
+    }
+
+    free(signame);
+
+    if (rc != 0)
+    {
+        ERROR("Cannot send a signal to %sprocess '%s' on TA '%s': %r",
+              (killpg ? "group of " : ""), ps_name, ta, rc);
+    }
+
+    return rc;
+}
+
+/* See descriptions in tapi_cfg_process.h */
+te_errno
+tapi_cfg_ps_kill(const char *ta, const char *ps_name, int signo)
+{
+    return tapi_cfg_ps_kill_common(ta, ps_name, signo, FALSE);
+}
+
+/* See descriptions in tapi_cfg_process.h */
+te_errno
+tapi_cfg_ps_killpg(const char *ta, const char *ps_name, int signo)
+{
+    return tapi_cfg_ps_kill_common(ta, ps_name, signo, TRUE);
 }

@@ -28,6 +28,7 @@
 #include "te_string.h"
 #include "te_shell_cmd.h"
 #include "te_str.h"
+#include "te_sigmap.h"
 #include "rcf_pch.h"
 #include "agentlib.h"
 #include "conf_common.h"
@@ -1429,6 +1430,71 @@ autorestart_loop(void *arg)
 }
 
 static te_errno
+ps_kill_common_get(unsigned int gid, const char *oid, char *value,
+                   const char *ps_name)
+{
+    struct ps_entry *ps;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", ps_name);
+
+    ps = ps_find(ps_name);
+    if (ps == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    /* We do not care about the value we get since it does not mean anything */
+    value[0] = '\0';
+
+    return 0;
+}
+
+static te_errno
+ps_kill_common_set(unsigned int gid, const char *oid, const char *value,
+                   const char *ps_name, te_bool killpg)
+{
+    struct ps_entry *ps;
+    int signo;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", ps_name);
+
+    ps = ps_find(ps_name);
+    if (ps == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    signo = map_name_to_signo(value);
+    if (signo == -1)
+    {
+        ERROR("Failed to send signal to %sprocess '%s', invalid signal "
+              "name '%s'", (killpg ? "group of " : ""), ps->name, value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if (killpg)
+        return ta_job_killpg(manager, ps->ta_job.id, signo);
+    else
+        return ta_job_kill(manager, ps->ta_job.id, signo);
+}
+
+static te_errno
+ps_kill_self_set(unsigned int gid, const char *oid, const char *value,
+                 const char *ps_name)
+{
+    return ps_kill_common_set(gid, oid, value, ps_name, FALSE);
+}
+
+static te_errno
+ps_kill_group_set(unsigned int gid, const char *oid, const char *value,
+                  const char *ps_name)
+{
+    return ps_kill_common_set(gid, oid, value, ps_name, TRUE);
+}
+
+static te_errno
 subst_process(te_string *value, const char *subst,
               const char *replaced_value)
 {
@@ -1477,7 +1543,16 @@ RCF_PCH_CFG_NODE_RW(node_ps_autorestart, "autorestart", NULL,
                     &node_ps_long_opt_sep, ps_autorestart_get,
                     ps_autorestart_set);
 
-RCF_PCH_CFG_NODE_COLLECTION(node_ps, "process", &node_ps_autorestart, NULL,
+RCF_PCH_CFG_NODE_RW(node_ps_kill_self, "self", NULL, NULL,
+                    ps_kill_common_get, ps_kill_self_set);
+
+RCF_PCH_CFG_NODE_RW(node_ps_kill_group, "group", NULL, &node_ps_kill_self,
+                    ps_kill_common_get, ps_kill_group_set);
+
+RCF_PCH_CFG_NODE_NA(node_ps_kill, "kill", &node_ps_kill_group,
+                    &node_ps_autorestart);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_ps, "process", &node_ps_kill, NULL,
                             ps_add, ps_del, ps_list, NULL);
 
 te_errno

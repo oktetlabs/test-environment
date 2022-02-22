@@ -81,3 +81,23 @@
       d: |
         Additional process environment variables.
         Name: environment variable name
+
+    - oid: "/agent/process/kill"
+      access: read_only
+      type: none
+      d: |
+        Root node for nodes that allow sending signals to the process.
+
+    - oid: "/agent/process/kill/self"
+      access: read_write
+      type: string
+      volatile: true
+      d: |
+        Name of a signal that will be sent to the process immediately.
+
+    - oid: "/agent/process/kill/group"
+      access: read_write
+      type: string
+      volatile: true
+      d: |
+        Name of a signal that will be sent to the process group immediately.

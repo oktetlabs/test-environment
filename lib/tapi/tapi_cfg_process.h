@@ -188,6 +188,30 @@ extern te_errno tapi_cfg_ps_get_autorestart(const char *ta,
                                             const char *ps_name,
                                             unsigned int *value);
 
+/**
+ * Send a signal to the process.
+ *
+ * @param      ta                 Test Agent.
+ * @param      ps_name            Process.
+ * @param      signo              Number of signal to send.
+ *
+ * @return     Status code
+ */
+extern te_errno tapi_cfg_ps_kill(const char *ta, const char *ps_name,
+                                 int signo);
+
+/**
+ * Send a signal to the process's porcess group.
+ *
+ * @param      ta                 Test Agent.
+ * @param      ps_name            Process.
+ * @param      signo              Number of signal to send.
+ *
+ * @return     Status code
+ */
+extern te_errno tapi_cfg_ps_killpg(const char *ta, const char *ps_name,
+                                   int signo);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
