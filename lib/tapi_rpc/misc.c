@@ -3304,7 +3304,9 @@ rpc_drain_fd_duration(rcf_rpc_server *rpcs, int fd, size_t size,
 
     rcf_rpc_call(rpcs, "drain_fd", &in, &out);
 
-    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(drain_fd, out.retval);
+    CHECK_RETVAL_VAR_ERR_COND(drain_fd, out.retval,
+                              out.retval != 0 && out.retval != -1,
+                              -1, RPC_ERRNO(rpcs) == RPC_EAGAIN);
 
     TAPI_RPC_LOG(rpcs, drain_fd, "fd = %d, size = %"TE_PRINTF_SIZE_T"u, "
                  "time2wait = %d ms, duration = %u sec, "
