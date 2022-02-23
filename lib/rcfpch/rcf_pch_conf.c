@@ -274,6 +274,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
     char *next_level;
 
     te_bool all;
+    te_errno rc;
 
 /**
  * Return from function with resources deallocation.
@@ -329,13 +330,15 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
                 i++;
             }
 
-            if ((obj->list)(gid, parsed, obj->sub_id, &tmp_list,
-                            inst_names[0], inst_names[1], inst_names[2],
-                            inst_names[3], inst_names[4], inst_names[5],
-                            inst_names[6], inst_names[7], inst_names[8],
-                            inst_names[9]) != 0)
+            rc = (obj->list)(gid, parsed, obj->sub_id, &tmp_list,
+                             inst_names[0], inst_names[1], inst_names[2],
+                             inst_names[3], inst_names[4], inst_names[5],
+                             inst_names[6], inst_names[7], inst_names[8],
+                             inst_names[9]);
+            if (rc != 0)
             {
-                ERROR("List method failed for '%s'", parsed);
+                ERROR("List method failed for '%s/%s:', rc=%r", parsed,
+                      obj->sub_id, rc);
                 free(dup);
                 RET(0);
             }
@@ -348,7 +351,6 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
              strlen(tmp_inst_name) > 0;
              tmp_inst_name = tmp)
         {
-            int   rc = 0;
             char  tmp_parsed[CFG_OID_MAX];
 
             if ((tmp = strchr(tmp_inst_name, ' ')) == NULL)
@@ -385,6 +387,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
                 *list = new_entry;
             }
 
+            rc = 0;
             if (obj->son != NULL && *next_level != 0)
                 rc = create_wildcard_inst_list(obj->son, tmp_parsed,
                                                next_level, full_oid, list);
