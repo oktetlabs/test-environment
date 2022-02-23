@@ -258,6 +258,54 @@ extern uint32_t netconf_get_rta_u32(struct rtattr *rta);
  */
 void *netconf_dup_rta(const struct rtattr *rta);
 
+
+/** Generic callback for attribute processing */
+typedef te_errno (*netconf_attr_cb)(struct nlattr *na, void *cb_data);
+
+/**
+ * Process netlink attributes.
+ *
+ * @param first_attr      Pointer to the first attribute
+ * @param attrs_size      Total number of bytes occupied by attributes
+ * @param cb              Callback to which pointer to every attribute
+ *                        is passed
+ * @param cb_data         User data passed to the callback
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_process_attrs(void *first_attr, size_t attrs_size,
+                                      netconf_attr_cb cb, void *cb_data);
+
+/**
+ * Wrapper over netconf_process_attrs() which assumes that attributes
+ * are placed immediately after some header in netlink message.
+ *
+ * @param h         Pointer to the main header of the netlink message
+ * @param hdr_len   Length of the additional header (not the main header)
+ * @param cb        Callback to which pointer to every attribute is passed
+ * @param cb_data   User data passed to the callback
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_process_hdr_attrs(struct nlmsghdr *h,
+                                          size_t hdr_len,
+                                          netconf_attr_cb cb,
+                                          void *cb_data);
+
+/**
+ * Wrapper over netconf_process_attrs() which assumes that parsed
+ * attributes are nested inside another attribute.
+ *
+ * @param na_parent   Parent attribute
+ * @param cb          Callback to which pointer to every attribute is passed
+ * @param cb_data     User data passed to the callback
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_process_nested_attrs(struct nlattr *na_parent,
+                                             netconf_attr_cb cb,
+                                             void *cb_data);
+
 /**
  * Free memory used by node of network interface type.
  *

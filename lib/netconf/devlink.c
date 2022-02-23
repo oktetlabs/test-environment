@@ -14,6 +14,7 @@
 #include "te_config.h"
 #include "netconf.h"
 #include "netconf_internal.h"
+#include "netconf_internal_genetlink.h"
 #include "logger_api.h"
 #include "te_alloc.h"
 
@@ -28,185 +29,24 @@
  */
 static int devlink_family = -1;
 
-/* Callback for attribute processing */
-typedef te_errno (*attr_cb)(struct nlattr *na, void *cb_data);
-
-/* Process attributes of Generic Netlink message */
-static te_errno
-process_attrs(struct nlmsghdr *h, attr_cb cb, void *cb_data)
-{
-    struct nlattr *na;
-    te_errno rc;
-
-    if (h == NULL)
-    {
-        ERROR("%s(): message header cannot be NULL", __FUNCTION__);
-        return TE_EINVAL;
-    }
-
-    na = NLMSG_DATA(h) + GENL_HDRLEN;
-    do {
-        rc = cb(na, cb_data);
-        if (rc != 0)
-            return rc;
-
-        na = (void *)na + NLA_ALIGN(na->nla_len);
-    } while ((void *)na < (void *)h + h->nlmsg_len);
-
-    return 0;
-}
-
-/* Process nested attributes inside a given attribute */
-static te_errno
-process_nested_attrs(struct nlattr *na_parent, attr_cb cb,
-                     void *cb_data)
-{
-    struct nlattr *na;
-    te_errno rc;
-
-    if (na_parent == NULL)
-    {
-        ERROR("%s(): parent attribute cannot be NULL", __FUNCTION__);
-        return TE_EINVAL;
-    }
-
-    na = (struct nlattr *)((void *)na_parent + NLA_HDRLEN);
-    do {
-        rc = cb(na, cb_data);
-        if (rc != 0)
-            return rc;
-
-        na = (void *)na + NLA_ALIGN(na->nla_len);
-    } while ((void *)na < (void *)na_parent + na_parent->nla_len);
-
-    return 0;
-}
-
-/* Initialize headers for Generic Netlink message */
-static te_errno
-init_hdrs(char *req, size_t max_len, uint16_t nlmsg_type,
-          uint16_t nlmsg_flags, uint8_t cmd, uint8_t version,
-          netconf_handle nh)
-{
-    struct nlmsghdr *h;
-    struct genlmsghdr *gh;
-
-    if (max_len < NLMSG_LENGTH(GENL_HDRLEN))
-    {
-        ERROR("%s(): not enough space for headers", __FUNCTION__);
-        return TE_ENOBUFS;
-    }
-
-    h = (struct nlmsghdr *)req;
-
-    memset(h, 0, sizeof(*h));
-    h->nlmsg_type = nlmsg_type;
-    h->nlmsg_len = NLMSG_LENGTH(GENL_HDRLEN);
-    h->nlmsg_flags = nlmsg_flags;
-    h->nlmsg_seq = ++nh->seq;
-
-    gh = NLMSG_DATA(h);
-    memset(gh, 0, GENL_HDRLEN);
-    gh->cmd = cmd;
-    gh->version = version;
-
-    return 0;
-}
-
-/* Callback for obtaining devlink family ID from message attribute */
-static te_errno
-family_attr_cb(struct nlattr *na, void *cb_data)
-{
-    uint16_t val;
-    te_errno rc;
-
-    UNUSED(cb_data);
-
-    if (na->nla_type == CTRL_ATTR_FAMILY_ID)
-    {
-        rc = netconf_get_uint16_attr(na, &val);
-        if (rc != 0)
-            return rc;
-
-        devlink_family = val;
-    }
-
-    return 0;
-}
-
-/* Callback for processing netlink message containing devlink family ID */
-static int
-family_msg_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
-{
-    te_errno rc;
-
-    UNUSED(list);
-    UNUSED(cookie);
-
-    rc = process_attrs(h, family_attr_cb, NULL);
-    if (rc != 0)
-        return -1;
-
-    return 0;
-}
-
-/*
- * Get devlink family ID. It is required to be able to access
- * devlink API via Generic Netlink. Devlink can have different
- * IDs on different hosts.
- */
-static te_errno
-get_devlink_family(netconf_handle nh)
-{
-    char req[NETCONF_MAX_REQ_LEN] = { 0, };
-    te_errno rc;
-    int os_rc;
-    struct nlmsghdr *h;
-
-    if (devlink_family >= 0)
-        return 0;
-
-    h = (struct nlmsghdr *)req;
-
-    rc = init_hdrs(req, sizeof(req), GENL_ID_CTRL, NLM_F_REQUEST,
-                   CTRL_CMD_GETFAMILY, 0x1, nh);
-    if (rc != 0)
-        return rc;
-
-    rc = netconf_append_attr(req, sizeof(req), CTRL_ATTR_FAMILY_NAME,
-                             DEVLINK_GENL_NAME, sizeof(DEVLINK_GENL_NAME));
-    if (rc != 0)
-        return rc;
-
-    os_rc = netconf_talk(nh, req, h->nlmsg_len, family_msg_cb, NULL, NULL);
-    if (os_rc < 0)
-    {
-        rc = te_rc_os2te(errno);
-        ERROR("%s(): failed to obtain devlink family ID, %r",
-              __FUNCTION__, rc);
-        return rc;
-    }
-
-    if (devlink_family < 0)
-    {
-        ERROR("%s(): devlink family ID was not found", __FUNCTION__);
-        return TE_ENOENT;
-    }
-
-    return 0;
-}
-
 /*
  * Check whether devlink family ID is already known; obtain it
  * if it is not.
  */
 #define GET_CHECK_DEVLINK_FAMILY(_nh) \
-    do {                                \
-        te_errno _rc;                   \
-                                        \
-        _rc = get_devlink_family(_nh);  \
-        if (_rc != 0)                   \
-            return _rc;                 \
+    do {                                                          \
+        te_errno _rc;                                             \
+        uint16_t _family;                                         \
+                                                                  \
+        if (devlink_family < 0)                                   \
+        {                                                         \
+            _rc = netconf_gn_get_family(_nh, DEVLINK_GENL_NAME,   \
+                                        &_family);                \
+            if (_rc != 0)                                         \
+                return _rc;                                       \
+                                                                  \
+            devlink_family = _family;                             \
+        }                                                         \
     } while (0)
 
 #if HAVE_DECL_DEVLINK_CMD_INFO_GET
@@ -257,7 +97,7 @@ info_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 
     info = &(list->tail->data.devlink_info);
 
-    rc = process_attrs(h, info_attr_cb, info);
+    rc = netconf_gn_process_attrs(h, info_attr_cb, info);
     if (rc != 0)
         return -1;
 
@@ -292,8 +132,9 @@ netconf_devlink_get_info(netconf_handle nh, const char *bus,
 
     h = (struct nlmsghdr *)req;
 
-    rc = init_hdrs(req, sizeof(req), devlink_family, req_flags,
-                   DEVLINK_CMD_INFO_GET, DEVLINK_GENL_VERSION, nh);
+    rc = netconf_gn_init_hdrs(req, sizeof(req), devlink_family, req_flags,
+                              DEVLINK_CMD_INFO_GET, DEVLINK_GENL_VERSION,
+                              nh);
     if (rc != 0)
         return rc;
 
@@ -463,7 +304,7 @@ param_value_cb(struct nlattr *na, void *data)
 
     cb_data->last_val_data = NULL;
     cb_data->last_val_cmode = NULL;
-    rc = process_nested_attrs(na, param_value_attr_cb, data);
+    rc = netconf_process_nested_attrs(na, param_value_attr_cb, data);
     if (rc != 0)
         return rc;
 
@@ -568,7 +409,7 @@ param_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
     cb_data.param = param;
     param->type = NETCONF_NLA_UNSPEC;
 
-    rc = process_attrs(h, param_attr_cb, &cb_data);
+    rc = netconf_gn_process_attrs(h, param_attr_cb, &cb_data);
     if (rc != 0)
         return rc;
 
@@ -590,8 +431,9 @@ param_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
         return TE_EINVAL;
     }
 
-    rc = process_nested_attrs(cb_data.param_attr, param_nested_attr_cb,
-                              &cb_data);
+    rc = netconf_process_nested_attrs(cb_data.param_attr,
+                                      param_nested_attr_cb,
+                                      &cb_data);
     if (rc != 0)
         return rc;
 
@@ -614,8 +456,9 @@ param_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
         return 0;
     }
 
-    return process_nested_attrs(cb_data.values_list_attr, param_value_cb,
-                                &cb_data);
+    return netconf_process_nested_attrs(cb_data.values_list_attr,
+                                        param_value_cb,
+                                        &cb_data);
 }
 
 /* See description in netconf.h */
@@ -632,9 +475,10 @@ netconf_devlink_param_dump(netconf_handle nh, netconf_list **list)
 
     h = (struct nlmsghdr *)req;
 
-    rc = init_hdrs(req, sizeof(req), devlink_family,
-                   NLM_F_REQUEST | NLM_F_DUMP,
-                   DEVLINK_CMD_PARAM_GET, DEVLINK_GENL_VERSION, nh);
+    rc = netconf_gn_init_hdrs(req, sizeof(req), devlink_family,
+                              NLM_F_REQUEST | NLM_F_DUMP,
+                              DEVLINK_CMD_PARAM_GET, DEVLINK_GENL_VERSION,
+                              nh);
     if (rc != 0)
         return rc;
 
@@ -711,9 +555,10 @@ netconf_devlink_param_set(netconf_handle nh, const char *bus,
     if (rc != 0)
         return rc;
 
-    rc = init_hdrs(req, sizeof(req), devlink_family,
-                   NLM_F_REQUEST | NLM_F_ACK,
-                   DEVLINK_CMD_PARAM_SET, DEVLINK_GENL_VERSION, nh);
+    rc = netconf_gn_init_hdrs(req, sizeof(req), devlink_family,
+                              NLM_F_REQUEST | NLM_F_ACK,
+                              DEVLINK_CMD_PARAM_SET, DEVLINK_GENL_VERSION,
+                              nh);
     if (rc != 0)
         return rc;
 

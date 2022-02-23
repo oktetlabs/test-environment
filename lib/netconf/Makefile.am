@@ -6,7 +6,7 @@ AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
 lib_LIBRARIES = libnetconf.a
 
-include_HEADERS = netconf.h netconf_internal.h
+include_HEADERS = netconf.h netconf_internal.h netconf_internal_genetlink.h
 
 libnetconf_a_SOURCES = netconf.c \
 	link.c \
@@ -22,7 +22,8 @@ libnetconf_a_SOURCES = netconf.c \
         geneve.c \
 	vxlan.c \
 	bridge.c \
-	devlink.c
+	devlink.c \
+	genetlink.c
 
 install-exec-hook:
 	touch -c -r libnetconf.a $(DESTDIR)/$(libdir)/libnetconf.a

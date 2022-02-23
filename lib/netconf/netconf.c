@@ -732,3 +732,72 @@ netconf_nla_type2str(netconf_nla_type nla_type)
             return "<UNKNOWN>";
     }
 }
+
+/* See description in netconf_internal.h */
+te_errno
+netconf_process_attrs(void *first_attr,
+                      size_t attrs_size,
+                      netconf_attr_cb cb,
+                      void *cb_data)
+{
+    struct nlattr *na;
+    size_t aligned_len;
+    te_errno rc;
+
+    if (first_attr == NULL)
+    {
+        ERROR("%s(): first_attr cannot be NULL", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    na = first_attr;
+    while (attrs_size > 0)
+    {
+        if (sizeof(*na) > attrs_size)
+            break;
+        if (na->nla_len > attrs_size)
+        {
+            ERROR("%s(): the last attribute has too big length",
+                  __FUNCTION__);
+            return TE_EINVAL;
+        }
+
+        rc = cb(na, cb_data);
+        if (rc != 0)
+            return rc;
+
+        aligned_len = NLA_ALIGN(na->nla_len);
+        na = (void *)na + aligned_len;
+        if (attrs_size >= aligned_len)
+            attrs_size -= aligned_len;
+        else
+            break;
+    }
+
+    return 0;
+}
+
+/* See description in netconf_internal.h */
+te_errno
+netconf_process_hdr_attrs(struct nlmsghdr *h, size_t hdr_len,
+                          netconf_attr_cb cb, void *cb_data)
+{
+    void *first_attr;
+    size_t attrs_size;
+
+    first_attr = NLMSG_DATA(h) + hdr_len;
+    attrs_size = (void *)h + h->nlmsg_len - first_attr;
+
+    return netconf_process_attrs(first_attr, attrs_size,
+                                 cb, cb_data);
+}
+
+/* See description in netconf_internal.h */
+te_errno
+netconf_process_nested_attrs(struct nlattr *na_parent, netconf_attr_cb cb,
+                             void *cb_data)
+{
+    return netconf_process_attrs((void *)na_parent + NLA_HDRLEN,
+                                 na_parent->nla_len - NLA_HDRLEN,
+                                 cb, cb_data);
+}

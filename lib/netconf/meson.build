@@ -81,6 +81,7 @@ configure_file(output: 'config.h',
 headers += files(
     'netconf.h',
     'netconf_internal.h',
+    'netconf_internal_genetlink.h',
 )
 sources += files(
     'bridge.c',
@@ -96,6 +97,7 @@ sources += files(
     'veth.c',
     'vlan.c',
     'udp_tunnel.c',
+    'genetlink.c',
     'geneve.c',
     'vxlan.c',
 )
