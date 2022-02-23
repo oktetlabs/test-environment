@@ -2779,7 +2779,15 @@ pci_param_list(unsigned int gid, const char *oid,
 
     rc = update_dev_params(gid);
     if (rc != 0)
+    {
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+        {
+            *list = NULL;
+            return 0;
+        }
+
         return TE_RC(TE_TA_UNIX, rc);
+    }
 
     for (node = dev_params->head; node != NULL; node = node->next)
     {
