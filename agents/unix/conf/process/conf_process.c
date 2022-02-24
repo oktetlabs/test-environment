@@ -764,8 +764,8 @@ ps_exe_set(unsigned int gid, const char *oid, const char *value,
     return rc;
 }
 
-static te_bool
-ps_is_running(struct ps_entry *ps)
+static te_errno
+ps_status_check(struct ps_entry *ps, te_bool *is_running)
 {
     te_errno rc = ta_job_wait(manager, ps->ta_job.id, 0, NULL);
 
@@ -773,22 +773,30 @@ ps_is_running(struct ps_entry *ps)
     {
         case 0:
         case TE_ECHILD:
-            return FALSE;
+            *is_running = FALSE;
+            rc = 0;
+            break;
         case TE_EINPROGRESS:
-            return TRUE;
+            *is_running = TRUE;
+            rc = 0;
+            break;
         default:
             WARN("Failed to check if TA job corresponding to process '%s' "
-                 "is running, ta_job_wait exited with error %r. "
+                 "is running, ta_job_wait() exited with error %r.\n"
                  "Considering that the job is not running.",
                  ps->name, rc);
-            return FALSE;
+            *is_running = FALSE;
+            break;
     }
+
+    return rc;
 }
 
 static te_errno
 ps_status_get(unsigned int gid, const char *oid, char *value,
               const char *ps_name)
 {
+    te_errno rc = 0;
     struct ps_entry *ps;
 
     UNUSED(gid);
@@ -803,7 +811,7 @@ ps_status_get(unsigned int gid, const char *oid, char *value,
     pthread_mutex_lock(&autorestart_lock);
 
     if (ps->autorestart == 0 && ps->enabled)
-        ps->enabled = ps_is_running(ps);
+        rc = ps_status_check(ps, &ps->enabled);
     else if (ps->autorestart_failed)
         ps->enabled = FALSE;
 
@@ -811,7 +819,7 @@ ps_status_get(unsigned int gid, const char *oid, char *value,
 
     snprintf(value, RCF_MAX_VAL, "%d", ps->enabled);
 
-    return 0;
+    return rc;
 }
 
 static te_errno
@@ -1404,7 +1412,11 @@ autorestart_loop(void *arg)
             if (ps->enabled && ps->autorestart != 0 &&
                 !ps->autorestart_failed && --ps->time_until_check == 0)
             {
-                if (!ps_is_running(ps))
+                te_bool is_running;
+
+                /* Try to restart the process even if the check failed */
+                ps_status_check(ps, &is_running);
+                if (!is_running)
                 {
                     rc = ps_start(ps);
                     if (rc != 0)
