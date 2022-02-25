@@ -23,5 +23,12 @@
                 <notes/>
             </iter>
         </test>
+        <test name="process_ping" type="script">
+            <objective>Check support for killing and waiting processes in Configurator</objective>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
     </iter>
 </test>

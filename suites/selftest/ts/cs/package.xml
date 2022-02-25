@@ -51,5 +51,9 @@
             <script name="process_autorestart"/>
         </run>
 
+        <run>
+            <script name="process_ping"/>
+        </run>
+
     </session>
 </package>

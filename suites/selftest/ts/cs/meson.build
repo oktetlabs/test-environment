@@ -4,6 +4,7 @@ tests = [
     'phy',
     'process',
     'process_autorestart',
+    'process_ping',
     'vlans',
     'vm',
 ]
