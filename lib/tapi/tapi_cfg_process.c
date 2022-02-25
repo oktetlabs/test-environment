@@ -17,6 +17,8 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_sigmap.h"
+#include "te_sleep.h"
+#include "te_time.h"
 #include "logger_ten.h"
 #include "conf_api.h"
 
@@ -24,7 +26,8 @@
 
 
 #define TE_CFG_TA_PS    "/agent:%s/process:%s"
-
+/** Default timeout to sleep for between polling process status */
+#define DEFAULT_POLL_FREQUENCY_MS  1000
 
 /* See descriptions in tapi_cfg_process.h */
 te_errno
@@ -301,4 +304,96 @@ te_errno
 tapi_cfg_ps_killpg(const char *ta, const char *ps_name, int signo)
 {
     return tapi_cfg_ps_kill_common(ta, ps_name, signo, TRUE);
+}
+
+static te_errno
+tapi_cfg_ps_get_exit_status(const char *ta, const char *ps_name,
+                            tapi_cfg_ps_exit_status_t *exit_status)
+{
+    te_errno rc;
+    tapi_cfg_ps_exit_status_t result;
+    int result_type;
+
+    assert(exit_status != NULL);
+
+    rc = cfg_get_instance_int_sync_fmt(&result_type, TE_CFG_TA_PS
+                                       "/status:/exit_status:/type:",
+                                       ta, ps_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot get exit status type (process '%s', TA '%s'): %r",
+              ps_name, ta, rc);
+        return rc;
+    }
+    /*
+     * Here we rely on the fact that ta_job_status_type_t and
+     * tapi_cfg_ps_exit_status_type_t are actually the same
+     */
+    result.type = result_type;
+
+    rc = cfg_get_instance_int_sync_fmt(&result.value, TE_CFG_TA_PS
+                                       "/status:/exit_status:/value:",
+                                       ta, ps_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot get exit status value (process '%s', TA '%s'): "
+              "%r", ps_name, ta, rc);
+        return rc;
+    }
+
+    *exit_status = result;
+
+    return 0;
+}
+
+/* See descriptions in tapi_cfg_process.h */
+te_errno
+tapi_cfg_ps_wait(const char *ta, const char *ps_name, int timeout_ms,
+                 tapi_cfg_ps_exit_status_t *exit_status)
+{
+    te_errno rc;
+    struct timeval tv_start;
+    struct timeval tv_now;
+
+    if (timeout_ms >= 0)
+    {
+        rc = te_gettimeofday(&tv_start, NULL);
+        if (rc != 0)
+            return rc;
+    }
+
+    while (1)
+    {
+        te_bool status;
+
+        rc = tapi_cfg_ps_get_status(ta, ps_name, &status);
+        if (rc != 0)
+            return rc;
+
+        /* Process is not running, get exit status if needed and quit */
+        if (!status)
+        {
+            if (exit_status != NULL)
+                return tapi_cfg_ps_get_exit_status(ta, ps_name, exit_status);
+            else
+                return 0;
+        }
+
+        if (timeout_ms >= 0)
+        {
+            rc = te_gettimeofday(&tv_now, NULL);
+            if (rc != 0)
+                return rc;
+
+            /* The behaviour is similar to ta_job_wait() */
+            if (TE_US2MS(TIMEVAL_SUB(tv_now, tv_start)) > timeout_ms)
+                return TE_RC(TE_TAPI, TE_EINPROGRESS);
+        }
+
+        /*
+         * We do not use VSLEEP here since the sleep may be called a huge number
+         * of times and the logs would become dirty
+         */
+        usleep(TE_MS2US(DEFAULT_POLL_FREQUENCY_MS));
+    }
 }

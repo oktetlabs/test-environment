@@ -22,6 +22,27 @@
 extern "C" {
 #endif
 
+/** Cause of process termination. */
+typedef enum tapi_cfg_ps_exit_status_type_t {
+    /** Process terminated normally (by exit() or return from main). */
+    TAPI_CFG_PS_EXIT_STATUS_EXITED,
+    /** Process was terminated by a signal. */
+    TAPI_CFG_PS_EXIT_STATUS_SIGNALED,
+    /** The cause of process termination is not known. */
+    TAPI_CFG_PS_EXIT_STATUS_UNKNOWN,
+} tapi_cfg_ps_exit_status_type_t;
+
+/** Structure that represents status of a terminated process. */
+typedef struct tapi_cfg_ps_exit_status_t {
+    /** Cause of process termination. */
+    tapi_cfg_ps_exit_status_type_t type;
+    /**
+     * Either an exit status of the process or a number of a signal
+     * which caused the process termination.
+     */
+    int value;
+} tapi_cfg_ps_exit_status_t;
+
 /**
  * Add process.
  *
@@ -211,6 +232,29 @@ extern te_errno tapi_cfg_ps_kill(const char *ta, const char *ps_name,
  */
 extern te_errno tapi_cfg_ps_killpg(const char *ta, const char *ps_name,
                                    int signo);
+
+/**
+ * Wait for a process completion (or check its status if @p timeout_ms is zero).
+ *
+ * @param[in]  ta                 Test Agent.
+ * @param[in]  ps_name            Process.
+ * @param[in]  timeout_ms         Time to wait for the process. @c 0 means to
+ *                                check current status and exit, negative value
+ *                                means that the call of the function blocks
+ *                                until the process changes its status.
+ * @param[out] exit_status        Process exit status location, may be @c NULL.
+ *
+ * @return     Status code
+ * @retval     0               The process completed running or was never
+ *                             started
+ * @retval     TE_EINPROGRESS  The process is still running.
+ *
+ * @note Parameters of the process are allowed to be changed after
+ *       successful call of this function.
+ */
+extern te_errno tapi_cfg_ps_wait(const char *ta, const char *ps_name,
+                                 int timeout_ms,
+                                 tapi_cfg_ps_exit_status_t *exit_status);
 
 #ifdef __cplusplus
 } /* extern "C" */

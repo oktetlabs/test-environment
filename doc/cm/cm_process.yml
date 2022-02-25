@@ -38,6 +38,33 @@
         restarted.
         If the status is 0, it is not allowed to reconfigure the process.
 
+    - oid: "/agent/process/status/exit_status"
+      access: read_only
+      type: none
+      d: |
+        Root node for process termination status.
+
+    - oid: "/agent/process/status/exit_status/type"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+        Cause of last process termination.
+        0 - process terminated normally (by exit() or return from main)
+        1 - process was terminated by a signal
+        2 - the cause of process termination is not known
+        If the process has never terminated yet (i.e. the process has never
+        started or it is running for the first time), the value is 2.
+
+    - oid: "/agent/process/status/exit_status/value"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+        Either a last exit status of the process or a number of a signal which
+        caused the process last termination.
+        If the process has never terminated yet, the value is 0.
+
     - oid: "/agent/process/autorestart"
       access: read_write
       type: integer

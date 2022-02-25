@@ -67,8 +67,8 @@ typedef SLIST_HEAD(ps_env_list_t, ps_env_entry) ps_env_list_t;
 typedef SLIST_HEAD(ps_opt_list_t, ps_opt_entry) ps_opt_list_t;
 
 struct ps_ta_job {
-    unsigned int  id;
-    te_bool       created;
+    unsigned int     id;
+    te_bool          created;
     /*
      * TA job subsystem is used to control actual processes on TA.
      * Everytime we change parameters of a process (e.g. arguments, exe, etc.),
@@ -76,7 +76,8 @@ struct ps_ta_job {
      * parameters cannot be changed.
      * This flag is used to check whether or not TA job should be renewed.
      */
-    te_bool       reconfigure_required;
+    te_bool          reconfigure_required;
+    ta_job_status_t  exit_status;
 };
 
 struct ps_entry {
@@ -525,6 +526,8 @@ ps_ta_job_init(struct ps_ta_job *ta_job)
      * it does not exist
      */
     ta_job->reconfigure_required = TRUE;
+    ta_job->exit_status.type = TA_JOB_STATUS_UNKNOWN;
+    ta_job->exit_status.value = 0;
 }
 
 static te_errno
@@ -767,7 +770,8 @@ ps_exe_set(unsigned int gid, const char *oid, const char *value,
 static te_errno
 ps_status_check(struct ps_entry *ps, te_bool *is_running)
 {
-    te_errno rc = ta_job_wait(manager, ps->ta_job.id, 0, NULL);
+    te_errno rc = ta_job_wait(manager, ps->ta_job.id, 0,
+                              &ps->ta_job.exit_status);
 
     switch (rc)
     {
@@ -1507,6 +1511,46 @@ ps_kill_group_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
+ps_exit_status_type_get(unsigned int gid, const char *oid, char *value,
+                        const char *ps_name)
+{
+    struct ps_entry *ps;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", ps_name);
+
+    ps = ps_find(ps_name);
+    if (ps == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%d", ps->ta_job.exit_status.type);
+
+    return 0;
+}
+
+static te_errno
+ps_exit_status_value_get(unsigned int gid, const char *oid, char *value,
+                         const char *ps_name)
+{
+    struct ps_entry *ps;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", ps_name);
+
+    ps = ps_find(ps_name);
+    if (ps == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%d", ps->ta_job.exit_status.value);
+
+    return 0;
+}
+
+static te_errno
 subst_process(te_string *value, const char *subst,
               const char *replaced_value)
 {
@@ -1545,8 +1589,17 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_ps_opt, "option", NULL, &node_ps_env,
 RCF_PCH_CFG_NODE_RW_WITH_SUBST(node_ps_exe, "exe", NULL, &node_ps_opt,
                                ps_exe_get, ps_exe_set, subst);
 
-RCF_PCH_CFG_NODE_RW(node_ps_status, "status", NULL, &node_ps_exe,
-                    ps_status_get, ps_status_set);
+RCF_PCH_CFG_NODE_RO(node_ps_exit_status_type, "type", NULL, NULL,
+                    ps_exit_status_type_get);
+
+RCF_PCH_CFG_NODE_RO(node_ps_exit_status_value, "value", NULL,
+                    &node_ps_exit_status_type, ps_exit_status_value_get);
+
+RCF_PCH_CFG_NODE_NA(node_ps_exit_status, "exit_status",
+                    &node_ps_exit_status_value, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_ps_status, "status", &node_ps_exit_status,
+                    &node_ps_exe, ps_status_get, ps_status_set);
 
 RCF_PCH_CFG_NODE_RW(node_ps_long_opt_sep, "long_option_value_separator", NULL,
                     &node_ps_status, ps_long_opt_sep_get, ps_long_opt_sep_set);
