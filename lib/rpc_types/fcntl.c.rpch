@@ -11,6 +11,7 @@
  */
 
 #include "te_config.h"
+#include "config.h"
 
 #if HAVE_FCNTL_H
 #include <fcntl.h>

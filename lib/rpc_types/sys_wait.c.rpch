@@ -11,6 +11,7 @@
  */
 
 #include "te_config.h"
+#include "config.h"
 
 #if HAVE_SYS_WAIT_H
 #include <sys/wait.h>

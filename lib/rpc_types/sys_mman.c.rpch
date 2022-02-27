@@ -11,6 +11,7 @@
 #define TE_LGR_USER     "RPC types"
 
 #include "te_config.h"
+#include "config.h"
 
 #if HAVE_SYS_MMAN_H
 #include <sys/mman.h>

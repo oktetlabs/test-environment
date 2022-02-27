@@ -11,6 +11,7 @@
  */
 
 #include "te_config.h"
+#include "config.h"
 
 #ifdef HAVE_NETDB_H
 #include <netdb.h>

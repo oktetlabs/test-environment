@@ -14,6 +14,7 @@
 #define TE_LGR_USER     "RPC types"
 
 #include "te_config.h"
+#include "config.h"
 
 #ifdef __CYGWIN__
 #ifndef WINDOWS

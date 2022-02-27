@@ -1,5 +1,7 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
+conf_data = configuration_data()
+
 headers += files(
     'te_rpc_aio.h',
     'te_rpc_defs.h',
@@ -74,28 +76,28 @@ check_headers = [
 
 foreach h : check_headers
     if cc.has_header(h)
-        c_args += [ '-DHAVE_' + h.to_upper().underscorify() ]
+        conf_data.set('HAVE_' + h.to_upper().underscorify(), '1')
     endif
 endforeach
 
 t = 'struct sock_extended_err'
 if cc.has_header_symbol('linux/errqueue.h', t)
-    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+    conf_data.set('HAVE_' + t.to_upper().underscorify(), '1')
 endif
 
 t = 'struct in_pktinfo'
 if cc.has_header_symbol('netinet/in.h', t)
-    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+    conf_data.set('HAVE_' + t.to_upper().underscorify(), '1')
 endif
 
 t = 'struct in6_pktinfo'
 if cc.has_header_symbol('netinet/in.h', t)
-    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+    conf_data.set('HAVE_' + t.to_upper().underscorify(), '1')
 endif
 
 t = 'struct in6_pktinfo'
 if cc.has_header_symbol('netinet/in.h', t)
-    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+    conf_data.set('HAVE_' + t.to_upper().underscorify(), '1')
 endif
 
 t = 'struct dirent'
@@ -104,7 +106,7 @@ check_decls_headers = '''
 #include <dirent.h>
 '''
 if cc.has_member(t, m, prefix: check_decls_headers)
-    c_args += [ '-DHAVE_' + (t + '_' + m).to_upper().underscorify() ]
+    conf_data.set('HAVE_' + (t + '_' + m).to_upper().underscorify(), '1')
 endif
 
 t = 'struct sigaction'
@@ -113,7 +115,7 @@ check_decls_headers = '''
 #include <signal.h>
 '''
 if cc.has_member(t, m, prefix: check_decls_headers)
-    c_args += [ '-DHAVE_' + (t + '_' + m).to_upper().underscorify() ]
+    conf_data.set('HAVE_' + (t + '_' + m).to_upper().underscorify(), '1')
 endif
 
 t = 'struct sockaddr_in6'
@@ -124,7 +126,7 @@ check_decls_headers = '''
 #include <netinet/in.h>
 '''
 if cc.has_member(t, m, prefix: check_decls_headers)
-    c_args += [ '-DHAVE_' + (t + '_' + m).to_upper().underscorify() ]
+    conf_data.set('HAVE_' + (t + '_' + m).to_upper().underscorify(), '1')
 endif
 
 #
@@ -158,7 +160,7 @@ check_decls_headers = '''
 
 foreach d : check_decls_list
     if cc.has_type(d, prefix: check_decls_headers)
-        c_args += '-D' + d.to_upper() + '=' + d
+        conf_data.set(d.to_upper(), d)
     endif
 endforeach
 
@@ -187,7 +189,9 @@ ethtool_decls_headers = '''
 
 foreach d : ethtool_decls_list
     if cc.has_type(d, prefix: ethtool_decls_headers)
-        c_args += '-DHAVE_DECL_' + d.to_upper()
+        conf_data.set('HAVE_DECL_' + d.to_upper(), '1')
+    else
+        conf_data.set('HAVE_DECL_' + d.to_upper(), '0')
     endif
 endforeach
 
@@ -202,6 +206,10 @@ ethtool_cmd_members_list = [
 
 foreach d : ethtool_cmd_members_list
     if cc.has_member('struct ethtool_cmd', d, prefix: ethtool_decls_headers)
-        c_args += '-DHAVE_ETHTOOL_CMD_' + d.to_upper().underscorify()
+        conf_data.set('HAVE_ETHTOOL_CMD_' + d.to_upper().underscorify(), '1')
     endif
 endforeach
+
+
+configure_file(output: 'config.h',
+               configuration: conf_data)
