@@ -104,6 +104,8 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #include "te_string.h"
 #include "rcf_rpc_defs.h"
 
+#include "te_rpc_linux_net_tstamp.h"
+
 #ifdef __unix__
 #ifndef SO_REUSEPORT
 #define SO_REUSEPORT 15
@@ -3475,8 +3477,9 @@ hwtstamp_config_data_rpc2h(tarpc_hwtstamp_config *rpc_hwdata,
         *hwdata_p = (caddr_t)hw_cfg;
     }
     COPY_FIELD(hw_cfg, rpc_hwdata, flags);
-    COPY_FIELD(hw_cfg, rpc_hwdata, tx_type);
-    COPY_FIELD(hw_cfg, rpc_hwdata, rx_filter);
+
+    hw_cfg->tx_type = hwtstamp_tx_types_rpc2h(rpc_hwdata->tx_type);
+    hw_cfg->rx_filter = hwtstamp_rx_filters_rpc2h(rpc_hwdata->rx_filter);
 }
 
 /* See the description in te_rpc_sys_socket.h */
@@ -3487,8 +3490,9 @@ hwtstamp_config_data_h2rpc(tarpc_hwtstamp_config *rpc_hwdata,
     struct hwtstamp_config *hw_cfg = 
                         (struct hwtstamp_config *)hwdata;
     COPY_FIELD(rpc_hwdata, hw_cfg, flags);
-    COPY_FIELD(rpc_hwdata, hw_cfg, tx_type);
-    COPY_FIELD(rpc_hwdata, hw_cfg, rx_filter);
+
+    rpc_hwdata->tx_type = hwtstamp_tx_types_h2rpc(hw_cfg->tx_type);
+    rpc_hwdata->rx_filter = hwtstamp_rx_filters_h2rpc(hw_cfg->rx_filter);
 }
 
 #endif

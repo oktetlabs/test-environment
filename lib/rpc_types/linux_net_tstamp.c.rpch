@@ -166,6 +166,21 @@ hwtstamp_tx_types_rpc2h(rpc_hwtstamp_tx_types type)
     }
 }
 
+rpc_hwtstamp_tx_types
+hwtstamp_tx_types_h2rpc(int type)
+{
+    switch (type)
+    {
+        H2RPC_CHECK_DECL(HWTSTAMP_TX_OFF);
+        H2RPC_CHECK_DECL(HWTSTAMP_TX_ON);
+        H2RPC_CHECK_DECL(HWTSTAMP_TX_ONESTEP_SYNC);
+        H2RPC_CHECK_DECL(HWTSTAMP_TX_ONESTEP_P2P);
+
+        default:
+            return RPC_HWTSTAMP_TX_UNKNOWN;
+    }
+}
+
 int
 hwtstamp_rx_filters_rpc2h(rpc_hwtstamp_rx_filters filter)
 {
@@ -189,5 +204,32 @@ hwtstamp_rx_filters_rpc2h(rpc_hwtstamp_rx_filters filter)
         RPC2H_CHECK_DECL(HWTSTAMP_FILTER_NTP_ALL);
 
         default: return -1;
+    }
+}
+
+rpc_hwtstamp_rx_filters
+hwtstamp_rx_filters_h2rpc(int filter)
+{
+    switch (filter)
+    {
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_NONE);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_ALL);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_SOME);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_PTP_V1_L4_EVENT);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_PTP_V1_L4_SYNC);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_PTP_V2_L4_EVENT);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_PTP_V2_L4_SYNC);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_PTP_V2_L2_EVENT);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_PTP_V2_L2_SYNC);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_PTP_V2_EVENT);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_PTP_V2_SYNC);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_PTP_V2_DELAY_REQ);
+        H2RPC_CHECK_DECL(HWTSTAMP_FILTER_NTP_ALL);
+
+        default:
+            return RPC_HWTSTAMP_FILTER_UNKNOWN;
     }
 }

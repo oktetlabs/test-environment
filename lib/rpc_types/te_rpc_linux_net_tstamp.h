@@ -100,6 +100,17 @@ typedef enum rpc_hwtstamp_tx_types {
 extern int hwtstamp_tx_types_rpc2h(rpc_hwtstamp_tx_types type);
 
 /**
+ * Convert constant from hwtstamp_tx_types enum to corresponding RPC
+ * constant.
+ *
+ * @param type      Native constant
+ *
+ * @return Corresponding RPC value or @c RPC_HWTSTAMP_TX_UNKNOWN if no such
+ *         value exists.
+ */
+extern rpc_hwtstamp_tx_types hwtstamp_tx_types_h2rpc(int type);
+
+/**
  * RPC constants corresponding to values defined in hwtstamp_rx_filters
  * enum from linux/net_tstamp.h. See descriptions there.
  */
@@ -133,6 +144,17 @@ typedef enum rpc_hwtstamp_rx_filters {
  * @return Corresponding native value or @c -1 if no such value exists.
  */
 extern int hwtstamp_rx_filters_rpc2h(rpc_hwtstamp_rx_filters filter);
+
+/**
+ * Convert constant from hwtstamp_rx_filters enum to corresponding RPC
+ * constant.
+ *
+ * @param filter     Native constant
+ *
+ * @return Corresponding RPC value or @c RPC_HWTSTAMP_FILTER_UNKNOWN if no
+ *         such value exists.
+ */
+extern rpc_hwtstamp_rx_filters hwtstamp_rx_filters_h2rpc(int filter);
 
 #ifdef __cplusplus
 } /* extern "C" */
