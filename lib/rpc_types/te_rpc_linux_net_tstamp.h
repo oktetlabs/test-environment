@@ -19,6 +19,7 @@
 #define __TE_RPC_LINUX_NET_TSTAMP_H__
 
 #include "te_rpc_defs.h"
+#include "te_string.h"
 
 
 #ifdef __cplusplus
@@ -120,6 +121,32 @@ extern rpc_hwtstamp_tx_types hwtstamp_tx_types_h2rpc(int type);
 extern const char *hwtstamp_tx_types_rpc2str(rpc_hwtstamp_tx_types type);
 
 /**
+ * Convert native flags from hwtstamp_tx_types to RPC ones.
+ * These flags are returned by ioctl(SIOCETHTOOL/ETHTOOL_GET_TS_INFO).
+ * Every member of enum hwtstamp_tx_types has a corresponding bit,
+ * for example HWTSTAMP_TX_ON -> (1 << HWTSTAMP_TX_ON).
+ * If this function sees (1 << HWTSTAMP_TX_ON) bit set, it sets
+ * (1 << RPC_HWTSTAMP_TX_ON) bit in the result.
+ *
+ * @param flags   Native flags
+ *
+ * @return RPC flags.
+ */
+extern unsigned int hwtstamp_tx_types_flags_h2rpc(unsigned int flags);
+
+/**
+ * Append string representation of flags produced by
+ * hwtstamp_tx_types_flags_h2rpc() to TE string.
+ *
+ * @param flags   Flags
+ * @param str     Where to append string representation
+ *
+ * @return Status code.
+ */
+extern te_errno hwtstamp_tx_types_flags_rpc2te_str(unsigned int flags,
+                                                   te_string *str);
+
+/**
  * RPC constants corresponding to values defined in hwtstamp_rx_filters
  * enum from linux/net_tstamp.h. See descriptions there.
  */
@@ -173,6 +200,32 @@ extern rpc_hwtstamp_rx_filters hwtstamp_rx_filters_h2rpc(int filter);
  * @return Constant name.
  */
 extern const char *hwtstamp_rx_filters_rpc2str(rpc_hwtstamp_rx_filters filter);
+
+/**
+ * Convert native flags from hwtstamp_rx_filters to RPC ones.
+ * These flags are returned by ioctl(SIOCETHTOOL/ETHTOOL_GET_TS_INFO).
+ * Every member of enum hwtstamp_rx_filters has a corresponding bit,
+ * for example HWTSTAMP_FILTER_ALL -> (1 << HWTSTAMP_FILTER_ALL).
+ * If this function sees (1 << HWTSTAMP_FILTER_ALL) bit set, it sets
+ * (1 << RPC_HWTSTAMP_FILTER_ALL) bit in the result.
+ *
+ * @param flags   Native flags
+ *
+ * @return RPC flags.
+ */
+extern unsigned int hwtstamp_rx_filters_flags_h2rpc(unsigned int flags);
+
+/**
+ * Append string representation of flags produced by
+ * hwtstamp_rx_filters_flags_h2rpc() to TE string.
+ *
+ * @param flags   Flags
+ * @param str     Where to append string representation
+ *
+ * @return Status code.
+ */
+extern te_errno hwtstamp_rx_filters_flags_rpc2te_str(unsigned int flags,
+                                                     te_string *str);
 
 #ifdef __cplusplus
 } /* extern "C" */

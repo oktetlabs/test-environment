@@ -3062,6 +3062,7 @@ ethtool_cmd_rpc2str(rpc_ethtool_cmd ethtool_cmd)
         RPC2STR(ETHTOOL_SRXCLSRLINS);
         RPC2STR(ETHTOOL_FLASHDEV);
         RPC2STR(ETHTOOL_RESET);
+        RPC2STR(ETHTOOL_GET_TS_INFO);
 
         /*
          * We should never reach the code below, because all value of the
@@ -3129,6 +3130,7 @@ ethtool_cmd_rpc2h(rpc_ethtool_cmd ethtool_cmd)
         RPC2H_CHECK(ETHTOOL_SRXCLSRLINS);
         RPC2H_CHECK(ETHTOOL_FLASHDEV);
         RPC2H_CHECK(ETHTOOL_RESET);
+        RPC2H_CHECK(ETHTOOL_GET_TS_INFO);
 
         default:
             WARN("%s is converted to 0",
@@ -3195,6 +3197,7 @@ ethtool_cmd_h2rpc(int ethtool_cmd)
         H2RPC_CHECK(ETHTOOL_SRXCLSRLINS);
         H2RPC_CHECK(ETHTOOL_FLASHDEV);
         H2RPC_CHECK(ETHTOOL_RESET);
+        H2RPC_CHECK(ETHTOOL_GET_TS_INFO);
 
         default: return RPC_ETHTOOL_UNKNOWN;
     }
@@ -3236,6 +3239,9 @@ ethtool_cmd2type(rpc_ethtool_cmd cmd)
 
         case RPC_ETHTOOL_GPERMADDR:
             return TARPC_ETHTOOL_PADDR;
+
+        case RPC_ETHTOOL_GET_TS_INFO:
+            return TARPC_ETHTOOL_TS_INFO;
 
         default:
             return 0;
@@ -3353,6 +3359,25 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                 break;
             }
 
+        case TARPC_ETHTOOL_TS_INFO:
+            {
+                struct ethtool_ts_info *ts_info =
+                        *(struct ethtool_ts_info **)edata_p;
+
+                if (ts_info == NULL)
+                {
+                    ts_info = calloc(1, sizeof(struct ethtool_ts_info));
+                    if (ts_info == NULL)
+                    {
+                        ERROR("%s(): out of memory", __FUNCTION__);
+                        return;
+                    }
+                    *edata_p = (caddr_t)ts_info;
+                }
+
+                break;
+            }
+
         default:
             ERROR("%s: Unknown ethtool command.", __FUNCTION__);
             break;
@@ -3448,6 +3473,25 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
                                                         evalue->data);
                 else
                     COPY_FIELD(rpc_evalue, evalue, data);
+
+                break;
+            }
+
+        case TARPC_ETHTOOL_TS_INFO:
+            {
+                struct ethtool_ts_info *h_data =
+                        (struct ethtool_ts_info *)edata;
+                tarpc_ethtool_ts_info  *rpc_data =
+                        &rpc_edata->data.tarpc_ethtool_data_u.ts_info;
+
+                rpc_data->so_timestamping = hwtstamp_instr_h2rpc(
+                                                  h_data->so_timestamping);
+                rpc_data->phc_index = h_data->phc_index;
+
+                rpc_data->tx_types = hwtstamp_tx_types_flags_h2rpc(
+                                                        h_data->tx_types);
+                rpc_data->rx_filters = hwtstamp_rx_filters_flags_h2rpc(
+                                                        h_data->rx_filters);
 
                 break;
             }

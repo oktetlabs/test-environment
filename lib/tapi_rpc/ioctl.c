@@ -504,6 +504,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 case RPC_ETHTOOL_PHYS_ID:
                 case RPC_ETHTOOL_GUFO:
                 case RPC_ETHTOOL_RESET:
+                case RPC_ETHTOOL_GET_TS_INFO:
                     in.access = IOCTL_RD;
                     break;
 
@@ -603,6 +604,10 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
                                 case TARPC_ETHTOOL_VALUE:
                                     size = sizeof(tarpc_ethtool_value);
+                                    break;
+
+                                case TARPC_ETHTOOL_TS_INFO:
+                                    size = sizeof(tarpc_ethtool_ts_info);
                                     break;
 
                                 default:
@@ -931,6 +936,36 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                          sizeof(ifreq_buf) -
                                                 strlen(ifreq_buf),
                                          "data %u", evalue->data);
+                            break;
+                        }
+
+                        case TARPC_ETHTOOL_TS_INFO:
+                        {
+                            struct tarpc_ethtool_ts_info *ts_info =
+                                (struct tarpc_ethtool_ts_info *)ifr->ifr_data;
+
+                            te_string str = TE_STRING_INIT;
+
+                            te_string_set_buf(&str, ifreq_buf,
+                                              sizeof(ifreq_buf),
+                                              strlen(ifreq_buf));
+
+                            te_string_append(
+                                     &str,
+                                     "so_timestamping = %s, phc_index = %d, "
+                                     "tx_types = ",
+                                     timestamping_flags_rpc2str(
+                                                ts_info->so_timestamping),
+                                     (int)(ts_info->phc_index));
+
+                            hwtstamp_tx_types_flags_rpc2te_str(
+                                          ts_info->tx_types, &str);
+
+                            te_string_append(&str, "%s", ", rx_filters = ");
+
+                            hwtstamp_rx_filters_flags_rpc2te_str(
+                                          ts_info->rx_filters, &str);
+
                             break;
                         }
 

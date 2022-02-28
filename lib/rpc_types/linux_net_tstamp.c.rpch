@@ -275,3 +275,121 @@ hwtstamp_rx_filters_rpc2str(rpc_hwtstamp_rx_filters filter)
             return "<UNKNOWN>";
     }
 }
+
+/*
+ * Type of pointer to function converting HWTSTAMP_* native value
+ * to the corresponding RPC value
+ */
+typedef int (*conv_func)(int h_val);
+
+/* Convert native HWTSTAMP* flags to RPC ones. */
+static unsigned int
+flags_h2rpc_gen(unsigned int flags, conv_func func)
+{
+    unsigned int result = 0;
+    int i;
+
+    for (i = 0; i < 32; i++)
+    {
+        if (flags & (1 << i))
+            result |= (1 << func(i));
+     }
+
+    return result;
+}
+
+unsigned int
+hwtstamp_tx_types_flags_h2rpc(unsigned int flags)
+{
+    return flags_h2rpc_gen(flags, (conv_func)&hwtstamp_tx_types_h2rpc);
+}
+
+unsigned int
+hwtstamp_rx_filters_flags_h2rpc(unsigned int flags)
+{
+    return flags_h2rpc_gen(flags, (conv_func)&hwtstamp_rx_filters_h2rpc);
+}
+
+te_errno
+hwtstamp_tx_types_flags_rpc2te_str(unsigned int flags, te_string *str)
+{
+#define CHECK_FLAG(_name) \
+    do {                                                              \
+        rpc_hwtstamp_tx_types _type;                                  \
+                                                                      \
+        _type = RPC_HWTSTAMP_TX_ ## _name;                            \
+        if (flags & (1 << _type))                                     \
+        {                                                             \
+            rc = te_string_append(str, "%s%s",                        \
+                                  (flag_added ? " | " : ""),          \
+                                  hwtstamp_tx_types_rpc2str(_type));  \
+            if (rc != 0)                                              \
+                return rc;                                            \
+                                                                      \
+            flag_added = TRUE;                                        \
+        }                                                             \
+    } while (0)
+
+    te_bool flag_added = FALSE;
+    te_errno rc;
+
+    CHECK_FLAG(OFF);
+    CHECK_FLAG(ON);
+    CHECK_FLAG(ONESTEP_SYNC);
+    CHECK_FLAG(ONESTEP_P2P);
+    CHECK_FLAG(UNKNOWN);
+
+    if (!flag_added)
+        return te_string_append(str, "0");
+
+    return 0;
+#undef CHECK_FLAG
+}
+
+te_errno
+hwtstamp_rx_filters_flags_rpc2te_str(unsigned int flags, te_string *str)
+{
+#define CHECK_FLAG(_name) \
+    do {                                                                  \
+        rpc_hwtstamp_rx_filters _filter;                                  \
+                                                                          \
+        _filter = RPC_HWTSTAMP_FILTER_ ## _name;                          \
+        if (flags & (1 << _filter))                                       \
+        {                                                                 \
+            rc = te_string_append(str, "%s%s",                            \
+                                  (flag_added ? " | " : ""),              \
+                                  hwtstamp_rx_filters_rpc2str(_filter));  \
+            if (rc != 0)                                                  \
+                return rc;                                                \
+                                                                          \
+            flag_added = TRUE;                                            \
+        }                                                                 \
+    } while (0)
+
+    te_bool flag_added = FALSE;
+    te_errno rc;
+
+    CHECK_FLAG(NONE);
+    CHECK_FLAG(ALL);
+    CHECK_FLAG(SOME);
+    CHECK_FLAG(PTP_V1_L4_EVENT);
+    CHECK_FLAG(PTP_V1_L4_SYNC);
+    CHECK_FLAG(PTP_V1_L4_DELAY_REQ);
+    CHECK_FLAG(PTP_V2_L4_EVENT);
+    CHECK_FLAG(PTP_V2_L4_SYNC);
+    CHECK_FLAG(PTP_V2_L4_DELAY_REQ);
+    CHECK_FLAG(PTP_V2_L2_EVENT);
+    CHECK_FLAG(PTP_V2_L2_SYNC);
+    CHECK_FLAG(PTP_V2_L2_DELAY_REQ);
+    CHECK_FLAG(PTP_V2_EVENT);
+    CHECK_FLAG(PTP_V2_SYNC);
+    CHECK_FLAG(PTP_V2_DELAY_REQ);
+    CHECK_FLAG(NTP_ALL);
+    CHECK_FLAG(UNKNOWN);
+
+    if (!flag_added)
+        return te_string_append(str, "0");
+
+    return 0;
+#undef CHECK_FLAG
+}

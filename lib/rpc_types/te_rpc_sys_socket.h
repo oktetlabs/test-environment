@@ -1333,7 +1333,8 @@ typedef enum rpc_ethtool_cmd {
     RPC_ETHTOOL_SRXCLSRLDEL,
     RPC_ETHTOOL_SRXCLSRLINS,
     RPC_ETHTOOL_FLASHDEV,
-    RPC_ETHTOOL_RESET
+    RPC_ETHTOOL_RESET,
+    RPC_ETHTOOL_GET_TS_INFO,
 } rpc_ethtool_cmd;
 
 /** Convert RPC ethtool command to string */

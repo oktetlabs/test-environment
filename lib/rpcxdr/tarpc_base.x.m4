@@ -276,7 +276,8 @@ struct tarpc_gethostname_out {
 enum tarpc_ethtool_type {
     TARPC_ETHTOOL_CMD = 1,      /**< struct ethtool_cmd */
     TARPC_ETHTOOL_VALUE = 2,    /**< struct ethtool_value */
-    TARPC_ETHTOOL_PADDR = 3     /**< struct ethtool_perm_addr */
+    TARPC_ETHTOOL_PADDR = 3,    /**< struct ethtool_perm_addr */
+    TARPC_ETHTOOL_TS_INFO = 4   /**< struct ethtool_ts_info */
 };
 
 struct tarpc_ethtool_cmd {
@@ -316,6 +317,14 @@ struct tarpc_ethtool_value {
     uint32_t    data;
 };
 
+struct tarpc_ethtool_ts_info {
+    uint32_t cmd;
+    uint32_t so_timestamping;
+    int32_t phc_index;
+    uint32_t tx_types;
+    uint32_t rx_filters;
+};
+
 /** struct ethtool_* */
 union tarpc_ethtool_data
     switch (tarpc_ethtool_type type)
@@ -323,6 +332,7 @@ union tarpc_ethtool_data
     case TARPC_ETHTOOL_CMD:     tarpc_ethtool_cmd cmd;
     case TARPC_ETHTOOL_VALUE:   tarpc_ethtool_value value;
     case TARPC_ETHTOOL_PADDR:   tarpc_ethtool_perm_addr paddr;
+    case TARPC_ETHTOOL_TS_INFO: tarpc_ethtool_ts_info ts_info;
     default:                    void;
 };
 
