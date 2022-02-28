@@ -332,6 +332,39 @@ AC_CHECK_HEADERS([linux/net_tstamp.h])
 AC_CHECK_TYPES([struct hwtstamp_config], [], [],
                [#include <linux/net_tstamp.h>])
 
+dnl
+dnl Check for members of hwtstamp_tx_types
+dnl
+AC_CHECK_DECLS([HWTSTAMP_TX_OFF, HWTSTAMP_TX_ON,
+                HWTSTAMP_TX_ONESTEP_SYNC,
+                HWTSTAMP_TX_ONESTEP_P2P],
+               [], [], [
+#include <linux/net_tstamp.h>
+])
+
+dnl
+dnl Check for members of hwtstamp_rx_filters
+dnl
+AC_CHECK_DECLS([HWTSTAMP_FILTER_NONE,
+                HWTSTAMP_FILTER_ALL,
+                HWTSTAMP_FILTER_SOME,
+                HWTSTAMP_FILTER_PTP_V1_L4_EVENT,
+                HWTSTAMP_FILTER_PTP_V1_L4_SYNC,
+                HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ,
+                HWTSTAMP_FILTER_PTP_V2_L4_EVENT,
+                HWTSTAMP_FILTER_PTP_V2_L4_SYNC,
+                HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ,
+                HWTSTAMP_FILTER_PTP_V2_L2_EVENT,
+                HWTSTAMP_FILTER_PTP_V2_L2_SYNC,
+                HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ,
+                HWTSTAMP_FILTER_PTP_V2_EVENT,
+                HWTSTAMP_FILTER_PTP_V2_SYNC,
+                HWTSTAMP_FILTER_PTP_V2_DELAY_REQ,
+                HWTSTAMP_FILTER_NTP_ALL],
+               [], [], [
+#include <linux/net_tstamp.h>
+])
+
 dnl Used here tarpc.h includes rpc/rpc.h which requires extra -I option
 dnl in the case of libtirpc. There is no easy way to inherit it from
 dnl rpcxdr findings so just repeat the check here

@@ -210,6 +210,37 @@ foreach d : ethtool_cmd_members_list
     endif
 endforeach
 
+tstamp_decls_list = [
+    'HWTSTAMP_TX_OFF',
+    'HWTSTAMP_TX_ON',
+    'HWTSTAMP_TX_ONESTEP_SYNC',
+    'HWTSTAMP_TX_ONESTEP_P2P',
+    'HWTSTAMP_FILTER_NONE',
+    'HWTSTAMP_FILTER_ALL',
+    'HWTSTAMP_FILTER_SOME',
+    'HWTSTAMP_FILTER_PTP_V1_L4_EVENT',
+    'HWTSTAMP_FILTER_PTP_V1_L4_SYNC',
+    'HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ',
+    'HWTSTAMP_FILTER_PTP_V2_L4_EVENT',
+    'HWTSTAMP_FILTER_PTP_V2_L4_SYNC',
+    'HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ',
+    'HWTSTAMP_FILTER_PTP_V2_L2_EVENT',
+    'HWTSTAMP_FILTER_PTP_V2_L2_SYNC',
+    'HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ',
+    'HWTSTAMP_FILTER_PTP_V2_EVENT',
+    'HWTSTAMP_FILTER_PTP_V2_SYNC',
+    'HWTSTAMP_FILTER_PTP_V2_DELAY_REQ',
+    'HWTSTAMP_FILTER_NTP_ALL',
+]
+
+foreach d : tstamp_decls_list
+    if cc.has_header_symbol('linux/net_tstamp.h', d)
+        conf_data.set('HAVE_DECL_' + d.to_upper().underscorify(), '1')
+    else
+        conf_data.set('HAVE_DECL_' + d.to_upper().underscorify(), '0')
+    endif
+endforeach
+
 
 configure_file(output: 'config.h',
                configuration: conf_data)

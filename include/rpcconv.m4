@@ -35,6 +35,31 @@ case `$1': return RPC_`$1';
 #line m4___line__ "m4___file__"
 (void)0')m4_dnl
 m4_dnl
+m4_dnl These macros are similar to RPC2H_CHECK() and H2RPC_CHECK(),
+m4_dnl but they check whether HAVE_DECL_<name> is defined to 1,
+m4_dnl not whether <name> is defined.
+m4_dnl They should be used when <name> is not introduced by #define,
+m4_dnl but rather is listed in a enum, and its presence is checked
+m4_dnl in configure.ac or meson.build.
+m4_dnl
+m4_define(`RPC2H_CHECK_DECL',
+`
+#if HAVE_DECL_`$1'
+#line m4___line__ "m4___file__"
+case RPC_`$1': return `$1';
+#endif
+#line m4___line__ "m4___file__"
+(void)0')m4_dnl
+m4_dnl
+m4_define(`H2RPC_CHECK_DECL',
+`
+#if HAVE_DECL_`$1'
+#line m4___line__ "m4___file__"
+case `$1': return RPC_`$1';
+#endif
+#line m4___line__ "m4___file__"
+(void)0')m4_dnl
+m4_dnl
 m4_dnl RPC2H_FLAG_CHECK and H2RPC_FLAG_CHECK should
 m4_dnl be used for flags conversion, like
 m4_dnl

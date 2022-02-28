@@ -77,58 +77,62 @@ typedef struct rpc_hwtstamp_config {
     int rx_filter;
 } rpc_hwtstamp_config;
 
-/* possible values for hwtstamp_config->tx_type */
+/**
+ * RPC constants corresponding to values defined in hwtstamp_tx_types
+ * enum from linux/net_tstamp.h. See descriptions there.
+ */
 typedef enum rpc_hwtstamp_tx_types {
-    RPC_HWTSTAMP_TX_OFF, /* No outgoing packet will need hardware time
-                            stamping; should a packet arrive which asks
-                            for it, no hardware time stamping will be
-                            done. */
-    RPC_HWTSTAMP_TX_ON, /* Enables hardware time stamping for outgoing
-                           packets; the sender of the packet decides which
-                           are to be time stamped by setting
-                           %SOF_TIMESTAMPING_TX_SOFTWARE before sending the
-                           packet. */
-    RPC_HWTSTAMP_TX_ONESTEP_SYNC, /* Enables time stamping for outgoing
-                                     packets just as HWTSTAMP_TX_ON does,
-                                     but also enables time stamp insertion
-                                     directly into Sync packets. In this
-                                     case, transmitted Sync packets will
-                                     not received a time stamp via the
-                                     socket error queue. */
+    RPC_HWTSTAMP_TX_OFF,
+    RPC_HWTSTAMP_TX_ON,
+    RPC_HWTSTAMP_TX_ONESTEP_SYNC,
+    RPC_HWTSTAMP_TX_ONESTEP_P2P,
+
+    RPC_HWTSTAMP_TX_UNKNOWN, /**< Unknown TX type */
 } rpc_hwtstamp_tx_types;
 
-extern int hwtstamp_tx_types_rpc2h(unsigned int type);
+/**
+ * Convert RPC constant to corresponsing value from hwtstamp_tx_types enum.
+ *
+ * @param type      RPC constant
+ *
+ * @return Corresponding native value or @c -1 if no such value exists.
+ */
+extern int hwtstamp_tx_types_rpc2h(rpc_hwtstamp_tx_types type);
 
-/* possible values for hwtstamp_config->rx_filter */
+/**
+ * RPC constants corresponding to values defined in hwtstamp_rx_filters
+ * enum from linux/net_tstamp.h. See descriptions there.
+ */
 typedef enum rpc_hwtstamp_rx_filters {
-    RPC_HWTSTAMP_FILTER_NONE, /* time stamp no incoming packet at all */
-    RPC_HWTSTAMP_FILTER_ALL, /* time stamp any incoming packet */
-    RCP_HWTSTAMP_FILTER_SOME, /* return value: time stamp all packets
-                                 requested plus some others */
-    RPC_HWTSTAMP_FILTER_PTP_V1_L4_EVENT, /* PTP v1, UDP, any kind of event
-                                            packet */
-    RPC_HWTSTAMP_FILTER_PTP_V1_L4_SYNC, /* PTP v1, UDP, Sync packet */
-    RPC_HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ, /* PTP v1, UDP, Delay_req
-                                                packet */
-    RPC_HWTSTAMP_FILTER_PTP_V2_L4_EVENT, /* PTP v2, UDP, any kind of event
-                                            packet */
-    RPC_HWTSTAMP_FILTER_PTP_V2_L4_SYNC, /* PTP v2, UDP, Sync packet */
-    RPC_HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ, /* PTP v2, UDP, Delay_req
-                                                packet */
-    RPC_HWTSTAMP_FILTER_PTP_V2_L2_EVENT, /* 802.AS1, Ethernet, any kind of
-                                            event packet */
-    RPC_HWTSTAMP_FILTER_PTP_V2_L2_SYNC, /* 802.AS1, Ethernet, Sync packet */
-    RPC_HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ, /* 802.AS1, Ethernet, Delay_req
-                                                packet */
-    RPC_HWTSTAMP_FILTER_PTP_V2_EVENT, /* PTP v2/802.AS1, any layer, any kind
-                                         of event packet */
-    RPC_HWTSTAMP_FILTER_PTP_V2_SYNC, /* PTP v2/802.AS1, any layer, Sync
-                                        packet */
-    RPC_HWTSTAMP_FILTER_PTP_V2_DELAY_REQ, /* PTP v2/802.AS1, any layer,
-                                             Delay_req packet */
+    RPC_HWTSTAMP_FILTER_NONE,
+    RPC_HWTSTAMP_FILTER_ALL,
+    RPC_HWTSTAMP_FILTER_SOME,
+    RPC_HWTSTAMP_FILTER_PTP_V1_L4_EVENT,
+    RPC_HWTSTAMP_FILTER_PTP_V1_L4_SYNC,
+    RPC_HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ,
+    RPC_HWTSTAMP_FILTER_PTP_V2_L4_EVENT,
+    RPC_HWTSTAMP_FILTER_PTP_V2_L4_SYNC,
+    RPC_HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ,
+    RPC_HWTSTAMP_FILTER_PTP_V2_L2_EVENT,
+    RPC_HWTSTAMP_FILTER_PTP_V2_L2_SYNC,
+    RPC_HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ,
+    RPC_HWTSTAMP_FILTER_PTP_V2_EVENT,
+    RPC_HWTSTAMP_FILTER_PTP_V2_SYNC,
+    RPC_HWTSTAMP_FILTER_PTP_V2_DELAY_REQ,
+    RPC_HWTSTAMP_FILTER_NTP_ALL,
+
+    RPC_HWTSTAMP_FILTER_UNKNOWN, /**< Unknown filter */
 } rpc_hwtstamp_rx_filters;
 
-extern int hwtstamp_rx_filters_rpc2h(unsigned int filter);
+/**
+ * Convert RPC constant to corresponsing value from hwtstamp_rx_filters
+ * enum.
+ *
+ * @param filter      RPC constant
+ *
+ * @return Corresponding native value or @c -1 if no such value exists.
+ */
+extern int hwtstamp_rx_filters_rpc2h(rpc_hwtstamp_rx_filters filter);
 
 #ifdef __cplusplus
 } /* extern "C" */
