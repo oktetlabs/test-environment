@@ -181,6 +181,21 @@ hwtstamp_tx_types_h2rpc(int type)
     }
 }
 
+const char *
+hwtstamp_tx_types_rpc2str(rpc_hwtstamp_tx_types type)
+{
+    switch(type)
+    {
+        RPC2STR(HWTSTAMP_TX_OFF);
+        RPC2STR(HWTSTAMP_TX_ON);
+        RPC2STR(HWTSTAMP_TX_ONESTEP_SYNC);
+        RPC2STR(HWTSTAMP_TX_ONESTEP_P2P);
+
+        default:
+            return "<UNKNOWN>";
+    }
+}
+
 int
 hwtstamp_rx_filters_rpc2h(rpc_hwtstamp_rx_filters filter)
 {
@@ -231,5 +246,32 @@ hwtstamp_rx_filters_h2rpc(int filter)
 
         default:
             return RPC_HWTSTAMP_FILTER_UNKNOWN;
+    }
+}
+
+const char *
+hwtstamp_rx_filters_rpc2str(rpc_hwtstamp_rx_filters filter)
+{
+    switch (filter)
+    {
+        RPC2STR(HWTSTAMP_FILTER_NONE);
+        RPC2STR(HWTSTAMP_FILTER_ALL);
+        RPC2STR(HWTSTAMP_FILTER_SOME);
+        RPC2STR(HWTSTAMP_FILTER_PTP_V1_L4_EVENT);
+        RPC2STR(HWTSTAMP_FILTER_PTP_V1_L4_SYNC);
+        RPC2STR(HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ);
+        RPC2STR(HWTSTAMP_FILTER_PTP_V2_L4_EVENT);
+        RPC2STR(HWTSTAMP_FILTER_PTP_V2_L4_SYNC);
+        RPC2STR(HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ);
+        RPC2STR(HWTSTAMP_FILTER_PTP_V2_L2_EVENT);
+        RPC2STR(HWTSTAMP_FILTER_PTP_V2_L2_SYNC);
+        RPC2STR(HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ);
+        RPC2STR(HWTSTAMP_FILTER_PTP_V2_EVENT);
+        RPC2STR(HWTSTAMP_FILTER_PTP_V2_SYNC);
+        RPC2STR(HWTSTAMP_FILTER_PTP_V2_DELAY_REQ);
+        RPC2STR(HWTSTAMP_FILTER_NTP_ALL);
+
+        default:
+            return "<UNKNOWN>";
     }
 }

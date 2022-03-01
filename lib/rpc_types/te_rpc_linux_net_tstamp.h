@@ -111,6 +111,15 @@ extern int hwtstamp_tx_types_rpc2h(rpc_hwtstamp_tx_types type);
 extern rpc_hwtstamp_tx_types hwtstamp_tx_types_h2rpc(int type);
 
 /**
+ * Get string name of a constant from rpc_hwtstamp_tx_types enum.
+ *
+ * @param type        RPC constant
+ *
+ * @return Constant name.
+ */
+extern const char *hwtstamp_tx_types_rpc2str(rpc_hwtstamp_tx_types type);
+
+/**
  * RPC constants corresponding to values defined in hwtstamp_rx_filters
  * enum from linux/net_tstamp.h. See descriptions there.
  */
@@ -155,6 +164,15 @@ extern int hwtstamp_rx_filters_rpc2h(rpc_hwtstamp_rx_filters filter);
  *         such value exists.
  */
 extern rpc_hwtstamp_rx_filters hwtstamp_rx_filters_h2rpc(int filter);
+
+/**
+ * Get string name of a constant from rpc_hwtstamp_rx_filters enum.
+ *
+ * @param filter        RPC constant
+ *
+ * @return Constant name.
+ */
+extern const char *hwtstamp_rx_filters_rpc2str(rpc_hwtstamp_rx_filters filter);
 
 #ifdef __cplusplus
 } /* extern "C" */

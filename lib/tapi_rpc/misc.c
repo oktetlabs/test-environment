@@ -632,13 +632,19 @@ tarpc_timespec2str(const struct tarpc_timespec *tv)
 const char *
 tarpc_hwtstamp_config2str(const tarpc_hwtstamp_config *hw_cfg)
 {
-    static char buf[32];
+    static char buf[256];
 
     if (hw_cfg == NULL)
+    {
         strcpy(buf, "(nil)");
+    }
     else
-        sprintf(buf, "{%d,%d,%d}", hw_cfg->flags,
-                hw_cfg->tx_type, hw_cfg->rx_filter);
+    {
+        TE_SPRINTF(buf, "{ .flags=0x%x, .tx_type=%s, .rx_filter=%s }",
+                   hw_cfg->flags, hwtstamp_tx_types_rpc2str(hw_cfg->tx_type),
+                   hwtstamp_rx_filters_rpc2str(hw_cfg->rx_filter));
+    }
+
     return buf;
 }
 
