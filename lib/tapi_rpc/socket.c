@@ -364,6 +364,12 @@ rpc_check_port_is_free(rcf_rpc_server *rpcs, uint16_t port)
 
     in.port = port;
 
+    /*
+     * Bug 11721: check_port_is_free() may change errno to EAFNOSUPPORT on
+     * systems without IPv6 support, so errno checking should be disabled.
+     */
+    rpcs->errno_change_check = 0;
+
     rcf_rpc_call(rpcs, "check_port_is_free", &in, &out);
     CHECK_RETVAL_VAR(check_port_is_free, out.retval,
                      (out.retval != TRUE && out.retval != FALSE), FALSE);
