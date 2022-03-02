@@ -649,7 +649,7 @@ extern te_errno cfg_get_instance_string_fmt(char **val,
  * Type-safe version of cfg_get_instance_fmt() for values of
  * struct sockaddr type
  */
-extern te_errno cfg_get_instance_addr_fmt(struct sockaddr *val,
+extern te_errno cfg_get_instance_addr_fmt(struct sockaddr **val,
                                           const char *oid_fmt, ...)
                                         __attribute__((format(printf, 2, 3)));
 
@@ -708,7 +708,7 @@ extern te_errno cfg_get_instance_string_sync_fmt(char **val,
  * Type-safe version of cfg_get_instance_sync_fmt() for values of
  * struct sockaddr type
  */
-extern te_errno cfg_get_instance_addr_sync_fmt(struct sockaddr *val,
+extern te_errno cfg_get_instance_addr_sync_fmt(struct sockaddr **val,
                                                const char *oid_fmt, ...)
                                         __attribute__((format(printf, 2, 3)));
 

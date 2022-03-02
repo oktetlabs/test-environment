@@ -1807,7 +1807,7 @@ cfg_get_instance_string_fmt(char **val, const char *oid_fmt, ...)
 
 /* See description in conf_api.h */
 te_errno
-cfg_get_instance_addr_fmt(struct sockaddr *val, const char *oid_fmt, ...)
+cfg_get_instance_addr_fmt(struct sockaddr **val, const char *oid_fmt, ...)
 {
     cfg_val_type type = CVT_ADDRESS;
 
@@ -1975,7 +1975,7 @@ cfg_get_instance_string_sync_fmt(char **val, const char *oid_fmt, ...)
 
 /* See description in conf_api.h */
 te_errno
-cfg_get_instance_addr_sync_fmt(struct sockaddr *val, const char *oid_fmt, ...)
+cfg_get_instance_addr_sync_fmt(struct sockaddr **val, const char *oid_fmt, ...)
 {
     cfg_val_type type = CVT_ADDRESS;
 
