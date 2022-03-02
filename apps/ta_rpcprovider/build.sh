@@ -60,7 +60,7 @@ if test ! -f meson.args ; then
     test -z "${CROSS_FILE}" || meson_args+=(--cross-file="${CROSS_FILE}")
     meson setup ${PWD} ${EXT_SOURCES} "${meson_args[@]}"
     echo "${meson_args[@]}" >meson.args
-elif diff -q meson.args meson.args.new 2>/dev/null ; then
+elif ! diff -q meson.args meson.args.new 2>/dev/null ; then
     meson configure "${meson_args[@]}"
 fi
 
