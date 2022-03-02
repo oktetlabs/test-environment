@@ -352,6 +352,7 @@ rpc_check_port_is_free(rcf_rpc_server *rpcs, uint16_t port)
 {
     tarpc_check_port_is_free_in  in;
     tarpc_check_port_is_free_out out;
+    te_bool errno_change_check_prev = rpcs->errno_change_check;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -375,6 +376,7 @@ rpc_check_port_is_free(rcf_rpc_server *rpcs, uint16_t port)
                      (out.retval != TRUE && out.retval != FALSE), FALSE);
     TAPI_RPC_LOG(rpcs, check_port_is_free, "%d", "%d",
                  (int)port, out.retval);
+    rpcs->errno_change_check = errno_change_check_prev;
     TAPI_RPC_OUT(check_port_is_free, FALSE);
     return out.retval; /* no jumps! */
 }
