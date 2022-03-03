@@ -93,7 +93,7 @@
         }                                               \
     } while (0)
 
-extern char configfs_mount_point[RCF_MAX_PATH];
+#define SYS_KERNEL_CONFIGFS_DIR "/sys/kernel/config"
 
 /** Internal structure for each created netconsole target */
 typedef struct netconsole_target {
@@ -262,11 +262,12 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
     SNPRINTF(cmdline, MAX_STR,
              "failed to compose netconsole configfs dir checking command",
              "cd %s/netconsole/ >/dev/null 2>&1 || exit 1",
-             configfs_mount_point);
+             SYS_KERNEL_CONFIGFS_DIR);
 
-    if (strlen(configfs_mount_point) == 0 ||
-        ta_system(cmdline) != 0)
+    if (ta_system(cmdline) != 0)
     {
+        RING("configfs directory for netconsole is no available, trying to "
+             "load module with parameters");
         UNUSED(target_name);
         UNUSED(target_dir_path);
 
@@ -309,7 +310,7 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
 
         SNPRINTF(tmp_path, RCF_MAX_PATH,
                  "failed to compose target directory path",
-                 "%s/netconsole/%s_%d_%lu", configfs_mount_point,
+                 "%s/netconsole/%s_%d_%lu", SYS_KERNEL_CONFIGFS_DIR,
                  target_name, (int)getpid(),
                  (long unsigned int)time(NULL));
 

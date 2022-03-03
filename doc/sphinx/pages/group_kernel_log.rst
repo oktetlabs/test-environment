@@ -98,17 +98,15 @@ If netconsole kernel module is not configured and you wish to configure it from 
 .. ref-code-block:: cpp
 
 	<register>
-	    <object oid="/agent/configfs" access="read_create" type="string"/>
 	    <object oid="/agent/netconsole" access="read_create" type="string"/>
 	</register>
 	<add>
-	    <instance oid="/agent:Agt_A/configfs:configfs"/>
 	    <instance oid="/agent:Agt_A/netconsole:netconsole_name"
 	              <!-- local_port:remote_host:remote_port -->
 	              value="6666:kili:6666"/>
 	</add>
 
-You can add more than one **netconsole** node, but only one **configfs** node. If you do not add **configfs** node, dynamic netconsole configuring will not be used but kernel module will be reloaded with new parameters.
+You can add more than one **netconsole** node. Note: if the default configfs directory (/sys/kernel/config) is not available, the netconsole dynamic reconfiguration will not be used, but kernel module will be reloaded with new parameters.
 
 |	:ref:`Console Log Level Configuration<doxid-group__console__ll>`
 |	:ref:`Packet Serial Parser<doxid-group__serial>`
