@@ -89,7 +89,8 @@ librpc_types_la_SOURCES = defs.c \
 	sysconf_name.c.rpch \
 	dlfcn.c.rpch \
 	dirent.c.rpch \
-	pthread.c.rpch
+	pthread.c.rpch \
+	sys_time.c.rpch
 
 librpc_types_la_LIBADD = $(TIRPC_LIBS)
 
@@ -114,7 +115,8 @@ BUILT_SOURCES=\
 	wsa.c \
 	sysconf_name.c \
 	dlfcn.c \
-	dirent.c
+	dirent.c \
+	sys_time.c
 
 CLEANFILES = $(BUILT_SOURCES)
 

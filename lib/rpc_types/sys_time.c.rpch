@@ -1,0 +1,71 @@
+/** @file
+ * @brief RPC types definitions
+ *
+ * Functions for processing time-related types.
+ *
+ *
+ * Copyright (C) 2022 OKTET Labs. All rights reserved.
+ *
+ * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
+ */
+
+#include "te_config.h"
+#include "config.h"
+
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#if HAVE_TIME_H
+#include <time.h>
+#endif
+
+#include "te_defs.h"
+#include "rcf_rpc_defs.h"
+#include "te_rpc_sys_time.h"
+
+/* See description in te_rpc_sys_time.h */
+int
+clock_id_rpc2h(rpc_clock_id id)
+{
+    switch (id)
+    {
+        RPC2H_CHECK(CLOCK_REALTIME);
+        RPC2H_CHECK(CLOCK_MONOTONIC);
+        RPC2H_CHECK(CLOCK_PROCESS_CPUTIME_ID);
+        RPC2H_CHECK(CLOCK_THREAD_CPUTIME_ID);
+        RPC2H_CHECK(CLOCK_MONOTONIC_RAW);
+        RPC2H_CHECK(CLOCK_REALTIME_COARSE);
+        RPC2H_CHECK(CLOCK_MONOTONIC_COARSE);
+        RPC2H_CHECK(CLOCK_BOOTTIME);
+        RPC2H_CHECK(CLOCK_REALTIME_ALARM);
+        RPC2H_CHECK(CLOCK_BOOTTIME_ALARM);
+
+        default:
+            return -1;
+    }
+}
+
+/* See description in te_rpc_sys_time.h */
+const char *
+clock_id_rpc2str(rpc_clock_id id)
+{
+    switch (id)
+    {
+        RPC2STR(CLOCK_REALTIME);
+        RPC2STR(CLOCK_MONOTONIC);
+        RPC2STR(CLOCK_PROCESS_CPUTIME_ID);
+        RPC2STR(CLOCK_THREAD_CPUTIME_ID);
+        RPC2STR(CLOCK_MONOTONIC_RAW);
+        RPC2STR(CLOCK_REALTIME_COARSE);
+        RPC2STR(CLOCK_MONOTONIC_COARSE);
+        RPC2STR(CLOCK_BOOTTIME);
+        RPC2STR(CLOCK_REALTIME_ALARM);
+        RPC2STR(CLOCK_BOOTTIME_ALARM);
+
+        default:
+            return "<UNKNOWN>";
+    }
+}

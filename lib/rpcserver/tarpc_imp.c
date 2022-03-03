@@ -11984,3 +11984,68 @@ TARPC_FUNC_STATIC(remove_dir_with_files, {},
     out->retval = -1;
 #endif
 })
+
+/* Fill system clock ID */
+static te_errno
+clock_id_tarpc2h(tarpc_clock_id_type id_type, tarpc_int id,
+                 clockid_t *id_out)
+{
+    int result = 0;
+
+    if (id_type == TARPC_CLOCK_ID_NAMED)
+    {
+        /*
+         * Clock ID is one of the named constants defined in
+         * linux/time.h (CLOCK_REALTIME, CLOCK_MONOTONIC, etc).
+         */
+        result = clock_id_rpc2h(id);
+        if (result < 0)
+        {
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                             "Unknown clock ID");
+            return TE_EINVAL;
+        }
+    }
+    else if (id_type == TARPC_CLOCK_ID_FD)
+    {
+        /*
+         * Clock ID represents file descriptor of "dynamic clock" device.
+         *
+         * It seems there is no macro for converting FD to clock ID;
+         * this expression is from "man clock_gettime".
+         */
+        result = (~(clockid_t)id << 3) | 3;
+    }
+    else
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                         "Unknown clock ID type");
+        return TE_EINVAL;
+    }
+
+    *id_out = (clockid_t)result;
+    return 0;
+}
+
+/*-------------- clock_gettime() --------------------------------*/
+TARPC_FUNC(clock_gettime, {},
+{
+    struct timespec ts;
+    clockid_t id;
+    te_errno rc;
+
+    rc = clock_id_tarpc2h(in->id_type, in->id, &id);
+    if (rc != 0)
+    {
+        out->retval = -1;
+    }
+    else
+    {
+        MAKE_CALL(out->retval = func(id, &ts));
+        if (out->retval >= 0)
+        {
+            out->ts.tv_sec = ts.tv_sec;
+            out->ts.tv_nsec = ts.tv_nsec;
+        }
+    }
+})

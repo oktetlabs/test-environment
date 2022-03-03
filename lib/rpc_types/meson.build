@@ -48,6 +48,7 @@ rpch_sources = [
     'sys_socket.c.rpch',
     'sys_stat.c.rpch',
     'sys_systeminfo.c.rpch',
+    'sys_time.c.rpch',
     'sys_wait.c.rpch',
     'sys_mman.c.rpch',
     'sysconf_name.c.rpch',

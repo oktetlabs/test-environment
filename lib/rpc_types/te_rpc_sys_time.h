@@ -94,6 +94,37 @@ timezone_rpc2h(const struct tarpc_timezone *tz_rpc, struct timezone *tz_h)
                TE_RC(TE_TA, TE_ERPC2H) : 0;
 }
 
+/** IDs of various system clocks */
+typedef enum rpc_clock_id {
+    RPC_CLOCK_REALTIME,
+    RPC_CLOCK_MONOTONIC,
+    RPC_CLOCK_PROCESS_CPUTIME_ID,
+    RPC_CLOCK_THREAD_CPUTIME_ID,
+    RPC_CLOCK_MONOTONIC_RAW,
+    RPC_CLOCK_REALTIME_COARSE,
+    RPC_CLOCK_MONOTONIC_COARSE,
+    RPC_CLOCK_BOOTTIME,
+    RPC_CLOCK_REALTIME_ALARM,
+    RPC_CLOCK_BOOTTIME_ALARM,
+} rpc_clock_id;
+
+/**
+ * Convert RPC clock ID to native one.
+ *
+ * @param id      RPC clock ID
+ *
+ * @return Native clock ID on success, @c -1 on failure.
+ */
+extern int clock_id_rpc2h(rpc_clock_id id);
+
+/**
+ * Get string representation of clock ID.
+ *
+ * @param id        RPC clock ID
+ *
+ * @return Pointer to string constant.
+ */
+extern const char *clock_id_rpc2str(rpc_clock_id id);
 
 #ifdef __cplusplus
 } /* extern "C" */

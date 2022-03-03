@@ -5678,6 +5678,27 @@ struct tarpc_remove_dir_with_files_in {
 
 typedef struct tarpc_int_retval_out tarpc_remove_dir_with_files_out;
 
+/* clock_gettime() */
+
+enum tarpc_clock_id_type {
+    TARPC_CLOCK_ID_NAMED, /**< Named constant from rpc_clock_id */
+    TARPC_CLOCK_ID_FD     /**< File descriptor of dynamic clock device */
+};
+
+struct tarpc_clock_gettime_in {
+    struct tarpc_in_arg common;
+
+    tarpc_clock_id_type id_type;
+    tarpc_int id;
+};
+
+struct tarpc_clock_gettime_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+    tarpc_timespec ts;
+};
+
 program tarpc
 {
     version ver0
@@ -5708,6 +5729,7 @@ program tarpc
         RPC_DEF(pthread_setcanceltype)
         RPC_DEF(pthread_join)
         RPC_DEF(gettimeofday)
+        RPC_DEF(clock_gettime)
         RPC_DEF(gethostname)
         
         RPC_DEF(access)

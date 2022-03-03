@@ -92,6 +92,20 @@ extern const char *tarpc_hwtstamp_config2str(
 extern int rpc_gettimeofday(rcf_rpc_server *rpcs,
                             tarpc_timeval *tv, tarpc_timezone *tz);
 
+/**
+ * Retrieve the time from the specified clock.
+ *
+ * @param rpcs      RPC server
+ * @param id_type   Type of clock ID
+ * @param id        Clock ID
+ * @param ts        Where to save obtained time
+ *
+ * @return @c 0 on success, @c -1 on failure.
+ */
+extern int rpc_clock_gettime(rcf_rpc_server *rpcs,
+                             tarpc_clock_id_type id_type,
+                             int id, tarpc_timespec *ts);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

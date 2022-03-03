@@ -181,3 +181,57 @@ rpc_gettimeofday(rcf_rpc_server *rpcs,
                      (int)tz->tz_dsttime);
     RETVAL_INT(gettimeofday, out.retval);
 }
+
+/* Append string representation of clock ID to TE string */
+static te_errno
+append_clock_id(te_string *str, tarpc_clock_id_type id_type, int id)
+{
+    if (id_type == TARPC_CLOCK_ID_NAMED)
+    {
+        return te_string_append(str, "clock_id=%s", clock_id_rpc2str(id));
+    }
+    else
+    {
+        return te_string_append(str, "clock_fd=%d", id);
+    }
+}
+
+/* See description in tapi_rpc_sys_time.h */
+int
+rpc_clock_gettime(rcf_rpc_server *rpcs,
+                  tarpc_clock_id_type id_type,
+                  int id, tarpc_timespec *ts)
+{
+    tarpc_clock_gettime_in in;
+    tarpc_clock_gettime_out out;
+
+    te_string params_str = TE_STRING_INIT_STATIC(1024);
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(clock_gettime, -1);
+    }
+
+    in.id_type = id_type;
+    in.id = id;
+
+    rcf_rpc_call(rpcs, "clock_gettime", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs) && ts != NULL)
+    {
+        ts->tv_sec = out.ts.tv_sec;
+        ts->tv_nsec = out.ts.tv_nsec;
+    }
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(clock_gettime, out.retval);
+
+    append_clock_id(&params_str, id_type, id);
+    TAPI_RPC_LOG(rpcs, clock_gettime, "%s", "%d ts=%s",
+                 params_str.ptr, out.retval, tarpc_timespec2str(&out.ts));
+
+    RETVAL_INT(clock_gettime, out.retval);
+}
