@@ -37,11 +37,7 @@ Getting TE sources
 ~~~~~~~~~~~~~~~~~~
 
 Test Environment sources can be obtained from
-
-.. code-block:: none
-
-
-	`https://git.oktetlabs.ru/git/oktetlabs/test-environment <https://git.oktetlabs.ru/git/oktetlabs/test-environment.git>`__
+`https://git.oktetlabs.ru/git/oktetlabs/test-environment <https://git.oktetlabs.ru/git/oktetlabs/test-environment.git>`__
 
 You will need OKTET Labs account and appropriate permissions, contact `Konstantin.Ushakov@oktetlabs.ru <mailto:Konstantin.Ushakov@oktetlabs.ru>`__ if you need any assistance.
 
