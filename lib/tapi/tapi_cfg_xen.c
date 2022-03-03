@@ -966,7 +966,7 @@ tapi_cfg_xen_dom_u_bridge_get_accel(char const *ta, char const *dom_u,
                                     char const *bridge, te_bool *accel)
 {
     cfg_val_type type = CVT_INTEGER;
-    int         *acceleration;
+    int          acceleration;
     te_errno     rc;
 
     if (ta == NULL || dom_u == NULL || bridge == NULL || accel == NULL)
@@ -986,8 +986,7 @@ tapi_cfg_xen_dom_u_bridge_get_accel(char const *ta, char const *dom_u,
     }
     else
     {
-        *accel = *acceleration ? TRUE : FALSE;
-        free(acceleration);
+        *accel = (acceleration != 0);
     }
 
     return rc;
