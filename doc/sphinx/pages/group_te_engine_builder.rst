@@ -224,9 +224,12 @@ For example:
 	# 'freebsd' platform among libraries to be built.
 	#
 
+Here is a typical (but not exhaustive) set of libraries for building a Unix agent:
 
+.. ref-code-block:: none
 
-
+    logger_core tools loggerta comm_net_agent conf_oid asn ndn rpcxdr
+    rpctransport agentlib rpc_types rpcserver rcfpch netconf ta_job
 
 .. _doxid-group__te__engine__builder_1te_engine_builder_conf_file_te_app:
 
