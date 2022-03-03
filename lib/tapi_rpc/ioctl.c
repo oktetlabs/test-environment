@@ -67,6 +67,7 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
+#include "tapi_rpc_time.h"
 
 #include "tarpc.h"
 

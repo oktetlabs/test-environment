@@ -341,51 +341,6 @@ extern void rpc_set_var(rcf_rpc_server *rpcs,
                         const char *name, tarpc_size_t size, uint64_t val);
 
 /**
- * Convert 'struct timeval' to string.
- *
- * @note Static buffer is used for return value.
- *
- * @param tv     pointer to 'struct timeval'
- *
- * @return null-terminated string
- */
-extern const char *tarpc_timeval2str(const struct tarpc_timeval *tv);
-
-/**
- * Convert 'struct timespec' to string.
- *
- * @note Static buffer is used for return value.
- *
- * @param tv     pointer to 'struct timespec'
- *
- * @return null-terminated string
- */
-extern const char *timespec2str(const struct timespec *tv);
-
-/**
- * Convert 'struct tarpc_timespec' to string.
- *
- * @note Static buffer is used for return value.
- *
- * @param tv     pointer to 'struct tarpc_timespec'
- *
- * @return null-terminated string
- */
-extern const char *tarpc_timespec2str(const struct tarpc_timespec *tv);
-
-/**
- * Convert 'struct tarpc_hwtstamp_config' to string.
- *
- * @note Static buffer is used for return value.
- *
- * @param hw_cfg     pointer to 'struct tarpc_hwtstamp_config'
- *
- * @return null-terminated string
- */
-extern const char *tarpc_hwtstamp_config2str(
-                        const tarpc_hwtstamp_config *hw_cfg);
-
-/**
  * Simple sender.
  *
  * @param handle            RPC server

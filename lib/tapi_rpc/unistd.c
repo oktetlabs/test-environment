@@ -42,6 +42,7 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
+#include "tapi_rpc_time.h"
 #include "tapi_test.h"
 #include "tapi_mem.h"
 #include "te_printf.h"
@@ -2132,61 +2133,6 @@ rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf)
 
     TAPI_RPC_LOG(rpcs, uname, "", "%d", out.retval);
     RETVAL_INT(uname, out.retval);
-}
-
-
-int
-rpc_gettimeofday(rcf_rpc_server *rpcs,
-                 tarpc_timeval *tv, tarpc_timezone *tz)
-{
-    tarpc_gettimeofday_in  in;
-    tarpc_gettimeofday_out out;
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
-    if (rpcs == NULL)
-    {
-        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(gettimeofday, -1);
-    }
-
-    if (tv != NULL)
-    {
-        in.tv.tv_len = 1;
-        in.tv.tv_val = tv;
-    }
-    if (tz != NULL)
-    {
-        in.tz.tz_len = 1;
-        in.tz.tz_val = tz;
-    }
-
-    rcf_rpc_call(rpcs, "gettimeofday", &in, &out);
-
-    if (RPC_IS_CALL_OK(rpcs))
-    {
-        if (tv != NULL && out.tv.tv_val != NULL)
-        {
-            tv->tv_sec  = out.tv.tv_val->tv_sec;
-            tv->tv_usec = out.tv.tv_val->tv_usec;
-        }
-        if (tz != NULL && out.tz.tz_val != NULL)
-        {
-            tz->tz_minuteswest = out.tz.tz_val->tz_minuteswest;
-            tz->tz_dsttime     = out.tz.tz_val->tz_dsttime;
-        }
-    }
-
-    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(gettimeofday, out.retval);
-    TAPI_RPC_LOG(rpcs, gettimeofday, "%p %p", "%d tv=%s tz={%d,%d}",
-                 tv, tz, out.retval,
-                 tarpc_timeval2str(tv),
-                 (out.retval != 0 || tz == NULL) ? 0 :
-                     (int)tz->tz_minuteswest,
-                 (out.retval != 0 || tz == NULL) ? 0 :
-                     (int)tz->tz_dsttime);
-    RETVAL_INT(gettimeofday, out.retval);
 }
 
 /**

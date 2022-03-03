@@ -1111,9 +1111,6 @@ extern rpc_ptr rpc_memalign(rcf_rpc_server *rpcs,
         }                                               \
     } while (0)
 
-extern int rpc_gettimeofday(rcf_rpc_server *rpcs,
-                            tarpc_timeval *tv, tarpc_timezone *tz);
-
 /**
  * Set resource limits and usage
  *

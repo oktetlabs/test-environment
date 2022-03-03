@@ -28,6 +28,7 @@
 #include "te_rpc_fcntl.h"
 #include "tapi_rpc_aio.h"
 #include "tapi_rpc_misc.h"
+#include "tapi_rpc_time.h"
 
 /**
  * Allocate a AIO control block.
