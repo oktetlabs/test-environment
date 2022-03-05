@@ -12049,3 +12049,24 @@ TARPC_FUNC(clock_gettime, {},
         }
     }
 })
+
+/*-------------- clock_settime() --------------------------------*/
+TARPC_FUNC(clock_settime, {},
+{
+    struct timespec ts = { .tv_sec = 0 };
+    clockid_t id;
+    te_errno rc;
+
+    rc = clock_id_tarpc2h(in->id_type, in->id, &id);
+    if (rc != 0)
+    {
+        out->retval = -1;
+    }
+    else
+    {
+        ts.tv_sec = in->ts.tv_sec;
+        ts.tv_nsec = in->ts.tv_nsec;
+
+        MAKE_CALL(out->retval = func(id, &ts));
+    }
+})

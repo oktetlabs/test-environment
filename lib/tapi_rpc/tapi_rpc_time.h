@@ -106,6 +106,20 @@ extern int rpc_clock_gettime(rcf_rpc_server *rpcs,
                              tarpc_clock_id_type id_type,
                              int id, tarpc_timespec *ts);
 
+/**
+ * Set the time for the specified clock.
+ *
+ * @param rpcs      RPC server
+ * @param id_type   Type of clock ID
+ * @param id        Clock ID
+ * @param ts        Time to set
+ *
+ * @return @c 0 on success, @c -1 on failure.
+ */
+extern int rpc_clock_settime(rcf_rpc_server *rpcs,
+                             tarpc_clock_id_type id_type,
+                             int id, const tarpc_timespec *ts);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

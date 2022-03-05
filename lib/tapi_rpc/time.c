@@ -235,3 +235,45 @@ rpc_clock_gettime(rcf_rpc_server *rpcs,
 
     RETVAL_INT(clock_gettime, out.retval);
 }
+
+/* See description in tapi_rpc_time.h */
+int
+rpc_clock_settime(rcf_rpc_server *rpcs,
+                  tarpc_clock_id_type id_type,
+                  int id, const tarpc_timespec *ts)
+{
+    tarpc_clock_settime_in in;
+    tarpc_clock_settime_out out;
+
+    te_string params_str = TE_STRING_INIT_STATIC(1024);
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(clock_settime, -1);
+    }
+    if (ts == NULL)
+    {
+        ERROR("%s(): ts cannot be NULL", __FUNCTION__);
+        rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
+        RETVAL_INT(clock_settime, -1);
+    }
+
+    in.id_type = id_type;
+    in.id = id;
+    in.ts.tv_sec = ts->tv_sec;
+    in.ts.tv_nsec = ts->tv_nsec;
+
+    rcf_rpc_call(rpcs, "clock_settime", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(clock_settime, out.retval);
+
+    append_clock_id(&params_str, id_type, id);
+    TAPI_RPC_LOG(rpcs, clock_settime, "%s, ts=%s", "%d",
+                 params_str.ptr, tarpc_timespec2str(ts), out.retval);
+
+    RETVAL_INT(clock_settime, out.retval);
+}
