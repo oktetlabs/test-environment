@@ -29,7 +29,7 @@ extern "C" {
  *
  * @param name  Name of the signal
  *
- * @return Signal number
+ * @return Signal number or @c -1 in case of error
  */
 extern int map_name_to_signo(const char *name);
 

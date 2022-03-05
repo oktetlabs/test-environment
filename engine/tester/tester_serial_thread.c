@@ -206,10 +206,19 @@ if (_rc != 0) \
                                 "Failed to get the handler signal");
 
             if (strlen(signame) > 0)
-                h->signal = map_name_to_signo(signame);
+            {
+                if (strcmp(signame, "none") == 0)
+                    h->signal = 0;
+                else
+                    h->signal = map_name_to_signo(signame);
+            }
             else
+            {
                 h->signal = SIGINT; /* Default */
+            }
             free(signame);
+            if (h->signal < 0)
+                return (te_errno)h->signal;
         }
 
         /* Insert element to ordered list */
@@ -337,29 +346,32 @@ tester_handle_serial_event(const char *event_name)
         {
             if (h->internal == TRUE)
             {
-                pthread_mutex_lock(&pid.mutex);
-                if (pid.id > 0)
+                if (h->signal > 0)
                 {
-                    if (kill(pid.id, h->signal) < 0)
+                    pthread_mutex_lock(&pid.mutex);
+                    if (pid.id > 0)
                     {
-                        if (errno == ESRCH)
+                        if (kill(pid.id, h->signal) < 0)
                         {
-                            fail = TRUE;
-                            VERB("kill(%d, %d) failed: %s", pid.id,
-                                 h->signal, strerror(errno));
+                            if (errno == ESRCH)
+                            {
+                                fail = TRUE;
+                                VERB("kill(%d, %d) failed: %s", pid.id,
+                                     h->signal, strerror(errno));
+                            }
+                            else
+                                ERROR("kill(%d, %d) failed: %s", pid.id,
+                                      h->signal, strerror(errno));
                         }
-                        else
-                            ERROR("kill(%d, %d) failed: %s", pid.id,
-                                  h->signal, strerror(errno));
                     }
+                    else
+                    {
+                        fail = TRUE;
+                        VERB("Can not send signal to process with pid %d",
+                             pid.id);
+                    }
+                    pthread_mutex_unlock(&pid.mutex);
                 }
-                else
-                {
-                    fail = TRUE;
-                    VERB("Can not send signal to process with pid %d",
-                         pid.id);
-                }
-                pthread_mutex_unlock(&pid.mutex);
             }
             else
             {

@@ -21,6 +21,7 @@
 #if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
+#include "logger_api.h"
 
 
 static const struct {
@@ -57,7 +58,8 @@ map_name_to_signo(const char *name)
         if (!strcmp(te_signals[i].name, name))
             return te_signals[i].signo;
     }
-    return 0;
+    ERROR("%s() unsupported signal name '%s'", __func__, name);
+    return -1;
 }
 
 /* See description in the te_sigmap.h */

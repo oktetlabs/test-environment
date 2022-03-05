@@ -349,6 +349,10 @@ OID                                   Type     Description
 /local/tester/event/handler           RC str   Event handler. Use a path to the executable as a value.
 /local/tester/event/handler/priority  RW int   Handler priority. By default: **0**.
 /local/tester/event/handler/signal    RW int   Signal number. By default: **SIGINT**.
+                                               The list of supported signals: SIGHUP, SIGINT, SIGQUIT, SIGILL, SIGTRAP,
+                                               SIGABRT, SIGBUS, SIGFPE, SIGKILL, SIGUSR1, SIGSEGV, SIGUSR2, SIGPIPE,
+                                               SIGALRM, SIGTERM, SIGSTKFLT.
+                                               The value 'none' means that the signal will not be sent.
 /local/tester/event/handler/internal  RW int   Indicates that it is an internal handler. By default: external.
 ====================================  =======  ====================================================================
 
