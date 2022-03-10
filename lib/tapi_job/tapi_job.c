@@ -795,29 +795,23 @@ tapi_job_filter_remove_channels(tapi_job_channel_t *filter,
 
     for (i = 0; channels[i] != NULL; i++)
     {
-        channel_entry *entry;
-        channel_entry *entry_tmp;
+        channel_entry *channel_filter_entry =
+            get_channel_entry(filter, &channels[i]->filter_entries);
+        channel_entry *job_filter_entry =
+            get_channel_entry(filter, &channels[i]->job->channel_entries);
 
-        SLIST_FOREACH_SAFE(entry, &channels[i]->job->channel_entries, next,
-                           entry_tmp)
+        if (channel_filter_entry != NULL)
         {
-            if (entry->channel == filter)
-            {
-                SLIST_REMOVE(&channels[i]->job->channel_entries, entry,
-                             channel_entry, next);
+            assert(job_filter_entry != NULL);
 
-                if (--filter->ref_count <= 0)
-                    free(filter);
-                free(entry);
-                /*
-                 * If a filter is attached to several channels of one job,
-                 * job->channel_entries will have more than one entry pointing
-                 * to that filter. Each iteration over job->channel_entries must
-                 * remove only one of such entries because the others will be
-                 * removed in further iterations over channels.
-                 */
-                break;
-            }
+            /*
+             * Remove the filter from the list of filters attached to the
+             * primary channel and from the list of all job's channels
+             */
+            remove_channel_entry_from_entry_list(channel_filter_entry,
+                                                 &channels[i]->filter_entries);
+            destroy_filter_entry(job_filter_entry,
+                                 &channels[i]->job->channel_entries);
         }
     }
 
