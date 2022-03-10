@@ -284,6 +284,9 @@
 /* Define to 1 if you have the <sys/time.h> header file. */
 #mesondefine HAVE_SYS_TIME_H
 
+/* Define to 1 if you have the <sys/timex.h> header file. */
+#mesondefine HAVE_SYS_TIMEX_H
+
 /* Define to 1 if you have the <sys/types.h> header file. */
 #mesondefine HAVE_SYS_TYPES_H
 

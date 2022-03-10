@@ -120,6 +120,23 @@ extern int rpc_clock_settime(rcf_rpc_server *rpcs,
                              tarpc_clock_id_type id_type,
                              int id, const tarpc_timespec *ts);
 
+/**
+ * Tune a clock.
+ *
+ * @note Currently support of this call is limited, not all fields
+ *       of struct timex are supported.
+ *
+ * @param rpcs      RPC server
+ * @param id_type   Type of clock ID
+ * @param id        Clock ID
+ * @param params    Adjustment parameters
+ *
+ * @return @c 0 on success, @c -1 on failure.
+ */
+extern int rpc_clock_adjtime(rcf_rpc_server *rpcs,
+                             tarpc_clock_id_type id_type,
+                             int id, tarpc_timex *params);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -30,6 +30,8 @@
 #include "tapi_test.h"
 #include "tarpc.h"
 
+#include "log_bufs.h"
+
 /* See description in tapi_rpc_time.h */
 const char *
 tarpc_timeval2str(const struct tarpc_timeval *tv)
@@ -276,4 +278,60 @@ rpc_clock_settime(rcf_rpc_server *rpcs,
                  params_str.ptr, tarpc_timespec2str(ts), out.retval);
 
     RETVAL_INT(clock_settime, out.retval);
+}
+
+/* See description in tapi_rpc_time.h */
+int
+rpc_clock_adjtime(rcf_rpc_server *rpcs,
+                  tarpc_clock_id_type id_type,
+                  int id, tarpc_timex *params)
+{
+    tarpc_clock_adjtime_in in;
+    tarpc_clock_adjtime_out out;
+
+    te_string *params_str = NULL;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(clock_adjtime, -1);
+    }
+    if (params == NULL)
+    {
+        ERROR("%s(): params cannot be NULL", __FUNCTION__);
+        rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
+        RETVAL_INT(clock_adjtime, -1);
+    }
+
+    params_str = te_log_str_alloc();
+    if (params_str == NULL)
+    {
+        ERROR("%s(): failed to allocate logging buffer", __FUNCTION__);
+        rpcs->_errno = TE_RC(TE_TAPI, TE_ENOMEM);
+        RETVAL_INT(clock_adjtime, -1);
+    }
+
+    in.id_type = id_type;
+    in.id = id;
+    memcpy(&in.params, params, sizeof(*params));
+
+    rcf_rpc_call(rpcs, "clock_adjtime", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs))
+        memcpy(params, &out.params, sizeof(*params));
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(clock_adjtime, out.retval);
+
+    append_clock_id(params_str, id_type, id);
+    te_string_append(params_str, ", ");
+    timex_tarpc2te_str(params, params_str);
+
+    TAPI_RPC_LOG(rpcs, clock_adjtime, "%s", "%d", te_string_value(params_str),
+                 out.retval);
+
+    te_string_free(params_str);
+    RETVAL_INT(clock_adjtime, out.retval);
 }

@@ -193,6 +193,7 @@ sys/sysctl.h \
 sys/sysmacros.h \
 sys/tihdr.h \
 sys/time.h \
+sys/timex.h \
 sys/uio.h \
 sys/un.h \
 sys/utsname.h \

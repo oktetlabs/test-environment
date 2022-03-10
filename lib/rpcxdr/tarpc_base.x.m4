@@ -5711,6 +5711,31 @@ struct tarpc_clock_settime_in {
 
 typedef struct tarpc_int_retval_out tarpc_clock_settime_out;
 
+/* clock_adjtime() */
+
+struct tarpc_timex {
+    tarpc_uint modes;
+    tarpc_int status;
+    int64_t offset;
+    int64_t freq;
+    tarpc_timeval time;
+};
+
+struct tarpc_clock_adjtime_in {
+    struct tarpc_in_arg common;
+
+    tarpc_clock_id_type id_type;
+    tarpc_int id;
+    tarpc_timex params;
+};
+
+struct tarpc_clock_adjtime_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+    tarpc_timex params;
+};
+
 program tarpc
 {
     version ver0
@@ -5743,6 +5768,7 @@ program tarpc
         RPC_DEF(gettimeofday)
         RPC_DEF(clock_gettime)
         RPC_DEF(clock_settime)
+        RPC_DEF(clock_adjtime)
         RPC_DEF(gethostname)
         
         RPC_DEF(access)

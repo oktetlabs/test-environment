@@ -95,6 +95,7 @@ check_headers = [
     'sys/sysctl.h',
     'sys/tihdr.h',
     'sys/time.h',
+    'sys/timex.h',
     'sys/uio.h',
     'sys/un.h',
     'sys/utsname.h',

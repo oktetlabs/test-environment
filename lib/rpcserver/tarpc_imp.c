@@ -70,6 +70,10 @@
 #include <linux/net_tstamp.h>
 #endif
 
+#ifdef HAVE_SYS_TIMEX_H
+#include <sys/timex.h>
+#endif
+
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
@@ -12070,3 +12074,54 @@ TARPC_FUNC(clock_settime, {},
         MAKE_CALL(out->retval = func(id, &ts));
     }
 })
+
+/*-------------- clock_adjtime() --------------------------------*/
+
+#ifdef HAVE_SYS_TIMEX_H
+
+/* Convert tarpc_timex structure to native timex structure. */
+static void
+timex_tarpc2h(const tarpc_timex *tarpc_val, struct timex *h_val)
+{
+    memset(h_val, 0, sizeof(*h_val));
+    h_val->modes = adj_mode_flags_rpc2h(tarpc_val->modes);
+    h_val->status = timex_status_flags_rpc2h(tarpc_val->status);
+    h_val->offset = tarpc_val->offset;
+    h_val->freq = tarpc_val->freq;
+    h_val->time.tv_sec = tarpc_val->time.tv_sec;
+    h_val->time.tv_usec = tarpc_val->time.tv_usec;
+}
+
+/* Convert native timex structure to tarpc_timex structure. */
+static void
+timex_h2tarpc(const struct timex *h_val, tarpc_timex *tarpc_val)
+{
+    memset(tarpc_val, 0, sizeof(*tarpc_val));
+    tarpc_val->modes = adj_mode_flags_h2rpc(h_val->modes);
+    tarpc_val->status = timex_status_flags_h2rpc(h_val->status);
+    tarpc_val->offset = h_val->offset;
+    tarpc_val->freq = h_val->freq;
+    tarpc_val->time.tv_sec = h_val->time.tv_sec;
+    tarpc_val->time.tv_usec = h_val->time.tv_usec;
+}
+
+TARPC_FUNC(clock_adjtime, {},
+{
+    clockid_t id;
+    te_errno rc;
+    struct timex params;
+
+    rc = clock_id_tarpc2h(in->id_type, in->id, &id);
+    if (rc != 0)
+    {
+        out->retval = -1;
+    }
+    else
+    {
+        timex_tarpc2h(&in->params, &params);
+        MAKE_CALL(out->retval = func(id, &params));
+        timex_h2tarpc(&params, &out->params);
+    }
+})
+
+#endif
