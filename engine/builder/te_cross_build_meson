@@ -105,7 +105,17 @@ make_workspace() {
     ws="$(cat "${ws_file}")"
     echo Platform $p workspace is $ws
 
-    te_eval_or_ssh "${p}" "mkdir -p \"${ws}\""
+    if test "${ws}" != . ; then
+        # Use a separate ccache for remote projects: in general,
+        # do not use NFS for this. This will help to avoid build
+        # failures, for example if NFS has some problem.
+        export CCACHE_DIR="${ws}/ccache"
+        export USE_ENV_CCACHE_DIR="CCACHE_DIR"
+    fi
+
+    te_eval_or_ssh "${p}" \
+        "mkdir -p \"${ws}\" ;
+         test -z \"$CCACHE_DIR\" || mkdir -p \"${CCACHE_DIR}\""
 
     # Make source workspace
     mk_platform_src "${p}" "${ws}"/src "${rsync}"
@@ -191,7 +201,8 @@ build_ext() {
             --build="${extbuild}" \
             --expheaders="${!pextinsth}" \
             --explibs="${!pextinstl}" \
-            --envvars="${!pextenv}" $enable_tce --build-meson || exit 1
+            --envvars="${!pextenv} ${USE_ENV_CCACHE_DIR}" \
+            $enable_tce --build-meson || exit 1
 
         rsync_from "$p" "${ws_ext_builddir}/" "${local_ext_builddir}"
     done
@@ -260,7 +271,7 @@ build_agent_apps() {
             --includes="${teincludes}" \
             --build="${appbuild}" \
             --expbin="${!pappinstbin}" \
-            --envvars="${!pappenv}" \
+            --envvars="${!pappenv} ${USE_ENV_CCACHE_DIR}" \
             --bin="${ws_platform_bin}" $enable_tce --build-meson || exit 1
 
         rsync_from "$p" "${ws_app_builddir}/" "${local_app_builddir}"
@@ -307,6 +318,7 @@ build_platform() {
     if test ! -f build/build.ninja ; then
         te_eval_or_ssh "${p}" \
             "cd \"${ws}\" || exit $? ;
+             test -z \"$CCACHE_DIR\" || export CCACHE_DIR=\"${CCACHE_DIR}\" ;
              ${build_m32} && source ${ws}/src/engine/builder/te_meson_m32_exports ;
              meson ${meson_nv_args} ${meson_args} -Dworkspace=${ws} src build"
         echo "${meson_nv_args}" >meson.nv_args
@@ -314,6 +326,7 @@ build_platform() {
     elif ! diff -q meson.args meson.args.new 2>/dev/null ; then
         te_eval_or_ssh "${p}" \
             "cd \"${ws}\"/build || exit $? ;
+             test -z \"$CCACHE_DIR\" || export CCACHE_DIR=\"${CCACHE_DIR}\" ;
              ${build_m32} && source ${ws}/src/engine/builder/te_meson_m32_exports ;
              meson configure ${meson_args}"
         echo "${meson_args}" >meson.args
@@ -339,6 +352,7 @@ build_platform() {
         set -o pipefail
         te_eval_or_ssh "${p}" \
             "which ninja >/dev/null 2>&1 && NINJA=ninja || NINJA=ninja-build ;
+            test -z \"$CCACHE_DIR\" || export CCACHE_DIR=\"${CCACHE_DIR}\" ;
             TE_BASE=\"${ws}\"/src ${destdir} NINJA_STATUS=\"[ninja][%f/%t] \"
             \$NINJA "${NINJA_EXTRA_OPTS[@]}" -C \"${ws}\"/build -v install" | ninja_status_filter
     ) || result=$?
