@@ -25,7 +25,6 @@ typedef struct channel_entry {
     tapi_job_channel_t *channel;
 } channel_entry;
 
-/* List of all channels/filters belonging to a job */
 typedef SLIST_HEAD(channel_entry_list, channel_entry) channel_entry_list;
 
 typedef enum tapi_job_factory_type {
@@ -45,7 +44,7 @@ struct tapi_job_t {
 
     SLIST_ENTRY(tapi_job_t) next;
 
-    /* Head of channel entries */
+    /* List of all channels/filters belonging to a job */
     channel_entry_list channel_entries;
 };
 
@@ -59,6 +58,11 @@ typedef SLIST_HEAD(job_list, tapi_job_t) job_list;
 
 struct tapi_job_channel_t {
     int ref_count;
+    /*
+     * For output primary channels: list of filters attached to the channel;
+     * For filters and input primary channels: empty list.
+     */
+    channel_entry_list filter_entries;
     tapi_job_t *job;
 
     rcf_rpc_server *rpcs;
@@ -75,6 +79,8 @@ init_channel(tapi_job_t *job, rcf_rpc_server *rpcs, unsigned int id,
     channel->rpcs = rpcs;
     channel->id = id;
     channel->ref_count = ref_count;
+
+    SLIST_INIT(&channel->filter_entries);
 }
 
 static void
@@ -433,6 +439,28 @@ add_channel_to_entry_list(tapi_job_channel_t *channel, channel_entry_list *list)
     SLIST_INSERT_HEAD(list, entry, next);
 }
 
+static channel_entry *
+get_channel_entry(tapi_job_channel_t *channel, channel_entry_list *list)
+{
+    channel_entry *entry;
+
+    SLIST_FOREACH(entry, list, next)
+    {
+        if (entry->channel == channel)
+            return entry;
+    }
+
+    return NULL;
+}
+
+static void
+remove_channel_entry_from_entry_list(channel_entry *entry,
+                                     channel_entry_list *list)
+{
+    SLIST_REMOVE(list, entry, channel_entry, next);
+    free(entry);
+}
+
 static te_errno
 tapi_job_alloc_channels(tapi_job_t *job, te_bool input_channels,
                         unsigned int n_channels,
@@ -494,6 +522,41 @@ tapi_job_alloc_output_channels(tapi_job_t *job, unsigned int n_channels,
                                tapi_job_channel_t *channels[n_channels])
 {
     return tapi_job_alloc_channels(job, FALSE, n_channels, channels);
+}
+
+static void
+destroy_filter_entry(channel_entry *filter_entry, channel_entry_list *list)
+{
+    if (--filter_entry->channel->ref_count <= 0)
+        free(filter_entry->channel);
+
+    remove_channel_entry_from_entry_list(filter_entry, list);
+}
+
+/*
+ * Free resources occupied by an output primary channel and all filters
+ * attached to it
+ */
+static void
+destroy_channel(tapi_job_channel_t *channel)
+{
+    channel_entry *entry;
+    channel_entry *entry_tmp;
+
+    SLIST_FOREACH_SAFE(entry, &channel->filter_entries, next, entry_tmp)
+    {
+        channel_entry *job_filter_entry =
+            get_channel_entry(entry->channel, &channel->job->channel_entries);
+
+        /*
+         * If the filter (entry->channel) is attached to the channel, it must be
+         * found in the list of all job's channels
+         */
+        assert(job_filter_entry != NULL);
+
+        remove_channel_entry_from_entry_list(entry, &channel->filter_entries);
+        destroy_filter_entry(job_filter_entry, &channel->job->channel_entries);
+    }
 }
 
 static te_errno
@@ -600,6 +663,7 @@ tapi_job_attach_filter(tapi_job_channel_set_t channels, const char *filter_name,
         {
             add_channel_to_entry_list(result,
                                       &channels[i]->job->channel_entries);
+            add_channel_to_entry_list(result, &channels[i]->filter_entries);
         }
         *filter = result;
     }
@@ -697,7 +761,10 @@ tapi_job_filter_add_channels(tapi_job_channel_t *filter,
 
     filter->ref_count += n_channels;
     for (i = 0; i < n_channels; i++)
+    {
         add_channel_to_entry_list(filter, &channels[i]->job->channel_entries);
+        add_channel_to_entry_list(filter, &channels[i]->filter_entries);
+    }
 
     return 0;
 }
@@ -1065,9 +1132,9 @@ tapi_job_destroy(tapi_job_t *job, int term_timeout_ms)
 
     SLIST_FOREACH_SAFE(entry, &job->channel_entries, next, entry_tmp)
     {
-        if (--entry->channel->ref_count <= 0)
-            free(entry->channel);
-        free(entry);
+        /* It also frees filters */
+        if (is_primary_channel(entry->channel))
+            destroy_channel(entry->channel);
     }
 
     SLIST_REMOVE(&all_jobs, job, tapi_job_t, next);
