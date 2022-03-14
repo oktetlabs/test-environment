@@ -106,6 +106,18 @@
 /* Define to 1 if `pw_gecos' is a member of `struct passwd'. */
 #mesondefine HAVE_STRUCT_PASSWD_PW_GECOS
 
+/* Define to 1 if the system has the type `struct ptp_clock_caps'. */
+#mesondefine HAVE_STRUCT_PTP_CLOCK_CAPS
+
+/* Define to 1 if `n_pins' is a member of  `struct ptp_clock_caps'. */
+#mesondefine HAVE_STRUCT_PTP_CLOCK_CAPS_N_PINS
+
+/* Define to 1 if `cross_timestamping' is a member of  `struct ptp_clock_caps'. */
+#mesondefine HAVE_STRUCT_PTP_CLOCK_CAPS_CROSS_TIMESTAMPING
+
+/* Define to 1 if `adjust_phase' is a member of  `struct ptp_clock_caps'. */
+#mesondefine HAVE_STRUCT_PTP_CLOCK_CAPS_ADJUST_PHASE
+
 /* Define to 1 if the system has the type `struct sg_io_hdr'. */
 #mesondefine HAVE_STRUCT_SG_IO_HDR
 

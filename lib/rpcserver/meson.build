@@ -269,6 +269,26 @@ foreach h : sg_io_headers
 endforeach
 
 #
+# Check for 'struct ptp_clock_caps' and some of its members
+#
+t = 'struct ptp_clock_caps'
+if cc.has_type(t, prefix: '#include <linux/ptp_clock.h>')
+    conf.set('HAVE_' + t.to_upper().underscorify(), 1)
+
+    members = [
+        'n_pins',
+        'cross_timestamping',
+        'adjust_phase',
+    ]
+    foreach m : members
+        if cc.has_member(t, m, prefix: '#include <linux/ptp_clock.h>')
+            conf.set('HAVE_' + t.to_upper().underscorify() + '_' +
+                     m.to_upper().underscorify(), 1)
+        endif
+    endforeach
+endif
+
+#
 # Asynchronous I/O:
 # - FreeBSD has in -lc;
 # - Linux has in -lnsl -lrt;

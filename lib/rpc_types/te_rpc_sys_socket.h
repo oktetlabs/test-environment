@@ -1050,7 +1050,9 @@ typedef enum rpc_ioctl_code {
     RPC_SIOCETHTOOL,        /**< Linux-specific Ethtool */
     RPC_SIOCSHWTSTAMP,
     RPC_SIOCGHWTSTAMP,
-    
+
+    RPC_PTP_CLOCK_GETCAPS, /**< Get PTP clock capabilities */
+
     /* Winsock2-specific codes */
     RPC_SIO_ADDRESS_LIST_CHANGE,
     RPC_SIO_ADDRESS_LIST_QUERY,

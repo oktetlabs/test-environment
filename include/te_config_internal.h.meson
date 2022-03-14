@@ -65,6 +65,9 @@
 /* Define to 1 if you have the <linux/net_tstamp.h> header file. */
 #mesondefine HAVE_LINUX_NET_TSTAMP_H
 
+/* Define to 1 if you have the <linux/ptp_clock.h> header file. */
+#mesondefine HAVE_LINUX_PTP_CLOCK_H
+
 /* Define to 1 if you have the <linux/sockios.h> header file. */
 #mesondefine HAVE_LINUX_SOCKIOS_H
 

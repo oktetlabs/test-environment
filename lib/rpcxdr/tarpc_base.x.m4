@@ -406,6 +406,18 @@ struct tarpc_sgio {
     tarpc_uint  info;            /**< [o] auxiliary information */
 };
 
+/** struct ptp_clock_caps */
+struct tarpc_ptp_clock_caps {
+    tarpc_int max_adj;
+    tarpc_int n_alarm;
+    tarpc_int n_ext_ts;
+    tarpc_int n_per_out;
+    tarpc_int pps;
+    tarpc_int n_pins;
+    tarpc_int cross_timestamping;
+    tarpc_int adjust_phase;
+};
+
 /** struct timespec */
 struct tarpc_timespec {
     int64_t     tv_sec;
@@ -3067,8 +3079,8 @@ enum ioctl_type {
     IOCTL_IFCONF,
     IOCTL_ARPREQ,
     IOCTL_SGIO,
-    IOCTL_HWTSTAMP_CONFIG
-    
+    IOCTL_HWTSTAMP_CONFIG,
+    IOCTL_PTP_CLOCK_CAPS
 };
 
 /* Access type of ioctl requests */
@@ -3085,6 +3097,9 @@ union ioctl_request switch (ioctl_type type) {
     case IOCTL_IFCONF:   tarpc_ifconf   req_ifconf;
     case IOCTL_ARPREQ:   tarpc_arpreq   req_arpreq;
     case IOCTL_SGIO:     tarpc_sgio     req_sgio;
+
+    case IOCTL_PTP_CLOCK_CAPS: tarpc_ptp_clock_caps
+                                  req_ptp_clock_caps;
 };
 
 struct tarpc_ioctl_in {

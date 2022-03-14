@@ -131,6 +131,7 @@ linux/if_ether.h \
 linux/if_packet.h \
 linux/net_tstamp.h \
 linux/udp.h \
+linux/ptp_clock.h \
 math.h \
 net/ethernet.h \
 net/if_arp.h \

@@ -384,6 +384,19 @@ AC_CHECK_TYPES([struct mmsghdr], [], [], [
 #include <sys/socket.h>
 ])
 
+AC_CHECK_TYPES([struct ptp_clock_caps], [], [], [
+#include <linux/ptp_clock.h>
+])
+
+AC_CHECK_MEMBERS([struct ptp_clock_caps.n_pins], [], [],
+                 [#include <linux/ptp_clock.h>])
+
+AC_CHECK_MEMBERS([struct ptp_clock_caps.cross_timestamping], [], [],
+                 [#include <linux/ptp_clock.h>])
+
+AC_CHECK_MEMBERS([struct ptp_clock_caps.adjust_phase], [], [],
+                 [#include <linux/ptp_clock.h>])
+
 LIBS=${TE_LDFLAGS}
 
 dnl

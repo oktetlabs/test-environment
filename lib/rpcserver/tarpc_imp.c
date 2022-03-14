@@ -74,6 +74,10 @@
 #include <sys/timex.h>
 #endif
 
+#ifdef HAVE_LINUX_PTP_CLOCK_H
+#include <linux/ptp_clock.h>
+#endif
+
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
@@ -4505,6 +4509,9 @@ typedef union ioctl_param {
 #ifdef HAVE_STRUCT_SG_IO_HDR
     struct sg_io_hdr sg;
 #endif
+#ifdef HAVE_STRUCT_PTP_CLOCK_CAPS
+    struct ptp_clock_caps ptp_caps;
+#endif
 } ioctl_param;
 
 static void
@@ -4728,6 +4735,34 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 break;
             }
 #endif /* HAVE_STRUCT_SG_IO_HDR */
+
+#ifdef HAVE_STRUCT_PTP_CLOCK_CAPS
+        case IOCTL_PTP_CLOCK_CAPS:
+        {
+#define COPY_FIELD(_name) \
+    req->ptp_caps._name = \
+        out->req.req_val[0].ioctl_request_u.req_ptp_clock_caps._name
+
+            COPY_FIELD(max_adj);
+            COPY_FIELD(n_alarm);
+            COPY_FIELD(n_ext_ts);
+            COPY_FIELD(n_per_out);
+            COPY_FIELD(pps);
+#ifdef HAVE_STRUCT_PTP_CLOCK_CAPS_N_PINS
+            COPY_FIELD(n_pins);
+#endif
+#ifdef HAVE_STRUCT_PTP_CLOCK_CAPS_CROSS_TIMESTAMPING
+            COPY_FIELD(cross_timestamping);
+#endif
+#ifdef HAVE_STRUCT_PTP_CLOCK_CAPS_ADJUST_PHASE
+            COPY_FIELD(adjust_phase);
+#endif
+
+#undef COPY_FIELD
+            break;
+        }
+#endif
+
         default:
             ERROR("Incorrect request type %d is received",
                   out->req.req_val[0].type);
@@ -4953,6 +4988,37 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
             break;
         }
 #endif /* HAVE_STRUCT_SG_IO_HDR */
+
+#ifdef HAVE_STRUCT_PTP_CLOCK_CAPS
+        case IOCTL_PTP_CLOCK_CAPS:
+        {
+#define COPY_FIELD(_name) \
+    out->req.req_val[0].ioctl_request_u.req_ptp_clock_caps._name = \
+        req->ptp_caps._name;
+
+            memset(&out->req.req_val[0].ioctl_request_u.req_ptp_clock_caps,
+                   0, sizeof(tarpc_ptp_clock_caps));
+
+            COPY_FIELD(max_adj);
+            COPY_FIELD(n_alarm);
+            COPY_FIELD(n_ext_ts);
+            COPY_FIELD(n_per_out);
+            COPY_FIELD(pps);
+#ifdef HAVE_STRUCT_PTP_CLOCK_CAPS_N_PINS
+            COPY_FIELD(n_pins);
+#endif
+#ifdef HAVE_STRUCT_PTP_CLOCK_CAPS_CROSS_TIMESTAMPING
+            COPY_FIELD(cross_timestamping);
+#endif
+#ifdef HAVE_STRUCT_PTP_CLOCK_CAPS_ADJUST_PHASE
+            COPY_FIELD(adjust_phase);
+#endif
+
+#undef COPY_FIELD
+            break;
+        }
+#endif
+
         default:
             assert(FALSE);
     }

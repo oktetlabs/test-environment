@@ -453,6 +453,19 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             }
             break;
 
+        case RPC_PTP_CLOCK_GETCAPS:
+            in.access = IOCTL_RD;
+
+            if (arg != NULL)
+            {
+                in.req.req_val[0].type = IOCTL_PTP_CLOCK_CAPS;
+                memcpy(
+                  &in.req.req_val[0].ioctl_request_u.req_ptp_clock_caps,
+                  arg, sizeof(tarpc_ptp_clock_caps));
+            }
+
+            break;
+
         case RPC_SIOCETHTOOL:
         {
             int           size = 0;
@@ -756,6 +769,13 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 break;
             }
 
+            case IOCTL_PTP_CLOCK_CAPS:
+                memcpy(
+                  arg,
+                  &out.req.req_val[0].ioctl_request_u.req_ptp_clock_caps,
+                  sizeof(tarpc_ptp_clock_caps));
+                break;
+
             default:
                 assert(FALSE);
         }
@@ -1056,6 +1076,22 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             }
             break;
         }
+
+        case IOCTL_PTP_CLOCK_CAPS:
+        {
+            tarpc_ptp_clock_caps *caps = (tarpc_ptp_clock_caps *)arg;
+
+            te_string_append(req_str, " { .max_adj = %d, .n_alarm = %d, "
+                             ".n_ext_ts = %d, .n_per_out = %d, .pps = %d, "
+                             ".n_pins = %d, .cross_timestamping = %d, "
+                             ".adjust_phase = %d } ", caps->max_adj,
+                             caps->n_alarm, caps->n_ext_ts, caps->n_per_out,
+                             caps->pps, caps->n_pins,
+                             caps->cross_timestamping, caps->adjust_phase);
+
+            break;
+        }
+
         default:
             req_val = "";
             break;
