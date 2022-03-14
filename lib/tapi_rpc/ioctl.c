@@ -64,6 +64,8 @@
 #include "te_ethtool.h"
 #endif
 
+#include "log_bufs.h"
+
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
@@ -82,7 +84,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
     ioctl_request   req;
     va_list         ap;
     int            *arg;
-    const char     *req_val;
+    const char     *req_val = NULL;
+
+    te_string *req_str = te_log_str_alloc();
 
     uint32_t passed_val_data = 0;
 
@@ -92,6 +96,14 @@ rpc_ioctl(rcf_rpc_server *rpcs,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        te_string_free(req_str);
+        RETVAL_INT(ioctl, -1);
+    }
+
+    if (req_str == NULL)
+    {
+        ERROR("%s(): failed to allocate logging buffer", __FUNCTION__);
+        rpcs->_errno = TE_RC(TE_TAPI, TE_ENOMEM);
         RETVAL_INT(ioctl, -1);
     }
 
@@ -531,6 +543,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
         default:
             ERROR("Unsupported ioctl code: %d", request);
             rpcs->_errno = TE_RC(TE_RCF, TE_EOPNOTSUPP);
+            te_string_free(req_str);
             RETVAL_INT(ioctl, -1);;
     }
 
@@ -764,20 +777,15 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
         case IOCTL_INT:
         {
-            static char int_buf[128];
-
-            snprintf(int_buf, sizeof(int_buf), "%d", *((int *)arg));
-            req_val = int_buf;
+            te_string_append(req_str, "%d", *((int *)arg));
             break;
         }
 
         case IOCTL_IFREQ:
         {
-            static char ifreq_buf[1024];
-
-            snprintf(ifreq_buf, sizeof(ifreq_buf),
-                     " interface %s: ", ((struct ifreq *)arg)->ifr_name);
-            req_val = ifreq_buf;
+            te_string_append(req_str,
+                             " interface %s: ",
+                             ((struct ifreq *)arg)->ifr_name);
 
             switch (request)
             {
@@ -789,8 +797,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 case RPC_SIOCSIFBRDADDR:
                 case RPC_SIOCGIFDSTADDR:
                 case RPC_SIOCSIFDSTADDR:
-                    snprintf(ifreq_buf + strlen(ifreq_buf),
-                             sizeof(ifreq_buf) - strlen(ifreq_buf),
+                    te_string_append(
+                             req_str,
                              "%s: %s ",
                              ((request == RPC_SIOCGIFADDR) ? "addr" :
                               (request == RPC_SIOCGIFNETMASK) ? "netmask" :
@@ -802,8 +810,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     break;
 
                 case RPC_SIOCGIFHWADDR:
-                    snprintf(ifreq_buf + strlen(ifreq_buf),
-                             sizeof(ifreq_buf) - strlen(ifreq_buf),
+                    te_string_append(
+                             req_str,
                              "hwaddr: %02x:%02x:%02x:%02x:%02x:%02x",
                              (unsigned char)((struct ifreq *)arg)->
                                  ifr_hwaddr.sa_data[0],
@@ -821,24 +829,24 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
                 case RPC_SIOCGIFMTU:
                 case RPC_SIOCSIFMTU:
-                    snprintf(ifreq_buf + strlen(ifreq_buf),
-                             sizeof(ifreq_buf) - strlen(ifreq_buf),
+                    te_string_append(
+                             req_str,
                              "mtu: %d ",
                              ((struct ifreq *)arg)->ifr_mtu);
                     break;
 
                 case RPC_SIOCGIFNAME:
                 case RPC_SIOCGIFINDEX:
-                    snprintf(ifreq_buf + strlen(ifreq_buf),
-                             sizeof(ifreq_buf) - strlen(ifreq_buf),
+                    te_string_append(
+                             req_str,
                              "ifindex: %u ",
                              ((struct ifreq *)arg)->ifr_ifindex);
                     break;
-                
+
                 case RPC_SIOCGIFFLAGS:
                 case RPC_SIOCSIFFLAGS:
-                    snprintf(ifreq_buf + strlen(ifreq_buf),
-                             sizeof(ifreq_buf) - strlen(ifreq_buf),
+                    te_string_append(
+                             req_str,
                              "flags: %s ",
                              if_fl_rpc2str(if_fl_h2rpc(
                                  (uint32_t)(unsigned short int)
@@ -849,8 +857,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 case RPC_SIOCGHWTSTAMP:
                 {
                     struct ifreq *ifr = (struct ifreq *)arg;
-                    snprintf(ifreq_buf + strlen(ifreq_buf),
-                             sizeof(ifreq_buf) - strlen(ifreq_buf),
+                    te_string_append(
+                             req_str,
                              "HW timestamp config: %s",
                                 tarpc_hwtstamp_config2str(
                                             (struct tarpc_hwtstamp_config *)
@@ -864,9 +872,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     tarpc_ethtool_command    cmd = 
                             *((tarpc_ethtool_command *)ifr->ifr_data);
                     tarpc_ethtool_type       type = ethtool_cmd2type(cmd);
-                    
-                    snprintf(ifreq_buf + strlen(ifreq_buf),
-                             sizeof(ifreq_buf) - strlen(ifreq_buf),
+
+                    te_string_append(
+                             req_str,
                              "ethtool %s: ", ethtool_cmd_rpc2str(cmd));
                     switch (type)
                     {
@@ -875,9 +883,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                             struct tarpc_ethtool_cmd *ecmd =
                                 (struct tarpc_ethtool_cmd *)
                                                             ifr->ifr_data;
-                                
-                            snprintf(ifreq_buf + strlen(ifreq_buf),
-                                     sizeof(ifreq_buf) - strlen(ifreq_buf),
+
+                            te_string_append(
+                                     req_str,
                                      "supported %x, advertising %x, "
                                      "speed %u, duplex %u, port %u, "
                                      "phy_address %u, transceiver %u, "
@@ -896,8 +904,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                             struct tarpc_ethtool_perm_addr *eaddr = 
                                 (struct tarpc_ethtool_perm_addr *)
                                                             ifr->ifr_data;
-                            snprintf(ifreq_buf + strlen(ifreq_buf),
-                                     sizeof(ifreq_buf) - strlen(ifreq_buf),
+
+                            te_string_append(
+                                     req_str,
                                      "hwaddr: %02x:%02x:%02x:%02x:%02x"
                                      ":%02x",
                                      (unsigned char)(eaddr->data.data[0]),
@@ -915,28 +924,27 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                 (struct tarpc_ethtool_value *)ifr->ifr_data;
 
                             if (cmd == RPC_ETHTOOL_RESET)
-                                snprintf(
-                                    ifreq_buf + strlen(ifreq_buf),
-                                    sizeof(ifreq_buf) -
-                                                    strlen(ifreq_buf),
+                            {
+                                te_string_append(
+                                    req_str,
                                     "requested flags %s, returned %s",
                                     ethtool_reset_flags_rpc2str(
                                                           passed_val_data),
                                     ethtool_reset_flags_rpc2str(
                                                             evalue->data));
+                            }
                             else if (cmd == RPC_ETHTOOL_GFLAGS ||
                                      cmd == RPC_ETHTOOL_SFLAGS)
-                                snprintf(
-                                    ifreq_buf + strlen(ifreq_buf),
-                                    sizeof(ifreq_buf) -
-                                                    strlen(ifreq_buf),
-                                    "data %s",
+                            {
+                                te_string_append(
+                                    req_str, "data %s",
                                     ethtool_flags_rpc2str(evalue->data));
+                            }
                             else
-                                snprintf(ifreq_buf + strlen(ifreq_buf),
-                                         sizeof(ifreq_buf) -
-                                                strlen(ifreq_buf),
-                                         "data %u", evalue->data);
+                            {
+                                te_string_append(req_str, "data %u",
+                                                 evalue->data);
+                            }
                             break;
                         }
 
@@ -945,14 +953,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                             struct tarpc_ethtool_ts_info *ts_info =
                                 (struct tarpc_ethtool_ts_info *)ifr->ifr_data;
 
-                            te_string str = TE_STRING_INIT;
-
-                            te_string_set_buf(&str, ifreq_buf,
-                                              sizeof(ifreq_buf),
-                                              strlen(ifreq_buf));
-
                             te_string_append(
-                                     &str,
+                                     req_str,
                                      "so_timestamping = %s, phc_index = %d, "
                                      "tx_types = ",
                                      timestamping_flags_rpc2str(
@@ -960,20 +962,20 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                      (int)(ts_info->phc_index));
 
                             hwtstamp_tx_types_flags_rpc2te_str(
-                                          ts_info->tx_types, &str);
+                                          ts_info->tx_types, req_str);
 
-                            te_string_append(&str, "%s", ", rx_filters = ");
+                            te_string_append(req_str, "%s",
+                                             ", rx_filters = ");
 
                             hwtstamp_rx_filters_flags_rpc2te_str(
-                                          ts_info->rx_filters, &str);
+                                          ts_info->rx_filters, req_str);
 
                             break;
                         }
 
                         default:
-                            snprintf(ifreq_buf + strlen(ifreq_buf),
-                                     sizeof(ifreq_buf) - strlen(ifreq_buf),
-                                     "unknown ethtool type");
+                            te_string_append(req_str,
+                                             "unknown ethtool type");
                     }
                     break;
                 }
@@ -985,10 +987,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
         }
         case IOCTL_ARPREQ:
         {
-            static char arpreq_buf[1024];
-            snprintf(arpreq_buf, sizeof(arpreq_buf), " ARP entry ");
-
-            req_val = arpreq_buf;
+            te_string_append(req_str, " ARP entry ");
 
             switch (request)
             {
@@ -998,16 +997,14 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     char flags[32];
                     int arp_flags = ((struct arpreq *)arg)->arp_flags;
 
-                    snprintf(arpreq_buf + strlen(arpreq_buf),
-                             sizeof(arpreq_buf) - strlen(arpreq_buf),
-                             "get/set: ");
-                    snprintf(arpreq_buf + strlen(arpreq_buf),
-                             sizeof(arpreq_buf) - strlen(arpreq_buf),
+                    te_string_append(req_str, "get/set: ");
+                    te_string_append(
+                             req_str,
                              "protocol address %s, ",
                               inet_ntoa(SIN(&(((struct arpreq *)arg)->
                                             arp_pa))->sin_addr));
-                    snprintf(arpreq_buf + strlen(arpreq_buf),
-                             sizeof(arpreq_buf) - strlen(arpreq_buf),
+                    te_string_append(
+                             req_str,
                              "HW address: family %d, "
                              "addr %02x:%02x:%02x:%02x:%02x:%02x ",
                              ((struct arpreq *)arg)->arp_ha.sa_family,
@@ -1041,18 +1038,14 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                              !(arp_flags & ATF_PUBL))
                              strcat(flags, "(incomplete)");
                     }
-                    snprintf(arpreq_buf + strlen(arpreq_buf),
-                             sizeof(arpreq_buf) - strlen(arpreq_buf),
-                             "arp flags %s", flags);
+                    te_string_append(req_str, "arp flags %s", flags);
                     break;
                 }
                 case RPC_SIOCDARP:
                 {
-                    snprintf(arpreq_buf + strlen(arpreq_buf),
-                             sizeof(arpreq_buf) - strlen(arpreq_buf),
-                             "delete: ");
-                    snprintf(arpreq_buf + strlen(arpreq_buf),
-                             sizeof(arpreq_buf) - strlen(arpreq_buf),
+                    te_string_append(req_str, "delete: ");
+                    te_string_append(
+                             req_str,
                              "protocol address %s, ",
                               inet_ntoa(SIN(&(((struct arpreq *)arg)->
                                             arp_pa))->sin_addr));
@@ -1068,8 +1061,12 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             break;
     }
 
+    if (req_val == NULL)
+        req_val = te_string_value(req_str);
+
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(ioctl, out.retval);
     TAPI_RPC_LOG(rpcs, ioctl, "%d, %s, %p(%s)", "%d",
                  fd, ioctl_rpc2str(request), arg, req_val, out.retval);
+    te_string_free(req_str);
     RETVAL_INT(ioctl, out.retval);
 }
