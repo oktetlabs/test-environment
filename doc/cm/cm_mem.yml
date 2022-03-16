@@ -1,0 +1,56 @@
+---
+
+- comment: |
+    Configuration model to memory control such as hugepages
+
+    Copyright (C) 2022 OKTET Labs.
+
+    Author: Artemii.Morozov E-mail: Artemii.Morozov@oktetlabs.ru
+
+- register:
+
+  - oid: "/agent/mem"
+    access: read_only
+    type: none
+    d: |
+        Root of memory configuration model.
+
+        Name: none
+
+  - oid: "/agent/mem/hugepages"
+    access: read_write
+    type: integer
+    depends:
+        - oid: "/agent/rsrc"
+    d: |
+       Alloc the specified number of hugepages. This object is a resource.
+       It must be grabbed before it may be used.
+
+       On Linux the value will be written to
+       '/sys/kernel/mm/hugepages/hugepage-<size>kB'/nr_hugepages'.
+
+       Linux will allocate as many pages as it has. Therefore, after setting
+       a new value, a check is made that the requested number of pages is
+       allocated.  If it is not, the old value will be written to this file
+       and error ENOSPC will be returned to the user.
+
+       Name: Hugepage size in kB
+       Value: Number of the hugepages
+
+  - oid: "/agent/mem/hugepages/mountpoint"
+    access: read_create
+    type: none
+    depends:
+        - oid: "/agent/rsrc"
+    d: |
+      Mount the directory as a hugetlbfs filesystem with the
+      appropriate 'pagesize' option.
+
+      This object is a resource. It must be grabbed before it may be used.
+      The path to the directory should be separated by '$', instead of a '/'
+      to avoid configuration model confusing. If the directory already exists,
+      it will not be created. Also if the directory is already mounted as
+      hugetlbfs then it will not be mounted. These two cases are normal.
+
+      Name: Directory name
+      Value: none
