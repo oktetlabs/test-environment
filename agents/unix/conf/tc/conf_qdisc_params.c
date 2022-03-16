@@ -1067,7 +1067,12 @@ conf_qdisc_param_list(unsigned int gid, const char *oid,
     if ((rc = te_string_append(&list_out, " ")) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    if (qdisc == NULL)
+    /*
+     * Return empty list if qdisc is not available or if it is disabled.
+     * Bug 11795: we should not list parameters for disabled qdisc as they may
+     * appear after the nodes removal and lead to configuration backup issues.
+     */
+    if (qdisc == NULL || rtnl_tc_get_handle(TC_CAST(qdisc)) == 0)
     {
         *list = list_out.ptr;
         return 0;
