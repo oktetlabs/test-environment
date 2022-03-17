@@ -224,7 +224,7 @@ te_errno
 tapi_cfg_socks_interface_get(const char                *ta,
                              tapi_socks_id              id,
                              tapi_socks_interface_id    interface_id,
-                             const char               **value)
+                             char                     **value)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -323,7 +323,7 @@ tapi_cfg_socks_interface_addr_family_set(const char               *ta,
 /* See description in tapi_cfg_socks.h */
 te_errno
 tapi_cfg_socks_outbound_interface_get(const char *ta, tapi_socks_id id,
-                                      const char **value)
+                                      char **value)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -344,7 +344,7 @@ tapi_cfg_socks_outbound_interface_set(const char *ta, tapi_socks_id id,
 
 /* See description in tapi_cfg_socks.h */
 te_errno
-tapi_cfg_socks_cipher_get(const char *ta, tapi_socks_id id, const char **value)
+tapi_cfg_socks_cipher_get(const char *ta, tapi_socks_id id, char **value)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -410,7 +410,7 @@ tapi_cfg_socks_user_del(const char         *ta,
 /* See description in tapi_cfg_socks.h */
 te_errno
 tapi_cfg_socks_user_next_hop_get(const char *ta, tapi_socks_id id,
-                                 tapi_socks_user_id user, const char **value)
+                                 tapi_socks_user_id user, char **value)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -432,7 +432,7 @@ tapi_cfg_socks_user_next_hop_set(const char *ta, tapi_socks_id id,
 /* See description in tapi_cfg_socks.h */
 te_errno
 tapi_cfg_socks_user_username_get(const char *ta, tapi_socks_id id,
-                                 tapi_socks_user_id user, const char **value)
+                                 tapi_socks_user_id user, char **value)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -454,7 +454,7 @@ tapi_cfg_socks_user_username_set(const char *ta, tapi_socks_id id,
 /* See description in tapi_cfg_socks.h */
 te_errno
 tapi_cfg_socks_user_password_get(const char *ta, tapi_socks_id id,
-                                 tapi_socks_user_id user, const char **value)
+                                 tapi_socks_user_id user, char **value)
 {
     cfg_val_type type = CVT_STRING;
 

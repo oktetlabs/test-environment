@@ -183,7 +183,7 @@ tapi_cfg_openvpn_user_del(const char *ta,
 /* See description in tapi_cfg_openvpn.h */
 te_errno
 tapi_cfg_openvpn_user_username_get(const char *ta, tapi_openvpn_id id,
-                                   tapi_openvpn_prop user, const char **val)
+                                   tapi_openvpn_prop user, char **val)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -205,7 +205,7 @@ tapi_cfg_openvpn_user_username_set(const char *ta, tapi_openvpn_id id,
 /* See description in tapi_cfg_openvpn.h */
 te_errno
 tapi_cfg_openvpn_user_password_get(const char *ta, tapi_openvpn_id id,
-                                   tapi_openvpn_prop user, const char **val)
+                                   tapi_openvpn_prop user, char **val)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -227,7 +227,7 @@ tapi_cfg_openvpn_user_password_set(const char *ta, tapi_openvpn_id id,
 /* See description in tapi_cfg_openvpn.h */
 te_errno
 tapi_cfg_openvpn_user_certificate_get(const char *ta, tapi_openvpn_id id,
-                                      tapi_openvpn_prop user, const char **val)
+                                      tapi_openvpn_prop user, char **val)
 {
     cfg_val_type type = CVT_STRING;
 

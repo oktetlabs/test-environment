@@ -87,13 +87,14 @@ extern te_errno tapi_cfg_acse_set_acs_url(char const *ta,
  *
  * @param ta            Test Agent name
  * @param acs           ACS object name
- * @param url           ACS object url parameter
+ * @param url           ACS object url parameter which should be freed after
+ *                      usage
  *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_acs_url(char const *ta,
                                           char const *acs,
-                                          char const **url);
+                                          char **url);
 
 /**
  * Set ACS object cert parameter.
@@ -113,13 +114,14 @@ extern te_errno tapi_cfg_acse_set_acs_cert(char const *ta,
  *
  * @param ta            Test Agent name
  * @param acs           ACS object name
- * @param cert          ACS object cert parameter
+ * @param cert          ACS object cert parameter which should be freed after
+ *                      usage
  *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_acs_cert(char const *ta,
                                            char const *acs,
-                                           char const **cert);
+                                           char **cert);
 
 /**
  * Set ACS object user parameter.
@@ -139,13 +141,14 @@ extern te_errno tapi_cfg_acse_set_acs_user(char const *ta,
  *
  * @param ta            Test Agent name
  * @param acs           ACS object name
- * @param user          ACS object user parameter
+ * @param user          ACS object user parameter which should be freed after
+ *                      usage
  *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_acs_user(char const *ta,
                                            char const *acs,
-                                           char const **user);
+                                           char **user);
 
 /**
  * Set ACS object pass parameter.
@@ -165,13 +168,14 @@ extern te_errno tapi_cfg_acse_set_acs_pass(char const *ta,
  *
  * @param ta            Test Agent name
  * @param acs           ACS object name
- * @param pass          ACS object pass parameter
+ * @param pass          ACS object pass parameter which should be freed after
+ *                      usage
  *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_acs_pass(char const *ta,
                                            char const *acs,
-                                           char const **pass);
+                                           char **pass);
 
 /**
  * Set ACS object enabled parameter.
@@ -318,14 +322,15 @@ extern te_errno tapi_cfg_acse_set_cpe_url(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cpe           CPE object name
- * @param url           CPE object url parameter
+ * @param url           CPE object url parameter which should be freed after
+ *                      usage
  *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_cpe_url(char const *ta,
                                           char const *acs,
                                           char const *cpe,
-                                          char const **url);
+                                          char **url);
 
 /**
  * Set CPE object cert parameter.
@@ -348,14 +353,15 @@ extern te_errno tapi_cfg_acse_set_cpe_cert(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cpe           CPE object name
- * @param cert          CPE object cert parameter
+ * @param cert          CPE object cert parameter which should be freed after
+ *                      usage
  *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_cpe_cert(char const *ta,
                                            char const *acs,
                                            char const *cpe,
-                                           char const **cert);
+                                           char **cert);
 
 /**
  * Set CPE object user parameter.
@@ -378,14 +384,15 @@ extern te_errno tapi_cfg_acse_set_cpe_user(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cpe           CPE object name
- * @param user          CPE object user parameter
+ * @param user          CPE object user parameter which should be freed after
+ *                      usage
  *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_cpe_user(char const *ta,
                                            char const *acs,
                                            char const *cpe,
-                                           char const **user);
+                                           char **user);
 
 /**
  * Set CPE object pass parameter.
@@ -408,14 +415,15 @@ extern te_errno tapi_cfg_acse_set_cpe_pass(char const *ta,
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cpe           CPE object name
- * @param pass          CPE object pass parameter
+ * @param pass          CPE object pass parameter which should be freed after
+ *                      usage
  *
  * @return              Status code
  */
 extern te_errno tapi_cfg_acse_get_cpe_pass(char const *ta,
                                            char const *acs,
                                            char const *cpe,
-                                           char const **pass);
+                                           char **pass);
 
 /**
  * Set CPE object IP address parameter.
@@ -439,7 +447,8 @@ extern te_errno tapi_cfg_acse_set_cpe_ip_addr(
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cpe           CPE object name
- * @param url           CPE object url parameter
+ * @param url           CPE object url parameter which should be freed after
+ *                      usage
  *
  * @return              Status code
  */
@@ -447,7 +456,7 @@ extern te_errno tapi_cfg_acse_get_cpe_ip_addr(
                     char const *ta,
                     char const *acs,
                     char const *cpe,
-                    struct sockaddr const **addr);
+                    struct sockaddr **addr);
 
 /**
  * Set CPE/session object enabled parameter.
@@ -565,7 +574,8 @@ extern te_errno tapi_cfg_acse_get_session_state(
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cpe           CPE object name
- * @param manufacturer  CPE/device_id object manufacturer parameter
+ * @param manufacturer  CPE/device_id object manufacturer parameter which should
+ *                      be freed after usage
  *
  * @return              Status code
  */
@@ -573,7 +583,7 @@ extern te_errno tapi_cfg_acse_get_device_id_manufacturer(
                     char const *ta,
                     char const *acs,
                     char const *cpe,
-                    char const **manufacturer);
+                    char **manufacturer);
 
 /**
  * Get CPE/device_id object oui parameter.
@@ -581,7 +591,8 @@ extern te_errno tapi_cfg_acse_get_device_id_manufacturer(
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cpe           CPE object name
- * @param oui           CPE/device_id object oui parameter
+ * @param oui           CPE/device_id object oui parameter which should be freed
+ *                      after usage
  *
  * @return              Status code
  */
@@ -589,7 +600,7 @@ extern te_errno tapi_cfg_acse_get_device_id_oui(
                     char const *ta,
                     char const *acs,
                     char const *cpe,
-                    char const **oui);
+                    char **oui);
 
 /**
  * Get CPE/device_id object product_class parameter.
@@ -597,7 +608,8 @@ extern te_errno tapi_cfg_acse_get_device_id_oui(
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cpe           CPE object name
- * @param product_class CPE/device_id object product_class parameter
+ * @param product_class CPE/device_id object product_class parameter which
+ *                      should be freed after usage
  *
  * @return              Status code
  */
@@ -605,7 +617,7 @@ extern te_errno tapi_cfg_acse_get_device_id_product_class(
                     char const *ta,
                     char const *acs,
                     char const *cpe,
-                    char const **product_class);
+                    char **product_class);
 
 /**
  * Get CPE/device_id object serial_number parameter.
@@ -613,7 +625,8 @@ extern te_errno tapi_cfg_acse_get_device_id_product_class(
  * @param ta            Test Agent name
  * @param acs           ACS object name
  * @param cpe           CPE object name
- * @param serial_number CPE/device_id object serial_number parameter
+ * @param serial_number CPE/device_id object serial_number parameter which
+ *                      should be freed after usage
  *
  * @return              Status code
  */
@@ -621,7 +634,7 @@ extern te_errno tapi_cfg_acse_get_device_id_serial_number(
                     char const *ta,
                     char const *acs,
                     char const *cpe,
-                    char const **serial_number);
+                    char **serial_number);
 
 /**
  * Add CPE object and then set its parameters.

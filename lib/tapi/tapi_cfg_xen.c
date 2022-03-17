@@ -56,7 +56,7 @@ te_errno
 tapi_cfg_xen_get_path(char const *ta, char *path)
 {
     cfg_val_type type  = CVT_STRING;
-    char const  *value;
+    char        *value;
     te_errno     rc;
 
     if (ta == NULL || path == NULL)
@@ -69,7 +69,7 @@ tapi_cfg_xen_get_path(char const *ta, char *path)
                                    "/agent:%s/xen:", ta)) == 0)
     {
         strcpy(path, value);
-        free((void *)value);
+        free(value);
     }
     else
         ERROR("Failed to get XEN path on %s", ta);
@@ -146,7 +146,7 @@ te_errno
 tapi_cfg_xen_get_rpc_br(char const *ta, char *br_name)
 {
     cfg_val_type type  = CVT_STRING;
-    char const  *value;
+    char        *value;
     te_errno     rc;
 
     if (ta == NULL || br_name == NULL)
@@ -164,7 +164,7 @@ tapi_cfg_xen_get_rpc_br(char const *ta, char *br_name)
     else
     {
         strcpy(br_name, value);
-        free((void *)value);
+        free(value);
     }
 
     return rc;
@@ -198,7 +198,7 @@ te_errno
 tapi_cfg_xen_get_rpc_if(char const *ta, char *if_name)
 {
     cfg_val_type type  = CVT_STRING;
-    char const  *value;
+    char        *value;
     te_errno     rc;
 
     if (ta == NULL || if_name == NULL)
@@ -216,7 +216,7 @@ tapi_cfg_xen_get_rpc_if(char const *ta, char *if_name)
     else
     {
         strcpy(if_name, value);
-        free((void *)value);
+        free(value);
     }
 
     return rc;
@@ -458,7 +458,7 @@ tapi_cfg_xen_dom_u_get_status(char const *ta, char const *dom_u,
                               char *status)
 {
     cfg_val_type type  = CVT_STRING;
-    char const  *value;
+    char        *value;
     te_errno     rc;
 
     if (ta == NULL || dom_u == NULL || status == NULL)
@@ -477,7 +477,7 @@ tapi_cfg_xen_dom_u_get_status(char const *ta, char const *dom_u,
     else
     {
         strcpy(status, value);
-        free((void *)value);
+        free(value);
     }
 
     return rc;
@@ -492,9 +492,9 @@ tapi_cfg_xen_dom_u_set_status(char const *ta, char const *dom_u,
     te_bool      started;
     te_errno     rc;
 
-    cfg_val_type           type  = CVT_ADDRESS;
-    struct sockaddr const *value;
-    struct sockaddr        ip_addr;
+    cfg_val_type     type  = CVT_ADDRESS;
+    struct sockaddr *value;
+    struct sockaddr  ip_addr;
 
     if (ta == NULL || dom_u == NULL || status == NULL)
     {
@@ -513,7 +513,7 @@ tapi_cfg_xen_dom_u_set_status(char const *ta, char const *dom_u,
     }
 
     memcpy(&ip_addr, value, sizeof(ip_addr));
-    free((void *)value);
+    free(value);
 
     if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, status),
                                    "/agent:%s/xen:/dom_u:%s/status:",
@@ -621,9 +621,9 @@ te_errno
 tapi_cfg_xen_dom_u_get_ip_addr(char const *ta, char const *dom_u,
                                struct sockaddr *ip_addr)
 {
-    cfg_val_type           type  = CVT_ADDRESS;
-    struct sockaddr const *value;
-    te_errno               rc;
+    cfg_val_type     type  = CVT_ADDRESS;
+    struct sockaddr *value;
+    te_errno         rc;
 
     if (ta == NULL || dom_u == NULL || ip_addr == NULL)
     {
@@ -641,7 +641,7 @@ tapi_cfg_xen_dom_u_get_ip_addr(char const *ta, char const *dom_u,
     else
     {
         memcpy(ip_addr, value, sizeof(*value));
-        free((void *)value);
+        free(value);
     }
 
     return rc;
@@ -783,7 +783,7 @@ tapi_cfg_xen_dom_u_bridge_get_if_name(char const *ta, char const *dom_u,
                                       char const *bridge, char *if_name)
 {
     cfg_val_type type  = CVT_STRING;
-    char const  *value;
+    char        *value;
     te_errno     rc;
 
     if (ta == NULL || dom_u == NULL || bridge == NULL || if_name == NULL)
@@ -803,7 +803,7 @@ tapi_cfg_xen_dom_u_bridge_get_if_name(char const *ta, char const *dom_u,
     else
     {
         strcpy(if_name, value);
-        free((void *)value);
+        free(value);
     }
 
     return rc;
@@ -842,9 +842,9 @@ tapi_cfg_xen_dom_u_bridge_get_ip_addr(char const *ta, char const *dom_u,
                                       char const *bridge,
                                       struct sockaddr *ip_addr)
 {
-    cfg_val_type           type  = CVT_ADDRESS;
-    struct sockaddr const *value;
-    te_errno               rc;
+    cfg_val_type     type  = CVT_ADDRESS;
+    struct sockaddr *value;
+    te_errno         rc;
 
     if (ta == NULL || dom_u == NULL || bridge == NULL || ip_addr == NULL)
     {
@@ -864,7 +864,7 @@ tapi_cfg_xen_dom_u_bridge_get_ip_addr(char const *ta, char const *dom_u,
     else
     {
         memcpy(ip_addr, value, sizeof(*value));
-        free((void *)value);
+        free(value);
     }
 
     return rc;

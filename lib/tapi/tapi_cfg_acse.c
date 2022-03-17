@@ -86,7 +86,7 @@ tapi_cfg_acse_set_acs_url(char const *ta, char const *acs,
 /* See description in tapi_cfg_acse.h */
 extern te_errno
 tapi_cfg_acse_get_acs_url(char const *ta, char const *acs,
-                          char const **url)
+                          char **url)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -108,7 +108,7 @@ tapi_cfg_acse_set_acs_cert(char const *ta, char const *acs,
 /* See description in tapi_cfg_acse.h */
 extern te_errno
 tapi_cfg_acse_get_acs_cert(char const *ta, char const *acs,
-                           char const **cert)
+                           char **cert)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -130,7 +130,7 @@ tapi_cfg_acse_set_acs_user(char const *ta, char const *acs,
 /* See description in tapi_cfg_acse.h */
 extern te_errno
 tapi_cfg_acse_get_acs_user(char const *ta, char const *acs,
-                           char const **user)
+                           char **user)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -152,7 +152,7 @@ tapi_cfg_acse_set_acs_pass(char const *ta, char const *acs,
 /* See description in tapi_cfg_acse.h */
 extern te_errno
 tapi_cfg_acse_get_acs_pass(char const *ta, char const *acs,
-                           char const **pass)
+                           char **pass)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -278,7 +278,7 @@ tapi_cfg_acse_set_cpe_url(char const *ta, char const *acs,
 /* See description in tapi_cfg_acse.h */
 extern te_errno
 tapi_cfg_acse_get_cpe_url(char const *ta, char const *acs,
-                          char const *cpe, char const **url)
+                          char const *cpe, char **url)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -300,7 +300,7 @@ tapi_cfg_acse_set_cpe_cert(char const *ta, char const *acs,
 /* See description in tapi_cfg_acse.h */
 extern te_errno
 tapi_cfg_acse_get_cpe_cert(char const *ta, char const *acs,
-                           char const *cpe, char const **cert)
+                           char const *cpe, char **cert)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -322,7 +322,7 @@ tapi_cfg_acse_set_cpe_user(char const *ta, char const *acs,
 /* See description in tapi_cfg_acse.h */
 extern te_errno
 tapi_cfg_acse_get_cpe_user(char const *ta, char const *acs,
-                           char const *cpe, char const **user)
+                           char const *cpe, char **user)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -344,7 +344,7 @@ tapi_cfg_acse_set_cpe_pass(char const *ta, char const *acs,
 /* See description in tapi_cfg_acse.h */
 extern te_errno
 tapi_cfg_acse_get_cpe_pass(char const *ta, char const *acs,
-                           char const *cpe, char const **pass)
+                           char const *cpe, char **pass)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -368,7 +368,7 @@ tapi_cfg_acse_set_cpe_ip_addr(char const *ta, char const *acs,
 extern te_errno
 tapi_cfg_acse_get_cpe_ip_addr(char const *ta, char const *acs,
                               char const *cpe,
-                              struct sockaddr const **addr)
+                              struct sockaddr **addr)
 {
     cfg_val_type type = CVT_ADDRESS;
 
@@ -464,7 +464,7 @@ tapi_cfg_acse_get_session_state(char const *ta, char const *acs,
 extern te_errno
 tapi_cfg_acse_get_device_id_manufacturer(char const *ta, char const *acs,
                                          char const *cpe,
-                                         char const **manufacturer)
+                                         char **manufacturer)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -478,7 +478,7 @@ tapi_cfg_acse_get_device_id_manufacturer(char const *ta, char const *acs,
 extern te_errno
 tapi_cfg_acse_get_device_id_oui(char const *ta, char const *acs,
                                 char const *cpe,
-                                char const **oui)
+                                char **oui)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -492,7 +492,7 @@ tapi_cfg_acse_get_device_id_oui(char const *ta, char const *acs,
 extern te_errno
 tapi_cfg_acse_get_device_id_product_class(char const *ta, char const *acs,
                                           char const *cpe,
-                                          char const **product_class)
+                                          char **product_class)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -506,7 +506,7 @@ tapi_cfg_acse_get_device_id_product_class(char const *ta, char const *acs,
 extern te_errno
 tapi_cfg_acse_get_device_id_serial_number(char const *ta, char const *acs,
                                           char const *cpe,
-                                          char const **serial_number)
+                                          char **serial_number)
 {
     cfg_val_type type = CVT_STRING;
 

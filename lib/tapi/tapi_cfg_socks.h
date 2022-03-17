@@ -242,14 +242,14 @@ extern te_errno tapi_cfg_socks_interface_del(const char *ta,
  * @param id            Instance ID.
  * @param interface_id  Interface instance ID.
  * @param value         Pointer to a string which will receive the obtained
- *                      interface name.
+ *                      interface name. The string should be freed after usage.
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_socks_interface_get(const char *ta,
     tapi_socks_id              id,
     tapi_socks_interface_id    interface_id,
-    const char               **value);
+    char                     **value);
 
 /**
  * Set interface to listen at.
@@ -335,13 +335,13 @@ extern te_errno tapi_cfg_socks_interface_addr_family_set(const char *ta,
  * @param ta    Test Agent.
  * @param id    Instance ID.
  * @param value Pointer to a string which will receive the obtained interface
- *              name.
+ *              name. The string should be freed after usage.
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_socks_outbound_interface_get(const char      *ta,
                                                       tapi_socks_id    id,
-                                                      const char     **value);
+                                                      char           **value);
 
 /**
  * Set interface to let traffic out from.
@@ -362,12 +362,13 @@ extern te_errno tapi_cfg_socks_outbound_interface_set(const char     *ta,
  * @param ta    Test Agent.
  * @param id    Instance ID.
  * @param value Pointer to a string which will receive the obtained cipher.
+ *              The string should be freed after usage.
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_socks_cipher_get(const char   *ta,
                                           tapi_socks_id id,
-                                          const char  **value);
+                                          char        **value);
 
 /**
  * Set cipher used when passing encrypted traffic.
@@ -443,13 +444,14 @@ extern te_errno tapi_cfg_socks_user_del(const char         *ta,
  * @param id    Instance ID.
  * @param user  User name.
  * @param value Pointer to variable which will receive actual user's next hop.
+ *              The string should be freed after usage.
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_socks_user_next_hop_get(const char        *ta,
                                                  tapi_socks_id      id,
                                                  tapi_socks_user_id user,
-                                                 const char       **value);
+                                                 char             **value);
 
 /**
  * Set user's next server to use (for that user requests will be relayed to
@@ -475,13 +477,14 @@ extern te_errno tapi_cfg_socks_user_next_hop_set(const char        *ta,
  * @param id    Instance ID.
  * @param user  User name.
  * @param value Pointer to variable which will receive actual user's username.
+ *              The variable should be freed after usage.
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_socks_user_username_get(const char        *ta,
                                                  tapi_socks_id      id,
                                                  tapi_socks_user_id user,
-                                                 const char       **value);
+                                                 char             **value);
 
 /**
  * Set user's internal username.
@@ -505,13 +508,14 @@ extern te_errno tapi_cfg_socks_user_username_set(const char        *ta,
  * @param id    Instance ID.
  * @param user  User name.
  * @param value Pointer to variable which will receive the actual password.
+ *              The variable should be freed after usage.
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_socks_user_password_get(const char          *ta,
                                                  tapi_socks_id        id,
                                                  tapi_socks_user_id   user,
-                                                 const char         **value);
+                                                 char               **value);
 
 /**
  * Set password associated with given user.

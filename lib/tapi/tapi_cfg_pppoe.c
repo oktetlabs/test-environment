@@ -72,7 +72,7 @@ tapi_cfg_pppoe_server_subnet_set(const char *ta, const char *subnet)
 
 /* See description in tapi_cfg_pppoe.h */
 te_errno
-tapi_cfg_pppoe_server_subnet_get(const char *ta, const char **subnet_p)
+tapi_cfg_pppoe_server_subnet_get(const char *ta, char **subnet_p)
 {
     cfg_val_type type = CVT_STRING;
     int          rc;

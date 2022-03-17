@@ -74,12 +74,13 @@ tapi_cfg_pppoe_server_subnet_set(const char *ta, const char *subnet);
  * Get subnet of PPPoE server to allocate local and remote addresses.
  *
  * @param ta            Test Agent
- * @param subnet_p      Returned pointer to subnet value
+ * @param subnet_p      Returned pointer to subnet value. Note, it should be
+ *                      freed with free(3) when it is no longer needed.
  *
  * @return Status code
  */
 extern te_errno
-tapi_cfg_pppoe_server_subnet_get(const char *ta, const char **subnet_p);
+tapi_cfg_pppoe_server_subnet_get(const char *ta, char **subnet_p);
 
 /**
  * Get local IP address of PPPoE server.

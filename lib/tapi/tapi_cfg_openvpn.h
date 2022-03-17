@@ -349,13 +349,14 @@ extern te_errno tapi_cfg_openvpn_user_del(const char       *ta,
  * @param id    Instance ID.
  * @param user  User name.
  * @param val   Pointer to variable which will receive actual user's username.
+ *              The username string should be freed after usage.
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_openvpn_user_username_get(const char          *ta,
                                                    tapi_openvpn_id      id,
                                                    tapi_openvpn_prop    user,
-                                                   const char         **val);
+                                                   char               **val);
 
 /**
  * Set user's internal username.
@@ -379,13 +380,14 @@ extern te_errno tapi_cfg_openvpn_user_username_set(const char          *ta,
  * @param id    Instance ID.
  * @param user  User name.
  * @param val   Pointer to variable which will receive the actual password.
+ *              The password string should be freed after usage.
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_openvpn_user_password_get(const char          *ta,
                                                    tapi_openvpn_id      id,
                                                    tapi_openvpn_prop    user,
-                                                   const char         **val);
+                                                   char               **val);
 
 /**
  * Set password associated with given user.
@@ -409,7 +411,7 @@ extern te_errno tapi_cfg_openvpn_user_password_set(const char          *ta,
  * @param id    Instance ID.
  * @param user  User name.
  * @param val   Pointer to variable which will receive the actual certificate
- *              path.
+ *              path. The certificate path string should be freed after usage.
  *
  * @return Status code
  *
@@ -418,7 +420,7 @@ extern te_errno tapi_cfg_openvpn_user_password_set(const char          *ta,
 extern te_errno tapi_cfg_openvpn_user_certificate_get(const char       *ta,
                                                       tapi_openvpn_id   id,
                                                       tapi_openvpn_prop user,
-                                                      const char      **val);
+                                                      char            **val);
 
 /**
  * Set path to certificate associated with the user.

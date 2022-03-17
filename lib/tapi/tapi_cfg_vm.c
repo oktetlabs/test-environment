@@ -50,7 +50,7 @@ tapi_cfg_vm_pass_pci(const char *ta, const char *vm_name,
 {
     te_errno rc;
     te_string pci_addr_by_vendor = TE_STRING_INIT;
-    const char *pci_addr_by_device = NULL;
+    char *pci_addr_by_device = NULL;
     cfg_val_type val_type = CVT_STRING;
     cfg_oid *oid;
 
@@ -77,6 +77,7 @@ tapi_cfg_vm_pass_pci(const char *ta, const char *vm_name,
     }
 
     oid = cfg_convert_oid_str(pci_addr_by_device);
+    free(pci_addr_by_device);
     pci_addr_by_device = CFG_OID_GET_INST_NAME(oid, 4);
 
     rc = cfg_add_instance_fmt(NULL, CVT_STRING, pci_addr_by_device,
