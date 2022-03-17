@@ -277,9 +277,11 @@ te_is_in_list() {
 #                  @c 1 otherwise
 te_check_tce() {
     local tcevar="TE_BS_TCE_${1}_${2}_SOURCES"
+    local component="$2"
+
     if test -n "${!tcevar}"; then
         if test "${TE_DO_TCE}" = all ||
-                te_is_in_list ${1} ${TE_DO_TCE}; then
+                te_is_in_list ${component} ${TE_DO_TCE}; then
             return 0
         fi
     fi
