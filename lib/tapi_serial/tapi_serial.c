@@ -46,24 +46,19 @@ tapi_serial_open_rpcs(rcf_rpc_server *rpcs, const char *console_name,
     char            *console = NULL;
     char            *user = NULL;
     struct sockaddr *address;
-    cfg_val_type     val_type;
     int              retval;
 
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type, &console, "/agent:%s/console:%s",
-                              rpcs->ta, console_name);
+    rc = cfg_get_instance_string_fmt(&console, "/agent:%s/console:%s",
+                                     rpcs->ta, console_name);
     CHECK_NZ_RETURN(rc);
 
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type, &user, "/agent:%s/console:%s/user:",
-                              rpcs->ta, console_name);
+    rc = cfg_get_instance_string_fmt(&user, "/agent:%s/console:%s/user:",
+                                     rpcs->ta, console_name);
     if (rc != 0)
         user = tapi_strdup(TAPI_SERIAL_DEFAULT_USER);
 
-    val_type = CVT_ADDRESS;
-    rc = cfg_get_instance_fmt(&val_type, &address,
-                              "/agent:%s/console:%s/address:", rpcs->ta,
-                              console_name);
+    rc = cfg_get_instance_addr_fmt(&address, "/agent:%s/console:%s/address:",
+                                   rpcs->ta, console_name);
     if (rc != 0 || te_sockaddr_is_wildcard(address))
         address = NULL;
 

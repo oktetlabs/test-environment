@@ -322,7 +322,6 @@ tapi_env_free(tapi_env *env)
     cfg_handle_tqe   *addr_hndl;
     tapi_env_if      *iface;
     tapi_env_alias   *alias;
-    cfg_val_type      type;
     int               n_entries;
     int               n_deleted;
     cfg_handle        ip_net_hndl;
@@ -447,9 +446,8 @@ tapi_env_free(tapi_env *env)
         }
         if (ip_net_oid != NULL)
         {
-            type = CVT_INTEGER;
-            rc = cfg_get_instance_fmt(&type, &n_entries,
-                                      "%s/n_entries:", ip_net_oid);
+            rc = cfg_get_instance_int_fmt(&n_entries, "%s/n_entries:",
+                                          ip_net_oid);
             if (rc != 0)
             {
                 ERROR("Failed to get number of entries in the pool: %r",
@@ -1158,10 +1156,9 @@ static te_errno
 tapi_env_get_alien_link_addr(struct sockaddr *addr)
 {
     struct sockaddr *tmp;
-    cfg_val_type     type = CVT_ADDRESS;
     te_errno         rc;
 
-    rc = cfg_get_instance_fmt(&type, &tmp, CFG_ALIEN_LINK_ADDR);
+    rc = cfg_get_instance_addr_fmt(&tmp, CFG_ALIEN_LINK_ADDR);
     if (rc != 0)
     {
         ERROR("Failed to get alien link address: %r", rc);
@@ -1196,11 +1193,10 @@ static te_errno
 tapi_env_get_fake_link_addr(struct sockaddr *addr)
 {
     uint8_t unset_link_addr[ETHER_ADDR_LEN] = {0};
-    cfg_val_type type = CVT_ADDRESS;
     struct sockaddr *tmp;
     te_errno rc;
 
-    rc = cfg_get_instance_fmt(&type, &tmp, CFG_FAKE_LINK_ADDR);
+    rc = cfg_get_instance_addr_fmt(&tmp, CFG_FAKE_LINK_ADDR);
     if (rc != 0)
     {
         ERROR("Failed to get fake link address: %r", rc);
@@ -1210,7 +1206,7 @@ tapi_env_get_fake_link_addr(struct sockaddr *addr)
     if (memcmp(unset_link_addr, tmp->sa_data, ETHER_ADDR_LEN) == 0)
     {
         free(tmp);
-        rc = cfg_get_instance_fmt(&type, &tmp, CFG_ALIEN_LINK_ADDR);
+        rc = cfg_get_instance_addr_fmt(&tmp, CFG_ALIEN_LINK_ADDR);
         if (rc != 0)
             return rc;
 
@@ -1358,10 +1354,8 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
                 if (alien_addr == 0)
                 {
                     struct sockaddr *tmp;
-                    cfg_val_type     type = CVT_ADDRESS;
 
-                    rc = cfg_get_instance_fmt(&type, &tmp,
-                                              "/local:/ip4_alien:");
+                    rc = cfg_get_instance_addr_fmt(&tmp, "/local:/ip4_alien:");
                     if (rc != 0)
                         break;
                     alien_addr = ntohl(SIN(tmp)->sin_addr.s_addr);
@@ -1519,12 +1513,10 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
                 if (first_time)
                 {
                     struct sockaddr *tmp;
-                    cfg_val_type     type = CVT_ADDRESS;
 
                     first_time = FALSE;
 
-                    rc = cfg_get_instance_fmt(&type, &tmp,
-                                              "/local:/ip6_alien:");
+                    rc = cfg_get_instance_addr_fmt(&tmp, "/local:/ip6_alien:");
                     if (rc != 0)
                         break;
                     memcpy(alien_addr, SIN6(tmp)->sin6_addr.s6_addr, IPV6_ADDR_LEN);
@@ -1801,8 +1793,7 @@ prepare_interfaces_pci_fn(tapi_env_if *iface, cfg_net_node_t *node)
         return rc;
     }
 
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type, &pci_oid, "%s", oid);
+    rc = cfg_get_instance_string_fmt(&pci_oid, "%s", oid);
     if (rc != 0)
     {
         ERROR("Failed to get PCI resource OID value '%s': %r", oid, rc);
@@ -1927,16 +1918,14 @@ prepare_pcos(tapi_env_hosts *hosts)
     tapi_env_process   *proc;
     tapi_env_pco       *pco;
     te_bool             main_thread;
-    cfg_val_type        val_type;
     int                 iut_errno_change_no_check = 0;
     te_bool             no_reuse_pco = FALSE;
     te_bool             get_reuse_pco;
     const char         *reuse_pco = getenv("TE_ENV_REUSE_PCO");
     const char         *tst_with_lib = getenv("TE_ENV_TST_WITH_LIB");
 
-    val_type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&val_type, &iut_errno_change_no_check,
-                              "/local:/iut_errno_change_no_check:");
+    rc = cfg_get_instance_int_fmt(&iut_errno_change_no_check,
+                                  "/local:/iut_errno_change_no_check:");
     if (rc != 0 && rc != TE_RC(TE_CS, TE_ENOENT))
     {
         ERROR("Failed to get '/local:/iut_errno_change_no_check:': %r",
@@ -2552,7 +2541,6 @@ tapi_env_get_net_host_addr(const tapi_env          *env,
                            socklen_t               *addrlen)
 {
     te_errno            rc;
-    cfg_val_type        val_type;
     char               *node_oid;
     const tapi_env_if  *iface;
 
@@ -2591,11 +2579,9 @@ tapi_env_get_net_host_addr(const tapi_env          *env,
     }
 
     /* Get IPv4/IPv6 subnet address */
-    val_type = CVT_ADDRESS;
-    rc = cfg_get_instance_fmt(&val_type, addr,
-                              "%s/ip%d_address:%u", node_oid,
-                              af == AF_INET6 ? 6 : 4,
-                              assigned->entries[iface->i_node]);
+    rc = cfg_get_instance_addr_fmt(addr, "%s/ip%d_address:%u",
+                                   node_oid, af == AF_INET6 ? 6 : 4,
+                                   assigned->entries[iface->i_node]);
     if (rc != 0)
     {
         ERROR("Failed to get IPv%d address assigned to the node '%s' "

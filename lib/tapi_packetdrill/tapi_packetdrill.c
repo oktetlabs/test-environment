@@ -101,10 +101,9 @@ copy_test(tapi_packetdrill_opts *opts, tapi_packetdrill_app *app)
     te_string       dst_path = TE_STRING_INIT_STATIC(PATH_MAX);
     te_string       src_path = TE_STRING_INIT_STATIC(PATH_MAX);
     char           *agt_dir = NULL;
-    cfg_val_type    val_type = CVT_STRING;
     const char     *ta = tapi_job_factory_ta(app->factory);
 
-    CHECK_RC(cfg_get_instance_fmt(&val_type, &agt_dir, "/agent:%s/dir:", ta));
+    CHECK_RC(cfg_get_instance_string_fmt(&agt_dir, "/agent:%s/dir:", ta));
 
     CHECK_RC(te_string_append(&src_path, "%s/%s", opts->src_test_dir,
                               opts->short_test_name));

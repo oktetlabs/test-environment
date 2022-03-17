@@ -88,11 +88,8 @@ extern te_errno
 tapi_cfg_acse_get_acs_url(char const *ta, char const *acs,
                           char **url)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, url,
-                                "/agent:%s/acse:/acs:%s/url:",
-                                ta, acs);
+    return cfg_get_instance_string_fmt(url, "/agent:%s/acse:/acs:%s/url:",
+                                       ta, acs);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -110,11 +107,8 @@ extern te_errno
 tapi_cfg_acse_get_acs_cert(char const *ta, char const *acs,
                            char **cert)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, cert,
-                                "/agent:%s/acse:/acs:%s/cert:",
-                                ta, acs);
+    return cfg_get_instance_string_fmt(cert, "/agent:%s/acse:/acs:%s/cert:",
+                                       ta, acs);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -132,11 +126,8 @@ extern te_errno
 tapi_cfg_acse_get_acs_user(char const *ta, char const *acs,
                            char **user)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, user,
-                                "/agent:%s/acse:/acs:%s/user:",
-                                ta, acs);
+    return cfg_get_instance_string_fmt(user, "/agent:%s/acse:/acs:%s/user:",
+                                       ta, acs);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -154,11 +145,8 @@ extern te_errno
 tapi_cfg_acse_get_acs_pass(char const *ta, char const *acs,
                            char **pass)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, pass,
-                                "/agent:%s/acse:/acs:%s/pass:",
-                                ta, acs);
+    return cfg_get_instance_string_fmt(pass, "/agent:%s/acse:/acs:%s/pass:",
+                                       ta, acs);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -220,11 +208,8 @@ extern te_errno
 tapi_cfg_acse_get_acs_port(char const *ta, char const *acs,
                            int *port)
 {
-    cfg_val_type type = CVT_INTEGER;
-
-    return cfg_get_instance_fmt(&type, port,
-                                "/agent:%s/acse:/acs:%s/port:",
-                                ta, acs);
+    return cfg_get_instance_int_fmt(port, "/agent:%s/acse:/acs:%s/port:",
+                                    ta, acs);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -280,11 +265,9 @@ extern te_errno
 tapi_cfg_acse_get_cpe_url(char const *ta, char const *acs,
                           char const *cpe, char **url)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, url,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/url:",
-                                ta, acs, cpe);
+    return cfg_get_instance_string_fmt(url,
+                                       "/agent:%s/acse:/acs:%s/cpe:%s/url:",
+                                       ta, acs, cpe);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -302,11 +285,9 @@ extern te_errno
 tapi_cfg_acse_get_cpe_cert(char const *ta, char const *acs,
                            char const *cpe, char **cert)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, cert,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/cert:",
-                                ta, acs, cpe);
+    return cfg_get_instance_string_fmt(cert,
+                                       "/agent:%s/acse:/acs:%s/cpe:%s/cert:",
+                                       ta, acs, cpe);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -324,11 +305,9 @@ extern te_errno
 tapi_cfg_acse_get_cpe_user(char const *ta, char const *acs,
                            char const *cpe, char **user)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, user,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/user:",
-                                ta, acs, cpe);
+    return cfg_get_instance_string_fmt(user,
+                                       "/agent:%s/acse:/acs:%s/cpe:%s/user:",
+                                       ta, acs, cpe);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -346,11 +325,9 @@ extern te_errno
 tapi_cfg_acse_get_cpe_pass(char const *ta, char const *acs,
                            char const *cpe, char **pass)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, pass,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/pass:",
-                                ta, acs, cpe);
+    return cfg_get_instance_string_fmt(pass,
+                                       "/agent:%s/acse:/acs:%s/cpe:%s/pass:",
+                                       ta, acs, cpe);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -370,11 +347,9 @@ tapi_cfg_acse_get_cpe_ip_addr(char const *ta, char const *acs,
                               char const *cpe,
                               struct sockaddr **addr)
 {
-    cfg_val_type type = CVT_ADDRESS;
-
-    return cfg_get_instance_fmt(&type, addr,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/ip_addr:",
-                                ta, acs, cpe);
+    return cfg_get_instance_addr_fmt(addr,
+                                     "/agent:%s/acse:/acs:%s/cpe:%s/ip_addr:",
+                                     ta, acs, cpe);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -466,12 +441,10 @@ tapi_cfg_acse_get_device_id_manufacturer(char const *ta, char const *acs,
                                          char const *cpe,
                                          char **manufacturer)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, manufacturer,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/"
-                                "device_id:/manufacturer:",
-                                ta, acs, cpe);
+    return cfg_get_instance_string_fmt(manufacturer,
+                                       "/agent:%s/acse:/acs:%s/cpe:%s/"
+                                       "device_id:/manufacturer:",
+                                       ta, acs, cpe);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -480,12 +453,10 @@ tapi_cfg_acse_get_device_id_oui(char const *ta, char const *acs,
                                 char const *cpe,
                                 char **oui)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, oui,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/"
-                                "device_id:/oui:",
-                                ta, acs, cpe);
+    return cfg_get_instance_string_fmt(oui,
+                                       "/agent:%s/acse:/acs:%s/cpe:%s/"
+                                       "device_id:/oui:",
+                                       ta, acs, cpe);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -494,12 +465,10 @@ tapi_cfg_acse_get_device_id_product_class(char const *ta, char const *acs,
                                           char const *cpe,
                                           char **product_class)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, product_class,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/"
-                                "device_id:/product_class:",
-                                ta, acs, cpe);
+    return cfg_get_instance_string_fmt(product_class,
+                                       "/agent:%s/acse:/acs:%s/cpe:%s/"
+                                       "device_id:/product_class:",
+                                       ta, acs, cpe);
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -508,12 +477,10 @@ tapi_cfg_acse_get_device_id_serial_number(char const *ta, char const *acs,
                                           char const *cpe,
                                           char **serial_number)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, serial_number,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/"
-                                "device_id:/serial_number:",
-                                ta, acs, cpe);
+    return cfg_get_instance_string_fmt(serial_number,
+                                       "/agent:%s/acse:/acs:%s/cpe:%s/"
+                                       "device_id:/serial_number:",
+                                       ta, acs, cpe);
 }
 
 /* See description in tapi_cfg_acse.h */

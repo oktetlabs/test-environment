@@ -48,11 +48,9 @@ tapi_eal_rpcs_set_cached_eal_args(const rcf_rpc_server *rpcs,
 static te_errno
 tapi_eal_rpcs_get_cached_eal_args(const rcf_rpc_server *rpcs, char **eal_args)
 {
-    cfg_val_type val_type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&val_type, eal_args,
-                                "/agent:%s/rpcserver:%s/config:",
-                                rpcs->ta, rpcs->name);
+    return cfg_get_instance_string_fmt(eal_args,
+                                       "/agent:%s/rpcserver:%s/config:",
+                                       rpcs->ta, rpcs->name);
 }
 
 static te_errno
@@ -871,9 +869,7 @@ tapi_eal_get_vdev_slave_pci_addr(cfg_handle   slave_handle,
     if (rc != 0)
         return rc;
 
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type, &slave_pci_inst_val,
-                              "%s", slave_inst_val);
+    rc = cfg_get_instance_string_fmt(&slave_pci_inst_val, "%s", slave_inst_val);
     if (rc != 0)
         goto out;
 
@@ -975,8 +971,7 @@ tapi_eal_get_vdev_properties(tapi_env              *env,
     if (rc != 0)
         goto out;
 
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type, &mode, "%s/mode:", node_val);
+    rc = cfg_get_instance_string_fmt(&mode, "%s/mode:", node_val);
     if (rc != 0)
         goto out;
 
@@ -1525,7 +1520,6 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     int                     my_argc = 0;
     const tapi_env_ps_if   *ps_if;
     int                     i;
-    cfg_val_type            val_type;
     int                     mem_channels;
     int                     mem_amount = 0;
     char                   *app_prefix = NULL;
@@ -1579,9 +1573,8 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     }
 
     /* Add memory channels information */
-    val_type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&val_type, &mem_channels,
-                              "/local:%s/mem_channels:", rpcs->ta);
+    rc = cfg_get_instance_int_fmt(&mem_channels, "/local:%s/mem_channels:",
+                                  rpcs->ta);
     if (rc != 0)
         goto cleanup;
 
@@ -1589,9 +1582,8 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     append_arg(&my_argc, &my_argv, "%d", mem_channels);
 
     /* Set the amount of memory (in Megabytes) to be booked within hugetables */
-    val_type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&val_type, &mem_amount,
-                              "/local:%s/dpdk:/mem_amount:", rpcs->ta);
+    rc = cfg_get_instance_int_fmt(&mem_amount, "/local:%s/dpdk:/mem_amount:",
+                                  rpcs->ta);
     if (rc == 0 && mem_amount > 0)
     {
         append_arg(&my_argc, &my_argv, "-m");
@@ -1599,9 +1591,8 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     }
 
     /* Specify DPDK app prefix */
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type, &app_prefix,
-                              "/local:%s/dpdk:/app_prefix:", rpcs->ta);
+    rc = cfg_get_instance_string_fmt(&app_prefix, "/local:%s/dpdk:/app_prefix:",
+                                     rpcs->ta);
     if (rc == 0 && app_prefix != NULL)
     {
         append_arg(&my_argc, &my_argv, "--file-prefix");
@@ -1611,9 +1602,9 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     }
 
     /* Append extra EAL args */
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type, &extra_eal_args,
-                              "/local:%s/dpdk:/extra_eal_args:", rpcs->ta);
+    rc = cfg_get_instance_string_fmt(&extra_eal_args,
+                                     "/local:%s/dpdk:/extra_eal_args:",
+                                     rpcs->ta);
     if (rc == 0)
     {
         char *sp = NULL;

@@ -461,9 +461,6 @@ tapi_serial_parser_event_get_count(const tapi_parser_id *id,
                                    const char *e_name,
                                    int *count)
 {
-    cfg_val_type type = CVT_INTEGER;
-
-    return cfg_get_instance_sync_fmt(&type, count,
-                                     TE_SERIAL_EVENT "/counter:",
-                                     id->ta, id->name, e_name);
+    return cfg_get_instance_int_sync_fmt(count, TE_SERIAL_EVENT "/counter:",
+                                         id->ta, id->name, e_name);
 }

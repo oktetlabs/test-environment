@@ -309,7 +309,6 @@ tapi_job_factory_set_path(tapi_job_factory_t *factory)
 {
     te_errno rc;
     char *ta_path = NULL;
-    cfg_val_type type = CVT_STRING;
     te_bool awaiting_error;
     rcf_rpc_server *rpcs;
 
@@ -322,7 +321,7 @@ tapi_job_factory_set_path(tapi_job_factory_t *factory)
     rpcs = factory->proto.rpcs;
     awaiting_error = RPC_AWAITING_ERROR(rpcs);
 
-    rc = cfg_get_instance_fmt(&type, &ta_path, "/agent:%s/env:PATH", rpcs->ta);
+    rc = cfg_get_instance_string_fmt(&ta_path, "/agent:%s/env:PATH", rpcs->ta);
     if (rc != 0)
         return rc;
 

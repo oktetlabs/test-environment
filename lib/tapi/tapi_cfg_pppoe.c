@@ -74,13 +74,12 @@ tapi_cfg_pppoe_server_subnet_set(const char *ta, const char *subnet)
 te_errno
 tapi_cfg_pppoe_server_subnet_get(const char *ta, char **subnet_p)
 {
-    cfg_val_type type = CVT_STRING;
-    int          rc;
+    int rc;
 
     /* Add subnet configuration entry */
-    if ((rc = cfg_get_instance_fmt(&type, subnet_p,
-                                   TE_CFG_TA_PPPOE_SERVER_FMT "/subnet:",
-                                   ta)) != 0)
+    if ((rc = cfg_get_instance_string_fmt(subnet_p,
+                                          TE_CFG_TA_PPPOE_SERVER_FMT "/subnet:",
+                                          ta)) != 0)
     {
         ERROR("Failed to get pppoe server subnet: %r", rc);
     }

@@ -102,12 +102,10 @@ tapi_cfg_socks_impl_get(const char *ta, tapi_socks_id id,
                         te_socks_impl *value)
 {
     te_errno     rc;
-    cfg_val_type type = CVT_STRING;
     char        *proto;
 
-    rc = cfg_get_instance_fmt(&type, &proto,
-                              TE_CFG_TA_SOCKS_FMT "/impl:",
-                              TE_CFG_TA_SOCKS_ARGS(ta, id));
+    rc = cfg_get_instance_string_fmt(&proto, TE_CFG_TA_SOCKS_FMT "/impl:",
+                                     TE_CFG_TA_SOCKS_ARGS(ta, id));
     if (rc != 0)
         return rc;
 
@@ -226,12 +224,10 @@ tapi_cfg_socks_interface_get(const char                *ta,
                              tapi_socks_interface_id    interface_id,
                              char                     **value)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, value,
-                                TE_CFG_TA_SOCKS_FMT "/interface:%s",
-                                TE_CFG_TA_SOCKS_ARGS(ta, id),
-                                (const char *)interface_id);
+    return cfg_get_instance_string_fmt(value,
+                                       TE_CFG_TA_SOCKS_FMT "/interface:%s",
+                                       TE_CFG_TA_SOCKS_ARGS(ta, id),
+                                       (const char *)interface_id);
 }
 
 /* See description in tapi_cfg_socks.h */
@@ -325,11 +321,9 @@ te_errno
 tapi_cfg_socks_outbound_interface_get(const char *ta, tapi_socks_id id,
                                       char **value)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, value,
-                                TE_CFG_TA_SOCKS_FMT "/outbound_interface:",
-                                TE_CFG_TA_SOCKS_ARGS(ta, id));
+    return cfg_get_instance_string_fmt(value,
+                                   TE_CFG_TA_SOCKS_FMT "/outbound_interface:",
+                                   TE_CFG_TA_SOCKS_ARGS(ta, id));
 }
 
 /* See description in tapi_cfg_socks.h */
@@ -346,11 +340,9 @@ tapi_cfg_socks_outbound_interface_set(const char *ta, tapi_socks_id id,
 te_errno
 tapi_cfg_socks_cipher_get(const char *ta, tapi_socks_id id, char **value)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, value,
-                                TE_CFG_TA_SOCKS_FMT "/cipher:",
-                                TE_CFG_TA_SOCKS_ARGS(ta, id));
+    return cfg_get_instance_string_fmt(value,
+                                       TE_CFG_TA_SOCKS_FMT "/cipher:",
+                                       TE_CFG_TA_SOCKS_ARGS(ta, id));
 }
 
 /* See description in tapi_cfg_socks.h */
@@ -367,11 +359,9 @@ te_errno
 tapi_cfg_socks_auth_get(const char *ta, tapi_socks_id id,
                         char **value)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, value,
-                                TE_CFG_TA_SOCKS_FMT "/auth:",
-                                TE_CFG_TA_SOCKS_ARGS(ta, id));
+    return cfg_get_instance_string_fmt(value,
+                                       TE_CFG_TA_SOCKS_FMT "/auth:",
+                                       TE_CFG_TA_SOCKS_ARGS(ta, id));
 }
 
 /* See description in tapi_cfg_socks.h */
@@ -412,11 +402,10 @@ te_errno
 tapi_cfg_socks_user_next_hop_get(const char *ta, tapi_socks_id id,
                                  tapi_socks_user_id user, char **value)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, value,
-        TE_CFG_TA_SOCKS_FMT "/user:%s/next_hop:",
-        TE_CFG_TA_SOCKS_ARGS(ta, id), (const char *)user);
+    return cfg_get_instance_string_fmt(value,
+                                       TE_CFG_TA_SOCKS_FMT "/user:%s/next_hop:",
+                                       TE_CFG_TA_SOCKS_ARGS(ta, id),
+                                       (const char *)user);
 }
 
 /* See description in tapi_cfg_socks.h */
@@ -434,11 +423,10 @@ te_errno
 tapi_cfg_socks_user_username_get(const char *ta, tapi_socks_id id,
                                  tapi_socks_user_id user, char **value)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, value,
-        TE_CFG_TA_SOCKS_FMT "/user:%s/username:",
-        TE_CFG_TA_SOCKS_ARGS(ta, id), (const char *)user);
+    return cfg_get_instance_string_fmt(value,
+                                       TE_CFG_TA_SOCKS_FMT "/user:%s/username:",
+                                       TE_CFG_TA_SOCKS_ARGS(ta, id),
+                                       (const char *)user);
 }
 
 /* See description in tapi_cfg_socks.h */
@@ -456,11 +444,10 @@ te_errno
 tapi_cfg_socks_user_password_get(const char *ta, tapi_socks_id id,
                                  tapi_socks_user_id user, char **value)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, value,
-        TE_CFG_TA_SOCKS_FMT "/user:%s/password:",
-        TE_CFG_TA_SOCKS_ARGS(ta, id), (const char *)user);
+    return cfg_get_instance_string_fmt(value,
+                                       TE_CFG_TA_SOCKS_FMT "/user:%s/password:",
+                                       TE_CFG_TA_SOCKS_ARGS(ta, id),
+                                       (const char *)user);
 }
 
 /* See description in tapi_cfg_socks.h */

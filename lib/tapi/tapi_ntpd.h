@@ -62,12 +62,10 @@ tapi_ntpd_disable(rcf_rpc_server *rpcs)
 static inline te_bool
 tapi_ntpd_status(rcf_rpc_server *rpcs)
 {
-    cfg_val_type val_type;
     int val;
 
-    val_type = CVT_INTEGER;
-    CHECK_RC(cfg_get_instance_fmt(&val_type, &val,
-                                  "/agent:%s/ntpd:/enable:", rpcs->ta));
+    CHECK_RC(cfg_get_instance_int_fmt(&val, "/agent:%s/ntpd:/enable:",
+                                      rpcs->ta));
 
     return val == 0 ? FALSE : TRUE;
 }

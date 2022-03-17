@@ -197,8 +197,7 @@ if (_rc != 0) \
         else
         {
             signame = NULL;
-            type = CVT_STRING;
-            SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_fmt(&type, &signame,
+            SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_string_fmt(&signame,
                 SERIAL_FMT_HLR "%s/signal:", event_name, h->name));
             SERIAL_CHECK_RC(rc, "Failed to get the handler signal");
             if (signame == NULL)
@@ -262,14 +261,12 @@ tester_serial_call_handler(const char *path)
 {
     char            full_path[TESTER_SERIAL_MAX_PATH];
     char           *loc = NULL;
-    cfg_val_type    type;
     int             res;
     int             rc;
 
     if (*path != '/' && *path != '~')
     {
-        type = CVT_STRING;
-        SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_fmt(&type, &loc,
+        SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_string_fmt(&loc,
             SERIAL_FMT_LOC "/location:"));
         if (rc != 0 || loc == NULL)
         {
@@ -478,9 +475,8 @@ tester_serial_thread(void)
     int             i;
     int             status;
 
-    type = CVT_INTEGER;
-    SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_fmt(&type, &period,
-                                               "/local:/tester:/period:"));
+    SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_int_fmt(&period,
+                                                   "/local:/tester:/period:"));
     if (rc != 0)
     {
         ERROR("Failed to get the parser period");
@@ -625,14 +621,12 @@ tester_check_serial_stop(void)
 te_errno
 tester_start_serial_thread(void)
 {
-    int             rc;
-    cfg_val_type    type;
-    int             enable;
+    int  rc;
+    int  enable;
 
     /* Check support of the serial parsing framework */
-    type = CVT_INTEGER;
-    SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_fmt(&type, &enable,
-                                               "/local:/tester:/enable:"));
+    SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_int_fmt(&enable,
+                                                   "/local:/tester:/enable:"));
     if ((rc != 0 && TE_RC(TE_CS, TE_ENOENT)) || enable == FALSE)
         return 0;
 

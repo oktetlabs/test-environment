@@ -28,7 +28,6 @@ tapi_cfg_if_feature_is_readonly(const char *ta,
                                 const char *feature_name,
                                 te_bool *readonly)
 {
-    cfg_val_type type = CVT_INTEGER;
     int val;
     te_errno rc;
 
@@ -36,10 +35,9 @@ tapi_cfg_if_feature_is_readonly(const char *ta,
         feature_name == NULL || readonly == NULL)
         return TE_EINVAL;
 
-    rc = cfg_get_instance_sync_fmt(&type, &val,
-                                   TE_CFG_TA_IF_FMT
-                                   "/feature:%s/readonly:",
-                                   ta, ifname, feature_name);
+    rc = cfg_get_instance_int_sync_fmt(&val,
+                                       TE_CFG_TA_IF_FMT "/feature:%s/readonly:",
+                                       ta, ifname, feature_name);
     if (rc != 0)
         return rc;
 
@@ -82,15 +80,13 @@ tapi_cfg_if_feature_get(const char *ta,
                         const char *feature_name,
                         int        *feature_value_out)
 {
-    cfg_val_type type = CVT_INTEGER;
-
     if ((ta == NULL) || (ifname == NULL) ||
         (feature_name == NULL) || (feature_value_out == NULL))
         return TE_EINVAL;
 
-    return cfg_get_instance_sync_fmt(&type, feature_value_out,
-                                     TE_CFG_TA_IF_FMT "/feature:%s",
-                                     ta, ifname, feature_name);
+    return cfg_get_instance_int_sync_fmt(feature_value_out,
+                                         TE_CFG_TA_IF_FMT "/feature:%s",
+                                         ta, ifname, feature_name);
 }
 
 /* See description in the tapi_cfg_if.h */
@@ -226,11 +222,10 @@ static te_errno
 tapi_cfg_if_common_get(const char *ta, const char *ifname, const char *field,
                        int *val)
 {
-    cfg_val_type type = CVT_INTEGER;
-    int          rc;
+    int rc;
 
-    if ((rc = cfg_get_instance_fmt(&type, val, TE_CFG_TA_IF_FMT "/%s:",
-                                   ta, ifname, field)) != 0)
+    if ((rc = cfg_get_instance_int_fmt(val, TE_CFG_TA_IF_FMT "/%s:",
+                                       ta, ifname, field)) != 0)
         ERROR("Failed to get %s value: %r", field, rc);
 
     return rc;
@@ -327,11 +322,8 @@ tapi_cfg_if_reset(const char *ta, const char *ifname)
 te_errno
 tapi_cfg_if_msglvl_get(const char *ta, const char *ifname, uint64_t *msglvl)
 {
-    cfg_val_type v_type = CVT_UINT64;
-
-    return cfg_get_instance_fmt(&v_type, msglvl,
-                                "/agent:%s/interface:%s/msglvl:",
-                                ta, ifname);
+    return cfg_get_instance_uint64_fmt(msglvl, "/agent:%s/interface:%s/msglvl:",
+                                       ta, ifname);
 }
 
 /* See description in the tapi_cfg_if.h */

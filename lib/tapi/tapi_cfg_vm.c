@@ -51,7 +51,6 @@ tapi_cfg_vm_pass_pci(const char *ta, const char *vm_name,
     te_errno rc;
     te_string pci_addr_by_vendor = TE_STRING_INIT;
     char *pci_addr_by_device = NULL;
-    cfg_val_type val_type = CVT_STRING;
     cfg_oid *oid;
 
     rc = te_string_append(&pci_addr_by_vendor,
@@ -68,8 +67,8 @@ tapi_cfg_vm_pass_pci(const char *ta, const char *vm_name,
         goto exit;
     }
 
-    rc = cfg_get_instance_fmt(&val_type, &pci_addr_by_device,
-                              "%s", pci_addr_by_vendor.ptr);
+    rc = cfg_get_instance_string_fmt(&pci_addr_by_device, "%s",
+                                     pci_addr_by_vendor.ptr);
     if (rc != 0)
     {
         ERROR("Failed to get PCI address for VM %s on TA %s", vm_name, ta);

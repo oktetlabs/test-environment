@@ -1855,15 +1855,14 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
         0,
     };
 
-    char         *offer = NULL;
-    int          par2adv = 0;
-    int          rc;
-    cfg_val_type type = CVT_STRING;
+    char *offer = NULL;
+    int  par2adv = 0;
+    int  rc;
 
-    rc = cfg_get_instance_fmt(&type, &offer,
-                              "/agent:%s/iscsi_initiator:/target_data:"
-                              "target_%d/conn:%d/parameters2advertize:",
-                              ta, target_id, cid);
+    rc = cfg_get_instance_string_fmt(&offer,
+                                     "/agent:%s/iscsi_initiator:/target_data:"
+                                     "target_%d/conn:%d/parameters2advertize:",
+                                     ta, target_id, cid);
     if (rc != 0)
     {
         ERROR("Failed to get current parameters2advertize: "
@@ -2616,14 +2615,13 @@ struct iscsi_io_handle_t
 static char *
 get_host_device(const char *ta, unsigned id)
 {
-    cfg_val_type type = CVT_STRING;
-    char        *device;
-    int          rc;
+    char *device;
+    int   rc;
 
-    rc = cfg_get_instance_fmt(&type, &device,
-                              "/agent:%s/iscsi_initiator:"
-                              "/target_data:target_%d/host_device:",
-                              ta, id);
+    rc = cfg_get_instance_string_fmt(&device,
+                                     "/agent:%s/iscsi_initiator:"
+                                     "/target_data:target_%d/host_device:",
+                                     ta, id);
     if (rc != 0)
     {
         ERROR("Cannot obtain host device string: %r", rc);
@@ -2647,14 +2645,13 @@ tapi_iscsi_initiator_is_device_ready(const char *ta, iscsi_target_id id)
         return TRUE;
     else
     {
-        cfg_val_type type = CVT_STRING;
-        char        *status;
-        int          rc;
+        char *status;
+        int   rc;
 
-        rc = cfg_get_instance_fmt(&type, &status,
-                                  "/agent:%s/iscsi_initiator:"
-                                  "/target_data:target_%d/conn:0/status:",
-                                  ta, id);
+        rc = cfg_get_instance_string_fmt(&status,
+                                     "/agent:%s/iscsi_initiator:"
+                                     "/target_data:target_%d/conn:0/status:",
+                                     ta, id);
         if (rc != 0)
         {
             ERROR("Cannot obtain host device status: %r", rc);

@@ -3062,10 +3062,9 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     {
         if (!(ctx->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN)))
         {
-            cfg_val_type    type = CVT_STRING; 
-            char           *reqs = NULL;
+            char *reqs = NULL;
 
-            rc = cfg_get_instance_fmt(&type, &reqs, "/local:/reqs:%u", id);
+            rc = cfg_get_instance_string_fmt(&reqs, "/local:/reqs:%u", id);
 
             if (rc == 0)
             {

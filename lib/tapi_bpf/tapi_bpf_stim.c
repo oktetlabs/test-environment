@@ -158,7 +158,6 @@ tapi_bpf_stim_init(rcf_rpc_server *pco, const char *ifname,
                    tapi_bpf_stim_hdl **handle)
 {
     tapi_bpf_stim_hdl *hdl = NULL;
-    cfg_val_type cfg_type = CVT_INTEGER;
 
     if (type == TAPI_BPF_STIM_STIMULUS_NONE)
         return;
@@ -173,9 +172,9 @@ tapi_bpf_stim_init(rcf_rpc_server *pco, const char *ifname,
 
     *handle = hdl;
 
-    CHECK_RC(cfg_get_instance_fmt(&cfg_type, &hdl->ifindex,
-                                  "/agent:%s/interface:%s/index:",
-                                  hdl->ta, hdl->ifname));
+    CHECK_RC(cfg_get_instance_int_fmt(&hdl->ifindex,
+                                      "/agent:%s/interface:%s/index:", hdl->ta,
+                                      hdl->ifname));
 
     CHECK_RC(tapi_cfg_qdisc_set_kind(hdl->ta, hdl->ifname,
                                      TAPI_CFG_QDISC_KIND_CLSACT));

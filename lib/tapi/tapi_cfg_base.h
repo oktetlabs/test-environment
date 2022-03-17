@@ -638,13 +638,11 @@ tapi_cfg_base_if_get_promisc(const char *ta,
                              const char *ifname,
                              te_bool *enabled)
 {
-    cfg_val_type type = CVT_INTEGER;
     te_errno rc;
     int val;
 
-    rc = cfg_get_instance_fmt(&type, &val,
-                              "/agent:%s/interface:%s/promisc:",
-                              ta, ifname);
+    rc = cfg_get_instance_int_fmt(&val, "/agent:%s/interface:%s/promisc:",
+                                  ta, ifname);
     if (rc == 0)
         *enabled = (val != 0);
 
@@ -702,16 +700,14 @@ static inline te_errno
 tapi_cfg_base_if_add_get_vlan(const char *ta, const char *if_name,
                               uint16_t vid, char **vlan_ifname)
 {
-    cfg_val_type    val = CVT_STRING;
     unsigned int    count = 0;
     cfg_handle      *handles = NULL;
     char             buf[128];
     int              vlan_not_found;
 
-    vlan_not_found = cfg_get_instance_fmt(
-                            &val, vlan_ifname,
-                            "/agent:%s/interface:%s/vlans:%d/ifname:",
-                            ta, if_name, vid);
+    vlan_not_found = cfg_get_instance_string_fmt(vlan_ifname,
+                                     "/agent:%s/interface:%s/vlans:%d/ifname:",
+                                     ta, if_name, vid);
     if (!vlan_not_found)
     {
         tapi_cfg_base_if_del_vlan(ta, if_name, vid);
@@ -732,13 +728,13 @@ tapi_cfg_base_if_add_get_vlan(const char *ta, const char *if_name,
 
     if (vlan_not_found &&
         /* Check if Priority only mode enabled */
-        cfg_get_instance_fmt(&val, vlan_ifname,
-                             "/agent:%s/interface:%s/vlans:%d/ifname:",
-                             ta, if_name, (vid | 0x1000)) &&
+        cfg_get_instance_string_fmt(vlan_ifname,
+                                    "/agent:%s/interface:%s/vlans:%d/ifname:",
+                                    ta, if_name, (vid | 0x1000)) &&
         /* Check if VLAN only vlan mode enabled */
-        cfg_get_instance_fmt(&val, vlan_ifname,
-                             "/agent:%s/interface:%s/vlans:%d/ifname:",
-                             ta, if_name, (vid | 0x2000)) )
+        cfg_get_instance_string_fmt(vlan_ifname,
+                                    "/agent:%s/interface:%s/vlans:%d/ifname:",
+                                    ta, if_name, (vid | 0x2000)) )
     {
         return tapi_cfg_base_if_add_vlan(ta, if_name, vid, vlan_ifname);
     }

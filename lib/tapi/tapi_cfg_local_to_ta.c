@@ -80,10 +80,9 @@ tapi_cfg_env_local_to_agent(void)
                   __FUNCTION__, i, rc);
             break;
         }
-        rc = cfg_get_instance_fmt(&type, &old_value,
-                                  "/agent:%s/env:%s",
-                                  CFG_OID_GET_INST_NAME(oid, 1),
-                                  CFG_OID_GET_INST_NAME(oid, 2));
+        rc = cfg_get_instance_string_fmt(&old_value, "/agent:%s/env:%s",
+                                         CFG_OID_GET_INST_NAME(oid, 1),
+                                         CFG_OID_GET_INST_NAME(oid, 2));
         if (rc == 0)
         {
             if (strcmp(new_value, "") == 0)

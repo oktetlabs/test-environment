@@ -60,12 +60,9 @@ tapi_sfptpd_disable(const char *ta)
 static inline te_bool
 tapi_sfptpd_status(const char *ta)
 {
-    cfg_val_type val_type;
     int val;
 
-    val_type = CVT_INTEGER;
-    CHECK_RC(cfg_get_instance_fmt(&val_type, &val,
-                                  "/agent:%s/sfptpd:/enable:", ta));
+    CHECK_RC(cfg_get_instance_int_fmt(&val, "/agent:%s/sfptpd:/enable:", ta));
 
     return val == 0 ? FALSE : TRUE;
 }

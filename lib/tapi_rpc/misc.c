@@ -3061,12 +3061,9 @@ te_bool
 tapi_stored_mtus_exist(const char *ta,
                        const char *name)
 {
-    te_errno      rc;
-    cfg_val_type  val_type = CVT_STRING;
+    te_errno rc;
 
-    rc = cfg_get_instance_fmt(&val_type, NULL,
-                              "/local:%s/saved_mtus:%s",
-                              ta, name);
+    rc = cfg_get_instance_string_fmt(NULL, "/local:%s/saved_mtus:%s", ta, name);
     if (rc == 0)
         return TRUE;
 
@@ -3083,7 +3080,6 @@ tapi_retrieve_saved_mtus(const char *ta,
     char         *fname = NULL;
     te_errno      rc = 0;
     te_errno      rc2 = 0;
-    cfg_val_type  val_type = CVT_STRING;
     FILE         *f = NULL;
     te_string     str = TE_STRING_INIT;
     char          buf[MTUS_BUF_LEN];
@@ -3092,9 +3088,8 @@ tapi_retrieve_saved_mtus(const char *ta,
     UNUSED(name);
     UNUSED(mtus);
 
-    rc = cfg_get_instance_fmt(&val_type, &fname,
-                              "/local:%s/saved_mtus:%s",
-                              ta, name);
+    rc = cfg_get_instance_string_fmt(&fname, "/local:%s/saved_mtus:%s",
+                                     ta, name);
     if (rc != 0)
     {
         ERROR("%s(): failed to get file name for '%s'",

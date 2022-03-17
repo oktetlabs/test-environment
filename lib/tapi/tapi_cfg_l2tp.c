@@ -69,10 +69,8 @@ tapi_cfg_l2tp_listen_ip_set(const char *ta, const struct sockaddr *addr)
 te_errno
 tapi_cfg_l2tp_listen_ip_get(const char *ta, struct sockaddr **addr)
 {
-    cfg_val_type type = CVT_ADDRESS;
-
-    return cfg_get_instance_fmt(&type, addr,
-                                TE_CFG_TA_L2TP_SERVER "/listen:", ta);
+    return cfg_get_instance_addr_fmt(addr,
+                                     TE_CFG_TA_L2TP_SERVER "/listen:", ta);
 }
 
 /* See descriptions in tapi_cfg_l2tp.h */
@@ -106,11 +104,9 @@ te_errno
 tapi_cfg_l2tp_tunnel_ip_get(const char *ta, const char *lns,
                             struct sockaddr **addr)
 {
-    cfg_val_type type = CVT_ADDRESS;
-
-    return cfg_get_instance_fmt(&type, addr,
-                                TE_CFG_TA_L2TP_SERVER "/lns:%s/local_ip:",
-                                ta, lns);
+    return cfg_get_instance_addr_fmt(addr,
+                                     TE_CFG_TA_L2TP_SERVER "/lns:%s/local_ip:",
+                                     ta, lns);
 }
 
 

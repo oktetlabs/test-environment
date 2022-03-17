@@ -51,7 +51,6 @@ static te_errno
 tapi_cfg_module_get_shared(const char *ta_name, const char *mod_name,
                               te_bool *shared)
 {
-    cfg_val_type val_type = CVT_INTEGER;
     int result_shared;
     char *rsrc_name = tapi_cfg_module_rsrc_name(mod_name);
     te_errno rc;
@@ -59,9 +58,8 @@ tapi_cfg_module_get_shared(const char *ta_name, const char *mod_name,
     if (rsrc_name == NULL)
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
-    rc = cfg_get_instance_fmt(&val_type, &result_shared,
-                              "/agent:%s/rsrc:%s/shared:",
-                              ta_name, rsrc_name);
+    rc = cfg_get_instance_int_fmt(&result_shared, "/agent:%s/rsrc:%s/shared:",
+                                  ta_name, rsrc_name);
     if (rc == 0)
         *shared = !!result_shared;
     else
@@ -101,7 +99,6 @@ tapi_cfg_module_grab(const char *ta_name, const char *mod_name,
     char *rsrc_name = NULL;
     char *module_oid = NULL;
     te_bool set_oid = TRUE;
-    cfg_val_type val_type = CVT_STRING;
     char *old_oid;
     int result_shared;
     te_errno rc;
@@ -117,8 +114,8 @@ tapi_cfg_module_grab(const char *ta_name, const char *mod_name,
         goto out;
     }
 
-    rc = cfg_get_instance_fmt(&val_type, &old_oid, "/agent:%s/rsrc:%s",
-                              ta_name, rsrc_name);
+    rc = cfg_get_instance_string_fmt(&old_oid, "/agent:%s/rsrc:%s",
+                                     ta_name, rsrc_name);
     if (rc == 0)
     {
         if (*old_oid != '\0' && strcmp(old_oid, module_oid))
@@ -165,10 +162,8 @@ tapi_cfg_module_grab(const char *ta_name, const char *mod_name,
             goto out;
     }
 
-    val_type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&val_type, &result_shared,
-                              "/agent:%s/rsrc:%s/shared:",
-                              ta_name, rsrc_name);
+    rc = cfg_get_instance_int_fmt(&result_shared, "/agent:%s/rsrc:%s/shared:",
+                                  ta_name, rsrc_name);
     if (rc != 0)
         goto out;
 
@@ -186,7 +181,6 @@ tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
 {
     int         rc;
     te_bool shared = FALSE;
-    cfg_val_type  cvt = CVT_INTEGER;
     int loaded;
 
     ENTRY("ta_name=%s mod_name=%s load=%s", ta_name, mod_name,
@@ -220,8 +214,8 @@ tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
         goto out;
     }
 
-    rc = cfg_get_instance_fmt(&cvt, &loaded, CFG_MODULE_OID_FMT "/loaded:",
-                              ta_name, mod_name);
+    rc = cfg_get_instance_int_fmt(&loaded, CFG_MODULE_OID_FMT "/loaded:",
+                                  ta_name, mod_name);
     if (rc != 0)
     {
         ERROR("Cannot get supposedly added module '%s' on %s: %r",
@@ -370,11 +364,8 @@ tapi_cfg_module_param_get(const char *ta_name,
                           const char *param_name,
                           char **param_value)
 {
-    cfg_val_type vtype = CVT_STRING;
-
-    return cfg_get_instance_fmt(&vtype, param_value,
-                                CFG_MODULE_PARAM_OID_FMT,
-                                ta_name, mod_name, param_name);
+    return cfg_get_instance_string_fmt(param_value, CFG_MODULE_PARAM_OID_FMT,
+                                       ta_name, mod_name, param_name);
 }
 
 /* See description in tapi_cfg_modules.h */
@@ -404,14 +395,12 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
                                    te_bool     fallback)
 {
     te_string     module_path = TE_STRING_INIT;
-    cfg_val_type  cvt = CVT_STRING;
-    cfg_val_type  cvt_int = CVT_INTEGER;
     char         *ta_dir;
     char         *current_filename = NULL;
     int           loaded;
     te_errno      rc;
 
-    rc = cfg_get_instance_fmt(&cvt, &ta_dir, "/agent:%s/dir:", ta_name);
+    rc = cfg_get_instance_string_fmt(&ta_dir, "/agent:%s/dir:", ta_name);
     if (rc != 0)
     {
         ERROR("Failed to get TA %s directory path: %r", ta_name, rc);
@@ -439,8 +428,8 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
     if (rc != 0)
         goto out;
 
-    rc = cfg_get_instance_fmt(&cvt_int, &loaded, "/agent:%s/module:%s/loaded:",
-                              ta_name, module_name);
+    rc = cfg_get_instance_int_fmt(&loaded, "/agent:%s/module:%s/loaded:",
+                                  ta_name, module_name);
     if (rc != 0)
     {
         ERROR("Failed to get the module '%s' 'loaded' property on %s: %r",
@@ -468,9 +457,9 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
 
     if (loaded)
     {
-        rc = cfg_get_instance_fmt(&cvt, &current_filename,
-                                  "/agent:%s/module:%s/filename:",
-                                  ta_name, module_name);
+        rc = cfg_get_instance_string_fmt(&current_filename,
+                                         "/agent:%s/module:%s/filename:",
+                                         ta_name, module_name);
         if (rc != 0)
         {
             ERROR("Failed to get the module '%s' 'filename' property on %s: %r",

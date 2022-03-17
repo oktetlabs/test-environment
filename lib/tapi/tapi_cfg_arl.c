@@ -186,9 +186,8 @@ tapi_cfg_arl_add_entry(const char *ta,
 int
 tapi_cfg_arl_get_entry(const char *oid, arl_entry_t *p)
 {
-    int             rc;
-    cfg_val_type    val_type;
-    int             val;
+    int rc;
+    int val;
 
     rc = tapi_cfg_get_son_mac(oid, "mac", "", p->mac);
     if (rc != 0)
@@ -197,8 +196,7 @@ tapi_cfg_arl_get_entry(const char *oid, arl_entry_t *p)
         return rc;
     }
 
-    val_type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&val_type,  &val, "%s/port:", oid);
+    rc = cfg_get_instance_int_fmt(&val, "%s/port:", oid);
     if (rc != 0)
     {
         ERROR("Failed(%x) to get ARL entry %s MAC", rc, oid);
@@ -206,8 +204,7 @@ tapi_cfg_arl_get_entry(const char *oid, arl_entry_t *p)
     }
     p->port = (unsigned int)val;
 
-    val_type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&val_type,  &val, "%s/type:", oid);
+    rc = cfg_get_instance_int_fmt(&val, "%s/type:", oid);
     if (rc != 0)
     {
         ERROR("Failed(%x) to get ARL entry %s MAC", rc, oid);
@@ -216,8 +213,7 @@ tapi_cfg_arl_get_entry(const char *oid, arl_entry_t *p)
     /* Direct mapping */
     p->type = (arl_entry_type)val;
 
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type,  &p->vlan, "%s/vlan:", oid);
+    rc = cfg_get_instance_string_fmt(&p->vlan, "%s/vlan:", oid);
     if (rc != 0)
     {
         ERROR("Failed(%x) to get ARL entry %s VLAN", rc, oid);

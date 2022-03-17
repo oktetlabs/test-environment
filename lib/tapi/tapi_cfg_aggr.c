@@ -27,11 +27,9 @@
 
 #define CHECK_BOND(ta_, name_) \
     do {                                                            \
-        int             rc_;                                        \
-        cfg_val_type    val_type_ = CVT_STRING;                     \
-        char           *aggr_type_ = NULL;                          \
-        rc_ = cfg_get_instance_fmt(                                 \
-                        &val_type_, &aggr_type_,                    \
+        int   rc_;                                                  \
+        char *aggr_type_ = NULL;                                    \
+        rc_ = cfg_get_instance_string_fmt(&aggr_type_,              \
                         "/agent:%s/aggregation:%s",                 \
                         ta_, name_);                                \
         if (rc_ != 0 || aggr_type_ == NULL)                         \
@@ -56,7 +54,6 @@ tapi_cfg_aggr_create_bond(const char *ta, const char *name,
                           char **ifname, const char *type)
 {
     int             rc = 0;
-    cfg_val_type    val_type;
     char           *bond_ifname = NULL;
     cfg_handle      aggr_handle = CFG_HANDLE_INVALID;
     cfg_handle      rsrc_handle = CFG_HANDLE_INVALID;
@@ -71,11 +68,9 @@ tapi_cfg_aggr_create_bond(const char *ta, const char *name,
         return rc;
     }
 
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(
-                        &val_type, &bond_ifname,
-                        "/agent:%s/aggregation:%s/interface:",
-                        ta, name);
+    rc = cfg_get_instance_string_fmt(&bond_ifname,
+                                     "/agent:%s/aggregation:%s/interface:",
+                                     ta, name);
     if (rc != 0 || bond_ifname == NULL)
     {
         ERROR("Failed to obtain name of created bond interface");
@@ -115,16 +110,15 @@ tapi_cfg_aggr_create_bond(const char *ta, const char *name,
 int
 tapi_cfg_aggr_destroy_bond(const char *ta, const char *name)
 {
-    cfg_val_type val_type = CVT_STRING;;
     te_errno     rc = 0;
     te_errno     rc2;
     char        *bond_ifname = NULL;
 
     CHECK_BOND(ta, name);
 
-    rc = cfg_get_instance_fmt(&val_type, &bond_ifname,
-                              "/agent:%s/aggregation:%s/interface:",
-                              ta, name);
+    rc = cfg_get_instance_string_fmt(&bond_ifname,
+                                     "/agent:%s/aggregation:%s/interface:",
+                                     ta, name);
     if (rc != 0 || bond_ifname == NULL)
     {
         ERROR("Failed to obtain name of bond interface");
@@ -176,17 +170,14 @@ tapi_cfg_aggr_bond_enslave(const char *ta, const char *name,
                            const char *slave_if)
 {
     int             rc = 0;
-    cfg_val_type    val_type;
     char           *bond_ifname = NULL;
     cfg_handle      slave_handle = CFG_HANDLE_INVALID;
 
     CHECK_BOND(ta, name);
 
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(
-                        &val_type, &bond_ifname,
-                        "/agent:%s/aggregation:%s/interface:",
-                        ta, name);
+    rc = cfg_get_instance_string_fmt(&bond_ifname,
+                                     "/agent:%s/aggregation:%s/interface:",
+                                     ta, name);
     if (rc != 0 || bond_ifname == NULL)
     {
         ERROR("Failed to obtain name of bond interface");

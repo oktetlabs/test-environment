@@ -94,11 +94,8 @@ te_errno
 tapi_cfg_openvpn_endpoint_ip_get(const char *ta, tapi_openvpn_id id,
                                  struct sockaddr **addr)
 {
-    cfg_val_type type = CVT_ADDRESS;
-
-    return cfg_get_instance_fmt(&type, addr,
-                                "/agent:%s/openvpn:%s/endpoint_ip:",
-                                ta, (const char *)id);
+    return cfg_get_instance_addr_fmt(addr, "/agent:%s/openvpn:%s/endpoint_ip:",
+                                     ta, (const char *)id);
 }
 
 
@@ -128,13 +125,12 @@ te_errno
 tapi_cfg_openvpn_peer_port_get(const char *ta, tapi_openvpn_id id,
                                tapi_openvpn_prop peer, uint16_t *val)
 {
-    te_errno        rc;
-    cfg_val_type    type = CVT_INTEGER;
-    int             port;
+    te_errno  rc;
+    int       port;
 
-    rc = cfg_get_instance_fmt(&type, &port,
-                              "/agent:%s/openvpn:%s/client:/peer:%s/port:",
-                              ta, (const char *)id, (const char *)peer);
+    rc = cfg_get_instance_int_fmt(&port,
+                                  "/agent:%s/openvpn:%s/client:/peer:%s/port:",
+                                  ta, (const char *)id, (const char *)peer);
     if (rc == 0)
     {
         /*
@@ -185,9 +181,7 @@ te_errno
 tapi_cfg_openvpn_user_username_get(const char *ta, tapi_openvpn_id id,
                                    tapi_openvpn_prop user, char **val)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, val,
+    return cfg_get_instance_string_fmt(val,
         "/agent:%s/openvpn:%s/server:/user:%s/username:",
         ta, (const char *)id, (const char *)user);
 }
@@ -207,9 +201,7 @@ te_errno
 tapi_cfg_openvpn_user_password_get(const char *ta, tapi_openvpn_id id,
                                    tapi_openvpn_prop user, char **val)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, val,
+    return cfg_get_instance_string_fmt(val,
         "/agent:%s/openvpn:%s/server:/user:%s/password:",
         ta, (const char *)id, (const char *)user);
 }
@@ -229,9 +221,7 @@ te_errno
 tapi_cfg_openvpn_user_certificate_get(const char *ta, tapi_openvpn_id id,
                                       tapi_openvpn_prop user, char **val)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, val,
+    return cfg_get_instance_string_fmt(val,
         "/agent:%s/openvpn:%s/server:/user:%s/certificate:",
         ta, (const char *)id, (const char *)user);
 }

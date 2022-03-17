@@ -70,11 +70,10 @@ char *
 tapi_bpf_build_bpf_obj_path(const char *ta, const char *bpf_prog_name)
 {
     char *ta_dir = NULL;
-    cfg_val_type val_type = CVT_STRING;
     te_string buf = TE_STRING_INIT;
     te_errno rc;
 
-    rc = cfg_get_instance_fmt(&val_type, &ta_dir, "/agent:%s/dir:", ta);
+    rc = cfg_get_instance_string_fmt(&ta_dir, "/agent:%s/dir:", ta);
     if (rc != 0)
     {
         ERROR("%s(): Failed to get /agent:%s/dir : %r",
@@ -340,15 +339,14 @@ te_errno
 tapi_bpf_obj_get_state(const char *ta, unsigned int bpf_id,
                        tapi_bpf_state *bpf_state)
 {
-    cfg_val_type val = CVT_STRING;
     char        *str = NULL;
     te_errno     rc;
 
     assert(ta != NULL);
     assert(bpf_state != NULL);
 
-    if ((rc = cfg_get_instance_fmt(&val, &str, "/agent:%s/bpf:%u/state:",
-                                   ta, bpf_id)) != 0)
+    if ((rc = cfg_get_instance_string_fmt(&str, "/agent:%s/bpf:%u/state:", ta,
+                                          bpf_id)) != 0)
     {
         ERROR("%s(): Failed to get state of BPF object /agent:%s/bpf:%u: %r",
               __FUNCTION__, ta, bpf_id, rc);
@@ -387,7 +385,6 @@ te_errno
 tapi_bpf_obj_get_type(const char *ta, unsigned int bpf_id,
                       tapi_bpf_prog_type *type)
 {
-    cfg_val_type        val_type = CVT_STRING;
     tapi_bpf_prog_type  prog_type;
     char               *str = NULL;
     te_errno            rc;
@@ -395,9 +392,8 @@ tapi_bpf_obj_get_type(const char *ta, unsigned int bpf_id,
     assert(ta != NULL);
     assert(type != NULL);
 
-    if ((rc = cfg_get_instance_fmt(&val_type, &str,
-                                   "/agent:%s/bpf:%u/type:",
-                                   ta, bpf_id)) == 0)
+    if ((rc = cfg_get_instance_string_fmt(&str, "/agent:%s/bpf:%u/type:", ta,
+                                          bpf_id)) == 0)
     {
         if ((rc = te_str_find_index(str, tapi_bpf_prog_types,
                                     TE_ARRAY_LEN(tapi_bpf_prog_types),
@@ -608,7 +604,6 @@ te_errno
 tapi_bpf_map_get_type(const char *ta, unsigned int bpf_id, const char *map,
                       tapi_bpf_map_type *type)
 {
-    cfg_val_type        val_type = CVT_STRING;
     tapi_bpf_map_type   map_type;
     char               *str = NULL;
     te_errno            rc;
@@ -617,9 +612,9 @@ tapi_bpf_map_get_type(const char *ta, unsigned int bpf_id, const char *map,
     assert(map != NULL);
     assert(type != NULL);
 
-    if ((rc = cfg_get_instance_fmt(&val_type, &str,
-                                   "/agent:%s/bpf:%u/map:%s/type:",
-                                   ta, bpf_id, map)) == 0)
+    if ((rc = cfg_get_instance_string_fmt(&str,
+                                          "/agent:%s/bpf:%u/map:%s/type:",
+                                          ta, bpf_id, map)) == 0)
     {
         if ((rc = te_str_find_index(str, tapi_bpf_map_types,
                                     TE_ARRAY_LEN(tapi_bpf_map_types),
@@ -642,7 +637,6 @@ te_errno
 tapi_bpf_map_get_key_size(const char *ta, unsigned int bpf_id,
                           const char *map, unsigned int *key_size)
 {
-    cfg_val_type val_type = CVT_INTEGER;
     int          val;
     te_errno     rc;
 
@@ -650,9 +644,9 @@ tapi_bpf_map_get_key_size(const char *ta, unsigned int bpf_id,
     assert(map != NULL);
     assert(key_size != NULL);
 
-    if ((rc = cfg_get_instance_fmt(&val_type, &val,
-                                   "/agent:%s/bpf:%u/map:%s/key_size:",
-                                   ta, bpf_id, map)) != 0)
+    if ((rc = cfg_get_instance_int_fmt(&val,
+                                       "/agent:%s/bpf:%u/map:%s/key_size:",
+                                       ta, bpf_id, map)) != 0)
     {
         ERROR("%s(): Failed to get value for /agent:%s/bpf:%u/map:%s/key_size:"
               " %r", __FUNCTION__, ta, bpf_id, map, rc);
@@ -669,7 +663,6 @@ te_errno
 tapi_bpf_map_get_val_size(const char *ta, unsigned int bpf_id,
                           const char *map, unsigned int *val_size)
 {
-    cfg_val_type val_type = CVT_INTEGER;
     int          val;
     te_errno     rc;
 
@@ -677,9 +670,9 @@ tapi_bpf_map_get_val_size(const char *ta, unsigned int bpf_id,
     assert(map != NULL);
     assert(val_size != NULL);
 
-    if ((rc = cfg_get_instance_fmt(&val_type, &val,
-                                   "/agent:%s/bpf:%u/map:%s/value_size:",
-                                   ta, bpf_id, map)) == 0)
+    if ((rc = cfg_get_instance_int_fmt(&val,
+                                       "/agent:%s/bpf:%u/map:%s/value_size:",
+                                       ta, bpf_id, map)) == 0)
     {
         *val_size = val;
     }
@@ -697,7 +690,6 @@ te_errno
 tapi_bpf_map_get_max_entries(const char *ta, unsigned int bpf_id,
                              const char *map, unsigned int *max_entries)
 {
-    cfg_val_type val_type = CVT_INTEGER;
     int          val;
     te_errno     rc;
 
@@ -705,9 +697,9 @@ tapi_bpf_map_get_max_entries(const char *ta, unsigned int bpf_id,
     assert(map != NULL);
     assert(max_entries != NULL);
 
-    if ((rc = cfg_get_instance_fmt(&val_type, &val,
-                                   "/agent:%s/bpf:%u/map:%s/max_entries:",
-                                   ta, bpf_id, map)) == 0)
+    if ((rc = cfg_get_instance_int_fmt(&val,
+                                       "/agent:%s/bpf:%u/map:%s/max_entries:",
+                                       ta, bpf_id, map)) == 0)
     {
         *max_entries = val;
     }
@@ -725,7 +717,6 @@ te_errno
 tapi_bpf_map_get_writable_state(const char *ta, unsigned int bpf_id,
                                 const char *map, te_bool *is_writable)
 {
-    cfg_val_type val_type = CVT_INTEGER;
     int          val;
     te_errno     rc;
 
@@ -733,9 +724,9 @@ tapi_bpf_map_get_writable_state(const char *ta, unsigned int bpf_id,
     assert(map != NULL);
     assert(is_writable != NULL);
 
-    if ((rc = cfg_get_instance_fmt(&val_type, &val,
-                                   "/agent:%s/bpf:%u/map:%s/writable:",
-                                   ta, bpf_id, map)) == 0)
+    if ((rc = cfg_get_instance_int_fmt(&val,
+                                       "/agent:%s/bpf:%u/map:%s/writable:",
+                                       ta, bpf_id, map)) == 0)
     {
         *is_writable = val == 0 ? FALSE : TRUE;
     }
@@ -869,7 +860,6 @@ tapi_bpf_map_lookup_kvpair(const char *ta,
                            const uint8_t *key, unsigned int key_size,
                            uint8_t *val, unsigned int val_size)
 {
-    cfg_val_type    val_type = CVT_STRING;
     te_string       key_str = TE_STRING_INIT_STATIC(RCF_MAX_VAL);
     char           *val_str = NULL;
     te_bool         wrtbl;
@@ -892,11 +882,11 @@ tapi_bpf_map_lookup_kvpair(const char *ta,
     if ((rc = tapi_bpf_map_get_writable_state(ta, bpf_id, map, &wrtbl)) != 0)
         return rc;
 
-    if ((rc = cfg_get_instance_fmt(&val_type, &val_str,
-                                   "/agent:%s/bpf:%u/map:%s/%s:/key:%s",
-                                   ta, bpf_id, map,
-                                   wrtbl ? "writable" : "read_only",
-                                   key_str.ptr)) != 0)
+    if ((rc = cfg_get_instance_string_fmt(&val_str,
+                                          "/agent:%s/bpf:%u/map:%s/%s:/key:%s",
+                                          ta, bpf_id, map,
+                                          wrtbl ? "writable" : "read_only",
+                                          key_str.ptr)) != 0)
     {
         ERROR("%s(): Failed to get value for "
               "/agent:%s/bpf:%u/map:%s/%s:/key:%s: %r",
@@ -1036,9 +1026,8 @@ te_errno
 tapi_bpf_perf_event_init(const char *ta, unsigned int bpf_id,
                          const char *map, unsigned int event_size)
 {
-    te_errno        rc = 0;
-    cfg_val_type    val_type = CVT_INTEGER;
-    int             val;
+    te_errno rc = 0;
+    int      val;
 
     if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, event_size),
                                    "/agent:%s/bpf:%u/perf_map:%s/event_size:",
@@ -1061,10 +1050,10 @@ tapi_bpf_perf_event_init(const char *ta, unsigned int bpf_id,
         return rc;
     }
 
-    if ((rc = cfg_get_instance_sync_fmt(&val_type, &val,
-                                        "/agent:%s/bpf:%u/perf_map:%s"
-                                        "/events_enable:",
-                                        ta, bpf_id, map)) != 0)
+    if ((rc = cfg_get_instance_int_sync_fmt(&val,
+                                            "/agent:%s/bpf:%u/perf_map:%s"
+                                            "/events_enable:",
+                                            ta, bpf_id, map)) != 0)
     {
         ERROR("%s(): Failed to get instance /agent:%s/bpf:%u/perf_map:%s"
               "/events_enable: (%r)",

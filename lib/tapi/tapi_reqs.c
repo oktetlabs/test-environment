@@ -47,8 +47,7 @@ tapi_reqs_modify(const char *reqs)
     if (reqs == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    rc = cfg_get_instance_fmt(&type, &old, "/local:/reqs:%u",
-                              te_test_id);
+    rc = cfg_get_instance_string_fmt(&old, "/local:/reqs:%u", te_test_id);
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
         ERROR("%s(): cfg_get_instance_fmt(/local:/reqs:%u) failed: %r",

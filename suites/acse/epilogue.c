@@ -26,7 +26,6 @@ int
 main(int argc, char *argv[])
 {
     const char *ta_acse;
-    cfg_val_type type = CVT_INTEGER;
     int cfg_value;
 
     TEST_START;
@@ -35,9 +34,7 @@ main(int argc, char *argv[])
 
     CHECK_RC(tapi_acse_stop(ta_acse));
 
-    type = CVT_INTEGER;
-    CHECK_RC(cfg_get_instance_fmt(&type, &cfg_value,
-                                 "/agent:%s/acse:", ta_acse));
+    CHECK_RC(cfg_get_instance_int_fmt(&cfg_value, "/agent:%s/acse:", ta_acse));
 
 
     RING("value of acse leaf: %d", cfg_value);

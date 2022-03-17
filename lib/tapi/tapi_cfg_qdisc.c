@@ -139,13 +139,12 @@ te_errno
 tapi_cfg_qdisc_get_param(const char *ta, const char *if_name,
                          const char *param, char **value)
 {
-    cfg_val_type type = CVT_STRING;
 
     if (ta == NULL || if_name == NULL || param == NULL || value == NULL)
         return TE_EINVAL;
 
-    return cfg_get_instance_fmt(&type, value, TAPI_CFG_QDISC_PARAM_FMT,
-                                ta, if_name, param);
+    return cfg_get_instance_string_fmt(value, TAPI_CFG_QDISC_PARAM_FMT,
+                                       ta, if_name, param);
 }
 
 /* See description in the tapi_cfg_qdisc.h */

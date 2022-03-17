@@ -1285,11 +1285,10 @@ extern int rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec);
 static inline te_bool
 tapi_interface_is_mine(const char *ta, const char *interface)
 {
-    cfg_val_type  val_type = CVT_STRING;
-    char         *val;
+    char *val;
 
-    if (cfg_get_instance_fmt(&val_type, &val, "/agent:%s/rsrc:%s", ta,
-                            interface) == 0)
+    if (cfg_get_instance_string_fmt(&val, "/agent:%s/rsrc:%s",
+                                    ta, interface) == 0)
     {
         free(val);
         return TRUE;

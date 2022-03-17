@@ -2325,7 +2325,6 @@ tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
     uint16_t      superframe_ip_id;
     size_t        superframe_ip_id_size = sizeof(superframe_ip_id);
     char         *tso_ip_id_inc_algo = NULL;
-    cfg_val_type  cvt = CVT_STRING;
     te_bool       mod15 = FALSE;
     te_errno      rc = 0;
     unsigned int  i;
@@ -2348,8 +2347,8 @@ tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
 
     assert(superframe_ip_id_size == sizeof(superframe_ip_id));
 
-    rc = cfg_get_instance_fmt(&cvt, &tso_ip_id_inc_algo,
-                              "/local:/dpdk:/tso_ip_id_inc_algo:");
+    rc = cfg_get_instance_string_fmt(&tso_ip_id_inc_algo,
+                                     "/local:/dpdk:/tso_ip_id_inc_algo:");
     if (rc != 0)
         goto out;
 

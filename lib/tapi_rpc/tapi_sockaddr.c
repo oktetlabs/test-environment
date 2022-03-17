@@ -64,17 +64,14 @@ tapi_allocate_port(struct rcf_rpc_server *pco, uint16_t *p_port)
 {
     static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-    int             rc;
-    cfg_val_type    val_type;
-    int             port;
+    int  rc;
+    int  port;
 
     /* NOTE: if scheme of port allocation will be changed,
        implementation of tapi_allocate_port_range() also should be fixed! */
     pthread_mutex_lock(&mutex);
 
-    val_type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&val_type, &port,
-                              "/volatile:/sockaddr_port:");
+    rc = cfg_get_instance_int_fmt(&port, "/volatile:/sockaddr_port:");
     if (rc != 0)
     {
         pthread_mutex_unlock(&mutex);

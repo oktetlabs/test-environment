@@ -157,9 +157,8 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
 
     for (i = 0; i < net->n_nodes; ++i)
     {
-        char           *node_oid;
-        cfg_val_type    val_type = CVT_INTEGER;
-        int             val;
+        char *node_oid;
+        int   val;
 
         /* Save cfg handle of the net node */
         net->nodes[i].handle = node_handles[i];
@@ -172,8 +171,7 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
             break;
         }
         /* Get node type */
-        rc = cfg_get_instance_fmt(&val_type, &val,
-                                  "%s/type:", node_oid);
+        rc = cfg_get_instance_int_fmt(&val, "%s/type:", node_oid);
         free(node_oid);
         if (rc != 0)
         {
@@ -533,9 +531,7 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
 
         VERB("Net/Node: %s", oid_name);
 
-        val_type = CVT_INTEGER;
-        rc = cfg_get_instance_fmt(&val_type, &cfg_node_type,
-                                  "%s/type:", oid_name);
+        rc = cfg_get_instance_int_fmt(&cfg_node_type, "%s/type:", oid_name);
         if (rc != 0)
             THROW_EXCEPTION("Error while getting type of node %s", oid_name);
 
@@ -645,7 +641,6 @@ int
 tapi_cfg_net_get_switch_port(const char *ta_node, unsigned int *p_port)
 {
     int             rc;
-    cfg_val_type    val_type = CVT_INTEGER;
     int             type;
     cfg_oid        *ta_node_oid;
     char          **oids = NULL;
@@ -654,7 +649,7 @@ tapi_cfg_net_get_switch_port(const char *ta_node, unsigned int *p_port)
     char           *end;
     long int        port;
 
-    rc = cfg_get_instance_fmt(&val_type,  &type, "%s/type:", ta_node);
+    rc = cfg_get_instance_int_fmt(&type, "%s/type:", ta_node);
     if (rc != 0)
     {
         ERROR("cfg_get_instance_fmt() failed %r", rc);
@@ -1382,7 +1377,6 @@ tapi_cfg_net_node_get_pci_info(cfg_net_t *net, cfg_net_node_t *node,
     unsigned int i;
     te_errno rc;
     const char *agent;
-    cfg_val_type type;
     char *domain = NULL;
     char *bus = NULL;
     char *slot = NULL;
@@ -1406,21 +1400,19 @@ tapi_cfg_net_node_get_pci_info(cfg_net_t *net, cfg_net_node_t *node,
     if (rc != 0)
         goto fail_get_pci_oids;
 
-    type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&type, &domain, "%s/domain:", *pci_oids);
+    rc = cfg_get_instance_string_fmt(&domain, "%s/domain:", *pci_oids);
     if (rc != 0)
         goto fail_get_domain;
 
-    rc = cfg_get_instance_fmt(&type, &bus, "%s/bus:", *pci_oids);
+    rc = cfg_get_instance_string_fmt(&bus, "%s/bus:", *pci_oids);
     if (rc != 0)
         goto fail_get_bus;
 
-    rc = cfg_get_instance_fmt(&type, &slot, "%s/slot:", *pci_oids);
+    rc = cfg_get_instance_string_fmt(&slot, "%s/slot:", *pci_oids);
     if (rc != 0)
         goto fail_get_slot;
 
-    type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&type, &fn, "%s/fn:", *pci_oids);
+    rc = cfg_get_instance_int_fmt(&fn, "%s/fn:", *pci_oids);
     if (rc != 0)
         goto fail_get_fn;
 
@@ -1599,14 +1591,12 @@ tapi_cfg_net_all_up(te_bool force)
     /* Check interfaces status and bring them down if "force" */
     for (k = 0; k < n_nodes; k++)
     {
-        cfg_val_type    type;
-        int             status;
+        int status;
 
         if (nodes[k] == NULL)
             continue; /* Not an interface */
 
-        type = CVT_INTEGER;
-        rc = cfg_get_instance_fmt(&type, &status, "%s/status:", nodes[k]);
+        rc = cfg_get_instance_int_fmt(&status, "%s/status:", nodes[k]);
         if (rc != 0)
         {
             ERROR("Failed to get status of %s: %r", nodes[k], rc);
@@ -1680,11 +1670,10 @@ tapi_cfg_net_node_delete_all_ip_addresses(cfg_net_t *net, cfg_net_node_t *node,
                                           const char *oid_str, cfg_oid *oid,
                                           void *cookie)
 {
-    int                 rc;
-    cfg_val_type        type;
-    char                ta_type[RCF_MAX_NAME];
-    char               *def_route_if;
-    te_bool             ipv6 = FALSE;
+    int      rc;
+    char     ta_type[RCF_MAX_NAME];
+    char    *def_route_if;
+    te_bool  ipv6 = FALSE;
 
     struct sockaddr_storage   dummy_addr;
 
@@ -1719,10 +1708,9 @@ tapi_cfg_net_node_delete_all_ip_addresses(cfg_net_t *net, cfg_net_node_t *node,
          * Do not delete IPv4 addresses from interfaces used by default
          * route.
          */
-        type = CVT_STRING;
-        rc = cfg_get_instance_fmt(&type, &def_route_if,
-                                  "/agent:%s/ip4_rt_default_if:",
-                                  CFG_OID_GET_INST_NAME(oid, 1));
+        rc = cfg_get_instance_string_fmt(&def_route_if,
+                                         "/agent:%s/ip4_rt_default_if:",
+                                         CFG_OID_GET_INST_NAME(oid, 1));
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
             def_route_if = NULL;
@@ -2041,11 +2029,9 @@ tapi_cfg_net_unassign_ip(unsigned int af, cfg_net_t *net,
             char *pool_entry_oid_str;
             int   n_entries;
 
-            type = CVT_INTEGER;
             if (cfg_get_oid_str(pool_entry_handle,
                                 &pool_entry_oid_str) == 0 &&
-                cfg_get_instance_fmt(&type, &n_entries,
-                                     "%s/n_entries:",
+                cfg_get_instance_int_fmt(&n_entries, "%s/n_entries:",
                                      pool_entry_oid_str) == 0)
             {
                 n_entries--;
@@ -2200,8 +2186,7 @@ tapi_cfg_net_all_check_mtu(void)
                 goto cleanup;
             }
 
-            type = CVT_INTEGER;
-            rc = cfg_get_instance_fmt(&type, &mtu, "%s/mtu:", oid);
+            rc = cfg_get_instance_int_fmt(&mtu, "%s/mtu:", oid);
             if (rc != 0)
             {
                 ERROR("Failed to get MTU of %s: %r", oid, rc);
@@ -2299,8 +2284,7 @@ tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
         }
         /* Get prefix length */
         type = CVT_INTEGER;
-        rc = cfg_get_instance_fmt(&type, &net_pfx,
-                                  "%s/prefix:", net_oid);
+        rc = cfg_get_instance_fmt(&type, &net_pfx, "%s/prefix:", net_oid);
         if (rc != 0)
         {
             ERROR("Failed to get IPv4 subnet '%s' prefix: %r",

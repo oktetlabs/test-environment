@@ -224,7 +224,6 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
                          unsigned int                  nb_rx,
                          struct tarpc_rte_mbuf_report *reportp)
 {
-    cfg_val_type                    cvt = CVT_STRING;
     tarpc_rte_mbuf_match_tx_rx_in   in;
     tarpc_rte_mbuf_match_tx_rx_out  out;
     te_log_buf                     *tlbp;
@@ -236,8 +235,8 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
     in.rx_burst.rx_burst_val = tapi_memdup(rx_burst, nb_rx * sizeof(*rx_burst));
     in.rx_burst.rx_burst_len = nb_rx;
 
-    CHECK_RC(cfg_get_instance_fmt(&cvt, &in.tso_ip_id_inc_algo,
-                                  "/local:/dpdk:/tso_ip_id_inc_algo:"));
+    CHECK_RC(cfg_get_instance_string_fmt(&in.tso_ip_id_inc_algo,
+                                         "/local:/dpdk:/tso_ip_id_inc_algo:"));
 
     rcf_rpc_call(rpcs, "rte_mbuf_match_tx_rx", &in, &out);
 

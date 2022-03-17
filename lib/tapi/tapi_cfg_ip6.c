@@ -98,12 +98,10 @@ tapi_cfg_ip6_get_linklocal_addr(const char *ta, const char *iface,
 
     if (i < num)
     {
-        cfg_val_type    type = CVT_INTEGER;
-        int             index;
+        int index;
 
-        rc = cfg_get_instance_fmt(&type, &index,
-                                  "/agent:%s/interface:%s/index:",
-                                  ta, iface);
+        rc = cfg_get_instance_int_fmt(&index, "/agent:%s/interface:%s/index:",
+                                      ta, iface);
         if (rc != 0)
         {
             ERROR("Failed to get index of the interface '%s' on "
@@ -131,9 +129,8 @@ te_errno
 tapi_cfg_ip6_get_mcastall_addr(const char *ta, const char *iface,
                                 struct sockaddr_in6 *p_addr)
 {
-    int             rc;
-    cfg_val_type    type = CVT_INTEGER;
-    int             index;
+    int rc;
+    int index;
 
     /* Link local all nodes: ff02::1 */
     static const uint8_t broadcast_addr[IPV6_ADDR_LEN] =
@@ -145,9 +142,8 @@ tapi_cfg_ip6_get_mcastall_addr(const char *ta, const char *iface,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    rc = cfg_get_instance_fmt(&type, &index,
-                              "/agent:%s/interface:%s/index:",
-                              ta, iface);
+    rc = cfg_get_instance_int_fmt(&index, "/agent:%s/interface:%s/index:",
+                                  ta, iface);
     if (rc != 0)
     {
         ERROR("Failed to get index of the interface '%s' on "

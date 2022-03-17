@@ -335,13 +335,11 @@ static te_errno
 add_del_macvlan(const char *ta, const char *ctl_if, const char *macvlan_if,
                 te_bool add)
 {
-    cfg_val_type val_type = CVT_STRING;
     te_errno     rc = 0;
     te_errno     rc2 = 0;
     te_bool      grabbed = FALSE;
 
-    if (cfg_get_instance_fmt(&val_type, NULL, "/agent:%s/rsrc:%s",
-                             ta, ctl_if) == 0)
+    if (cfg_get_instance_string_fmt(NULL, "/agent:%s/rsrc:%s", ta, ctl_if) == 0)
         grabbed = TRUE;
 
     if (!grabbed)

@@ -55,7 +55,6 @@
 te_errno
 tapi_cfg_xen_get_path(char const *ta, char *path)
 {
-    cfg_val_type type  = CVT_STRING;
     char        *value;
     te_errno     rc;
 
@@ -65,8 +64,7 @@ tapi_cfg_xen_get_path(char const *ta, char *path)
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_get_instance_fmt(&type, &value,
-                                   "/agent:%s/xen:", ta)) == 0)
+    if ((rc = cfg_get_instance_string_fmt(&value, "/agent:%s/xen:", ta)) == 0)
     {
         strcpy(path, value);
         free(value);
@@ -145,7 +143,6 @@ tapi_cfg_xen_set_rcf_port(char const *ta, unsigned int port)
 te_errno
 tapi_cfg_xen_get_rpc_br(char const *ta, char *br_name)
 {
-    cfg_val_type type  = CVT_STRING;
     char        *value;
     te_errno     rc;
 
@@ -156,8 +153,8 @@ tapi_cfg_xen_get_rpc_br(char const *ta, char *br_name)
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_get_instance_fmt(&type, &value,
-                                   "/agent:%s/xen:/rpc_br:", ta)) != 0)
+    if ((rc = cfg_get_instance_string_fmt(&value, "/agent:%s/xen:/rpc_br:",
+                                          ta)) != 0)
     {
         ERROR("Failed to get RCF/RPC bridge name on %s", ta);
     }
@@ -197,7 +194,6 @@ tapi_cfg_xen_set_rpc_br(char const *ta, char const *br_name)
 te_errno
 tapi_cfg_xen_get_rpc_if(char const *ta, char *if_name)
 {
-    cfg_val_type type  = CVT_STRING;
     char        *value;
     te_errno     rc;
 
@@ -208,8 +204,8 @@ tapi_cfg_xen_get_rpc_if(char const *ta, char *if_name)
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_get_instance_fmt(&type, &value,
-                                   "/agent:%s/xen:/rpc_if:", ta)) != 0)
+    if ((rc = cfg_get_instance_string_fmt(&value, "/agent:%s/xen:/rpc_if:",
+                                          ta)) != 0)
     {
         ERROR("Failed to get RCF/RPC interface name on %s", ta);
     }
@@ -249,7 +245,6 @@ tapi_cfg_xen_set_rpc_if(char const *ta, char const *if_name)
 te_errno
 tapi_cfg_xen_get_base_mac_addr(char const *ta, uint8_t *mac)
 {
-    cfg_val_type     type = CVT_ADDRESS;
     struct sockaddr *addr;
     te_errno         rc;
 
@@ -259,9 +254,8 @@ tapi_cfg_xen_get_base_mac_addr(char const *ta, uint8_t *mac)
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_get_instance_fmt(&type, &addr,
-                                   "/agent:%s/xen:/base_mac_addr:",
-                                   ta)) != 0)
+    if ((rc = cfg_get_instance_addr_fmt(&addr, "/agent:%s/xen:/base_mac_addr:",
+                                        ta)) != 0)
     {
         ERROR("Failed to get base MAC address on %s", ta);
     }
@@ -303,7 +297,6 @@ tapi_cfg_xen_set_base_mac_addr(char const *ta, uint8_t const *mac)
 te_errno
 tapi_cfg_xen_get_accel(char const *ta, te_bool *accel)
 {
-    cfg_val_type type = CVT_INTEGER;
     int          acceleration;
     te_errno     rc;
 
@@ -313,9 +306,8 @@ tapi_cfg_xen_get_accel(char const *ta, te_bool *accel)
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_get_instance_fmt(&type, &acceleration,
-                                   "/agent:%s/xen:/accel:",
-                                   ta)) != 0)
+    if ((rc = cfg_get_instance_int_fmt(&acceleration, "/agent:%s/xen:/accel:",
+                                       ta)) != 0)
     {
         ERROR("Failed to get acceleration on %s", ta);
     }
@@ -457,7 +449,6 @@ te_errno
 tapi_cfg_xen_dom_u_get_status(char const *ta, char const *dom_u,
                               char *status)
 {
-    cfg_val_type type  = CVT_STRING;
     char        *value;
     te_errno     rc;
 
@@ -468,9 +459,9 @@ tapi_cfg_xen_dom_u_get_status(char const *ta, char const *dom_u,
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_get_instance_fmt(&type, &value,
-                                   "/agent:%s/xen:/dom_u:%s/status:",
-                                   ta, dom_u)) != 0)
+    if ((rc = cfg_get_instance_string_fmt(&value,
+                                          "/agent:%s/xen:/dom_u:%s/status:",
+                                          ta, dom_u)) != 0)
     {
         ERROR("Failed to get status for '%s' domU on %s", dom_u, ta);
     }
@@ -492,7 +483,6 @@ tapi_cfg_xen_dom_u_set_status(char const *ta, char const *dom_u,
     te_bool      started;
     te_errno     rc;
 
-    cfg_val_type     type  = CVT_ADDRESS;
     struct sockaddr *value;
     struct sockaddr  ip_addr;
 
@@ -504,9 +494,9 @@ tapi_cfg_xen_dom_u_set_status(char const *ta, char const *dom_u,
     }
 
     /* Needed for transition to "running" status */
-    if ((rc = cfg_get_instance_fmt(&type, &value,
-                                   "/agent:%s/xen:/dom_u:%s/ip_addr:",
-                                   ta, dom_u)) != 0)
+    if ((rc = cfg_get_instance_addr_fmt(&value,
+                                        "/agent:%s/xen:/dom_u:%s/ip_addr:",
+                                        ta, dom_u)) != 0)
     {
         ERROR("Failed to get IP address for '%s' domU on %s", dom_u, ta);
         return rc;
@@ -621,7 +611,6 @@ te_errno
 tapi_cfg_xen_dom_u_get_ip_addr(char const *ta, char const *dom_u,
                                struct sockaddr *ip_addr)
 {
-    cfg_val_type     type  = CVT_ADDRESS;
     struct sockaddr *value;
     te_errno         rc;
 
@@ -632,9 +621,9 @@ tapi_cfg_xen_dom_u_get_ip_addr(char const *ta, char const *dom_u,
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_get_instance_fmt(&type, &value,
-                                   "/agent:%s/xen:/dom_u:%s/ip_addr:",
-                                   ta, dom_u)) != 0)
+    if ((rc = cfg_get_instance_addr_fmt(&value,
+                                        "/agent:%s/xen:/dom_u:%s/ip_addr:",
+                                        ta, dom_u)) != 0)
     {
         ERROR("Failed to get IP address for '%s' domU on %s", dom_u, ta);
     }
@@ -675,7 +664,6 @@ tapi_cfg_xen_dom_u_set_ip_addr(char const *ta, char const *dom_u,
 te_errno
 tapi_cfg_xen_dom_u_get_mac_addr(char const *ta, char const *dom_u, uint8_t *mac)
 {
-    cfg_val_type     type = CVT_ADDRESS;
     struct sockaddr *addr;
     te_errno         rc;
 
@@ -687,9 +675,9 @@ tapi_cfg_xen_dom_u_get_mac_addr(char const *ta, char const *dom_u, uint8_t *mac)
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_get_instance_fmt(&type, &addr,
-                                   "/agent:%s/xen:/dom_u:%s/mac_addr:",
-                                   ta, dom_u)) != 0)
+    if ((rc = cfg_get_instance_addr_fmt(&addr,
+                                        "/agent:%s/xen:/dom_u:%s/mac_addr:",
+                                        ta, dom_u)) != 0)
     {
         ERROR("Failed to get MAC address of '%s' domU on %s", dom_u, ta);
     }
@@ -782,7 +770,6 @@ te_errno
 tapi_cfg_xen_dom_u_bridge_get_if_name(char const *ta, char const *dom_u,
                                       char const *bridge, char *if_name)
 {
-    cfg_val_type type  = CVT_STRING;
     char        *value;
     te_errno     rc;
 
@@ -793,9 +780,10 @@ tapi_cfg_xen_dom_u_bridge_get_if_name(char const *ta, char const *dom_u,
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_get_instance_fmt(&type, &value,
-                                   "/agent:%s/xen:/dom_u:%s"
-                                   "/bridge:%s", ta, dom_u, bridge)) != 0)
+    if ((rc = cfg_get_instance_string_fmt(&value,
+                                          "/agent:%s/xen:/dom_u:%s"
+                                          "/bridge:%s",
+                                          ta, dom_u, bridge)) != 0)
     {
         ERROR("Failed to get RCF/RPC interface name for '%s' "
               "bridge on '%s' domU on %s", bridge, dom_u, ta);
@@ -842,7 +830,6 @@ tapi_cfg_xen_dom_u_bridge_get_ip_addr(char const *ta, char const *dom_u,
                                       char const *bridge,
                                       struct sockaddr *ip_addr)
 {
-    cfg_val_type     type  = CVT_ADDRESS;
     struct sockaddr *value;
     te_errno         rc;
 
@@ -853,10 +840,10 @@ tapi_cfg_xen_dom_u_bridge_get_ip_addr(char const *ta, char const *dom_u,
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_get_instance_fmt(&type, &value,
-                                   "/agent:%s/xen:/dom_u:%s"
-                                   "/bridge:%s/ip_addr:",
-                                   ta, dom_u, bridge)) != 0)
+    if ((rc = cfg_get_instance_addr_fmt(&value,
+                                        "/agent:%s/xen:/dom_u:%s"
+                                        "/bridge:%s/ip_addr:",
+                                        ta, dom_u, bridge)) != 0)
     {
         ERROR("Failed to get IP address for '%s' bridge "
               "interface on '%s' domU on %s", bridge, dom_u, ta);
@@ -902,7 +889,6 @@ te_errno
 tapi_cfg_xen_dom_u_bridge_get_mac_addr(char const *ta, char const *dom_u,
                                        char const *bridge, uint8_t *mac)
 {
-    cfg_val_type     type = CVT_ADDRESS;
     struct sockaddr *addr;
     te_errno         rc;
 
@@ -913,10 +899,10 @@ tapi_cfg_xen_dom_u_bridge_get_mac_addr(char const *ta, char const *dom_u,
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_get_instance_fmt(&type, &addr,
-                                   "/agent:%s/xen:/dom_u:%s"
-                                   "/bridge:%s/mac_addr:",
-                                   ta, dom_u, bridge)) != 0)
+    if ((rc = cfg_get_instance_addr_fmt(&addr,
+                                        "/agent:%s/xen:/dom_u:%s"
+                                        "/bridge:%s/mac_addr:",
+                                        ta, dom_u, bridge)) != 0)
     {
         ERROR("Failed to get MAC address for '%s' bridge "
               "interface on '%s' domU on %s", bridge, dom_u, ta);
@@ -965,7 +951,6 @@ te_errno
 tapi_cfg_xen_dom_u_bridge_get_accel(char const *ta, char const *dom_u,
                                     char const *bridge, te_bool *accel)
 {
-    cfg_val_type type = CVT_INTEGER;
     int          acceleration;
     te_errno     rc;
 
@@ -976,10 +961,10 @@ tapi_cfg_xen_dom_u_bridge_get_accel(char const *ta, char const *dom_u,
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_get_instance_fmt(&type, &acceleration,
-                                   "/agent:%s/xen:/dom_u:%s"
-                                   "/bridge:%s/accel:",
-                                   ta, dom_u, bridge)) != 0)
+    if ((rc = cfg_get_instance_int_fmt(&acceleration,
+                                       "/agent:%s/xen:/dom_u:%s"
+                                       "/bridge:%s/accel:",
+                                       ta, dom_u, bridge)) != 0)
     {
         ERROR("Failed to get acceleration sign for '%s' bridge "
               "interface on '%s' domU on %s", bridge, dom_u, ta);

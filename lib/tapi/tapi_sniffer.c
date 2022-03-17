@@ -52,7 +52,6 @@
 static te_errno
 sniffer_enable_sync(tapi_sniffer_id *snif_id)
 {
-    cfg_val_type    type;
     te_errno        rc;
     char            sn_oid[CFG_OID_MAX];
 
@@ -74,10 +73,8 @@ sniffer_enable_sync(tapi_sniffer_id *snif_id)
         return rc;
     }
 
-    type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&type, &snif_id->ssn, TE_CFG_SNIF_FMT,
-                              snif_id->ta, snif_id->ifname,
-                              snif_id->snifname);
+    rc = cfg_get_instance_int_fmt(&snif_id->ssn, TE_CFG_SNIF_FMT, snif_id->ta,
+                                  snif_id->ifname, snif_id->snifname);
     if (rc != 0)
     {
         ERROR("Failed to get the sniffer ssn");

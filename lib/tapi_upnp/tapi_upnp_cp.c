@@ -71,12 +71,11 @@ tapi_upnp_cp_stop(const char *ta)
 te_bool
 tapi_upnp_cp_started(const char *ta)
 {
-    te_errno     rc;
-    cfg_val_type type = CVT_INTEGER;
-    int          enabled = 0;
+    te_errno rc;
+    int      enabled = 0;
 
-    rc = cfg_get_instance_fmt(&type, &enabled,
-                              TE_CFG_UPNP_CP_ROOT_FMT "/enable:", ta);
+    rc = cfg_get_instance_int_fmt(&enabled,
+                                  TE_CFG_UPNP_CP_ROOT_FMT "/enable:", ta);
     if (rc != 0)
         ERROR("Failed to get the UPnP Control Point 'enable' value");
 

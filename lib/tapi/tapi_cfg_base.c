@@ -818,8 +818,7 @@ te_errno
 tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
                           uint16_t vid, char **vlan_ifname)
 {
-    cfg_val_type val = CVT_STRING;
-    te_errno     rc = 0;
+    te_errno rc = 0;
 
     if ((rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
                                    "/agent:%s/interface:%s/vlans:%d",
@@ -830,7 +829,7 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
         return rc;
     }
 
-    if ((rc = cfg_get_instance_fmt(&val, vlan_ifname,
+    if ((rc = cfg_get_instance_string_fmt(vlan_ifname,
                          "/agent:%s/interface:%s/vlans:%d/ifname:",
                          ta, if_name, vid)) != 0)
     {
@@ -905,12 +904,10 @@ te_errno
 tapi_cfg_base_if_get_mtu_u(const char *agent, const char *interface,
                            int *mtu)
 {
-    te_errno        rc;
-    cfg_val_type    type = CVT_INTEGER;
+    te_errno rc;
 
-    if ((rc = cfg_get_instance_fmt(&type, (void *)mtu,
-                                   "/agent:%s/interface:%s/mtu:",
-                                   agent, interface)) != 0)
+    if ((rc = cfg_get_instance_int_fmt(mtu, "/agent:%s/interface:%s/mtu:",
+                                       agent, interface)) != 0)
         ERROR("%s(): Failed to get MTU value for %s on %s: %r",
               __FUNCTION__, interface, agent, rc);
 
@@ -1057,10 +1054,7 @@ tapi_cfg_base_if_add_rsrc(const char *ta, const char *ifname)
 te_errno
 tapi_cfg_base_if_check_add_rsrc(const char *ta, const char *ifname)
 {
-    cfg_val_type  val_type = CVT_STRING;
-
-    if (cfg_get_instance_fmt(&val_type, NULL, "/agent:%s/rsrc:%s",
-                             ta, ifname) == 0)
+    if (cfg_get_instance_string_fmt(NULL, "/agent:%s/rsrc:%s", ta, ifname) == 0)
         return 0;
 
     return tapi_cfg_base_if_add_rsrc(ta, ifname);
@@ -1211,14 +1205,13 @@ tapi_cfg_base_if_get_ipvlan_mode(const char *ta, const char *link,
                                  const char *ifname, char **mode,
                                  char **flag)
 {
-    char           *mode_flag = NULL;
-    cfg_val_type    val_type = CVT_STRING;
-    char           *val = NULL;
-    int             rc;
+    char *mode_flag = NULL;
+    char *val = NULL;
+    int   rc;
 
-    if ((rc = cfg_get_instance_fmt(&val_type, &mode_flag,
-                                   "/agent:%s/interface:%s/ipvlan:%s",
-                                   ta, link, ifname)) != 0)
+    if ((rc = cfg_get_instance_string_fmt(&mode_flag,
+                                          "/agent:%s/interface:%s/ipvlan:%s",
+                                          ta, link, ifname)) != 0)
     {
         return rc;
     }

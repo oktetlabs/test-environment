@@ -41,12 +41,11 @@ te_errno
 tapi_cfg_phy_autoneg_oper_get(const char *ta, const char *if_name,
                               int *state)
 {
-    te_errno     rc = 0;
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc = 0;
 
-    rc = cfg_get_instance_sync_fmt(&type, state,
-                            "/agent:%s/interface:%s/phy:/autoneg_oper:",
-                            ta, if_name);
+    rc = cfg_get_instance_int_sync_fmt(state,
+                                   "/agent:%s/interface:%s/phy:/autoneg_oper:",
+                                   ta, if_name);
 
     /* Check that option is supported */
     if (*state == -1)
@@ -73,12 +72,11 @@ te_errno
 tapi_cfg_phy_autoneg_admin_get(const char *ta, const char *if_name,
                          int *state)
 {
-    te_errno     rc = 0;
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc = 0;
 
-    rc = cfg_get_instance_sync_fmt(&type, state,
-                            "/agent:%s/interface:%s/phy:/autoneg_admin:",
-                            ta, if_name);
+    rc = cfg_get_instance_int_sync_fmt(state,
+                                   "/agent:%s/interface:%s/phy:/autoneg_admin:",
+                                   ta, if_name);
 
     /* Check that option is supported */
     if (*state == -1)
@@ -282,12 +280,11 @@ tapi_cfg_phy_duplex_admin_set(const char *ta, const char *if_name,
 te_errno
 tapi_cfg_phy_speed_oper_get(const char *ta, const char *if_name, int *speed)
 {
-    te_errno     rc = 0;
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc = 0;
 
-    rc = cfg_get_instance_sync_fmt(&type, speed,
-                            "/agent:%s/interface:%s/phy:/speed_oper:",
-                            ta, if_name);
+    rc = cfg_get_instance_int_sync_fmt(speed,
+                                   "/agent:%s/interface:%s/phy:/speed_oper:",
+                                   ta, if_name);
     if (rc != 0)
         return rc;
 
@@ -315,12 +312,11 @@ te_errno
 tapi_cfg_phy_speed_admin_get(const char *ta, const char *if_name,
                              int *speed)
 {
-    te_errno     rc = 0;
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc = 0;
 
-    rc = cfg_get_instance_sync_fmt(&type, speed,
-                            "/agent:%s/interface:%s/phy:/speed_admin:",
-                            ta, if_name);
+    rc = cfg_get_instance_int_sync_fmt(speed,
+                                   "/agent:%s/interface:%s/phy:/speed_admin:",
+                                   ta, if_name);
     if (rc != 0)
         return rc;
 
@@ -500,12 +496,11 @@ tapi_cfg_phy_mode_admin_set(const char *ta, const char *if_name,
 te_errno
 tapi_cfg_phy_state_get(const char *ta, const char *if_name, int *state)
 {
-    te_errno     rc = 0;
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc = 0;
 
-    rc = cfg_get_instance_sync_fmt(&type, state,
-                                   "/agent:%s/interface:%s/phy:/state:",
-                                   ta, if_name);
+    rc = cfg_get_instance_int_sync_fmt(state,
+                                       "/agent:%s/interface:%s/phy:/state:",
+                                       ta, if_name);
 
     if (rc != 0)
         return rc;
@@ -570,10 +565,9 @@ tapi_cfg_phy_is_mode_advertised(const char *ta, const char *if_name,
                                 int speed, int duplex,
                                 te_bool *state)
 {
-    te_errno      rc = 0;
-    int           advertised = -1;
-    char         *duplex_string;
-    cfg_val_type  type = CVT_INTEGER;
+    te_errno  rc = 0;
+    int       advertised = -1;
+    char     *duplex_string;
 
     duplex_string = tapi_cfg_phy_duplex_id2str(duplex);
 
@@ -581,11 +575,10 @@ tapi_cfg_phy_is_mode_advertised(const char *ta, const char *if_name,
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     /* Get mode state */
-    rc = cfg_get_instance_sync_fmt(&type, &advertised,
-                                   "/agent:%s/interface:%s/phy:"
-                                   "/modes:/speed:%d/duplex:%s",
-                                   ta, if_name, speed,
-                                   duplex_string);
+    rc = cfg_get_instance_int_sync_fmt(&advertised,
+                                       "/agent:%s/interface:%s/phy:"
+                                       "/modes:/speed:%d/duplex:%s",
+                                       ta, if_name, speed, duplex_string);
 
     if (advertised == 1)
         *state = TRUE;
@@ -737,10 +730,9 @@ te_errno
 tapi_cfg_phy_pause_lp_adv_get(const char *ta, const char *if_name,
                               int *state)
 {
-    te_errno     rc = 0;
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc = 0;
 
-    rc = cfg_get_instance_sync_fmt(&type, state,
+    rc = cfg_get_instance_int_sync_fmt(state,
                                    "/agent:%s/interface:%s/phy:/pause_lp_adv:",
                                    ta, if_name);
 
@@ -769,12 +761,11 @@ te_errno
 tapi_cfg_phy_autoneg_lp_adv_get(const char *ta, const char *if_name,
                                 int *state)
 {
-    te_errno     rc = 0;
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc = 0;
 
-    rc = cfg_get_instance_sync_fmt(&type, state,
-                                   "/agent:%s/interface:%s/phy:/autoneg_lp_adv:",
-                                   ta, if_name);
+    rc = cfg_get_instance_int_sync_fmt(state,
+                               "/agent:%s/interface:%s/phy:/autoneg_lp_adv:",
+                               ta, if_name);
 
     /* Check that option is supported */
     if (*state == TE_PHY_AUTONEG_UNKNOWN)

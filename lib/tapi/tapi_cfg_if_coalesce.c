@@ -23,12 +23,9 @@ te_errno
 tapi_cfg_if_coalesce_get(const char *ta, const char *if_name,
                          const char *param, uint64_t *val)
 {
-    cfg_val_type v_type = CVT_UINT64;
-
-    return cfg_get_instance_fmt(
-                &v_type, val,
-                "/agent:%s/interface:%s/coalesce:/param:%s",
-                ta, if_name, param);
+    return cfg_get_instance_uint64_fmt(val,
+                                   "/agent:%s/interface:%s/coalesce:/param:%s",
+                                   ta, if_name, param);
 }
 
 /* See description in tapi_cfg_if_coalesce.h */

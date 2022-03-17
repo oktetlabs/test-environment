@@ -1936,14 +1936,11 @@ tapi_cfg_get_if_parent(const char *ta,
                        size_t len)
 {
     char          *parent = NULL;
-    cfg_val_type   type;
     int            rc = 0;
     size_t         len_got;
 
-    type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&type, &parent,
-                              "/agent:%s/interface:%s/parent:",
-                              ta, ifname);
+    rc = cfg_get_instance_string_fmt(&parent, "/agent:%s/interface:%s/parent:",
+                                     ta, ifname);
     if (rc != 0)
         return rc;
 
@@ -2344,7 +2341,6 @@ tapi_cfg_insert_net_addr(cfg_handle        net_pool_entry,
     cfg_handle      pool;
     cfg_handle      entry;
     int             n_entries;
-    cfg_val_type    val_type;
     int             prefix;
     unsigned int    net_addr_bits;
     char            buf[INET6_ADDRSTRLEN];
@@ -2393,9 +2389,7 @@ tapi_cfg_insert_net_addr(cfg_handle        net_pool_entry,
     /* No available entries */
 
     /* Get number of entries in the pool */
-    val_type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&val_type, &n_entries,
-                              "%s/n_entries:", net_oid);
+    rc = cfg_get_instance_int_fmt(&n_entries, "%s/n_entries:", net_oid);
     if (rc != 0)
     {
         ERROR("Failed to get number of entries in the pool: "
@@ -2419,8 +2413,7 @@ tapi_cfg_insert_net_addr(cfg_handle        net_pool_entry,
     }
 
     /* Get network prefix length */
-    val_type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&val_type, &prefix, "%s/prefix:", net_oid);
+    rc = cfg_get_instance_int_fmt(&prefix, "%s/prefix:", net_oid);
     if (rc != 0)
     {
         ERROR("Failed to get prefix length of '%s': %r",
@@ -2486,10 +2479,8 @@ tapi_cfg_insert_net_addr(cfg_handle        net_pool_entry,
             else
             {
                 /* Check if the entry already exists */
-                val_type = CVT_INTEGER;
-                rc = cfg_get_instance_fmt(&val_type, &entry_state,
-                                          "%s/pool:/entry:%s",
-                                          net_oid, buf);
+                rc = cfg_get_instance_int_fmt(&entry_state, "%s/pool:/entry:%s",
+                                              net_oid, buf);
             }
         } while (rc == 0);
     }
@@ -2510,9 +2501,8 @@ tapi_cfg_insert_net_addr(cfg_handle        net_pool_entry,
         }
 
         /* Check if the entry already exists */
-        val_type = CVT_INTEGER;
-        rc = cfg_get_instance_fmt(&val_type, &entry_state,
-                                  "%s/pool:/entry:%s", net_oid, buf);
+        rc = cfg_get_instance_int_fmt(&entry_state, "%s/pool:/entry:%s",
+                                      net_oid, buf);
     }
 
     if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
@@ -2595,8 +2585,8 @@ tapi_cfg_set_loglevel_save(const char *ta, int new_val, int *old_val)
 
     if (old_val != NULL)
     {
-        rc = cfg_get_instance_fmt(CVT_INTEGER, &prev_val,
-                                  "/agent:%s/sys:/console_loglevel:", ta);
+        rc = cfg_get_instance_int_fmt(&prev_val,
+                                      "/agent:%s/sys:/console_loglevel:", ta);
         if (rc != 0)
         {
             ERROR("%s(): failed to get current kernel log level",
@@ -2833,8 +2823,7 @@ tapi_cfg_alloc_net_addr_pair(struct sockaddr **addr1, struct sockaddr **addr2,
             return rc;
         }
 
-        rc = cfg_get_instance_fmt(CVT_INTEGER, prefix, "%s/prefix:",
-                                  net_pool);
+        rc = cfg_get_instance_int_fmt(prefix, "%s/prefix:", net_pool);
         free(net_pool);
         if (rc != 0)
         {

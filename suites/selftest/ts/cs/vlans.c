@@ -128,11 +128,10 @@ main(int argc, char *argv[])
                           &n_handles, &handles); 
     RING("find resources on Agt_A rc %r, n: %d", rc, n_handles);
     {
-        cfg_val_type type = CVT_STRING;
         char *name = NULL;
 
-        rc = cfg_get_instance_fmt(&type, &name,
-                                  "/agent:Agt_A/interface:eth1/vlans:12/ifname:");
+        rc = cfg_get_instance_string_fmt(&name,
+                             "/agent:Agt_A/interface:eth1/vlans:12/ifname:");
         RING("read ifname rc %r, %s", rc, name);
     }
 

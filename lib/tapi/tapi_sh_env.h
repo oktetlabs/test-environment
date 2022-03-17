@@ -84,11 +84,10 @@ tapi_sh_env_set(rcf_rpc_server *pco,
 static inline te_errno
 tapi_sh_env_get(rcf_rpc_server *pco, const char *env_name, char **val)
 {
-    cfg_val_type  val_type = CVT_STRING;
     te_errno      rc;
 
-    rc = cfg_get_instance_fmt(&val_type, val, "/agent:%s/env:%s",
-                              pco->ta, env_name);
+    rc = cfg_get_instance_string_fmt(val, "/agent:%s/env:%s",
+                                     pco->ta, env_name);
     if (rc != 0)
         ERROR("Failed to get env %s", env_name);
 
@@ -362,14 +361,12 @@ tapi_getenv_bool(const char *var_name)
 static inline te_errno
 tapi_sh_env_ta_path_append(const char *ta, const char *dir)
 {
-    cfg_val_type val_type = CVT_STRING;
     char new_path_str[PATH_MAX];
     char *path;
     te_errno rc;
     int res;
 
-    rc = cfg_get_instance_fmt(&val_type, &path, "/agent:%s/env:PATH",
-                              ta);
+    rc = cfg_get_instance_string_fmt(&path, "/agent:%s/env:PATH", ta);
     if (rc != 0)
     {
         ERROR("Failed to get PATH env from agent %s", ta);

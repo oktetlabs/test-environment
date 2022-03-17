@@ -46,7 +46,6 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
     te_errno        rc;
     uint16_t        srv_port;
     cfg_handle      tmp;
-    cfg_val_type    val_type;
     char           *str;
 
     srv_port = ntohs(te_sockaddr_get_port(srv_addr));
@@ -108,10 +107,9 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
     if (rc != 0)
         return rc;
 
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type, &str,
-             "/agent:%s/vtund:/server:%u/session:%s-%s/interface:",
-             ta_srv, srv_port, ta_srv, ta_clnt);
+    rc = cfg_get_instance_string_fmt(&str,
+                         "/agent:%s/vtund:/server:%u/session:%s-%s/interface:",
+                         ta_srv, srv_port, ta_srv, ta_clnt);
     if (rc != 0)
     {
         ERROR("Failed to get name of the network interface created "
@@ -163,10 +161,9 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
     if (rc != 0)
         return rc;
 
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type, &str,
-             "/agent:%s/vtund:/client:%s-%s/interface:",
-             ta_clnt, ta_srv, ta_clnt);
+    rc = cfg_get_instance_string_fmt(&str,
+                                     "/agent:%s/vtund:/client:%s-%s/interface:",
+                                     ta_clnt, ta_srv, ta_clnt);
     if (rc != 0)
     {
         ERROR("Failed to get name of the network interface created "

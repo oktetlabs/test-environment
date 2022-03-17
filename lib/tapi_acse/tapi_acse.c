@@ -152,14 +152,12 @@ tapi_acse_ta_cs_init(tapi_acse_context_t *ctx)
 {
     char          buf[CFG_OID_MAX];
     char         *acse_val;
-    cfg_val_type  type;
     cfg_handle    acs_handle = CFG_HANDLE_INVALID,
                   cpe_handle = CFG_HANDLE_INVALID;
     te_errno      rc;
 
     /* Check, if there running ACSE itself */
-    type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&type, &acse_val, "/agent:%s/acse:", ctx->ta);
+    rc = cfg_get_instance_string_fmt(&acse_val, "/agent:%s/acse:", ctx->ta);
     if (rc != 0) return TE_RC(TE_TAPI, rc);
     if (acse_val == NULL || strlen(acse_val) == 0)
     {
@@ -361,14 +359,12 @@ tapi_acse_manage_vlist(const char *ta, const char *acs_name,
             {
                 /* integer parameters */
                 int *p_val = va_arg(ap, int *);
-                type = CVT_INTEGER;
-                rc = cfg_get_instance_fmt(&type, p_val, "%s", buf);
+                rc = cfg_get_instance_int_fmt(p_val, "%s", buf);
             }
             else /* string parameters */
             {
                 char **p_val = va_arg(ap, char **);
-                type = CVT_STRING;
-                rc = cfg_get_instance_fmt(&type, p_val, "%s", buf);
+                rc = cfg_get_instance_string_fmt(p_val, "%s", buf);
             }
         }
         else

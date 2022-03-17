@@ -34,12 +34,10 @@
 static te_errno
 tapi_rpc_rte_eth_conf_get_link_speeds(const char *ta, uint32_t *link_speeds)
 {
-    te_errno      rc;
-    cfg_val_type  val_type = CVT_STRING;
-    char         *val;
+    te_errno  rc;
+    char     *val;
 
-    rc = cfg_get_instance_fmt(&val_type, &val,
-                              "/local:%s/dpdk:/link_speeds:", ta);
+    rc = cfg_get_instance_string_fmt(&val, "/local:%s/dpdk:/link_speeds:", ta);
     if (rc == TE_RC(TE_CS, TE_ENOENT))
         return 0;
     if (rc != 0)

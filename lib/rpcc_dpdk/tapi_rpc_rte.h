@@ -40,12 +40,11 @@ typedef rpc_ptr rpc_rte_flow_p;
 static inline te_bool
 dpdk_reuse_rpcs(void)
 {
-    cfg_val_type    val_type = CVT_STRING;
-    char           *reuse = NULL;
-    te_bool         is_enabled = TRUE;
-    te_errno        rc;
+    char     *reuse = NULL;
+    te_bool   is_enabled = TRUE;
+    te_errno  rc;
 
-    rc = cfg_get_instance_fmt(&val_type, &reuse, "/local:/dpdk:/reuse_rpcs:");
+    rc = cfg_get_instance_string_fmt(&reuse, "/local:/dpdk:/reuse_rpcs:");
     if ((rc != 0) || (reuse == NULL) || (strcasecmp(reuse, "yes") != 0))
         is_enabled = FALSE;
 

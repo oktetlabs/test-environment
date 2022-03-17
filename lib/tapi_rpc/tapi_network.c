@@ -80,9 +80,8 @@ tapi_network_setup(te_bool ipv6_supp)
     }
 
     /* Get default value for 'use_static_arp' */
-    val_type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&val_type, &use_static_arp_def,
-                              "/local:/use_static_arp:");
+    rc = cfg_get_instance_int_fmt(&use_static_arp_def,
+                                  "/local:/use_static_arp:");
     if (rc != 0)
     {
         use_static_arp_def = 0;
@@ -203,10 +202,9 @@ tapi_network_setup(te_bool ipv6_supp)
                 free(if_oid);
 
                 /* Should we use static ARP for this TA? */
-                val_type = CVT_INTEGER;
-                rc = cfg_get_instance_fmt(&val_type, &use_static_arp,
-                                          "/local:%s/use_static_arp:",
-                                          CFG_OID_GET_INST_NAME(oid, 1));
+                rc = cfg_get_instance_int_fmt(&use_static_arp,
+                                              "/local:%s/use_static_arp:",
+                                              CFG_OID_GET_INST_NAME(oid, 1));
                 if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
                 {
                     use_static_arp = use_static_arp_def;

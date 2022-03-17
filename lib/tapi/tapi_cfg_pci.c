@@ -32,23 +32,22 @@ te_errno
 tapi_cfg_pci_get_pci_vendor_device(const char *ta, const char *pci_addr,
                                    char **vendor, char **device)
 {
-    cfg_val_type val_type = CVT_STRING;
     char *vendor_str;
     char *device_str;
     te_errno rc;
 
-    rc = cfg_get_instance_fmt(&val_type, &device_str,
-                              CFG_PCI_TA_DEVICE_FMT "/device_id:",
-                              ta, pci_addr);
+    rc = cfg_get_instance_string_fmt(&device_str,
+                                     CFG_PCI_TA_DEVICE_FMT "/device_id:",
+                                     ta, pci_addr);
     if (rc != 0)
     {
         ERROR("Failed to get device ID by PCI addr %s, %r", pci_addr, rc);
         return rc;
     }
 
-    rc = cfg_get_instance_fmt(&val_type, &vendor_str,
-                              CFG_PCI_TA_DEVICE_FMT "/vendor_id:",
-                              ta, pci_addr);
+    rc = cfg_get_instance_string_fmt(&vendor_str,
+                                     CFG_PCI_TA_DEVICE_FMT "/vendor_id:",
+                                     ta, pci_addr);
 
     if (rc != 0)
     {
@@ -427,10 +426,9 @@ tapi_cfg_pci_get_ta_driver(const char *ta,
 te_errno
 tapi_cfg_pci_get_net_if(const char *pci_oid, char **interface)
 {
-    cfg_val_type type = CVT_STRING;
     te_errno rc;
 
-    rc = cfg_get_instance_fmt(&type, interface, "%s/net:", pci_oid);
+    rc = cfg_get_instance_string_fmt(interface, "%s/net:", pci_oid);
     if (rc != 0)
         ERROR("Failed to get the only interface of a PCI device: %r", rc);
 
@@ -489,10 +487,9 @@ out:
 te_errno
 tapi_cfg_pci_get_numa_node(const char *pci_oid, char **numa_node)
 {
-    cfg_val_type type = CVT_STRING;
     te_errno rc;
 
-    rc = cfg_get_instance_fmt(&type, numa_node, "%s/node:", pci_oid);
+    rc = cfg_get_instance_string_fmt(numa_node, "%s/node:", pci_oid);
     if (rc != 0)
         ERROR("Failed to get the NUMA node of a PCI device: %r", rc);
 
@@ -547,9 +544,8 @@ te_errno
 tapi_cfg_pci_get_driver(const char *pci_oid, char **driver)
 {
     te_errno rc;
-    cfg_val_type type = CVT_STRING;
 
-    rc = cfg_get_instance_fmt(&type, driver, "%s/driver:", pci_oid);
+    rc = cfg_get_instance_string_fmt(driver, "%s/driver:", pci_oid);
     if (rc != 0)
     {
         ERROR("Failed to get current driver of PCI device %s", pci_oid);
@@ -663,7 +659,6 @@ tapi_cfg_pci_get_pcioid_by_vend_dev_inst(const char *ta, const char *vendor,
                                          char **pci_oid)
 {
     char *pci_oidstr;
-    cfg_val_type type = CVT_STRING;
     te_errno rc;
 
     if (ta == NULL)
@@ -684,9 +679,9 @@ tapi_cfg_pci_get_pcioid_by_vend_dev_inst(const char *ta, const char *vendor,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    rc = cfg_get_instance_fmt(&type, &pci_oidstr,
-                              CFG_PCI_TA_VEND_DEVICE_FMT "/instance:%d",
-                              ta, vendor, device, instance);
+    rc = cfg_get_instance_string_fmt(&pci_oidstr,
+                                     CFG_PCI_TA_VEND_DEVICE_FMT "/instance:%d",
+                                     ta, vendor, device, instance);
     if (rc != 0)
     {
         ERROR("Failed to get PCI oid by %s:%s:%d, %r", vendor, device,
@@ -765,9 +760,7 @@ out:
 te_errno
 tapi_cfg_pci_get_serialno(const char *pci_oid, char **serialno)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, serialno, "%s/serialno:", pci_oid);
+    return cfg_get_instance_string_fmt(serialno, "%s/serialno:", pci_oid);
 }
 
 /* Convert configuration mode constant to string name */
@@ -820,10 +813,9 @@ tapi_cfg_pci_get_param_str(const char *pci_oid,
                            tapi_cfg_pci_param_cmode cmode,
                            char **value)
 {
-    cfg_val_type type = CVT_STRING;
-
-    return cfg_get_instance_fmt(&type, value, "%s/param:%s/value:%s",
-                                pci_oid, param_name, cmode_to_str(cmode));
+    return cfg_get_instance_string_fmt(value, "%s/param:%s/value:%s",
+                                       pci_oid, param_name,
+                                       cmode_to_str(cmode));
 }
 
 /* See description in tapi_cfg_pci.h */

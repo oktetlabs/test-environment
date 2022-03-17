@@ -35,7 +35,6 @@ main(int argc, char *argv[])
     char           *vm_name = "testvm";
     const char     *ta_vm = "Agt_VM";
     const char     *key = "/srv/virtual/testvm.id_rsa";
-    cfg_val_type    val_type = CVT_INTEGER;
     int             ssh_port;
     int             rcf_port;
     char           *confstr;
@@ -79,10 +78,11 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_cfg_vm_start(ta, vm_name));
 
     TEST_STEP("Start a test agent on the virtual machine");
-    CHECK_RC(cfg_get_instance_fmt(&val_type, &ssh_port,
-                                  "/agent:%s/vm:%s/ssh_port:/host:", ta, vm_name));
-    CHECK_RC(cfg_get_instance_fmt(&val_type, &rcf_port,
-                                  "/agent:%s/vm:%s/rcf_port:", ta, vm_name));
+    CHECK_RC(cfg_get_instance_int_fmt(&ssh_port,
+                                      "/agent:%s/vm:%s/ssh_port:/host:",
+                                      ta, vm_name));
+    CHECK_RC(cfg_get_instance_int_fmt(&rcf_port, "/agent:%s/vm:%s/rcf_port:",
+                                      ta, vm_name));
 
     SLEEP(2);
 
