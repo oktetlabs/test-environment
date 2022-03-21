@@ -135,6 +135,7 @@ tester_serial_get_handlers(const char *event_name, serial_hand_h_t *hh)
     tester_serial_handler_t    *current;
     int                         rc;
     char                       *signame;
+    int                         is_internal;
 
     SLIST_INIT(hh);
 
@@ -179,10 +180,10 @@ if (_rc != 0) \
         if (h->name == NULL)
             SERIAL_CHECK_RC(TE_ENOENT, "The handler name is NULL");
 
-        type = CVT_INTEGER;
-        SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_fmt(&type, &h->internal, 
+        SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_int_fmt(&is_internal,
             SERIAL_FMT_HLR "%s/internal:", event_name, h->name));
         SERIAL_CHECK_RC(rc, "Failed to get the handler type");
+        h->internal = (is_internal != 0);
 
         if (h->internal == FALSE)
         {

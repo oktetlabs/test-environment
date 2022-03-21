@@ -164,11 +164,15 @@ extern te_errno
 tapi_cfg_acse_get_acs_enabled(char const *ta, char const *acs,
                               te_bool *enabled)
 {
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc;
+    int enabled_int;
 
-    return cfg_get_instance_fmt(&type, enabled,
-                                "/agent:%s/acse:/acs:%s/enabled:",
-                                ta, acs);
+    rc = cfg_get_instance_int_fmt(&enabled_int,
+                                  "/agent:%s/acse:/acs:%s/enabled:", ta, acs);
+    if (rc == 0)
+        *enabled = (enabled_int != 0);
+
+    return rc;
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -186,11 +190,15 @@ extern te_errno
 tapi_cfg_acse_get_acs_ssl(char const *ta, char const *acs,
                           te_bool *ssl)
 {
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc;
+    int ssl_enabled;
 
-    return cfg_get_instance_fmt(&type, ssl,
-                                "/agent:%s/acse:/acs:%s/ssl:",
-                                ta, acs);
+    rc = cfg_get_instance_int_fmt(&ssl_enabled,
+                                  "/agent:%s/acse:/acs:%s/ssl:", ta, acs);
+    if (rc == 0)
+        *ssl = (ssl_enabled != 0);
+
+    return rc;
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -367,11 +375,16 @@ extern te_errno
 tapi_cfg_acse_get_session_enabled(char const *ta, char const *acs,
                                   char const *cpe, te_bool *enabled)
 {
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc;
+    int enabled_int;
 
-    return cfg_get_instance_fmt(&type, enabled,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/"
-                                "session:/enabled:", ta, acs, cpe);
+    rc = cfg_get_instance_int_fmt(&enabled_int,
+                                  "/agent:%s/acse:/acs:%s/cpe:%s/"
+                                  "session:/enabled:", ta, acs, cpe);
+    if (rc == 0)
+        *enabled = (enabled_int != 0);
+
+    return rc;
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -391,11 +404,16 @@ tapi_cfg_acse_get_session_hold_requests(char const *ta, char const *acs,
                                         char const *cpe,
                                         te_bool *hold_requests)
 {
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc;
+    int hold_requests_int;
 
-    return cfg_get_instance_fmt(&type, hold_requests,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/"
-                                "session:/hold_requests:", ta, acs, cpe);
+    rc = cfg_get_instance_int_fmt(&hold_requests_int,
+                                  "/agent:%s/acse:/acs:%s/cpe:%s/"
+                                  "session:/hold_requests:", ta, acs, cpe);
+    if (rc == 0)
+        *hold_requests = (hold_requests_int != 0);
+
+    return rc;
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -415,11 +433,19 @@ tapi_cfg_acse_get_session_target_state(char const *ta, char const *acs,
                                        char const *cpe,
                                        session_state_t *target_state)
 {
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc;
+    int target_state_int;
 
-    return cfg_get_instance_fmt(&type, target_state,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/"
-                                "session:/target_state:", ta, acs, cpe);
+    rc = cfg_get_instance_int_fmt(&target_state_int,
+                                  "/agent:%s/acse:/acs:%s/cpe:%s/"
+                                  "session:/target_state:", ta, acs, cpe);
+    if (rc == 0)
+    {
+        /* Here we hope that Agent returned a value compatible with the enum */
+        *target_state = target_state_int;
+    }
+
+    return rc;
 }
 
 /* See description in tapi_cfg_acse.h */
@@ -428,11 +454,19 @@ tapi_cfg_acse_get_session_state(char const *ta, char const *acs,
                                 char const *cpe,
                                 session_state_t *state)
 {
-    cfg_val_type type = CVT_INTEGER;
+    te_errno rc;
+    int state_int;
 
-    return cfg_get_instance_fmt(&type, state,
-                                "/agent:%s/acse:/acs:%s/cpe:%s/"
-                                "session:/state:", ta, acs, cpe);
+    return cfg_get_instance_int_fmt(&state_int,
+                                    "/agent:%s/acse:/acs:%s/cpe:%s/"
+                                    "session:/state:", ta, acs, cpe);
+    if (rc == 0)
+    {
+        /* Here we hope that Agent returned a value compatible with the enum */
+        *state = state_int;
+    }
+
+    return rc;
 }
 
 /* See description in tapi_cfg_acse.h */
