@@ -7888,8 +7888,9 @@ user_add(unsigned int gid, const char *oid, const char *value,
     /*
      * We manually add group to be independent from system settings
      * (one group for all users / each user with its group)
+     * "-f" is used in order not to fail if such group already exists (bug 11813)
      */
-    sprintf(buf, "/usr/sbin/groupadd -g %u %s ", uid, user);
+    sprintf(buf, "/usr/sbin/groupadd -f -g %u %s ", uid, user);
     if ((rc = ta_system(buf)) != 0)
     {
         ERROR("\"%s\" command failed with %d", buf, rc);
