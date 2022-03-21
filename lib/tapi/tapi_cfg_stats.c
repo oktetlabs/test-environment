@@ -89,10 +89,8 @@ tapi_cfg_stats_if_stats_get(const char          *ta,
 #define TAPI_CFG_STATS_IF_COUNTER_GET(_counter_) \
     do                                                      \
     {                                                       \
-        cfg_val_type    val_type = CVT_INTEGER;             \
         VERB("IF_COUNTER_GET(%s)", #_counter_);             \
-        rc = cfg_get_instance_fmt(&val_type,                \
-                 &stats->_counter_,                         \
+        rc = cfg_get_instance_uint64_fmt(&stats->_counter_, \
                  "/agent:%s/interface:%s/stats:/%s:",       \
                  ta, ifname, #_counter_);                   \
         if (rc != 0)                                        \
@@ -154,9 +152,8 @@ tapi_cfg_stats_net_stats_get(const char          *ta,
 #define TAPI_CFG_STATS_IPV4_COUNTER_GET(_counter_) \
     do                                                          \
     {                                                           \
-        cfg_val_type    val_type = CVT_INTEGER;                 \
         VERB("IPV4_COUNTER_GET(%s)", #_counter_);               \
-        rc = cfg_get_instance_fmt(&val_type,                    \
+        rc = cfg_get_instance_uint64_fmt(                       \
                                   &stats->ipv4._counter_,       \
                                   "/agent:%s/stats:/ipv4_%s:",  \
                                   ta, #_counter_);              \
@@ -191,9 +188,8 @@ tapi_cfg_stats_net_stats_get(const char          *ta,
 #define TAPI_CFG_STATS_ICMP_COUNTER_GET(_counter_) \
     do                                                          \
     {                                                           \
-        cfg_val_type    val_type = CVT_INTEGER;                 \
         VERB("ICMP_COUNTER_GET(%s)", #_counter_);               \
-        rc = cfg_get_instance_fmt(&val_type,                    \
+        rc = cfg_get_instance_uint64_fmt(                       \
                                   &stats->icmp._counter_,       \
                                   "/agent:%s/stats:/icmp_%s:",  \
                                   ta, #_counter_);              \

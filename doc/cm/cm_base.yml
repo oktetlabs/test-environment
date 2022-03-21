@@ -237,7 +237,7 @@
 
     - oid: "/agent/interface/stats/in_octets"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          Total amount of octets received on the interface.
@@ -245,7 +245,7 @@
 
     - oid: "/agent/interface/stats/in_ucast_pkts"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          Total amount of unicast packets received on the interface.
@@ -253,7 +253,7 @@
 
     - oid: "/agent/interface/stats/in_nucast_pkts"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          Total amount of non-unicast packets received on the interface.
@@ -261,7 +261,7 @@
 
     - oid: "/agent/interface/stats/in_discards"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          Total amount of discarded packets on the interface.
@@ -269,7 +269,7 @@
 
     - oid: "/agent/interface/stats/in_errors"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          Total amount of packets containing an error received
@@ -278,7 +278,7 @@
 
     - oid: "/agent/interface/stats/in_unknown_protos"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          Total amount of packets with unsupported protocol received
@@ -287,7 +287,7 @@
 
     - oid: "/agent/interface/stats/out_octets"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          Total amount of octets transmitted on the interface.
@@ -295,7 +295,7 @@
 
     - oid: "/agent/interface/stats/out_ucast_pkts"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          Total amount of unicast packets transmitted on the interface.
@@ -303,7 +303,7 @@
 
     - oid: "/agent/interface/stats/out_nucast_pkts"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          Total amount of non-unicast packets transmitted on the interface.
@@ -311,7 +311,7 @@
 
     - oid: "/agent/interface/stats/out_discards"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          Total amount of packets discarded from the transmit queue of
@@ -320,7 +320,7 @@
 
     - oid: "/agent/interface/stats/out_errors"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          Total amount of packets dropped from the transmit queue of the
@@ -664,7 +664,7 @@
 
     - oid: "/agent/stats/ipv4_in_recvs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The total number of recieved IPv4 packets.
@@ -672,7 +672,7 @@
 
     - oid: "/agent/stats/ipv4_in_hdr_errs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of packets discarded due to errors in their IPv4 headers.
@@ -680,7 +680,7 @@
 
     - oid: "/agent/stats/ipv4_in_addr_errs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of packets discarded due to value of IPv4 destination.
@@ -688,7 +688,7 @@
 
     - oid: "/agent/stats/ipv4_forw_dgrams"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of forwarded IPv4 packets.
@@ -696,7 +696,7 @@
 
     - oid: "/agent/stats/ipv4_in_unknown_protos"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of packets discarded due to unknown or unsupported
@@ -705,7 +705,7 @@
 
     - oid: "/agent/stats/ipv4_in_discards"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of input IP packets for which no problems were
@@ -715,7 +715,7 @@
 
     - oid: "/agent/stats/ipv4_in_delivers"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The total numver of input packets successfully delivered to IPv4
@@ -724,7 +724,7 @@
 
     - oid: "/agent/stats/ipv4_out_requests"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The total numver of IPv4 packets which local IP user-protocols
@@ -733,7 +733,7 @@
 
     - oid: "/agent/stats/ipv4_out_discards"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The total number of output IP packets for which no problems
@@ -743,7 +743,7 @@
 
     - oid: "/agent/stats/ipv4_out_no_routes"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of IP packets discarded because there was no
@@ -752,7 +752,7 @@
 
     - oid: "/agent/stats/ipv4_reasm_timeout"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of reassembly timeouts.
@@ -760,7 +760,7 @@
 
     - oid: "/agent/stats/ipv4_reasm_reqds"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of reassembly requests.
@@ -768,7 +768,7 @@
 
     - oid: "/agent/stats/ipv4_reasm_oks"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of successfuly reassemblied IP packets.
@@ -776,7 +776,7 @@
 
     - oid: "/agent/stats/ipv4_reasm_fails"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The total number of failures in reassembling IP packets.
@@ -784,7 +784,7 @@
 
     - oid: "/agent/stats/ipv4_frag_oks"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of successfuly fragmented IP packets.
@@ -792,7 +792,7 @@
 
     - oid: "/agent/stats/ipv4_frag_fails"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of unsuccessfuly fragmented IP packets.
@@ -800,7 +800,7 @@
 
     - oid: "/agent/stats/ipv4_frag_creates"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The total number of fragmented IP packets.
@@ -808,7 +808,7 @@
 
     - oid: "/agent/stats/icmp_in_msgs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The total number of ICMP messages received.
@@ -816,7 +816,7 @@
 
     - oid: "/agent/stats/icmp_in_errs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The total number of ICMP error messages received.
@@ -824,7 +824,7 @@
 
     - oid: "/agent/stats/icmp_in_dest_unreachs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The total number of ICMP error messages
@@ -834,7 +834,7 @@
 
     - oid: "/agent/stats/icmp_in_time_excds"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Time Exceeded messages received.
@@ -842,7 +842,7 @@
 
     - oid: "/agent/stats/icmp_in_parm_probs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Parameter Problem messages received.
@@ -850,7 +850,7 @@
 
     - oid: "/agent/stats/icmp_in_src_quenchs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Source Quench messages received.
@@ -858,7 +858,7 @@
 
     - oid: "/agent/stats/icmp_in_redirects"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Redirect messages received.
@@ -866,7 +866,7 @@
 
     - oid: "/agent/stats/icmp_in_echos"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Echo (request) messages received.
@@ -874,7 +874,7 @@
 
     - oid: "/agent/stats/icmp_in_echo_reps"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Echo (reply) messages received.
@@ -882,7 +882,7 @@
 
     - oid: "/agent/stats/icmp_in_timestamps"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Timestamp (request) messages received.
@@ -890,7 +890,7 @@
 
     - oid: "/agent/stats/icmp_in_timestamp_reps"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Timestamp (reply) messages received.
@@ -898,7 +898,7 @@
 
     - oid: "/agent/stats/icmp_in_addr_masks"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Address Mask (request) messages received.
@@ -907,7 +907,7 @@
 
     - oid: "/agent/stats/icmp_in_addr_mask_reps"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Address Mask (reply) messages received.
@@ -915,7 +915,7 @@
 
     - oid: "/agent/stats/icmp_out_msgs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The total number of ICMP messages transmitted.
@@ -923,7 +923,7 @@
 
     - oid: "/agent/stats/icmp_out_errs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The total number of ICMP error messages transmitted.
@@ -931,7 +931,7 @@
 
     - oid: "/agent/stats/icmp_out_dest_unreachs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The total number of ICMP error messages
@@ -941,7 +941,7 @@
 
     - oid: "/agent/stats/icmp_out_time_excds"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Time Exceeded messages transmitted.
@@ -949,7 +949,7 @@
 
     - oid: "/agent/stats/icmp_out_parm_probs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Parameter Problem messages transmitted.
@@ -957,7 +957,7 @@
 
     - oid: "/agent/stats/icmp_out_src_quenchs"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Source Quench messages transmitted.
@@ -965,7 +965,7 @@
 
     - oid: "/agent/stats/icmp_out_redirects"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Redirect messages transmitted.
@@ -973,7 +973,7 @@
 
     - oid: "/agent/stats/icmp_out_echos"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Echo (request) messages transmitted.
@@ -981,7 +981,7 @@
 
     - oid: "/agent/stats/icmp_out_echo_reps"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Echo (reply) messages transmitted.
@@ -989,7 +989,7 @@
 
     - oid: "/agent/stats/icmp_out_timestamps"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Timestamp (request) messages transmitted.
@@ -997,7 +997,7 @@
 
     - oid: "/agent/stats/icmp_out_timestamp_reps"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Timestamp (reply) messages transmitted.
@@ -1005,7 +1005,7 @@
 
     - oid: "/agent/stats/icmp_out_addr_masks"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Address Mask (request) messages transmitted.
@@ -1014,7 +1014,7 @@
 
     - oid: "/agent/stats/icmp_out_addr_mask_reps"
       access: read_only
-      type: integer
+      type: uint64
       volatile: true
       d: |
          The number of ICMP Address Mask (reply) messages transmitted.
