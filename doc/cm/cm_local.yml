@@ -156,6 +156,15 @@
         It is important for DPDK performance and there is no easy
         way to auto-detect it.
 
+    - oid: "/local/path"
+      access: read_create
+      type: string
+      d: |
+        Path to something
+
+        Name: name of the entity for which path is specified
+        Value: filesystem path
+
     - oid: "/local/test"
       access: read_only
       type: none
