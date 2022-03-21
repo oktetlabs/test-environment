@@ -2361,17 +2361,23 @@ tapi_iscsi_target_unmount(const char *ta)
 static te_bool
 check_mounted(const char *ta)
 {
-    cfg_val_type type = CVT_STRING;
-    char         mountpoint[64];
-    char        *expected_mountpoint;
-    int          rc;
+    char    *mountpoint;
+    char    *expected_mountpoint;
+    int      rc;
+    te_bool  mounted;
 
     expected_mountpoint = get_target_mountpoint();
-    rc  = cfg_get_instance_fmt(&type, mountpoint,
-                               "/agent:%s/iscsi_target:/backing_store_mp:",
-                               ta);
-    return (rc != 0 ||
-            strcmp(mountpoint, expected_mountpoint) != 0);
+    rc  = cfg_get_instance_string_fmt(&mountpoint,
+                                  "/agent:%s/iscsi_target:/backing_store_mp:",
+                                  ta);
+    if (rc != 0)
+        return FALSE;
+
+    mounted = (strcmp(mountpoint, expected_mountpoint) != 0);
+
+    free(mountpoint);
+
+    return mounted;
 }
 
 static te_errno
