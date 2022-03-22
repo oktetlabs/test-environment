@@ -10,6 +10,7 @@ engine_scripts = [
 ]
 
 platform_scripts = [
+    'te_clean_gcov.sh',
     'te_generate_symtbl',
     'te_generate_symtbl.sh',
     'te_meson_m32_exports',

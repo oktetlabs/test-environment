@@ -249,6 +249,22 @@ function fetch_host_tce
             "platform ${platform} host ${host} tce ${tce}"
 }
 
+function clean_platform_tce
+{
+    local platform=$1
+    local tce=$2
+    local hostdir="${platform_ws[${platform}]}"
+    local hostdest="${hostdir}/destdir/${TE_INSTALL}/${platform}"
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+
+    te_eval_or_ssh "${platform}" "
+                   export PATH=\"${hostdest}/bin:\${PATH}\" ;
+                   te_clean_gcov.sh \"${hostdir}/${build}\"
+                   " || \
+        die "fail to clean platform TCE: " \
+            "platform ${platform} tce ${tce}"
+}
+
 for platform in "${!platform_tce[@]}" ; do
     tce_list="${platform_tce[${platform}]}"
     hosts="${platform_hosts[${platform}]}"
@@ -259,6 +275,10 @@ for platform in "${!platform_tce[@]}" ; do
         for tce in ${tce_list} ; do
             fetch_host_tce ${platform} ${host} ${tce}
         done
+    done
+
+    for tce in ${tce_list} ; do
+        clean_platform_tce ${platform} ${tce}
     done
 
     # TODO: provide TCE summary across platforms
