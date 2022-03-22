@@ -217,6 +217,23 @@ function rsync_fnmatch_from
     fi
 }
 
+function rsync_fnmatch_to
+{
+    local fnm="$1"
+    local platform="$2"
+    local src="$3"
+    local dst="$4"
+    local p_ssh="${platform}_SSH"
+    local ssh="${!p_ssh}"
+    local rsync="rsync -a --include=${fnm} --include=*/ --exclude=*"
+
+    if test -n "${ssh}" ; then
+        ${rsync} -e "${ssh% *}" "${src}/" "${ssh##* }:${dst}/"
+    else
+        ${rsync} "${src}/" "${dst}/"
+    fi
+}
+
 function tce_ws_dir
 {
     local platform=$1
@@ -265,6 +282,34 @@ function clean_platform_tce
             "platform ${platform} tce ${tce}"
 }
 
+function process_host_tce
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local hostdir="${platform_ws[${platform}]}"
+    local hostdest="${hostdir}/destdir/${TE_INSTALL}/${platform}"
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+
+    rsync_fnmatch_to "*.gcda" ${platform} "${tcedir}/build" \
+                     "${hostdir}/${build}" || \
+        die "fail to place TCE onto platform: " \
+            "platform ${platform} host ${host} tce ${tce}"
+
+    te_eval_or_ssh ${platform} "
+                   export PATH=\"${hostdest}/bin:\${PATH}\" ;
+                   te_process_gcov.sh \"${hostdir}/${build}\"
+                   " || \
+        die "fail to process TCE on platform: " \
+            "platform ${platform} host ${host} tce ${tce}"
+
+    rsync_fnmatch_from "*.gcov" ${platform} "${hostdir}/${build}" \
+                       "${tcedir}/build" || \
+        die "fail to fetch TCE from platform: " \
+            "platform ${platform} host ${host} tce ${tce}"
+}
+
 for platform in "${!platform_tce[@]}" ; do
     tce_list="${platform_tce[${platform}]}"
     hosts="${platform_hosts[${platform}]}"
@@ -277,8 +322,11 @@ for platform in "${!platform_tce[@]}" ; do
         done
     done
 
-    for tce in ${tce_list} ; do
-        clean_platform_tce ${platform} ${tce}
+    for host in ${hosts} ; do
+        for tce in ${tce_list} ; do
+            clean_platform_tce ${platform} ${tce}
+            process_host_tce ${platform} ${host} ${tce}
+        done
     done
 
     # TODO: provide TCE summary across platforms

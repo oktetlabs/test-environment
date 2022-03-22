@@ -14,6 +14,7 @@ platform_scripts = [
     'te_generate_symtbl',
     'te_generate_symtbl.sh',
     'te_meson_m32_exports',
+    'te_process_gcov.sh',
 ]
 
 if get_option('engine')
