@@ -33,6 +33,14 @@ rsync_gcda_from() {
     fi
 }
 
+declare -A platform_ws
+
+for platform in $TE_BS_PLATFORMS ; do
+    ws_file="${TE_BUILD}/platforms/${platform}/${platform}.ws"
+    ws_dir="$(cat "$ws_file")"
+    platform_ws[${platform}]="${ws_dir}"
+done
+
 for platform in $TE_BS_PLATFORMS; do
     tce_list="$*"
     if test "$tce_list" = all; then
@@ -77,8 +85,7 @@ for platform in $TE_BS_PLATFORMS; do
             test -d "${!buildvar}/../src" || ln -s "${!srcvar}" "${!buildvar}/../src"
         fi
         if test -f "${!buildvar}/build.ninja"; then
-            ws="${TE_BUILD}/platforms/$platform/$platform.ws"
-            wsdir="$(cat "$ws")"
+            wsdir="${platform_ws[${platform}]}"
             remotedir="${!buildvar}"
             remotedir="$wsdir/${remotedir#${TE_BUILD}/platforms/$platform/}"
             rsync_gcda_from "$platform" "$remotedir" "${!buildvar}"
