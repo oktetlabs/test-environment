@@ -153,11 +153,30 @@ function map_platform_to_hosts
 
 map_platform_to_hosts
 
+function set_platform_host_ssh
+{
+    local platform=$1
+    local host=$2
+    local p_host_ssh="${platform}_${host}_SSH"
+    local host_ssh="${!p_host_ssh}"
+    local p_ssh="${platform}_SSH"
+    local ssh="${!p_ssh}"
+
+    test -n "$host_ssh" && \
+        return 0
+
+    host_ssh=$(echo "${ssh}" | sed "s/ [^ ]\+$/ ${host}/")
+
+    export ${p_host_ssh}="${host_ssh}"
+}
+
 for platform in "${!platform_tce[@]}" ; do
     tce_list="${platform_tce[${platform}]}"
     hosts="${platform_hosts[${platform}]}"
 
     for host in ${hosts} ; do
+        set_platform_host_ssh ${platform} ${host}
+
         for tce in ${tce_list} ; do
             : # TODO: process tce on host
         done
