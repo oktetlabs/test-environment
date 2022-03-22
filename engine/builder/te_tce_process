@@ -41,6 +41,9 @@ for platform in $TE_BS_PLATFORMS ; do
     platform_ws[${platform}]="${ws_dir}"
 done
 
+declare -A platform_tce
+declare -A platform_tce_build
+
 for platform in $TE_BS_PLATFORMS; do
     tce_list="$*"
     if test "$tce_list" = all; then
@@ -86,8 +89,12 @@ for platform in $TE_BS_PLATFORMS; do
         fi
         if test -f "${!buildvar}/build.ninja"; then
             wsdir="${platform_ws[${platform}]}"
-            remotedir="${!buildvar}"
-            remotedir="$wsdir/${remotedir#${TE_BUILD}/platforms/$platform/}"
+            build="${!buildvar#${TE_BUILD}/platforms/${platform}/}"
+
+            platform_tce[${platform}]+=" ${tce}"
+            platform_tce_build["${platform}_${tce}"]="${build}"
+
+            remotedir="$wsdir/${build}"
             rsync_gcda_from "$platform" "$remotedir" "${!buildvar}"
         fi
         find "${!buildvar}" -name '*.da' -o -name '.*.da' -o -name '*.gcda' -o -name '.*.gcda' | \
@@ -105,3 +112,8 @@ for platform in $TE_BS_PLATFORMS; do
     test -n "$fake_sbd" && rm -f "$sbd"
 done
 
+for platform in "${!platform_tce[@]}" ; do
+    tce_list="${platform_tce[${platform}]}"
+
+    # TODO: process TCE on each host
+done
