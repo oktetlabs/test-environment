@@ -39,6 +39,14 @@ function die
     exit 1
 }
 
+TCE_WS="${TE_BUILD}/tce_workspace"
+
+if test -d "${TCE_WS}" ; then
+    rm -rf "${TCE_WS}"
+fi
+mkdir "${TCE_WS}" || \
+    die "fail to create workspace to process TCE"
+
 declare -A platform_ws
 
 for platform in $TE_BS_PLATFORMS ; do
@@ -170,6 +178,77 @@ function set_platform_host_ssh
     export ${p_host_ssh}="${host_ssh}"
 }
 
+function check_host_dir
+{
+    local platform="$1"
+    local host="$2"
+    local dir="$3"
+    local rc=
+
+    te_eval_or_ssh "${platform}_${host}" \
+                   "test -d \"$dir\""
+    rc=$?
+
+    case $rc in
+    0|1)
+        return $rc
+        ;;
+    *)
+        die "fail to check directory: " \
+            "platform ${platform} host {$host}"
+        ;;
+    esac
+}
+
+function rsync_fnmatch_from
+{
+    local fnm="$1"
+    local platform="$2"
+    local src="$3"
+    local dst="$4"
+    local p_ssh="${platform}_SSH"
+    local ssh="${!p_ssh}"
+    local rsync="rsync -a --include=${fnm} --include=*/ --exclude=*"
+
+    if test -n "${ssh}" ; then
+        ${rsync} -e "${ssh% *}" "${ssh##* }:${src}/" "${dst}/"
+    else
+        ${rsync} "${src}/" "${dst}/"
+    fi
+}
+
+function tce_ws_dir
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+
+    echo "${TCE_WS}/${platform}_${host}_${tce}"
+}
+
+function fetch_host_tce
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+    local hostdir="${platform_ws[${platform}]}"
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+
+    mkdir -p "${tcedir}/build" || \
+        die "fail to create directory to save TCE: " \
+            "platform ${platform} host ${host} tce ${tce}"
+
+    # Check TCE provided by a host
+    check_host_dir ${platform} ${host} "${hostdir}/${build}" || \
+        return 0
+
+    rsync_fnmatch_from "*.gcda" "${platform}_${host}" "${hostdir}/${build}" \
+                       "${tcedir}/build" || \
+        die "fail to fetch TCE: " \
+            "platform ${platform} host ${host} tce ${tce}"
+}
+
 for platform in "${!platform_tce[@]}" ; do
     tce_list="${platform_tce[${platform}]}"
     hosts="${platform_hosts[${platform}]}"
@@ -178,7 +257,9 @@ for platform in "${!platform_tce[@]}" ; do
         set_platform_host_ssh ${platform} ${host}
 
         for tce in ${tce_list} ; do
-            : # TODO: process tce on host
+            fetch_host_tce ${platform} ${host} ${tce}
         done
     done
+
+    # TODO: provide TCE summary across platforms
 done
