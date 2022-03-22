@@ -33,6 +33,12 @@ rsync_gcda_from() {
     fi
 }
 
+function die
+{
+    echo "ERROR: $*" > /dev/stderr
+    exit 1
+}
+
 declare -A platform_ws
 
 for platform in $TE_BS_PLATFORMS ; do
@@ -112,8 +118,48 @@ for platform in $TE_BS_PLATFORMS; do
     test -n "$fake_sbd" && rm -f "$sbd"
 done
 
+function parse_ta_list_line
+{
+    local _map=$1
+    shift
+    local line=( $@ )
+    local platform="${line[2]}"
+    local host="${line[1]}"
+    local hosts=
+
+    test \( -n "${platform}" \) -a \( -n "${host}" \) || \
+        return 1
+
+    hosts="$(eval echo "\${${_map}[${platform}]}")"
+    hosts="${hosts}${hosts:+ }${host}"
+
+    eval "${_map}[${platform}]=\"${hosts}\""
+}
+
+function map_platform_to_hosts
+{
+    local ta_file="${TE_TA_LIST_FILE}"
+    local line=
+    declare -gA platform_hosts
+
+    while read line ; do
+        test -n "$line" || \
+            continue
+        parse_ta_list_line platform_hosts "$line" || \
+            die "fail to parse the list of TA hosts"
+    done < "${ta_file}" || \
+        die "fail to read the list of TA hosts"
+}
+
+map_platform_to_hosts
+
 for platform in "${!platform_tce[@]}" ; do
     tce_list="${platform_tce[${platform}]}"
+    hosts="${platform_hosts[${platform}]}"
 
-    # TODO: process TCE on each host
+    for host in ${hosts} ; do
+        for tce in ${tce_list} ; do
+            : # TODO: process tce on host
+        done
+    done
 done
