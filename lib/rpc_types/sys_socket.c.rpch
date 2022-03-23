@@ -1923,12 +1923,6 @@ ioctl_rpc2str(rpc_ioctl_code code)
     }
 }
 
-
-/* Define some value for unknown IOCTL request */
-#ifndef IOCTL_MAX
-#define IOCTL_MAX 0x7FFFFFFF
-#endif
-
 /* See description in te_rpc_sys_socket.h */
 int
 ioctl_rpc2h(rpc_ioctl_code code)
@@ -2001,11 +1995,11 @@ ioctl_rpc2h(rpc_ioctl_code code)
         RPC2H_CHECK(SIO_UDP_CONNRESET);
         RPC2H_CHECK(SIO_INDEX_BIND);
         RPC2H_CHECK(SIO_UCAST_IF);
-        
+
         default:
-            WARN("%s is converted to IOCTL_MAX(%u)",
-                 ioctl_rpc2str(code), IOCTL_MAX);
-            return IOCTL_MAX;
+            WARN("%s is converted to TE_IOCTL_UNKNOWN (%u)",
+                 ioctl_rpc2str(code), TE_IOCTL_UNKNOWN);
+            return TE_IOCTL_UNKNOWN;
     }
 }
 

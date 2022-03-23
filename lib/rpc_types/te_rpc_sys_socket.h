@@ -1089,6 +1089,19 @@ typedef enum rpc_ioctl_code {
 /** Convert RPC ioctl requests to string */
 extern const char * ioctl_rpc2str(rpc_ioctl_code code);
 
+/**
+ * ioctl() request which is not known to system.
+ */
+#define TE_IOCTL_UNKNOWN 0xffffffff
+
+/**
+ * Get native value of ioctl() request.
+ *
+ * @param code      RPC value
+ *
+ * @return Native value (@c TE_IOCTL_UNKNOWN if native value is not
+ *         defined)
+ */
 extern int ioctl_rpc2h(rpc_ioctl_code code);
 
 

@@ -5032,6 +5032,18 @@ TARPC_FUNC(ioctl,
     ioctl_param  req_local;
     void        *req_ptr;
 
+    int native_code;
+
+    native_code = ioctl_rpc2h(in->code);
+    if (native_code == TE_IOCTL_UNKNOWN && in->code != RPC_SIOUNKNOWN)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOIOCTLCMD),
+                         "ioctl() request %s is not defined",
+                         ioctl_rpc2str(in->code));
+        out->retval = -1;
+        goto finish;
+    }
+
     if (out->req.req_val != NULL)
     {
         memset(&req_local, 0, sizeof(req_local));
@@ -5045,7 +5057,7 @@ TARPC_FUNC(ioctl,
         req_ptr = NULL;
     }
 
-    MAKE_CALL(out->retval = func(in->s, ioctl_rpc2h(in->code), req_ptr));
+    MAKE_CALL(out->retval = func(in->s, native_code, req_ptr));
     if (req_ptr != NULL)
     {
         tarpc_ioctl_post(in, out, req_ptr);

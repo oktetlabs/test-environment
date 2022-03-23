@@ -179,6 +179,7 @@ typedef enum {
     TE_ENOMEDIUM,     /**< No medium found */
     TE_EMEDIUMTYPE,   /**< Wrong medium type */
     TE_ECANCELED,     /**< Operation is cancelled */
+    TE_ENOIOCTLCMD,   /**< No ioctl() command */
 
     /* Windows-specific error codes */
     TE_E_NETNAME_DELETED,/**< The specified network name is no longer
@@ -622,6 +623,7 @@ te_rc_err2str(te_errno err)
         ERR2STR(ENOMEDIUM);
         ERR2STR(EMEDIUMTYPE);
         ERR2STR(ECANCELED);
+        ERR2STR(ENOIOCTLCMD);
 
         ERR2STR(E_UNEXP_NET_ERR);
         ERR2STR(E_WAIT_TIMEOUT);
@@ -1239,6 +1241,10 @@ te_rc_os2te(int err)
 
 #if defined(ECANCELED) && (ECANCELED != ENOMEDIUM)
         case ECANCELED: return TE_ECANCELED;
+#endif
+
+#ifdef ENOIOCTLCMD
+        case ENOIOCTLCMD: return TE_ENOIOCTLCMD;
 #endif
 
 #if defined USER_DEFINED_ERRNO_1
