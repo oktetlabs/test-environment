@@ -269,16 +269,14 @@ ta_job_status2tarpc_job_status(const ta_job_status_t *from,
 static te_errno
 job_wait(unsigned int job_id, int timeout_ms, tarpc_job_status *status)
 {
-    te_errno rc, status_rc;
+    te_errno rc;
     ta_job_status_t ta_status;
 
     INIT_MANAGER_IF_NEEDED(manager);
 
     rc = ta_job_wait(manager, job_id, timeout_ms, &ta_status);
-    status_rc = ta_job_status2tarpc_job_status(&ta_status, status);
-
     if (rc == 0)
-        rc = status_rc;
+        rc = ta_job_status2tarpc_job_status(&ta_status, status);
 
     return rc;
 }
