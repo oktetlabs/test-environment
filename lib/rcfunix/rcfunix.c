@@ -1067,7 +1067,12 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
     }
 
     RING("CMD to remove: %s", cmd.ptr);
-    rc = system_with_timeout(ta->kill_timeout, NULL, "%s", cmd.ptr);
+    /*
+     * Let's use copy_timeout here, it's greater than kill_timeout and
+     * with kill_timeout 'rm -fr' fails rarely with timeout, despite it
+     * still working not hanging.
+     */
+    rc = system_with_timeout(ta->copy_timeout, NULL, "%s", cmd.ptr);
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         goto done;
 
