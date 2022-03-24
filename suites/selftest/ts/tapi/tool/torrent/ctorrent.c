@@ -218,12 +218,13 @@ main(int argc, char **argv)
     TEST_SUCCESS;
 
 cleanup:
-    tapi_job_factory_destroy(factory_iut);
-    tapi_job_factory_destroy(factory_tst);
-
     CLEANUP_CHECK_RC(tapi_bttrack_destroy(tracker));
     CLEANUP_CHECK_RC(tapi_ctorrent_destroy(app_iut, TE_SEC2MS(10)));
     CLEANUP_CHECK_RC(tapi_ctorrent_destroy(app_tst, TE_SEC2MS(10)));
+
+    tapi_job_factory_destroy(factory_iut);
+    tapi_job_factory_destroy(factory_tst);
+
     cleanup_unlink_file(pco_iut->ta, metainfo_iut);
     cleanup_unlink_file(pco_tst->ta, metainfo_tst);
     cleanup_unlink_file(pco_iut->ta, source_file);

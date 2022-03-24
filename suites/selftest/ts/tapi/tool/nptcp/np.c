@@ -93,10 +93,10 @@ int main(int argc, char **argv)
 cleanup:
     te_vec_free(&report);
 
+    CLEANUP_CHECK_RC(tapi_nptcp_destroy(app));
+
     tapi_job_factory_destroy(factory_receiver);
     tapi_job_factory_destroy(factory_transmitter);
-
-    CLEANUP_CHECK_RC(tapi_nptcp_destroy(app));
 
     TEST_END;
 }
