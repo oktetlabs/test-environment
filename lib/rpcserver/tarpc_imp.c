@@ -4514,11 +4514,12 @@ typedef union ioctl_param {
 #endif
 } ioctl_param;
 
-static void
+static te_errno
 tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 ioctl_param *req, checked_arg_list *arglist)
 {
     size_t  reqlen;
+    te_errno rc;
 
     assert(in != NULL);
     assert(out != NULL);
@@ -4607,10 +4608,17 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 
 #if HAVE_LINUX_ETHTOOL_H
                 case RPC_SIOCETHTOOL:
-                    ethtool_data_rpc2h(
+                    rc = ethtool_data_rpc2h(
                                     &(out->req.req_val[0].ioctl_request_u.
                                       req_ifreq.rpc_ifr_ethtool),
                                     &req->ifreq.ifr_data);
+                    if (rc != 0)
+                    {
+                        te_rpc_error_set(TE_RC(TE_TA_UNIX, rc),
+                                         "Failed to convert Ethtool command "
+                                         "data before calling ioctl()");
+                        return rc;
+                    }
                     break;
 #endif /* HAVE_LINUX_ETHTOOL_H */
 #if HAVE_LINUX_NET_TSTAMP_H
@@ -4637,9 +4645,9 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 
             if (buflen > 0 && (buf = calloc(1, buflen + 64)) == NULL)
             {
-                ERROR("Out of memory");
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                return;
+                te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOMEM),
+                                 "Out of memory");
+                return TE_ENOMEM;
             }
             req->ifconf.ifc_buf = buf;
             req->ifconf.ifc_len = buflen;
@@ -4764,19 +4772,23 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 #endif
 
         default:
-            ERROR("Incorrect request type %d is received",
-                  out->req.req_val[0].type);
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-            return;
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                             "Incorrect request type %d is received",
+                             out->req.req_val[0].type);
+            return TE_EINVAL;
     }
     if (in->access == IOCTL_WR)
         INIT_CHECKED_ARG(req, reqlen, 0);
+
+    return 0;
 }
 
-static void
+static te_errno
 tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                  ioctl_param *req)
 {
+    te_errno rc;
+
     switch (out->req.req_val[0].type)
     {
         case IOCTL_INT:
@@ -4861,11 +4873,18 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 
 #if HAVE_LINUX_ETHTOOL_H
                 case RPC_SIOCETHTOOL:
-                    ethtool_data_h2rpc(
+                    rc = ethtool_data_h2rpc(
                                     &(out->req.req_val[0].ioctl_request_u.
                                       req_ifreq.rpc_ifr_ethtool),
                                     req->ifreq.ifr_data);
                     free(req->ifreq.ifr_data);
+                    if (rc != 0)
+                    {
+                        te_rpc_error_set(TE_RC(TE_TA_UNIX, rc),
+                                         "Failed to convert Ethtool command "
+                                         "data after calling ioctl()");
+                        return rc;
+                    }
                     break;
 #endif /* HAVE_LINUX_ETHTOOL_H */
 #if HAVE_LINUX_NET_TSTAMP_H
@@ -4879,10 +4898,11 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                     break;
 #endif /* HAVE_LINUX_NET_TSTAMP_H */
                 default:
-                    ERROR("Unsupported IOCTL request %d of type IFREQ",
-                          in->code);
-                    out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-                    return;
+                    te_rpc_error_set(
+                             TE_RC(TE_TA_UNIX, TE_EINVAL),
+                             "Unsupported IOCTL request %d of type IFREQ",
+                             in->code);
+                    return TE_EINVAL;
             }
             break;
 
@@ -4905,9 +4925,10 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
             if ((req_t = calloc(n, sizeof(*req_t))) == NULL)
             {
                 free(req->ifconf.ifc_buf);
-                ERROR("Out of memory");
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                return;
+                te_rpc_error_set(
+                         TE_RC(TE_TA_UNIX, TE_ENOMEM),
+                         "Out of memory");
+                return TE_ENOMEM;
             }
             out->req.req_val[0].ioctl_request_u.req_ifconf.
                 rpc_ifc_req.rpc_ifc_req_val = req_t;
@@ -4922,9 +4943,10 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 if (req_t->rpc_ifr_name.rpc_ifr_name_val == NULL)
                 {
                     free(req->ifconf.ifc_buf);
-                    ERROR("Out of memory");
-                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                    return;
+                    te_rpc_error_set(
+                             TE_RC(TE_TA_UNIX, TE_ENOMEM),
+                             "Out of memory");
+                    return TE_ENOMEM;
                 }
                 memcpy(req_t->rpc_ifr_name.rpc_ifr_name_val,
                        req_c->ifr_name, sizeof(req_c->ifr_name));
@@ -5022,6 +5044,8 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
         default:
             assert(FALSE);
     }
+
+    return 0;
 }
 
 TARPC_FUNC(ioctl,
@@ -5033,6 +5057,7 @@ TARPC_FUNC(ioctl,
     void        *req_ptr;
 
     int native_code;
+    te_errno rc;
 
     native_code = ioctl_rpc2h(in->code);
     if (native_code == TE_IOCTL_UNKNOWN && in->code != RPC_SIOUNKNOWN)
@@ -5048,9 +5073,12 @@ TARPC_FUNC(ioctl,
     {
         memset(&req_local, 0, sizeof(req_local));
         req_ptr = &req_local;
-        tarpc_ioctl_pre(in, out, req_ptr, arglist);
-        if (out->common._errno != 0)
+        rc = tarpc_ioctl_pre(in, out, req_ptr, arglist);
+        if (rc != 0)
+        {
+            out->retval = -1;
             goto finish;
+        }
     }
     else
     {
@@ -5060,7 +5088,9 @@ TARPC_FUNC(ioctl,
     MAKE_CALL(out->retval = func(in->s, native_code, req_ptr));
     if (req_ptr != NULL)
     {
-        tarpc_ioctl_post(in, out, req_ptr);
+        rc = tarpc_ioctl_post(in, out, req_ptr);
+        if (rc != 0)
+            out->retval = -1;
     }
 
 finish:

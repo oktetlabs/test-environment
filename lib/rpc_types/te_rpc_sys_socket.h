@@ -1364,6 +1364,9 @@ ethtool_cmd2str(rpc_ethtool_cmd ethtool_cmd)
     return "unknown";
 }
 
+/** Command number not used by Ethtool */
+#define TE_ETHTOOL_UNKNOWN 0
+
 /** Convert RPC ethtool command to native one */
 extern int ethtool_cmd_rpc2h(rpc_ethtool_cmd ethtool_cmd);
 
@@ -1381,16 +1384,25 @@ extern tarpc_ethtool_type ethtool_cmd2type(rpc_ethtool_cmd cmd);
  * @param edata_p   pointer to return host ethtool structure;
  *                  this structure is allocated if the pointer is
  *                  initialised to NULL
+ *
+ * @return Status code.
+ *
+ * @retval @c TE_EBADRQC - requested Ethtool command is not defined
+ * @retval @c TE_ENOMEM - not enough memory
+ * @retval @c TE_EINVAL - invalid command data
  */
-extern void ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p);
+extern te_errno ethtool_data_rpc2h(tarpc_ethtool *rpc_edata,
+                                   caddr_t *edata_p);
 
 /**
  * Copy ethtool data from the host data structure to RPC. 
  *
  * @param rpc_edata RPC ethtool data structure
  * @param edata     ethtool command structure
+ *
+ * @return Status code.
  */
-extern void ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata);
+extern te_errno ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata);
 
 #endif /* HAVE_LINUX_ETHTOOL_H */
 

@@ -274,6 +274,7 @@ struct tarpc_gethostname_out {
 
 /* Ethtool data types */
 enum tarpc_ethtool_type {
+    TARPC_ETHTOOL_UNKNOWN = 0,  /**< Unknown type */
     TARPC_ETHTOOL_CMD = 1,      /**< struct ethtool_cmd */
     TARPC_ETHTOOL_VALUE = 2,    /**< struct ethtool_value */
     TARPC_ETHTOOL_PADDR = 3,    /**< struct ethtool_perm_addr */

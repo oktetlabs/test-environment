@@ -3135,9 +3135,10 @@ ethtool_cmd_rpc2h(rpc_ethtool_cmd ethtool_cmd)
         RPC2H_CHECK(ETHTOOL_GET_TS_INFO);
 
         default:
-            WARN("%s is converted to 0",
-                 ethtool_cmd_rpc2str(ethtool_cmd));
-            return 0;
+            WARN("%s is converted to %d",
+                 ethtool_cmd_rpc2str(ethtool_cmd),
+                 TE_ETHTOOL_UNKNOWN);
+            return TE_ETHTOOL_UNKNOWN;
     }
 }
 
@@ -3246,18 +3247,25 @@ ethtool_cmd2type(rpc_ethtool_cmd cmd)
             return TARPC_ETHTOOL_TS_INFO;
 
         default:
-            return 0;
+            return TARPC_ETHTOOL_UNKNOWN;
     }
-    return 0;
+    return TARPC_ETHTOOL_UNKNOWN;
 }
 
 #define COPY_FIELD(to, from, fname) \
     (to)->fname = (from)->fname;
 #if HAVE_LINUX_ETHTOOL_H
 /* See the description in te_rpc_sys_socket.h */
-void 
+te_errno
 ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
 {
+    uint32_t cmd;
+
+    cmd = ethtool_cmd_rpc2h(rpc_edata->command);
+    if (cmd == TE_ETHTOOL_UNKNOWN &&
+        rpc_edata->command != RPC_ETHTOOL_UNKNOWN)
+        return TE_EBADRQC;
+
     switch (rpc_edata->data.type)
     {
         case TARPC_ETHTOOL_CMD:
@@ -3271,7 +3279,7 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                 {
                     ecmd = calloc(sizeof(struct ethtool_cmd), 1);
                     if (ecmd == NULL)
-                        break;
+                        return TE_ENOMEM;
                     *edata_p = (caddr_t)ecmd;
                 }
 
@@ -3321,7 +3329,7 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                     eaddr = calloc(sizeof(struct ethtool_perm_addr) +
                                    sizeof(rpc_eaddr->data), 1);
                     if (eaddr == NULL)
-                        break;
+                        return TE_ENOMEM;
                     *edata_p = (caddr_t)eaddr;
                 }
 
@@ -3343,7 +3351,7 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                 {
                     evalue = calloc(sizeof(struct ethtool_value), 1);
                     if (evalue == NULL)
-                        break;
+                        return TE_ENOMEM;
                     *edata_p = (caddr_t)evalue;
                 }
 
@@ -3370,10 +3378,8 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                 {
                     ts_info = calloc(1, sizeof(struct ethtool_ts_info));
                     if (ts_info == NULL)
-                    {
-                        ERROR("%s(): out of memory", __FUNCTION__);
-                        return;
-                    }
+                        return TE_ENOMEM;
+
                     *edata_p = (caddr_t)ts_info;
                 }
 
@@ -3381,15 +3387,16 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
             }
 
         default:
-            ERROR("%s: Unknown ethtool command.", __FUNCTION__);
-            break;
+            ERROR("%s: Unknown ethtool data type", __FUNCTION__);
+            return TE_EINVAL;
     }
-    *((uint32_t *)(*edata_p)) =
-                           ethtool_cmd_rpc2h(rpc_edata->command);
+
+    *((uint32_t *)(*edata_p)) = cmd;
+    return 0;
 }
 
 /* See the description in te_rpc_sys_socket.h */
-void 
+te_errno
 ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
 {
     rpc_edata->command = ethtool_cmd_h2rpc(*((uint32_t *)edata));
@@ -3448,7 +3455,7 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
                 {
                     ERROR("%s(): too big size of hardware address %d",
                           __FUNCTION__, eaddr->size);
-                    break;
+                    return TE_ENOBUFS;
                 }
 
                 /* cmd field is not used here */
@@ -3500,9 +3507,10 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
 
         default:
             ERROR("%s: Unknown ethtool command type.", __FUNCTION__);
-            break;
+            return TE_EINVAL;
     }
 
+    return 0;
 }
 #endif /* HAVE_LINUX_ETHTOOL_H */
 
