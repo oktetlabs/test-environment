@@ -52,6 +52,13 @@
 #include "ndn.h"
 #include "ndn_base.h"
 
+static te_bool sigusr2_caught = FALSE;
+
+te_bool
+te_sigusr2_caught(void)
+{
+    return sigusr2_caught;
+}
 
 /* See description in tapi_test.h */
 void
@@ -71,7 +78,7 @@ te_test_sig_handler(int signum)
         if (getenv("TE_TEST_SIGUSR2_STOP") != NULL)
             exit(TE_EXIT_SIGUSR2);
         else
-            RING_VERDICT("Test caught the SIGUSR2 signal");
+            sigusr2_caught = TRUE;
     }
 }
 

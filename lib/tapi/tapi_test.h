@@ -247,6 +247,8 @@ extern "C" {
  */
 #define TEST_END \
 cleanup_specific:                                                   \
+    if (te_sigusr2_caught())                                        \
+        RING_VERDICT("Test caught the SIGUSR2 signal");             \
     TEST_END_SPECIFIC;                                              \
     if (result == EXIT_SUCCESS &&                                   \
         tapi_test_run_status_get() != TE_TEST_RUN_STATUS_OK)        \
@@ -1028,6 +1030,14 @@ typedef enum {
 
 /** ID assigned by the Tester to the test instance */
 extern unsigned int te_test_id;
+
+/**
+ * Check whether SIGUSR2 signal has ever been caught
+ *
+ * @retval FALSE No signal has been caught
+ * @retval TRUE  Signal(-s) has(-ve) been caught.
+ */
+extern te_bool te_sigusr2_caught(void);
 
 /**
  * Finds a particular parameter in the list of parameters
