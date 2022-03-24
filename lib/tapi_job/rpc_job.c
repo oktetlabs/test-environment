@@ -45,7 +45,7 @@ rpc_job_set_rpcs_timeout(rcf_rpc_server *rpcs, int timeout_ms,
     }
 }
 
-int
+te_errno
 rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
                const char *tool, const char **argv, const char **env,
                unsigned int *job_id)
@@ -131,10 +131,10 @@ rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
     if (out.retval == 0)
         *job_id = out.job_id;
 
-    RETVAL_INT(job_create, out.retval);
+    RETVAL_TE_ERRNO(job_create, out.retval);
 }
 
-int
+te_errno
 rpc_job_start(rcf_rpc_server *rpcs, unsigned int job_id)
 {
     tarpc_job_start_in  in;
@@ -150,7 +150,7 @@ rpc_job_start(rcf_rpc_server *rpcs, unsigned int job_id)
 
     TAPI_RPC_LOG(rpcs, job_start, "%u", "%r", in.job_id, out.retval);
 
-    RETVAL_INT(job_start, out.retval);
+    RETVAL_TE_ERRNO(job_start, out.retval);
 }
 
 static const char *
@@ -164,7 +164,7 @@ tarpc_uint_array2log_buf(te_log_buf *buf, size_t size, tarpc_uint *array)
     return te_log_buf_get(buf);
 }
 
-int
+te_errno
 rpc_job_allocate_channels(rcf_rpc_server *rpcs, unsigned int job_id,
                           te_bool input_channels, unsigned int n_channels,
                           unsigned int *channels)
@@ -204,10 +204,10 @@ rpc_job_allocate_channels(rcf_rpc_server *rpcs, unsigned int job_id,
             channels[i] = out.channels.channels_val[i];
     }
 
-    RETVAL_INT(job_allocate_channels, out.retval);
+    RETVAL_TE_ERRNO(job_allocate_channels, out.retval);
 }
 
-int
+te_errno
 rpc_job_deallocate_channels(rcf_rpc_server *rpcs, unsigned int n_channels,
                             unsigned int *channels)
 {
@@ -233,10 +233,10 @@ rpc_job_deallocate_channels(rcf_rpc_server *rpcs, unsigned int n_channels,
                  out.retval);
     te_log_buf_free(tlbp_channels);
 
-    RETVAL_INT(job_deallocate_channels, out.retval);
+    RETVAL_TE_ERRNO(job_deallocate_channels, out.retval);
 }
 
-int
+te_errno
 rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
                       unsigned int n_channels, unsigned int *channels,
                       te_bool readable, te_log_level log_level,
@@ -277,10 +277,10 @@ rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
 
     free(in.filter_name);
 
-    RETVAL_INT(job_attach_filter, out.retval);
+    RETVAL_TE_ERRNO(job_attach_filter, out.retval);
 }
 
-int
+te_errno
 rpc_job_filter_add_regexp(rcf_rpc_server *rpcs, unsigned int filter,
                           const char *re, unsigned int extract)
 {
@@ -302,10 +302,10 @@ rpc_job_filter_add_regexp(rcf_rpc_server *rpcs, unsigned int filter,
                  in.filter, in.re, in.extract, out.retval);
     free(in.re);
 
-    RETVAL_INT(job_filter_add_regexp, out.retval);
+    RETVAL_TE_ERRNO(job_filter_add_regexp, out.retval);
 }
 
-int
+te_errno
 rpc_job_filter_add_channels(rcf_rpc_server *rpcs, unsigned int filter,
                             unsigned int n_channels, unsigned int *channels)
 {
@@ -331,10 +331,10 @@ rpc_job_filter_add_channels(rcf_rpc_server *rpcs, unsigned int filter,
                  out.retval);
     te_log_buf_free(tlbp_channels);
 
-    RETVAL_INT(job_filter_add_channels, out.retval);
+    RETVAL_TE_ERRNO(job_filter_add_channels, out.retval);
 }
 
-int
+te_errno
 rpc_job_filter_remove_channels(rcf_rpc_server *rpcs, unsigned int filter,
                                unsigned int n_channels, unsigned int *channels)
 {
@@ -360,7 +360,7 @@ rpc_job_filter_remove_channels(rcf_rpc_server *rpcs, unsigned int filter,
                  out.retval);
     te_log_buf_free(tlbp_channels);
 
-    RETVAL_INT(job_filter_remove_channels, out.retval);
+    RETVAL_TE_ERRNO(job_filter_remove_channels, out.retval);
 }
 
 static void
@@ -383,7 +383,7 @@ tarpc_job_buffer_copy(const tarpc_job_buffer *from, tarpc_job_buffer *to)
     }
 }
 
-int
+te_errno
 rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
                 unsigned int *filters, int timeout_ms,
                 tarpc_job_buffer *buffer)
@@ -415,10 +415,10 @@ rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
     if (out.retval == 0 && buffer != NULL)
         tarpc_job_buffer_copy(&out.buffer, buffer);
 
-    RETVAL_INT(job_receive, out.retval);
+    RETVAL_TE_ERRNO(job_receive, out.retval);
 }
 
-int
+te_errno
 rpc_job_receive_last(rcf_rpc_server *rpcs, unsigned int n_filters,
                      unsigned int *filters, int timeout_ms,
                      tarpc_job_buffer *buffer)
@@ -450,10 +450,10 @@ rpc_job_receive_last(rcf_rpc_server *rpcs, unsigned int n_filters,
     if (out.retval == 0 && buffer != NULL)
         tarpc_job_buffer_copy(&out.buffer, buffer);
 
-    RETVAL_INT(job_receive_last, out.retval);
+    RETVAL_TE_ERRNO(job_receive_last, out.retval);
 }
 
-int
+te_errno
 rpc_job_receive_many(rcf_rpc_server *rpcs, unsigned int n_filters,
                      unsigned int *filters, int timeout_ms,
                      tarpc_job_buffer **buffers, unsigned int *count)
@@ -489,7 +489,7 @@ rpc_job_receive_many(rcf_rpc_server *rpcs, unsigned int n_filters,
     out.buffers.buffers_val = NULL;
     out.buffers.buffers_len = 0;
 
-    RETVAL_INT(job_receive_many, out.retval);
+    RETVAL_TE_ERRNO(job_receive_many, out.retval);
 }
 
 void
@@ -532,10 +532,10 @@ rpc_job_clear(rcf_rpc_server *rpcs, unsigned int n_filters,
                  out.retval);
     te_log_buf_free(tlbp_filters);
 
-    RETVAL_INT(job_clear, out.retval);
+    RETVAL_TE_ERRNO(job_clear, out.retval);
 }
 
-int
+te_errno
 rpc_job_send(rcf_rpc_server *rpcs, unsigned int channel,
              const void *buf, size_t count)
 {
@@ -555,10 +555,10 @@ rpc_job_send(rcf_rpc_server *rpcs, unsigned int channel,
     TAPI_RPC_LOG(rpcs, job_send, "%u, %lu", "%r", in.channel,
                  in.buf.buf_len, out.retval);
 
-    RETVAL_INT(job_send, out.retval);
+    RETVAL_TE_ERRNO(job_send, out.retval);
 }
 
-int
+te_errno
 rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
              unsigned int *channels, int timeout_ms)
 {
@@ -586,10 +586,10 @@ rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
                  in.timeout_ms, out.retval);
     te_log_buf_free(tlbp_channels);
 
-    RETVAL_INT(job_poll, out.retval);
+    RETVAL_TE_ERRNO(job_poll, out.retval);
 }
 
-int
+te_errno
 rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo)
 {
     tarpc_job_kill_in  in;
@@ -607,10 +607,10 @@ rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo)
     TAPI_RPC_LOG(rpcs, job_kill, "%u, %s", "%r", in.job_id,
                  signum_rpc2str(in.signo), out.retval);
 
-    RETVAL_INT(job_kill, out.retval);
+    RETVAL_TE_ERRNO(job_kill, out.retval);
 }
 
-int
+te_errno
 rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo)
 {
     tarpc_job_killpg_in  in;
@@ -628,7 +628,7 @@ rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo)
     TAPI_RPC_LOG(rpcs, job_killpg, "%u, %s", "%r", in.job_id,
                  signum_rpc2str(in.signo), out.retval);
 
-    RETVAL_INT(job_killpg, out.retval);
+    RETVAL_TE_ERRNO(job_killpg, out.retval);
 }
 
 static const char *
@@ -655,7 +655,7 @@ tarpc_job_status2str(te_log_buf *tlbp, const tarpc_job_status *status)
     return te_log_buf_get(tlbp);
 }
 
-int
+te_errno
 rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id, int timeout_ms,
              tarpc_job_status *status)
 {
@@ -686,10 +686,10 @@ rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id, int timeout_ms,
 
     te_log_buf_free(tlbp);
 
-    RETVAL_INT(job_wait, out.retval);
+    RETVAL_TE_ERRNO(job_wait, out.retval);
 }
 
-int
+te_errno
 rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo,
              int term_timeout_ms)
 {
@@ -710,10 +710,10 @@ rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo,
     TAPI_RPC_LOG(rpcs, job_stop, "%u, %s, %d ms", "%r", in.job_id,
                  signum_rpc2str(signo), in.term_timeout_ms, out.retval);
 
-    RETVAL_INT(job_stop, out.retval);
+    RETVAL_TE_ERRNO(job_stop, out.retval);
 }
 
-int
+te_errno
 rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id, int term_timeout_ms)
 {
     tarpc_job_destroy_in  in;
@@ -732,10 +732,10 @@ rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id, int term_timeout_ms)
     TAPI_RPC_LOG(rpcs, job_destroy, "%u, %d ms", "%r",
                  in.job_id, in.term_timeout_ms, out.retval);
 
-    RETVAL_INT(job_destroy, out.retval);
+    RETVAL_TE_ERRNO(job_destroy, out.retval);
 }
 
-int
+te_errno
 rpc_job_wrapper_add(rcf_rpc_server *rpcs, unsigned int job_id,
                     const char *tool, const char **argv,
                     tarpc_job_wrapper_priority priority,
@@ -794,10 +794,10 @@ rpc_job_wrapper_add(rcf_rpc_server *rpcs, unsigned int job_id,
     if (out.retval == 0)
         *wrapper_id = out.wrapper_id;
 
-    RETVAL_INT(job_wrapper_add, out.retval);
+    RETVAL_TE_ERRNO(job_wrapper_add, out.retval);
 }
 
-int
+te_errno
 rpc_job_wrapper_delete(rcf_rpc_server *rpcs, unsigned int job_id,
                        unsigned int wrapper_id)
 {
@@ -814,10 +814,10 @@ rpc_job_wrapper_delete(rcf_rpc_server *rpcs, unsigned int job_id,
 
     TAPI_RPC_LOG(rpcs, job_wrapper_delete, "%u, %u", "%r",
                  in.job_id, in.wrapper_id, out.retval);
-    RETVAL_INT(job_wrapper_delete, out.retval);
+    RETVAL_TE_ERRNO(job_wrapper_delete, out.retval);
 }
 
-int
+te_errno
 rpc_job_add_sched_param(rcf_rpc_server *rpcs, unsigned int job_id,
                         struct tarpc_job_sched_param *sched_param,
                         size_t sched_param_len)
@@ -836,5 +836,5 @@ rpc_job_add_sched_param(rcf_rpc_server *rpcs, unsigned int job_id,
     CHECK_RPC_ERRNO_UNCHANGED(job_add_sched_param, out.retval);
 
     TAPI_RPC_LOG(rpcs, job_add_sched_param, "%u", "%r", in.job_id, out.retval);
-    RETVAL_ZERO_INT(job_add_sched_param, out.retval);
+    RETVAL_TE_ERRNO(job_add_sched_param, out.retval);
 }

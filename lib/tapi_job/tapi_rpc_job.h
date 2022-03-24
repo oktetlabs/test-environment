@@ -37,9 +37,9 @@ extern "C" {
  *
  * @return              Status code
  */
-extern int rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
-                          const char *tool, const char **argv, const char **env,
-                          unsigned int *job_id);
+extern te_errno rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
+                               const char *tool, const char **argv,
+                               const char **env, unsigned int *job_id);
 
 /**
  * Start a job
@@ -47,7 +47,7 @@ extern int rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
  * @param rpcs          RPC server
  * @param job_id        Job instance handle
  */
-extern int rpc_job_start(rcf_rpc_server *rpcs, unsigned int job_id);
+extern te_errno rpc_job_start(rcf_rpc_server *rpcs, unsigned int job_id);
 
 /**
  * Allocate @p n_channels channels.
@@ -67,10 +67,11 @@ extern int rpc_job_start(rcf_rpc_server *rpcs, unsigned int job_id);
  *
  * @return          Status code
  */
-extern int rpc_job_allocate_channels(rcf_rpc_server *rpcs, unsigned int job_id,
-                                     te_bool input_channels,
-                                     unsigned int n_channels,
-                                     unsigned int *channels);
+extern te_errno rpc_job_allocate_channels(rcf_rpc_server *rpcs,
+                                          unsigned int job_id,
+                                          te_bool input_channels,
+                                          unsigned int n_channels,
+                                          unsigned int *channels);
 
 /**
  * Deallocate @p n_channels channels.
@@ -81,9 +82,9 @@ extern int rpc_job_allocate_channels(rcf_rpc_server *rpcs, unsigned int job_id,
  *
  * @return                Status code
  */
-extern int rpc_job_deallocate_channels(rcf_rpc_server *rpcs,
-                                       unsigned int n_channels,
-                                       unsigned int *channels);
+extern te_errno rpc_job_deallocate_channels(rcf_rpc_server *rpcs,
+                                            unsigned int n_channels,
+                                            unsigned int *channels);
 
 /**
  * Create a secondary output channel applying a filter to an existing
@@ -106,10 +107,13 @@ extern int rpc_job_deallocate_channels(rcf_rpc_server *rpcs,
  * @retval TE_EPERM     Some of @p channels are input channels
  * @retval TE_EINVAL    Some of @p channels are output filters
  */
-extern int rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
-                                 unsigned int n_channels, unsigned int *channels,
-                                 te_bool readable, te_log_level log_level,
-                                 unsigned int *filter);
+extern te_errno rpc_job_attach_filter(rcf_rpc_server *rpcs,
+                                      const char *filter_name,
+                                      unsigned int n_channels,
+                                      unsigned int *channels,
+                                      te_bool readable,
+                                      te_log_level log_level,
+                                      unsigned int *filter);
 
 /**
  * Add a regular expression for filter
@@ -122,8 +126,9 @@ extern int rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
  *
  * @return          Status code
  */
-extern int rpc_job_filter_add_regexp(rcf_rpc_server *rpcs, unsigned int filter,
-                                     const char *re, unsigned int extract);
+extern te_errno rpc_job_filter_add_regexp(rcf_rpc_server *rpcs,
+                                          unsigned int filter, const char *re,
+                                          unsigned int extract);
 
 /**
  * Attach an existing filter to additional output channels
@@ -135,10 +140,10 @@ extern int rpc_job_filter_add_regexp(rcf_rpc_server *rpcs, unsigned int filter,
  *
  * @return            Status code
  */
-extern int rpc_job_filter_add_channels(rcf_rpc_server *rpcs,
-                                       unsigned int filter,
-                                       unsigned int n_channels,
-                                       unsigned int *channels);
+extern te_errno rpc_job_filter_add_channels(rcf_rpc_server *rpcs,
+                                            unsigned int filter,
+                                            unsigned int n_channels,
+                                            unsigned int *channels);
 
 /**
  * Remove filter from specified output channels
@@ -150,10 +155,10 @@ extern int rpc_job_filter_add_channels(rcf_rpc_server *rpcs,
  *
  * @return            Status code
  */
-extern int rpc_job_filter_remove_channels(rcf_rpc_server *rpcs,
-                                          unsigned int filter,
-                                          unsigned int n_channels,
-                                          unsigned int *channels);
+extern te_errno rpc_job_filter_remove_channels(rcf_rpc_server *rpcs,
+                                               unsigned int filter,
+                                               unsigned int n_channels,
+                                               unsigned int *channels);
 
 /**
  * Read the next message from one of the available filters.
@@ -172,9 +177,9 @@ extern int rpc_job_filter_remove_channels(rcf_rpc_server *rpcs,
  *                    primary output channels
  * @retval TE_EXDEV   if @p filters are on different RPC servers
  */
-extern int rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
-                           unsigned int *filters, int timeout_ms,
-                           tarpc_job_buffer *buffer);
+extern te_errno rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
+                                unsigned int *filters, int timeout_ms,
+                                tarpc_job_buffer *buffer);
 /**
  * Read the last non-eos message from one of the available filters.
  * The message is not removed from the queue, it can still be read with
@@ -194,9 +199,11 @@ extern int rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
  *                    primary output channels
  * @retval TE_EXDEV   if @p filters are on different RPC servers
  */
-extern int rpc_job_receive_last(rcf_rpc_server *rpcs, unsigned int n_filters,
-                                unsigned int *filters, int timeout_ms,
-                                tarpc_job_buffer *buffer);
+extern te_errno rpc_job_receive_last(rcf_rpc_server *rpcs,
+                                     unsigned int n_filters,
+                                     unsigned int *filters,
+                                     int timeout_ms,
+                                     tarpc_job_buffer *buffer);
 
 /**
  * Read multiple messages at once from the specified filters.
@@ -217,10 +224,11 @@ extern int rpc_job_receive_last(rcf_rpc_server *rpcs, unsigned int n_filters,
  *
  * @return Status code.
  */
-extern int rpc_job_receive_many(rcf_rpc_server *rpcs, unsigned int n_filters,
-                                unsigned int *filters, int timeout_ms,
-                                tarpc_job_buffer **buffers,
-                                unsigned int *count);
+extern te_errno rpc_job_receive_many(rcf_rpc_server *rpcs,
+                                     unsigned int n_filters,
+                                     unsigned int *filters, int timeout_ms,
+                                     tarpc_job_buffer **buffers,
+                                     unsigned int *count);
 
 /**
  * Release array of message buffers.
@@ -256,8 +264,8 @@ extern te_errno rpc_job_clear(rcf_rpc_server *rpcs, unsigned int n_filters,
  * @return          Status code
  * @retval TE_EPERM if @p channel is not an input channel
  */
-extern int rpc_job_send(rcf_rpc_server *rpcs, unsigned int channel,
-                        const void *buf, size_t count);
+extern te_errno rpc_job_send(rcf_rpc_server *rpcs, unsigned int channel,
+                             const void *buf, size_t count);
 
 /**
  * Poll the job's channels/filters for readiness.
@@ -272,8 +280,8 @@ extern int rpc_job_send(rcf_rpc_server *rpcs, unsigned int channel,
  * @retval TE_EPERM     if some channels from @p wait_set are neither input
  *                      channels nor pollable output channels
  */
-extern int rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
-                        unsigned int *channels, int timeout_ms);
+extern te_errno rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
+                             unsigned int *channels, int timeout_ms);
 
 /**
  * Send a signal to the job
@@ -284,8 +292,8 @@ extern int rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
  *
  * @return              Status code
  */
-extern int rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id,
-                        rpc_signum signo);
+extern te_errno rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id,
+                             rpc_signum signo);
 
 /**
  * Send a signal to the proccess group
@@ -296,8 +304,8 @@ extern int rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id,
  *
  * @return              Status code
  */
-extern int rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id,
-                          rpc_signum signo);
+extern te_errno rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id,
+                               rpc_signum signo);
 
 /**
  * Wait for the job completion (or check its status if @p timeout is zero)
@@ -312,8 +320,8 @@ extern int rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id,
  * @retval TE_EINPROGRESS   Job is still running
  * @retval TE_ECHILD        Job was never started
  */
-extern int rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id,
-                        int timeout_ms, tarpc_job_status *status);
+extern te_errno rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id,
+                             int timeout_ms, tarpc_job_status *status);
 
 /**
  * Stop a job. It can be started over with tapi_job_start().
@@ -331,8 +339,8 @@ extern int rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id,
  *
  * @return              Status code
  */
-extern int rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id,
-                        rpc_signum signo, int term_timeout_ms);
+extern te_errno rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id,
+                             rpc_signum signo, int term_timeout_ms);
 
 /**
  * Destroy the job instance. If the job has started, it is terminated
@@ -348,8 +356,8 @@ extern int rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id,
  *
  * @return              Status code
  */
-extern int rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id,
-                           int term_timeout_ms);
+extern te_errno rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id,
+                                int term_timeout_ms);
 
 /**
  * Add a wrapper for the specified job.
@@ -363,11 +371,10 @@ extern int rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id,
  *
  * @return                Status code
  */
-extern int rpc_job_wrapper_add(rcf_rpc_server *rpcs,
-                               unsigned int job_id,
-                               const char *tool, const char **argv,
-                               tarpc_job_wrapper_priority priority,
-                               unsigned int *wrapper_id);
+extern te_errno rpc_job_wrapper_add(rcf_rpc_server *rpcs, unsigned int job_id,
+                                    const char *tool, const char **argv,
+                                    tarpc_job_wrapper_priority priority,
+                                    unsigned int *wrapper_id);
 
 /**
  * Delete the wrapper instance handle.
@@ -377,9 +384,9 @@ extern int rpc_job_wrapper_add(rcf_rpc_server *rpcs,
  *
  * @return           Status code
  */
-extern int rpc_job_wrapper_delete(rcf_rpc_server *rpcs,
-                                  unsigned int job_id,
-                                  unsigned int wrapper_id);
+extern te_errno rpc_job_wrapper_delete(rcf_rpc_server *rpcs,
+                                       unsigned int job_id,
+                                       unsigned int wrapper_id);
 
 /**
  * Add a scheduling parameters for the specified job.
@@ -391,10 +398,10 @@ extern int rpc_job_wrapper_delete(rcf_rpc_server *rpcs,
  *
  * @return Status code
  */
-extern int rpc_job_add_sched_param(rcf_rpc_server *rpcs,
-                                   unsigned int job_id,
-                                   struct tarpc_job_sched_param *sched_param,
-                                   size_t sched_param_len);
+extern te_errno rpc_job_add_sched_param(rcf_rpc_server *rpcs,
+                                    unsigned int job_id,
+                                    struct tarpc_job_sched_param *sched_param,
+                                    size_t sched_param_len);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
