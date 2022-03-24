@@ -498,6 +498,46 @@ function summarise_tce
     popd > /dev/null
 }
 
+function copy_host_report
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+    local mtcedir="$(tce_ws_dir "${platform}" "" "${tce}")"
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local conf="${tcedir}/tce.conf"
+    local report="${tcedir}/report.tce"
+
+    test -d "${mtcedir}" && \
+        rm -r "${mtcedir}"
+
+    mkdir -p "${mtcedir}"
+
+    cp -t "${mtcedir}" "${conf}" "${report}" || \
+        die "fail to copy TCE into merge workspace: " \
+            "platform ${platform} host ${host} tce ${tce}"
+}
+
+function merge_host_report
+{
+    local mplatform=$1
+    local platform=$2
+    local host=$3
+    local tce=$4
+    local mtcedir="$(tce_ws_dir "${mplatform}" "" "${tce}")"
+    local mconf="${mtcedir}/tce.conf"
+    local mreport="${mtcedir}/report.tce"
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local conf="${tcedir}/tce.conf"
+    local report="${tcedir}/report.tce"
+
+    tce_merge_report.py "${mconf}" "${mreport}" \
+                         "${conf}" "${report}" || \
+        die "fail to merge reports: " \
+            "merge platform ${mplatform} " \
+            "platform ${platform} host ${host} tce ${tce}"
+}
+
 all_tce="$(echo "${platform_tce[@]}" | sed 's/ \+/\n/g' | sort -u)"
 
 for tce in $all_tce ; do
@@ -505,6 +545,7 @@ for tce in $all_tce ; do
     platform=
     hosts=
     host=
+    mplatform=
 
     for platform in ${platforms} ; do
         hosts="${platform_hosts[${platform}]}"
@@ -516,6 +557,20 @@ for tce in $all_tce ; do
             copy_tce_to_build ${platform} ${host} ${tce}
             report_host_tce ${platform} ${host} ${tce}
             summarise_tce ${platform} ${host} ${tce} "${repname}"
+        done
+    done
+
+    for platform in ${platforms} ; do
+        hosts="${platform_hosts[${platform}]}"
+
+        for host in ${hosts} ; do
+            if test -z "${mplatform}" ; then
+                copy_host_report ${platform} ${host} ${tce}
+                mplatform="${platform}"
+                continue
+            fi
+
+            merge_host_report ${mplatform} ${platform} ${host} ${tce}
         done
     done
 

@@ -8,6 +8,7 @@ tce_scripts = [
     'tce_merge_diff',
     'tce_merge_max',
     'tce_merge_min',
+    'tce_merge_report.py',
     'tce_merge_sum',
     'tce_report',
     'tce_resolve_gcov.py',
