@@ -2104,6 +2104,10 @@ rsrc_list(unsigned int gid, const char *oid,
                 free(buf);
                 return TE_RC(TE_RCF_PCH, TE_ENOMEM);
             }
+            else
+            {
+                buf = new_buf;
+            }
         }
         offset += sprintf(buf + offset, "%s ", tmp->id);
     }
