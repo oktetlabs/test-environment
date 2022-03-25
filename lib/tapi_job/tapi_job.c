@@ -15,11 +15,22 @@
 #include "tapi_job.h"
 #include "tapi_job_factory_rpc.h"
 #include "tapi_job_internal.h"
+#include "tapi_job_methods.h"
 #include "tapi_mem.h"
 #include "tapi_rpc_stdio.h"
 #include "tapi_rpc_job.h"
 #include "tapi_test.h"
 #include "te_alloc.h"
+
+#define TAPI_JOB_CHECK_METHOD_SUPPORT(_job, _method) \
+    do {                                                                       \
+        if ((_job)->methods._method == NULL)                                   \
+        {                                                                      \
+            ERROR("The job was created by a factory that does not "            \
+                  "support method '%s'", #_method);                            \
+            return TE_RC(TE_TAPI, TE_EOPNOTSUPP);                              \
+        }                                                                      \
+    } while (0)
 
 typedef struct channel_entry {
     SLIST_ENTRY(channel_entry) next;
@@ -48,6 +59,8 @@ struct tapi_job_t {
         /** Identifies job created by RPC factory */
         unsigned int id;
     } backend;
+
+    tapi_job_methods_t methods;
 
     SLIST_ENTRY(tapi_job_t) next;
 
@@ -192,6 +205,22 @@ tapi_job_factory_destroy(tapi_job_factory_t *factory)
     free(factory);
 }
 
+/* job->factory must already be set */
+static void
+init_methods(tapi_job_t *job)
+{
+    switch (job->factory->type)
+    {
+        case TAPI_JOB_FACTORY_RPC:
+            job->methods = rpc_job_methods;
+            break;
+
+        default:
+            /* job->factory was set so it is supposed to be valid */
+            assert(0);
+    }
+}
+
 /* See description in tapi_job_internal.h */
 rcf_rpc_server *
 tapi_job_get_rpcs(const tapi_job_t *job)
@@ -253,8 +282,12 @@ tapi_job_create(tapi_job_factory_t *factory, const char *spawner,
 
     tapi_job->factory = factory;
     SLIST_INIT(&tapi_job->channel_entries);
-    rc = rpc_job_create(tapi_job, spawner == NULL ? "" : spawner, program, argv,
-                        env);
+
+    init_methods(tapi_job);
+
+    TAPI_JOB_CHECK_METHOD_SUPPORT(tapi_job, create);
+    rc = tapi_job->methods.create(tapi_job, spawner == NULL ? "" : spawner,
+                                  program, argv, env);
     if (rc != 0)
     {
         free(tapi_job);
@@ -386,21 +419,27 @@ tapi_job_factory_set_path(tapi_job_factory_t *factory)
 te_errno
 tapi_job_start(tapi_job_t *job)
 {
-    return rpc_job_start(job);
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, start);
+
+    return job->methods.start(job);
 }
 
 /* See description in tapi_job.h */
 te_errno
 tapi_job_kill(tapi_job_t *job, int signo)
 {
-    return rpc_job_kill(job, signo);
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, kill);
+
+    return job->methods.kill(job, signo);
 }
 
 /* See description in tapi_job.h */
 te_errno
 tapi_job_killpg(tapi_job_t *job, int signo)
 {
-    return rpc_job_killpg(job, signo);
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, killpg);
+
+    return job->methods.killpg(job, signo);
 }
 
 unsigned int
@@ -413,7 +452,9 @@ tapi_job_get_timeout(void)
 te_errno
 tapi_job_wait(tapi_job_t *job, int timeout_ms, tapi_job_status_t *status)
 {
-    return rpc_job_wait(job, timeout_ms, status);
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, killpg);
+
+    return job->methods.wait(job, timeout_ms, status);
 }
 
 te_bool
@@ -421,7 +462,9 @@ tapi_job_is_running(tapi_job_t *job)
 {
     te_errno rc;
 
-    rc = rpc_job_wait(job, 0, NULL);
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, wait);
+
+    rc = job->methods.wait(job, 0, NULL);
     switch (rc)
     {
         case 0:
@@ -478,6 +521,8 @@ tapi_job_alloc_channels(tapi_job_t *job, te_bool input_channels,
     unsigned int i;
     te_errno rc;
 
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, allocate_channels);
+
     if (channels != NULL)
     {
         channel_ids = tapi_calloc(n_channels, sizeof(*channel_ids));
@@ -487,8 +532,8 @@ tapi_job_alloc_channels(tapi_job_t *job, te_bool input_channels,
             channels_tmp[i] = tapi_malloc(sizeof(tapi_job_channel_t));
     }
 
-    rc = rpc_job_allocate_channels(job, input_channels, n_channels,
-                                   channel_ids);
+    rc = job->methods.allocate_channels(job, input_channels, n_channels,
+                                        channel_ids);
     if (rc != 0)
     {
         free(channel_ids);
@@ -1150,7 +1195,9 @@ tapi_job_clear(const tapi_job_channel_set_t filters)
 te_errno
 tapi_job_stop(tapi_job_t *job, int signo, int term_timeout_ms)
 {
-    return rpc_job_stop(job, signo, term_timeout_ms);
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, stop);
+
+    return job->methods.stop(job, signo, term_timeout_ms);
 }
 
 /* See description in tapi_job.h */
@@ -1161,10 +1208,12 @@ tapi_job_destroy(tapi_job_t *job, int term_timeout_ms)
     channel_entry *entry;
     channel_entry *entry_tmp;
 
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, destroy);
+
     if (job == NULL)
         return 0;
 
-    rc = rpc_job_destroy(job, term_timeout_ms);
+    rc = job->methods.destroy(job, term_timeout_ms);
     if (rc != 0)
         return rc;
 
@@ -1190,8 +1239,10 @@ tapi_job_wrapper_add(tapi_job_t *job, const char *tool, const char **argv,
     te_errno rc;
     tapi_job_wrapper_t *wrapper;
 
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, wrapper_add);
+
     wrapper = tapi_calloc(1, sizeof(*wrapper));
-    rc = rpc_job_wrapper_add(job, tool, argv, priority, &wrapper->id);
+    rc = job->methods.wrapper_add(job, tool, argv, priority, &wrapper->id);
     if (rc != 0)
     {
         free(wrapper);
@@ -1209,11 +1260,14 @@ te_errno
 tapi_job_wrapper_delete(tapi_job_wrapper_t *wrapper)
 {
     te_errno rc;
+    tapi_job_t *job = wrapper->job;
+
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, wrapper_delete);
 
     if (wrapper == NULL)
         return 0;
 
-    rc = rpc_job_wrapper_delete(wrapper->job, wrapper->id);
+    rc = job->methods.wrapper_delete(job, wrapper->id);
     if (rc != 0)
         return rc;
 
@@ -1226,5 +1280,7 @@ te_errno
 tapi_job_add_sched_param(tapi_job_t *job,
                          tapi_job_sched_param *sched_param)
 {
-    return rpc_job_add_sched_param(job, sched_param);
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, add_sched_param);
+
+    return job->methods.add_sched_param(job, sched_param);
 }

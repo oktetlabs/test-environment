@@ -23,9 +23,14 @@ extern "C" {
 
 #define TAPI_RPC_JOB_BIG_TIMEOUT_MS 600000
 
+/** Methods for jobs created by RPC factory */
+extern const tapi_job_methods_t rpc_job_methods;
+
 /**
  * Create a job controlled by the RPC server @p rpcs.
  * The job will be managed by @p spawner plugin.
+ *
+ * @note This function implements tapi_job_method_create
  *
  * @param[inout] job    Job instance handle.
  *                      On input, job factory must be set.
@@ -46,6 +51,8 @@ extern te_errno rpc_job_create(tapi_job_t *job, const char *spawner,
 /**
  * Start a job
  *
+ * @note This function implements tapi_job_method_start
+ *
  * @param job           Job instance handle
  *
  * @return              Status code
@@ -60,6 +67,8 @@ extern te_errno rpc_job_start(const tapi_job_t *job);
  * The first and the second output channels are expected to be
  * connected to stdout and stderr respectively;
  * The wiring of not mentioned channels is spawner-dependant.
+ *
+ * @note This function implements tapi_job_method_allocate_channels
  *
  * @param job             Job instance handle
  * @param n_channels      Number of channels
@@ -287,6 +296,8 @@ extern te_errno rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
 /**
  * Send a signal to the job
  *
+ * @note This function implements tapi_job_method_kill
+ *
  * @param job           Job instance handle
  * @param signo         Signal number
  *
@@ -297,6 +308,8 @@ extern te_errno rpc_job_kill(const tapi_job_t *job, int signo);
 /**
  * Send a signal to the proccess group
  *
+ * @note This function implements tapi_job_method_killpg
+ *
  * @param job           Job instance handle
  * @param signo         Signal number
  *
@@ -306,6 +319,8 @@ extern te_errno rpc_job_killpg(const tapi_job_t *job, int signo);
 
 /**
  * Wait for the job completion (or check its status if @p timeout is zero)
+ *
+ * @note This function implements tapi_job_method_wait
  *
  * @param job           Job instance handle
  * @param timeout_ms    Timeout in ms (negative means
@@ -323,6 +338,8 @@ extern te_errno rpc_job_wait(const tapi_job_t *job, int timeout_ms,
  * Stop a job. It can be started over with tapi_job_start().
  * The function tries to terminate the job with the specified signal.
  * If the signal fails to terminate the job, the function will send @c SIGKILL.
+ *
+ * @note This function implements tapi_job_method_stop
  *
  * @param job               Job instance handle
  * @param signo             Signal to be sent at first. If signo is @c SIGKILL,
@@ -342,6 +359,8 @@ extern te_errno rpc_job_stop(const tapi_job_t *job, int signo,
  * as gracefully as possible. All resources of the instance are freed;
  * all unread data on all filters are lost.
  *
+ * @note This function implements tapi_job_method_destroy
+ *
  * @param job               Job instance handle
  * @param term_timeout_ms   The timeout of graceful termination of a job,
  *                          if it has been running. After the timeout expiration
@@ -354,6 +373,8 @@ extern te_errno rpc_job_destroy(const tapi_job_t *job, int term_timeout_ms);
 
 /**
  * Add a wrapper for the specified job.
+ *
+ * @note This function implements tapi_job_method_wrapper_add
  *
  * @param[in] job         Job instance handle
  * @param[in] tool        Path to the wrapper tool
@@ -371,6 +392,8 @@ extern te_errno rpc_job_wrapper_add(const tapi_job_t *job,
 /**
  * Delete the wrapper instance handle.
  *
+ * @note This function implements tapi_job_method_wrapper_delete
+ *
  * @param job               Job instance handle
  * @param wrapper_id        Wrapper instance handle
  *
@@ -381,6 +404,8 @@ extern te_errno rpc_job_wrapper_delete(const tapi_job_t *job,
 
 /**
  * Add a scheduling parameters for the specified job.
+ *
+ * @note This function implements tapi_job_method_add_sched_param
  *
  * @param job             Job instance handle
  * @param sched_param     Array of scheduling parameters.

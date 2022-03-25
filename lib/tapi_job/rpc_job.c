@@ -12,6 +12,7 @@
 #include "te_config.h"
 
 #include "tapi_job_internal.h"
+#include "tapi_job_methods.h"
 #include "tapi_rpc_job.h"
 #include "log_bufs.h"
 #include "logger_api.h"
@@ -33,6 +34,20 @@
 #define CHECK_RPC_ERRNO_UNCHANGED(_func, _var) \
     CHECK_RETVAL_VAR_ERR_COND(_func, _var, FALSE, TE_RC(TE_TAPI, TE_ECORRUPTED), \
                               FALSE);
+
+const tapi_job_methods_t rpc_job_methods = {
+    .create = rpc_job_create,
+    .start = rpc_job_start,
+    .allocate_channels = rpc_job_allocate_channels,
+    .kill = rpc_job_kill,
+    .killpg = rpc_job_killpg,
+    .wait = rpc_job_wait,
+    .stop = rpc_job_stop,
+    .destroy = rpc_job_destroy,
+    .wrapper_add = rpc_job_wrapper_add,
+    .wrapper_delete = rpc_job_wrapper_delete,
+    .add_sched_param = rpc_job_add_sched_param,
+};
 
 static void
 rpc_job_set_rpcs_timeout(rcf_rpc_server *rpcs, int timeout_ms,
