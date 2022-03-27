@@ -16,8 +16,8 @@
 
 #include "te_config.h"
 #include "logger_api.h"
+#include "te_defs.h"
 #include "te_dbuf.h"
-#include "te_string.h"
 
 /* See description in te_dbuf.h. */
 te_errno
@@ -134,32 +134,4 @@ te_dbuf_print(const te_dbuf *dbuf)
     if (i % VALUES_IN_LINE != 0)
         VERB(str);
 #undef VALUES_IN_LINE
-}
-
-/* See description in te_dbuf.h */
-te_errno
-te_dbuf_from_te_string(te_dbuf *dbuf, struct te_string *testr)
-{
-    if (testr->ext_buf)
-    {
-        ERROR("%s: external source buffers are not supported", __FUNCTION__);
-        return TE_EINVAL;
-    }
-
-    dbuf->ptr = (uint8_t *)testr->ptr;
-    dbuf->size = testr->size;
-    dbuf->len = testr->len;
-
-    /* TE string might have null buffer yet reserved size, but te_dbuf can't */
-    if (dbuf->ptr == NULL && dbuf->size != 0)
-        dbuf->size = 0;
-
-    /*
-     * Forget about string's memory ownership.
-     */
-    testr->ptr = NULL;
-    testr->size = 0;
-    te_string_reset(testr);
-
-    return 0;
 }

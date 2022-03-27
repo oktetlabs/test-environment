@@ -28,9 +28,6 @@
 extern "C" {
 #endif
 
-/* Forward declarations to avoid cyclic dependencies */
-struct te_dbuf;
-
 /** Initial length of the dynamically allocated string */
 #define TE_STRING_INIT_LEN      (16)
 
@@ -305,21 +302,6 @@ char *raw2string(uint8_t *data, int size)
 
     return str.ptr;
 }
-
-/**
- * Pass @p dbuf TE dynamic buffer memory ownership to @p testr TE string. The
- * actual conversion happens without reallocation of data structures, meaning
- * that @p dbuf becomes empty after the operation.
- *
- * @param testr     Destination TE string.
- * @param dbuf      Source dynamic buffer.
- *
- * @return Status code.
- *
- * @remark This function changes the 'external buffer' property of a target
- *         string so that it can carry owned buffers.
- */
-extern te_errno te_string_from_te_dbuf(te_string *testr, struct te_dbuf *dbuf);
 
 /**
  * @defgroup te_tools_te_substring Substring manipulation API
