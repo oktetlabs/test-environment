@@ -3348,12 +3348,23 @@ rpc_drain_fd_simple(rcf_rpc_server *rpcs, int fd, uint64_t *read)
 
 /* See the description in tapi_rpc_misc.h */
 int
-rpc_read_fd2te_dbuf_append(rcf_rpc_server *rpcs, int fd, int time2wait,
-                           size_t amount, te_dbuf *dbuf)
+rpc_read_fd(rcf_rpc_server *rpcs, int fd, int time2wait,
+            size_t amount, void **buf, size_t *read)
 {
     tarpc_read_fd_in  in;
     tarpc_read_fd_out out;
-    te_errno rc;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): rpcs cannot be NULL", __FUNCTION__);
+        RETVAL_INT(read_fd, -1);
+    }
+    if (buf == NULL || read == NULL)
+    {
+        ERROR("%s(): buf or read arguments cannot be NULL", __FUNCTION__);
+        rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
+        RETVAL_INT(read_fd, -1);
+    }
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -3378,18 +3389,45 @@ rpc_read_fd2te_dbuf_append(rcf_rpc_server *rpcs, int fd, int time2wait,
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
     {
-        if (out.buf.buf_val != NULL && out.buf.buf_len != 0)
-        {
-            rc = te_dbuf_append(dbuf, out.buf.buf_val, out.buf.buf_len);
-            if (rc != 0)
-            {
-                ERROR("Failed to save read data");
-                RETVAL_INT(read_fd, -1);
-            }
-        }
+        *buf = out.buf.buf_val;
+        *read = out.buf.buf_len;
+        out.buf.buf_val = NULL;
+        out.buf.buf_len = 0;
     }
 
     RETVAL_ZERO_INT(read_fd, out.retval);
+}
+
+/* See the description in tapi_rpc_misc.h */
+int
+rpc_read_fd2te_dbuf_append(rcf_rpc_server *rpcs, int fd, int time2wait,
+                           size_t amount, te_dbuf *dbuf)
+{
+    int rc;
+    te_errno te_rc;
+    void *buf = NULL;
+    size_t len;
+
+    te_bool awaiting_error;
+
+    awaiting_error = RPC_AWAITING_ERROR(rpcs);
+
+    rc = rpc_read_fd(rpcs, fd, time2wait, amount, &buf, &len);
+    if (rc < 0)
+        return rc;
+
+    te_rc = te_dbuf_append(dbuf, buf, len);
+    free(buf);
+    if (te_rc != 0)
+    {
+        if (!awaiting_error)
+            TAPI_JMP_DO(TE_EFAIL);
+
+        rpcs->_errno = TE_RC(TE_TAPI, te_rc);
+        return -1;
+    }
+
+    return 0;
 }
 
 /* See the description in tapi_rpc_misc.h */
@@ -3406,60 +3444,34 @@ rpc_read_fd2te_dbuf(rcf_rpc_server *rpcs, int fd, int time2wait,
 
 /* See the description in tapi_rpc_misc.h */
 int
-rpc_read_fd(rcf_rpc_server *rpcs, int fd, int time2wait,
-            size_t amount, void **buf, size_t *read)
-{
-    te_dbuf dbuf = TE_DBUF_INIT(0);
-    int rc;
-
-    if (buf == NULL || read == NULL)
-        TEST_FAIL("Invalid arguments");
-
-    rc = rpc_read_fd2te_dbuf_append(rpcs, fd, time2wait, amount, &dbuf);
-    *buf = dbuf.ptr;
-    *read = dbuf.len;
-
-    return rc;
-}
-
-/* See the description in tapi_rpc_misc.h */
-int
 rpc_read_fd2te_string_append(rcf_rpc_server *rpcs, int fd, int time2wait,
                              size_t amount, te_string *testr)
 {
-    te_dbuf dbuf = TE_DBUF_INIT(0);
+    int rc;
+    te_errno te_rc;
+    void *buf = NULL;
+    size_t len;
+
     te_bool awaiting_error;
-    int rc = -1;
 
     awaiting_error = RPC_AWAITING_ERROR(rpcs);
 
-    if (te_dbuf_from_te_string(&dbuf, testr) != 0)
-        goto out;
+    rc = rpc_read_fd(rpcs, fd, time2wait, amount, &buf, &len);
+    if (rc < 0)
+        return rc;
 
-    rc = rpc_read_fd2te_dbuf_append(rpcs, fd, time2wait, amount, &dbuf);
-    if (rc != 0)
-        goto out;
-
-    if (te_string_from_te_dbuf(testr, &dbuf) != 0)
-    {
-        ERROR("Failed to convert dynamic buffer to a string");
-        /*
-         * Cast is to avoid warning:
-         * comparison of distinct pointer types lacks a cast
-         */
-        if ((void *)dbuf.ptr != (void *)testr->ptr)
-            te_dbuf_free(&dbuf);
-        rc = -1;
-    }
-
-out:
-    if (rc != 0)
+    te_rc = te_string_append_buf(testr, (char *)buf, len);
+    free(buf);
+    if (te_rc != 0)
     {
         if (!awaiting_error)
             TAPI_JMP_DO(TE_EFAIL);
+
+        rpcs->_errno = TE_RC(TE_TAPI, te_rc);
+        return -1;
     }
 
-    return rc;
+    return 0;
 }
 
 /* See the description in tapi_rpc_misc.h */
