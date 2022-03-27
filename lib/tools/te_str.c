@@ -533,32 +533,16 @@ te_str_hex_raw2str(const uint8_t *data, size_t data_len, te_string *str)
     size_t          i;
     size_t          need_size;
 
+    te_errno rc;
+
     assert(data != NULL);
     assert(str != NULL);
 
     need_size = data_len * 3;
 
-    if (str->ext_buf && str->size < need_size)
-    {
-        ERROR("%s(): buffer size is too small, needed %u, but provided %u",
-               __FUNCTION__, need_size, str->size);
-        return TE_EINVAL;
-    }
-
-    if (str->size < need_size)
-    {
-        char *new_ptr;
-
-        /* Extend buffer */
-        new_ptr = realloc(str->ptr, need_size);
-        if (new_ptr == NULL)
-        {
-            ERROR("%s(): Memory allocation failure", __FUNCTION__);
-            return TE_ENOMEM;
-        }
-        str->size = need_size;
-        str->ptr = new_ptr;
-    }
+    rc = te_string_reserve(str, need_size);
+    if (rc != 0)
+        return rc;
 
     p_data = data;
     p_buf = str->ptr;
