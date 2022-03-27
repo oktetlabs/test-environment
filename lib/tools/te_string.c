@@ -203,6 +203,29 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
 }
 
 te_errno
+te_string_append_buf(te_string *str, const char *buf, size_t len)
+{
+    size_t req_len;
+    te_errno rc;
+
+    if (len == 0)
+        return 0;
+
+    req_len = str->len + len;
+    if (buf[len - 1] != '\0')
+        req_len++;
+
+    rc = te_string_reserve(str, req_len);
+    if (rc != 0)
+        return rc;
+
+    memcpy(str->ptr + str->len, buf, len);
+    str->ptr[req_len - 1] = '\0';
+    str->len = req_len - 1;
+    return 0;
+}
+
+te_errno
 te_string_append_shell_arg_as_is(te_string *str, const char *arg)
 {
     te_errno rc = 0;

@@ -141,6 +141,19 @@ extern te_errno te_string_append_va(te_string  *str,
                                     va_list     ap);
 
 /**
+ * Append contents of a buffer to TE string. Buffer may be not
+ * null-terminated.
+ *
+ * @param str     TE string
+ * @param buf     Buffer
+ * @param len     Number of bytes in buffer
+ *
+ * @return Status code.
+ */
+extern te_errno te_string_append_buf(te_string *str, const char *buf,
+                                     size_t len);
+
+/**
  * Append arguments separated by space with required shell escaping
  * to avoid expansion and variable substitution.
  *
