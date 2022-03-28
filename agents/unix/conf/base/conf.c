@@ -307,6 +307,9 @@ extern te_errno ta_unix_conf_pci_init(void);
 extern te_errno ta_unix_conf_pci_cleanup(void);
 #endif
 
+extern te_errno ta_unix_conf_memory_init(void);
+extern te_errno ta_unix_conf_memory_cleanup(void);
+
 extern te_errno ta_unix_conf_cpu_init(void);
 
 #ifdef WITH_SOCKS
@@ -1353,6 +1356,9 @@ rcf_ch_conf_init(void)
             goto fail;
 #endif
 
+        if (ta_unix_conf_memory_init() != 0)
+            goto fail;
+
         if (ta_unix_conf_sys_init() != 0)
             goto fail;
 
@@ -1567,6 +1573,8 @@ rcf_ch_conf_fini(void)
 #ifdef ENABLE_PCI_SUPPORT
     ta_unix_conf_pci_cleanup();
 #endif
+
+    ta_unix_conf_memory_cleanup();
 
    (void)ta_unix_conf_sys_tree_fini();
 
