@@ -80,8 +80,14 @@ te_string_reserve(te_string *str, size_t size)
      *  bits/basic_string.tcc
      * with the exception of grow factor exponent used.
      */
-    if (size < str->size)
+    if (size <= str->size)
         return 0;
+
+    if (str->ext_buf)
+    {
+        ERROR("%s(): cannot resize external buffer", __FUNCTION__);
+        return TE_EINVAL;
+    }
 
     /*
      * Apply grow factor ^ exp until predefined limit, and if size < newsize <
@@ -95,7 +101,7 @@ te_string_reserve(te_string *str, size_t size)
     for (grow = 0; grow < TE_STRING_GROW_FACTOR_EXP_LIMIT; ++grow)
     {
         grow_factor *= TE_STRING_GROW_FACTOR;
-        if (size > str->size && size < grow_factor * str->size)
+        if (size < grow_factor * str->size)
         {
             size = grow_factor * str->size;
             break;
@@ -107,7 +113,7 @@ te_string_reserve(te_string *str, size_t size)
      * allocations over page size. Based on GCC C++ basic_string implementation.
      */
     adj_size = size + malloc_header_size;
-    if (adj_size > pagesize && size > str->size)
+    if (adj_size > pagesize)
     {
         size_t extra;
 

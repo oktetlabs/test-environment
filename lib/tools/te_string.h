@@ -104,6 +104,7 @@ te_string_reset(te_string *str)
 
 /**
  * Reserve space for at least @p size elements in @p str string
+ * (including null byte at the end).
  *
  * @param str           TE string.
  * @param size          Number of elements to to have a room for in a string
