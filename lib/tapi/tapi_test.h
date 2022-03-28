@@ -47,6 +47,7 @@
 #include "te_tools.h"
 #include "te_param.h"
 #include "te_kvpair.h"
+#include "log_bufs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -250,6 +251,7 @@ cleanup_specific:                                                   \
     if (te_sigusr2_caught())                                        \
         RING_VERDICT("Test caught the SIGUSR2 signal");             \
     TEST_END_SPECIFIC;                                              \
+    te_log_bufs_cleanup();                                          \
     if (result == EXIT_SUCCESS &&                                   \
         tapi_test_run_status_get() != TE_TEST_RUN_STATUS_OK)        \
     {                                                               \

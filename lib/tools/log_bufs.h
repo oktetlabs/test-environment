@@ -27,6 +27,8 @@ extern "C" {
 
 #include <inttypes.h>
 
+#include "te_string.h"
+
 /*
  * Declaration of te_log_buf type, which is defined
  * in the implementation, so user can allocate and operate only
@@ -83,6 +85,23 @@ extern const char *te_log_buf_get(te_log_buf *buf);
  * @note This is thread safe function
  */
 extern void te_log_buf_free(te_log_buf *buf);
+
+/**
+ * Free all resources allocated for logging buffers.
+ * This function actually destroys all the existing buffers,
+ * not just marks them free for further use.
+ */
+extern void te_log_bufs_cleanup(void);
+
+/**
+ * Obtain reusable TE string for logging.
+ * The string can then be used like a normal TE string, however its buffer
+ * cannot be replaced by te_string_set_buf().
+ * Obtained string must be released with te_string_free().
+ *
+ * @return TE string pointer or @c NULL on failure.
+ */
+extern te_string *te_log_str_alloc(void);
 
 /**
  * Put @a argc/@a argv arguments enclosed in double quotes and separated

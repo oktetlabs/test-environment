@@ -21,6 +21,7 @@
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #include <stdio.h>
+#include <stddef.h>
 #endif
 
 #if HAVE_STDARG_H
@@ -41,102 +42,145 @@
 #include "te_string.h"
 #include "logger_api.h"
 #include "log_bufs.h"
+#include "te_queue.h"
+#include "te_alloc.h"
 
 /** The number of characters in a sinle log buffer. */
 #define LOG_BUF_LEN (1024 * 10)
-/** The number of buffers in log buffer pool. */
-#define LOG_BUF_NUM 10
 
 
 /** Internal presentation of log buffer. */
 struct te_log_buf {
+    te_string   str;    /**< Buffer data - must be the first member */
     te_bool     used;   /**< Whether this buffer is already in use */
-    te_string   str;    /**< Buffer data */
+
+    TAILQ_ENTRY(te_log_buf) links; /**< Queue links */
 };
 
-/** Statically allocated pool of log buffers. */
-static te_log_buf te_log_bufs[LOG_BUF_NUM];
+/** Type of buffers queue head */
+typedef TAILQ_HEAD(te_log_bufs, te_log_buf) te_log_bufs;
 
-/** The index of the last freed buffer, or -1 if unknown. */
-static int te_log_buf_last_freed = 0;
+/** Head of the queue of log buffers */
+static te_log_bufs bufs_queue = TAILQ_HEAD_INITIALIZER(bufs_queue);
 
 /** Mutex used to protect shred log buffer pool. */
 static pthread_mutex_t te_log_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/** Check that 'ptr_' is a valid log buffer */
-#define VALIDATE_LOG_BUF(ptr_) \
-    do {                                                                \
-        assert(((ptr_) >= te_log_bufs));                                \
-        assert(((uintptr_t)(ptr_) - (uintptr_t)te_log_bufs) %           \
-               sizeof(te_log_bufs[0]) == 0);                            \
-        assert((ptr_ - te_log_bufs) < LOG_BUF_NUM);                     \
-        assert((ptr_)->used == TRUE);                                   \
-    } while (0)
+/**
+ * Release function which will be called from te_string_free().
+ *
+ * @param str     Pointer to TE string obtained with
+ *                te_log_str_alloc().
+ */
+static te_string_free_func te_log_str_free;
+static void
+te_log_str_free(te_string *str)
+{
+    if (str == NULL)
+        return;
 
-/* See description in log_bufs.h */
+    te_log_buf_free((te_log_buf *)str);
+}
+
 te_log_buf *
 te_log_buf_alloc(void)
 {
-    int i;
-    int id;
+    te_log_buf *buf;
+    te_log_buf *prev_buf;
 
     pthread_mutex_lock(&te_log_buf_mutex);
 
-    if (te_log_buf_last_freed != -1)
+    buf = TAILQ_LAST(&bufs_queue, te_log_bufs);
+    if (buf == NULL || buf->used)
     {
-        assert(te_log_bufs[te_log_buf_last_freed].used == FALSE &&
-               te_log_bufs[te_log_buf_last_freed].str.len == 0);
-
-        id = te_log_buf_last_freed;
-        te_log_buf_last_freed = -1;
-        te_log_bufs[id].used = TRUE;
-        te_log_bufs[id].str = (te_string)TE_STRING_INIT_RESERVE(LOG_BUF_LEN);
-        pthread_mutex_unlock(&te_log_buf_mutex);
-
-        return &te_log_bufs[id];
-    }
-
-    for (i = 0; i < LOG_BUF_NUM; i++)
-    {
-        if (!te_log_bufs[i].used)
+        buf = TE_ALLOC(sizeof(te_log_buf));
+        if (buf == NULL)
         {
-            assert(te_log_bufs[i].str.len == 0);
-
-            te_log_bufs[i].used = TRUE;
-            te_log_bufs[i].str = (te_string)TE_STRING_INIT_RESERVE(LOG_BUF_LEN);
             pthread_mutex_unlock(&te_log_buf_mutex);
-
-            return &te_log_bufs[i];
+            return NULL;
+        }
+        buf->str = (te_string)TE_STRING_INIT_RESERVE_FREE(LOG_BUF_LEN,
+                                                          &te_log_str_free);
+        TAILQ_INSERT_HEAD(&bufs_queue, buf, links);
+    }
+    else
+    {
+        /*
+         * Make sure that all the buffers which are in use are at the
+         * beginning of the queue.
+         */
+        prev_buf = TAILQ_PREV(buf, te_log_bufs, links);
+        if (prev_buf != NULL && !prev_buf->used)
+        {
+            TAILQ_REMOVE(&bufs_queue, buf, links);
+            TAILQ_INSERT_HEAD(&bufs_queue, buf, links);
         }
     }
+
+    buf->used = TRUE;
     pthread_mutex_unlock(&te_log_buf_mutex);
 
-    /* There is no available buffer, wait until one freed */
-    do {
-        pthread_mutex_lock(&te_log_buf_mutex);
-        if (te_log_buf_last_freed != -1)
-        {
-            assert(te_log_bufs[te_log_buf_last_freed].used == FALSE &&
-                   te_log_bufs[te_log_buf_last_freed].str.len == 0);
-
-            id = te_log_buf_last_freed;
-            te_log_buf_last_freed = -1;
-            te_log_bufs[id].used = TRUE;
-            te_log_bufs[id].str = (te_string)TE_STRING_INIT_RESERVE(
-                LOG_BUF_LEN);
-            pthread_mutex_unlock(&te_log_buf_mutex);
-
-            return &te_log_bufs[id];
-        }
-        pthread_mutex_unlock(&te_log_buf_mutex);
-
-        RING("Waiting for a tapi log buffer");
-        sleep(1);
-    } while (TRUE);
-
-    assert(0);
-    return NULL;
+    return buf;
 }
+
+te_string *
+te_log_str_alloc(void)
+{
+    te_log_buf *buf;
+
+    buf = te_log_buf_alloc();
+    if (buf == NULL)
+        return NULL;
+
+    return &buf->str;
+}
+
+void
+te_log_buf_free(te_log_buf *buf)
+{
+    te_log_buf *next_buf;
+
+    pthread_mutex_lock(&te_log_buf_mutex);
+    te_string_reset(&buf->str);
+    buf->used = FALSE;
+
+    /*
+     * Make sure that all the free buffers are at the
+     * tail of the queue.
+     */
+    next_buf = TAILQ_NEXT(buf, links);
+    if (next_buf != NULL)
+    {
+        TAILQ_REMOVE(&bufs_queue, buf, links);
+        TAILQ_INSERT_TAIL(&bufs_queue, buf, links);
+    }
+
+    pthread_mutex_unlock(&te_log_buf_mutex);
+}
+
+void
+te_log_bufs_cleanup(void)
+{
+    te_log_buf *buf;
+    te_log_buf *buf_aux;
+
+    pthread_mutex_lock(&te_log_buf_mutex);
+
+    TAILQ_FOREACH_SAFE(buf, &bufs_queue, links, buf_aux)
+    {
+        TAILQ_REMOVE(&bufs_queue, buf, links);
+        free(buf->str.ptr);
+        free(buf);
+    }
+
+    pthread_mutex_unlock(&te_log_buf_mutex);
+}
+
+/** Check that 'ptr_' is a valid log buffer */
+#define VALIDATE_LOG_BUF(ptr_) \
+    do {                                                                \
+        assert((ptr_)->used == TRUE);                                   \
+    } while (0)
 
 /* See description in log_bufs.h */
 int
@@ -171,23 +215,6 @@ te_log_buf_get(te_log_buf *buf)
     }
 
     return buf->str.ptr;
-}
-
-/* See description in log_bufs.h */
-void
-te_log_buf_free(te_log_buf *buf)
-{
-    if (buf == NULL)
-        return;
-
-    VALIDATE_LOG_BUF(buf);
-
-    pthread_mutex_lock(&te_log_buf_mutex);
-    buf->used = FALSE;
-    te_string_free(&buf->str);
-    te_log_buf_last_freed =
-        (buf - te_log_bufs) / sizeof(te_log_bufs[0]);
-    pthread_mutex_unlock(&te_log_buf_mutex);
 }
 
 const char *
