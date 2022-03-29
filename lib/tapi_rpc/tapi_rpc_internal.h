@@ -350,6 +350,21 @@ do {                                                                    \
 #define CHECK_RETVAL_VAR_RPC_PTR(_func, _var) \
     CHECK_RETVAL_VAR(_func, _var, ((_var) == RPC_UNKNOWN_ADDR), RPC_NULL)
 
+/** Return with check (for functions returning te_errno value) */
+#define RETVAL_TE_ERRNO(_func, _retval) \
+    do {                                                            \
+        te_errno __retval = (_retval);                              \
+        te_errno_codes __errno_code = TE_RC_GET_ERROR(__retval);    \
+        te_module __module = TE_RC_GET_MODULE(__retval);            \
+                                                                    \
+        TAPI_RPC_OUT(_func, __errno_code != 0 &&                    \
+                            (__errno_code <= TE_MIN_ERRNO ||        \
+                             __errno_code >= TE_MAX_ERRNO ||        \
+                             __module <= TE_MIN_MODULE    ||        \
+                             __module >= TE_MAX_MODULE));           \
+                                                                    \
+        return __retval;                                            \
+    } while (0)
 
 /** Return with check (for functions returning zero value) */
 #define RETVAL_ZERO_INT(_func, _retval) \
