@@ -310,13 +310,15 @@ typedef enum {
     TE_GSOAP_ERROR = TE_MIN_ERRNO + 1300, /**< Internal gSOAP error */
     TE_CWMP_FAULT,      /**< CWMP Fault received */
 /*@}*/
+
+    TE_MAX_ERRNO, /**< Auxiliary value. It must be the last in the enum. */
 } te_errno_codes;
 
 
 /**
  * @name Identifiers of TE modules (error sources) used in errors
  *
- * @note Add new modules to the end of the enum: in RAW logs
+ * @note Add new modules just before @c TE_MAX_MODULE: in RAW logs
  *       errors are saved as numeric values, so changing the
  *       existing values by inserting some new value in the
  *       middle of the enum will break conversion of the old
@@ -325,6 +327,8 @@ typedef enum {
  * @todo Make it 'enum' when %r specified will be supported.
  */
 typedef enum {
+    TE_MIN_MODULE = -1, /**< Auxiliary value. It must be the first
+                             in the enum. */
     TE_MODULE_NONE = 0, /**< Module is not specified */
     TE_IPC = 1,         /**< TE IPC */
     TE_COMM,            /**< RCF<->TA communication libraries */
@@ -361,6 +365,9 @@ typedef enum {
     TE_ACSE,            /**< ACS Emulator */
     TE_TA_ACSE,         /**< TA interface to ACS Emulator */
     TE_RPCS,            /**< RPC server internal errors */
+
+    TE_MAX_MODULE,      /**< Auxiliary value. It must be the last
+                             in the enum. */
 } te_module;
 /*@}*/
 
