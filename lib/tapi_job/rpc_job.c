@@ -590,7 +590,7 @@ rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
 }
 
 te_errno
-rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo)
+rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id, int signo)
 {
     tarpc_job_kill_in  in;
     tarpc_job_kill_out out;
@@ -599,7 +599,7 @@ rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo)
     memset(&out, 0, sizeof(out));
 
     in.job_id = job_id;
-    in.signo = signo;
+    in.signo = signum_h2rpc(signo);
 
     rcf_rpc_call(rpcs, "job_kill", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_kill, out.retval);
@@ -611,7 +611,7 @@ rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo)
 }
 
 te_errno
-rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo)
+rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id, int signo)
 {
     tarpc_job_killpg_in  in;
     tarpc_job_killpg_out out;
@@ -620,7 +620,7 @@ rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo)
     memset(&out, 0, sizeof(out));
 
     in.job_id = job_id;
-    in.signo = signo;
+    in.signo = signum_h2rpc(signo);
 
     rcf_rpc_call(rpcs, "job_killpg", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_killpg, out.retval);
@@ -690,7 +690,7 @@ rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id, int timeout_ms,
 }
 
 te_errno
-rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo,
+rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id, int signo,
              int term_timeout_ms)
 {
     tarpc_job_stop_in   in;
@@ -700,7 +700,7 @@ rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo,
     memset(&out, 0, sizeof(out));
 
     in.job_id = job_id;
-    in.signo = signo;
+    in.signo = signum_h2rpc(signo);
     in.term_timeout_ms = term_timeout_ms;
 
     rpc_job_set_rpcs_timeout(rpcs, term_timeout_ms, RCF_RPC_UNSPEC_TIMEOUT);
@@ -708,7 +708,7 @@ rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo,
     CHECK_RPC_ERRNO_UNCHANGED(job_stop, out.retval);
 
     TAPI_RPC_LOG(rpcs, job_stop, "%u, %s, %d ms", "%r", in.job_id,
-                 signum_rpc2str(signo), in.term_timeout_ms, out.retval);
+                 signum_rpc2str(in.signo), in.term_timeout_ms, out.retval);
 
     RETVAL_TE_ERRNO(job_stop, out.retval);
 }

@@ -293,7 +293,7 @@ extern te_errno rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
  * @return              Status code
  */
 extern te_errno rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id,
-                             rpc_signum signo);
+                             int signo);
 
 /**
  * Send a signal to the proccess group
@@ -305,7 +305,7 @@ extern te_errno rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id,
  * @return              Status code
  */
 extern te_errno rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id,
-                               rpc_signum signo);
+                               int signo);
 
 /**
  * Wait for the job completion (or check its status if @p timeout is zero)
@@ -340,7 +340,7 @@ extern te_errno rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id,
  * @return              Status code
  */
 extern te_errno rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id,
-                             rpc_signum signo, int term_timeout_ms);
+                             int signo, int term_timeout_ms);
 
 /**
  * Destroy the job instance. If the job has started, it is terminated
