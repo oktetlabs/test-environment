@@ -117,6 +117,23 @@ te_string_reset(te_string *str)
 extern te_errno te_string_reserve(te_string *str, size_t size);
 
 /**
+ * Get value of TE string.
+ *
+ * @param str     Pointer to TE string
+ *
+ * @return Pointer to null-terminated sequence of characters.
+ *         If @p str is @c NULL or its internal buffer is not
+ *         allocated, pointer to empty string is returned.
+ */
+static inline const char *te_string_value(const te_string *str)
+{
+    if (str == NULL || str->ptr == NULL)
+        return "";
+
+    return str->ptr;
+}
+
+/**
  * Append to the string results of the sprintf(fmt, ...);
  *
  * @param str           TE string
