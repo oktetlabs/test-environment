@@ -216,6 +216,7 @@ conf_tc_internal_nl_error2te_errno(int nl_error)
         case NLE_EXIST:         return TE_RC(TE_TA_UNIX, TE_EEXIST);
         case NLE_NOMEM:         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
         case NLE_INVAL:         return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        case NLE_OPNOTSUPP:     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 
         default:
             WARN("Cannot convert libnl error to TE error: %s",
