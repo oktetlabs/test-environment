@@ -33,9 +33,10 @@ typedef enum tapi_job_factory_type {
 
 struct tapi_job_factory_t {
     tapi_job_factory_type type;
+    /** Backend-specific data */
     union {
         rcf_rpc_server *rpcs;
-    } proto;
+    } backend;
 };
 
 struct tapi_job_t {
@@ -137,7 +138,7 @@ tapi_job_factory_rpc_create(rcf_rpc_server *rpcs,
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
     result->type = TAPI_JOB_FACTORY_RPC;
-    result->proto.rpcs = rpcs;
+    result->backend.rpcs = rpcs;
 
     *factory = result;
 
@@ -157,7 +158,7 @@ tapi_job_factory_ta(const tapi_job_factory_t *factory)
     switch (factory->type)
     {
         case TAPI_JOB_FACTORY_RPC:
-            return factory->proto.rpcs->ta;
+            return factory->backend.rpcs->ta;
 
         default:
             ERROR("Invalid job factory type");
@@ -205,9 +206,9 @@ tapi_job_create(tapi_job_factory_t *factory, const char *spawner,
 
     tapi_job = tapi_calloc(1, sizeof(*tapi_job));
 
-    tapi_job->rpcs = factory->proto.rpcs;
+    tapi_job->rpcs = factory->backend.rpcs;
     SLIST_INIT(&tapi_job->channel_entries);
-    rc = rpc_job_create(factory->proto.rpcs, spawner == NULL ? "" : spawner,
+    rc = rpc_job_create(factory->backend.rpcs, spawner == NULL ? "" : spawner,
                         program, argv, env, &tapi_job->id);
     if (rc != 0)
     {
@@ -318,7 +319,7 @@ tapi_job_factory_set_path(tapi_job_factory_t *factory)
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    rpcs = factory->proto.rpcs;
+    rpcs = factory->backend.rpcs;
     awaiting_error = RPC_AWAITING_ERROR(rpcs);
 
     rc = cfg_get_instance_string_fmt(&ta_path, "/agent:%s/env:PATH", rpcs->ta);
