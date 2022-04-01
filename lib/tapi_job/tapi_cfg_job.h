@@ -1,19 +1,22 @@
 /** @file
- * @brief Test API to configure processes.
+ * @brief Configurator API for Agent job control
  *
- * @defgroup tapi_conf_process Processes configuration
- * @ingroup tapi_conf
+ * @defgroup tapi_cfg_job Configurator API for Agent job control (tapi_cfg_job)
+ * @ingroup tapi_job
  * @{
  *
- * Definition of TAPI to configure processes.
+ * Configurator API for Agent job control.
+ * Since the API is based on "/agent/process" Configurator subtree,
+ * terms "job" and "process" are used interchangeably in this file.
  *
  * Copyright (C) 2020 OKTET Labs. All rights reserved.
  *
  * @author Dilshod Urazov <Dilshod.Urazov@oktetlabs.ru>
+ * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */
 
-#ifndef __TE_TAPI_CFG_PROCESS_H__
-#define __TE_TAPI_CFG_PROCESS_H__
+#ifndef __TE_TAPI_CFG_JOB_H__
+#define __TE_TAPI_CFG_JOB_H__
 
 #include "te_defs.h"
 #include "te_errno.h"
@@ -22,26 +25,26 @@
 extern "C" {
 #endif
 
-/** Cause of process termination. */
-typedef enum tapi_cfg_ps_exit_status_type_t {
-    /** Process terminated normally (by exit() or return from main). */
-    TAPI_CFG_PS_EXIT_STATUS_EXITED,
-    /** Process was terminated by a signal. */
-    TAPI_CFG_PS_EXIT_STATUS_SIGNALED,
-    /** The cause of process termination is not known. */
-    TAPI_CFG_PS_EXIT_STATUS_UNKNOWN,
-} tapi_cfg_ps_exit_status_type_t;
+/** Cause of process termination */
+typedef enum cfg_job_exit_status_type_t {
+    /** Process terminated normally (by exit() or return from main) */
+    CFG_JOB_EXIT_STATUS_EXITED,
+    /** Process was terminated by a signal */
+    CFG_JOB_EXIT_STATUS_SIGNALED,
+    /** The cause of process termination is not known */
+    CFG_JOB_EXIT_STATUS_UNKNOWN,
+} cfg_job_exit_status_type_t;
 
-/** Structure that represents status of a terminated process. */
-typedef struct tapi_cfg_ps_exit_status_t {
-    /** Cause of process termination. */
-    tapi_cfg_ps_exit_status_type_t type;
+/** Structure that represents status of a terminated process */
+typedef struct cfg_job_exit_status_t {
+    /** Cause of process termination */
+    cfg_job_exit_status_type_t type;
     /**
      * Either an exit status of the process or a number of a signal
-     * which caused the process termination.
+     * which caused the process termination
      */
     int value;
-} tapi_cfg_ps_exit_status_t;
+} cfg_job_exit_status_t;
 
 /**
  * Add process argument.
@@ -53,9 +56,8 @@ typedef struct tapi_cfg_ps_exit_status_t {
  *
  * @return Status code
  */
-extern te_errno tapi_cfg_ps_add_arg(const char *ta, const char *ps_name,
-                                    unsigned int order,
-                                    const char *arg);
+extern te_errno cfg_job_add_arg(const char *ta, const char *ps_name,
+                                unsigned int order, const char *arg);
 
 /**
  * Add environment variable.
@@ -67,9 +69,8 @@ extern te_errno tapi_cfg_ps_add_arg(const char *ta, const char *ps_name,
  *
  * @return Status code
  */
-extern te_errno tapi_cfg_ps_add_env(const char *ta, const char *ps_name,
-                                    const char *env_name,
-                                    const char *value);
+extern te_errno cfg_job_add_env(const char *ta, const char *ps_name,
+                                const char *env_name, const char *value);
 
 /**
  * Add process.
@@ -81,8 +82,8 @@ extern te_errno tapi_cfg_ps_add_env(const char *ta, const char *ps_name,
  *
  * @return Status code
  */
-extern te_errno tapi_cfg_ps_add(const char *ta, const char *ps_name,
-                                  const char *exe, te_bool start);
+extern te_errno cfg_job_add(const char *ta, const char *ps_name,
+                            const char *exe, te_bool start);
 
 /**
  * Start process.
@@ -94,9 +95,9 @@ extern te_errno tapi_cfg_ps_add(const char *ta, const char *ps_name,
  *
  * @return Status code
  *
- * @sa tapi_cfg_ps_set_autorestart
+ * @sa cfg_job_set_autorestart
  */
-extern te_errno tapi_cfg_ps_start(const char *ta, const char *ps_name);
+extern te_errno cfg_job_start(const char *ta, const char *ps_name);
 
 /**
  * Send a signal to the process.
@@ -107,8 +108,7 @@ extern te_errno tapi_cfg_ps_start(const char *ta, const char *ps_name);
  *
  * @return     Status code
  */
-extern te_errno tapi_cfg_ps_kill(const char *ta, const char *ps_name,
-                                 int signo);
+extern te_errno cfg_job_kill(const char *ta, const char *ps_name, int signo);
 
 /**
  * Send a signal to the process's porcess group.
@@ -119,8 +119,7 @@ extern te_errno tapi_cfg_ps_kill(const char *ta, const char *ps_name,
  *
  * @return     Status code
  */
-extern te_errno tapi_cfg_ps_killpg(const char *ta, const char *ps_name,
-                                   int signo);
+extern te_errno cfg_job_killpg(const char *ta, const char *ps_name, int signo);
 
 /**
  * Get current process status.
@@ -140,10 +139,10 @@ extern te_errno tapi_cfg_ps_killpg(const char *ta, const char *ps_name,
  * @note If @p status is @c FALSE, the process parameters are allowed
  *       to be changed.
  *
- * @sa tapi_cfg_ps_set_autorestart
+ * @sa cfg_job_set_autorestart
  */
-extern te_errno tapi_cfg_ps_get_status(const char *ta, const char *ps_name,
-                                       te_bool *status);
+extern te_errno cfg_job_get_status(const char *ta, const char *ps_name,
+                                   te_bool *status);
 
 /**
  * Wait for a process completion (or check its status if @p timeout_ms is zero).
@@ -164,15 +163,15 @@ extern te_errno tapi_cfg_ps_get_status(const char *ta, const char *ps_name,
  * @note Parameters of the process are allowed to be changed after
  *       successful call of this function.
  */
-extern te_errno tapi_cfg_ps_wait(const char *ta, const char *ps_name,
-                                 int timeout_ms,
-                                 tapi_cfg_ps_exit_status_t *exit_status);
+extern te_errno cfg_job_wait(const char *ta, const char *ps_name,
+                             int timeout_ms,
+                             cfg_job_exit_status_t *exit_status);
 
 /**
  * Stop process.
  * For autorestart processes this function will stop the process and prevent
  * the autorestart subsystem from starting the process over until
- * tapi_cfg_ps_start() is called.
+ * cfg_job_start() is called.
  *
  * @param ta            Test Agent.
  * @param ps_name       Process name.
@@ -180,13 +179,13 @@ extern te_errno tapi_cfg_ps_wait(const char *ta, const char *ps_name,
  * @return Status code
  *
  * @note Successfull call of this function guarantees that
- *       tapi_cfg_ps_get_status() will return @c FALSE, thus the process
+ *       cfg_job_get_status() will return @c FALSE, thus the process
  *       parameters are allowed to be changed
- *       (using tapi_cfg_ps_add_arg(), etc.).
+ *       (using cfg_job_add_arg(), etc.).
  *
- * @sa tapi_cfg_ps_set_autorestart
+ * @sa cfg_job_set_autorestart
  */
-extern te_errno tapi_cfg_ps_stop(const char *ta, const char *ps_name);
+extern te_errno cfg_job_stop(const char *ta, const char *ps_name);
 
 /**
  * Delete process.
@@ -196,7 +195,7 @@ extern te_errno tapi_cfg_ps_stop(const char *ta, const char *ps_name);
  *
  * @return Status code
  */
-extern te_errno tapi_cfg_ps_del(const char *ta, const char *ps_name);
+extern te_errno cfg_job_del(const char *ta, const char *ps_name);
 
 /**
  * Set autorestart timeout.
@@ -211,10 +210,8 @@ extern te_errno tapi_cfg_ps_del(const char *ta, const char *ps_name);
  *
  * @return Status code
  */
-extern te_errno tapi_cfg_ps_set_autorestart(const char *ta,
-                                            const char *ps_name,
-                                            unsigned int value);
-
+extern te_errno cfg_job_set_autorestart(const char *ta, const char *ps_name,
+                                        unsigned int value);
 /**
  * Get autorestart timeout.
  *
@@ -225,13 +222,13 @@ extern te_errno tapi_cfg_ps_set_autorestart(const char *ta,
  *
  * @return Status code
  */
-extern te_errno tapi_cfg_ps_get_autorestart(const char *ta,
-                                            const char *ps_name,
-                                            unsigned int *value);
+extern te_errno cfg_job_get_autorestart(const char *ta, const char *ps_name,
+                                        unsigned int *value);
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_TAPI_CFG_PROCESS_H__ */
 
-/**@} <!-- END tapi_conf_process --> */
+#endif /* !__TE_TAPI_CFG_JOB_H__ */
+
+/**@} <!-- END tapi_cfg_job --> */

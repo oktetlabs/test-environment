@@ -1,15 +1,12 @@
 /** @file
- * @brief Test API to configure processes.
+ * @brief Configurator API for Agent job control
  *
- * @defgroup tapi_conf_process Processes configuration
- * @ingroup tapi_conf
- * @{
- *
- * Definition of TAPI to configure processes.
+ * Definition of Configurator API for Agent job control
  *
  * Copyright (C) 2020 OKTET Labs. All rights reserved.
  *
  * @author Dilshod Urazov <Dilshod.Urazov@oktetlabs.ru>
+ * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */
 
 #include "te_config.h"
@@ -22,7 +19,7 @@
 #include "logger_ten.h"
 #include "conf_api.h"
 
-#include "tapi_cfg_process.h"
+#include "tapi_cfg_job.h"
 
 
 #define TE_CFG_TA_PS    "/agent:%s/process:%s"
@@ -30,8 +27,8 @@
 #define DEFAULT_POLL_FREQUENCY_MS  1000
 
 te_errno
-tapi_cfg_ps_add_arg(const char *ta, const char *ps_name,
-                    unsigned int order, const char *arg)
+cfg_job_add_arg(const char *ta, const char *ps_name, unsigned int order,
+                const char *arg)
 {
     te_errno rc;
 
@@ -48,8 +45,8 @@ tapi_cfg_ps_add_arg(const char *ta, const char *ps_name,
 }
 
 te_errno
-tapi_cfg_ps_add_env(const char *ta, const char *ps_name,
-                    const char *env_name, const char *value)
+cfg_job_add_env(const char *ta, const char *ps_name, const char *env_name,
+                const char *value)
 {
     te_errno rc;
 
@@ -65,10 +62,9 @@ tapi_cfg_ps_add_env(const char *ta, const char *ps_name,
     return rc;
 }
 
-/* See descriptions in tapi_cfg_process.h */
+/* See descriptions in tapi_cfg_job.h */
 te_errno
-tapi_cfg_ps_add(const char *ta, const char *ps_name,
-                  const char *exe, te_bool start)
+cfg_job_add(const char *ta, const char *ps_name, const char *exe, te_bool start)
 {
     te_errno rc;
 
@@ -84,15 +80,15 @@ tapi_cfg_ps_add(const char *ta, const char *ps_name,
     if (rc != 0)
     {
         ERROR("Cannot set exe '%s' in process '%s': %r", exe, ps_name, rc);
-        return tapi_cfg_ps_del(ta, ps_name);
+        return cfg_job_del(ta, ps_name);
     }
 
-    return start ? tapi_cfg_ps_start(ta, ps_name) : 0;
+    return start ? cfg_job_start(ta, ps_name) : 0;
 }
 
-/* See descriptions in tapi_cfg_process.h */
+/* See descriptions in tapi_cfg_job.h */
 te_errno
-tapi_cfg_ps_start(const char *ta, const char *ps_name)
+cfg_job_start(const char *ta, const char *ps_name)
 {
     te_errno rc;
 
@@ -106,8 +102,8 @@ tapi_cfg_ps_start(const char *ta, const char *ps_name)
 
 /** @param killpg   If @c TRUE, send signal to process group, else to process */
 static te_errno
-tapi_cfg_ps_kill_common(const char *ta, const char *ps_name, int signo,
-                        te_bool killpg)
+cfg_job_kill_common(const char *ta, const char *ps_name, int signo,
+                    te_bool killpg)
 {
     te_errno rc;
     char *signame = map_signo_to_name(signo);
@@ -143,23 +139,23 @@ tapi_cfg_ps_kill_common(const char *ta, const char *ps_name, int signo,
     return rc;
 }
 
-/* See descriptions in tapi_cfg_process.h */
+/* See descriptions in tapi_cfg_job.h */
 te_errno
-tapi_cfg_ps_kill(const char *ta, const char *ps_name, int signo)
+cfg_job_kill(const char *ta, const char *ps_name, int signo)
 {
-    return tapi_cfg_ps_kill_common(ta, ps_name, signo, FALSE);
+    return cfg_job_kill_common(ta, ps_name, signo, FALSE);
 }
 
-/* See descriptions in tapi_cfg_process.h */
+/* See descriptions in tapi_cfg_job.h */
 te_errno
-tapi_cfg_ps_killpg(const char *ta, const char *ps_name, int signo)
+cfg_job_killpg(const char *ta, const char *ps_name, int signo)
 {
-    return tapi_cfg_ps_kill_common(ta, ps_name, signo, TRUE);
+    return cfg_job_kill_common(ta, ps_name, signo, TRUE);
 }
 
-/* See descriptions in tapi_cfg_process.h */
+/* See descriptions in tapi_cfg_job.h */
 te_errno
-tapi_cfg_ps_get_status(const char *ta, const char *ps_name, te_bool *status)
+cfg_job_get_status(const char *ta, const char *ps_name, te_bool *status)
 {
     te_errno rc;
     int val;
@@ -191,11 +187,11 @@ tapi_cfg_ps_get_status(const char *ta, const char *ps_name, te_bool *status)
 }
 
 static te_errno
-tapi_cfg_ps_get_exit_status(const char *ta, const char *ps_name,
-                            tapi_cfg_ps_exit_status_t *exit_status)
+cfg_job_get_exit_status(const char *ta, const char *ps_name,
+                        cfg_job_exit_status_t *exit_status)
 {
     te_errno rc;
-    tapi_cfg_ps_exit_status_t result;
+    cfg_job_exit_status_t result;
     int result_type;
 
     assert(exit_status != NULL);
@@ -211,7 +207,7 @@ tapi_cfg_ps_get_exit_status(const char *ta, const char *ps_name,
     }
     /*
      * Here we rely on the fact that ta_job_status_type_t and
-     * tapi_cfg_ps_exit_status_type_t are actually the same
+     * cfg_job_exit_status_type_t are actually the same
      */
     result.type = result_type;
 
@@ -230,10 +226,10 @@ tapi_cfg_ps_get_exit_status(const char *ta, const char *ps_name,
     return 0;
 }
 
-/* See descriptions in tapi_cfg_process.h */
+/* See descriptions in tapi_cfg_job.h */
 te_errno
-tapi_cfg_ps_wait(const char *ta, const char *ps_name, int timeout_ms,
-                 tapi_cfg_ps_exit_status_t *exit_status)
+cfg_job_wait(const char *ta, const char *ps_name, int timeout_ms,
+             cfg_job_exit_status_t *exit_status)
 {
     te_errno rc;
     struct timeval tv_start;
@@ -250,7 +246,7 @@ tapi_cfg_ps_wait(const char *ta, const char *ps_name, int timeout_ms,
     {
         te_bool status;
 
-        rc = tapi_cfg_ps_get_status(ta, ps_name, &status);
+        rc = cfg_job_get_status(ta, ps_name, &status);
         if (rc != 0)
             return rc;
 
@@ -258,7 +254,7 @@ tapi_cfg_ps_wait(const char *ta, const char *ps_name, int timeout_ms,
         if (!status)
         {
             if (exit_status != NULL)
-                return tapi_cfg_ps_get_exit_status(ta, ps_name, exit_status);
+                return cfg_job_get_exit_status(ta, ps_name, exit_status);
             else
                 return 0;
         }
@@ -282,9 +278,9 @@ tapi_cfg_ps_wait(const char *ta, const char *ps_name, int timeout_ms,
     }
 }
 
-/* See descriptions in tapi_cfg_process.h */
+/* See descriptions in tapi_cfg_job.h */
 te_errno
-tapi_cfg_ps_stop(const char *ta, const char *ps_name)
+cfg_job_stop(const char *ta, const char *ps_name)
 {
     te_errno rc;
 
@@ -296,9 +292,9 @@ tapi_cfg_ps_stop(const char *ta, const char *ps_name)
     return rc;
 }
 
-/* See descriptions in tapi_cfg_process.h */
+/* See descriptions in tapi_cfg_job.h */
 te_errno
-tapi_cfg_ps_del(const char *ta, const char *ps_name)
+cfg_job_del(const char *ta, const char *ps_name)
 {
     te_errno rc;
 
@@ -310,8 +306,7 @@ tapi_cfg_ps_del(const char *ta, const char *ps_name)
 }
 
 te_errno
-tapi_cfg_ps_set_autorestart(const char *ta, const char *ps_name,
-                            unsigned int value)
+cfg_job_set_autorestart(const char *ta, const char *ps_name, unsigned int value)
 {
     te_errno rc;
 
@@ -327,8 +322,8 @@ tapi_cfg_ps_set_autorestart(const char *ta, const char *ps_name,
 }
 
 te_errno
-tapi_cfg_ps_get_autorestart(const char *ta, const char *ps_name,
-                            unsigned int *value)
+cfg_job_get_autorestart(const char *ta, const char *ps_name,
+                        unsigned int *value)
 {
     te_errno rc;
     cfg_val_type type = CVT_INTEGER;
