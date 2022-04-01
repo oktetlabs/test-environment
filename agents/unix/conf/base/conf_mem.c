@@ -829,6 +829,9 @@ get_supported_hugepages_sizes(void)
     n = scandir(SYS_HUGEPAGES, &names, NULL, alphasort);
     if (n <= 0)
     {
+        if (errno == ENOENT)
+            return 0;
+
         rc = te_rc_os2te(errno);
         ERROR("%s(): Cannot get a list of available hugepages size: %r",
               __FUNCTION__, rc);
