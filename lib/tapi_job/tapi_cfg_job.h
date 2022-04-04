@@ -21,6 +21,9 @@
 #include "te_defs.h"
 #include "te_errno.h"
 
+#include "tapi_job.h"
+#include "tapi_job_methods.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,44 +49,15 @@ typedef struct cfg_job_exit_status_t {
     int value;
 } cfg_job_exit_status_t;
 
-/**
- * Add process argument.
- *
- * @param ta            Test Agent.
- * @param ps_name       Process.
- * @param order         Relative order.
- * @param arg           Argument itself.
- *
- * @return Status code
- */
-extern te_errno cfg_job_add_arg(const char *ta, const char *ps_name,
-                                unsigned int order, const char *arg);
+/** Methods for job created by CFG factory */
+extern const tapi_job_methods_t cfg_job_methods;
 
 /**
- * Add environment variable.
+ * Create a job
  *
- * @param ta            Test Agent.
- * @param ps_name       Process.
- * @param env_name      Variable name.
- * @param value         Variable value.
- *
- * @return Status code
+ * @sa tapi_job_method_create
  */
-extern te_errno cfg_job_add_env(const char *ta, const char *ps_name,
-                                const char *env_name, const char *value);
-
-/**
- * Add process.
- *
- * @param ta            Test Agent.
- * @param ps_name       Process name.
- * @param exe           Executable to run.
- * @param start         Start it just after addition
- *
- * @return Status code
- */
-extern te_errno cfg_job_add(const char *ta, const char *ps_name,
-                            const char *exe, te_bool start);
+extern tapi_job_method_create cfg_job_create;
 
 /**
  * Start process.

@@ -96,6 +96,11 @@ extern void tapi_job_factory_destroy(tapi_job_factory_t *factory);
  * @note The first element of @p args, by convention of exec family functions,
  *       should point to the filename associated with the file being executed.
  *
+ * @note Unnamed jobs created by CFG factory are not supposed to live longer
+ *       than one test, so they should be destroyed at the end of the test where
+ *       they were created. Otherwise, trying to create an unnamed job by CFG
+ *       factory in a subsequent test will lead to an error.
+ *
  * @param factory   Job factory
  * @param spawner   Spawner plugin name
  *                 (may be @c NULL for the default plugin)

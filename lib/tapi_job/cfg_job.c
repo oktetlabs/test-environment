@@ -11,6 +11,7 @@
 
 #include "te_config.h"
 
+#include "tapi_mem.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_sigmap.h"
@@ -20,13 +21,34 @@
 #include "conf_api.h"
 
 #include "tapi_cfg_job.h"
+#include "tapi_job_internal.h"
 
 
 #define TE_CFG_TA_PS    "/agent:%s/process:%s"
 /** Default timeout to sleep for between polling process status */
 #define DEFAULT_POLL_FREQUENCY_MS  1000
 
-te_errno
+const tapi_job_methods_t cfg_job_methods = {
+    .create = cfg_job_create,
+};
+
+static te_errno
+cfg_job_set_exe(const char *ta, const char *ps_name, const char *exe)
+{
+    te_errno rc;
+
+    rc  = cfg_set_instance_fmt(CFG_VAL(STRING, exe),
+                               TE_CFG_TA_PS "/exe:", ta, ps_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot set exe '%s' (process '%s', TA '%s'): %r",
+              exe, ps_name, rc);
+    }
+
+    return rc;
+}
+
+static te_errno
 cfg_job_add_arg(const char *ta, const char *ps_name, unsigned int order,
                 const char *arg)
 {
@@ -44,7 +66,29 @@ cfg_job_add_arg(const char *ta, const char *ps_name, unsigned int order,
     return rc;
 }
 
-te_errno
+static te_errno
+cfg_job_add_all_args(const char *ta, const char *ps_name, const char **argv)
+{
+    te_errno rc;
+    unsigned int order = 1;
+    size_t i;
+
+    /*
+     * The first argument corresponds to exe.
+     * It is handled on Agent side by conf_process.c and should not be added to
+     * Configurator tree.
+     */
+    for (i = 1; argv != NULL && argv[i] != NULL; i++)
+    {
+        rc = cfg_job_add_arg(ta, ps_name, order++, argv[i]);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
+}
+
+static te_errno
 cfg_job_add_env(const char *ta, const char *ps_name, const char *env_name,
                 const char *value)
 {
@@ -62,11 +106,49 @@ cfg_job_add_env(const char *ta, const char *ps_name, const char *env_name,
     return rc;
 }
 
-/* See descriptions in tapi_cfg_job.h */
-te_errno
-cfg_job_add(const char *ta, const char *ps_name, const char *exe, te_bool start)
+static te_errno
+cfg_job_add_all_envs(const char *ta, const char *ps_name, const char **env)
 {
     te_errno rc;
+    size_t i;
+
+    for (i = 0; env != NULL && env[i] != NULL; i++)
+    {
+        char *env_copy = tapi_strdup(env[i]);
+        char *separator = strchr(env_copy, '=');
+        char *value;
+
+        /* Enviroment is supposed to look like "ENV_VAR=VALUE" */
+        if (separator == NULL)
+        {
+            ERROR("Invalid environment '%s'", env[i]);
+            free(env_copy);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+
+        *separator = '\0';
+        value = separator + 1;
+
+        rc = cfg_job_add_env(ta, ps_name, env_copy, value);
+        free(env_copy);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
+}
+
+/* See descriptions in tapi_cfg_job.h */
+te_errno
+cfg_job_create(tapi_job_t *job, const char *spawner, const char *tool,
+               const char **argv, const char **env)
+{
+    te_errno rc;
+    const char *ta = tapi_job_get_ta(job);
+    const char *ps_name = tapi_job_get_name(job);
+
+    if (spawner != NULL && spawner[0] != '\0')
+        WARN("Spawner plugin is not supported for Configurator backend");
 
     rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL, TE_CFG_TA_PS, ta, ps_name);
     if (rc != 0)
@@ -75,15 +157,16 @@ cfg_job_add(const char *ta, const char *ps_name, const char *exe, te_bool start)
         return rc;
     }
 
-    rc  = cfg_set_instance_fmt(CFG_VAL(STRING, exe),
-                               TE_CFG_TA_PS "/exe:", ta, ps_name);
-    if (rc != 0)
-    {
-        ERROR("Cannot set exe '%s' in process '%s': %r", exe, ps_name, rc);
-        return cfg_job_del(ta, ps_name);
-    }
+    rc = cfg_job_set_exe(ta, ps_name, tool);
+    if (rc == 0)
+        rc = cfg_job_add_all_args(ta, ps_name, argv);
+    if (rc == 0)
+        rc = cfg_job_add_all_envs(ta, ps_name, env);
 
-    return start ? cfg_job_start(ta, ps_name) : 0;
+    if (rc != 0)
+        cfg_job_del(ta, ps_name);
+
+    return rc;
 }
 
 /* See descriptions in tapi_cfg_job.h */

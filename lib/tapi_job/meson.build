@@ -7,6 +7,7 @@ headers += files(
     'tapi_job_opt.h',
 )
 sources += files(
+    'cfg_job.c',
     'rpc_job.c',
     'tapi_job.c',
     'tapi_job_opt.c',

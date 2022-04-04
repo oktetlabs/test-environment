@@ -65,6 +65,34 @@ extern unsigned int tapi_job_get_id(const tapi_job_t *job);
 extern void tapi_job_set_id(tapi_job_t *job, unsigned int id);
 
 /**
+ * Get name of the Test Agent on which @p job was created.
+ * The job must have been created using CFG job factory, otherwise
+ * the function calls TEST_FAIL().
+ *
+ * The function is primarily intended for internal usage.
+ *
+ * @param job       Job instance handle
+ *
+ * @return          Name of the Test Agent on which @p job was created
+ * @exception       TEST_FAIL
+ */
+extern const char *tapi_job_get_ta(const tapi_job_t *job);
+
+/**
+ * Get name of the @p job.
+ * The job must have been created using CFG job factory, otherwise
+ * the function calls TEST_FAIL().
+ *
+ * The function is primarily intended for internal usage.
+ *
+ * @param job       Job instance handle
+ *
+ * @return          Name of the @p job
+ * @exception       TEST_FAIL
+ */
+extern const char *tapi_job_get_name(const tapi_job_t *job);
+
+/**
  * Set name of the @p job.
  * The corresponding member of tapi_job_t should be freed when the job is not
  * needed anymore.
