@@ -64,6 +64,22 @@ extern unsigned int tapi_job_get_id(const tapi_job_t *job);
  */
 extern void tapi_job_set_id(tapi_job_t *job, unsigned int id);
 
+/**
+ * Set name of the @p job.
+ * The corresponding member of tapi_job_t should be freed when the job is not
+ * needed anymore.
+ * The job must have been created using CFG job factory, otherwise
+ * the function calls TEST_FAIL().
+ *
+ * The function is primarily intended for internal usage.
+ *
+ * @param job       Job instance handle
+ * @param name      Name to set to the @p job
+ *
+ * @exception       TEST_FAIL
+ */
+extern void tapi_job_set_name(tapi_job_t *job, const char *name);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

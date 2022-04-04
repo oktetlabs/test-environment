@@ -113,6 +113,33 @@ extern te_errno tapi_job_create(tapi_job_factory_t *factory,
                                 const char **argv,
                                 const char **env,
                                 tapi_job_t **job);
+
+/**
+ * Same as tapi_job_create(), but allows to set a name for the job being created
+ *
+ * @param factory   Job factory
+ * @param name      Name of the job.
+ *                  If CFG job factory is used, this parameter is mandatory.
+                    If RPC job factory is used, it should be @c NULL.
+ * @param spawner   Spawner plugin name (may be @c NULL for the default plugin)
+ * @param program   Program path to run
+ * @param argv      Program arguments (last item is @c NULL)
+ * @param env       Program environment (last item is @c NULL).
+ *                  May be @c NULL to keep the current environment.
+ * @param[out] job  Job handle
+ *
+ * @return          Status code
+ *
+ * @sa tapi_job_create
+ */
+extern te_errno tapi_job_create_named(tapi_job_factory_t *factory,
+                                      const char *name,
+                                      const char *spawner,
+                                      const char *program,
+                                      const char **argv,
+                                      const char **env,
+                                      tapi_job_t **job);
+
 /**
  * A simplified description of an output filter.
  * The caller is expected to fill the fields one is
@@ -143,6 +170,12 @@ typedef struct tapi_job_simple_filter_t {
  * interested in and leave others @c NULL.
  */
 typedef struct tapi_job_simple_desc_t {
+    /**
+     * Name of the job.
+     * Might be useful for jobs created by CFG factory
+     * (see tapi_job_create_named()).
+     */
+    const char *name;
     /** Spawner type */
     const char *spawner;
     /** Program path */

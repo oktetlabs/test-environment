@@ -61,6 +61,8 @@ struct tapi_job_t {
     union {
         /** Identifies job created by RPC factory */
         unsigned int id;
+        /* Identifies job created by Configurator factory */
+        char *name;
     } backend;
 
     tapi_job_methods_t methods;
@@ -285,11 +287,34 @@ tapi_job_set_id(tapi_job_t *job, unsigned int id)
     job->backend.id = id;
 }
 
+/* See description in tapi_job_internal.h */
+void
+tapi_job_set_name(tapi_job_t *job, const char *name)
+{
+    if (job == NULL)
+        TEST_FAIL("Job is NULL");
+
+    if (job->factory->type != TAPI_JOB_FACTORY_CFG)
+        TEST_FAIL("Job was not created by CFG factory");
+
+    job->backend.name = tapi_strdup(name);
+}
+
 /* See description in tapi_job.h */
 te_errno
 tapi_job_create(tapi_job_factory_t *factory, const char *spawner,
                 const char *program, const char **argv,
                 const char **env, tapi_job_t **job)
+{
+    return tapi_job_create_named(factory, NULL, spawner, program, argv, env,
+                                 job);
+}
+
+/* See description in tapi_job.h */
+te_errno
+tapi_job_create_named(tapi_job_factory_t *factory, const char *name,
+                      const char *spawner, const char *program,
+                      const char **argv, const char **env, tapi_job_t **job)
 {
     tapi_job_t *tapi_job;
     te_errno rc;
@@ -300,8 +325,16 @@ tapi_job_create(tapi_job_factory_t *factory, const char *spawner,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    if (factory->type != TAPI_JOB_FACTORY_RPC)
-        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+    switch (factory->type)
+    {
+        case TAPI_JOB_FACTORY_RPC:
+            if (name != NULL)
+                WARN("Name is ignored for jobs created by RPC factory");
+            break;
+
+        default:
+            return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+    }
 
     tapi_job = tapi_calloc(1, sizeof(*tapi_job));
 
@@ -376,8 +409,9 @@ tapi_job_simple_create(tapi_job_factory_t *factory,
         return TE_EALREADY;
     }
 
-    rc = tapi_job_create(factory, desc->spawner, desc->program, desc->argv,
-                         desc->env, desc->job_loc);
+    rc = tapi_job_create_named(factory, desc->name, desc->spawner,
+                               desc->program, desc->argv, desc->env,
+                               desc->job_loc);
     if (rc != 0)
         return rc;
 
@@ -1241,6 +1275,24 @@ tapi_job_destroy(tapi_job_t *job, int term_timeout_ms)
     rc = job->methods.destroy(job, term_timeout_ms);
     if (rc != 0)
         return rc;
+
+    switch (job->factory->type)
+    {
+        case TAPI_JOB_FACTORY_RPC:
+            break;
+
+        case TAPI_JOB_FACTORY_CFG:
+            free(job->backend.name);
+            break;
+
+        default:
+            /*
+             * tapi_job_destroy() is supposed to be called only after successful
+             * call of tapi_job_create() where the supported factory is set.
+             * So, this code block is not accessible.
+             */
+            assert(0);
+    }
 
     SLIST_FOREACH_SAFE(entry, &job->channel_entries, next, entry_tmp)
     {
