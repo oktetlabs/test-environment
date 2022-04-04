@@ -764,6 +764,23 @@ module_version_get(unsigned int gid, const char *oid, char *value,
 #endif
 }
 
+static te_errno
+module_param_create(te_kernel_module *module, const char *name,
+                    const char *value)
+{
+    te_kernel_module_param *param;
+
+    param = calloc(1, sizeof(te_kernel_module_param));
+    if (param == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    TE_SPRINTF(param->name, "%s", name);
+    TE_SPRINTF(param->value, "%s", value);
+    LIST_INSERT_HEAD(&module->params, param, list);
+
+    return 0;
+}
+
 /**
  * Get list of module parameter names.
  *
@@ -924,10 +941,25 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
         if (module != NULL)
         {
             te_kernel_module_param *param;
+            te_bool found = FALSE;
 
             LIST_FOREACH(param, &module->params, list)
+            {
                 if (strcmp(param->name, param_name) == 0)
+                {
                     TE_SPRINTF(param->value, "%s", value);
+                    found = TRUE;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                rc = module_param_create(module, param_name, value);
+                if (rc != 0)
+                    return TE_RC(TE_TA_UNIX, rc);
+            }
+
         }
     }
 
@@ -948,6 +980,7 @@ module_param_add(unsigned int gid, const char *oid,
 {
     te_kernel_module *module = mod_find(mod_name);
     te_kernel_module_param *param;
+    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -971,15 +1004,11 @@ module_param_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
     }
 
-    param = calloc(1, sizeof(te_kernel_module_param));
-    if (param == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    rc = module_param_create(module, param_name, param_value);
+    if (rc != 0)
+        ERROR("Failed to create module parameter: %r", rc);
 
-    TE_SPRINTF(param->name, "%s", param_name);
-    TE_SPRINTF(param->value, "%s", param_value);
-    LIST_INSERT_HEAD(&module->params, param, list);
-
-    return 0;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 static te_errno
