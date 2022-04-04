@@ -1052,6 +1052,9 @@ typedef enum rpc_ioctl_code {
     RPC_SIOCGHWTSTAMP,
 
     RPC_PTP_CLOCK_GETCAPS, /**< Get PTP clock capabilities */
+    RPC_PTP_SYS_OFFSET,    /**< Get a few samples of system and PTP
+                                clock times obtained at the same
+                                moment */
 
     /* Winsock2-specific codes */
     RPC_SIO_ADDRESS_LIST_CHANGE,

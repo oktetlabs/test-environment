@@ -4512,6 +4512,9 @@ typedef union ioctl_param {
 #ifdef HAVE_STRUCT_PTP_CLOCK_CAPS
     struct ptp_clock_caps ptp_caps;
 #endif
+#ifdef HAVE_STRUCT_PTP_SYS_OFFSET
+    struct ptp_sys_offset ptp_sys_offset;
+#endif
 } ioctl_param;
 
 static te_errno
@@ -4767,6 +4770,32 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 #endif
 
 #undef COPY_FIELD
+            break;
+        }
+#endif
+
+#ifdef HAVE_STRUCT_PTP_SYS_OFFSET
+        case IOCTL_PTP_SYS_OFFSET:
+        {
+            tarpc_ptp_sys_offset *out_arg =
+                &out->req.req_val[0].ioctl_request_u.req_ptp_sys_offset;
+            unsigned int req_size;
+
+            req->ptp_sys_offset.n_samples = out_arg->n_samples;
+
+            /*
+             * See comments for ptp_sys_offset structure fields
+             * in linux/ptp_clock.h
+             */
+            req_size = out_arg->n_samples * 2 + 1;
+            if (req_size > TE_ARRAY_LEN(out_arg->ts))
+            {
+                te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOBUFS),
+                                 "Not enough space for requested number "
+                                 "of time samples");
+                return TE_ENOBUFS;
+            }
+
             break;
         }
 #endif
@@ -5037,6 +5066,25 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 #endif
 
 #undef COPY_FIELD
+            break;
+        }
+#endif
+
+#ifdef HAVE_STRUCT_PTP_SYS_OFFSET
+        case IOCTL_PTP_SYS_OFFSET:
+        {
+            tarpc_ptp_sys_offset *out_arg =
+                &out->req.req_val[0].ioctl_request_u.req_ptp_sys_offset;
+            unsigned int i;
+
+            out_arg->n_samples = req->ptp_sys_offset.n_samples;
+
+            for (i = 0; i < 2 * out_arg->n_samples + 1; i++)
+            {
+                out_arg->ts[i].sec = req->ptp_sys_offset.ts[i].sec;
+                out_arg->ts[i].nsec = req->ptp_sys_offset.ts[i].nsec;
+            }
+
             break;
         }
 #endif

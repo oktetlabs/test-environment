@@ -439,6 +439,20 @@ struct tarpc_onload_scm_timestamping_stream {
     tarpc_size_t len;
 };
 
+struct tarpc_ptp_clock_time {
+    int64_t sec;
+    uint32_t nsec;
+};
+
+struct tarpc_ptp_sys_offset {
+    tarpc_uint n_samples;
+    /*
+     * In ptp_clock.h PTP_MAX_SAMPLES is defined to 25,
+     * and in ptp_sys_offset 2 * PTP_MAX_SAMPLES + 1 is used.
+     */
+    tarpc_ptp_clock_time ts[51];
+};
+
 /** Function gets nothing */
 struct tarpc_void_in {
     struct tarpc_in_arg     common;
@@ -3081,7 +3095,8 @@ enum ioctl_type {
     IOCTL_ARPREQ,
     IOCTL_SGIO,
     IOCTL_HWTSTAMP_CONFIG,
-    IOCTL_PTP_CLOCK_CAPS
+    IOCTL_PTP_CLOCK_CAPS,
+    IOCTL_PTP_SYS_OFFSET
 };
 
 /* Access type of ioctl requests */
@@ -3101,6 +3116,8 @@ union ioctl_request switch (ioctl_type type) {
 
     case IOCTL_PTP_CLOCK_CAPS: tarpc_ptp_clock_caps
                                   req_ptp_clock_caps;
+    case IOCTL_PTP_SYS_OFFSET: tarpc_ptp_sys_offset
+                                  req_ptp_sys_offset;
 };
 
 struct tarpc_ioctl_in {

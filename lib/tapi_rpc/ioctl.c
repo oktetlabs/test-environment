@@ -466,6 +466,19 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
             break;
 
+        case RPC_PTP_SYS_OFFSET:
+            in.access = IOCTL_RD;
+
+            if (arg != NULL)
+            {
+                in.req.req_val[0].type = IOCTL_PTP_SYS_OFFSET;
+                memcpy(
+                  &in.req.req_val[0].ioctl_request_u.req_ptp_sys_offset,
+                  arg, sizeof(tarpc_ptp_sys_offset));
+            }
+
+            break;
+
         case RPC_SIOCETHTOOL:
         {
             int           size = 0;
@@ -774,6 +787,13 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                   arg,
                   &out.req.req_val[0].ioctl_request_u.req_ptp_clock_caps,
                   sizeof(tarpc_ptp_clock_caps));
+                break;
+
+            case IOCTL_PTP_SYS_OFFSET:
+                memcpy(
+                  arg,
+                  &out.req.req_val[0].ioctl_request_u.req_ptp_sys_offset,
+                  sizeof(tarpc_ptp_sys_offset));
                 break;
 
             default:
@@ -1088,6 +1108,36 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                              caps->n_alarm, caps->n_ext_ts, caps->n_per_out,
                              caps->pps, caps->n_pins,
                              caps->cross_timestamping, caps->adjust_phase);
+
+            break;
+        }
+
+        case IOCTL_PTP_SYS_OFFSET:
+        {
+            tarpc_ptp_sys_offset *answ = (tarpc_ptp_sys_offset *)arg;
+            int i;
+
+            te_string_append(req_str, " { .n_samples = %u, [ ",
+                             answ->n_samples);
+
+            for (i = 0;
+                 i < answ->n_samples * 2 + 1 && i < TE_ARRAY_LEN(answ->ts);
+                 i++)
+            {
+                te_string_append(req_str, "%s %lld.%06u, ",
+                                 (i % 2 == 0 ? "sys" : "phc"),
+                                 (long long int)(answ->ts[i].sec),
+                                 (unsigned int)(answ->ts[i].nsec));
+            }
+            if (i > 0)
+            {
+                te_string_cut(req_str, 2);
+                te_string_append(req_str, " ] }");
+            }
+            else
+            {
+                te_string_append(req_str, "] }");
+            }
 
             break;
         }
