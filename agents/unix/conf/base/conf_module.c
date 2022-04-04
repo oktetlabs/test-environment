@@ -904,6 +904,12 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
     char name[TE_MODULE_NAME_LEN];
     te_errno rc;
 
+    if (!mod_loaded(module_name))
+    {
+        ERROR("Cannot change the parameters of the not loaded module");
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
+    }
+
     rc = mod_name_underscorify(module_name, name, sizeof(name));
     if (rc != 0)
         return rc;
