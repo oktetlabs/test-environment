@@ -31,6 +31,8 @@
 const tapi_job_methods_t cfg_job_methods = {
     .create = cfg_job_create,
     .start = cfg_job_start,
+    .kill = cfg_job_kill,
+    .killpg = cfg_job_killpg,
 };
 
 static te_errno
@@ -186,12 +188,13 @@ cfg_job_start(const tapi_job_t *job)
     return rc;
 }
 
-/** @param killpg   If @c TRUE, send signal to process group, else to process */
+/* When killpg is TRUE, send signal to process group, else to process */
 static te_errno
-cfg_job_kill_common(const char *ta, const char *ps_name, int signo,
-                    te_bool killpg)
+cfg_job_kill_common(const tapi_job_t *job, int signo, te_bool killpg)
 {
     te_errno rc;
+    const char *ta = tapi_job_get_ta(job);
+    const char *ps_name = tapi_job_get_name(job);
     char *signame = map_signo_to_name(signo);
 
     if (signame == NULL)
@@ -227,16 +230,16 @@ cfg_job_kill_common(const char *ta, const char *ps_name, int signo,
 
 /* See descriptions in tapi_cfg_job.h */
 te_errno
-cfg_job_kill(const char *ta, const char *ps_name, int signo)
+cfg_job_kill(const tapi_job_t *job, int signo)
 {
-    return cfg_job_kill_common(ta, ps_name, signo, FALSE);
+    return cfg_job_kill_common(job, signo, FALSE);
 }
 
 /* See descriptions in tapi_cfg_job.h */
 te_errno
-cfg_job_killpg(const char *ta, const char *ps_name, int signo)
+cfg_job_killpg(const tapi_job_t *job, int signo)
 {
-    return cfg_job_kill_common(ta, ps_name, signo, TRUE);
+    return cfg_job_kill_common(job, signo, TRUE);
 }
 
 /* See descriptions in tapi_cfg_job.h */

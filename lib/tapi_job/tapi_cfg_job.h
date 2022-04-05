@@ -67,26 +67,18 @@ extern tapi_job_method_create cfg_job_create;
 extern tapi_job_method_start cfg_job_start;
 
 /**
- * Send a signal to the process.
+ * Send a signal to the job
  *
- * @param      ta                 Test Agent.
- * @param      ps_name            Process.
- * @param      signo              Number of signal to send.
- *
- * @return     Status code
+ * @sa tapi_job_method_kill
  */
-extern te_errno cfg_job_kill(const char *ta, const char *ps_name, int signo);
+extern tapi_job_method_kill cfg_job_kill;
 
 /**
- * Send a signal to the process's porcess group.
+ * Send a signal to the job's proccess group
  *
- * @param      ta                 Test Agent.
- * @param      ps_name            Process.
- * @param      signo              Number of signal to send.
- *
- * @return     Status code
+ * @sa tapi_job_method_killpg
  */
-extern te_errno cfg_job_killpg(const char *ta, const char *ps_name, int signo);
+extern tapi_job_method_killpg cfg_job_killpg;
 
 /**
  * Get current process status.
