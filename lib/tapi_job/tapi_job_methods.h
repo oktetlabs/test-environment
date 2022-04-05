@@ -137,8 +137,7 @@ typedef te_errno (tapi_job_method_stop)(const tapi_job_t *job, int signo,
 /**
  * Method that destroys a job on backend side.
  * If the job has started, it is terminated as gracefully as possible.
- * All resources of the instance are freed; all unread data on all filters are
- * lost.
+ * All resources of the instance are freed.
  *
  * @param        job               Job instance handle
  * @param        term_timeout_ms   The timeout of graceful termination of a job,

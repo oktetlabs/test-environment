@@ -1368,10 +1368,10 @@ tapi_job_destroy(tapi_job_t *job, int term_timeout_ms)
     channel_entry *entry;
     channel_entry *entry_tmp;
 
-    TAPI_JOB_CHECK_METHOD_SUPPORT(job, destroy);
-
     if (job == NULL)
         return 0;
+
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, destroy);
 
     rc = job->methods.destroy(job, term_timeout_ms);
     if (rc != 0)

@@ -102,14 +102,13 @@ extern tapi_job_method_wait cfg_job_wait;
 extern tapi_job_method_stop cfg_job_stop;
 
 /**
- * Delete process.
+ * Destroy a job
  *
- * @param ta            Test Agent.
- * @param ps_name       Process name.
+ * @note Parameter @p term_timeout_ms is ignored, use @c -1 to avoid warning
  *
- * @return Status code
+ * @sa tapi_job_method_destroy
  */
-extern te_errno cfg_job_del(const char *ta, const char *ps_name);
+extern tapi_job_method_destroy cfg_job_destroy;
 
 /**
  * Set autorestart timeout.

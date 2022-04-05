@@ -706,6 +706,9 @@ extern te_errno tapi_job_stop(tapi_job_t *job, int signo, int term_timeout_ms);
  * as gracefully as possible. All resources of the instance are freed;
  * all unread data on all filters are lost.
  *
+ * @note Parameter @p term_timeout_ms is supported only for jobs created by RPC
+ *       factory. Use @c -1 to avoid warnings.
+ *
  * @param job               Job instance handle
  * @param term_timeout_ms   The timeout of graceful termination of a job,
  *                          if it has been running. After the timeout expiration

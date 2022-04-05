@@ -41,6 +41,7 @@ const tapi_job_methods_t cfg_job_methods = {
     .killpg = cfg_job_killpg,
     .wait = cfg_job_wait,
     .stop = cfg_job_stop,
+    .destroy = cfg_job_destroy,
 };
 
 static te_errno
@@ -175,7 +176,7 @@ cfg_job_create(tapi_job_t *job, const char *spawner, const char *tool,
         rc = cfg_job_add_all_envs(ta, ps_name, env);
 
     if (rc != 0)
-        cfg_job_del(ta, ps_name);
+        cfg_job_destroy(job, -1);
 
     return rc;
 }
@@ -453,9 +454,14 @@ cfg_job_stop(const tapi_job_t *job, int signo, int term_timeout_ms)
 
 /* See descriptions in tapi_cfg_job.h */
 te_errno
-cfg_job_del(const char *ta, const char *ps_name)
+cfg_job_destroy(const tapi_job_t *job, int term_timeout_ms)
 {
     te_errno rc;
+    const char *ta = tapi_job_get_ta(job);
+    const char *ps_name = tapi_job_get_name(job);
+
+    if (term_timeout_ms != -1)
+        WARN_PARAM_NOT_SUPPORTED(term_timeout_ms);
 
     rc = cfg_del_instance_fmt(FALSE, TE_CFG_TA_PS, ta, ps_name);
     if (rc != 0)
