@@ -111,32 +111,20 @@ extern tapi_job_method_stop cfg_job_stop;
 extern tapi_job_method_destroy cfg_job_destroy;
 
 /**
- * Set autorestart timeout.
- * The value represents a frequency with which the autorestart subsystem
- * will check whether the process stopped running (regardless of the reason)
- * and restart it if it did.
+ * Set autorestart timeout for a job
  *
- * @param ta            Test Agent.
- * @param ps_name       Process.
- * @param value         Autorestart timeout in seconds or @c 0 to disable
- *                      autorestart for the process.
+ * @note This function should be called before the job is started
  *
- * @return Status code
+ * @sa tapi_job_method_set_autorestart
  */
-extern te_errno cfg_job_set_autorestart(const char *ta, const char *ps_name,
-                                        unsigned int value);
+extern tapi_job_method_set_autorestart cfg_job_set_autorestart;
+
 /**
- * Get autorestart timeout.
+ * Get autorestart timeout of a job
  *
- * @param[in]  ta       Test Agent.
- * @param[in]  ps_name  Process.
- * @param[out] value    Autorestart timeout in seconds. If @c 0
- *                      the autorestart is disabled.
- *
- * @return Status code
+ * @sa tapi_job_method_get_autorestart
  */
-extern te_errno cfg_job_get_autorestart(const char *ta, const char *ps_name,
-                                        unsigned int *value);
+extern tapi_job_method_get_autorestart cfg_job_get_autorestart;
 
 #ifdef __cplusplus
 } /* extern "C" */

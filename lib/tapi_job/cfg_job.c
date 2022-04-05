@@ -42,6 +42,8 @@ const tapi_job_methods_t cfg_job_methods = {
     .wait = cfg_job_wait,
     .stop = cfg_job_stop,
     .destroy = cfg_job_destroy,
+    .set_autorestart = cfg_job_set_autorestart,
+    .get_autorestart = cfg_job_get_autorestart,
 };
 
 static te_errno
@@ -470,10 +472,13 @@ cfg_job_destroy(const tapi_job_t *job, int term_timeout_ms)
     return rc;
 }
 
+/* See descriptions in tapi_cfg_job.h */
 te_errno
-cfg_job_set_autorestart(const char *ta, const char *ps_name, unsigned int value)
+cfg_job_set_autorestart(const tapi_job_t *job, unsigned int value)
 {
     te_errno rc;
+    const char *ta = tapi_job_get_ta(job);
+    const char *ps_name = tapi_job_get_name(job);
 
     rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
                               TE_CFG_TA_PS "/autorestart:", ta, ps_name);
@@ -486,24 +491,14 @@ cfg_job_set_autorestart(const char *ta, const char *ps_name, unsigned int value)
     return rc;
 }
 
+/* See descriptions in tapi_cfg_job.h */
 te_errno
-cfg_job_get_autorestart(const char *ta, const char *ps_name,
-                        unsigned int *value)
+cfg_job_get_autorestart(const tapi_job_t *job, unsigned int *value)
 {
     te_errno rc;
+    const char *ta = tapi_job_get_ta(job);
+    const char *ps_name = tapi_job_get_name(job);
     cfg_val_type type = CVT_INTEGER;
-
-    if (ta == NULL)
-    {
-        ERROR("%s: test agent name must not be NULL", __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-
-    if (ps_name == NULL)
-    {
-        ERROR("%s: process name must not be NULL", __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
 
     rc = cfg_get_instance_fmt(&type, value,
                               TE_CFG_TA_PS "/autorestart:", ta, ps_name);

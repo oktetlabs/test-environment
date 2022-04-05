@@ -228,6 +228,10 @@ extern te_errno tapi_job_simple_create(tapi_job_factory_t *factory,
 /**
  * Start a job
  *
+ * @note For autorestart jobs this function should be called only once.
+ *       The following job executions will be done by the autorestart
+ *       subsystem.
+ *
  * @param job Job instance handle
  */
 extern te_errno tapi_job_start(tapi_job_t *job);
@@ -288,11 +292,15 @@ extern unsigned int tapi_job_get_timeout(void);
  * @param[out] status Exit status (may be @c NULL)
  *
  * @return                  Status code
- * @retval TE_EINPROGRESS   Job is still running
+ * @retval TE_EINPROGRESS   Job is still running. For autorestart jobs, this
+ *                          means that the autorestart subsystem is working with
+ *                          the job and it will be restarted when needed.
  * @retval TE_ECHILD        Job was never started
  *
  * @note For jobs created by some factories it's possible that this function
  *       will return zero if the job was never started
+ *
+ * @sa tapi_job_set_autorestart
  */
 extern te_errno tapi_job_wait(tapi_job_t *job, int timeout_ms,
                               tapi_job_status_t *status);
@@ -689,6 +697,9 @@ extern te_errno tapi_job_clear(const tapi_job_channel_set_t filters);
  * @note Parameters @p signo and @p term_timeout_ms are supported only for jobs
  *       created by RPC factory. Use @c -1 to avoid warnings.
  *
+ * @note For autorestart jobs this function will stop the job and prevent the
+ *       autorestart subsystem from starting the job over
+ *
  * @param job               Job instance handle
  * @param signo             Signal to be sent at first. If signo is @c SIGKILL,
  *                          it will be sent only once.
@@ -698,6 +709,8 @@ extern te_errno tapi_job_clear(const tapi_job_channel_set_t filters);
  *                          (negative means default timeout)
  *
  * @return Status code
+ *
+ * @sa tapi_job_set_autorestart
  */
 extern te_errno tapi_job_stop(tapi_job_t *job, int signo, int term_timeout_ms);
 
@@ -810,6 +823,34 @@ typedef struct tapi_job_sched_priority_param {
  */
 extern te_errno tapi_job_add_sched_param(tapi_job_t *job,
                                          tapi_job_sched_param *sched_param);
+
+/**
+ * Set autorestart timeout for the job.
+ * The value represents a frequency with which the autorestart subsystem
+ * will check whether the process stopped running (regardless of the reason)
+ * and restart it if it did.
+ *
+ * @note For jobs created by CFG factory this function should be called before
+ *       the job is started
+ *
+ * @param      job          Job instance handle
+ * @param      value        Autorestart timeout in seconds or @c 0 to disable
+ *                          autorestart for the process.
+ *
+ * @return     Status code
+ */
+extern te_errno tapi_job_set_autorestart(tapi_job_t *job, unsigned int value);
+
+/**
+ * Get autorestart timeout
+ *
+ * @param[in]  job          Job instance handle
+ * @param[out] value        Autorestart timeout in seconds. If @c 0,
+ *                          the autorestart is disabled.
+ *
+ * @return     Status code
+ */
+extern te_errno tapi_job_get_autorestart(tapi_job_t *job, unsigned int *value);
 
 /**
  * @page tapi-job-factory Creating tapi_job_t instances

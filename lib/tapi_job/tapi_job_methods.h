@@ -191,6 +191,33 @@ typedef te_errno (tapi_job_method_wrapper_delete)(const tapi_job_t *job,
 typedef te_errno (tapi_job_method_add_sched_param)(const tapi_job_t *job,
                                              tapi_job_sched_param *sched_param);
 
+/**
+ * Method that sets autorestart timeout.
+ * The @p value represents a frequency with which the autorestart subsystem
+ * will check whether the @p job stopped running (regardless of the reason)
+ * and restart it if it did.
+ *
+ * @param        job               Job instance handle
+ * @param        value             Autorestart timeout in seconds or @c 0 to
+ *                                 disable autorestart for the process
+ *
+ * @return       Status code
+ */
+typedef te_errno (tapi_job_method_set_autorestart)(const tapi_job_t *job,
+                                                   unsigned int value);
+
+/**
+ * Method that obtains the autorestart timeout
+ *
+ * @param[in]    job               Job instance handle
+ * @param[out]   value             Autorestart timeout in seconds. If @c 0, the
+ *                                 autorestart is disabled.
+ *
+ * @return       Status code
+ */
+typedef te_errno (tapi_job_method_get_autorestart)(const tapi_job_t *job,
+                                                   unsigned int *value);
+
 /** Methods to operate TAPI Job instances */
 typedef struct tapi_job_methods_t {
     /** Method that creates a job on backend side */
@@ -215,6 +242,10 @@ typedef struct tapi_job_methods_t {
     tapi_job_method_wrapper_delete *wrapper_delete;
     /** Method that adds a scheduling parameters for the specified job */
     tapi_job_method_add_sched_param *add_sched_param;
+    /** Method that sets the autorestart timeout */
+    tapi_job_method_set_autorestart *set_autorestart;
+    /** Method that obtains the autorestart timeout */
+    tapi_job_method_get_autorestart *get_autorestart;
 } tapi_job_methods_t;
 
 #ifdef __cplusplus

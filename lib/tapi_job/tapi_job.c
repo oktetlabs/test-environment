@@ -1462,3 +1462,19 @@ tapi_job_add_sched_param(tapi_job_t *job,
 
     return job->methods.add_sched_param(job, sched_param);
 }
+
+te_errno
+tapi_job_set_autorestart(tapi_job_t *job, unsigned int value)
+{
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, set_autorestart);
+
+    return job->methods.set_autorestart(job, value);
+}
+
+te_errno
+tapi_job_get_autorestart(tapi_job_t *job, unsigned int *value)
+{
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, get_autorestart);
+
+    return job->methods.get_autorestart(job, value);
+}
