@@ -214,6 +214,19 @@ RCF_PCH_CFG_NODE_COLLECTION(node_module, "module",
                             module_add, module_del,
                             module_list, NULL);
 
+static te_bool
+module_is_exclusive_locked(const char *name)
+{
+    return rcf_pch_rsrc_accessible("/agent:%s/module:%s", ta_name, name);
+}
+
+static te_bool
+module_is_locked(const char *name)
+{
+    return rcf_pch_rsrc_accessible_may_share("/agent:%s/module:%s", ta_name,
+                                             name);
+}
+
 static te_errno
 mod_name_underscorify(const char *mod_name, char *buf, size_t size)
 {
@@ -921,6 +934,12 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
     char name[TE_MODULE_NAME_LEN];
     te_errno rc;
 
+    if (!module_is_exclusive_locked(module_name))
+    {
+        ERROR("Failed to change parameters of the not grabbed module");
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
+    }
+
     if (!mod_loaded(module_name))
     {
         ERROR("Cannot change the parameters of the not loaded module");
@@ -984,6 +1003,12 @@ module_param_add(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
+
+    if (!module_is_locked(mod_name))
+    {
+        ERROR("Cannot add parameters of the not grabbed module");
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
+    }
 
     if (module == NULL)
     {
@@ -1353,6 +1378,12 @@ module_add(unsigned int gid, const char *oid,
     if (mod_find(mod_name) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
+    if (!module_is_locked(mod_name))
+    {
+        ERROR("Failed to add not grabbed module");
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
+    }
+
     module = calloc(1, sizeof(te_kernel_module));
     if (module == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
@@ -1409,7 +1440,7 @@ module_loaded_set(unsigned int gid, const char *oid, char *value,
     if (te_strtol_bool(value, &load))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    if (!rcf_pch_rsrc_accessible("/agent:%s/module:%s", ta_name, mod_name))
+    if (!module_is_exclusive_locked(mod_name))
     {
         ERROR("Cannot (un)load module when exclusive rsrc is not accessible");
         return TE_RC(TE_TA_UNIX, TE_EPERM);
