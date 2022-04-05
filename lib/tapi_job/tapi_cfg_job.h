@@ -92,24 +92,14 @@ extern tapi_job_method_killpg cfg_job_killpg;
 extern tapi_job_method_wait cfg_job_wait;
 
 /**
- * Stop process.
- * For autorestart processes this function will stop the process and prevent
- * the autorestart subsystem from starting the process over until
- * cfg_job_start() is called.
+ * Stop a job
  *
- * @param ta            Test Agent.
- * @param ps_name       Process name.
+ * @note Parameters @p signo and @p term_timeout_ms are ignored, use @c -1 to
+ *       avoid warnings
  *
- * @return Status code
- *
- * @note Successfull call of this function guarantees that
- *       cfg_job_get_status() will return @c FALSE, thus the process
- *       parameters are allowed to be changed
- *       (using cfg_job_add_arg(), etc.).
- *
- * @sa cfg_job_set_autorestart
+ * @sa tapi_job_method_stop
  */
-extern te_errno cfg_job_stop(const char *ta, const char *ps_name);
+extern tapi_job_method_stop cfg_job_stop;
 
 /**
  * Delete process.

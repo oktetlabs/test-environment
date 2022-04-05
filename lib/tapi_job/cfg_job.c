@@ -28,12 +28,19 @@
 /** Default timeout to sleep for between polling process status */
 #define DEFAULT_POLL_FREQUENCY_MS  1000
 
+#define WARN_PARAM_NOT_SUPPORTED(_param) \
+    do {                                                                       \
+        WARN("%s(): parameter '" #_param "' is ignored since it is not "       \
+             "supported", __FUNCTION__);                                       \
+    } while (0)
+
 const tapi_job_methods_t cfg_job_methods = {
     .create = cfg_job_create,
     .start = cfg_job_start,
     .kill = cfg_job_kill,
     .killpg = cfg_job_killpg,
     .wait = cfg_job_wait,
+    .stop = cfg_job_stop,
 };
 
 static te_errno
@@ -424,9 +431,17 @@ cfg_job_wait(const tapi_job_t *job, int timeout_ms,
 
 /* See descriptions in tapi_cfg_job.h */
 te_errno
-cfg_job_stop(const char *ta, const char *ps_name)
+cfg_job_stop(const tapi_job_t *job, int signo, int term_timeout_ms)
 {
     te_errno rc;
+    const char *ta = tapi_job_get_ta(job);
+    const char *ps_name = tapi_job_get_name(job);
+
+    if (signo != -1)
+        WARN_PARAM_NOT_SUPPORTED(signo);
+
+    if (term_timeout_ms != -1)
+        WARN_PARAM_NOT_SUPPORTED(term_timeout_ms);
 
     rc  = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
                                TE_CFG_TA_PS "/status:", ta, ps_name);

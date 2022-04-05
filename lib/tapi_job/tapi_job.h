@@ -686,6 +686,9 @@ extern te_errno tapi_job_clear(const tapi_job_channel_set_t filters);
  * The function tries to terminate the job with the specified signal.
  * If the signal fails to terminate the job, the function will send @c SIGKILL.
  *
+ * @note Parameters @p signo and @p term_timeout_ms are supported only for jobs
+ *       created by RPC factory. Use @c -1 to avoid warnings.
+ *
  * @param job               Job instance handle
  * @param signo             Signal to be sent at first. If signo is @c SIGKILL,
  *                          it will be sent only once.
