@@ -30,6 +30,7 @@
 
 const tapi_job_methods_t cfg_job_methods = {
     .create = cfg_job_create,
+    .start = cfg_job_start,
 };
 
 static te_errno
@@ -171,9 +172,11 @@ cfg_job_create(tapi_job_t *job, const char *spawner, const char *tool,
 
 /* See descriptions in tapi_cfg_job.h */
 te_errno
-cfg_job_start(const char *ta, const char *ps_name)
+cfg_job_start(const tapi_job_t *job)
 {
     te_errno rc;
+    const char *ta = tapi_job_get_ta(job);
+    const char *ps_name = tapi_job_get_name(job);
 
     rc  = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                TE_CFG_TA_PS "/status:", ta, ps_name);

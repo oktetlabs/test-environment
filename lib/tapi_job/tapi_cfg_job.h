@@ -60,18 +60,11 @@ extern const tapi_job_methods_t cfg_job_methods;
 extern tapi_job_method_create cfg_job_create;
 
 /**
- * Start process.
- * For autorestart processes this function should be called only once.
- * The following process executions will be done by the autorestart subsystem.
+ * Start a job
  *
- * @param ta            Test Agent.
- * @param ps_name       Process name.
- *
- * @return Status code
- *
- * @sa cfg_job_set_autorestart
+ * @sa tapi_job_method_start
  */
-extern te_errno cfg_job_start(const char *ta, const char *ps_name);
+extern tapi_job_method_start cfg_job_start;
 
 /**
  * Send a signal to the process.
