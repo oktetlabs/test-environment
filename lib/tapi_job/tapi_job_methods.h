@@ -102,13 +102,16 @@ typedef te_errno (tapi_job_method_killpg)(const tapi_job_t *job, int signo);
  * is zero)
  *
  * @param[in]    job               Job instance handle
- * @param[in]    timeout_ms        Timeout in ms (negative means default
- *                                 timeout)
+ * @param[in]    timeout_ms        Timeout in ms.
+ *                                 Meaning of negative timeout is
+ *                                 implementation-dependent.
  * @param[out]   status            Exit status
  *
  * @return       Status code
  * @retval       TE_EINPROGRESS    Job is still running
  * @retval       TE_ECHILD         Job was never started
+ *
+ * @note Some implementations may also return zero if the job was never started
  */
 typedef te_errno (tapi_job_method_wait)(const tapi_job_t *job, int timeout_ms,
                                         tapi_job_status_t *status);

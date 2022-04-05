@@ -282,12 +282,17 @@ extern unsigned int tapi_job_get_timeout(void);
  * Wait for the job completion (or check its status if @p timeout is zero)
  *
  * @param job Job instance handle
- * @param timeout_ms Timeout in ms (negative means tapi_job_get_timeout())
+ * @param timeout_ms Timeout in ms. Meaning of negative timeout depends on the
+ *                   factory type that was used to create the job.
+ *                   See rpc_job_wait() and cfg_job_wait() for details.
  * @param[out] status Exit status (may be @c NULL)
  *
  * @return                  Status code
  * @retval TE_EINPROGRESS   Job is still running
  * @retval TE_ECHILD        Job was never started
+ *
+ * @note For jobs created by some factories it's possible that this function
+ *       will return zero if the job was never started
  */
 extern te_errno tapi_job_wait(tapi_job_t *job, int timeout_ms,
                               tapi_job_status_t *status);

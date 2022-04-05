@@ -81,50 +81,15 @@ extern tapi_job_method_kill cfg_job_kill;
 extern tapi_job_method_killpg cfg_job_killpg;
 
 /**
- * Get current process status.
+ * Wait for a job completion
  *
- * @param[in]  ta       Test Agent.
- * @param[in]  ps_name  Process name.
- * @param[out] status   Process current status. For autorestart processes
- *                      @c TRUE means that the autorestart subsystem is working
- *                      with the process and it will be restarted when needed;
- *                      @c FALSE means that the process is most likely not
- *                      running and will not be started by the autorestart
- *                      subsystem. For other processes @c TRUE means that
- *                      the process is running, @c FALSE that it is not.
+ * @note Negative @p timeout_ms blocks the test execution until the job changes
+ *       its status.
+ *       Zero return value may also mean that the job was never started.
  *
- * @return Status code
- *
- * @note If @p status is @c FALSE, the process parameters are allowed
- *       to be changed.
- *
- * @sa cfg_job_set_autorestart
+ * @sa tapi_job_method_wait
  */
-extern te_errno cfg_job_get_status(const char *ta, const char *ps_name,
-                                   te_bool *status);
-
-/**
- * Wait for a process completion (or check its status if @p timeout_ms is zero).
- *
- * @param[in]  ta                 Test Agent.
- * @param[in]  ps_name            Process.
- * @param[in]  timeout_ms         Time to wait for the process. @c 0 means to
- *                                check current status and exit, negative value
- *                                means that the call of the function blocks
- *                                until the process changes its status.
- * @param[out] exit_status        Process exit status location, may be @c NULL.
- *
- * @return     Status code
- * @retval     0               The process completed running or was never
- *                             started
- * @retval     TE_EINPROGRESS  The process is still running.
- *
- * @note Parameters of the process are allowed to be changed after
- *       successful call of this function.
- */
-extern te_errno cfg_job_wait(const char *ta, const char *ps_name,
-                             int timeout_ms,
-                             cfg_job_exit_status_t *exit_status);
+extern tapi_job_method_wait cfg_job_wait;
 
 /**
  * Stop process.

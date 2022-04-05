@@ -612,7 +612,7 @@ tapi_job_get_timeout(void)
 te_errno
 tapi_job_wait(tapi_job_t *job, int timeout_ms, tapi_job_status_t *status)
 {
-    TAPI_JOB_CHECK_METHOD_SUPPORT(job, killpg);
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, wait);
 
     return job->methods.wait(job, timeout_ms, status);
 }

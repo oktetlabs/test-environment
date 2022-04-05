@@ -33,6 +33,7 @@ const tapi_job_methods_t cfg_job_methods = {
     .start = cfg_job_start,
     .kill = cfg_job_kill,
     .killpg = cfg_job_killpg,
+    .wait = cfg_job_wait,
 };
 
 static te_errno
@@ -242,9 +243,23 @@ cfg_job_killpg(const tapi_job_t *job, int signo)
     return cfg_job_kill_common(job, signo, TRUE);
 }
 
-/* See descriptions in tapi_cfg_job.h */
-te_errno
-cfg_job_get_status(const char *ta, const char *ps_name, te_bool *status)
+/**
+ * Get current process status.
+ *
+ * @param[in]  ta       Test Agent.
+ * @param[in]  ps_name  Process name.
+ * @param[out] status   Process current status. For autorestart processes
+ *                      @c TRUE means that the autorestart subsystem is working
+ *                      with the process and it will be restarted when needed;
+ *                      @c FALSE means that the process is most likely not
+ *                      running and will not be started by the autorestart
+ *                      subsystem. For other processes @c TRUE means that
+ *                      the process is running, @c FALSE that it is not.
+ *
+ * @return Status code
+ */
+static te_errno
+cfg_job_get_process_status(const char *ta, const char *ps_name, te_bool *status)
 {
     te_errno rc;
     int val;
@@ -315,14 +330,45 @@ cfg_job_get_exit_status(const char *ta, const char *ps_name,
     return 0;
 }
 
+static te_errno
+cfg_job_exit_status2tapi_job_status(const cfg_job_exit_status_t *from,
+                                    tapi_job_status_t *to)
+{
+    switch (from->type)
+    {
+        case CFG_JOB_EXIT_STATUS_EXITED:
+            to->type = TAPI_JOB_STATUS_EXITED;
+            break;
+
+        case CFG_JOB_EXIT_STATUS_SIGNALED:
+            to->type = TAPI_JOB_STATUS_SIGNALED;
+            break;
+
+        case CFG_JOB_EXIT_STATUS_UNKNOWN:
+            to->type = TAPI_JOB_STATUS_UNKNOWN;
+            break;
+
+        default:
+            ERROR("Invalid CFG JOB status");
+            return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    to->value = from->value;
+
+    return 0;
+}
+
 /* See descriptions in tapi_cfg_job.h */
 te_errno
-cfg_job_wait(const char *ta, const char *ps_name, int timeout_ms,
-             cfg_job_exit_status_t *exit_status)
+cfg_job_wait(const tapi_job_t *job, int timeout_ms,
+             tapi_job_status_t *job_exit_status)
 {
     te_errno rc;
+    const char *ta = tapi_job_get_ta(job);
+    const char *ps_name = tapi_job_get_name(job);
     struct timeval tv_start;
     struct timeval tv_now;
+    cfg_job_exit_status_t ps_exit_status;
 
     if (timeout_ms >= 0)
     {
@@ -335,17 +381,26 @@ cfg_job_wait(const char *ta, const char *ps_name, int timeout_ms,
     {
         te_bool status;
 
-        rc = cfg_job_get_status(ta, ps_name, &status);
+        rc = cfg_job_get_process_status(ta, ps_name, &status);
         if (rc != 0)
             return rc;
 
         /* Process is not running, get exit status if needed and quit */
         if (!status)
         {
-            if (exit_status != NULL)
-                return cfg_job_get_exit_status(ta, ps_name, exit_status);
-            else
+            if (job_exit_status == NULL)
+            {
                 return 0;
+            }
+            else
+            {
+                rc = cfg_job_get_exit_status(ta, ps_name, &ps_exit_status);
+                if (rc != 0)
+                    return rc;
+
+                return cfg_job_exit_status2tapi_job_status(&ps_exit_status,
+                                                           job_exit_status);
+            }
         }
 
         if (timeout_ms >= 0)
