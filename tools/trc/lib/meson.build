@@ -20,14 +20,14 @@ libtrc_diff_sources = files(
 libtrc_report = static_library(
     'libtrc_report',
     ['log_parse.c', 'report_html.c', common_sources],
-    dependencies: [dep_common],
+    dependencies: [dep_common, dependency('jansson')],
     c_args: c_args,
 )
 
 libtrc_diff = static_library(
     'libtrc_diff',
     [libtrc_diff_sources, common_sources],
-    dependencies : [dep_common],
+    dependencies : [dep_common, dependency('jansson')],
     c_args: c_args,
 )
 

@@ -920,8 +920,7 @@ trc_log_parse_start_element(void *user_data,
                     if (!entity_match &&
                         xmlStrcmp(attrs[0], CONST_CHAR2XML("entity")) == 0)
                     {
-                        if (xmlStrcmp(attrs[1],
-                                      CONST_CHAR2XML("Dispatcher")) != 0)
+                        if (xmlStrcmp(attrs[1], CONST_CHAR2XML("Tester")) != 0)
                             break;
                         entity_match = TRUE;
                     }
@@ -1254,7 +1253,8 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
 
         case TRC_LOG_PARSE_TAGS:
             assert(strcmp(tag, "msg") == 0);
-            trc_tags_str_to_list(ctx->tags, ctx->str);
+            if (trc_tags_json_to_list(ctx->tags, ctx->str) != 0)
+                ERROR("TRC tags parse failure");
             free(ctx->str);
             ctx->str = NULL;
             ctx->state = TRC_LOG_PARSE_LOGS;

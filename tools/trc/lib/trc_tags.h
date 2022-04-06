@@ -34,6 +34,16 @@ extern "C" {
  */
 extern te_errno trc_tags_str_to_list(tqh_strings *tags, char *tags_str);
 
+/**
+ * Parse JSON string with TRC tags and add them into the list.
+ *
+ * @param json_buf      JSON string with TRC tags.
+ * @param parsed_tags   List to add tags.
+ *
+ * @return Status code.
+ */
+extern te_errno trc_tags_json_to_list(tqh_strings *parsed_tags, char *json_buf);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
