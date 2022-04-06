@@ -790,6 +790,31 @@ log_mi_test_end(gen_ctx_user_t *ctx, te_rgt_mi *mi)
 }
 
 /**
+ * Log MI trc tags message.
+ *
+ * @param ctx     Logging context.
+ * @param mi      Structure with data from parsed MI artifact.
+ */
+static void
+log_mi_trc_tags(gen_ctx_user_t *ctx, te_rgt_mi *mi)
+{
+    te_rgt_mi_trc_tags      *data = &mi->data.trc_tags;
+    te_rgt_mi_trc_tag_entry *tag;
+
+    if (te_vec_size(&data->tags) > 0)
+    {
+        fprintf_log(ctx, "TRC tags:");
+        TE_VEC_FOREACH(&data->tags, tag)
+        {
+            if (tag->value == NULL)
+                fprintf_log(ctx, "\n %s", tag->name);
+            else
+                fprintf_log(ctx, "\n %s:%s", tag->name, tag->value);
+        }
+    }
+}
+
+/**
  * Log MI artifact.
  *
  * @param ctx     Logging context.
@@ -903,6 +928,10 @@ log_mi_artifact(gen_ctx_user_t *ctx, te_rgt_mi *mi)
     else if (mi->type == TE_RGT_MI_TYPE_TEST_END)
     {
         log_mi_test_end(ctx, mi);
+    }
+    else if (mi->type == TE_RGT_MI_TYPE_TRC_TAGS)
+    {
+        log_mi_trc_tags(ctx, mi);
     }
 }
 

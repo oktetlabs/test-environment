@@ -198,6 +198,25 @@ te_rgt_mi_test_end_clean(te_rgt_mi_test_end *data)
     }
 }
 
+/**
+ * Release memory allocated for storing data for MI message
+ * of type "trc_tags".
+ *
+ * @param tags      Pointer to te_rgt_mi_trc_tags structure.
+ */
+static void
+te_rgt_mi_trc_tags_clean(te_rgt_mi_trc_tags *data)
+{
+    te_rgt_mi_trc_tag_entry *tag;
+
+    TE_VEC_FOREACH(&data->tags, tag)
+    {
+        free(tag->name);
+        free(tag->value);
+    }
+    te_vec_free(&data->tags);
+}
+
 /* See description in mi_msg.h */
 void
 te_rgt_mi_clean(te_rgt_mi *mi)
@@ -212,6 +231,9 @@ te_rgt_mi_clean(te_rgt_mi *mi)
             break;
         case TE_RGT_MI_TYPE_TEST_END:
             te_rgt_mi_test_end_clean(&mi->data.test_end);
+            break;
+        case TE_RGT_MI_TYPE_TRC_TAGS:
+            te_rgt_mi_trc_tags_clean(&mi->data.trc_tags);
             break;
         default:;
     }
@@ -1088,6 +1110,82 @@ cleanup:
         te_rgt_mi_clean(mi);
 }
 
+/** Parse "trc_tags" MI message */
+static void
+te_rgt_parse_mi_trc_tags_message(te_rgt_mi *mi)
+{
+    int      ret;
+    size_t   i;
+    te_errno rc;
+
+    json_t *root;
+    json_t *tags = NULL;
+    json_t *tag = NULL;
+
+    json_error_t err;
+
+    te_rgt_mi_trc_tags *data;
+    const char         *tag_name;
+    const char         *tag_value;
+
+    mi->type = TE_RGT_MI_TYPE_TRC_TAGS;
+    data = &mi->data.trc_tags;
+
+    root = (json_t *)(mi->json_obj);
+
+    tags = json_object_get(root, "tags");
+    if (tags == NULL)
+    {
+        te_rgt_mi_parse_error(mi, TE_EINVAL,
+                              "Failed to get the \"tags\" field from the "
+                              "trc_tags message");
+        goto cleanup;
+    }
+
+    if (!check_json_type(mi, &tags, JSON_ARRAY, "tags"))
+        goto cleanup;
+
+    data->tags = TE_VEC_INIT(te_rgt_mi_trc_tag_entry);
+
+    if (tags != NULL)
+    {
+        json_array_foreach(tags, i, tag)
+        {
+            te_rgt_mi_trc_tag_entry tag_entry;
+
+            ret = json_unpack_ex(tag, &err, JSON_STRICT, "{s:s, s?s}",
+                                 "name", &tag_name, "value", &tag_value);
+            if (ret != 0)
+            {
+                te_rgt_mi_parse_error(mi, TE_EINVAL,
+                                      "Error unpacking trc_tags JSON log "
+                                      "message: %s (line %d, column %d)",
+                                      err.text, err.line, err.column);
+                goto cleanup;
+            }
+
+            tag_entry.name = strdup(tag_name);
+            tag_entry.value = (tag_value != NULL ? strdup(tag_value) : NULL);
+
+            rc = TE_VEC_APPEND(&data->tags, tag_entry);
+            if (rc != 0)
+            {
+                te_rgt_mi_parse_error(mi, TE_EINVAL,
+                                      "Error appending unpacked trc_tag: %s",
+                                      tag_name);
+                free(tag_entry.name);
+                free(tag_entry.value);
+                goto cleanup;
+            }
+        }
+    }
+
+cleanup:
+    json_decref(tags);
+    if (mi->rc != 0)
+        te_rgt_mi_clean(mi);
+}
+
 #endif /* HAVE_LIBJANSSON */
 
 /* See description in mi_msg.h */
@@ -1136,6 +1234,10 @@ te_rgt_parse_mi_message(const char *json_buf, size_t buf_len,
     else if (strcmp(type, "test_end") == 0)
     {
         te_rgt_parse_mi_test_end_message(mi);
+    }
+    else if (strcmp(type, "trc_tags") == 0)
+    {
+        te_rgt_parse_mi_trc_tags_message(mi);
     }
     else
     {

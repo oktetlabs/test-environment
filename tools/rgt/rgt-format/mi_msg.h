@@ -29,6 +29,7 @@ extern "C" {
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_vector.h"
 
 /** Maximum length of error description from JSON parser */
 #define TE_RGT_MI_MAX_ERR_LEN 1024
@@ -164,11 +165,23 @@ typedef struct te_rgt_mi_test_end {
     size_t                 expected_num; /**< Number of expected results */
 } te_rgt_mi_test_end;
 
+/** Description of a TRC tag */
+typedef struct te_rgt_mi_trc_tag_entry {
+    char *name;   /**< Tag name */
+    char *value;  /**< Tag value */
+} te_rgt_mi_trc_tag_entry;
+
+/** Description of MI message of type "trc_tags" */
+typedef struct te_rgt_mi_trc_tags {
+    te_vec tags; /**< Vector of TRC tags */
+} te_rgt_mi_trc_tags;
+
 /** Types of MI message */
 typedef enum {
     TE_RGT_MI_TYPE_MEASUREMENT = 0,   /**< Measurement */
     TE_RGT_MI_TYPE_TEST_START,        /**< Package/Session/Test start */
     TE_RGT_MI_TYPE_TEST_END,          /**< Package/Session/Test end */
+    TE_RGT_MI_TYPE_TRC_TAGS,          /**< TRC tags */
     TE_RGT_MI_TYPE_UNKNOWN            /**< Unknown type */
 } te_rgt_mi_type;
 
@@ -191,6 +204,8 @@ typedef struct te_rgt_mi {
                                          message */
         te_rgt_mi_test_start test_start; /**< Data for test_start MI message */
         te_rgt_mi_test_end   test_end;   /**< Data for test_end MI message */
+
+        te_rgt_mi_trc_tags trc_tags; /**< Data for trc_tags MI message */
     } data; /**< Data obtained from JSON object */
 } te_rgt_mi;
 
