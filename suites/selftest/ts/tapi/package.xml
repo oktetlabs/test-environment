@@ -9,6 +9,10 @@
         </run>
 
         <run>
+            <package name="job"/>
+        </run>
+
+        <run>
             <package name="tool"/>
         </run>
 

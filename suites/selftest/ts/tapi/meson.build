@@ -2,6 +2,7 @@
 
 packages = [
     'cache',
+    'job',
     'tool',
 ]
 

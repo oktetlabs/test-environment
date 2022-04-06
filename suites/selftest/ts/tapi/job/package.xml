@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package version="1.0">
+
+    <description>Test Suite to test TAPI Job implementation</description>
+
+    <author mailto="Andrey.Izrailev@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+        <prologue>
+            <script name="prologue"/>
+        </prologue>
+
+        <epilogue>
+            <script name="epilogue"/>
+        </epilogue>
+
+        <run>
+            <script name="cfg_basic_operations"/>
+        </run>
+    </session>
+</package>
