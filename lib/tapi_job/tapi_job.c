@@ -444,7 +444,14 @@ tapi_job_create_named(tapi_job_factory_t *factory, const char *name,
 
     init_methods(tapi_job);
 
-    TAPI_JOB_CHECK_METHOD_SUPPORT(tapi_job, create);
+    if (tapi_job->methods.create == NULL)
+    {
+        ERROR("Trying to create a job using factory that does not support "
+              "method 'create'");
+        free(tapi_job);
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+    }
+
     rc = tapi_job->methods.create(tapi_job, spawner == NULL ? "" : spawner,
                                   program, argv, env);
     if (rc != 0)
