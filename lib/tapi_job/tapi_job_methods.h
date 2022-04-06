@@ -218,6 +218,25 @@ typedef te_errno (tapi_job_method_set_autorestart)(const tapi_job_t *job,
 typedef te_errno (tapi_job_method_get_autorestart)(const tapi_job_t *job,
                                                    unsigned int *value);
 
+/**
+ * Method that retrieves information about a job that was once created and
+ * hasn't been destroyed.
+ *
+ * @param[inout] job               Job instance handle.
+ *                                 On input, job factory must be set.
+ *                                 On ouput, job is filled with the retrieved
+ *                                 data.
+ * @param[in]    identifier        Backend-specific data that allows to
+ *                                 identify the job. For instance, it may be a
+ *                                 name of the job for the Configurator backend.
+ *
+ * @return       Status code
+ * @retval       TE_ENOENT         The job with the @p identifier was never
+ *                                 created
+ */
+typedef te_errno (tapi_job_method_recreate)(tapi_job_t *job,
+                                            const void *identifier);
+
 /** Methods to operate TAPI Job instances */
 typedef struct tapi_job_methods_t {
     /** Method that creates a job on backend side */
@@ -246,6 +265,8 @@ typedef struct tapi_job_methods_t {
     tapi_job_method_set_autorestart *set_autorestart;
     /** Method that obtains the autorestart timeout */
     tapi_job_method_get_autorestart *get_autorestart;
+    /** Method that recreates a job */
+    tapi_job_method_recreate *recreate;
 } tapi_job_methods_t;
 
 #ifdef __cplusplus

@@ -459,6 +459,59 @@ tapi_job_create_named(tapi_job_factory_t *factory, const char *name,
     return 0;
 }
 
+/* See description in tapi_job.h */
+te_errno
+tapi_job_recreate(tapi_job_factory_t *factory, const void *identifier,
+                  tapi_job_t **job)
+{
+    te_errno rc;
+    tapi_job_t *tapi_job;
+
+    if (factory == NULL)
+    {
+        ERROR("Job factory is NULL");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (identifier == NULL)
+    {
+        ERROR("Job identifier is NULL");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    tapi_job = tapi_calloc(1, sizeof(*tapi_job));
+    tapi_job->factory = factory;
+
+    init_methods(tapi_job);
+
+    if (tapi_job->methods.recreate == NULL)
+    {
+        ERROR("Trying to recreate a job using factory that does not support "
+              "method 'recreate'");
+        free(tapi_job);
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+    }
+
+    rc = tapi_job->methods.recreate(tapi_job, identifier);
+    if (rc != 0)
+    {
+        free(tapi_job);
+        return rc;
+    }
+
+    SLIST_INSERT_HEAD(&all_jobs, tapi_job, next);
+    /*
+     * This part is supposed to be improved if/when the Configurator backend
+     * supports channels. We will need to recreate allocated channels and
+     * filters attached to them properly.
+     * For now it's just to avoid segfault in tapi_job_destroy().
+     */
+    SLIST_INIT(&tapi_job->channel_entries);
+
+    *job = tapi_job;
+    return 0;
+}
+
 static te_errno
 tapi_job_simple_alloc_channels(tapi_job_t *job, tapi_job_simple_desc_t *desc)
 {

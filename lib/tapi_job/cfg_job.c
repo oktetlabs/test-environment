@@ -44,6 +44,7 @@ const tapi_job_methods_t cfg_job_methods = {
     .destroy = cfg_job_destroy,
     .set_autorestart = cfg_job_set_autorestart,
     .get_autorestart = cfg_job_get_autorestart,
+    .recreate = cfg_job_recreate,
 };
 
 static te_errno
@@ -181,6 +182,23 @@ cfg_job_create(tapi_job_t *job, const char *spawner, const char *tool,
         cfg_job_destroy(job, -1);
 
     return rc;
+}
+
+/* See descriptions in tapi_cfg_job.h */
+te_errno
+cfg_job_recreate(tapi_job_t *job, const void *name)
+{
+    te_errno rc;
+    const char *ta = tapi_job_get_ta(job);
+    const char *ps_name = (const char *)name;
+
+    rc = cfg_get_instance_fmt(NULL, NULL, TE_CFG_TA_PS, ta, ps_name);
+    if (rc != 0)
+        return rc;
+
+    tapi_job_set_name(job, ps_name);
+
+    return 0;
 }
 
 /* See descriptions in tapi_cfg_job.h */

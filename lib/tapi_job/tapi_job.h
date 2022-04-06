@@ -146,6 +146,23 @@ extern te_errno tapi_job_create_named(tapi_job_factory_t *factory,
                                       tapi_job_t **job);
 
 /**
+ * Get handle of a job that was once created and hasn't been destroyed.
+ *
+ * @param[in]  factory     Job factory that was used when the job was first
+ *                         created
+ * @param[in]  identifier  Data that allows to identify the job.
+ *                         For jobs created by CFG factory it must be a C-string
+ *                         with a name that was assigned to the job when it was
+ *                         first create.
+ * @param[out] job         Location where to put the job handle
+ *
+ * @return     Status code
+ * @retval     TE_ENOENT   The job with the @p identifier was never created
+ */
+extern te_errno tapi_job_recreate(tapi_job_factory_t *factory,
+                                  const void *identifier, tapi_job_t **job);
+
+/**
  * A simplified description of an output filter.
  * The caller is expected to fill the fields one is
  * interested in and leave others @c NULL or @c 0.

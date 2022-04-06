@@ -126,6 +126,17 @@ extern tapi_job_method_set_autorestart cfg_job_set_autorestart;
  */
 extern tapi_job_method_get_autorestart cfg_job_get_autorestart;
 
+/**
+ * Retrieve information about a job from Configurator
+ *
+ * @note At this moment the function only checks that a process corresponding to
+ *       the job exists, but later it might be extended to extract additional
+ *       job data
+ *
+ * @sa tapi_job_method_recreate
+ */
+extern tapi_job_method_recreate cfg_job_recreate;
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
