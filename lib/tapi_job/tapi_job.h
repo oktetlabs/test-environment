@@ -72,6 +72,8 @@ extern const char * tapi_job_factory_ta(const tapi_job_factory_t *factory);
  * is inherited by created job if the environment is not specified in
  * tapi_job_create().
  *
+ * @note This function supports only RPC factories
+ *
  * @note Job TAPI does not automatically inherit the environment from /agent:env
  *
  * @param factory       Job factory
@@ -348,6 +350,8 @@ extern te_bool tapi_job_is_running(tapi_job_t *job);
  * The first channel is expected to be connected to the job's stdin;
  * the wiring of others is spawner-dependant.
  *
+ * @note This function supports only jobs created by RPC factory
+ *
  * @param      job        Job instace handle
  * @param      n_channels Number of channels
  * @param[out] channels   A vector of obtained channel handles
@@ -364,6 +368,8 @@ extern te_errno tapi_job_alloc_input_channels(tapi_job_t *job,
  * The first and the second output channels are expected to be
  * connected to stdout and stderr resp., the wiring of others is
  * spawner-dependant.
+ *
+ * @note This function supports only jobs created by RPC factory
  *
  * @note The implementation need not support any other operations on
  *       primary output channels other than attaching and removing filters
@@ -768,6 +774,8 @@ typedef enum {
  * Add a wrapper for the specified job. We can only add a wrapper
  * to a job that hasn't started yet.
  *
+ * @note This function supports only jobs created by RPC factory
+ *
  * @note The wrapper must be added after the job is created.
  *
  * @note We can call this function several times. Wrappers will be
@@ -831,6 +839,8 @@ typedef struct tapi_job_sched_priority_param {
 /**
  * Add a scheduling parameters for the specified job.
  *
+ * @note This function supports only jobs created by RPC factory
+ *
  * @param job          Job instance handle
  * @param sched_param  Array of scheduling parameters. The last element must
  *                     have the type @c TAPI_JOB_SCHED_END and data pointer to
@@ -847,6 +857,8 @@ extern te_errno tapi_job_add_sched_param(tapi_job_t *job,
  * will check whether the process stopped running (regardless of the reason)
  * and restart it if it did.
  *
+ * @note This function supports only jobs created by CFG factory
+ *
  * @note For jobs created by CFG factory this function should be called before
  *       the job is started
  *
@@ -860,6 +872,8 @@ extern te_errno tapi_job_set_autorestart(tapi_job_t *job, unsigned int value);
 
 /**
  * Get autorestart timeout
+ *
+ * @note This function supports only jobs created by CFG factory
  *
  * @param[in]  job          Job instance handle
  * @param[out] value        Autorestart timeout in seconds. If @c 0,
