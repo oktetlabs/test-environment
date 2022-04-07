@@ -32,6 +32,11 @@ arguments = {
             'dest': 'author', 'default': None,
             'help': 'Author of the new test',
         }),
+    '--copyright': ('-c', {
+            'dest': 'rights', 'default': None,
+            'help': 'Copyright string format. Can contain argument {year} '\
+                    'which will be replaced by the current year value',
+        }),
     '--document-id': ('-d', {
             'dest': 'doc_id',
             'help': 'Document ID (from doclist) which contains '\
@@ -92,6 +97,7 @@ def postreview():
     add_argument(group, '--scenario')
     add_argument(parser, '--test-suite', required=True)
     add_argument(parser, '--author')
+    add_argument(parser, '--copyright')
     group = parser.add_mutually_exclusive_group(required=True)
     add_argument(group, '--output')
     add_argument(group, '--repository')
@@ -106,7 +112,8 @@ def postreview():
             stdout=subprocess.PIPE)
         data = p.stdout.read().decode('utf-8')
 
-    patch = create_patch(args.test_suite, data=data, author=args.author)
+    patch = create_patch(args.test_suite, data=data, author=args.author,
+                         rights=args.rights)
     if args.output:
         open(args.output, 'w').write(patch)
         print('Patch saved in the file: ' + args.output)
@@ -138,6 +145,7 @@ def implement():
     add_argument(parser, '--test-suite', required=True)
     add_argument(parser, '--reference',  required=True)
     add_argument(parser, '--author')
+    add_argument(parser, '--copyright')
     add_argument(parser, '--force')
     args = parser.parse_args()
 
@@ -174,7 +182,7 @@ def implement():
             print('The test already exists: %s' % filename)
             sys.exit(-1)
         open(filename, 'w').write(TestGenerator.generate(
-                test, args.author))
+                test, args.author, args.rights))
 
         test.cut()
         open(args.scenario, 'w').write(reader.dump_full())

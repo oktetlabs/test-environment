@@ -1,14 +1,16 @@
+import os
 import datetime
 
 from scenarios.generator import Generator
 from scenarios.redirect  import stdout2str
 
 class TestGenerator(Generator):
-    def __init__(self, test, author):
+    def __init__(self, test, author, rights):
         super().__init__()
         self.test = test.test
         self.groups = test.groups
         self.author = author
+        self.rights = rights
         self.location = list(test.get_location())
 
     def copyright(self):
@@ -21,7 +23,11 @@ class TestGenerator(Generator):
             if not has_objective and self.test.summary:
                 c.write(self.test.summary)
             year = datetime.datetime.now().year
-            c.write('', 'Copyright (C) %s Solarflare Communications Ltd.' % year)
+            if self.rights:
+                c.write('', self.rights.format(year=year))
+            else:
+                c.write('', 'Copyright (C) 2003-{year} OKTET Labs. '\
+                        'All rights reserved.'.format(year=year))
         self.write('')
 
     def _doxygen_values(self, values):
@@ -115,8 +121,8 @@ class TestGenerator(Generator):
 
     @staticmethod
     @stdout2str
-    def generate(test, author=None):
-        g = TestGenerator(test, author)
+    def generate(test, author=None, rights=None):
+        g = TestGenerator(test, author, rights)
         g.copyright()
         g.doxygen()
         g.write('#define TE_TEST_NAME "%s"' % '/'.join(g.location[1:]), '')

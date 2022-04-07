@@ -185,7 +185,7 @@ Workflow with test suite scenarios
 
      .. code-block:: none
 
-     	$TE_BASE/scripts/scenarios.py --postreview -s OKTL-0000999-example_ts.yml -t example-ts -a "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" -r example-ts
+     	$TE_BASE/scripts/scenarios.py --postreview -s OKTL-0000999-example_ts.yml -t example-ts -a "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" -c "Copyright (C) {year} Example Ltd." -r example-ts
 
      Where:
 
@@ -194,6 +194,8 @@ Workflow with test suite scenarios
      * ``-t example-ts`` the relative or absolute test suite location;
 
      * ``-a "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>"`` the author for test templates in the created review request;
+
+     * ``-c "Copyright (C) {year} Example Ltd."`` the copyright string format. Can contain argument **{year}** which will be replaced by the current year value. Optional. Default is **TE_COPYRIGHT**;
 
      * ``-r example-ts`` the repository ID for the created review request.
 
