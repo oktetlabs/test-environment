@@ -38,11 +38,11 @@ extern "C" {
  *
  * @return       Status code
  */
-typedef te_errno (*tapi_job_method_create)(tapi_job_t *job,
-                                           const char *spawner,
-                                           const char *program,
-                                           const char **argv,
-                                           const char **env);
+typedef te_errno (tapi_job_method_create)(tapi_job_t *job,
+                                          const char *spawner,
+                                          const char *program,
+                                          const char **argv,
+                                          const char **env);
 
 /**
  * Method that starts a job
@@ -51,7 +51,7 @@ typedef te_errno (*tapi_job_method_create)(tapi_job_t *job,
  *
  * @return       Status code
  */
-typedef te_errno (*tapi_job_method_start)(const tapi_job_t *job);
+typedef te_errno (tapi_job_method_start)(const tapi_job_t *job);
 
 /**
  * Method that allocates @p n_channels channels.
@@ -72,10 +72,10 @@ typedef te_errno (*tapi_job_method_start)(const tapi_job_t *job);
  *
  * @return       Status code
  */
-typedef te_errno (*tapi_job_method_allocate_channels)(const tapi_job_t *job,
-                                                      te_bool input_channels,
-                                                      unsigned int n_channels,
-                                                      unsigned int *channels);
+typedef te_errno (tapi_job_method_allocate_channels)(const tapi_job_t *job,
+                                                     te_bool input_channels,
+                                                     unsigned int n_channels,
+                                                     unsigned int *channels);
 
 /**
  * Method that sends a signal to a job
@@ -85,7 +85,7 @@ typedef te_errno (*tapi_job_method_allocate_channels)(const tapi_job_t *job,
  *
  * @return       Status code
  */
-typedef te_errno (*tapi_job_method_kill)(const tapi_job_t *job, int signo);
+typedef te_errno (tapi_job_method_kill)(const tapi_job_t *job, int signo);
 
 /**
  * Method that sends a signal to job's process group
@@ -95,7 +95,7 @@ typedef te_errno (*tapi_job_method_kill)(const tapi_job_t *job, int signo);
  *
  * @return       Status code
  */
-typedef te_errno (*tapi_job_method_killpg)(const tapi_job_t *job, int signo);
+typedef te_errno (tapi_job_method_killpg)(const tapi_job_t *job, int signo);
 
 /**
  * Method that waits for the job completion (or checks its status if @p timeout
@@ -110,8 +110,8 @@ typedef te_errno (*tapi_job_method_killpg)(const tapi_job_t *job, int signo);
  * @retval       TE_EINPROGRESS    Job is still running
  * @retval       TE_ECHILD         Job was never started
  */
-typedef te_errno (*tapi_job_method_wait)(const tapi_job_t *job, int timeout_ms,
-                                         tapi_job_status_t *status);
+typedef te_errno (tapi_job_method_wait)(const tapi_job_t *job, int timeout_ms,
+                                        tapi_job_status_t *status);
 
 /**
  * Method that stops a job.
@@ -128,8 +128,8 @@ typedef te_errno (*tapi_job_method_wait)(const tapi_job_t *job, int timeout_ms,
  *
  * @return       Status code
  */
-typedef te_errno (*tapi_job_method_stop)(const tapi_job_t *job, int signo,
-                                         int term_timeout_ms);
+typedef te_errno (tapi_job_method_stop)(const tapi_job_t *job, int signo,
+                                        int term_timeout_ms);
 
 /**
  * Method that destroys a job on backend side.
@@ -145,8 +145,8 @@ typedef te_errno (*tapi_job_method_stop)(const tapi_job_t *job, int signo,
  *
  * @return       Status code
  */
-typedef te_errno (*tapi_job_method_destroy)(const tapi_job_t *job,
-                                            int term_timeout_ms);
+typedef te_errno (tapi_job_method_destroy)(const tapi_job_t *job,
+                                           int term_timeout_ms);
 
 /**
  * Method that adds a wrapper for the specified job
@@ -159,7 +159,7 @@ typedef te_errno (*tapi_job_method_destroy)(const tapi_job_t *job,
  *
  * @return       Status code
  */
-typedef te_errno (*tapi_job_method_wrapper_add)(const tapi_job_t *job,
+typedef te_errno (tapi_job_method_wrapper_add)(const tapi_job_t *job,
                                         const char *tool, const char **argv,
                                         tapi_job_wrapper_priority_t priority,
                                         unsigned int *wrapper_id);
@@ -172,8 +172,8 @@ typedef te_errno (*tapi_job_method_wrapper_add)(const tapi_job_t *job,
  *
  * @return       Status code
  */
-typedef te_errno (*tapi_job_method_wrapper_delete)(const tapi_job_t *job,
-                                                   unsigned int wrapper_id);
+typedef te_errno (tapi_job_method_wrapper_delete)(const tapi_job_t *job,
+                                                  unsigned int wrapper_id);
 
 /**
  * Method that adds a scheduling parameters for the specified job
@@ -186,33 +186,33 @@ typedef te_errno (*tapi_job_method_wrapper_delete)(const tapi_job_t *job,
  *
  * @return       Status code
  */
-typedef te_errno (*tapi_job_method_add_sched_param)(const tapi_job_t *job,
+typedef te_errno (tapi_job_method_add_sched_param)(const tapi_job_t *job,
                                              tapi_job_sched_param *sched_param);
 
 /** Methods to operate TAPI Job instances */
 typedef struct tapi_job_methods_t {
     /** Method that creates a job on backend side */
-    tapi_job_method_create create;
+    tapi_job_method_create *create;
     /** Method that starts a job */
-    tapi_job_method_start start;
+    tapi_job_method_start *start;
     /** Method that allocates channels */
-    tapi_job_method_allocate_channels allocate_channels;
+    tapi_job_method_allocate_channels *allocate_channels;
     /** Method that sends a signal to a job */
-    tapi_job_method_kill kill;
+    tapi_job_method_kill *kill;
     /** Method that sends a signal to job's process group */
-    tapi_job_method_killpg killpg;
+    tapi_job_method_killpg *killpg;
     /** Method that waits for the job completion */
-    tapi_job_method_wait wait;
+    tapi_job_method_wait *wait;
     /** Method that stops a job */
-    tapi_job_method_stop stop;
+    tapi_job_method_stop *stop;
     /** Method that destroys a job on backend side */
-    tapi_job_method_destroy destroy;
+    tapi_job_method_destroy *destroy;
     /** Method that adds a wrapper for the specified job */
-    tapi_job_method_wrapper_add wrapper_add;
+    tapi_job_method_wrapper_add *wrapper_add;
     /** Method that deletes the wrapper instance handle */
-    tapi_job_method_wrapper_delete wrapper_delete;
+    tapi_job_method_wrapper_delete *wrapper_delete;
     /** Method that adds a scheduling parameters for the specified job */
-    tapi_job_method_add_sched_param add_sched_param;
+    tapi_job_method_add_sched_param *add_sched_param;
 } tapi_job_methods_t;
 
 #ifdef __cplusplus
