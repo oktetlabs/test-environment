@@ -310,6 +310,26 @@ function process_host_tce
             "platform ${platform} host ${host} tce ${tce}"
 }
 
+function link_platform_tce_install
+{
+    local platform=$1
+    local tce=$2
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local pbuild="${TE_BUILD}/platforms/${platform}"
+    local inst="$(realpath ${pbuild}/${build}/../inst)"
+
+    test -d "${inst}" && \
+        return 0
+
+    test -d "${TE_INSTALL}/${platform}" || \
+        die "fail to locate install directory: " \
+            "platform ${platform} tce ${tce}"
+
+    ln -s "${TE_INSTALL}/${platform}" "${inst}" || \
+        die "fail to link install directory: " \
+            "platform ${platform} tce ${tce}"
+}
+
 for platform in "${!platform_tce[@]}" ; do
     tce_list="${platform_tce[${platform}]}"
     hosts="${platform_hosts[${platform}]}"
@@ -327,6 +347,10 @@ for platform in "${!platform_tce[@]}" ; do
             clean_platform_tce ${platform} ${tce}
             process_host_tce ${platform} ${host} ${tce}
         done
+    done
+
+    for tce in ${tce_list} ; do
+        link_platform_tce_install ${platform} ${tce}
     done
 
     # TODO: provide TCE summary across platforms
