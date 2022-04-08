@@ -28,13 +28,29 @@
 #include "te_defs.h"
 
 void
-te_string_free(te_string *str)
+te_string_free_heap(te_string *str)
 {
     str->len = str->size = 0;
-    if (!str->ext_buf)
-        free(str->ptr);
+    free(str->ptr);
     str->ptr = NULL;
-    str->ext_buf = FALSE;
+}
+
+void
+te_string_free(te_string *str)
+{
+    if (str == NULL)
+        return;
+
+    if (str->free_func == NULL)
+    {
+        ERROR("%s(): free_func must not be NULL. te_string_free_heap() will "
+              "be used but you must fix your code initializing te_string "
+              "properly!", __FUNCTION__);
+        te_string_free_heap(str);
+        return;
+    }
+
+    str->free_func(str);
 }
 
 /* See the description in te_string.h */

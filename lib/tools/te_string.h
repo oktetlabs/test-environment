@@ -45,6 +45,10 @@ extern "C" {
  */
 #define TE_STRING_GROW_FACTOR_EXP_LIMIT (4)
 
+/**< Type of function to be used for releasing resources */
+struct te_string;
+typedef void (te_string_free_func)(struct te_string *str);
+
 /**
  * TE string type.
  */
@@ -55,7 +59,15 @@ typedef struct te_string {
     te_bool ext_buf;      /**< If TRUE, buffer is supplied
                                by user and should not be
                                reallocated or freed. */
+
+    te_string_free_func *free_func; /**< If set, will be called
+                                         from te_string_free()
+                                         instead of default
+                                         actions */
 } te_string;
+
+/* Internal function, to be used only in initializers. */
+extern te_string_free_func te_string_free_heap;
 
 /** On-stack te_string initializer */
 #define TE_STRING_INIT TE_STRING_INIT_RESERVE(0)
@@ -64,18 +76,30 @@ typedef struct te_string {
  * On-stack te_string initializer with a defined reserve
  */
 #define TE_STRING_INIT_RESERVE(reserved_size_) \
-    { NULL, (reserved_size_), 0, FALSE }
+    { .ptr = NULL, .size = (reserved_size_), .len = 0, .ext_buf = FALSE, \
+      .free_func = &te_string_free_heap }
 
+/**
+ * On-stack te_string initializer with a defined reserve and
+ * free function.
+ */
+#define TE_STRING_INIT_RESERVE_FREE(reserved_size_, free_func_) \
+    { .ptr = NULL, .size = (reserved_size_), .len = 0, .ext_buf = FALSE, \
+      .free_func = free_func_ }
 
 /**
  * Initialize TE string assigning buffer to it.
  */
-#define TE_STRING_BUF_INIT(buf_)  { buf_, sizeof(buf_), 0, TRUE }
+#define TE_STRING_BUF_INIT(buf_) \
+    { .ptr = buf_, .size = sizeof(buf_), .len = 0, .ext_buf = TRUE, \
+      .free_func = &te_string_reset }
 
 /**
  * Initialize TE string assigning buffer and size to it.
  */
-#define TE_STRING_EXT_BUF_INIT(buf_, size_)  { buf_, size_, 0, TRUE }
+#define TE_STRING_EXT_BUF_INIT(buf_, size_) \
+    { .ptr = buf_, .size = size_, .len = 0, .ext_buf = TRUE, \
+      .free_func = &te_string_reset }
 
 /**
  * Initialize TE string assigning statically allocated memory
