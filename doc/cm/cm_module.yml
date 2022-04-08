@@ -27,6 +27,16 @@
 
          Value: 1 means loaded
 
+    - oid: "/agent/module/loaded_oper"
+      access: read_only
+      volatile: true
+      type: integer
+      d: |
+        Is the module loaded in the system from the human
+        point of view.
+
+        Value: 1 means loaded
+
     - oid: "/agent/module/unload_holders"
       access: read_write
       type: integer

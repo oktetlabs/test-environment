@@ -109,6 +109,8 @@ static te_errno module_loaded_set(unsigned int gid, const char *oid,
                                   char *value, char *mod_name);
 static te_errno module_loaded_get(unsigned int gid, const char *oid,
                                   char *value, char *mod_name);
+static te_errno module_loaded_oper_get(unsigned int gid, const char *oid,
+                                       char *value, char *mod_name);
 static te_errno module_filename_set(unsigned int gid, const char *oid,
                                     const char *value,
                                     const char *mod_name,...);
@@ -211,8 +213,12 @@ RCF_PCH_CFG_NODE_RW(node_module_loaded, "loaded",
                     NULL, &node_module_driver,
                     module_loaded_get, module_loaded_set);
 
+RCF_PCH_CFG_NODE_RO(node_module_loaded_oper, "loaded_oper",
+                    NULL, &node_module_loaded,
+                    module_loaded_oper_get);
+
 RCF_PCH_CFG_NODE_COLLECTION(node_module, "module",
-                            &node_module_loaded, NULL,
+                            &node_module_loaded_oper, NULL,
                             module_add, module_del,
                             module_list, NULL);
 
@@ -1568,6 +1574,21 @@ module_loaded_get(unsigned int gid, const char *oid, char *value,
 {
     te_kernel_module *module = mod_find(mod_name);
     te_bool loaded = module->fake_unload ? FALSE : mod_loaded(mod_name);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    mod_consistentcy_check(module, loaded);
+
+    return te_snprintf(value, RCF_MAX_VAL, "%s", loaded ? "1" : "0");
+}
+
+static te_errno
+module_loaded_oper_get(unsigned int gid, const char *oid, char *value,
+                       char *mod_name)
+{
+    te_kernel_module *module = mod_find(mod_name);
+    te_bool loaded = mod_loaded(mod_name);
 
     UNUSED(gid);
     UNUSED(oid);
