@@ -163,19 +163,21 @@ typedef enum ta_reboot_state {
 /** Type of the reboot */
 typedef enum ta_reboot_type {
     /** Restart TA process */
-    TA_REBOOT_TYPE_AGENT,
+    TA_REBOOT_TYPE_AGENT = 0x1,
     /** Reboot TA host */
-    TA_REBOOT_TYPE_HOST,
+    TA_REBOOT_TYPE_HOST = 0x2,
     /** Cold reboot the host using assigned power control agent */
-    TA_REBOOT_TYPE_COLD,
+    TA_REBOOT_TYPE_COLD = 0x4,
 } ta_reboot_type;
 
 /** Contextual information for rebooting the agent */
 typedef struct ta_reboot_context {
     /** Current reboot state */
     ta_reboot_state state;
-    /** The type of reboot requested by the user */
-    ta_reboot_type requested_type;
+    /** Bitmask of the requested reboot types by the user */
+    int requested_types;
+    /** Bitmask of the allowed reboot types by the user */
+    int allowed_types;
     /**
      * Current reboot type.
      * The current reboot type will increase to the requested type according
@@ -373,6 +375,13 @@ extern te_bool rcf_ta_reboot_on_req_reply(ta *agent, rcf_op_t opcode);
  * @param agent Test Agent structure
  */
 extern void rcf_ta_reboot_init_ctx(ta *agent);
+
+/**
+ * Get the next available reboot type
+ *
+ * @param agent Test Agent structure
+ */
+extern void rcf_ta_reboot_get_next_reboot_type(ta *agent);
 
 #ifdef __cplusplus
 } /* extern "C" */

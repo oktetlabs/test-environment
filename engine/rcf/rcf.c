@@ -362,6 +362,47 @@ parse_config_ta(xmlNodePtr ta_node)
         }
     }
 
+    rcf_ta_reboot_init_ctx(agent);
+
+    attr = xmlGetProp_exp(ta_node, (const xmlChar *)"reboot_types");
+    if (attr != NULL)
+    {
+        char *token;
+        char *saveptr;
+
+        token = strtok_r(attr, "|", &saveptr);
+        while (token != NULL)
+        {
+            if (strcmp(token, "agent") == 0)
+            {
+                agent->reboot_ctx.allowed_types |= TA_REBOOT_TYPE_AGENT;
+            }
+            else if (strcmp(token, "warm") == 0)
+            {
+                agent->reboot_ctx.allowed_types |= TA_REBOOT_TYPE_HOST;
+            }
+            else if (strcmp(token, "cold") == 0)
+            {
+                agent->reboot_ctx.allowed_types |= TA_REBOOT_TYPE_COLD;
+            }
+            else
+            {
+                ERROR("Unknown reboot type: %s", token);
+                free(attr);
+                return TE_RC(TE_RCF, TE_EINVAL);
+            }
+
+            token = strtok_r(NULL, "|", &saveptr);
+        }
+    }
+    else
+    {
+        agent->reboot_ctx.allowed_types |= (TA_REBOOT_TYPE_AGENT |
+                                            TA_REBOOT_TYPE_HOST |
+                                            TA_REBOOT_TYPE_COLD);
+    }
+    free(attr);
+
     /* TA is already running under gdb */
     if (attribute_contains_yes(ta_node, "fake"))
         agent->flags |= TA_FAKE;
@@ -2281,28 +2322,16 @@ rcf_ta_check_start(void)
 static void
 get_reboot_type_from_reboot_request(ta *agent, rcf_msg *msg)
 {
-    if ((msg->flags & (AGENT_REBOOT | HOST_REBOOT | COLD_REBOOT)) ==
-        (AGENT_REBOOT | HOST_REBOOT | COLD_REBOOT))
-    {
-        agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_COLD;
-        agent->reboot_ctx.current_type = TA_REBOOT_TYPE_AGENT;
-    }
-    else if ((msg->flags & COLD_REBOOT) != 0)
-    {
-        agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_COLD;
-        agent->reboot_ctx.current_type = TA_REBOOT_TYPE_COLD;
-    }
-    else if ((msg->flags & HOST_REBOOT) != 0)
-    {
-        agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_HOST;
-        agent->reboot_ctx.current_type = TA_REBOOT_TYPE_HOST;
-    }
-    else if ((msg->flags & AGENT_REBOOT) != 0)
-    {
-        agent->reboot_ctx.requested_type = TA_REBOOT_TYPE_AGENT;
-        agent->reboot_ctx.current_type = TA_REBOOT_TYPE_AGENT;
-    }
-    else
+    if (msg->flags & AGENT_REBOOT)
+        agent->reboot_ctx.requested_types |= TA_REBOOT_TYPE_AGENT;
+
+    if (msg->flags & HOST_REBOOT)
+        agent->reboot_ctx.requested_types |= TA_REBOOT_TYPE_HOST;
+
+    if (msg->flags & COLD_REBOOT)
+        agent->reboot_ctx.requested_types |= TA_REBOOT_TYPE_COLD;
+
+    if (agent->reboot_ctx.requested_types == 0)
     {
         msg->error = TE_RC(TE_RCF, TE_EOPNOTSUPP);
         ERROR("Unsupported reboot type");
@@ -2332,8 +2361,19 @@ process_reboot_request(ta *agent, usrreq *req)
     if (msg->error != 0)
         return;
 
+    agent->reboot_ctx.requested_types &= agent->reboot_ctx.allowed_types;
+    if (agent->reboot_ctx.requested_types == 0)
+    {
+        ERROR("None of the requested reboot types are allowed for '%s'",
+              agent->name);
+        msg->error = TE_RC(TE_RCF, TE_EOPNOTSUPP);
+        return;
+    }
+
+    rcf_ta_reboot_get_next_reboot_type(agent);
+
     if ((agent->flags & TA_LOCAL) && !(agent->flags & TA_PROXY)
-        && agent->reboot_ctx.requested_type != TA_REBOOT_TYPE_AGENT)
+        && agent->reboot_ctx.current_type != TA_REBOOT_TYPE_AGENT)
     {
         msg->error = TE_RC(TE_RCF, TE_ETALOCAL);
         ERROR("Agent '%s' runs on the same host with TEN and "

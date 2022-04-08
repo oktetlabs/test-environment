@@ -32,6 +32,7 @@ rcf_ta_reboot_init_ctx(ta *agent)
     agent->reboot_ctx.is_agent_reboot_msg_sent = FALSE;
     agent->reboot_ctx.is_answer_recv = FALSE;
     agent->reboot_ctx.restart_attempt = 0;
+    agent->reboot_ctx.requested_types = 0;
 }
 
 static const char *
@@ -50,6 +51,26 @@ ta_reboot_type2str(ta_reboot_type type)
 
         default:
             return "<unknown>";
+    }
+}
+
+void
+rcf_ta_reboot_get_next_reboot_type(ta *agent)
+{
+    if (agent->reboot_ctx.requested_types & TA_REBOOT_TYPE_AGENT)
+    {
+        agent->reboot_ctx.current_type = TA_REBOOT_TYPE_AGENT;
+        agent->reboot_ctx.requested_types ^=  TA_REBOOT_TYPE_AGENT;
+    }
+    else if (agent->reboot_ctx.requested_types & TA_REBOOT_TYPE_HOST)
+    {
+        agent->reboot_ctx.current_type = TA_REBOOT_TYPE_HOST;
+        agent->reboot_ctx.requested_types ^= TA_REBOOT_TYPE_HOST;
+    }
+    else if (agent->reboot_ctx.requested_types & TA_REBOOT_TYPE_COLD)
+    {
+        agent->reboot_ctx.current_type = TA_REBOOT_TYPE_COLD;
+        agent->reboot_ctx.requested_types ^= TA_REBOOT_TYPE_COLD;
     }
 }
 
@@ -796,14 +817,14 @@ rcf_ta_reboot_state_handler(ta *agent)
 
     if (agent->reboot_ctx.error != 0)
     {
-        if (agent->reboot_ctx.requested_type > agent->reboot_ctx.current_type)
+        if (agent->reboot_ctx.requested_types != 0)
         {
             WARN("%s for '%s' is failed",
                  ta_reboot_type2str(agent->reboot_ctx.current_type), agent->name);
             RING("Use %s instead of %s for '%s'",
                  ta_reboot_type2str(agent->reboot_ctx.current_type + 1),
                  ta_reboot_type2str(agent->reboot_ctx.current_type), agent->name);
-            agent->reboot_ctx.current_type++;
+            rcf_ta_reboot_get_next_reboot_type(agent);
             rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_WAITING);
             agent->reboot_ctx.error = 0;
             agent->reboot_ctx.is_agent_reboot_msg_sent = FALSE;
