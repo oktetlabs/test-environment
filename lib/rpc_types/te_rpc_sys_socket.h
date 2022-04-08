@@ -251,18 +251,39 @@ extern rpc_socket_domain domain_h2rpc(int domain);
 #define TE_AF_TARPC_SA  254
 
 /**
- * TA-independent address families.
+ * @defgroup rpc_socket_addr_family TA-independent address families
+ * @{
  */
-typedef enum rpc_socket_addr_family {
-    RPC_AF_UNKNOWN, /**< Address family unknown to RPC server sockets */
-    RPC_AF_INET,    /**< IPv4 */
-    RPC_AF_INET6,   /**< IPv6 */
-    RPC_AF_PACKET,  /**< Low level packet interface */
-    RPC_AF_LOCAL,   /**< Local communication */
-    RPC_AF_UNIX,    /**< Synonym of RPC_AF_LOCAL */
-    RPC_AF_ETHER,   /**< Non-standard family for Ethernet addresses */
-    RPC_AF_UNSPEC   /**< Unspecified */
-} rpc_socket_addr_family;
+
+/**
+ * TA-independent address families type.
+ */
+typedef rpc_socket_domain rpc_socket_addr_family;
+
+/** Address family unknown to RPC server sockets */
+#define RPC_AF_UNKNOWN RPC_PF_UNKNOWN
+
+/** IPv4 */
+#define RPC_AF_INET    RPC_PF_INET
+
+/** IPv6 */
+#define RPC_AF_INET6   RPC_PF_INET6
+
+/** Low level packet interface */
+#define RPC_AF_PACKET  RPC_PF_PACKET
+
+/** Local communication */
+#define RPC_AF_LOCAL   RPC_PF_LOCAL
+
+/** Synonym of RPC_AF_LOCAL */
+#define RPC_AF_UNIX    RPC_PF_UNIX
+
+/** Non-standard family for Ethernet addresses */
+#define RPC_AF_ETHER   RPC_PF_ETHER
+
+/** Unspecified */
+#define RPC_AF_UNSPEC  RPC_PF_UNSPEC
+/**@} <!-- END rpc_socket_addr_family --> */
 
 /** Convert RPC address family to string */
 extern const char * addr_family_rpc2str(rpc_socket_addr_family addr_family);
