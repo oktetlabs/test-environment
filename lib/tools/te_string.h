@@ -262,34 +262,6 @@ extern void te_string_cut_beginning(te_string *str, size_t len);
 extern void te_string_free(te_string *str);
 
 /**
- * Specify buffer to use in TE string instead
- * of dynamically allocated one used by default
- * (buffer may already contain some string).
- *
- * @param str       TE string.
- * @param buf       Buffer.
- * @param size      Number of bytes in buffer.
- * @param len       Length of string already in buffer.
- */
-extern void te_string_set_buf(te_string *str,
-                              char *buf, size_t size,
-                              size_t len);
-
-/**
- * Specify buffer to use in TE string instead
- * of dynamically allocated one used by default.
- *
- * @param str       TE string.
- * @param buf       Buffer.
- * @param size      Number of bytes in buffer.
- */
-static inline void
-te_string_assign_buf(te_string *str, char *buf, size_t size)
-{
-    te_string_set_buf(str, buf, size, 0);
-}
-
-/**
  * Get string representation of raw data.
  *
  * @param data  Buffer

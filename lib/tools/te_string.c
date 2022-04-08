@@ -53,19 +53,6 @@ te_string_free(te_string *str)
     str->free_func(str);
 }
 
-/* See the description in te_string.h */
-void
-te_string_set_buf(te_string *str,
-                  char *buf, size_t size,
-                  size_t len)
-{
-    te_string_free(str);
-    str->ptr = buf;
-    str->size = size;
-    str->len = len;
-    str->ext_buf = TRUE;
-}
-
 te_errno
 te_string_append(te_string *str, const char *fmt, ...)
 {
