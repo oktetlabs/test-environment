@@ -306,7 +306,7 @@ ipvlan_get(unsigned int gid, const char *oid, char *values,
     const char *mode_str;
     const char *flag_str;
     te_errno    rc;
-    te_string   str = TE_STRING_INIT;
+    te_string   str = TE_STRING_EXT_BUF_INIT(values, RCF_MAX_VAL);
 
     UNUSED(gid);
     UNUSED(oid);
@@ -321,8 +321,6 @@ ipvlan_get(unsigned int gid, const char *oid, char *values,
         return rc;
 
     /* Build string, for example "l2:private" */
-    te_string_assign_buf(&str, values, RCF_MAX_VAL);
-
     return te_string_append(&str, "%s:%s", mode_str, flag_str);
 }
 
