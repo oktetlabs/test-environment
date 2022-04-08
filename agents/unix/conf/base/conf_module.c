@@ -87,6 +87,8 @@ typedef struct te_kernel_module {
     te_bool loaded; /*< Is the module loaded into the system */
     te_bool fallback; /*< Load module shipped with the kernel if file
                           pointed by filename does not exist */
+    te_bool fake_unload; /*< Flag to handle module unload when the module
+                             is shared as a resource. */
 
     /*< List of parameters of unloaded module to pass later when load it */
     LIST_HEAD(te_kernel_module_params, te_kernel_module_param) params;
@@ -689,7 +691,7 @@ mod_modprobe(te_kernel_module *module)
 static void
 mod_consistentcy_check(te_kernel_module *module, te_bool loaded)
 {
-    if (module != NULL && (loaded ^ module->loaded))
+    if (module != NULL && (loaded ^ module->loaded) && !module->fake_unload)
         WARN("Inconsistent state of '%s' module : system=%s cache=%s",
              module->name, loaded ? "loaded" : "not loaded",
              module->loaded ? "loaded" : "not loaded");
@@ -793,6 +795,47 @@ module_param_create(te_kernel_module *module, const char *name,
 
     return 0;
 }
+
+static te_errno
+verify_loaded_module_param(const te_kernel_module *module,
+                           const char *param_name,
+                           const char *param_value)
+{
+    char value[RCF_MAX_VAL];
+    te_errno rc;
+
+    rc = read_sys_value(value, RCF_MAX_VAL, TRUE, SYS_MODULE"/%s/parameters/%s",
+                        module->name, param_name);
+    if (rc != 0)
+        return rc;
+
+    if (strcmp(param_value, value) != 0)
+    {
+        ERROR("The value of the parameter '%s' = '%s' of the module '%s' "
+              "differs from the value from sysfs = '%s'", param_name,
+              param_value, module->name, value);
+        rc = TE_EINVAL;
+    }
+
+    return rc;
+}
+
+static te_errno
+verify_loaded_module_params(const te_kernel_module *module)
+{
+    te_errno rc = 0;
+    te_kernel_module_param *param;
+
+    LIST_FOREACH(param, &module->params, list)
+    {
+        rc = verify_loaded_module_param(module, param->name, param->value);
+        if (rc != 0)
+            break;
+    }
+
+    return rc;
+}
+
 
 /**
  * Get list of module parameter names.
@@ -933,12 +976,12 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
 #if __linux__
     char name[TE_MODULE_NAME_LEN];
     te_errno rc;
+    te_kernel_module *module = mod_find(module_name);
+    te_kernel_module_param *param;
+    te_bool found = FALSE;
 
-    if (!module_is_exclusive_locked(module_name))
-    {
-        ERROR("Failed to change parameters of the not grabbed module");
-        return TE_RC(TE_TA_UNIX, TE_EPERM);
-    }
+    if (module == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (!mod_loaded(module_name))
     {
@@ -946,41 +989,44 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EPERM);
     }
 
-    rc = mod_name_underscorify(module_name, name, sizeof(name));
-    if (rc != 0)
-        return rc;
-
-    rc = write_sys_value(value,
-                         SYS_MODULE "/%s/parameters/%s",
-                         name, param_name);
-    if (rc == 0)
+    if (module_is_exclusive_locked(module_name))
     {
-        te_kernel_module *module = mod_find(module_name);
+        te_string path = TE_STRING_INIT_STATIC(PATH_MAX);
 
-        if (module != NULL)
+        rc = te_string_append(&path, SYS_MODULE"/%s/parameters/%s",
+                              name, param_name);
+
+        if (access(path.ptr, W_OK) == 0)
         {
-            te_kernel_module_param *param;
-            te_bool found = FALSE;
+            rc = mod_name_underscorify(module_name, name, sizeof(name));
+            if (rc != 0)
+                return rc;
 
-            LIST_FOREACH(param, &module->params, list)
-            {
-                if (strcmp(param->name, param_name) == 0)
-                {
-                    TE_SPRINTF(param->value, "%s", value);
-                    found = TRUE;
-                    break;
-                }
-            }
-
-            if (!found)
-            {
-                rc = module_param_create(module, param_name, value);
-                if (rc != 0)
-                    return TE_RC(TE_TA_UNIX, rc);
-            }
-
+            rc = write_sys_value(value, path.ptr);
+            if (rc != 0)
+                return rc;
         }
     }
+
+    LIST_FOREACH(param, &module->params, list)
+    {
+        if (strcmp(param->name, param_name) == 0)
+        {
+            TE_SPRINTF(param->value, "%s", value);
+            found = TRUE;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        rc = module_param_create(module, param_name, value);
+        if (rc != 0)
+            return TE_RC(TE_TA_UNIX, rc);
+    }
+
+     if (!module_is_exclusive_locked(module_name))
+        rc = verify_loaded_module_param(module, param_name, value);
 
     return rc;
 #else
@@ -998,7 +1044,6 @@ module_param_add(unsigned int gid, const char *oid,
                  const char *param_name,...)
 {
     te_kernel_module *module = mod_find(mod_name);
-    te_kernel_module_param *param;
     te_errno rc;
 
     UNUSED(gid);
@@ -1391,6 +1436,7 @@ module_add(unsigned int gid, const char *oid,
     module->filename = NULL;
     module->filename_load_dependencies = FALSE;
     module->fallback = FALSE;
+    module->fake_unload = FALSE;
     LIST_INIT(&module->params);
 
     LIST_INSERT_HEAD(&modules, module, list);
@@ -1422,6 +1468,64 @@ module_del(unsigned int gid, const char *oid, const char *mod_name)
     return 0;
 }
 
+/**
+ * If the module is used by another agent set fake_unload to @c TRUE
+ *
+ * @param module Kernel module
+ *
+ * @return Status code
+ */
+static void
+maybe_fake_unload(te_kernel_module *module)
+{
+    module->fake_unload = !module_is_exclusive_locked(module->name);
+}
+
+static te_errno
+mod_unload(te_kernel_module *module)
+{
+    te_errno rc;
+
+    maybe_fake_unload(module);
+
+    if (module->fake_unload)
+        return 0;
+
+    if (module->unload_holders)
+        mod_try_unload_holders(module->name);
+
+    rc = mod_rmmod(module->name);
+    if (rc != 0)
+        ERROR("Failed to unload module '%s'", module->name);
+
+    return rc;
+}
+
+static te_errno
+mod_load(te_kernel_module *module)
+{
+    te_errno rc;
+
+    if (mod_loaded(module->name))
+    {
+        RING("Module '%s' already loaded", module->name);
+        return verify_loaded_module_params(module);
+    }
+
+    rc = mod_filename_modprobe_try_load_dependencies(module);
+    if (rc != 0)
+    {
+        ERROR("Failed to load module '%s' dependencies", module->name);
+        return rc;
+    }
+
+    rc = mod_modprobe(module);
+    if (rc != 0)
+        ERROR("Failed to load module '%s'", module->name);
+
+    return rc;
+}
+
 static te_errno
 module_loaded_set(unsigned int gid, const char *oid, char *value,
                   char *mod_name)
@@ -1429,45 +1533,30 @@ module_loaded_set(unsigned int gid, const char *oid, char *value,
     te_kernel_module *module = mod_find(mod_name);
     te_bool loaded = mod_loaded(mod_name);
     te_bool load;
-    te_errno rc;
+    te_errno rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    if (module != NULL)
-        mod_consistentcy_check(module, loaded);
+    if (module == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    mod_consistentcy_check(module, loaded);
 
     if (te_strtol_bool(value, &load))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    if (!module_is_exclusive_locked(mod_name))
-    {
-        ERROR("Cannot (un)load module when exclusive rsrc is not accessible");
-        return TE_RC(TE_TA_UNIX, TE_EPERM);
-    }
-
     if (load)
     {
-        if (module != NULL)
-        {
-            rc = mod_filename_modprobe_try_load_dependencies(module);
-            rc = (rc == 0) ? mod_modprobe(module) : rc;
-        }
-        else
-        {
-            ERROR("Failed to load a pre-loaded module");
-            rc = TE_EFAULT;
-        }
+        rc = mod_load(module);
+        module->fake_unload = FALSE;
     }
     else
     {
-        if (module != NULL && module->unload_holders)
-            mod_try_unload_holders(mod_name);
-
-        rc = mod_rmmod(mod_name);
+        rc = mod_unload(module);
     }
 
-    if (rc == 0 && module != NULL)
+    if (rc == 0)
         module->loaded = load;
 
     return rc;
@@ -1478,7 +1567,7 @@ module_loaded_get(unsigned int gid, const char *oid, char *value,
                   char *mod_name)
 {
     te_kernel_module *module = mod_find(mod_name);
-    te_bool loaded = mod_loaded(mod_name);
+    te_bool loaded = module->fake_unload ? FALSE : mod_loaded(mod_name);
 
     UNUSED(gid);
     UNUSED(oid);

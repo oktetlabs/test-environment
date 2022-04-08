@@ -181,7 +181,6 @@ tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
 {
     int         rc;
     te_bool shared = FALSE;
-    int loaded;
 
     ENTRY("ta_name=%s mod_name=%s load=%s", ta_name, mod_name,
           load ? "true" : "false");
@@ -214,16 +213,7 @@ tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
         goto out;
     }
 
-    rc = cfg_get_instance_int_fmt(&loaded, CFG_MODULE_OID_FMT "/loaded:",
-                                  ta_name, mod_name);
-    if (rc != 0)
-    {
-        ERROR("Cannot get supposedly added module '%s' on %s: %r",
-              mod_name, ta_name, rc);
-        goto out;
-    }
-
-    if (!loaded && load)
+    if (load)
     {
         rc = tapi_cfg_module_load(ta_name, mod_name);
         if (rc != 0)
@@ -240,12 +230,6 @@ static te_errno
 tapi_cfg_module_loaded_set(const char *ta_name, const char *mod_name,
                            te_bool loaded)
 {
-    te_errno rc;
-
-    rc = tapi_cfg_module_check_exclusive_rsrc(ta_name, mod_name);
-    if (rc != 0)
-        return rc;
-
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, loaded ? 1 : 0),
                                 CFG_MODULE_OID_FMT "/loaded:", ta_name,
                                 mod_name);

@@ -21,9 +21,10 @@
     - oid: "/agent/module/loaded"
       access: read_write
       type: integer
-      volatile: true
       d: |
-         Is module loaded in the system
+         Control module state. Set to 1 to load the module.
+         Set to 0 to unload it.
+
          Value: 1 means loaded
 
     - oid: "/agent/module/unload_holders"
