@@ -10,10 +10,16 @@ tce_scripts = [
     'tce_merge_min',
     'tce_merge_sum',
     'tce_report',
+    'tce_resolve_gcov.py',
     'tce_summary',
 ]
 
 install_data(tce_scripts, install_dir: 'bin')
+
+install_subdir(
+    'tce_py',
+    install_dir : 'lib',
+    )
 
 tce_src_files = files(
     'bbhook.c',

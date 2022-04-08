@@ -330,6 +330,36 @@ function link_platform_tce_install
             "platform ${platform} tce ${tce}"
 }
 
+function resolve_platform_host_tce
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+    local hostdir="${platform_ws[${platform}]}"
+    local pbuild="${TE_BUILD}/platforms/${platform}"
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local conf="${tcedir}/tce.conf"
+
+    cat > "${conf}" << EOF
+{
+    "build" : "${build}",
+    "inst" : "../inst",
+    "plat_build" : "${pbuild}/${build}",
+    "host_build" : "${hostdir}/${build}",
+    "host_inst" : "${hostdir}/destdir/${TE_INSTALL}/${platform}",
+    "unres" : "unres.txt"
+}
+EOF
+
+    tce_resolve_gcov.py "${conf}" || \
+        die "fail to resolve gcovs: " \
+            "platform ${platform} host ${host} tce ${tce}"
+}
+
+tce_py="${TE_INSTALL}/${TE_HOST}/lib"
+export PYTHONPATH="${tce_py}:${PYTHONPATH}"
+
 for platform in "${!platform_tce[@]}" ; do
     tce_list="${platform_tce[${platform}]}"
     hosts="${platform_hosts[${platform}]}"
@@ -351,6 +381,10 @@ for platform in "${!platform_tce[@]}" ; do
 
     for tce in ${tce_list} ; do
         link_platform_tce_install ${platform} ${tce}
+
+        for host in ${hosts} ; do
+            resolve_platform_host_tce ${platform} ${host} ${tce}
+        done
     done
 
     # TODO: provide TCE summary across platforms
