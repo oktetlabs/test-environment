@@ -1035,7 +1035,7 @@ bpf_get_map_kv_pair(unsigned int gid, const char *oid, char *value_str,
 {
     struct bpf_map_entry *map;
     unsigned char *key, *value;
-    te_string value_buf = { value_str, RCF_MAX_VAL, 0, TRUE };
+    te_string value_buf = TE_STRING_EXT_BUF_INIT(value_str, RCF_MAX_VAL);
     te_errno rc = 0;
 
     UNUSED(gid);
@@ -1797,7 +1797,8 @@ bpf_get_perf_map_event(unsigned int gid, const char *oid, char *value_str,
                        const char *id_str)
 {
     struct bpf_perf_map_entry  *map;
-    te_string                   value_buf = {value_str, RCF_MAX_VAL, 0, TRUE};
+    te_string                   value_buf = TE_STRING_EXT_BUF_INIT(
+                                                    value_str, RCF_MAX_VAL);
     te_errno                    rc = 0;
     unsigned int                id = 0;
     bpf_perf_map_event          event;

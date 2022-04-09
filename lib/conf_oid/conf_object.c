@@ -296,7 +296,7 @@ te_conf_obj_to_str(const te_conf_obj *fields, size_t fields_number,
     const void *arg;
 
     te_errno    rc = 0;
-    te_string   string = {0};
+    te_string   string = TE_STRING_INIT;
 
 /**
  * The short form of the error message
