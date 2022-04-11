@@ -29,6 +29,97 @@ extern "C" {
 
 #include "te_string.h"
 
+/**
+ * Free all resources allocated for logging buffers.
+ * This function actually destroys all the existing buffers,
+ * not just marks them free for further use.
+ */
+extern void te_log_bufs_cleanup(void);
+
+/**
+ * Obtain reusable TE string for logging.
+ * The string can then be used like a normal TE string, however its buffer
+ * cannot be replaced by te_string_set_buf().
+ * Obtained string must be released with te_string_free().
+ *
+ * @return TE string pointer or @c NULL on failure.
+ */
+extern te_string *te_log_str_alloc(void);
+
+/**
+ * Append @a argc/@a argv arguments enclosed in double quotes and separated
+ * by comma to TE string.
+ *
+ * @param str   Pointer to TE string
+ * @param argc  Number of arguments
+ * @param argv  Array with arguments
+ *
+ * @return Status code.
+ */
+extern te_errno te_args2te_str(te_string *str,
+                               int argc, const char **argv);
+
+/** Mapping of the bit number to string */
+typedef struct te_log_buf_bit2str {
+    unsigned int    bit; /**< Bit index */
+    const char     *str; /**< String name of the bit */
+} te_bit2str;
+
+/** Mapping of the flag within mask to string */
+typedef struct te_log_buf_flag2str {
+    uint64_t        flag; /**< Flag. May be defined as more than
+                               one bit set. */
+    uint64_t        mask; /**< Mask applied when checking for flag.
+                               In value X flag is set when
+                               (X & mask) == flag */
+    const char     *str;  /**< String name of the flag */
+} te_flag2str;
+
+/**
+ * Append bit mask converted to string to TE string.
+ *
+ * Pipe '|' is used as a separator.
+ *
+ * @param str       Pointer to TE string
+ * @param bit_mask  Bit mask
+ * @param map       Bit to string map terminated by the element with @c NULL
+ *                  string
+ *
+ * @return Status code.
+ */
+extern te_errno te_bit_mask2te_str(te_string *str,
+                                   unsigned long long bit_mask,
+                                   const te_bit2str *map);
+
+/**
+ * Extended version of te_bit_mask2te_str(). First it checks for
+ * all bits from @p bm, unsetting them in @p bit_mask. Then the
+ * bits which are left are checked against flags from @p fm.
+ *
+ * Pipe '|' is used as a separator.
+ *
+ * @param str       Pointer to TE string
+ * @param bit_mask  Bit mask
+ * @param bm        Bit to string map terminated by the element with @c NULL
+ *                  string
+ * @param fm        Flag within some mask to string map terminated by the
+ *                  element with @c NULL string
+ *
+ * @return Status code.
+ */
+extern te_errno te_extended_bit_mask2te_str(
+                                     te_string *str,
+                                     unsigned long long bit_mask,
+                                     const te_bit2str *bm,
+                                     const te_flag2str *fm);
+
+/*
+ * NOTE: the following API is deprecated. It is better to allocate
+ * te_string with te_log_str_alloc() and use te_string-specific functions
+ * to avoid code duplication and simplify code reuse. te_string is used
+ * in TE much more commonly and for various purposes.
+ */
+
 /*
  * Declaration of te_log_buf type, which is defined
  * in the implementation, so user can allocate and operate only
@@ -37,12 +128,13 @@ extern "C" {
 struct te_log_buf;
 typedef struct te_log_buf te_log_buf;
 
-
 /* Log buffer related functions */
 
 /**
  * Allocates a buffer to be used for accumulating log message.
  * Mainly used in tapi_snmp itself.
+ *
+ * @note This function is deprecated. Use te_log_str_alloc().
  *
  * @return Pointer to the buffer.
  *
@@ -87,25 +179,11 @@ extern const char *te_log_buf_get(te_log_buf *buf);
 extern void te_log_buf_free(te_log_buf *buf);
 
 /**
- * Free all resources allocated for logging buffers.
- * This function actually destroys all the existing buffers,
- * not just marks them free for further use.
- */
-extern void te_log_bufs_cleanup(void);
-
-/**
- * Obtain reusable TE string for logging.
- * The string can then be used like a normal TE string, however its buffer
- * cannot be replaced by te_string_set_buf().
- * Obtained string must be released with te_string_free().
- *
- * @return TE string pointer or @c NULL on failure.
- */
-extern te_string *te_log_str_alloc(void);
-
-/**
  * Put @a argc/@a argv arguments enclosed in double quotes and separated
  * by comma to log buffer.
+ *
+ * @note This function is deprecated. te_args2te_str() can be
+ *       used with TE string instead.
  *
  * @param buf   Pointer to the buffer allocated with @b te_log_buf_alloc()
  * @param argc  Number of arguments
@@ -117,23 +195,13 @@ extern const char *te_args2log_buf(te_log_buf *buf,
                                    int argc, const char **argv);
 
 
-/** Mapping of the bit number to string */
-struct te_log_buf_bit2str {
-    unsigned int    bit;
-    const char     *str;
-};
-
-/** Mapping of the flag within mask to string */
-struct te_log_buf_flag2str {
-    uint64_t        flag;
-    uint64_t        mask;
-    const char     *str;
-};
-
 /**
  * Append bit mask converted to string to log buffer.
  *
  * Pipe '|' is used as a separator.
+ *
+ * @note This function is deprecated. te_bit_mask2te_str() can be
+ *       used with TE string instead.
  *
  * @param buf       Pointer to the buffer
  * @param bit_mask  Bit mask
@@ -150,6 +218,9 @@ extern const char *te_bit_mask2log_buf(te_log_buf *buf,
  * Append extended bit mask converted to string to log buffer.
  *
  * Pipe '|' is used as a separator.
+ *
+ * @note This function is deprecated. te_extended_bit_mask2te_str() can be
+ *       used with TE string instead.
  *
  * @param buf       Pointer to the buffer
  * @param bit_mask  Bit mask
@@ -168,6 +239,9 @@ extern const char *te_extended_bit_mask2log_buf(te_log_buf *buf,
 /**
  * Put ether address to log buffer.
  *
+ * @note This function is deprecated. te_mac_addr2te_str() can be used with
+ *       TE string instead.
+ *
  * @param buf   Pointer to the buffer allocated with @b te_log_buf_alloc()
  * @param argc  Pointer to the ether address
  *
@@ -178,6 +252,9 @@ extern const char *te_ether_addr2log_buf(te_log_buf *buf,
 
 /**
  * Put IPv4 / IPv6 address to log buffer.
+ *
+ * @note This function is deprecated. te_ip_addr2te_str() can be used with
+ *       TE string instead.
  *
  * @param buf            Pointer to the buffer allocated with @b te_log_buf_alloc()
  * @param ip_addr        Pointer to the IPv4 / IPv6 address

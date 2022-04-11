@@ -44,6 +44,7 @@
 #include "log_bufs.h"
 #include "te_queue.h"
 #include "te_alloc.h"
+#include "te_sockaddr.h"
 
 /** The number of characters in a sinle log buffer. */
 #define LOG_BUF_LEN (1024 * 10)
@@ -220,12 +221,12 @@ te_log_buf_get(te_log_buf *buf)
     return buf->str.ptr;
 }
 
-const char *
-te_bit_mask_or_flag2log_buf(te_log_buf *buf, unsigned long long bit_mask,
-                            const struct te_log_buf_bit2str *bit_map,
-                            const struct te_log_buf_flag2str *flag_map,
-                            unsigned long long *left_bit_mask,
-                            te_bool append_left, te_bool *added_out)
+static te_errno
+te_bit_mask_or_flag2te_str(te_string *te_str, unsigned long long bit_mask,
+                           const struct te_log_buf_bit2str *bit_map,
+                           const struct te_log_buf_flag2str *flag_map,
+                           unsigned long long *left_bit_mask,
+                           te_bool append_left, te_bool *added_out)
 {
     unsigned int        i;
     te_bool             added = FALSE;
@@ -233,7 +234,7 @@ te_bit_mask_or_flag2log_buf(te_log_buf *buf, unsigned long long bit_mask,
     uint64_t            bit_or_flag;
     const char         *str;
 
-    VALIDATE_LOG_BUF(buf);
+    te_errno rc;
 
     for (i = 0; (str = bit_map != NULL ? bit_map[i].str : flag_map[i].str)
                 != NULL; ++i)
@@ -251,14 +252,21 @@ te_bit_mask_or_flag2log_buf(te_log_buf *buf, unsigned long long bit_mask,
 
         if (append)
         {
-            te_log_buf_append(buf, "%s%s", added ? "|" : "", str);
+            rc = te_string_append(te_str, "%s%s", added ? "|" : "", str);
+            if (rc != 0)
+                return rc;
             added = TRUE;
             bit_mask &= ~bit_or_flag;
         }
     }
 
     if (bit_mask != 0 && append_left)
-        te_log_buf_append(buf, "%s%#llx", added ? "|" : "", bit_mask);
+    {
+        rc = te_string_append(te_str, "%s%#llx", added ? "|" : "",
+                              bit_mask);
+        if (rc != 0)
+            return rc;
+    }
 
     if (left_bit_mask != NULL)
         *left_bit_mask = bit_mask;
@@ -266,15 +274,58 @@ te_bit_mask_or_flag2log_buf(te_log_buf *buf, unsigned long long bit_mask,
     if (added_out != NULL)
         *added_out = added;
 
-    return te_log_buf_get(buf);
+    return 0;
+}
+
+te_errno
+te_bit_mask2te_str(te_string *str,
+                   unsigned long long bit_mask,
+                   const te_bit2str *map)
+{
+    return te_bit_mask_or_flag2te_str(str, bit_mask, map, NULL, NULL, TRUE,
+                                      NULL);
 }
 
 const char *
 te_bit_mask2log_buf(te_log_buf *buf, unsigned long long bit_mask,
                     const struct te_log_buf_bit2str *map)
 {
-    return te_bit_mask_or_flag2log_buf(buf, bit_mask, map, NULL, NULL, TRUE,
-           NULL);
+    te_bit_mask2te_str(&buf->str, bit_mask, map);
+
+    return te_log_buf_get(buf);
+}
+
+te_errno
+te_extended_bit_mask2te_str(te_string *str,
+                            unsigned long long bit_mask,
+                            const te_bit2str *bm,
+                            const te_flag2str *fm)
+{
+    unsigned long long left;
+    te_bool added;
+    te_errno rc;
+
+    rc = te_bit_mask_or_flag2te_str(str, bit_mask, bm, NULL, &left,
+                                    FALSE, &added);
+    if (rc != 0)
+        return rc;
+
+    if (added)
+    {
+        rc = te_string_append(str, "|");
+        if (rc != 0)
+            return rc;
+    }
+
+    rc = te_bit_mask_or_flag2te_str(str, left, NULL, fm, &left, FALSE,
+                                    added ? NULL : &added);
+    if (rc != 0)
+        return rc;
+
+    if (left != 0)
+        return te_string_append(str, "%s%#llx", added ? "|" : "", left);
+
+    return 0;
 }
 
 const char *
@@ -282,27 +333,31 @@ te_extended_bit_mask2log_buf(te_log_buf *buf, unsigned long long bit_mask,
                              const struct te_log_buf_bit2str *bm,
                              const struct te_log_buf_flag2str *fm)
 {
-    unsigned long long left;
-    te_bool added;
-
-    te_bit_mask_or_flag2log_buf(buf, bit_mask, bm, NULL, &left, FALSE, &added);
-    if (added)
-        te_log_buf_append(buf, "|");
-    te_bit_mask_or_flag2log_buf(buf, left, NULL, fm, &left, FALSE,
-                                added ? NULL : &added);
-    if (left != 0)
-        te_log_buf_append(buf, "%s%#llx", added ? "|" : "", left);
+    te_extended_bit_mask2te_str(&buf->str, bit_mask, bm, fm);
 
     return te_log_buf_get(buf);
+}
+
+te_errno
+te_args2te_str(te_string *str, int argc, const char **argv)
+{
+    int i;
+    te_errno rc;
+
+    for (i = 0; i < argc; ++i)
+    {
+        rc = te_string_append(str, "%s\"%s\"", i == 0 ? "" : ", ", argv[i]);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
 }
 
 const char *
 te_args2log_buf(te_log_buf *buf, int argc, const char **argv)
 {
-    int     i;
-
-    for (i = 0; i < argc; ++i)
-        te_log_buf_append(buf, "%s\"%s\"", i == 0 ? "" : ", ", argv[i]);
+    te_args2te_str(&buf->str, argc, argv);
 
     return te_log_buf_get(buf);
 }
@@ -310,13 +365,7 @@ te_args2log_buf(te_log_buf *buf, int argc, const char **argv)
 const char *
 te_ether_addr2log_buf(te_log_buf *buf, const uint8_t *mac_addr)
 {
-    if (mac_addr == NULL)
-        te_log_buf_append(buf, "<NULL>");
-    else
-        te_log_buf_append(buf, "%02x:%02x:%02x:%02x:%02x:%02x",
-                          mac_addr[0], mac_addr[1],
-                          mac_addr[2], mac_addr[3],
-                          mac_addr[4], mac_addr[5]);
+    te_mac_addr2te_str(&buf->str, mac_addr);
 
     return te_log_buf_get(buf);
 }
@@ -324,8 +373,7 @@ te_ether_addr2log_buf(te_log_buf *buf, const uint8_t *mac_addr)
 const char *
 te_ip_addr2log_buf(te_log_buf *buf, const void *ip_addr, int addr_str_len)
 {
-    char ip_addr_str[addr_str_len];
-    int  af;
+    int af;
 
     switch (addr_str_len)
     {
@@ -340,9 +388,6 @@ te_ip_addr2log_buf(te_log_buf *buf, const void *ip_addr, int addr_str_len)
             break;
     }
 
-    inet_ntop(af, ip_addr, ip_addr_str, addr_str_len);
-
-    te_log_buf_append(buf, "%s", ip_addr_str);
-
+    te_ip_addr2te_str(&buf->str, ip_addr, af);
     return te_log_buf_get(buf);
 }

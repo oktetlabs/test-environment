@@ -948,6 +948,33 @@ te_ip2str(const struct sockaddr *addr)
 
 /* See description in te_sockaddr.h */
 te_errno
+te_ip_addr2te_str(te_string *str, const void *ip_addr, int af)
+{
+#define MAX_STR_LEN MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)
+    char ip_addr_str[MAX_STR_LEN];
+    const char *result;
+
+    result = inet_ntop(af, ip_addr, ip_addr_str, MAX_STR_LEN);
+    if (result == NULL)
+        return te_rc_os2te(errno);
+
+    return te_string_append(str, "%s", ip_addr_str);
+#undef MAX_STR_LEN
+}
+
+/* See description in te_sockaddr.h */
+te_errno
+te_mac_addr2te_str(te_string *str, const uint8_t *mac_addr)
+{
+    if (mac_addr == NULL)
+        return te_string_append(str, "<NULL>");
+
+    return te_string_append(str, TE_PRINTF_MAC_FMT,
+                            TE_PRINTF_MAC_VAL(mac_addr));
+}
+
+/* See description in te_sockaddr.h */
+te_errno
 te_sockaddr_netaddr_from_string(const char      *addr_str,
                                 struct sockaddr *addr)
 {

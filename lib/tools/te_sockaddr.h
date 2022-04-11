@@ -36,6 +36,7 @@
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "te_string.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -198,6 +199,30 @@ extern const char * te_sockaddr_get_ipstr(const struct sockaddr *addr);
  * @sa te_sockaddr_get_ipstr, te_sockaddr2str
  */
 extern char *te_ip2str(const struct sockaddr *addr);
+
+/**
+ * Append IPv4 or IPv6 address to TE string.
+ *
+ * @param str            Pointer to TE string
+ * @param ip_addr        Pointer to in_addr or in6_addr
+ * @param af             @c AF_INET or @c AF_INET6
+ *
+ * @return Status code.
+ */
+extern te_errno te_ip_addr2te_str(te_string *str,
+                                  const void *ip_addr,
+                                  int af);
+
+/**
+ * Append MAC address to TE string.
+ *
+ * @param str       Pointer to the TE string
+ * @param mac_addr  Pointer to the MAC address
+ *
+ * @return Status code.
+ */
+extern te_errno te_mac_addr2te_str(te_string *str,
+                                   const uint8_t *mac_addr);
 
 /**
  * Update network address part of sockaddr structure according to
