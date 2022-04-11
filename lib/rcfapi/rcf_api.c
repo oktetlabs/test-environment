@@ -2198,7 +2198,7 @@ rcf_ta_trrecv_get(const char *ta_name, int session,
             "Traffic receive operation on the CSAP %d (%s:%d) got %u "
             "packets : %r", csap_id, ta_name, session, n, rc);
 
-    if (num != NULL)
+    if (num != NULL && rc == 0)
         *num = n;
 
     return rc;
