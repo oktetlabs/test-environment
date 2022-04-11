@@ -2132,7 +2132,7 @@ rcf_ta_trrecv_wait(const char *ta_name, int session,
                    unsigned int *num)
 {
     te_errno        rc;
-    unsigned int    n;
+    unsigned int    n = 0;
 
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
             "Waiting for receive operation on the CSAP %d (%s:%d) ...",
@@ -2159,7 +2159,7 @@ rcf_ta_trrecv_stop(const char *ta_name, int session,
                    unsigned int *num)
 {
     te_errno        rc;
-    unsigned int    n;
+    unsigned int    n = 0;
 
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
             "Stopping receive operation on the CSAP %d (%s:%d) ...",
@@ -2186,7 +2186,7 @@ rcf_ta_trrecv_get(const char *ta_name, int session,
                   unsigned int *num)
 {
     te_errno        rc;
-    unsigned int    n;
+    unsigned int    n = 0;
 
     VERB("%s(ta %s, csap %d, *num  %p) called",
          ta_name, csap_id, num);
