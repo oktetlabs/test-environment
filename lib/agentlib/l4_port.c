@@ -253,12 +253,14 @@ agent_alloc_l4_specified_port(int socket_family, int socket_type,
     if (port > MAX_AVAILABLE_PORT && port < MIN_AVAILABLE_PORT)
     {
         ERROR("Invalid port nubmer");
+        pthread_mutex_unlock(&alloc_lock);
         return TE_EINVAL;
     }
 
     if (!agent_check_l4_port_is_free(socket_family, socket_type, port))
     {
         ERROR("The port %s is busy");
+        pthread_mutex_unlock(&alloc_lock);
         return TE_EBUSY;
     }
 
