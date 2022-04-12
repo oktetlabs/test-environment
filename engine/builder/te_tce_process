@@ -17,22 +17,6 @@
 SCRIPT_DIR=`dirname $0`
 . ${SCRIPT_DIR}/te_functions
 
-# Adapted from te_meson_build
-rsync_gcda_from() {
-    local p="$1"; shift
-    local src="$1"; shift
-    local dst="$1"; shift
-    local sshvar="${p}_SSH"
-    local ssh="${!sshvar}"
-    local rsync="rsync -a --include=*.gcda --include=*/ --exclude=*"
-
-    if test -n "${ssh}" ; then
-        $rsync -e "${ssh% *}" "${ssh##* }:${src}/" "${dst}/"
-    else
-        $rsync "${src}/" "${dst}/"
-    fi
-}
-
 function die
 {
     echo "ERROR: $*" > /dev/stderr
@@ -108,8 +92,7 @@ for platform in $TE_BS_PLATFORMS; do
             platform_tce[${platform}]+=" ${tce}"
             platform_tce_build["${platform}_${tce}"]="${build}"
 
-            remotedir="$wsdir/${build}"
-            rsync_gcda_from "$platform" "$remotedir" "${!buildvar}"
+            continue
         fi
         find "${!buildvar}" -name '*.da' -o -name '.*.da' -o -name '*.gcda' -o -name '.*.gcda' | \
             xargs -r -n1 tce_gcov "${!buildvar}" || exit 1
@@ -482,6 +465,39 @@ function report_host_tce
     popd > /dev/null
 }
 
+function summarise_tce
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+    local repname="$4"
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local report="${tcedir}/report.tce"
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local wsdir="${TE_BUILD}/platforms/${platform}"
+    local p_excl="TE_BS_TCE_${platform}_${tce}_EXCLUDESRC"
+    local excl="${!p_excl}"
+    local resbase="${TE_LOG_DIR}/${repname}"
+
+    test -d "${resbase}_files" && \
+        rm -r "${resbase}_files"
+
+    mkdir -p "${resbase}_files"
+
+    pushd "${wsdir}/${build}" > /dev/null || \
+        die "fail to locate platform to summarise TCE: " \
+             "platform ${platform} host ${host} tce ${tce}"
+
+    tce_summary -vEXCLUDE="${excl}" -vSORTMODE=coverage \
+                -vDATADIR="${resbase}_files" \
+                "${report}" > \
+                "${resbase}.html" || \
+        die "fail to create summary for TCE report" \
+             "platform ${platform} host ${host} tce ${tce}"
+
+    popd > /dev/null
+}
+
 all_tce="$(echo "${platform_tce[@]}" | sed 's/ \+/\n/g' | sort -u)"
 
 for tce in $all_tce ; do
@@ -494,9 +510,12 @@ for tce in $all_tce ; do
         hosts="${platform_hosts[${platform}]}"
 
         for host in ${hosts} ; do
+            repname="tce_log_${platform}_${host}_${tce}"
+
             clean_tce_on_build ${platform} ${tce}
             copy_tce_to_build ${platform} ${host} ${tce}
             report_host_tce ${platform} ${host} ${tce}
+            summarise_tce ${platform} ${host} ${tce} "${repname}"
         done
     done
 
