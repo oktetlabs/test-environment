@@ -11,6 +11,7 @@ headers += files(
     'tapi_nptcp.h',
     'tapi_ping.h',
     'tapi_sfnt_pingpong.h',
+    'tapi_ssh.h',
     'tapi_stress.h',
     'tapi_wrk.h',
 )
@@ -25,6 +26,7 @@ sources += files(
     'tapi_nptcp.c',
     'tapi_ping.c',
     'tapi_sfnt_pingpong.c',
+    'tapi_ssh.c',
     'tapi_stress.c',
     'tapi_wrk.c',
 )
