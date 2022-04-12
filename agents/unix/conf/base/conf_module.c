@@ -807,11 +807,16 @@ verify_loaded_module_param(const te_kernel_module *module,
                            const char *param_name,
                            const char *param_value)
 {
+    char name[TE_MODULE_NAME_LEN];
     char value[RCF_MAX_VAL];
     te_errno rc;
 
+    rc = mod_name_underscorify(module->name, name, sizeof(name));
+    if (rc != 0)
+        return rc;
+
     rc = read_sys_value(value, RCF_MAX_VAL, TRUE, SYS_MODULE"/%s/parameters/%s",
-                        module->name, param_name);
+                        name, param_name);
     if (rc != 0)
         return rc;
 
@@ -980,7 +985,6 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
 #if __linux__
-    char name[TE_MODULE_NAME_LEN];
     te_errno rc;
     te_kernel_module *module = mod_find(module_name);
     te_kernel_module_param *param;
@@ -997,17 +1001,18 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
 
     if (module_is_exclusive_locked(module_name))
     {
+        char name[TE_MODULE_NAME_LEN];
         te_string path = TE_STRING_INIT_STATIC(PATH_MAX);
+
+        rc = mod_name_underscorify(module_name, name, sizeof(name));
+        if (rc != 0)
+            return rc;
 
         rc = te_string_append(&path, SYS_MODULE"/%s/parameters/%s",
                               name, param_name);
 
         if (access(path.ptr, W_OK) == 0)
         {
-            rc = mod_name_underscorify(module_name, name, sizeof(name));
-            if (rc != 0)
-                return rc;
-
             rc = write_sys_value(value, path.ptr);
             if (rc != 0)
                 return rc;
