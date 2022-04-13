@@ -140,6 +140,9 @@ te_log_buf_free(te_log_buf *buf)
 {
     te_log_buf *next_buf;
 
+    if (buf == NULL)
+        return;
+
     pthread_mutex_lock(&te_log_buf_mutex);
     te_string_reset(&buf->str);
     buf->used = FALSE;
