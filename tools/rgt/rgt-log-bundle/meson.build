@@ -6,6 +6,7 @@ common_libs = declare_dependency(
 )
 
 rgt_log_bundle = [
+    'rgt-caps-recover',
     'rgt-log-split',
     'rgt-log-merge',
     'rgt-log-recover',
