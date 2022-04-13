@@ -574,5 +574,6 @@ for tce in $all_tce ; do
         done
     done
 
-    # TODO: provide TCE summary across platforms
+    repname="tce_log_${tce}"
+    summarise_tce ${mplatform} "" ${tce} "${repname}"
 done
