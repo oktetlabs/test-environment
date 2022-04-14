@@ -208,6 +208,8 @@ split_long_string(char *s, unsigned int max_len)
         return NULL;
     }
 
+    *value = (te_string)TE_STRING_INIT;
+
     do {
         while (p2 != NULL && p2 - p0 < (int)max_len)
         {
