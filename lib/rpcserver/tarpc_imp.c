@@ -4586,6 +4586,9 @@ typedef union ioctl_param {
 #ifdef HAVE_STRUCT_PTP_SYS_OFFSET
     struct ptp_sys_offset ptp_sys_offset;
 #endif
+#ifdef HAVE_STRUCT_PTP_SYS_OFFSET_EXTENDED
+    struct ptp_sys_offset_extended ptp_sys_offset_extended;
+#endif
 } ioctl_param;
 
 static te_errno
@@ -4860,6 +4863,27 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
              */
             req_size = out_arg->n_samples * 2 + 1;
             if (req_size > TE_ARRAY_LEN(out_arg->ts))
+            {
+                te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOBUFS),
+                                 "Not enough space for requested number "
+                                 "of time samples");
+                return TE_ENOBUFS;
+            }
+
+            break;
+        }
+#endif
+
+#ifdef HAVE_STRUCT_PTP_SYS_OFFSET_EXTENDED
+        case IOCTL_PTP_SYS_OFFSET_EXTENDED:
+        {
+            tarpc_ptp_sys_offset_extended *out_arg =
+                &out->req.req_val[0].ioctl_request_u.
+                                req_ptp_sys_offset_extended;
+
+            req->ptp_sys_offset_extended.n_samples = out_arg->n_samples;
+
+            if (out_arg->n_samples > TE_ARRAY_LEN(out_arg->ts))
             {
                 te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOBUFS),
                                  "Not enough space for requested number "
@@ -5154,6 +5178,38 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
             {
                 out_arg->ts[i].sec = req->ptp_sys_offset.ts[i].sec;
                 out_arg->ts[i].nsec = req->ptp_sys_offset.ts[i].nsec;
+            }
+
+            break;
+        }
+#endif
+
+#ifdef HAVE_STRUCT_PTP_SYS_OFFSET_EXTENDED
+        case IOCTL_PTP_SYS_OFFSET_EXTENDED:
+        {
+            tarpc_ptp_sys_offset_extended *out_arg =
+                &out->req.req_val[0].ioctl_request_u.
+                                    req_ptp_sys_offset_extended;
+            unsigned int i;
+
+            out_arg->n_samples = req->ptp_sys_offset_extended.n_samples;
+
+            for (i = 0; i < out_arg->n_samples; i++)
+            {
+                out_arg->ts[i].sys1.sec =
+                    req->ptp_sys_offset_extended.ts[i][0].sec;
+                out_arg->ts[i].sys1.nsec =
+                    req->ptp_sys_offset_extended.ts[i][0].nsec;
+
+                out_arg->ts[i].phc.sec =
+                    req->ptp_sys_offset_extended.ts[i][1].sec;
+                out_arg->ts[i].phc.nsec =
+                    req->ptp_sys_offset_extended.ts[i][1].nsec;
+
+                out_arg->ts[i].sys2.sec =
+                    req->ptp_sys_offset_extended.ts[i][2].sec;
+                out_arg->ts[i].sys2.nsec =
+                    req->ptp_sys_offset_extended.ts[i][2].nsec;
             }
 
             break;

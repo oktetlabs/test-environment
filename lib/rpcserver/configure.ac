@@ -401,6 +401,10 @@ AC_CHECK_TYPES([struct ptp_sys_offset], [], [], [
 #include <linux/ptp_clock.h>
 ])
 
+AC_CHECK_TYPES([struct ptp_sys_offset_extended], [], [], [
+#include <linux/ptp_clock.h>
+])
+
 LIBS=${TE_LDFLAGS}
 
 dnl

@@ -479,6 +479,20 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
             break;
 
+        case RPC_PTP_SYS_OFFSET_EXTENDED:
+            in.access = IOCTL_RD;
+
+            if (arg != NULL)
+            {
+                in.req.req_val[0].type = IOCTL_PTP_SYS_OFFSET_EXTENDED;
+                memcpy(
+                  &in.req.req_val[0].ioctl_request_u.
+                                    req_ptp_sys_offset_extended,
+                  arg, sizeof(tarpc_ptp_sys_offset_extended));
+            }
+
+            break;
+
         case RPC_SIOCETHTOOL:
         {
             int           size = 0;
@@ -794,6 +808,14 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                   arg,
                   &out.req.req_val[0].ioctl_request_u.req_ptp_sys_offset,
                   sizeof(tarpc_ptp_sys_offset));
+                break;
+
+            case IOCTL_PTP_SYS_OFFSET_EXTENDED:
+                memcpy(
+                  arg,
+                  &out.req.req_val[0].ioctl_request_u.
+                                    req_ptp_sys_offset_extended,
+                  sizeof(tarpc_ptp_sys_offset_extended));
                 break;
 
             default:
@@ -1129,6 +1151,42 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                  (long long int)(answ->ts[i].sec),
                                  (unsigned int)(answ->ts[i].nsec));
             }
+            if (i > 0)
+            {
+                te_string_cut(req_str, 2);
+                te_string_append(req_str, " ] }");
+            }
+            else
+            {
+                te_string_append(req_str, "] }");
+            }
+
+            break;
+        }
+
+        case IOCTL_PTP_SYS_OFFSET_EXTENDED:
+        {
+            tarpc_ptp_sys_offset_extended *answ =
+                        (tarpc_ptp_sys_offset_extended *)arg;
+            int i;
+
+            te_string_append(req_str, " { .n_samples = %u, [ ",
+                             answ->n_samples);
+
+            for (i = 0;
+                 i < answ->n_samples && i < TE_ARRAY_LEN(answ->ts);
+                 i++)
+            {
+                te_string_append(req_str, "{ sys %lld.%06u, "
+                                 "phc %lld.%06u, sys %lld.%06u }, ",
+                                 (long long int)(answ->ts[i].sys1.sec),
+                                 (unsigned int)(answ->ts[i].sys1.nsec),
+                                 (long long int)(answ->ts[i].phc.sec),
+                                 (unsigned int)(answ->ts[i].phc.nsec),
+                                 (long long int)(answ->ts[i].sys2.sec),
+                                 (unsigned int)(answ->ts[i].sys2.nsec));
+            }
+
             if (i > 0)
             {
                 te_string_cut(req_str, 2);
