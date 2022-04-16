@@ -22,7 +22,7 @@
 #ifdef WITH_VTUND
 
 #include "te_queue.h"
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 
 
 /** Template for VTund configuration file name */

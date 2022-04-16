@@ -20,7 +20,7 @@
 
 #ifdef WITH_DNS_SERVER
 
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 #include <limits.h>
 
 #define NAMED_CONF           "named.conf"

@@ -20,7 +20,7 @@
 
 #ifdef WITH_ISCSI
 #include <stddef.h>
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 #include <sys/wait.h>
 #include "iscsi_target_api.h"
 

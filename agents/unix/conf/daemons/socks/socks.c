@@ -16,7 +16,7 @@
 #include "config.h"
 #endif
 
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 #include "te_string.h"
 #include "te_sockaddr.h"
 #include "rcf_pch.h"

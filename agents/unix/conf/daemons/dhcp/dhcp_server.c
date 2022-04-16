@@ -21,7 +21,7 @@
 
 #ifdef WITH_DHCP_SERVER
 
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 #include "dhcp_server.h"
 
 #ifdef HAVE_PWD_H

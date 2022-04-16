@@ -27,7 +27,7 @@
 #include "logger_api.h"
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 
 #define PPPD_EXEC "/usr/sbin/pppd"
 #define PPPOE_CLIENT_EXEC "/usr/sbin/pppoe"

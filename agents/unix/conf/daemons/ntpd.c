@@ -19,7 +19,7 @@
 #include "config.h"
 #endif
 
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 
 #define SERVICE_INITD "/etc/init.d"
 

@@ -21,7 +21,7 @@
 #endif
 
 #include <netinet/in.h>
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 
 #include "te_defs.h"
 #include "te_queue.h"

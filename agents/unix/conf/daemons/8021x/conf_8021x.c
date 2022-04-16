@@ -20,7 +20,7 @@
 
 #ifdef ENABLE_8021X
 #include <stddef.h>
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 
 /** Identifiers for supplicant parameters */
 typedef enum {

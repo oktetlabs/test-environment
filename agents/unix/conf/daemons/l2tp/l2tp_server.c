@@ -5,7 +5,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <ifaddrs.h>
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 #include "rcf_pch.h"
 #include "te_queue.h"
 #include "te_string.h"

@@ -192,9 +192,7 @@ typedef struct pam_message const pam_message_t;
 #include "te_shell_cmd.h"
 #include "te_string.h"
 
-#ifdef CFG_UNIX_DAEMONS
 #include "conf_daemons.h"
-#endif
 
 #if defined(__linux__)
 #include <linux/sockios.h>

@@ -18,7 +18,7 @@
 #include "config.h"
 #endif
 
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 
 #if HAVE_PTHREAD_H
 #include <pthread.h>

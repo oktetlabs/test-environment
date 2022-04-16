@@ -15,7 +15,7 @@
 #include "config.h"
 #endif
 
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 #include "conf_nginx.h"
 #include "rcf_pch.h"
 #include "te_alloc.h"

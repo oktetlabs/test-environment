@@ -27,7 +27,7 @@
 #include <signal.h>
 #endif
 
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 
 /** sfptpd daemon process id. */
 static pid_t sfptpd_pid = -1;

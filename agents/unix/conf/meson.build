@@ -10,6 +10,7 @@ includes += include_directories('route')
 includes += include_directories('rule')
 includes += include_directories('util')
 includes += include_directories('vm')
+includes += include_directories('daemons')
 
 sources += files(
     'base/conf.c',
@@ -159,7 +160,6 @@ endif
 unix_daemons = get_option('agent-unix-daemons')
 if unix_daemons.length() != 0
     c_args += [ '-DCFG_UNIX_DAEMONS' ]
-    includes += include_directories('daemons')
     sources += files('daemons/conf_daemons.c')
     sources += files('daemons/ldap/ldap.c')
     if unix_daemons.contains('tftp')

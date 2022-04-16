@@ -20,7 +20,7 @@
 
 #ifdef WITH_RADIUS_SERVER
 #include <stddef.h>
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 
 /* Part 1: Common parsing and creating configuration files */
 

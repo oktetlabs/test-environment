@@ -126,7 +126,7 @@ if CFG_UNIX_DAEMONS
 AM_CPPFLAGS += @DAEMONS_CFLAGS@
 
 libconf_a_SOURCES += daemons/conf_daemons.c daemons/ldap/ldap.c
-noinst_HEADERS += daemons/conf_daemons.h
+noinst_HEADERS += daemons/conf_daemons.h daemons/conf_daemons_internal.h
 
 if CFG_UNIX_DAEMONS_RADVD
 

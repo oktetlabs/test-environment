@@ -20,7 +20,7 @@
 
 #ifdef WITH_RADVD
 
-#include "conf_daemons.h"
+#include "conf_daemons_internal.h"
 #include "radvd.h"
 
 /*** Common variables ***/
