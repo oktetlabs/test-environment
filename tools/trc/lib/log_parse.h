@@ -96,6 +96,9 @@ typedef struct trc_log_parse_ctx {
     unsigned int                skip_depth; /**< Skip depth */
     trc_log_parse_state         skip_state; /**< State to return */
 
+    trc_log_parse_state log_parent_state; /**< State to return after parsing
+                                               logs */
+
     trc_report_test_iter_data  *iter_data;  /**< Current test iteration
                                                  data */
 

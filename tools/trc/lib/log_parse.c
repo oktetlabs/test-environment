@@ -752,7 +752,6 @@ trc_log_parse_start_element(void *user_data,
         case TRC_LOG_PARSE_ROOT:
             if (strcmp(tag, "logs") == 0)
             {
-                /* TODO: Avoid search of tags inside tests */
                 if (ctx->flags & TRC_LOG_PARSE_IGNORE_LOG_TAGS)
                 {
                     /* Ignore logs inside tests */
@@ -762,6 +761,7 @@ trc_log_parse_start_element(void *user_data,
                 }
                 else
                 {
+                    ctx->log_parent_state = TRC_LOG_PARSE_ROOT;
                     ctx->state = TRC_LOG_PARSE_LOGS;
                 }
             }
@@ -810,10 +810,18 @@ trc_log_parse_start_element(void *user_data,
             }
             else if (strcmp(tag, "logs") == 0)
             {
-                /* Ignore logs inside tests */
-                ctx->skip_state = ctx->state;
-                ctx->skip_depth = 1;
-                ctx->state = TRC_LOG_PARSE_SKIP;
+                if (ctx->flags & TRC_LOG_PARSE_IGNORE_LOG_TAGS)
+                {
+                    /* Ignore logs inside tests */
+                    ctx->skip_state = ctx->state;
+                    ctx->skip_depth = 1;
+                    ctx->state = TRC_LOG_PARSE_SKIP;
+                }
+                else
+                {
+                    ctx->log_parent_state = TRC_LOG_PARSE_TEST;
+                    ctx->state = TRC_LOG_PARSE_LOGS;
+                }
             }
             else
             {
@@ -1001,7 +1009,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
 
         case TRC_LOG_PARSE_LOGS:
             assert(strcmp(tag, "logs") == 0);
-            ctx->state = TRC_LOG_PARSE_ROOT;
+            ctx->state = ctx->log_parent_state;
             break;
 
         case TRC_LOG_PARSE_TEST:
