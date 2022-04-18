@@ -124,6 +124,9 @@
 /* Define to 1 if the system has the type `struct ptp_sys_offset_extended'. */
 #mesondefine HAVE_STRUCT_PTP_SYS_OFFSET_EXTENDED
 
+/* Define to 1 if the system has the type `struct ptp_sys_offset_precise'. */
+#mesondefine HAVE_STRUCT_PTP_SYS_OFFSET_PRECISE
+
 /* Define to 1 if the system has the type `struct sg_io_hdr'. */
 #mesondefine HAVE_STRUCT_SG_IO_HDR
 

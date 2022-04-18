@@ -465,6 +465,12 @@ struct tarpc_ptp_sys_offset_extended {
     tarpc_ptp_three_ts ts[25];
 };
 
+struct tarpc_ptp_sys_offset_precise {
+    tarpc_ptp_clock_time device;
+    tarpc_ptp_clock_time sys_realtime;
+    tarpc_ptp_clock_time sys_monoraw;
+};
+
 /** Function gets nothing */
 struct tarpc_void_in {
     struct tarpc_in_arg     common;
@@ -3109,7 +3115,8 @@ enum ioctl_type {
     IOCTL_HWTSTAMP_CONFIG,
     IOCTL_PTP_CLOCK_CAPS,
     IOCTL_PTP_SYS_OFFSET,
-    IOCTL_PTP_SYS_OFFSET_EXTENDED
+    IOCTL_PTP_SYS_OFFSET_EXTENDED,
+    IOCTL_PTP_SYS_OFFSET_PRECISE
 };
 
 /* Access type of ioctl requests */
@@ -3133,6 +3140,8 @@ union ioctl_request switch (ioctl_type type) {
                                   req_ptp_sys_offset;
     case IOCTL_PTP_SYS_OFFSET_EXTENDED: tarpc_ptp_sys_offset_extended
                                               req_ptp_sys_offset_extended;
+    case IOCTL_PTP_SYS_OFFSET_PRECISE: tarpc_ptp_sys_offset_precise
+                                              req_ptp_sys_offset_precise;
 };
 
 struct tarpc_ioctl_in {

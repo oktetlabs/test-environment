@@ -493,6 +493,20 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
             break;
 
+        case RPC_PTP_SYS_OFFSET_PRECISE:
+            in.access = IOCTL_RD;
+
+            if (arg != NULL)
+            {
+                in.req.req_val[0].type = IOCTL_PTP_SYS_OFFSET_PRECISE;
+                memcpy(
+                  &in.req.req_val[0].ioctl_request_u.
+                                    req_ptp_sys_offset_precise,
+                  arg, sizeof(tarpc_ptp_sys_offset_precise));
+            }
+
+            break;
+
         case RPC_SIOCETHTOOL:
         {
             int           size = 0;
@@ -816,6 +830,14 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                   &out.req.req_val[0].ioctl_request_u.
                                     req_ptp_sys_offset_extended,
                   sizeof(tarpc_ptp_sys_offset_extended));
+                break;
+
+            case IOCTL_PTP_SYS_OFFSET_PRECISE:
+                memcpy(
+                  arg,
+                  &out.req.req_val[0].ioctl_request_u.
+                                    req_ptp_sys_offset_precise,
+                  sizeof(tarpc_ptp_sys_offset_precise));
                 break;
 
             default:
@@ -1196,6 +1218,24 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             {
                 te_string_append(req_str, "] }");
             }
+
+            break;
+        }
+
+        case IOCTL_PTP_SYS_OFFSET_PRECISE:
+        {
+            tarpc_ptp_sys_offset_precise *answ =
+                        (tarpc_ptp_sys_offset_precise *)arg;
+
+            te_string_append(req_str, "{ device %lld.%06u, "
+                             "sys_realtime %lld.%06u, "
+                             "sys_monoraw %lld.%06u }, ",
+                             (long long int)(answ->device.sec),
+                             (unsigned int)(answ->device.nsec),
+                             (long long int)(answ->sys_realtime.sec),
+                             (unsigned int)(answ->sys_realtime.nsec),
+                             (long long int)(answ->sys_monoraw.sec),
+                             (unsigned int)(answ->sys_monoraw.nsec));
 
             break;
         }

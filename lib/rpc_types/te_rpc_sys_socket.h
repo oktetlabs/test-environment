@@ -1079,6 +1079,9 @@ typedef enum rpc_ioctl_code {
     RPC_PTP_SYS_OFFSET_EXTENDED, /**< Extended version of
                                       PTP_SYS_OFFSET providing three
                                       timestamps per sample */
+    RPC_PTP_SYS_OFFSET_PRECISE , /**< Estimate offset between system and
+                                      PTP clocks using getcrosststamp()
+                                      callback in driver */
 
     /* Winsock2-specific codes */
     RPC_SIO_ADDRESS_LIST_CHANGE,

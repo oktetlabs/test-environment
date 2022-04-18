@@ -4589,6 +4589,9 @@ typedef union ioctl_param {
 #ifdef HAVE_STRUCT_PTP_SYS_OFFSET_EXTENDED
     struct ptp_sys_offset_extended ptp_sys_offset_extended;
 #endif
+#ifdef HAVE_STRUCT_PTP_SYS_OFFSET_PRECISE
+    struct ptp_sys_offset_precise ptp_sys_offset_precise;
+#endif
 } ioctl_param;
 
 static te_errno
@@ -4890,6 +4893,32 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                                  "of time samples");
                 return TE_ENOBUFS;
             }
+
+            break;
+        }
+#endif
+
+#ifdef HAVE_STRUCT_PTP_SYS_OFFSET_PRECISE
+        case IOCTL_PTP_SYS_OFFSET_PRECISE:
+        {
+            tarpc_ptp_sys_offset_precise *out_arg =
+                &out->req.req_val[0].ioctl_request_u.
+                                req_ptp_sys_offset_precise;
+
+            req->ptp_sys_offset_precise.device.sec =
+                                            out_arg->device.sec;
+            req->ptp_sys_offset_precise.device.nsec =
+                                            out_arg->device.nsec;
+
+            req->ptp_sys_offset_precise.sys_realtime.sec =
+                                            out_arg->sys_realtime.sec;
+            req->ptp_sys_offset_precise.sys_realtime.nsec =
+                                            out_arg->sys_realtime.nsec;
+
+            req->ptp_sys_offset_precise.sys_monoraw.sec =
+                                            out_arg->sys_monoraw.sec;
+            req->ptp_sys_offset_precise.sys_monoraw.nsec =
+                                            out_arg->sys_monoraw.nsec;
 
             break;
         }
@@ -5211,6 +5240,30 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 out_arg->ts[i].sys2.nsec =
                     req->ptp_sys_offset_extended.ts[i][2].nsec;
             }
+
+            break;
+        }
+#endif
+
+#ifdef HAVE_STRUCT_PTP_SYS_OFFSET_PRECISE
+        case IOCTL_PTP_SYS_OFFSET_PRECISE:
+        {
+            tarpc_ptp_sys_offset_precise *out_arg =
+                &out->req.req_val[0].ioctl_request_u.
+                                    req_ptp_sys_offset_precise;
+
+            out_arg->device.sec = req->ptp_sys_offset_precise.device.sec;
+            out_arg->device.nsec = req->ptp_sys_offset_precise.device.nsec;
+
+            out_arg->sys_realtime.sec =
+                          req->ptp_sys_offset_precise.sys_realtime.sec;
+            out_arg->sys_realtime.nsec =
+                          req->ptp_sys_offset_precise.sys_realtime.nsec;
+
+            out_arg->sys_monoraw.sec =
+                          req->ptp_sys_offset_precise.sys_monoraw.sec;
+            out_arg->sys_monoraw.nsec =
+                          req->ptp_sys_offset_precise.sys_monoraw.nsec;
 
             break;
         }

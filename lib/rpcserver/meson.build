@@ -298,6 +298,11 @@ if cc.has_type(t, prefix: '#include <linux/ptp_clock.h>')
     conf.set('HAVE_' + t.to_upper().underscorify(), 1)
 endif
 
+t = 'struct ptp_sys_offset_precise'
+if cc.has_type(t, prefix: '#include <linux/ptp_clock.h>')
+    conf.set('HAVE_' + t.to_upper().underscorify(), 1)
+endif
+
 #
 # Asynchronous I/O:
 # - FreeBSD has in -lc;
