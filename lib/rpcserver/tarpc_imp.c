@@ -459,6 +459,48 @@ try_ta_symtbl:
 }
 
 /**
+ * Log a file descriptor set after call for descriptor monitor functions like
+ * select() or poll().
+ *
+ * @param preamble  name of fd_set entity, e.g. readfds, writefds or exceptfds
+ * @param before    fd_set data before a call
+ * @param after     fd_set data after a call
+ * @param nfds      number of descriptors in the set
+ * @param seqno     sequential number to coordinate logs
+ * @param fd_set_id rpc identification ptr to log
+ *
+ */
+static void
+log_fd_set(const char *preamble, fd_set *before, fd_set *after, int nfds,
+           uint16_t seqno, rpc_fd_set_p fd_set_id)
+{
+    int i = 0;
+    te_string str = ((te_string)TE_STRING_INIT);
+
+    for (i = 0; i < nfds; i++)
+    {
+        te_bool before_bit = FD_ISSET(i, before);
+        te_bool after_bit = FD_ISSET(i, after);
+
+        if (!before_bit)
+            continue;
+
+        if (after_bit)
+            te_string_append(&str, "%d(rdy) ", i);
+        else
+            te_string_append(&str, "%d ", i);
+    }
+
+    if (str.ptr != NULL)
+    {
+        RING("-> %s[%" PRIu64 "]("RPC_TYPE_NS_FD_SET"(%#x)): %s", preamble,
+             seqno, fd_set_id, str.ptr);
+    }
+
+    te_string_free(&str);
+}
+
+/**
  * Find the pointer to function by its name in table.
  * Try to convert string to long int and cast it to the pointer
  * in the case if function is implemented as a static one. Use it
@@ -2909,6 +2951,9 @@ TARPC_FUNC(select,
     fd_set *rfds;
     fd_set *wfds;
     fd_set *efds;
+    fd_set rfds_init;
+    fd_set wfds_init;
+    fd_set efds_init;
     struct timeval tv;
     static rpc_ptr_id_namespace ns = RPC_PTR_ID_NS_INVALID;
 
@@ -2925,8 +2970,32 @@ TARPC_FUNC(select,
     RCF_PCH_MEM_INDEX_TO_PTR_RPC(wfds, in->writefds, ns, );
     RCF_PCH_MEM_INDEX_TO_PTR_RPC(efds, in->exceptfds, ns, );
 
+    /* Copy fd_sets to compare against them after select call */
+    if (rfds != NULL)
+        rfds_init = *rfds;
+    if (wfds != NULL)
+        wfds_init = *wfds;
+    if (efds != NULL)
+        efds_init = *efds;
+
     MAKE_CALL(out->retval = func(in->n, rfds, wfds, efds,
                     out->timeout.timeout_len == 0 ? NULL : &tv));
+
+    if (rfds != NULL)
+    {
+        log_fd_set("readfds", &rfds_init, rfds, in->n, in->common.seqno,
+                   in->readfds);
+    }
+    if (wfds != NULL)
+    {
+        log_fd_set("writefds", &wfds_init, wfds, in->n, in->common.seqno,
+                   in->writefds);
+    }
+    if (efds != NULL)
+    {
+        log_fd_set("exceptfds", &efds_init, efds, in->n, in->common.seqno,
+                   in->exceptfds);
+    }
 
     if (out->timeout.timeout_len > 0)
         TARPC_CHECK_RC(timeval_h2rpc(
