@@ -1011,9 +1011,19 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
     char          *slave_list_str = NULL;
     te_errno       rc = 0;
     unsigned int   i;
+    const char *dn = ps_if->iface->if_info.if_name;
+    const char dn_prefix_af_xdp[] = "net_af_xdp";
+    te_bool is_af_xdp = FALSE;
 
     prefix = (is_bonding) ? prefix_bonding : prefix_failsafe;
     postfix = (is_bonding) ? postfix_bonding : postfix_failsafe;
+
+    if (strncmp(dn, dn_prefix_af_xdp, strlen(dn_prefix_af_xdp)) == 0)
+    {
+        is_af_xdp = TRUE;
+        prefix = ",iface=";
+        postfix = "";
+    }
 
     rc = tapi_eal_get_vdev_slaves(env, ps_if, &slaves, &nb_slaves);
     if (rc != 0)
@@ -1026,15 +1036,30 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
         size_t  slave_list_str_len_new = slave_list_str_len;
         size_t  len;
         int     ret;
+        char *sub = slaves[i];
+        char *ifname_by_fn = NULL;
+
+        if (is_af_xdp) {
+            rc = cfg_get_instance_string_fmt(
+                       &ifname_by_fn, "/agent:%s/hardware:/pci:/device:%s/net:",
+                       ta, slaves[i]);
+            if (rc != 0)
+                goto out;
+
+            sub = ifname_by_fn;
+        }
 
         slave_list_str_len_new += strlen(prefix);
-        slave_list_str_len_new += strlen(slaves[i]);
+        slave_list_str_len_new += strlen(sub);
         if (!is_bonding)
         {
             rc = tapi_rte_get_dev_args_by_pci_addr(ta, slaves[i],
                                                    &dev_args_failsafe);
             if (rc != 0)
+            {
+                free(ifname_by_fn);
                 goto out;
+            }
         }
         if (dev_args_failsafe != NULL)
         {
@@ -1048,6 +1073,7 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
         if (slave_list_str_new == NULL)
         {
             rc = TE_ENOMEM;
+            free(ifname_by_fn);
             free(dev_args_failsafe);
             goto out;
         }
@@ -1055,11 +1081,12 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
 
         len = slave_list_str_len_new - slave_list_str_len;
         ret = snprintf(slave_list_str + slave_list_str_len, len + 1,
-                       "%s%s%s%s%s", prefix, slaves[i],
+                       "%s%s%s%s%s", prefix, sub,
                        (dev_args_failsafe != NULL) ? "," : "",
                        (dev_args_failsafe != NULL) ? dev_args_failsafe : "",
                        postfix);
         free(dev_args_failsafe);
+        free(ifname_by_fn);
         if (ret < 0 || (size_t)ret != len)
         {
             rc = TE_EINVAL;
@@ -1547,27 +1574,44 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
      /* Specify PCI whitelist or virtual device information */
     STAILQ_FOREACH(ps_if, &pco->process->ifs, links)
     {
-        if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
-        {
-            char *dev_args;
+        const char *dn = ps_if->iface->if_info.if_name;
+        const char dn_prefix_af_xdp[] = "net_af_xdp";
+        char *dev_args;
 
-            rc = tapi_rte_get_dev_args_by_pci_addr(rpcs->ta,
-                                                   ps_if->iface->if_info.if_name,
-                                                   &dev_args);
-            if (rc != 0)
-                goto cleanup;
-
-            append_arg(&my_argc, &my_argv, "--allow=%s%s%s",
-                       ps_if->iface->if_info.if_name,
-                       (dev_args == NULL) ? "" : ",",
-                       (dev_args == NULL) ? "" : dev_args);
-            free(dev_args);
-        }
-        else if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_RTE_VDEV)
+        switch (ps_if->iface->rsrc_type)
         {
-            rc = tapi_eal_whitelist_vdev_slaves(env, ps_if, rpcs->ta,
-                                                &my_argc, &my_argv);
-            if (rc != 0)
+            case NET_NODE_RSRC_TYPE_PCI_FN:
+                rc = tapi_rte_get_dev_args_by_pci_addr(rpcs->ta,
+                                                       ps_if->iface->if_info.if_name,
+                                                       &dev_args);
+                if (rc != 0)
+                    goto cleanup;
+
+                append_arg(&my_argc, &my_argv, "--allow=%s%s%s",
+                           ps_if->iface->if_info.if_name,
+                           (dev_args == NULL) ? "" : ",",
+                           (dev_args == NULL) ? "" : dev_args);
+                free(dev_args);
+                break;
+
+            case NET_NODE_RSRC_TYPE_RTE_VDEV:
+                if (strncmp(dn, dn_prefix_af_xdp,
+                            strlen(dn_prefix_af_xdp)) != 0)
+                {
+                    rc = tapi_eal_whitelist_vdev_slaves(env, ps_if, rpcs->ta,
+                                                        &my_argc, &my_argv);
+                    if (rc != 0)
+                        goto cleanup;
+                }
+                else
+                {
+                    /* Do not let EAL automatically grab PCI devices */
+                    append_arg(&my_argc, &my_argv, "--allow=FFFF:FF:FF.F");
+                }
+                break;
+
+            default:
+                rc = TE_EINVAL;
                 goto cleanup;
         }
     }
