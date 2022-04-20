@@ -86,6 +86,66 @@ var module;
                                                    a.onclick = function() { callback(); return false; };
                                                    return a; };
 
+    /**
+     * Get single-line description of a JSON object (to be used for object
+     * references in a tree). It will include name of the first key and
+     * possibly its value (if the value is not array or object).
+     *
+     * @param json          JSON object.
+     * @param max_string    Maximum length of a string.
+     * @param sort_objects  If @c TRUE, sort keys before choosing the first
+     *                      one.
+     *
+     * @return Object description.
+     */
+    function _obj_short_descr(json, max_string, sort_objects)
+    {
+        var keys = Object.keys(json);
+        var key;
+        var value;
+        var result;
+
+        if (keys.length == 0)
+            return "";
+
+        if (sort_objects)
+            keys = keys.sort();
+
+        key = keys[0];
+        value = json[key];
+        result = "\"" + key + "\": ";
+
+        if (typeof(value) == "string")
+        {
+            if (value.length > max_string)
+            {
+                result = result + "\"" + value.substr(0, max_string) +
+                         "..." + "\"";
+            }
+            else
+            {
+                result = result + "\"" + value + "\"";
+            }
+        }
+        else if (typeof(value) != "object")
+        {
+            result = result + JSON.stringify(value);
+        }
+        else if (value.constructor == Array)
+        {
+            result = result + "[...]";
+        }
+        else
+        {
+            result = result + "{...}";
+        }
+
+        if (keys.length > 1)
+            result = result + ", ...";
+
+        return result;
+    }
+
     function _renderjson(json, indent, dont_indent, show_level, max_string, sort_objects) {
         var my_indent = dont_indent ? "" : indent;
 
@@ -141,7 +201,8 @@ var module;
         if (isempty(json))
             return themetext(null, my_indent, "object syntax", "{}");
 
-        return disclosure("{", "...", "}", "object", function () {
+        return disclosure("{", " " + _obj_short_descr(json) + " ", "}",
+                          "object", function () {
             var os = append(span("object"), themetext("object syntax", "{", null, "\n"));
             for (var k in json) var last = k;
             var keys = Object.keys(json);
