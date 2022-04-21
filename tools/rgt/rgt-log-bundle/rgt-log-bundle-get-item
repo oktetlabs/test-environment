@@ -19,11 +19,13 @@ Usage: rgt-log-bundle-get-item [<options>]
   --req-path=PATH       Path to the log to be obtained
   --shared-url=URL      URL of directory for shared files (images etc.)
   --docs-url=URL        URL of directory for test descriptions
-  --sniff-log           Include sniffer capture logs (currently works
-                        only for log.txt)
-  --sniff-log-dir=PATH  Where to find sniffer capture files (by default
-                        it looks for "caps" subfolder in the same folder
-                        in which RAW log bundle is stored)
+  --sniff-log           Include sniffer capture logs
+  --sniff-log-dir=PATH  Where to find sniffer capture files. No need
+                        to specify this if log bundle includes capture
+                        files. Otherwise this path is used only when
+                        generating log.txt and by default is set to
+                        "caps" subdirectory in the same directory where
+                        log bundle is stored
 
 EOF
 }
