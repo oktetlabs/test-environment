@@ -1462,13 +1462,15 @@ socket_listen_close(int domain, const struct sockaddr *addr,
         rc = bind_func(s, addr, addrlen);
         if( rc != 0 )
         {
-            ERROR("%s(): bind() function failed", __FUNCTION__);
+            ERROR("%s(): bind() function failed with error %r", __FUNCTION__,
+                  TE_OS_RC(TE_TA_UNIX, errno));
             return -1;
         }
         rc = listen_func(s, 1);
         if( rc != 0 )
         {
-            ERROR("%s(): listen() function failed", __FUNCTION__);
+            ERROR("%s(): listen() function failed with error %r", __FUNCTION__,
+                  TE_OS_RC(TE_TA_UNIX, errno));
             return -1;
         }
         tarpc_call_close_with_hooks(close_func, s);
