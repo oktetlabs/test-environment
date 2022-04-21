@@ -17,7 +17,10 @@
 #ifndef __TE_STDINT_H__
 #define __TE_STDINT_H__
 
-#include "te_config.h"
+/*
+ * It should be included only after including of config.h where
+ * constant HAVE_STDINT_H is defined.
+ */
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
