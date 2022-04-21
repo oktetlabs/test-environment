@@ -376,6 +376,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
     rpcs->def_timeout = default_timeout;
     rpcs->timeout = RCF_RPC_UNSPEC_TIMEOUT;
     rpcs->sid = sid;
+    rpcs->seqno = 0;
 
     rcf_rpc_server_hooks_run(rpcs);
 
@@ -719,6 +720,9 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     in->op = rpcs->op;
     in->jobid = rpcs->jobid0;
     in->lib_flags = TARPC_LIB_DEFAULT;
+    if (rpcs->op != RCF_RPC_WAIT)
+        rpcs->seqno++;
+    in->seqno = rpcs->seqno;
     if (rpcs->use_libc || rpcs->use_libc_once)
         in->lib_flags |= TARPC_LIB_USE_LIBC;
     if (rpcs->use_syscall)

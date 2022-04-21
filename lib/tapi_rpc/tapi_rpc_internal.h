@@ -40,6 +40,9 @@
 #if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
+#if HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
 #include "tarpc.h"
 #include "tapi_jmp.h"
 #include "tapi_test_run_status.h"
@@ -93,9 +96,11 @@ do {                                                                    \
                 break;                                                  \
         }                                                               \
         LOG_MSG(rpcs->err_log ? TE_LL_ERROR : TE_LL_RING,               \
-                "RPC (%s,%s)%s%s: " #func "(" in_format ") -> "         \
+                "RPC (%s,%s[%" PRIu16 "])%s%s: " #func                  \
+                "(" in_format ") -> "                                   \
                 out_format " (" RPC_ERROR_FMT ")",                      \
-                rpcs->ta, rpcs->name, rpcop2str(rpcs->last_op),         \
+                rpcs->ta, rpcs->name, rpcs->seqno,                      \
+                rpcop2str(rpcs->last_op),                               \
                 (rpcs->last_use_libc || rpcs->use_libc) ? " libc" : "", \
                 _x, RPC_ERROR_ARGS(rpcs));                              \
         rpcs->err_log = FALSE;                                          \

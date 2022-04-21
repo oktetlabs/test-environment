@@ -129,6 +129,11 @@ typedef struct rcf_rpc_server {
                                      the server (in milliseconds since
                                      Epoch; 0 if it should be called
                                      immediately) */
+    uint16_t    seqno;          /**< Sequence number of the next RPC call.
+                                     Only incremented by completed calls.
+                                     The number should not be taken as a
+                                     globally unique id, it may wrap up
+                                     relatively quickly */
 
     uint32_t    def_timeout;    /**< Default RPC call timeout in
                                      milliseconds */

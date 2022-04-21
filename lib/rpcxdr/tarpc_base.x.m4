@@ -100,6 +100,7 @@ struct tarpc_in_arg {
     tarpc_op        op;         /**< RPC operation */
     uint64_t        start;
     uint64_t        jobid;      /**< Job identifier (for async calls) */
+    uint16_t        seqno;      /**< Sequence number of an RPC call */
     tarpc_lib_flags lib_flags;  /**< How to resolve function name */
 };
 
