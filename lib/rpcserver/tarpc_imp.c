@@ -4484,6 +4484,9 @@ TARPC_FUNC(pselect,
             fd_set *rfds = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->readfds, ns);
             fd_set *wfds = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->writefds, ns);
             fd_set *efds = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->exceptfds, ns);
+            fd_set rfds_init;
+            fd_set wfds_init;
+            fd_set efds_init;
             sigset_t *sigmask = rcf_pch_mem_get(in->sigmask);
             /*
              * The pointer may be a NULL and, therefore, contain
@@ -4492,9 +4495,34 @@ TARPC_FUNC(pselect,
              */
             INIT_CHECKED_ARG(sigmask, sizeof(sigset_t), 0);
 
+            /* Copy fd_sets to compare against them after pselect() call */
+            if (rfds != NULL)
+                rfds_init = *rfds;
+            if (wfds != NULL)
+                wfds_init = *wfds;
+            if (efds != NULL)
+                efds_init = *efds;
+
             MAKE_CALL(out->retval = func(in->n, rfds, wfds, efds,
                             out->timeout.timeout_len == 0 ? NULL : &tv,
                             sigmask));
+
+
+            if (rfds != NULL)
+            {
+                log_fd_set("readfds", &rfds_init, rfds, in->n, in->common.seqno,
+                           in->readfds);
+            }
+            if (wfds != NULL)
+            {
+                log_fd_set("writefds", &wfds_init, wfds, in->n,
+                           in->common.seqno, in->writefds);
+            }
+            if (efds != NULL)
+            {
+                log_fd_set("exceptfds", &efds_init, efds, in->n,
+                           in->common.seqno, in->exceptfds);
+            }
 
             if (out->timeout.timeout_len > 0)
             {
