@@ -15,6 +15,12 @@
 #include <stdio.h>
 #include <popt.h>
 #include <inttypes.h>
+#include <string.h>
+#include <errno.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "te_config.h"
 #include "te_defs.h"
@@ -74,18 +80,39 @@ rgt_load_caps_idx(const char *split_log_path,
                   FILE **f_heads_out)
 {
     rgt_cap_idx_rec *idx = NULL;
-    uint64_t len;
-    uint64_t cnt;
+    uint64_t len = 0;
+    uint64_t cnt = 0;
     FILE *f = NULL;
+
+    te_string idx_path = TE_STRING_INIT;
+    struct stat st;
+    int rc;
 
     RGT_ERROR_INIT;
 
-    CHECK_FOPEN_FMT(f, "r",
-                    "%s/sniff_heads_idx", split_log_path);
+    CHECK_TE_RC(te_string_append(&idx_path, "%s/sniff_heads_idx",
+                                 split_log_path));
+    rc = stat(te_string_value(&idx_path), &st);
+    if (rc < 0)
+    {
+        /* Bundle may simply not include capture files. */
+        if (errno == ENOENT)
+            RGT_CLEANUP_JUMP;
+
+        ERROR("stat(%s) fails with error %d (%s)",
+              te_string_value(&idx_path),
+              errno, strerror(errno));
+        RGT_ERROR_JUMP;
+    }
+
+    CHECK_FOPEN(f, te_string_value(&idx_path), "r");
 
     CHECK_OS_RC(fseek(f, 0L, SEEK_END));
     CHECK_OS_RC(len = ftello(f));
     CHECK_OS_RC(fseek(f, 0L, SEEK_SET));
+
+    if (len == 0)
+        RGT_CLEANUP_JUMP;
 
     if (len % sizeof(rgt_cap_idx_rec) != 0)
     {
@@ -115,6 +142,7 @@ rgt_load_caps_idx(const char *split_log_path,
     RGT_ERROR_SECTION;
 
     CHECK_FCLOSE(f);
+    te_string_free(&idx_path);
 
     if (RGT_ERROR)
     {

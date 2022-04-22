@@ -204,12 +204,22 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
 /** Set error variable to error value */
 #define RGT_ERROR_SET rgt_err_var = RGT_ERROR_FAIL
 
+/**
+ * Jump to error/cleanup section without setting error variable
+ * (can be used when you simply need to terminate function
+ *  execution, do cleanup and return success)
+ */
+#define RGT_CLEANUP_JUMP \
+    do {                        \
+        if (!rgt_err_section)   \
+            goto error;         \
+    } while (0)
+
 /** Set error variable to error value and jump to error section */
 #define RGT_ERROR_JUMP \
     do {                        \
         RGT_ERROR_SET;          \
-        if (!rgt_err_section)   \
-            goto error;         \
+        RGT_CLEANUP_JUMP;       \
     } while (0)
 
 /** Get value of error variable */

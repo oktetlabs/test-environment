@@ -317,6 +317,8 @@ main(int argc, char **argv)
 
     CHECK_RC(rgt_load_caps_idx(split_log_path, &caps_idx, &caps_num,
                                &f_sniff_heads));
+    if (caps_num == 0)
+        RGT_CLEANUP_JUMP;
 
     CHECK_RC(recover_caps_files_heads());
 
