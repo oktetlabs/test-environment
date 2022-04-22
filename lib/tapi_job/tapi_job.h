@@ -90,6 +90,15 @@ extern te_errno tapi_job_factory_set_path(tapi_job_factory_t *factory);
 extern void tapi_job_factory_destroy(tapi_job_factory_t *factory);
 
 /**
+ * Get factory used to create the job.
+ *
+ * @param job Job instance handle
+ *
+ * @return Job factory handle or @c NULL if @p job is @c NULL
+ */
+extern tapi_job_factory_t *tapi_job_get_factory(tapi_job_t *job);
+
+/**
  * Create a job controlled in the way specified by @p factory.
  * The job will be managed by @p spawner plugin.
  *

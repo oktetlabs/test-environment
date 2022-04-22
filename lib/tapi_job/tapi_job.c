@@ -258,6 +258,13 @@ init_methods(tapi_job_t *job)
     }
 }
 
+/* See description in tapi_job.h */
+tapi_job_factory_t *
+tapi_job_get_factory(tapi_job_t *job)
+{
+    return (job != NULL) ? job->factory : NULL;
+}
+
 /* See description in tapi_job_internal.h */
 rcf_rpc_server *
 tapi_job_get_rpcs(const tapi_job_t *job)

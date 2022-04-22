@@ -33,14 +33,19 @@ tapi_dpdk_l2fwd_start(tapi_dpdk_l2fwd_job_t *l2fwd_job)
 te_errno
 tapi_dpdk_l2fwd_destroy(tapi_dpdk_l2fwd_job_t *l2fwd_job)
 {
+    tapi_job_factory_t *factory;
     te_errno rc;
 
     if (l2fwd_job == NULL)
         return 0;
 
+    factory = tapi_job_get_factory(l2fwd_job->job);
+
     rc = tapi_job_destroy(l2fwd_job->job, TAPI_DPDK_L2FWD_TERM_TIMEOUT_MS);
     if (rc != 0)
         return rc;
+
+    tapi_job_factory_destroy(factory);
 
     free(l2fwd_job->ta);
     return 0;
@@ -284,8 +289,9 @@ out:
         free(l2fwd_argv[i]);
     free(l2fwd_argv);
     te_string_free(&l2fwd_path);
-    tapi_job_factory_destroy(factory);
+
+    if (rc != 0)
+        tapi_job_factory_destroy(factory);
 
     return rc;
 }
-
