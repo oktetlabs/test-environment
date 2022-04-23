@@ -250,21 +250,6 @@ extern const char *te_extended_bit_mask2log_buf(te_log_buf *buf,
 extern const char *te_ether_addr2log_buf(te_log_buf *buf,
                                          const uint8_t * mac_addr);
 
-/**
- * Put IPv4 / IPv6 address to log buffer.
- *
- * @note This function is deprecated. te_ip_addr2te_str() can be used with
- *       TE string instead.
- *
- * @param buf            Pointer to the buffer allocated with @b te_log_buf_alloc()
- * @param ip_addr        Pointer to the IPv4 / IPv6 address
- * @param addr_str_len   Length of the string form for IPv4 / IPv6 address
- *
- * @return @b te_log_buf_get() return value after addition
- */
-extern const char *te_ip_addr2log_buf(te_log_buf *buf, const void *ip_addr,
-                                      int addr_str_len);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

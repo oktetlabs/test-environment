@@ -369,25 +369,3 @@ te_ether_addr2log_buf(te_log_buf *buf, const uint8_t *mac_addr)
 
     return te_log_buf_get(buf);
 }
-
-const char *
-te_ip_addr2log_buf(te_log_buf *buf, const void *ip_addr, int addr_str_len)
-{
-    int af;
-
-    switch (addr_str_len)
-    {
-        case INET_ADDRSTRLEN:
-            af = AF_INET;
-            break;
-        case INET6_ADDRSTRLEN:
-            af = AF_INET6;
-            break;
-        default:
-            af = AF_UNSPEC;
-            break;
-    }
-
-    te_ip_addr2te_str(&buf->str, ip_addr, af);
-    return te_log_buf_get(buf);
-}
