@@ -78,6 +78,9 @@ typedef struct tapi_ethtool_report {
 
     te_bool err_out;       /**< @c TRUE if something was printed to
                                 stderr */
+    te_string err_data;    /**< Text printed to stderr */
+    te_errno err_code;     /**< Error code determined from parsing
+                                stderr output */
 
     union {
         tapi_ethtool_if_props if_props; /**< Interface properties printed

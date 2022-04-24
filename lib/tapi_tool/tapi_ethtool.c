@@ -27,6 +27,10 @@ const tapi_ethtool_opt tapi_ethtool_default_opt = {
 
 const tapi_ethtool_report tapi_ethtool_default_report = {
     .cmd = TAPI_ETHTOOL_CMD_NONE,
+
+    .err_out = FALSE,
+    .err_data = TE_STRING_INIT,
+    .err_code = TE_EOK,
 };
 
 /** Filters used to parse ethtool output when no command is supplied */
@@ -625,22 +629,78 @@ get_ring(tapi_ethtool_app *app, tapi_ethtool_ring *ring)
 }
 
 /**
+ * Check and parse stderr output.
+ *
+ * @param app           Pointer to application structure
+ * @param report        Where to save parsed data
+ *
+ * @return Status code.
+ */
+static te_errno
+get_error(tapi_ethtool_app *app,
+          tapi_ethtool_report *report)
+{
+    tapi_job_buffer_t *buffers = NULL;
+    unsigned int count = 0;
+    unsigned int i;
+    te_errno rc = 0;
+
+    rc = tapi_job_receive_many(TAPI_JOB_CHANNEL_SET(app->err_filter),
+                               0, &buffers, &count);
+    if (rc != 0)
+        return rc;
+
+    report->err_code = TE_EOK;
+    for (i = 0; i < count; i++)
+    {
+        if (buffers[i].eos)
+            break;
+
+        report->err_out = TRUE;
+
+        rc = te_string_append(&report->err_data, "%s",
+                              te_string_value(&buffers[i].data));
+        if (rc != 0)
+            goto cleanup;
+
+        if (strcasestr(te_string_value(&buffers[i].data),
+                       "Operation not supported") != NULL)
+            report->err_code = TE_EOPNOTSUPP;
+    }
+
+cleanup:
+
+    tapi_job_buffers_free(buffers, count);
+
+    return rc;
+}
+
+/**
  * Get data parsed from ethtool output.
  *
- * @param app       Pointer to application structure
- * @param report    Where to save parsed data
+ * @param app           Pointer to application structure
+ * @param report        Where to save parsed data
+ * @param parse_stdout  If @c TRUE, parse stdout
  *
  * @return Status code.
  */
 static te_errno
 get_report(tapi_ethtool_app *app,
-           tapi_ethtool_report *report)
+           tapi_ethtool_report *report,
+           te_bool parse_stdout)
 {
+    te_errno rc;
+
     tapi_ethtool_destroy_report(report);
 
     report->cmd = app->cmd;
-    report->err_out = tapi_job_filters_have_data(
-                          TAPI_JOB_CHANNEL_SET(app->err_filter), 0);
+
+    rc = get_error(app, report);
+    if (rc != 0)
+        return TE_RC(TE_TAPI, rc);
+
+    if (!parse_stdout)
+        return 0;
 
     switch (report->cmd)
     {
@@ -691,11 +751,14 @@ tapi_ethtool(tapi_job_factory_t *factory,
         status.value != 0)
     {
         rc = TE_RC(TE_TAPI, TE_ESHCMD);
+        if (report != NULL)
+            get_report(app, report, FALSE);
+
         goto out;
     }
 
     if (report != NULL)
-        rc = get_report(app, report);
+        rc = get_report(app, report, TRUE);
 
 out:
 
@@ -720,6 +783,10 @@ tapi_ethtool_destroy_report(tapi_ethtool_report *report)
         default:
             return;
     }
+
+    te_string_free(&report->err_data);
+
+    *report = (tapi_ethtool_report)tapi_ethtool_default_report;
 }
 
 /* See description in tapi_ethtool.h */
