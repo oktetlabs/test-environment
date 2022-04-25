@@ -1055,10 +1055,14 @@ pollreq2str(struct rpc_pollfd *ufds, unsigned int nfds,
         buf += rc;
         for (i = 0; i < nfds; ++i)
         {
-            rc = snprintf(buf, buflen, "{%d,%s,%s}",
+            const char* returned_events = poll_event_rpc2str(ufds[i].revents);
+            te_bool need_mark = (ufds[i].revents != 0);
+
+            rc = snprintf(buf, buflen, "{%d,%s,%s%s}",
                           ufds[i].fd,
                           poll_event_rpc2str(ufds[i].events),
-                          poll_event_rpc2str(ufds[i].revents));
+                          returned_events,
+                          need_mark ? " (RETURNED)" : "");
             if ((size_t)rc > buflen)
                 break;
             buflen -= rc;
@@ -1163,8 +1167,6 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
 
     in.chk_func = TEST_BEHAVIOUR(use_chk_funcs);
 
-    pollreq2str(ufds, rnfds, str_buf_1, sizeof(str_buf_1));
-
     if ((timeout > 0) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
     {
         rpcs->timeout = TE_SEC2MS(TAPI_RPC_TIMEOUT_EXTRA_SEC) + timeout;
@@ -1184,10 +1186,10 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(poll, out.retval);
-    TAPI_RPC_LOG(rpcs, poll, "%p%s, %u, %d, chk_func=%s", "%d %s",
-                 ufds, str_buf_1, nfds, timeout,
+    TAPI_RPC_LOG(rpcs, poll, "%p%s, %u, %d, chk_func=%s", "%d",
+                 ufds, str_buf_2, nfds, timeout,
                  (in.chk_func ? "TRUE" : "FALSE"),
-                 out.retval, str_buf_2);
+                 out.retval);
     RETVAL_INT(poll, out.retval);
 }
 
