@@ -52,4 +52,16 @@ typedef struct tester_global {
 
 extern tester_global tester_global_context;
 
+/**
+ * Log TRC tags as an MI message.
+ *
+ * Tag names and values are split at the first colon, no additional checks
+ * are performed.
+ *
+ * @param trc_tags          TRC tags.
+ *
+ * @return Status code.
+ */
+extern te_errno tester_log_trc_tags(const tqh_strings *trc_tags);
+
 #endif  /* __TE_TESTER_H__ */

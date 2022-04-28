@@ -49,6 +49,7 @@
 #include "te_alloc.h"
 #include "conf_api.h"
 #include "log_bufs.h"
+#include "te_trc.h"
 
 #include "tester_conf.h"
 #include "tester_term.h"
@@ -58,6 +59,8 @@
 #include "tester_flags.h"
 #include "tester_serial_thread.h"
 #include "te_shell_cmd.h"
+#include "tester.h"
+#include "tester_msg.h"
 
 /** Define it to enable support of timeouts in Tester */
 #undef TESTER_TIMEOUT_SUPPORT
@@ -2479,6 +2482,85 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     return 0;
 }
 
+#ifdef WITH_TRC
+/**
+ * This function reads TRC tags from Configurator tree and appends them to the
+ * list.
+ *
+ * @param[out]  trc_tags  List of TRC tags to append to.
+ *
+ * @return      Status code.
+ */
+static te_errno
+get_trc_tags(tqh_strings *trc_tags)
+{
+    te_errno      rc = 0;
+    te_string     tag = TE_STRING_INIT;
+    char         *tag_name = NULL;
+    char         *tag_value = NULL;
+    unsigned int  num;
+    cfg_handle   *handles = NULL;
+    cfg_val_type  type = CVT_STRING;
+    int           i;
+
+    if (trc_tags == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    rc = cfg_find_pattern_fmt(&num, &handles, TE_CFG_TRC_TAGS_FMT, "*");
+    if (rc != 0)
+    {
+        ERROR("%s(): Cannot get the list of TRC tags: %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    for (i = 0; i < num; i++)
+    {
+        rc = cfg_get_inst_name(handles[i], &tag_name);
+        if (rc != 0)
+        {
+            ERROR("%s(): Cannot get TRC tag name by its handle %d: %r",
+                  __FUNCTION__, handles[i], rc);
+            goto cleanup;
+        }
+
+        rc = cfg_get_instance(handles[i], &type, &tag_value);
+        if (rc != 0)
+        {
+            ERROR("%s(): Cannot get TRC tag value by its handle %d: %r",
+                  __FUNCTION__, handles[i], rc);
+            free(tag_name);
+            goto cleanup;
+        }
+
+        if (strlen(tag_value) > 0)
+            rc = te_string_append(&tag, "%s:%s", tag_name, tag_value);
+        else
+            rc = te_string_append(&tag, "%s", tag_name);
+        free(tag_value);
+        free(tag_name);
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed to construct TRC tag: %r", __FUNCTION__, rc);
+            rc = TE_RC(TE_TESTER, TE_EFAULT);
+            goto cleanup;
+        }
+
+        rc = trc_add_tag(trc_tags, te_string_value(&tag));
+        te_string_reset(&tag);
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed to add TRC tag: %r", __FUNCTION__, rc);
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    free(handles);
+    te_string_free(&tag);
+
+    return rc;
+}
+#endif /* WITH_TRC */
 
 static tester_cfg_walk_ctl
 run_script(run_item *ri, test_script *script,
@@ -3068,6 +3150,49 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
         {
             char *reqs = NULL;
 
+#ifdef WITH_TRC
+            if (id == TE_TEST_ID_ROOT_PROLOGUE)
+            {
+                tqh_strings new_tags;
+
+                TAILQ_INIT(&new_tags);
+
+                rc = get_trc_tags(&new_tags);
+                if (rc != 0)
+                {
+                    ERROR("Get new TRC tags failed: %r", rc);
+                    EXIT("FAULT");
+                    return TESTER_CFG_WALK_FAULT;
+                }
+
+                if (!TAILQ_EMPTY(&new_tags))
+                {
+                    tqe_string *cur_tag;
+
+                    rc = tester_log_trc_tags(&new_tags);
+                    if (rc != 0)
+                    {
+                        ERROR("Logging of TRC tags failed: %r", rc);
+                        EXIT("FAULT");
+                        tq_strings_free(&new_tags, free);
+                        return TESTER_CFG_WALK_FAULT;
+                    }
+
+                    TAILQ_FOREACH(cur_tag, &new_tags, links)
+                    {
+                        rc = trc_add_tag(gctx->trc_tags, cur_tag->v);
+                        if (rc != 0)
+                        {
+                            ERROR("Update of TRC tags failed: %r", rc);
+                            EXIT("FAULT");
+                            tq_strings_free(&new_tags, free);
+                            return TESTER_CFG_WALK_FAULT;
+                        }
+                    }
+                }
+                tq_strings_free(&new_tags, free);
+            }
+#endif
             rc = cfg_get_instance_string_fmt(&reqs, "/local:/reqs:%u", id);
 
             if (rc == 0)

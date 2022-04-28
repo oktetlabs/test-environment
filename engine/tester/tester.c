@@ -885,17 +885,8 @@ tester_log_reqs(void)
 }
 
 #ifdef WITH_TRC
-/**
- * Log TRC tags as an MI message.
- *
- * Tag names and values are split at the first colon, no additional checks
- * are performed.
- *
- * @param trc_tags          TRC tags
- *
- * @returns Status code
- */
-static te_errno
+/* See the description in tester.h */
+te_errno
 tester_log_trc_tags(const tqh_strings *trc_tags)
 {
     char         *text;

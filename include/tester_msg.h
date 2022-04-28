@@ -17,6 +17,23 @@
 /** Type of IPC used by Tester IPC */
 #define TESTER_IPC              (TRUE)  /** Connection-oriented */
 
+
+/** Initial test ID (assigned to root package) */
+#define TE_TEST_ID_INIT 1
+
+/**
+ * Test ID of the root prologue if the prologue exists.
+ *
+ * Root package gets the initial ID. The next one is as typically root prologue.
+ */
+#define TE_TEST_ID_ROOT_PROLOGUE (TE_TEST_ID_INIT + 1)
+
+/**
+ * @def TE_CFG_TRC_TAGS_FMT
+ * Macro for working with a branch of the configurator object tree for TRC tags.
+ */
+#define TE_CFG_TRC_TAGS_FMT "/local:/trc_tags:%s"
+
 /**
  * Types of messages which tests send to Tester.
  */

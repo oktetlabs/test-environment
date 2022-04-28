@@ -35,7 +35,7 @@
                     <result notes="FAILED is also accepted when tag1 is enabled"
                             key="key 2" value="FAILED"/>
                 </results>
-                <results tags="!somenonexistenttag">
+                <results tags="tag_set_by_prologue">
                     <result key="key 3" notes="Expected result" value="PASSED">
                         <verdict>Test verdict 1</verdict>
                         <verdict>Test verdict 2</verdict>

@@ -25,6 +25,7 @@
 
 #include "te_config.h"
 #include "tapi_test.h"
+#include "tapi_tags.h"
 
 int
 main(int argc, char **argv)
@@ -32,6 +33,10 @@ main(int argc, char **argv)
     TEST_START;
 
     TEST_STEP("Start dummy prologue");
+
+    TEST_STEP("Add TRC tag");
+    CHECK_RC(tapi_tags_add_tag("tag_set_by_prologue", NULL));
+
     TEST_SUCCESS;
 
 cleanup:

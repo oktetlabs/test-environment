@@ -26,6 +26,14 @@
            Name: test ID
            Value: requirements expression
 
+    - oid: "/local/trc_tags"
+      access: read_create
+      type: string
+      d: |
+         Names and values of TRC tags (used by tapi_tags_add_tag()).
+           Name: TRC tag name
+           Value: TRC tag value
+
     - oid: "/local/ip4_alien"
       access: read_write
       type: address
