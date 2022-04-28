@@ -69,10 +69,17 @@ if [[ "${sniff_logs}" == "true" ]] ; then
         sniff_log_dir="$(dirname "${raw_log_path}")/caps"
     fi
 
-    sniff_args=("--sniff-log-dir=${sniff_log_dir}")
+    if [[ ! -d "${sniff_log_dir}" ]] ; then
+        echo >&2 \
+          "Cannot find capture directory, no sniffer logs will be included"
+        sniff_logs=false
+        sniff_log_dir=
+    else
+        sniff_args=("--sniff-log-dir=${sniff_log_dir}")
 
-    sniff_rec_dir="${bundle_tmpdir}/recovered_caps/"
-    sniff_rec_args=("--caps=${sniff_rec_dir}")
+        sniff_rec_dir="${bundle_tmpdir}/recovered_caps/"
+        sniff_rec_args=("--caps=${sniff_rec_dir}")
+    fi
 fi
 
 cleanup()
