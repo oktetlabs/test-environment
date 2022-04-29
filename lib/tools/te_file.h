@@ -38,6 +38,18 @@ extern "C" {
 extern char *te_basename(const char *pathname);
 
 /**
+ * Get a resolved link using @p path.
+ *
+ * @param path_fmt      Path format string.
+ * @param ...           Format string arguments.
+ *
+ * @return A heap-allocated string containing a resolved link,
+ *         or @c NULL if an error has occurred.
+ */
+extern char *te_readlink_fmt(const char *path_fmt, ...)
+                            __attribute__((format(printf, 1, 2)));
+
+/**
  * Get a dirname from @p pathname, and check if it is valid. Unlike system
  * dirname() it does not modify the contents of @p pathname
  *

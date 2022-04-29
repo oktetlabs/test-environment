@@ -14,6 +14,7 @@
 #include "te_errno.h"
 #include "te_file.h"
 #include "te_string.h"
+#include "te_dbuf.h"
 #include "logger_api.h"
 
 #ifdef STDC_HEADERS
@@ -42,6 +43,65 @@ te_basename(const char *pathname)
         return NULL;
 
     return strdup(name);
+}
+
+/* See description in te_file.h */
+char *
+te_readlink_fmt(const char *path_fmt, ...)
+{
+    va_list ap;
+    te_string path = TE_STRING_INIT;
+    te_dbuf linkbuf = TE_DBUF_INIT(100);
+    te_errno rc;
+    te_bool resolved = FALSE;
+#define CHECK_ERR(_msg)                         \
+    do {                                        \
+        if (TE_RC_GET_ERROR(rc) != 0)           \
+        {                                       \
+            ERROR("%s(): " _msg ": %r",         \
+                  __FUNCTION__, rc);            \
+            te_string_free(&path);              \
+            te_dbuf_free(&linkbuf);             \
+            return NULL;                        \
+        }                                       \
+    } while(0)
+
+    va_start(ap, path_fmt);
+    rc = te_string_append_va(&path, path_fmt, ap);
+    va_end(ap);
+    CHECK_ERR("cannot format the path");
+
+    rc = te_dbuf_append(&linkbuf, NULL, path.len + 1);
+    CHECK_ERR("cannot allocate link contents buffer");
+
+    while (!resolved)
+    {
+        ssize_t nbytes = readlink(path.ptr, (char *)linkbuf.ptr, linkbuf.len);
+
+        if (nbytes < 0)
+        {
+            ERROR("%s(): cannot resolve '%s': %r", __FUNCTION__, path.ptr,
+                  TE_OS_RC(TE_MODULE_NONE, errno));
+
+            te_string_free(&path);
+            te_dbuf_free(&linkbuf);
+            return NULL;
+        }
+        if (nbytes < linkbuf.len)
+        {
+            resolved = TRUE;
+            linkbuf.ptr[nbytes] = '\0';
+        }
+        else
+        {
+            rc = te_dbuf_append(&linkbuf, NULL, linkbuf.len);
+            CHECK_ERR("cannot extend link contents buffer");
+        }
+    }
+
+    te_string_free(&path);
+    return (char *)linkbuf.ptr;
+#undef CHECK_ERR
 }
 
 /* See description in te_file.h */
