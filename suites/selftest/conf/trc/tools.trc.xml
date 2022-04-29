@@ -1,0 +1,7 @@
+<test name="tools" type="package">
+    <objective>Self-tests for lib/tools functions</objective>
+    <iter result="PASSED">
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tools/readlink.trc.xml" parse="xml"/>
+    </iter>
+</test>

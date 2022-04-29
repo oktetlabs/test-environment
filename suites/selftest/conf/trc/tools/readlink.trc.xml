@@ -1,0 +1,6 @@
+<test name="readlink" type="script">
+    <objective>Test for te_readlink_fmt correctness</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>

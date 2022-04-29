@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>Package for self-tests of lib/tool functions</description>
+    <author mailto="Artem.Andreev@oktetlabs.ru"/>
+
+    <session>
+        <run>
+            <script name="readlink"/>
+        </run>
+    </session>
+</package>

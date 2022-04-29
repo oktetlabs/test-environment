@@ -31,6 +31,9 @@
 
             <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                         href="trc/tad.trc.xml" parse="xml"/>
+
+            <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                        href="trc/tools.trc.xml" parse="xml"/>
         </iter>
     </test>
 </trc_db>
