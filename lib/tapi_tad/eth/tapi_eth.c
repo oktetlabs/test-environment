@@ -418,14 +418,7 @@ tapi_eth_store_packet_cb(asn_value *packet, void *user_data)
     }
 
     csap_sniff_storage->packets_captured = packets_captured;
-
-    packets_captured[n_packets_captured] = asn_copy_value(packet);
-    if (packets_captured[n_packets_captured] == NULL)
-    {
-        csap_sniff_storage->err = TE_ENOMEM;
-        return;
-    }
-
+    packets_captured[n_packets_captured] = packet;
     csap_sniff_storage->n_packets_captured++;
 }
 
