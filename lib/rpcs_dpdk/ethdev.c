@@ -1631,7 +1631,7 @@ TARPC_FUNC(rte_eth_dev_default_mac_addr_set, {},
         memcpy(mac_addr_p->addr_bytes, in->mac_addr.mac_addr_val[0].addr_bytes,
                sizeof(mac_addr_p->addr_bytes));
 
-    MAKE_CALL(func(in->port_id, mac_addr_p));
+    MAKE_CALL(out->retval = func(in->port_id, mac_addr_p));
 
     neg_errno_h2rpc(&out->retval);
 
