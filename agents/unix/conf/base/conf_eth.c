@@ -27,8 +27,16 @@
 #include <sys/ioctl.h>
 #endif
 
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+
 #ifdef HAVE_STROPTS_H
 #include <stropts.h>
+#endif
+
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
 #endif
 
 #include "logger_api.h"
@@ -43,6 +51,8 @@
 #endif
 
 #include "te_rpc_sys_socket.h"
+
+#include "conf_oid.h"
 
 #ifdef HAVE_LINUX_ETHTOOL_H
 #define E_BITS_PER_DWORD ((unsigned)(sizeof(uint32_t) * CHAR_BIT))
@@ -956,6 +966,194 @@ eth_ring_tx_current_set(unsigned int  gid,
     return eth_ring_size_set(gid, oid, value, ifname, false);
 }
 
+static te_errno
+eth_channels_ofst_get(cfg_oid  *oid,
+                      size_t   *ofp)
+{
+    switch ((*cfg_oid_inst_subid(oid, 4) << CHAR_BIT) |
+            (*cfg_oid_inst_subid(oid, 5)))
+    {
+        case (('c' << CHAR_BIT) | 'c'):
+            *ofp = offsetof(struct ethtool_channels, combined_count);
+            break;
+
+        case (('c' << CHAR_BIT) | 'm'):
+            *ofp = offsetof(struct ethtool_channels, max_combined);
+            break;
+
+        case (('o' << CHAR_BIT) | 'c'):
+            *ofp = offsetof(struct ethtool_channels, other_count);
+            break;
+
+        case (('o' << CHAR_BIT) | 'm'):
+            *ofp = offsetof(struct ethtool_channels, max_other);
+            break;
+
+        case (('r' << CHAR_BIT) | 'c'):
+            *ofp = offsetof(struct ethtool_channels, rx_count);
+            break;
+
+        case (('r' << CHAR_BIT) | 'm'):
+            *ofp = offsetof(struct ethtool_channels, max_rx);
+            break;
+
+        case (('t' << CHAR_BIT) | 'c'):
+            *ofp = offsetof(struct ethtool_channels, tx_count);
+            break;
+
+        case (('t' << CHAR_BIT) | 'm'):
+            *ofp = offsetof(struct ethtool_channels, max_tx);
+            break;
+
+        default:
+            return TE_ENOENT;
+    }
+
+    return 0;
+}
+
+static te_errno
+eth_channels_get(unsigned int  *gid,
+                 const char    *oid,
+                 char          *value,
+                 const char    *iface)
+{
+    struct ethtool_channels   channels = { .cmd = ETHTOOL_GCHANNELS };
+    struct eth_if_context    *iface_ctx;
+    uint32_t                 *vp = NULL;
+    te_errno                  rc;
+
+    UNUSED(gid);
+
+    iface_ctx = eth_feature_iface_context(iface);
+    if (iface_ctx == NULL || !iface_ctx->valid)
+    {
+        ERROR("%s(): interface context not found", __FUNCTION__);
+        rc = TE_ENOENT;
+        goto exit;
+    }
+
+    rc = eth_feature_ioctl_send(iface, &channels);
+    if (rc == 0)
+    {
+        cfg_oid  *oid_parsed = NULL;
+        size_t    ofst;
+
+        oid_parsed = cfg_convert_oid_str(oid);
+        if (oid_parsed == NULL)
+        {
+            ERROR("%s(): OID parsing failed", __FUNCTION__);
+            rc = TE_EFAULT;
+            goto exit;
+        }
+
+        rc = eth_channels_ofst_get(oid_parsed, &ofst);
+
+        cfg_free_oid(oid_parsed);
+
+        if (rc != 0)
+        {
+            ERROR("%s(): offset search failed: %r", __FUNCTION__, rc);
+            goto exit;
+        }
+
+        vp = (uint32_t *)((uint8_t *)&channels + ofst);
+    }
+    else if (rc != TE_EOPNOTSUPP)
+    {
+        ERROR("%s(): ioctl failed: %r", __FUNCTION__, rc);
+        goto exit;
+    }
+
+    rc = (vp != NULL) ?
+         te_snprintf(value, RCF_MAX_VAL, "%u", *vp) :
+         te_snprintf(value, RCF_MAX_VAL, "%d", -1);
+
+    if (rc != 0)
+        ERROR("%s(): te_snprintf() failed: %r", __FUNCTION__, rc);
+
+exit:
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+eth_channels_set(unsigned int  *gid,
+                 const char    *oid,
+                 const char    *value,
+                 const char    *iface)
+{
+    struct ethtool_channels   channels = { .cmd = ETHTOOL_GCHANNELS };
+    unsigned long             value_parsed;
+    cfg_oid                  *oid_parsed;
+    struct eth_if_context    *iface_ctx;
+    uint32_t                 *vp = NULL;
+    size_t                    ofst;
+    te_errno                  rc;
+
+    UNUSED(gid);
+
+    iface_ctx = eth_feature_iface_context(iface);
+    if (iface_ctx == NULL || !iface_ctx->valid)
+    {
+        ERROR("%s(): interface context not found", __FUNCTION__);
+        rc = TE_ENOENT;
+        goto exit;
+    }
+
+    rc = eth_feature_ioctl_send(iface, &channels);
+    if (rc != 0)
+    {
+        ERROR("%s(): ioctl failed: %r", __FUNCTION__, rc);
+        goto exit;
+    }
+
+    oid_parsed = cfg_convert_oid_str(oid);
+    if (oid_parsed == NULL)
+    {
+        ERROR("%s(): OID parsing failed", __FUNCTION__);
+        rc = TE_EFAULT;
+        goto exit;
+    }
+
+    rc = eth_channels_ofst_get(oid_parsed, &ofst);
+
+    cfg_free_oid(oid_parsed);
+
+    if (rc != 0)
+    {
+        ERROR("%s(): offset search failed: %r", __FUNCTION__, rc);
+        goto exit;
+    }
+
+    vp = (uint32_t *)((uint8_t *)&channels + ofst);
+
+    rc = te_strtoul(value, 0, &value_parsed);
+    if (rc != 0)
+    {
+        ERROR("%s(): invalid value '%s': %r", __FUNCTION__, value, rc);
+        goto exit;
+    }
+    else if (value_parsed > UINT32_MAX)
+    {
+        ERROR("%s(): too big value '%s'", __FUNCTION__, value);
+        rc = TE_ERANGE;
+        goto exit;
+    }
+
+    channels.cmd = ETHTOOL_SCHANNELS;
+    *vp = value_parsed;
+
+    rc = eth_feature_ioctl_send(iface, &channels);
+    if (rc != 0)
+    {
+        ERROR("%s(): ioctl failed: %r", __FUNCTION__, rc);
+        goto exit;
+    }
+
+exit:
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
 RCF_PCH_CFG_NODE_RO(firmwareversion, "firmwareversion", NULL, NULL,
                     eth_firmwareversion_get);
 
@@ -995,7 +1193,54 @@ RCF_PCH_CFG_NODE_NA(eth_ring_rx, "rx", &eth_ring_rx_current, &eth_ring_tx);
 
 RCF_PCH_CFG_NODE_NA(eth_ring, "ring", &eth_ring_rx, &eth_feature);
 
-RCF_PCH_CFG_NODE_RW(eth_msglvl, "msglvl", NULL, &eth_ring,
+RCF_PCH_CFG_NODE_RO(eth_channels_tx_maximum, "maximum",
+                    NULL, NULL, eth_channels_get);
+
+RCF_PCH_CFG_NODE_RW(eth_channels_tx_current, "current",
+                    NULL, &eth_channels_tx_maximum,
+                    eth_channels_get,
+                    eth_channels_set);
+
+RCF_PCH_CFG_NODE_NA(eth_channels_tx, "tx", &eth_channels_tx_current, NULL);
+
+RCF_PCH_CFG_NODE_RO(eth_channels_rx_maximum, "maximum",
+                    NULL, NULL, eth_channels_get);
+
+RCF_PCH_CFG_NODE_RW(eth_channels_rx_current, "current",
+                    NULL, &eth_channels_rx_maximum,
+                    eth_channels_get,
+                    eth_channels_set);
+
+RCF_PCH_CFG_NODE_NA(eth_channels_rx, "rx", &eth_channels_rx_current,
+                    &eth_channels_tx);
+
+RCF_PCH_CFG_NODE_RO(eth_channels_other_maximum, "maximum",
+                    NULL, NULL, eth_channels_get);
+
+RCF_PCH_CFG_NODE_RW(eth_channels_other_current, "current",
+                    NULL, &eth_channels_other_maximum,
+                    eth_channels_get, eth_channels_set);
+
+RCF_PCH_CFG_NODE_NA(eth_channels_other, "other",
+                    &eth_channels_other_current,
+                    &eth_channels_rx);
+
+RCF_PCH_CFG_NODE_RO(eth_channels_combined_maximum, "maximum",
+                    NULL, NULL, eth_channels_get);
+
+RCF_PCH_CFG_NODE_RW(eth_channels_combined_current, "current",
+                    NULL, &eth_channels_combined_maximum,
+                    eth_channels_get, eth_channels_set);
+
+RCF_PCH_CFG_NODE_NA(eth_channels_combined, "combined",
+                    &eth_channels_combined_current,
+                    &eth_channels_other);
+
+RCF_PCH_CFG_NODE_NA(eth_channels, "channels",
+                    &eth_channels_combined,
+                    &eth_ring);
+
+RCF_PCH_CFG_NODE_RW(eth_msglvl, "msglvl", NULL, &eth_channels,
                     eth_msglvl_get, eth_msglvl_set);
 
 RCF_PCH_CFG_NODE_RW(eth_reset, "reset", NULL, &eth_msglvl,

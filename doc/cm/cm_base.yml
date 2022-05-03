@@ -568,6 +568,123 @@
          Value: 0 - feature can be changed
                 1 - feature is read-only
 
+    - oid: "/agent/interface/channels"
+      access: read_only
+      type: none
+      d: |
+         NIC channel count controls
+
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/channels/combined"
+      access: read_only
+      type: none
+      d: |
+         NIC combined channel count controls
+
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/channels/combined/current"
+      access: read_write
+      type: integer
+      d: |
+         NIC combined channel count (current)
+
+         Name: none
+         Value: channel count (-1 if not supported)
+
+    - oid: "/agent/interface/channels/combined/maximum"
+      access: read_only
+      type: integer
+      d: |
+         NIC combined channel count (maximum)
+
+         Name: none
+         Value: channel count (-1 if not supported)
+
+    - oid: "/agent/interface/channels/other"
+      access: read_only
+      type: none
+      d: |
+         NIC other channel count controls
+
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/channels/other/current"
+      access: read_write
+      type: integer
+      d: |
+         NIC other channel count (current)
+
+         Name: none
+         Value: channel count (-1 if not supported)
+
+    - oid: "/agent/interface/channels/other/maximum"
+      access: read_only
+      type: integer
+      d: |
+         NIC other channel count (maximum)
+
+         Name: none
+         Value: channel count (-1 if not supported)
+
+    - oid: "/agent/interface/channels/rx"
+      access: read_only
+      type: none
+      d: |
+         NIC Rx channel count controls
+
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/channels/rx/current"
+      access: read_write
+      type: integer
+      d: |
+         NIC Rx channel count (current)
+
+         Name: none
+         Value: channel count (-1 if not supported)
+
+    - oid: "/agent/interface/channels/rx/maximum"
+      access: read_only
+      type: integer
+      d: |
+         NIC Rx channel count (maximum)
+
+         Name: none
+         Value: channel count (-1 if not supported)
+
+    - oid: "/agent/interface/channels/tx"
+      access: read_only
+      type: none
+      d: |
+         NIC Tx channel count controls
+
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/channels/tx/current"
+      access: read_write
+      type: integer
+      d: |
+         NIC Tx channel count (current)
+
+         Name: none
+         Value: channel count (-1 if not supported)
+
+    - oid: "/agent/interface/channels/tx/maximum"
+      access: read_only
+      type: integer
+      d: |
+         NIC Tx channel count (maximum)
+
+         Name: none
+         Value: channel count (-1 if not supported)
+
     - oid: "/agent/interface/ring"
       access: read_only
       type: none
