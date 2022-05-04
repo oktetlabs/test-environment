@@ -673,6 +673,12 @@ static te_errno agent_dir_get(unsigned int, const char *, char *,
 static te_errno agent_tmp_dir_get(unsigned int, const char *, char *,
                                   const char *, ...);
 
+static te_errno agent_lib_mod_dir_get(unsigned int, const char *, char *,
+                                      const char *, ...);
+
+static te_errno agent_lib_bin_dir_get(unsigned int, const char *, char *,
+                                      const char *, ...);
+
 static te_errno nameserver_get(unsigned int, const char *, char *,
                                const char *, ...);
 
@@ -833,8 +839,16 @@ RCF_PCH_CFG_NODE_RO(node_tmp_dir, "tmp_dir",
                     NULL, &node_dir,
                     (rcf_ch_cfg_get)agent_tmp_dir_get);
 
-RCF_PCH_CFG_NODE_RO(node_dns, "dns",
+RCF_PCH_CFG_NODE_RO(node_lib_mod_dir, "lib_mod_dir",
                     NULL, &node_tmp_dir,
+                    (rcf_ch_cfg_get)agent_lib_mod_dir_get);
+
+RCF_PCH_CFG_NODE_RO(node_lib_bin_dir, "lib_bin_dir",
+                    NULL, &node_lib_mod_dir,
+                    (rcf_ch_cfg_get)agent_lib_bin_dir_get);
+
+RCF_PCH_CFG_NODE_RO(node_dns, "dns",
+                    NULL, &node_lib_bin_dir,
                     (rcf_ch_cfg_get)nameserver_get);
 
 RCF_PCH_CFG_NODE_RW(node_rp_filter_all, "rp_filter_all",
@@ -7237,6 +7251,28 @@ agent_tmp_dir_get(unsigned int gid, const char *oid, char *result,
     UNUSED(oid);
     UNUSED(instance);
     te_strlcpy(result, ta_tmp_dir, RCF_MAX_VAL);
+    return 0;
+}
+
+static te_errno
+agent_lib_mod_dir_get(unsigned int gid, const char *oid, char *result,
+                      const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+    te_strlcpy(result, ta_lib_mod_dir, RCF_MAX_VAL);
+    return 0;
+}
+
+static te_errno
+agent_lib_bin_dir_get(unsigned int gid, const char *oid, char *result,
+                  const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+    te_strlcpy(result, ta_lib_bin_dir, RCF_MAX_VAL);
     return 0;
 }
 

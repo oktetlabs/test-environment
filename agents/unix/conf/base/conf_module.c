@@ -316,7 +316,7 @@ mod_get_module_res_name(const char *modname, const char *filename,
     if (filename != NULL)
         return te_string_append(res_name, "%s", filename);
 
-    rc = te_string_append(res_name, "%s/%s.ko", ta_dir, modname);
+    rc = te_string_append(res_name, "%s/%s.ko", ta_lib_mod_dir, modname);
     if (rc != 0)
         return rc;
 
@@ -391,7 +391,7 @@ mod_load_with_dependencies(const char *modname, const char *filename,
         te_string_free(&cmd);
         rc = te_string_append(&cmd,
                 "path=%s/%s.ko ; test -f $path && insmod $path || modprobe %s",
-                ta_dir, modname, modname);
+                ta_lib_mod_dir, modname, modname);
         if (rc != 0)
             goto close;
 

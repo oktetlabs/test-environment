@@ -46,6 +46,26 @@
          not result in configuration restore failure.
           Name: None
 
+    - oid: "/agent/lib_mod_dir"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Agent directory for kernel module files.
+         It is volatile since it changes on agent restart and should
+         not result in configuration restore failure.
+          Name: None
+
+    - oid: "/agent/lib_bin_dir"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Agent directory for library files.
+         It is volatile since it changes on agent restart and should
+         not result in configuration restore failure.
+          Name: None
+
     - oid: "/agent/ip4_fw"
       access: read_write
       type: integer

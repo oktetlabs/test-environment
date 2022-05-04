@@ -379,19 +379,21 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
                                    te_bool     fallback)
 {
     te_string     module_path = TE_STRING_INIT;
-    char         *ta_dir;
+    char         *ta_lib_mod_dir;
     char         *current_filename = NULL;
     int           loaded;
     te_errno      rc;
 
-    rc = cfg_get_instance_string_fmt(&ta_dir, "/agent:%s/dir:", ta_name);
+    rc = cfg_get_instance_string_fmt(&ta_lib_mod_dir, "/agent:%s/lib_mod_dir:",
+                                     ta_name);
     if (rc != 0)
     {
         ERROR("Failed to get TA %s directory path: %r", ta_name, rc);
         goto out;
     }
 
-    rc = te_string_append(&module_path, "%s/%s.ko", ta_dir, module_name);
+    rc = te_string_append(&module_path, "%s/%s.ko", ta_lib_mod_dir,
+                          module_name);
     if (rc != 0)
     {
         ERROR("Failed to construct the module '%s' path: %r",
@@ -526,7 +528,7 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
 
 out:
     te_string_free(&module_path);
-    free(ta_dir);
+    free(ta_lib_mod_dir);
     free(current_filename);
 
     return TE_RC(TE_TAPI, rc);

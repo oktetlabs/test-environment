@@ -153,7 +153,7 @@ extern te_errno tapi_cfg_module_param_get_int(const char *ta_name,
                                               int *param_value);
 
 /**
- * Given a module file in a TA directory, insert the former.
+ * Given a module file in a TA modules directory, insert the former.
  * Take care of the module dependencies if required.
  *
  * @param  ta_name           The TA name

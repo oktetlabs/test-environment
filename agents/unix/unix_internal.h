@@ -171,6 +171,10 @@ extern const char *ta_execname;
 extern char ta_dir[RCF_MAX_PATH];
 /** Directory for temporary files */
 extern char ta_tmp_dir[RCF_MAX_PATH];
+/** Directory for kernel module files */
+extern char ta_lib_mod_dir[RCF_MAX_PATH];
+/** Directory for library files */
+extern char ta_lib_bin_dir[RCF_MAX_PATH];
 
 /**
  * Get oper status of the interface (TRUE - RUNNING).

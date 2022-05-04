@@ -47,6 +47,9 @@
 #if defined (__QNX__)
 #include <spawn.h>
 #endif
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>
+#endif
 
 #ifdef __linux__
 #include <elf.h>
@@ -119,6 +122,10 @@ const char *ta_name = "(unix)";
 char ta_dir[RCF_MAX_PATH];
 /** Directory for temporary files */
 char ta_tmp_dir[RCF_MAX_PATH];
+/** Directory for kernel module files */
+char ta_lib_mod_dir[RCF_MAX_PATH];
+/** Directory for library files */
+char ta_lib_bin_dir[RCF_MAX_PATH];
 
 #if __linux__
 const char *ta_tmp_path = "/tmp/";
@@ -1615,6 +1622,31 @@ main(int argc, char **argv)
         ta_dir[0] = 0;
     else
         *tmp = 0;
+
+#ifdef HAVE_SYS_UTSNAME_H
+    struct utsname val;
+
+    if (uname(&val) < 0)
+    {
+        fprintf(stderr, "uname() returned unexpected error %s\n",
+                strerror(errno));
+        return -1;
+    }
+
+    /* Definitely, there is enough space in ta_lib_mod_dir and ta_lib_bin_dir */
+    TE_SPRINTF(ta_lib_mod_dir, "%s/lib/modules/%s", ta_dir, val.release);
+    for (tmp = ta_lib_mod_dir; *tmp != '\0'; tmp++)
+        *tmp = tolower(*tmp);
+
+    TE_SPRINTF(ta_lib_bin_dir, "%s/lib/%s-%s", ta_dir, val.machine,
+               val.sysname);
+    for (tmp = ta_lib_bin_dir; *tmp != '\0'; tmp++)
+        *tmp = tolower(*tmp);
+#else
+    fprintf(stderr, "Failed to call unsupported uname()\n");
+    ta_lib_mod_dir[0] = '\0';
+    ta_lib_bin_dir[0] = '\0';
+#endif
 
     /*
      * Create 'tmp' directory inside TA directory and change current
