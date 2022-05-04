@@ -41,6 +41,8 @@ cat <<EOF
 Usage: dispatcher.sh [<generic options>] [[<test options> tests ]...
 Generic options:
   -q                            Suppress part of output messages
+  -n                            Do not build TE, TA and any Test Suites
+                                (cumulate no-builder and tester-no-build)
   --force                       Never prompt
 
   --daemon[=<PID>]              Run/use TE engine daemons
