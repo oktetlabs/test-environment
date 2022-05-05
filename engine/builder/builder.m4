@@ -101,6 +101,9 @@ dnl       list of headers to copy to TE build tree
 dnl       list of libraries to copy to TE build tree
 dnl       list of environment variables to export to the build script
 dnl       (this only matters for remote builds)
+dnl       additional parameters, may be empty or:
+dnl           --with-vcs-stuff: copy vcs-specific files/directories to
+dnl                             the source directory for build
 dnl
 define([TE_PLATFORM_EXT],
 [[
@@ -142,6 +145,7 @@ declare "${EXTLIST}_${EXTNAME}_BUILD"="$6"
 declare "${EXTLIST}_${EXTNAME}_INSTALL_HEADERS"="$7"
 declare "${EXTLIST}_${EXTNAME}_INSTALL_LIBS"="$8"
 declare "${EXTLIST}_${EXTNAME}_ENV_VARS"="$9"
+declare "${EXTLIST}_${EXTNAME}_PARMS"="$10"
 ]])
 
 dnl Specifies list of external static libraries that should be
@@ -388,6 +392,9 @@ dnl                             contains all the agents specified in TE_TA_TYPES
 dnl       list of executables to copy to TA agent directory
 dnl       list of environment variables to export to the build script
 dnl       (this only matters for remote builds)
+dnl       additional parameters, may be empty or:
+dnl           --with-vcs-stuff: copy vcs-specific files/directories to
+dnl                             the source directory for build
 dnl
 define([TE_TA_APP],
 [[
@@ -431,6 +438,7 @@ declare "${TA_APPS}_${APPNAME}_LIBS"="$7"
 declare "${TA_APPS}_${APPNAME}_BUILD"="$8"
 declare "${TA_APPS}_${APPNAME}_INSTALL_BIN"="$9"
 declare "${TA_APPS}_${APPNAME}_ENV_VARS"="$10"
+declare "${TA_APPS}_${APPNAME}_PARMS"="$11"
 ]])
 
 dnl Specifies TCE-enabled components

@@ -99,6 +99,8 @@ Test Environment Engine depends on a set of 3-rd party libraries and packages:
 
 * automake - at least 1.9;
 
+* bash - at least 4.3;
+
 * bison;
 
 * curl;
