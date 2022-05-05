@@ -376,6 +376,7 @@ mod_load_with_dependencies(const char *modname, const char *filename,
         if (*(--c) != '\n')
             goto close;
         *c = '\0';
+        RING("Loading dependent module %s for %s", dep_name, modname);
         rc = mod_load_with_dependencies(dep_name, NULL, TRUE);
         if (rc != 0)
             goto close;
