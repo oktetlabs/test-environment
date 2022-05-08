@@ -78,10 +78,18 @@
 #define TCP_SYN_SENT_ACTIVE_PATH TCP_SYN_SENT_PATH
 #define TCP_SYN_SENT_PASSIVE_PATH TCP_SYN_SENT_PATH
 
-#define TCP_SYN_RECV_PATH \
-    TCP_SYN_SENT_PATH, RPC_TCP_SYN_RECV
-#define TCP_SYN_RECV_ACTIVE_PATH TCP_SYN_RECV_PATH
-#define TCP_SYN_RECV_PASSIVE_PATH TCP_SYN_RECV_PATH
+/*
+ * SYN_RECV can be achieved both via LISTEN and via SYN_SENT
+ * (simultaneous open with connect() from both ends, in real
+ * world this happens rarely).
+ * However when it is achieved via LISTEN, it is not directly
+ * observable since listening socket itself does not change
+ * its state to SYN_RECV and accept() returns only socket
+ * which has already moved from SYN_RECV to ESTABLISHED.
+ */
+#define TCP_SYN_RECV_ACTIVE_PATH TCP_SYN_SENT_PATH, RPC_TCP_SYN_RECV
+#define TCP_SYN_RECV_PASSIVE_PATH TCP_LISTEN_PATH, RPC_TCP_SYN_RECV
+#define TCP_SYN_RECV_PATH TCP_SYN_RECV_ACTIVE_PATH
 
 #define TCP_ESTABLISHED_PATH \
     TCP_SYN_SENT_PATH, RPC_TCP_ESTABLISHED
