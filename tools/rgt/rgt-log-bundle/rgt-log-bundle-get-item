@@ -115,6 +115,15 @@ elif [[ "${req_path}" =~ log[.]raw$ ]] ; then
         err_cleanup "Failed to recover original raw log"
     fi
 
+elif [[ "${req_path}" =~ /caps[/]?$ ||
+        "${req_path}" =~ ^caps[/]?$ ]] ; then
+
+    "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
+        --caps="${req_path}"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to recover sniffer capture files"
+    fi
+
 elif [[ "${req_path}" =~ log_gist[.]raw$ ]] ; then
     pixz -x log_gist.raw <"${bundle_path}" | tar -x -O >"${req_path}"
     if test $? -ne 0 ; then
