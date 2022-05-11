@@ -618,6 +618,7 @@
     - oid: "/agent/interface/channels/combined/maximum"
       access: read_only
       type: integer
+      volatile: true
       d: |
          NIC combined channel count (maximum)
 
@@ -645,6 +646,7 @@
     - oid: "/agent/interface/channels/other/maximum"
       access: read_only
       type: integer
+      volatile: true
       d: |
          NIC other channel count (maximum)
 
@@ -672,6 +674,7 @@
     - oid: "/agent/interface/channels/rx/maximum"
       access: read_only
       type: integer
+      volatile: true
       d: |
          NIC Rx channel count (maximum)
 
@@ -699,6 +702,7 @@
     - oid: "/agent/interface/channels/tx/maximum"
       access: read_only
       type: integer
+      volatile: true
       d: |
          NIC Tx channel count (maximum)
 
