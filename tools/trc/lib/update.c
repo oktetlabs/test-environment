@@ -4319,6 +4319,8 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
 
     trc_update_args_groups       cur_comb_wilds;
     trc_update_args_group       *p_group;
+    trc_update_args_group       *prev_group;
+    trc_update_args_group       *cur_group;
     trc_update_args_group       *new_group;
     trc_test_iter_arg           *arg;
     trc_test_iter               *iter1;
@@ -4329,6 +4331,8 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
     te_bool allow_intersect = !!(flags & TRC_UPDATE_INTERSEC_WILDS);
     te_bool new_iter_added;
     te_bool iter_remained;
+
+    unsigned int iter_num = 0;
 
     memset(&cur_comb_wilds, 0, sizeof(cur_comb_wilds));
     SLIST_INIT(&cur_comb_wilds);
@@ -4341,8 +4345,11 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
         args_in_wild[i] = FALSE;
 
     do {
+        iter_num = 0;
         TAILQ_FOREACH(iter1, &test->iters.head, links)
         {
+            iter_num++;
+
             iter_data1 = trc_db_iter_get_user_data(iter1, db_uid);
             if (iter_data1 == NULL ||
                 iter_data1->results_id != results_id ||
@@ -4415,6 +4422,8 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                                        iter1->exp_default);
                 new_group->group_id = args_group->group_id;
 
+                new_group->first_iter_num = iter_num - 1;
+
                 SLIST_INSERT_HEAD(&cur_comb_wilds, new_group,
                                   links);
             }
@@ -4426,7 +4435,29 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                         SLIST_FIRST(&cur_comb_wilds)) != NULL)
             {
                 SLIST_REMOVE_HEAD(&cur_comb_wilds, links);
-                SLIST_INSERT_HEAD(wildcards, p_group, links);
+
+                /*
+                 * Add wildcards in order of the first matching
+                 * iteration. It should help to avoid unnecessary
+                 * TRC rearrangements when using TRC update.
+                 */
+                prev_group = NULL;
+                SLIST_FOREACH(cur_group, wildcards, links)
+                {
+                    if (p_group->first_iter_num <
+                                        cur_group->first_iter_num)
+                    {
+                        break;
+                    }
+
+                    prev_group = cur_group;
+                }
+
+                if (prev_group == NULL)
+                    SLIST_INSERT_HEAD(wildcards, p_group, links);
+                else
+                    SLIST_INSERT_AFTER(prev_group, p_group, links);
+
                 if (flags & TRC_UPDATE_EXT_WILDS)
                     trc_update_extend_wild(db_uid, test, p_group);
             }

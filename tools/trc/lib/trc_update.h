@@ -402,6 +402,9 @@ struct trc_update_args_group {
     trc_exp_result   *exp_default; /**< Default result of iterations
                                         matching wildcard */
     int               group_id;    /**< Group ID */
+
+    unsigned int first_iter_num;   /**< Number of the first matching
+                                        iteration */
 };
 
 /** Context of TRC Update tool */
