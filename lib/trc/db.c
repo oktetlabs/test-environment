@@ -496,7 +496,8 @@ trc_db_test_delete_wilds(trc_test *test)
 /* See the description in trc_db.h */
 trc_test_iter *
 trc_db_new_test_iter(trc_test *test, unsigned int n_args,
-                     trc_report_argument *args)
+                     trc_report_argument *args,
+                     trc_test_iter *insert_before)
 {
     trc_test_iter *p;
     te_errno       rc;
@@ -516,7 +517,11 @@ trc_db_new_test_iter(trc_test *test, unsigned int n_args,
             free(p);
             return NULL;
         }
-        TAILQ_INSERT_TAIL(&test->iters.head, p, links);
+
+        if (insert_before == NULL)
+            TAILQ_INSERT_TAIL(&test->iters.head, p, links);
+        else
+            TAILQ_INSERT_BEFORE(insert_before, p, links);
     }
 
     return p;

@@ -733,7 +733,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
 
     INFO("New iteration of the test %s", test->name);
 
-    p = trc_db_new_test_iter(test, 0, NULL);
+    p = trc_db_new_test_iter(test, 0, NULL, NULL);
     if (p == NULL)
         return TE_RC(TE_TRC, TE_ENOMEM);
 

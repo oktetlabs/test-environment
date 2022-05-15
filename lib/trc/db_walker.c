@@ -650,20 +650,37 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
         {
             if (flags & STEP_ITER_CREATE_NFOUND)
             {
+                /*
+                 * iter_to_copy here is used by TRC Update.
+                 * It needs full list of test iterations which
+                 * TRC DB often does not contain because wildcard
+                 * records are used there. So instead it obtains
+                 * full list of iterations from fake run log and
+                 * adds them to TRC DB copy stored in memory.
+                 * It copies expected results from matching
+                 * (possibly wildcard) records which were loaded
+                 * from TRC XML files.
+                 * An iteration is appended before iter_to_copy
+                 * so that order of appended iterations matches
+                 * order of existing records in TRC DB and TRC Update
+                 * can try to minimize unnecessary rearrangements.
+                 */
+
+                if (wild_iter != NULL)
+                    iter_to_copy = wild_iter;
+                else if (old_exact_iter != NULL)
+                    iter_to_copy = old_exact_iter;
+
                 VERB("Step iteration - force to create");
                 walker->iter = trc_db_new_test_iter(walker->test,
-                                                    n_args, args);
+                                                    n_args, args,
+                                                    iter_to_copy);
                 if (walker->iter == NULL)
                 {
                     ERROR("Cannot allocate a new test '%s' iteration",
                           walker->test->name);
                     return FALSE;
                 }
-
-                if (wild_iter != NULL)
-                    iter_to_copy = wild_iter;
-                else if (old_exact_iter != NULL)
-                    iter_to_copy = old_exact_iter;
 
                 if (iter_to_copy != NULL && iter_to_copy->filename != NULL)
                     walker->iter->filename =

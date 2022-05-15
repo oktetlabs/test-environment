@@ -202,9 +202,12 @@ extern trc_test *trc_db_new_test(trc_tests *tests, trc_test_iter *parent,
 /**
  * Allocate and initialize control structure for a new test iteration.
  *
- * @param parent        Test a new iteration belongs to
- * @param n_args        Number of arguments
- * @param args          Array with arguments
+ * @param parent          Test a new iteration belongs to
+ * @param n_args          Number of arguments
+ * @param args            Array with arguments
+ * @param insert_before   If not @c NULL, insert the new iteration
+ *                        before this one. Otherwise the new iteration
+ *                        is added to the end of the list.
  *
  * @note If @a names[] and @a values[] are owned by the function,
  *       the pointers in @a names and @a values are set to @c NULL.
@@ -213,7 +216,8 @@ extern trc_test *trc_db_new_test(trc_tests *tests, trc_test_iter *parent,
  */
 extern trc_test_iter *trc_db_new_test_iter(trc_test      *test,
                                            unsigned int   n_args,
-                                           trc_report_argument *args);
+                                           trc_report_argument *args,
+                                           trc_test_iter *insert_before);
 
 extern void *trc_db_get_test_by_path(te_trc_db *db,
                                      char *path);
