@@ -5883,6 +5883,7 @@ program tarpc
         RPC_DEF(closedir)
 
         RPC_DEF(read)
+        RPC_DEF(pread)
         RPC_DEF(write)
         RPC_DEF(read_via_splice)
         RPC_DEF(write_via_splice)
