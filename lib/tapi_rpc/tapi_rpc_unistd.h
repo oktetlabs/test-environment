@@ -254,6 +254,26 @@ rpc_read(rcf_rpc_server *rpcs,
     return rpc_read_gen(rpcs, fd, buf, count, count);
 }
 
+/**
+ * Read up to @b count bytes from file with descriptor @b fd at
+ * @b offset into buffer pointed to by @b buf.
+ * The behavior of this call depends on the following operations:
+ * - @b RCF_RPC_CALL do not wait the remote procedure to complete
+ *   (non-blocking call)
+ * - @b RCF_RPC_WAIT wait for non-blocking call to complete
+ * - @b RCF_RPC_CALL_WAIT wait for remote procedure to complete before
+ *   returning (blocking call)
+ *
+ * @param rpcs     RPC server handle.
+ * @param fd       File descriptor.
+ * @param buf      Pointer to buffer into where data is read.
+ * @param count    Number of bytes to read.
+ * @param offset   Offset from the start of the @b fd.
+ *
+ * @return  Number of bytes read, otherwise -1 on error.
+ */
+extern int rpc_pread(rcf_rpc_server *rpcs, int fd, void* buf, size_t count,
+                     tarpc_off_t offset);
 
 /**
  * Like rpc_read() but uses a buffer allocated by the user 

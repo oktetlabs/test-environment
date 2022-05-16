@@ -977,6 +977,18 @@ struct tarpc_read_out {
     uint8_t         buf<>;
 };
 
+struct tarpc_pread_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int       fd;
+    uint8_t         buf<>;
+    tarpc_size_t    len;
+    tarpc_off_t     offset;
+
+    tarpc_bool chk_func;
+};
+
+typedef tarpc_read_out tarpc_pread_out;
 
 typedef struct tarpc_read_in tarpc_write_in;
 

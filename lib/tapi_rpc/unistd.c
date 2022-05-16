@@ -357,6 +357,47 @@ rpc_read_gen(rcf_rpc_server *rpcs,
     RETVAL_INT(read, out.retval);
 }
 
+int
+rpc_pread(rcf_rpc_server *rpcs, int fd, void* buf, size_t count,
+          tarpc_off_t offset)
+{
+    tarpc_pread_in  in;
+    tarpc_pread_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    in.chk_func = TEST_BEHAVIOUR(use_chk_funcs);
+
+    in.fd = fd;
+    in.len = count;
+    in.offset = offset;
+    if (buf != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        in.buf.buf_len = count;
+        in.buf.buf_val = buf;
+    }
+
+    rcf_rpc_call(rpcs, "pread", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        if (buf != NULL && out.buf.buf_val != NULL)
+            memcpy(buf, out.buf.buf_val, out.buf.buf_len);
+    }
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(pread, out.retval);
+    TAPI_RPC_LOG(rpcs, pread, "%d, %p, %u, %jd, chk_func=%s", "%d",
+                 fd, buf, count, (intmax_t)offset,
+                 (in.chk_func ? "TRUE" : "FALSE"), out.retval);
+    RETVAL_INT(pread, out.retval);
+}
 
 int
 rpc_read_via_splice(rcf_rpc_server *rpcs,
