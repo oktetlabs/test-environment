@@ -1,0 +1,11 @@
+<test name="unistd" type="package">
+    <objective> To test POSIX unistd functions </objective>
+    <iter result="PASSED">
+        <test name="pread_pwrite">
+            <objective/>
+            <iter result="PASSED">
+                <arg name="env">{{{'pco_iut':IUT}}}</arg>
+            </iter>
+        </test>
+    </iter>
+</test>

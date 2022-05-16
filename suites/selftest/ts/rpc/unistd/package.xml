@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>Package for self-tests of unistd functions</description>
+    <author mailto="tej@oktetlabs.ru"/>
+    <session>
+        <run>
+            <script name="pread_pwrite"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+        </run>
+    </session>
+</package>

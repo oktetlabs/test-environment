@@ -3,6 +3,7 @@
 packages = [
     'file',
     'server',
+    'unistd',
 ]
 
 install_data([ 'package.xml' ], install_dir: package_dir)

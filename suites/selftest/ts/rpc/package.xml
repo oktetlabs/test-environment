@@ -10,5 +10,8 @@
         <run>
             <package name="file"/>
         </run>
+        <run>
+            <package name="unistd"/>
+        </run>
     </session>
 </package>
