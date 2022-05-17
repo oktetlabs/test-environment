@@ -492,6 +492,7 @@ alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
     else
         TAILQ_INSERT_AFTER(&args->head, insert_after, p, links);
 
+    tq_strings_add_uniq_dup(&args->save_order, p->name);
 
     rc = get_text_content(node, "arg", &p->value);
     if (rc != 0)
@@ -1726,6 +1727,8 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
 
             if (renew_content)
             {
+                tqe_string *tq_str;
+
                 xmlSetProp(p->tests.node, BAD_CAST "result",
                            BAD_CAST "PASSED");
 
@@ -1754,8 +1757,35 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
 
                 prev_node = NULL;
 
-                TAILQ_FOREACH(a, &p->args.head, links)
+                for (tq_str = TAILQ_FIRST(&p->args.save_order),
+                     a = TAILQ_FIRST(&p->args.head);
+                     tq_str != NULL || a != NULL; )
                 {
+                    /*
+                     * If save_order is filled - save arguments to
+                     * XML in order defined by it.
+                     */
+                    if (tq_str != NULL)
+                    {
+                        te_bool found = FALSE;
+
+                        TAILQ_FOREACH(a, &p->args.head, links)
+                        {
+                            if (strcmp(a->name, tq_str->v) == 0)
+                            {
+                                found = TRUE;
+                                break;
+                            }
+                        }
+
+                        if (!found)
+                        {
+                            ERROR("Failed to find argument '%s' from "
+                                  "saving order list", tq_str->v);
+                            return TE_ENOENT;
+                        }
+                    }
+
                     if ((node = xmlNewNode(NULL, BAD_CAST "arg")) == NULL)
                     {
                         ERROR("xmlNewChild() failed for 'arg'");
@@ -1781,6 +1811,16 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
                         xmlAddNextSibling(prev_node, node);
 
                     prev_node = node;
+
+                    if (tq_str == NULL)
+                    {
+                        a = TAILQ_NEXT(a, links);
+                    }
+                    else
+                    {
+                        tq_str = TAILQ_NEXT(tq_str, links);
+                        a = NULL;
+                    }
                 }
                     
                 if ((node = xmlNewNode(NULL, BAD_CAST "notes")) == NULL)

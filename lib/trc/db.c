@@ -56,6 +56,7 @@ trc_free_test_iter_args(trc_test_iter_args *args)
         return;
 
     trc_free_test_iter_args_head(&args->head);
+    tq_strings_free(&args->save_order, free);
 }
 
 /* See description in trc_db.h */
@@ -64,6 +65,7 @@ trc_test_iter_args_init(trc_test_iter_args *args)
 {
     args->node = NULL;
     TAILQ_INIT(&args->head);
+    TAILQ_INIT(&args->save_order);
 }
 
 /* See description in trc_db.h */
@@ -93,6 +95,8 @@ trc_test_iter_args_copy(trc_test_iter_args *dst,
 
         TAILQ_INSERT_TAIL(&dst->head, dup_arg, links);
     }
+
+    return tq_strings_copy(&dst->save_order, &src->save_order);
 }
 
 /* See description in trc_db.h */
@@ -542,7 +546,8 @@ trc_db_new_test_iter(trc_test *test, unsigned int n_args,
     p = TE_ALLOC(sizeof(*p));
     if (p != NULL)
     {
-        TAILQ_INIT(&p->args.head);
+        trc_test_iter_args_init(&p->args);
+
         STAILQ_INIT(&p->exp_results);
         TAILQ_INIT(&p->tests.head);
         LIST_INIT(&p->users);

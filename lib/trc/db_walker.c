@@ -583,17 +583,33 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
         trc_test_iter *iter_to_copy = NULL;
         te_bool        dup_detected = FALSE;
 
+        te_bool user_match = FALSE;
+        const char *arg_names[n_args];
+        unsigned int i;
+
+        /*
+         * Memorize initial order of arguments before sorting them
+         * for TRC matching.
+         */
+        for (i = 0; i < n_args; i++)
+            arg_names[i] = args[i].name;
+
         qsort(args, n_args, sizeof(*args), trc_report_argument_compare);
         for (walker->iter = TAILQ_FIRST(&walker->test->iters.head);
              walker->iter != NULL;
              walker->iter = TAILQ_NEXT(walker->iter, links))
         {
             if (func_args_match == NULL || walker->iter->log_found)
+            {
                 match_result = test_iter_args_match(&walker->iter->args,
                                                     n_args, args, TRUE);
+            }
             else
+            {
                 match_result = func_args_match(walker->iter,
                                                n_args, args, FALSE);
+                user_match = TRUE;
+            }
 
             if (match_result != ITER_NO_MATCH)
             {
@@ -694,8 +710,8 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
 
                 if (iter_to_copy != NULL)
                 {
-                   trc_db_test_iter_res_cpy(walker->iter,
-                                            iter_to_copy);
+                    trc_db_test_iter_res_cpy(walker->iter,
+                                             iter_to_copy);
                 }
                 else
                 {
@@ -705,6 +721,25 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                     else
                         walker->iter->exp_default =
                             exp_defaults_get(TE_TEST_PASSED);
+                }
+
+                if (iter_to_copy != NULL && !user_match)
+                {
+                    /*
+                     * If possible, use arguments order from existing
+                     * TRC record when saving updated TRC.
+                     */
+                    tq_strings_copy(&walker->iter->args.save_order,
+                                    &iter_to_copy->args.save_order);
+                }
+                else
+                {
+                    for (i = 0; i < n_args; i++)
+                    {
+                        tq_strings_add_uniq_dup(
+                                    &walker->iter->args.save_order,
+                                    arg_names[i]);
+                    }
                 }
             }
             else

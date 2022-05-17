@@ -126,6 +126,7 @@ trc_update_free_test_iter_data(trc_update_test_iter_data *data)
     {
         SLIST_REMOVE_HEAD(&data->all_wilds, links);
         trc_update_args_group_free(args_group);
+        free(args_group);
     }
 
     for (i = 0; i < data->args_n; i++)
@@ -269,6 +270,7 @@ void
 trc_update_args_group_free(trc_update_args_group *args_group)
 {
     trc_free_test_iter_args(args_group->args);
+    free(args_group->args);
     trc_exp_results_free(args_group->exp_results);
     trc_exp_result_free(args_group->exp_default);
 }
@@ -4362,7 +4364,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
             {
                 new_group = TE_ALLOC(sizeof(*new_group));
                 new_group->args = TE_ALLOC(sizeof(trc_test_iter_args));
-                TAILQ_INIT(&new_group->args->head);
+                trc_test_iter_args_init(new_group->args);
 
                 args_comb_to_wildcard(args_in_wild, args_count,
                                       iter_data1->args,
@@ -4393,10 +4395,13 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
 
                 if (iter2 != NULL || !new_iter_added)
                 {
-                    trc_free_test_iter_args(new_group->args);
+                    trc_update_args_group_free(new_group);
                     free(new_group);
                     continue;
                 }
+
+                tq_strings_copy(&new_group->args->save_order,
+                                &iter1->args.save_order);
 
                 TAILQ_FOREACH(iter2, &test->iters.head, links)
                 {
@@ -4515,8 +4520,6 @@ trc_update_generate_test_wilds(unsigned int db_uid,
     trc_test_iter               *iter;
     trc_update_test_iter_data   *iter_data;
     trc_exp_results             *dup_results;
-    trc_test_iter_args          *dup_args;
-    trc_test_iter_arg           *arg;
 
     if (test->type != TRC_TEST_SCRIPT)
         return 0;
@@ -4575,15 +4578,10 @@ trc_update_generate_test_wilds(unsigned int db_uid,
                                         args_group->exp_results);
             memcpy(&iter->exp_results, dup_results, sizeof(*dup_results));
             free(dup_results);
-            TAILQ_INIT(&iter->args.head);
-            dup_args = trc_test_iter_args_dup(args_group->args);
-            while ((arg = TAILQ_FIRST(&dup_args->head)) != NULL)
-            {
-                TAILQ_REMOVE(&dup_args->head, arg, links);
-                TAILQ_INSERT_TAIL(&iter->args.head, arg, links);
-            }
 
-            free(dup_args);
+            trc_test_iter_args_init(&iter->args);
+            trc_test_iter_args_copy(&iter->args, args_group->args);
+
             iter->parent = test;
 
             if (test->filename != NULL)
@@ -4726,7 +4724,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
 
                     new_group = TE_ALLOC(sizeof(*new_group));
                     new_group->args = TE_ALLOC(sizeof(trc_test_iter_args));
-                    TAILQ_INIT(&new_group->args->head);
+                    trc_test_iter_args_init(new_group->args);
 
                     args_comb_to_wildcard(args_in_wild, args_count,
                                           iter_data1->args,
@@ -4905,7 +4903,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
 
                     new_group = TE_ALLOC(sizeof(*new_group));
                     new_group->args = TE_ALLOC(sizeof(trc_test_iter_args));
-                    TAILQ_INIT(&new_group->args->head);
+                    trc_test_iter_args_init(new_group->args);
 
                     args_comb_to_wildcard(args_in_wild, args_count,
                                           iter_data1->args,
@@ -4967,8 +4965,6 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
     trc_test_iter               *iter;
     trc_update_test_iter_data   *iter_data;
     trc_exp_results             *dup_results;
-    trc_test_iter_args          *dup_args;
-    trc_test_iter_arg           *arg;
 
     int      set_num;
     
@@ -5170,15 +5166,10 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
                 memcpy(&iter->exp_results, dup_results,
                        sizeof(*dup_results));
                 free(dup_results);
-                TAILQ_INIT(&iter->args.head);
-                dup_args = trc_test_iter_args_dup(args_group->args);
-                while ((arg = TAILQ_FIRST(&dup_args->head)) != NULL)
-                {
-                    TAILQ_REMOVE(&dup_args->head, arg, links);
-                    TAILQ_INSERT_TAIL(&iter->args.head, arg, links);
-                }
 
-                free(dup_args);
+                trc_test_iter_args_init(&iter->args);
+                trc_test_iter_args_copy(&iter->args, args_group->args);
+
                 iter->parent = test_entry->test;
 
                 if (test_entry->test->filename != NULL)

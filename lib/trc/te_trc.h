@@ -52,6 +52,12 @@ typedef struct trc_test_iter_args {
 
     trc_test_iter_args_head     head;  /**< Head of the list */
 
+    tqh_strings save_order; /**< Argument names listed in order
+                                 in which they should be saved to XML.
+                                 They can be stored in different
+                                 order in memory when they are
+                                 sorted to simplify matching
+                                 TRC records. */
 } trc_test_iter_args;
 
 /** TE log test argument */
