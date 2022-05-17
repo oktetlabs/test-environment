@@ -609,6 +609,7 @@
     - oid: "/agent/interface/channels/combined/current"
       access: read_write
       type: integer
+      volatile: true
       d: |
          NIC combined channel count (current)
 
@@ -637,6 +638,7 @@
     - oid: "/agent/interface/channels/other/current"
       access: read_write
       type: integer
+      volatile: true
       d: |
          NIC other channel count (current)
 
@@ -665,6 +667,7 @@
     - oid: "/agent/interface/channels/rx/current"
       access: read_write
       type: integer
+      volatile: true
       d: |
          NIC Rx channel count (current)
 
@@ -693,6 +696,7 @@
     - oid: "/agent/interface/channels/tx/current"
       access: read_write
       type: integer
+      volatile: true
       d: |
          NIC Tx channel count (current)
 
