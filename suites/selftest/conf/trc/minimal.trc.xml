@@ -43,5 +43,12 @@
                 </results>
             </iter>
         </test>
+        <test name="env" type="script">
+            <objective>Get the environment</objective>
+            <iter result="PASSED">
+                <arg name="env">{{{'pco_iut':IUT},if:'iut_if'}}</arg>
+                <notes/>
+            </iter>
+        </test>
     </iter>
 </test>

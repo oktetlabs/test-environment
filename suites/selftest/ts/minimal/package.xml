@@ -16,5 +16,11 @@
         <run>
             <script name="mi_meas_line_graph"/>
         </run>
+        <run>
+            <script name="env"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT},if:'iut_if'}}</value>
+            </arg>
+        </run>
     </session>
 </package>

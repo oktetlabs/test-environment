@@ -1,9 +1,9 @@
 # Copyright (C) 2019 OKTET Labs. All rights reserved.
 
 tests = [
-    'helloworld',
     'artifact',
-    'verdict',
+    'env',
+    'helloworld',
     'mi_meas_line_graph'
 ]
 
