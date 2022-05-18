@@ -256,6 +256,18 @@ typedef enum te_bool3 {
 #define TE_OFFSET_OF(_s, _f)    (offsetof(_s, _f))
 
 /**
+ * Size of a @p field in a structure @p type.
+ *
+ * A complement to a C standard `offsetof`.
+ * One usecase for such a macro is to define
+ * compile-time assertions.
+ *
+ * @param type   Struct or union type name
+ * @param field  Field name
+ */
+#define TE_SIZEOF_FIELD(type, field) (sizeof(((type *)NULL)->field))
+
+/**
  * Number of elements in array.
  *
  * @param _array    C name of an array
