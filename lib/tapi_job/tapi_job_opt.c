@@ -16,6 +16,7 @@
 #include "logger_api.h"
 #include "tapi_job_opt.h"
 #include "te_sockaddr.h"
+#include "te_enum.h"
 
 typedef struct tapi_job_opt_array_impl {
     const tapi_job_opt_array *array;
@@ -146,6 +147,24 @@ tapi_job_opt_create_addr_port_ptr(const void *value, const void *priv,
     return te_vec_append_str_fmt(args, "%s:%" PRIu16,
                                  te_sockaddr_get_ipstr(*sa),
                                  ntohs(te_sockaddr_get_port(*sa)));
+}
+
+te_errno
+tapi_job_opt_create_enum(const void *value, const void *priv, te_vec *args)
+{
+    int ival = *(const int *)value;
+
+    return te_vec_append_str_fmt(args, "%s",
+                                 te_enum_map_from_value(priv, ival));
+}
+
+te_errno
+tapi_job_opt_create_enum_bool(const void *value, const void *priv, te_vec *args)
+{
+    te_bool bval = *(const te_bool *)value;
+
+    return te_vec_append_str_fmt(args, "%s",
+                                 te_enum_map_from_value(priv, bval));
 }
 
 /**

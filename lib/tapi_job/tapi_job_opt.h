@@ -191,6 +191,14 @@ te_errno tapi_job_opt_create_sockaddr_ptr(const void *value, const void *priv,
 te_errno tapi_job_opt_create_addr_port_ptr(const void *value, const void *priv,
                                            te_vec *args);
 
+/** value type: any enum */
+te_errno tapi_job_opt_create_enum(const void *value, const void *priv,
+                                  te_vec *args);
+
+/** value type: te_bool */
+te_errno tapi_job_opt_create_enum_bool(const void *value, const void *priv,
+                                       te_vec *args);
+
 /**@} <!-- END tapi_job_opt_formatting --> */
 
 /**
@@ -347,6 +355,51 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, const void *priv,
 #define TAPI_JOB_OPT_ADDR_PORT_PTR(_prefix, _concat_prefix, _struct, _field) \
     { tapi_job_opt_create_addr_port_ptr, _prefix, _concat_prefix, NULL, \
       offsetof(_struct, _field), NULL }
+
+/**
+ * Bind an enumeration argument using a custom mapping @p _map from values
+ * to strings.
+ *
+ * @param[in]   _prefix         Argument prefix.
+ * @param[in]   _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in]   _struct         Option struct.
+ * @param[in]   _field          Field name of the enumeration in option struct.
+ *                              The field must have the same size as int.
+ *                              In most (if not all) standard ABIs this
+ *                              means `enum`-typed fields may be freely used.
+ *                              There is a compile-check for that constraint.
+ * @param[in]   _map            Enumeration mapping (te_enum_map array)
+ */
+#define TAPI_JOB_OPT_ENUM(_prefix, _concat_prefix, _struct, _field, _map) \
+    { tapi_job_opt_create_enum, _prefix, _concat_prefix, NULL,               \
+      (TE_COMPILE_TIME_ASSERT_EXPR(TE_SIZEOF_FIELD(_struct, _field) ==       \
+                             sizeof(int)) ?  offsetof(_struct, _field) : 0), \
+     (_map) }
+
+/**
+ * Bind a boolean argument using a custom mapping @p _map from values
+ * to strings.
+ *
+ * @note Constrast with TAPI_JOB_OPT_BOOL which adds or omits
+ *       the parameterless option depending on the booleanb value.
+ *
+ * @param[in]   _prefix         Argument prefix.
+ * @param[in]   _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in]   _struct         Option struct.
+ * @param[in]   _field          Field name of the boolean in option struct.
+ *                              The field must have the same size as int.
+ *                              In most (if not all) standard ABIs this
+ *                              means `enum`-typed fields may be freely used.
+ *                              There is a compile-check for that constraint.
+ * @param[in]   _map            Enumeration mapping (te_enum_map array).
+ *                              The map shall contain two elements for
+ *                              `TRUE` and `FALSE`
+ *
+ */
+#define TAPI_JOB_OPT_ENUM_BOOL(_prefix, _concat_prefix, _struct, _field, _map) \
+    { tapi_job_opt_create_enum_bool, _prefix, _concat_prefix, NULL, \
+      offsetof(_struct, _field), (_map) }
+
 
 /**@} <!-- END tapi_job_opt_bind_constructors --> */
 
