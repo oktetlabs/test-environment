@@ -1,0 +1,6 @@
+# TE_AGT1 is not set so SSH won't be used
+export TE_AGT1_TA_NAME="Agt_A"
+export TE_AGT1_TA_IF=lo
+
+# Agent 2 is not configured
+
