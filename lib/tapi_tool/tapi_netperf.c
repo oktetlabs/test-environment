@@ -202,9 +202,11 @@ set_test_rr_opt(te_vec *args, int32_t response_size,
 
 /** value type: `int` */
 static te_errno
-create_optional_port(const void *value, te_vec *args)
+create_optional_port(const void *value, const void *priv, te_vec *args)
 {
     int num = *(const int *)value;
+
+    UNUSED(priv);
 
     /* Set default value: 12865 */
     if (num == -1)
@@ -215,11 +217,13 @@ create_optional_port(const void *value, te_vec *args)
 
 /** value type: `netperf_test_spec_cmdline` */
 static te_errno
-create_optional_test_spec(const void *value, te_vec *args)
+create_optional_test_spec(const void *value, const void *priv, te_vec *args)
 {
     const tapi_netperf_test_opt *tst_opt = (const tapi_netperf_test_opt *)value;
 
     te_errno rc = 0;
+
+    UNUSED(priv);
 
     switch (tst_opt->type)
     {
@@ -242,18 +246,22 @@ create_optional_test_spec(const void *value, te_vec *args)
 
 /** value type: `tapi_netperf_test_name` */
 static te_errno
-create_optional_test_name(const void *value, te_vec *args)
+create_optional_test_name(const void *value, const void *priv, te_vec *args)
 {
     tapi_netperf_test_name test_name = *(const tapi_netperf_test_name *)value;
+
+    UNUSED(priv);
 
     return te_vec_append_str_fmt(args, "%s", tapi_netperf_test_name_maps[test_name]);
 }
 
 /** value type: `rpc_socket_proto` */
 static te_errno
-create_optional_ipversion(const void *value, te_vec *args)
+create_optional_ipversion(const void *value, const void *priv, te_vec *args)
 {
     sa_family_t ipversion = *(const sa_family_t *)value;
+
+    UNUSED(priv);
 
     switch (ipversion)
     {

@@ -20,9 +20,11 @@ typedef struct tapi_job_opt_array_impl {
 } tapi_job_opt_array_impl;
 
 te_errno
-tapi_job_opt_create_uint_t(const void *value, te_vec *args)
+tapi_job_opt_create_uint_t(const void *value, const void *priv, te_vec *args)
 {
     tapi_job_opt_uint_t *p = (tapi_job_opt_uint_t *)value;
+
+    UNUSED(priv);
 
     if (!p->defined)
         return TE_ENOENT;
@@ -31,9 +33,12 @@ tapi_job_opt_create_uint_t(const void *value, te_vec *args)
 }
 
 te_errno
-tapi_job_opt_create_uint_t_hex(const void *value, te_vec *args)
+tapi_job_opt_create_uint_t_hex(const void *value, const void *priv,
+                               te_vec *args)
 {
     tapi_job_opt_uint_t *p = (tapi_job_opt_uint_t *)value;
+
+    UNUSED(priv);
 
     if (!p->defined)
         return TE_ENOENT;
@@ -42,26 +47,31 @@ tapi_job_opt_create_uint_t_hex(const void *value, te_vec *args)
 }
 
 te_errno
-tapi_job_opt_create_uint(const void *value, te_vec *args)
+tapi_job_opt_create_uint(const void *value, const void *priv, te_vec *args)
 {
     unsigned int uint = *(const unsigned int *)value;
+
+    UNUSED(priv);
 
     return te_vec_append_str_fmt(args, "%u", uint);
 }
 
 te_errno
-tapi_job_opt_create_uint_omittable(const void *value, te_vec *args)
+tapi_job_opt_create_uint_omittable(const void *value, const void *priv,
+                                   te_vec *args)
 {
     if (*(const unsigned int *)value == TAPI_JOB_OPT_OMIT_UINT)
         return TE_ENOENT;
 
-    return tapi_job_opt_create_uint(value, args);
+    return tapi_job_opt_create_uint(value, priv, args);
 }
 
 te_errno
-tapi_job_opt_create_double_t(const void *value, te_vec *args)
+tapi_job_opt_create_double_t(const void *value, const void *priv, te_vec *args)
 {
     tapi_job_opt_double_t *p = (tapi_job_opt_double_t *)value;
+
+    UNUSED(priv);
 
     if (!p->defined)
         return TE_ENOENT;
@@ -70,9 +80,11 @@ tapi_job_opt_create_double_t(const void *value, te_vec *args)
 }
 
 te_errno
-tapi_job_opt_create_string(const void *value, te_vec *args)
+tapi_job_opt_create_string(const void *value, const void *priv, te_vec *args)
 {
     const char *str = *(const char *const *)value;
+
+    UNUSED(priv);
 
     if (str == NULL)
         return TE_ENOENT;
@@ -81,18 +93,21 @@ tapi_job_opt_create_string(const void *value, te_vec *args)
 }
 
 te_errno
-tapi_job_opt_create_bool(const void *value, te_vec *args)
+tapi_job_opt_create_bool(const void *value, const void *priv, te_vec *args)
 {
     UNUSED(args);
+    UNUSED(priv);
 
     return (*(const te_bool *)value) ? 0 : TE_ENOENT;
 }
 
 te_errno
-tapi_job_opt_create_dummy(const void *value, te_vec *args)
+tapi_job_opt_create_dummy(const void *value, const void *priv, te_vec *args)
 {
     UNUSED(value);
     UNUSED(args);
+    UNUSED(priv);
+
     /*
      * Function is just a dummy stuff which is required to
      * handle options without arguments in tapi_job_opt_build_args().
@@ -101,9 +116,12 @@ tapi_job_opt_create_dummy(const void *value, te_vec *args)
 }
 
 te_errno
-tapi_job_opt_create_sockaddr_ptr(const void *value, te_vec *args)
+tapi_job_opt_create_sockaddr_ptr(const void *value, const void *priv,
+                                 te_vec *args)
 {
     const struct sockaddr **sa = (const struct sockaddr **)value;
+
+    UNUSED(priv);
 
     if (sa == NULL || *sa == NULL)
         return TE_ENOENT;
@@ -112,9 +130,12 @@ tapi_job_opt_create_sockaddr_ptr(const void *value, te_vec *args)
 }
 
 te_errno
-tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args)
+tapi_job_opt_create_addr_port_ptr(const void *value, const void *priv,
+                                  te_vec *args)
 {
     const struct sockaddr **sa = (const struct sockaddr **)value;
+
+    UNUSED(priv);
 
     if (sa == NULL || *sa == NULL)
         return TE_ENOENT;
@@ -177,9 +198,10 @@ tapi_job_opt_bind2str(const tapi_job_opt_bind *bind, const void *opt,
     te_errno rc;
 
     if (bind->fmt_func == tapi_job_opt_create_array)
-        rc = bind->fmt_func(&(tapi_job_opt_array_impl){(const tapi_job_opt_array *)ptr, opt}, &arg_vec);
+        rc = bind->fmt_func(&(tapi_job_opt_array_impl){(const tapi_job_opt_array *)ptr, opt},
+                            bind->priv, &arg_vec);
     else
-        rc = bind->fmt_func(ptr, &arg_vec);
+        rc = bind->fmt_func(ptr, bind->priv, &arg_vec);
 
     if (rc != 0)
     {
@@ -234,13 +256,15 @@ out:
 }
 
 te_errno
-tapi_job_opt_create_array(const void *value, te_vec *args)
+tapi_job_opt_create_array(const void *value, const void *priv, te_vec *args)
 {
     const tapi_job_opt_array_impl *impl = (const tapi_job_opt_array_impl *)value;
     const tapi_job_opt_array *array = impl->array;
     tapi_job_opt_bind bind = array->bind;
     te_errno rc;
     size_t i;
+
+    UNUSED(priv);
 
     for (i = 0; i < array->array_length; i++,
          bind.opt_offset += array->element_size)

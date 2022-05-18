@@ -28,6 +28,8 @@ extern "C" {
  *
  * @param[in]  opt          Pointer to an argument, with specific type for
  *                          every formatting function.
+ * @param[in]  priv         Pointer to private data that may be needed for
+ *                          a formatting function.
  * @param[out] arg          Vector to put formatted argument to. Functions are
  *                          allowed to put multiple string in the vector. In
  *                          that case multiple arguments will be created.
@@ -36,7 +38,8 @@ extern "C" {
  * @retval  TE_ENOENT       The argument must be skipped (along with
  *                          prefix/suffix);
  */
-typedef te_errno (*tapi_job_opt_arg_format)(const void *opt, te_vec *arg);
+typedef te_errno (*tapi_job_opt_arg_format)(const void *opt, const void *priv,
+                                            te_vec *arg);
 
 /**
  * Bind between a tool's option struct field and command line arguments.
@@ -55,6 +58,8 @@ typedef struct tapi_job_opt_bind {
     const char *suffix;
     /** Offset of a field */
     size_t opt_offset;
+    /** Private data for value conversion */
+    const void *priv;
 } tapi_job_opt_bind;
 
 /**
@@ -78,7 +83,7 @@ typedef struct tapi_job_opt_array {
 
 /** A convenience vector constructor to define option binds */
 #define TAPI_JOB_OPT_SET(...)                                              \
-    {__VA_ARGS__, {NULL, NULL, NULL, FALSE, 0}}
+    {__VA_ARGS__, {NULL, NULL, NULL, FALSE, 0, NULL}}
 
 /**
  * Create a vector with command line arguments by processing option binds.
@@ -143,37 +148,48 @@ typedef struct tapi_job_opt_double_t {
  */
 
 /** value type: `tapi_job_opt_uint_t` */
-te_errno tapi_job_opt_create_uint_t(const void *value, te_vec *args);
+te_errno tapi_job_opt_create_uint_t(const void *value, const void *priv,
+                                    te_vec *args);
 
 /** value type: `tapi_job_opt_uint_t` */
-te_errno tapi_job_opt_create_uint_t_hex(const void *value, te_vec *args);
+te_errno tapi_job_opt_create_uint_t_hex(const void *value, const void *priv,
+                                        te_vec *args);
 
 /** value type: `unsigned int` */
-te_errno tapi_job_opt_create_uint(const void *value, te_vec *args);
+te_errno tapi_job_opt_create_uint(const void *value, const void *priv,
+                                  te_vec *args);
 
 /** value type: `unsigned int`, may be omitted */
-te_errno tapi_job_opt_create_uint_omittable(const void *value, te_vec *args);
+te_errno tapi_job_opt_create_uint_omittable(const void *value, const void *priv,
+                                            te_vec *args);
 
 /** value type: `tapi_job_opt_double_t` */
-te_errno tapi_job_opt_create_double_t(const void *value, te_vec *args);
+te_errno tapi_job_opt_create_double_t(const void *value, const void *priv,
+                                      te_vec *args);
 
 /** value type: `char *` */
-te_errno tapi_job_opt_create_string(const void *value, te_vec *args);
+te_errno tapi_job_opt_create_string(const void *value, const void *priv,
+                                    te_vec *args);
 
 /** value type: `te_bool` */
-te_errno tapi_job_opt_create_bool(const void *value, te_vec *args);
+te_errno tapi_job_opt_create_bool(const void *value, const void *priv,
+                                  te_vec *args);
 
 /** value type: `tapi_job_opt_array` */
-te_errno tapi_job_opt_create_array(const void *value, te_vec *args);
+te_errno tapi_job_opt_create_array(const void *value, const void *priv,
+                                   te_vec *args);
 
 /** value type: none */
-te_errno tapi_job_opt_create_dummy(const void *value, te_vec *args);
+te_errno tapi_job_opt_create_dummy(const void *value, const void *priv,
+                                   te_vec *args);
 
 /** value type: 'struct sockaddr *' */
-te_errno tapi_job_opt_create_sockaddr_ptr(const void *value, te_vec *args);
+te_errno tapi_job_opt_create_sockaddr_ptr(const void *value, const void *priv,
+                                          te_vec *args);
 
 /** value type: 'struct sockaddr *' */
-te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
+te_errno tapi_job_opt_create_addr_port_ptr(const void *value, const void *priv,
+                                           te_vec *args);
 
 /**@} <!-- END tapi_job_opt_formatting --> */
 
@@ -195,7 +211,7 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
 #define TAPI_JOB_OPT_UINT_T(_prefix, _concat_prefix, _suffix, \
                             _struct, _field) \
     { tapi_job_opt_create_uint_t, _prefix, _concat_prefix, _suffix, \
-      offsetof(_struct, _field) }
+      offsetof(_struct, _field), NULL }
 
 /**
  * Bind `tapi_job_opt_uint_t` argument, specifying it in hexadecimal
@@ -210,7 +226,7 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
 #define TAPI_JOB_OPT_UINT_T_HEX(_prefix, _concat_prefix, _suffix, \
                                 _struct, _field) \
     { tapi_job_opt_create_uint_t_hex, _prefix, _concat_prefix, _suffix, \
-      offsetof(_struct, _field) }
+      offsetof(_struct, _field), NULL }
 
 /**
  * Bind `unsigned int` argument.
@@ -223,7 +239,7 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
  */
 #define TAPI_JOB_OPT_UINT(_prefix, _concat_prefix, _suffix, _struct, _field) \
     { tapi_job_opt_create_uint, _prefix, _concat_prefix, _suffix, \
-      offsetof(_struct, _field) }
+      offsetof(_struct, _field), NULL }
 
 /**
  * Similar to @ref TAPI_JOB_OPT_UINT, but the argument will not be included in
@@ -243,7 +259,7 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
 #define TAPI_JOB_OPT_UINT_OMITTABLE(_prefix, _concat_prefix, _suffix, \
                                     _struct, _field) \
     { tapi_job_opt_create_uint_omittable, _prefix, _concat_prefix, _suffix, \
-      offsetof(_struct, _field) }
+      offsetof(_struct, _field), NULL }
 
 /**
  * Bind `tapi_job_opt_double_t` argument.
@@ -257,7 +273,7 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
 #define TAPI_JOB_OPT_DOUBLE(_prefix, _concat_prefix, _suffix, \
                             _struct, _field) \
     { tapi_job_opt_create_double_t, _prefix, _concat_prefix, _suffix, \
-      offsetof(_struct, _field) }
+      offsetof(_struct, _field), NULL }
 
 /**
  * The value is used to omit uint argument when it is bound
@@ -274,7 +290,7 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
  */
 #define TAPI_JOB_OPT_BOOL(_prefix, _struct, _field) \
     { tapi_job_opt_create_bool, _prefix, FALSE, NULL, \
-      offsetof(_struct, _field) }
+      offsetof(_struct, _field), NULL }
 
 /**
  * Bind `char *` argument.
@@ -286,7 +302,7 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
  */
 #define TAPI_JOB_OPT_STRING(_prefix, _concat_prefix, _struct, _field) \
     { tapi_job_opt_create_string, _prefix, _concat_prefix, NULL, \
-      offsetof(_struct, _field) }
+      offsetof(_struct, _field), NULL }
 
 /**
  * Bind `tapi_job_opt_array` argument.
@@ -295,7 +311,8 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
  * @param[in]     _field            Field name of the array in option struct.
  */
 #define TAPI_JOB_OPT_ARRAY(_struct, _field) \
-    { tapi_job_opt_create_array, NULL, FALSE, NULL, offsetof(_struct, _field) }
+    { tapi_job_opt_create_array, NULL, FALSE, NULL, \
+      offsetof(_struct, _field), NULL }
 
 /**
  * Bind none argument.
@@ -303,7 +320,7 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
  * @param[in]     _prefix           Option name.
  */
 #define TAPI_JOB_OPT_DUMMY(_prefix) \
-    { tapi_job_opt_create_dummy, _prefix, FALSE, NULL, 0 }
+    { tapi_job_opt_create_dummy, _prefix, FALSE, NULL, 0, NULL }
 
 /**
  * Bind `struct sockaddr *` argument.
@@ -316,7 +333,7 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
  */
 #define TAPI_JOB_OPT_SOCKADDR_PTR(_prefix, _concat_prefix, _struct, _field) \
     { tapi_job_opt_create_sockaddr_ptr, _prefix, _concat_prefix, NULL, \
-      offsetof(_struct, _field) }
+      offsetof(_struct, _field), NULL }
 
 /**
  * Bind `struct sockaddr *` argument (formatted as "address:port").
@@ -329,7 +346,7 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
  */
 #define TAPI_JOB_OPT_ADDR_PORT_PTR(_prefix, _concat_prefix, _struct, _field) \
     { tapi_job_opt_create_addr_port_ptr, _prefix, _concat_prefix, NULL, \
-      offsetof(_struct, _field) }
+      offsetof(_struct, _field), NULL }
 
 /**@} <!-- END tapi_job_opt_bind_constructors --> */
 

@@ -76,7 +76,7 @@ typedef struct tapi_ethtool_app {
     } out_filters; /**< Filters for parsing stdout */
 } tapi_ethtool_app;
 
-static te_errno fill_cmd_arg(const void *value, te_vec *args);
+static te_errno fill_cmd_arg(const void *value, const void *priv, te_vec *args);
 
 /*
  * These option bindings are enough for all commands requiring
@@ -102,10 +102,12 @@ static const tapi_job_opt_bind basic_binds[] = TAPI_JOB_OPT_SET(
  * @return Status code.
  */
 static te_errno
-fill_cmd_arg(const void *value, te_vec *args)
+fill_cmd_arg(const void *value, const void *priv, te_vec *args)
 {
     tapi_ethtool_cmd cmd = *(const tapi_ethtool_cmd *)value;
     const char *cmd_str = NULL;
+
+    UNUSED(priv);
 
     switch (cmd)
     {

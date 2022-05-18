@@ -58,9 +58,11 @@ struct tapi_sfnt_pp_app_server_t {
 
 /** value type: `int` */
 static te_errno
-create_optional_int(const void *value, te_vec *args)
+create_optional_int(const void *value, const void *priv, te_vec *args)
 {
     const int num = *(const int *)value;
+
+    UNUSED(priv);
 
     if (num == -1)
         return TE_ENOENT;
@@ -70,9 +72,11 @@ create_optional_int(const void *value, te_vec *args)
 
 /** value type: `uint8_t` */
 static te_errno
-create_optional_proto(const void *value, te_vec *args)
+create_optional_proto(const void *value, const void *priv, te_vec *args)
 {
     uint8_t proto = *(const uint8_t *)value;
+
+    UNUSED(priv);
 
     switch (proto)
     {
@@ -90,9 +94,12 @@ create_optional_proto(const void *value, te_vec *args)
 
 /** value type `tapi_sfnt_pp_muxer' */
 static te_errno
-create_optional_muxer(const void *value, te_vec *args)
+create_optional_muxer(const void *value, const void *priv,
+                      te_vec *args)
 {
     tapi_sfnt_pp_muxer muxer = *(const tapi_sfnt_pp_muxer *)value;
+
+    UNUSED(priv);
 
     switch (muxer)
     {
@@ -116,12 +123,14 @@ create_optional_muxer(const void *value, te_vec *args)
 
 /** value type `te_vec *` */
 static te_errno
-create_optional_sizes(const void *value, te_vec *args)
+create_optional_sizes(const void *value, const void *priv, te_vec *args)
 {
     const te_vec  **sizes = (const te_vec **)value;
     const int     *elem;
     te_errno       rc;
     te_string      tmp = TE_STRING_INIT;
+
+    UNUSED(priv);
 
     if (*sizes == NULL)
         return TE_ENOENT;
@@ -148,9 +157,11 @@ create_optional_sizes(const void *value, te_vec *args)
 
 /** value type: `sa_family_t` */
 static te_errno
-create_optional_ipversion(const void *value, te_vec *args)
+create_optional_ipversion(const void *value, const void *priv, te_vec *args)
 {
     sa_family_t ipversion = *(const sa_family_t *)value;
+
+    UNUSED(priv);
 
     switch (ipversion)
     {
