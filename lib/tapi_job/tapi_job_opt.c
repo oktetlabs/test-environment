@@ -8,6 +8,9 @@
  * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  */
 
+#include "te_config.h"
+#include <inttypes.h>
+
 #include "te_defs.h"
 #include "te_string.h"
 #include "logger_api.h"
@@ -140,9 +143,9 @@ tapi_job_opt_create_addr_port_ptr(const void *value, const void *priv,
     if (sa == NULL || *sa == NULL)
         return TE_ENOENT;
 
-    return te_vec_append_str_fmt(args, "%s:%u",
+    return te_vec_append_str_fmt(args, "%s:%" PRIu16,
                                  te_sockaddr_get_ipstr(*sa),
-                                 (unsigned int)te_sockaddr_get_port(*sa));
+                                 ntohs(te_sockaddr_get_port(*sa)));
 }
 
 /**
