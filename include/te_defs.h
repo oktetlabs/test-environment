@@ -473,9 +473,24 @@ te_round_up_pow2(unsigned long long num)
 #define TEST_ARG_VAR_PREFIX "VAR."
 #define TEST_ARG_ENV_PREFIX "TE_TEST_VAR_"
 
-/* assert() function analog for compilation */
-#define TE_COMPILE_TIME_ASSERT(x) \
-    switch(0) {case 0: case x:;}
+/**
+ * Build-time analog of an assert().
+ *
+ * @note Syntactically this is a boolean expression that always
+ * return true, so it can be used in conditional expressions.
+ * This is important because a comma operator always makes
+ * an expression non-constant, so e.g. to insert a check into
+ * a static variable initializer, one would need to do smth like:
+ * `static int x = TE_COMPILE_TIME_ASSERT_EXPR(test) ? value : 0`
+ */
+#define TE_COMPILE_TIME_ASSERT_EXPR(x) \
+    (!!sizeof((char [!!(x) ? 1 : -1]){0}))
+
+/**
+ * The same as TE_COMPILE_TIME_ASSERT_EXPR(), but suitable
+ * as a standalone statement without compiler warnings
+ */
+#define TE_COMPILE_TIME_ASSERT(x) ((void)TE_COMPILE_TIME_ASSERT_EXPR(x))
 
 /**
  * Void function pointer. Can be casted to any other function
