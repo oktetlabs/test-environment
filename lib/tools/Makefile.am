@@ -28,6 +28,7 @@ include_HEADERS = \
 	log_bufs.h \
 	te_sigmap.h \
 	te_dbuf.h \
+	te_enum.h \
 	te_ipstack.h \
 	te_kvpair.h \
 	te_toeplitz.h \
@@ -97,7 +98,8 @@ libtools_la_SOURCES = \
 	te_vector.c \
 	te_meas_stats.c \
 	te_hex_diff_dump.c \
-	te_mi_log.c
+	te_mi_log.c \
+	te_enum.c
 
 liblogger_file_la_SOURCES = te_log_file.c
 
