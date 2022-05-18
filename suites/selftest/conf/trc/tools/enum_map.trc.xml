@@ -1,0 +1,6 @@
+<test name="enum_map" type="script">
+    <objective>Testing te_enum.h correctness</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>

@@ -3,5 +3,7 @@
     <iter result="PASSED">
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/readlink.trc.xml" parse="xml"/>
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tools/enum_map.trc.xml" parse="xml"/>
     </iter>
 </test>

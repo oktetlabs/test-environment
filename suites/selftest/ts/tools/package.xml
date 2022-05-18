@@ -7,5 +7,9 @@
         <run>
             <script name="readlink"/>
         </run>
+
+        <run>
+            <script name="enum_map"/>
+        </run>
     </session>
 </package>

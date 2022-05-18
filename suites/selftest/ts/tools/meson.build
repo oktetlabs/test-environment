@@ -1,7 +1,8 @@
 # Copyright (C) 2022 OKTET Labs. All rights reserved.
 
 tests = [
-    'readlink'
+    'readlink',
+    'enum_map'
 ]
 
 foreach test : tests
