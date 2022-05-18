@@ -8,6 +8,9 @@
                     href="tapi/job.trc.xml" parse="xml"/>
 
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tapi/jobopt.trc.xml" parse="xml"/>
+
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tapi/tool.trc.xml" parse="xml"/>
     </iter>
 </test>

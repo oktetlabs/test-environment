@@ -3,6 +3,7 @@
 packages = [
     'cache',
     'job',
+    'jobopt',
     'tool',
 ]
 

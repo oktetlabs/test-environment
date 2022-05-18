@@ -1,0 +1,10 @@
+<test name="jobopt" type="package">
+    <objective>Test TAPI Job option handling implemetation</objective>
+    <iter result="PASSED">
+        <test name="sample" type="script">
+            <objective>Sanity check that options of all types are constructed correctly</objective>
+
+            <iter result="PASSED"/>
+        </test>
+    </iter>
+</test>

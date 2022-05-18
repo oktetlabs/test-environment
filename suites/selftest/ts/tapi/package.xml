@@ -13,6 +13,10 @@
         </run>
 
         <run>
+            <package name="jobopt"/>
+        </run>
+
+        <run>
             <package name="tool"/>
         </run>
 
