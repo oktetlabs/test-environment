@@ -19,6 +19,8 @@
 
 #include "te_config.h"
 
+#include <stddef.h>
+
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #include <stdbool.h>
@@ -249,10 +251,9 @@ typedef enum te_bool3 {
 /**
  * Offset of the field in structure.
  *
- * @param _s        Structure name
- * @param _f        Field name
+ * @deprecated Use standard C `offsetof`
  */
-#define TE_OFFSET_OF(_s, _f)    ((size_t)(&(((_s *)NULL)->_f)))
+#define TE_OFFSET_OF(_s, _f)    (offsetof(_s, _f))
 
 /**
  * Number of elements in array.
