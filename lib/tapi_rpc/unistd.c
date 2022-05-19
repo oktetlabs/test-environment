@@ -2684,6 +2684,8 @@ rpc_mkdirp(rcf_rpc_server *rpcs, const char *path, rpc_file_mode_flags mode)
     if (path != NULL)
         free(in.path.path_val);
 
+    /* mkdirp() on the agent may legitimately clear errno */
+    out.common.errno_changed = FALSE;
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(mkdirp, out.retval);
     TAPI_RPC_LOG(rpcs, mkdirp, "%s, %s", "%d",
                  path, file_mode_flags_rpc2str(mode), out.retval);
