@@ -992,7 +992,11 @@ typedef tarpc_read_out tarpc_pread_out;
 
 typedef struct tarpc_read_in tarpc_write_in;
 
+typedef struct tarpc_pread_in tarpc_pwrite_in;
+
 typedef struct tarpc_ssize_t_retval_out tarpc_write_out;
+
+typedef struct tarpc_write_out tarpc_pwrite_out;
 
 typedef struct tarpc_write_in tarpc_write_and_close_in;
 

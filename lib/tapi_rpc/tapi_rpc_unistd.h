@@ -162,6 +162,22 @@ extern int rpc_dup3(rcf_rpc_server *rpcs,
 extern int rpc_write(rcf_rpc_server *rpcs,
                      int fd, const void *buf, size_t count);
 
+/**
+ * Write up to @b count bytes from buffer @b buf to a file with descriptor
+ * @b fd at @b offset.
+ * @note See pwrite(2) manual page for more information.
+ *
+ * @param rpcs     RPC server handle.
+ * @param fd       File descriptor.
+ * @param buf      Pointer to a buffer containing data to write.
+ * @param count    Number of bytes to be written.
+ * @param offset   Offset from the start of the @b fd.
+ *
+ * @return  Number of bytes actually written, otherwise -1 on failure.
+ */
+extern int rpc_pwrite(rcf_rpc_server *rpcs, int fd, const void *buf,
+                      size_t count, off_t offset);
+
 extern int rpc_write_via_splice(rcf_rpc_server *rpcs,
                                 int fd, const void *buf, size_t count);
 
