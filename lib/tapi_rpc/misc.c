@@ -3387,6 +3387,9 @@ rpc_remove_dir_with_files(rcf_rpc_server *rpcs, const char *path)
     in.path.path_val = (char *)strdup(path);
 
     rcf_rpc_call(rpcs, "remove_dir_with_files", &in, &out);
+
+    /* This function should not check errno */
+    out.common.errno_changed = FALSE;
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(remove_dir_with_files, out.retval);
 
     free(in.path.path_val);
