@@ -124,3 +124,77 @@ tq_strings_add_uniq_dup(tqh_strings *list, const char *value)
 {
     return tq_strings_add_uniq_gen(list, value, TRUE);
 }
+
+/** Mode argument for tq_strings_copy_move() */
+typedef enum tq_strings_copy_mode {
+    TQ_STRINGS_MOVE, /**< Remove tqe_string's from source queue,
+                          add them to destination queue */
+    TQ_STRINGS_SHALLOW_COPY, /**< Add tqe_string's pointing to the same
+                                  strings to the destination queue, do not
+                                  change the source queue */
+    TQ_STRINGS_COPY, /**< Add tqe_string's pointing to newly allocated
+                          duplicate strings to the destination queue,
+                          do not change the source queue */
+} tq_strings_copy_mode;
+
+/**
+ * Copy or move values from source queue to destination queue.
+ *
+ * @param dst       Destination queue
+ * @param src       Source queue
+ * @param mode      See tq_strings_copy_mode for supported modes
+ *
+ * @return Status code.
+ */
+static te_errno
+tq_strings_copy_move(tqh_strings *dst,
+                     tqh_strings *src,
+                     tq_strings_copy_mode mode)
+{
+    tqe_string *str;
+    tqe_string *str_aux;
+    te_errno rc;
+
+    TAILQ_FOREACH_SAFE(str, src, links, str_aux)
+    {
+        if (mode == TQ_STRINGS_MOVE)
+        {
+            TAILQ_REMOVE(src, str, links);
+            TAILQ_INSERT_TAIL(dst, str, links);
+        }
+        else
+        {
+            rc = tq_strings_add_uniq_gen(
+                          dst, str->v,
+                          (mode == TQ_STRINGS_COPY ? TRUE : FALSE));
+            if (rc != 0)
+                return rc;
+        }
+    }
+
+    return 0;
+}
+
+/* See the description in tq_string.h */
+te_errno
+tq_strings_move(tqh_strings *dst,
+                tqh_strings *src)
+{
+    return tq_strings_copy_move(dst, src, TQ_STRINGS_MOVE);
+}
+
+/* See the description in tq_string.h */
+te_errno
+tq_strings_copy(tqh_strings *dst,
+                tqh_strings *src)
+{
+    return tq_strings_copy_move(dst, src, TQ_STRINGS_COPY);
+}
+
+/* See the description in tq_string.h */
+te_errno
+tq_strings_shallow_copy(tqh_strings *dst,
+                        tqh_strings *src)
+{
+    return tq_strings_copy_move(dst, src, TQ_STRINGS_SHALLOW_COPY);
+}

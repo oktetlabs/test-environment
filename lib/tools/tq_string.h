@@ -109,6 +109,40 @@ extern te_errno tq_strings_add_uniq(tqh_strings *list, const char *value);
 extern te_errno tq_strings_add_uniq_dup(tqh_strings *list,
                                         const char *value);
 
+/**
+ * Move values from source queue to destination queue.
+ *
+ * @param dst       Destination queue
+ * @param src       Source queue
+ *
+ * @return Status code.
+ */
+extern te_errno tq_strings_move(tqh_strings *dst,
+                                tqh_strings *src);
+
+/**
+ * Copy values from source queue to destination queue.
+ *
+ * @param dst       Destination queue
+ * @param src       Source queue
+ *
+ * @return Status code.
+ */
+extern te_errno tq_strings_copy(tqh_strings *dst,
+                                tqh_strings *src);
+
+/**
+ * Copy members from source queue to destination queue but
+ * let copied members to point to the same strings.
+ *
+ * @param dst       Destination queue
+ * @param src       Source queue
+ *
+ * @return Status code.
+ */
+extern te_errno tq_strings_shallow_copy(tqh_strings *dst,
+                                        tqh_strings *src);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
