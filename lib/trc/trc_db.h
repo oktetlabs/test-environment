@@ -520,6 +520,24 @@ extern void trc_free_test_iter_args_head(trc_test_iter_args_head *head);
 extern void trc_free_test_iter_args(trc_test_iter_args *args);
 
 /**
+ * Initialize trc_test_iter_args structure.
+ *
+ * @param args      Pointer to the structure
+ */
+extern void trc_test_iter_args_init(trc_test_iter_args *args);
+
+/**
+ * Copy list of arguments.
+ *
+ * @param dst     Where to add copied arguments
+ * @param src     Source list of arguments
+ *
+ * @return Status code.
+ */
+extern te_errno trc_test_iter_args_copy(trc_test_iter_args *dst,
+                                        trc_test_iter_args *src);
+
+/**
  * Duplicate list of test arguments.
  *
  * @param args      Structure containing head of

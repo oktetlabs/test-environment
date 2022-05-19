@@ -59,24 +59,61 @@ trc_free_test_iter_args(trc_test_iter_args *args)
 }
 
 /* See description in trc_db.h */
-trc_test_iter_args *
-trc_test_iter_args_dup(trc_test_iter_args *args)
+void
+trc_test_iter_args_init(trc_test_iter_args *args)
 {
-    trc_test_iter_args  *dup;
+    args->node = NULL;
+    TAILQ_INIT(&args->head);
+}
+
+/* See description in trc_db.h */
+te_errno
+trc_test_iter_args_copy(trc_test_iter_args *dst,
+                        trc_test_iter_args *src)
+{
     trc_test_iter_arg   *dup_arg;
     trc_test_iter_arg   *arg;
 
-    dup = TE_ALLOC(sizeof(*dup));
-    TAILQ_INIT(&dup->head);
-
-    TAILQ_FOREACH(arg, &args->head, links)
+    TAILQ_FOREACH(arg, &src->head, links)
     {
         dup_arg = TE_ALLOC(sizeof(*dup_arg));
-        
+        if (dup_arg == NULL)
+            return TE_ENOMEM;
+
         dup_arg->name = strdup(arg->name);
         dup_arg->value = strdup(arg->value);
+        if (dup_arg->name == NULL ||
+            dup_arg->value == NULL)
+        {
+            free(dup_arg->name);
+            free(dup_arg->value);
+            free(dup_arg);
+            return TE_ENOMEM;
+        }
 
-        TAILQ_INSERT_TAIL(&dup->head, dup_arg, links);
+        TAILQ_INSERT_TAIL(&dst->head, dup_arg, links);
+    }
+}
+
+/* See description in trc_db.h */
+trc_test_iter_args *
+trc_test_iter_args_dup(trc_test_iter_args *args)
+{
+    trc_test_iter_args *dup;
+    te_errno rc;
+
+    dup = TE_ALLOC(sizeof(*dup));
+    if (dup == NULL)
+        return NULL;
+
+    trc_test_iter_args_init(dup);
+
+    rc = trc_test_iter_args_copy(dup, args);
+    if (rc != 0)
+    {
+        trc_free_test_iter_args(dup);
+        free(dup);
+        return NULL;
     }
 
     return dup;
