@@ -2284,6 +2284,18 @@ TARPC_FUNC(write, {},
 }
 )
 
+
+/*-------------- pwrite() ------------------------------*/
+
+TARPC_FUNC(pwrite, {},
+{
+    INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, 0);
+
+    MAKE_CALL(out->retval = func(in->fd, in->buf.buf_val, in->len,
+                                 in->offset));
+}
+)
+
 /*-------------- write_via_splice() ------------------------------*/
 
 tarpc_ssize_t

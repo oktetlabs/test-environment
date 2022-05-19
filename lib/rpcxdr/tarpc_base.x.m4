@@ -5889,6 +5889,7 @@ program tarpc
         RPC_DEF(read)
         RPC_DEF(pread)
         RPC_DEF(write)
+        RPC_DEF(pwrite)
         RPC_DEF(read_via_splice)
         RPC_DEF(write_via_splice)
         RPC_DEF(write_and_close)
