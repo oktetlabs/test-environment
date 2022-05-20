@@ -1018,6 +1018,11 @@ tester_assemble_plan(tester_run_data *data, const tester_cfg_walk *cbs, const te
 
     if (ctl != TESTER_CFG_WALK_FIN)
     {
+        if (ctl == TESTER_CFG_WALK_CONT && data->plan.root == NULL)
+        {
+            WARN("The execution plan is empty");
+            return 0;
+        }
         ERROR("Plan-gathering tree walk returned unexpected result %u",
               ctl);
         LGR_MESSAGE(TE_LL_ERROR, TE_LOG_EXEC_PLAN_USER,
@@ -4552,8 +4557,13 @@ tester_run(testing_scenario   *scenario,
     switch (ctl)
     {
         case TESTER_CFG_WALK_CONT:
-            ERROR("Unexpected 'continue' at the end of walk");
-            rc = TE_RC(TE_TESTER, TE_EFAULT);
+            if (cfgs->total_iters == 0)
+                rc = 0;
+            else
+            {
+                ERROR("Unexpected 'continue' at the end of walk");
+                rc = TE_RC(TE_TESTER, TE_EFAULT);
+            }
             break;
 
         case TESTER_CFG_WALK_FIN:
