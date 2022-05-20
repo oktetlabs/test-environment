@@ -866,7 +866,10 @@ tester_run_destroy_ctx(tester_run_data *data)
     tester_ctx *curr = SLIST_FIRST(&data->ctxs);
     tester_ctx *prev;
 
-    assert(curr != NULL);
+    /* Test list is empty, nothing to do */
+    if (curr == NULL)
+        return;
+
     prev = SLIST_NEXT(curr, links);
     if (prev != NULL)
     {
@@ -2740,7 +2743,6 @@ static tester_cfg_walk_ctl
 run_cfg_end(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
 {
     tester_run_data    *gctx = opaque;
-    tester_ctx         *ctx;
 
     UNUSED(cfg);
 
@@ -2748,9 +2750,6 @@ run_cfg_end(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     tester_run_destroy_ctx(gctx);
-
-    ctx = SLIST_FIRST(&gctx->ctxs);
-    assert(ctx != NULL);
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
