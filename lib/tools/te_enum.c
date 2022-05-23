@@ -29,14 +29,15 @@ te_enum_map_from_str(const te_enum_map map[], const char *name,
 }
 
 const char *
-te_enum_map_from_value(const te_enum_map map[], int value)
+te_enum_map_from_any_value(const te_enum_map map[], int value,
+                           const char *unknown)
 {
     for (; map->name != NULL; map++)
     {
         if (map->value == value)
             return map->name;
     }
-    abort();
+    return unknown;
 }
 
 void

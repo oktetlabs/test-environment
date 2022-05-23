@@ -59,7 +59,6 @@ main(int argc, char **argv)
         }
     }
 
-
     TEST_STEP("Checking value-to-strng mapping");
     for (i = 0; mapping[i].name != NULL; i++)
     {
@@ -75,6 +74,10 @@ main(int argc, char **argv)
     TEST_STEP("Checking mapping of non-existing string");
     if (te_enum_map_from_str(mapping, "does not exist", -1) != -1)
         TEST_VERDICT("Non-existing string reported as found");
+
+    TEST_STEP("Checking mapping of non-existing values");
+    if (te_enum_map_from_any_value(mapping, -1, NULL) != NULL)
+        TEST_VERDICT("Non-existing value reported as found");
 
     TEST_STEP("Check dynamic map generation");
     te_enum_map_fill_by_conversion(dynamic_map, RPC_SIGHUP, RPC_SIGUNKNOWN,

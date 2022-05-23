@@ -56,18 +56,40 @@ extern int te_enum_map_from_str(const te_enum_map map[],
 /**
  * Convert a @p value into a symbolic name.
  *
- * If @p value is not
- * found in @p map, the function aborts, since it's a clearly programmer's
- * error, not a runtime error.
- *
  * If there are several mappings with the same value, the first one is used.
  *
- * @param map   Mapping
- * @param value Value
+ * @param map     Mapping
+ * @param value   Value
+ * @param unknown Label to return if @p value is not found
+ *
+ * @return A string matching the @p value or @p unknown
+ */
+extern const char *te_enum_map_from_any_value(const te_enum_map map[],
+                                              int value,
+                                              const char *unknown);
+
+/**
+ * Same as te_enum_map_from_any_value() but aborts the program if
+ * the value is not found.
+ *
+ * This is to be used where a set of values is known to be closed,
+ * so any value not in that set results from the programmer's error.
+ *
+ * @param map     Mapping
+ * @param value   Value
  *
  * @return A string matching the @p value
  */
-extern const char *te_enum_map_from_value(const te_enum_map map[], int value);
+static inline const char *
+te_enum_map_from_value(const te_enum_map map[], int value)
+{
+    const char *label = te_enum_map_from_any_value(map, value, NULL);
+
+    if (label == NULL)
+        abort();
+
+    return label;
+}
 
 /**
  * Fill in an enum mapping array based on the mapping function.
