@@ -16,6 +16,7 @@
 #ifndef __TE_ENUM_H__
 #define __TE_ENUM_H__
 
+#include "te_defs.h"
 #include "te_errno.h"
 
 #ifdef __cplusplus
@@ -107,6 +108,60 @@ te_enum_map_from_value(const te_enum_map map[], int value)
 extern void te_enum_map_fill_by_conversion(te_enum_map map[],
                                            int minval, int maxval,
                                            const char *(*val2str)(int val));
+
+
+/**
+ * A translation between two sets of integral values
+ *
+ * An array of translations should end with TE_ENUM_TRN_END
+ */
+typedef struct te_enum_trn {
+    /** Left-hand side value */
+    int from;
+    /** Right-hand side value */
+    int to;
+} te_enum_trn;
+
+/** Terminating element of an enum translation array */
+#define TE_ENUM_TRN_END { .from = INT_MIN, .to = INT_MIN }
+
+
+/**
+ * Translate a @p value into a correpsonding value according to @p trn.
+ *
+ * If there are several translations with the same value,
+ * the first one is used.
+ *
+ * @param trn         Translation table
+ * @param value       Value
+ * @param reverse     If `TRUE`, the @a to field of the translation is
+ *                    used as a key, i.e. a reverse translation is
+ *                    performed.
+ * @param unknown_val Value to return if @p value is not found
+ *
+ * @return A value correspodning to the @p value or @p unknown_val
+ */
+
+extern int te_enum_translate(const te_enum_trn trn[],
+                             int value, te_bool reverse,
+                             int unknown_val);
+
+/**
+ * Fill in an enum translation array based on the translation function.
+ *
+ * The purpose of the function is to bridge te_enum API and pre-existing
+ * value-to-value conversion functions such as used in RPC libraries
+ *
+ * @param trn[out]  An array of sufficient size (@p maxval - @p minval + 2)
+ *                  to be filled.
+ *                  The terminating TE_ENUM_TRN_END will be appended
+ * @param minval    Minimal source enum value
+ * @param maxval    Maximum source enum value
+ * @param val2str   Conversion function
+ */
+extern void te_enum_trn_fill_by_conversion(te_enum_trn trn[],
+                                           int minval, int maxval,
+                                           int (*val2val)(int val));
 
 
 #ifdef __cplusplus

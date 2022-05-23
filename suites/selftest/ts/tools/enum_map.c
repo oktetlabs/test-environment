@@ -40,6 +40,14 @@ main(int argc, char **argv)
     };
     te_enum_map dynamic_map[RPC_SIGUNKNOWN - RPC_SIGHUP + 2] =
         {TE_ENUM_MAP_END,};
+    static const te_enum_trn translation[] = {
+        {.from = 1, .to = 0x100},
+        {.from = 2, .to = 0x101},
+        {.from = 3, .to = 0x102},
+        TE_ENUM_TRN_END
+    };
+    te_enum_trn dynamic_trn[RPC_SIGUNKNOWN - RPC_SIGHUP + 2] =
+        {TE_ENUM_TRN_END,};
 
     unsigned i;
 
@@ -102,6 +110,59 @@ main(int argc, char **argv)
     }
     if (dynamic_map[i].name != NULL)
         TEST_VERDICT("Dynamic map is not properly terminated");
+
+    TEST_STEP("Checking enum value translation");
+    for (i = 0; translation[i].from != INT_MIN; i++)
+    {
+        int mapped = te_enum_translate(translation, translation[i].from,
+                                       FALSE, -1);
+
+        if (mapped != translation[i].to)
+        {
+            TEST_VERDICT("Forward translation of %d failed: "
+                         "expected %d, got %d", translation[i].from,
+                         translation[i].to, mapped);
+        }
+        mapped = te_enum_translate(translation, translation[i].to, TRUE, -1);
+
+        if (mapped != translation[i].from)
+        {
+            TEST_VERDICT("Backward translation of %d failed: "
+                         "expected %d, got %d", translation[i].to,
+                         translation[i].from, mapped);
+        }
+    }
+
+    TEST_STEP("Checking unknown value translation");
+    if (te_enum_translate(translation, INT_MAX, FALSE, -1) != -1)
+        TEST_VERDICT("Unknown value forward-translated as it is known");
+    if (te_enum_translate(translation, INT_MAX, TRUE, -1) != -1)
+        TEST_VERDICT("Unknown value backward-translated as it is known");
+
+    TEST_STEP("Check dynamic translation generation");
+    te_enum_trn_fill_by_conversion(dynamic_trn, RPC_SIGHUP, RPC_SIGUNKNOWN,
+                                   (int (*)(int))signum_rpc2h);
+    for (i = 0; i + RPC_SIGHUP <= RPC_SIGUNKNOWN; i++)
+    {
+        int translated = signum_rpc2h(i + RPC_SIGHUP);
+
+        if (dynamic_trn[i].from == INT_MIN)
+            TEST_VERDICT("Dynamic translation is not complete");
+
+        if (dynamic_trn[i].from != (int)i + RPC_SIGHUP)
+        {
+            TEST_VERDICT("Expected source value %d, but got %d",
+                         (int)i + RPC_SIGHUP, dynamic_trn[i].from);
+        }
+        if (dynamic_trn[i].to != translated)
+        {
+            TEST_VERDICT("Expected destination value '%d', but got '%d'",
+                         translated, dynamic_trn[i].to);
+        }
+    }
+    if (dynamic_trn[i].from != INT_MIN)
+        TEST_VERDICT("Dynamic translation is not properly terminated");
+
 
     TEST_SUCCESS;
 

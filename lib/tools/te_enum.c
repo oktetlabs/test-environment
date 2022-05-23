@@ -54,3 +54,30 @@ te_enum_map_fill_by_conversion(te_enum_map map[],
     }
     map->name = NULL;
 }
+
+int
+te_enum_translate(const te_enum_trn trn[], int value, te_bool reverse,
+                  int unknown_val)
+{
+    for (; trn->from != INT_MIN; trn++)
+    {
+        if (value == (reverse ? trn->to : trn->from))
+            return reverse ? trn->from : trn->to;
+    }
+    return unknown_val;
+}
+
+void
+te_enum_trn_fill_by_conversion(te_enum_trn trn[],
+                               int minval, int maxval,
+                               int (*val2val)(int val))
+{
+    int value;
+
+    for (value = minval; value <= maxval; value++, trn++)
+    {
+        trn->from = value;
+        trn->to = val2val(value);
+    }
+    trn->from = trn->to = INT_MIN;
+}
