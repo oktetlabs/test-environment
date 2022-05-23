@@ -51,8 +51,9 @@ typedef struct tapi_wrk_opt {
      * the path is @c NULL AND script_content is not @c NULL.
      */
     const char *script_path;
-    /** Array option for headers field */
-    tapi_job_opt_array headers_array;
+
+    /** Number of actual headers in @a headers */
+    size_t n_headers;
     /** Request headers in "Name: Value" format (note the space). */
     const char *headers[TAPI_WRK_HEADERS_MAX];
     /** Print latency statistics */

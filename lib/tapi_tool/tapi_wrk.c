@@ -36,17 +36,6 @@ const tapi_wrk_opt tapi_wrk_default_opt = {
     .timeout_ms = 2000,
     .script_path = NULL,
     .script_content = NULL,
-    .headers_array = {
-        .array_length = 0,
-        .element_size = sizeof(char *),
-        .bind = {
-            .fmt_func = tapi_job_opt_create_string,
-            .prefix = "--header",
-            .concatenate_prefix = FALSE,
-            .suffix = NULL,
-            .opt_offset = offsetof(tapi_wrk_opt, headers)
-        },
-    },
     .latency = FALSE,
     .host = NULL,
 };
@@ -57,7 +46,9 @@ static const tapi_job_opt_bind wrk_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_UINT("--duration", FALSE, "s", tapi_wrk_opt, duration_s),
     TAPI_JOB_OPT_BOOL("--latency", tapi_wrk_opt, latency),
     TAPI_JOB_OPT_STRING(NULL, FALSE, tapi_wrk_opt, host),
-    TAPI_JOB_OPT_ARRAY(tapi_wrk_opt, headers_array),
+    TAPI_JOB_OPT_ARRAY(tapi_wrk_opt, n_headers, headers,
+                       TAPI_JOB_OPT_STRING("--header", FALSE,
+                                           tapi_wrk_opt, headers)),
     TAPI_JOB_OPT_STRING("--script", FALSE, tapi_wrk_opt, script_path)
 );
 

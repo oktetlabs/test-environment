@@ -63,21 +63,16 @@ typedef struct tapi_job_opt_bind {
 } tapi_job_opt_bind;
 
 /**
- * Array of arguments.
- *
- * @note    Only array-type field members are supported, pointers
- *          to an array are not.
+ * The descriptor for an array-typed field.
+ * This structure shall *never* be used directly,
+ * see TAPI_JOB_OPT_ARRAY()
  */
 typedef struct tapi_job_opt_array {
-    /** Size of an array */
-    size_t array_length;
+    /** The offset of the data field relative to the length */
+    size_t array_offset;
     /** Size of an element in the array */
     size_t element_size;
-    /**
-     * Option bind for every element in the array.
-     *
-     * @note    the bind's offset is the offset of the array member.
-     */
+    /** Option bind for every element in the array */
     tapi_job_opt_bind bind;
 } tapi_job_opt_array;
 
@@ -175,7 +170,7 @@ te_errno tapi_job_opt_create_string(const void *value, const void *priv,
 te_errno tapi_job_opt_create_bool(const void *value, const void *priv,
                                   te_vec *args);
 
-/** value type: `tapi_job_opt_array` */
+/** value type: an inline array */
 te_errno tapi_job_opt_create_array(const void *value, const void *priv,
                                    te_vec *args);
 
@@ -316,11 +311,34 @@ te_errno tapi_job_opt_create_enum_bool(const void *value, const void *priv,
  * Bind `tapi_job_opt_array` argument.
  *
  * @param[in]     _struct           Option struct.
- * @param[in]     _field            Field name of the array in option struct.
+ * @param[in]     _lenfield         Field name of the array length in
+ *                                  the option struct (`size_t`).
+ * @param[in]     _arrfield         Field name of the array data field.
+ *                                  It must be the genuine inline array,
+ *                                  not a pointer, and it must come after
+ *                                  the @p _lenfield
+ * @param         ...               Binding for a element
+ *                                  (must be a valid initializer list for
+ *                                  tapi_job_opt_bind, e.g as provided
+ *                                  by convenience macros; the argument is
+ *                                  a vararg because members of the list
+ *                                  are treated by the preprocessor as
+ *                                  individual macro arguments)
  */
-#define TAPI_JOB_OPT_ARRAY(_struct, _field) \
-    { tapi_job_opt_create_array, NULL, FALSE, NULL, \
-      offsetof(_struct, _field), NULL }
+#define TAPI_JOB_OPT_ARRAY(_struct, _lenfield, _arrfield, ...)          \
+    { tapi_job_opt_create_array, NULL, FALSE, NULL,                     \
+        (TE_COMPILE_TIME_ASSERT_EXPR(                                   \
+            TE_SIZEOF_FIELD(_struct, _lenfield) == sizeof(size_t)) ?    \
+         offsetof(_struct, _lenfield) : 0),                             \
+        &(tapi_job_opt_array){                                          \
+        .array_offset =                                                 \
+            TE_COMPILE_TIME_ASSERT_EXPR(                                \
+                offsetof(_struct, _arrfield) >                          \
+                offsetof(_struct, _lenfield)) ?                         \
+            offsetof(_struct, _arrfield) - offsetof(_struct, _lenfield) \
+            : 0,                                                        \
+        .element_size = TE_SIZEOF_FIELD(_struct, _arrfield[0]),         \
+        .bind = __VA_ARGS__ } }
 
 /**
  * Bind none argument.

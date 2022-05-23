@@ -18,11 +18,6 @@
 #include "te_sockaddr.h"
 #include "te_enum.h"
 
-typedef struct tapi_job_opt_array_impl {
-    const tapi_job_opt_array *array;
-    const void *opt;
-} tapi_job_opt_array_impl;
-
 te_errno
 tapi_job_opt_create_uint_t(const void *value, const void *priv, te_vec *args)
 {
@@ -219,11 +214,7 @@ tapi_job_opt_bind2str(const tapi_job_opt_bind *bind, const void *opt,
     const uint8_t *ptr = (const uint8_t *)opt + bind->opt_offset;
     te_errno rc;
 
-    if (bind->fmt_func == tapi_job_opt_create_array)
-        rc = bind->fmt_func(&(tapi_job_opt_array_impl){(const tapi_job_opt_array *)ptr, opt},
-                            bind->priv, &arg_vec);
-    else
-        rc = bind->fmt_func(ptr, bind->priv, &arg_vec);
+    rc = bind->fmt_func(ptr, bind->priv, &arg_vec);
 
     if (rc != 0)
     {
@@ -280,18 +271,18 @@ out:
 te_errno
 tapi_job_opt_create_array(const void *value, const void *priv, te_vec *args)
 {
-    const tapi_job_opt_array_impl *impl = (const tapi_job_opt_array_impl *)value;
-    const tapi_job_opt_array *array = impl->array;
+    const tapi_job_opt_array *array = priv;
     tapi_job_opt_bind bind = array->bind;
     te_errno rc;
     size_t i;
+    size_t len = *(const size_t *)value;
 
-    UNUSED(priv);
+    bind.opt_offset = array->array_offset;
+    assert(bind.opt_offset > 0);
 
-    for (i = 0; i < array->array_length; i++,
-         bind.opt_offset += array->element_size)
+    for (i = 0; i < len; i++, bind.opt_offset += array->element_size)
     {
-        rc = tapi_job_opt_bind2str(&bind, impl->opt, args);
+        rc = tapi_job_opt_bind2str(&bind, value, args);
         if (rc != 0)
             return rc;
     }

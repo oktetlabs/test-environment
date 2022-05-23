@@ -52,7 +52,7 @@ main(int argc, char **argv)
         const char *str2;
         te_bool flag1;
         te_bool flag2;
-        tapi_job_opt_array opt_array;
+        size_t n_array;
         const char *array[8];
 #ifdef HAVE_NETINET_IN_H
         const struct sockaddr *addr;
@@ -74,7 +74,7 @@ main(int argc, char **argv)
         TE_ENUM_MAP_END
     };
 
-    static const tapi_job_opt_bind option_descs[] =
+    const tapi_job_opt_bind option_descs[] =
         TAPI_JOB_OPT_SET(
             TAPI_JOB_OPT_UINT("--uint", FALSE, NULL, data_sample, uint),
             TAPI_JOB_OPT_UINT_T("--uint=", TRUE, NULL, data_sample, opt_uint1),
@@ -86,7 +86,9 @@ main(int argc, char **argv)
             TAPI_JOB_OPT_STRING("-s", FALSE, data_sample, str2),
             TAPI_JOB_OPT_BOOL("--flag1", data_sample, flag1),
             TAPI_JOB_OPT_BOOL("--flag2", data_sample, flag2),
-            TAPI_JOB_OPT_ARRAY(data_sample, opt_array),
+            TAPI_JOB_OPT_ARRAY(data_sample, n_array, array,
+                               TAPI_JOB_OPT_STRING("--item=", TRUE,
+                                                   data_sample, array)),
             TAPI_JOB_OPT_DUMMY("--dummy"),
 #ifdef HAVE_NETINET_IN_H
             TAPI_JOB_OPT_SOCKADDR_PTR("--ip", FALSE, data_sample, addr),
@@ -114,11 +116,7 @@ main(int argc, char **argv)
         .str2 = NULL,
         .flag1 = TRUE,
         .flag2 = FALSE,
-        .opt_array = {
-            .array_length = 3,
-            .element_size = sizeof(const char *),
-            .bind = TAPI_JOB_OPT_STRING("--item=", TRUE, data_sample, array)
-        },
+        .n_array = 3,
         .array = {
             "value1",
             "value2",
@@ -161,6 +159,9 @@ main(int argc, char **argv)
 
     if (te_vec_size(&result_args) != TE_ARRAY_LEN(expected_strs) + 1)
     {
+        for (i = 0; i < te_vec_size(&result_args); i++)
+            RING("---- %s", TE_VEC_GET(const char *, &result_args, i));
+
         TEST_VERDICT("Number of constructed arguments is not as expected: "
                      "got %zu, expected %zu",
                      te_vec_size(&result_args),
