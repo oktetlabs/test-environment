@@ -88,7 +88,7 @@ main(int argc, char **argv)
             TAPI_JOB_OPT_BOOL("--flag2", data_sample, flag2),
             TAPI_JOB_OPT_ARRAY(data_sample, n_array, array,
                                TAPI_JOB_OPT_STRING("--item=", TRUE,
-                                                   data_sample, array)),
+                                                   data_sample, array[0])),
             TAPI_JOB_OPT_DUMMY("--dummy"),
 #ifdef HAVE_NETINET_IN_H
             TAPI_JOB_OPT_SOCKADDR_PTR("--ip", FALSE, data_sample, addr),

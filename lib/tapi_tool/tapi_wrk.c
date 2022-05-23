@@ -48,7 +48,7 @@ static const tapi_job_opt_bind wrk_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_STRING(NULL, FALSE, tapi_wrk_opt, host),
     TAPI_JOB_OPT_ARRAY(tapi_wrk_opt, n_headers, headers,
                        TAPI_JOB_OPT_STRING("--header", FALSE,
-                                           tapi_wrk_opt, headers)),
+                                           tapi_wrk_opt, headers[0])),
     TAPI_JOB_OPT_STRING("--script", FALSE, tapi_wrk_opt, script_path)
 );
 
