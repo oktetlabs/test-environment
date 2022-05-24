@@ -5912,6 +5912,7 @@ program tarpc
         RPC_DEF(send_one_byte_many)
 
         RPC_DEF(readv)
+        RPC_DEF(preadv)
         RPC_DEF(writev)
 
         RPC_DEF(lseek)
