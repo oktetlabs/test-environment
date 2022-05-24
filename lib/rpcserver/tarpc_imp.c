@@ -2852,6 +2852,37 @@ TARPC_FUNC(writev,
 }
 )
 
+/*-------------- pwritev() ------------------------------*/
+
+#if HAVE_PWRITEV
+
+TARPC_FUNC(pwritev,
+{
+    if (in->vector.vector_len > RCF_RPC_MAX_IOVEC)
+    {
+        ERROR("Too long iovec is provided");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return TRUE;
+    }
+},
+{
+    struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+    struct iovec *res = NULL;
+
+    if (in->vector.vector_val != NULL)
+    {
+        rpcs_iovec_tarpc2h(in->vector.vector_val, iovec_arr,
+                           in->vector.vector_len, FALSE,
+                           arglist);
+        res = iovec_arr;
+    }
+
+    MAKE_CALL(out->retval = func(in->fd, res, in->count, in->offset));
+}
+)
+
+#endif /* HAVE_PWRITEV */
+
 #ifndef TE_POSIX_FS_PROVIDED
 /*-------------- lseek() ------------------------------*/
 

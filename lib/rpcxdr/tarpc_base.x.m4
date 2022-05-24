@@ -5918,6 +5918,7 @@ program tarpc
         RPC_DEF(readv)
         RPC_DEF(preadv)
         RPC_DEF(writev)
+        RPC_DEF(pwritev)
 
         RPC_DEF(lseek)
 
