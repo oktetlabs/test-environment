@@ -1100,8 +1100,18 @@ struct tarpc_readv_out {
     struct tarpc_iovec      vector<>;
 };
 
+struct tarpc_preadv_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int           fd;
+    struct tarpc_iovec  vector<>;
+    tarpc_size_t        count;
+    tarpc_off_t         offset;
+};
 
 typedef struct tarpc_readv_in tarpc_writev_in;
+
+typedef struct tarpc_readv_out tarpc_preadv_out;
 
 typedef struct tarpc_ssize_t_retval_out tarpc_writev_out;
 

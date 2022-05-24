@@ -751,6 +751,80 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
 }
 
 int
+rpc_preadv(rcf_rpc_server *rpcs, int fd, const struct rpc_iovec *iov,
+           size_t iovcnt, off_t offset)
+{
+    te_string str = TE_STRING_INIT_STATIC(1024);
+
+    tarpc_preadv_in  in;
+    tarpc_preadv_out out;
+
+    struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+
+    size_t i;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    memset(iovec_arr, 0, sizeof(iovec_arr));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(preadv, -1);
+    }
+
+    if (iovcnt > RCF_RPC_MAX_IOVEC)
+    {
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
+        RETVAL_INT(preadv, -1);
+    }
+
+    in.fd = fd;
+    in.count = iovcnt;
+    in.offset = offset;
+
+    if (iov != NULL)
+    {
+        in.vector.vector_len = iovcnt;
+        in.vector.vector_val = iovec_arr;
+
+        te_iovec_rpc2tarpc(iov, iovec_arr, iovcnt);
+    }
+    te_iovec_rpc2str_append(&str, iov, iovcnt);
+
+    rcf_rpc_call(rpcs, "preadv", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs) &&
+        iov != NULL && out.vector.vector_val != NULL)
+    {
+        for (i = 0; i < iovcnt; i++)
+        {
+            size_t in_iov_len  = iov[i].iov_len;
+            size_t out_iov_len = out.vector.vector_val[i].iov_len;
+
+            if (in_iov_len != out_iov_len)
+            {
+                ERROR("%s: in_iov_len(%zu) != out_iov_len(%zu)",
+                      __FUNCTION__, in_iov_len, out_iov_len);
+            }
+
+            if ((iov[i].iov_base != NULL) &&
+                (out.vector.vector_val[i].iov_base.iov_base_val != NULL))
+            {
+                memcpy(iov[i].iov_base,
+                       out.vector.vector_val[i].iov_base.iov_base_val,
+                       iov[i].iov_rlen);
+            }
+        }
+    }
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(preadv, out.retval);
+    TAPI_RPC_LOG(rpcs, preadv, "%d, %s, %zu, %jd", "%d",
+                 fd, str.ptr, iovcnt, (intmax_t)offset, out.retval);
+    RETVAL_INT(preadv, out.retval);
+}
+
+int
 rpc_writev(rcf_rpc_server *rpcs,
            int fd, const struct rpc_iovec *iov, size_t iovcnt)
 {

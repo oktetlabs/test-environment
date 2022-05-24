@@ -474,6 +474,23 @@ rpc_readv(rcf_rpc_server *rpcs,
 }
 
 /**
+ * Read data from specified file with descriptor @b fd at @b offset
+ * into a vector of buffer @b iov.
+ *
+ * @param rpcs     RPC server handle.
+ * @param fd       File descriptorfrom which data is read.
+ * @param iov      Vector of buffer where data is stored.
+ * @param iovcnt   Number of buffer to read.
+ * @param offset   Offset from the start of the @b fd.
+ *
+ * @return Number of bytes read,otherwise -1 is returned when an
+ *         error occured.
+ * @note See @b preadv manual page for more information.
+ */
+extern int rpc_preadv(rcf_rpc_server *rpcs, int fd, const struct rpc_iovec *iov,
+                      size_t iovcnt, tarpc_off_t offset);
+
+/**
  * Allocate a set of file descriptors on RPC server side.
  *
  * @param rpcs   RPC server handle
