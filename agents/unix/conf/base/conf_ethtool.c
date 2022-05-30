@@ -382,8 +382,7 @@ set_ethtool_lsets(const char *if_name, ta_ethtool_lsets *lsets)
 /* See description in conf_ethtool.h */
 te_errno
 get_ethtool_value(const char *if_name, unsigned int gid,
-                  ta_ethtool_cmd cmd, void *val_local, void **ptr_out,
-                  te_bool do_set)
+                  ta_ethtool_cmd cmd, void **ptr_out)
 {
     ta_cfg_obj_t *obj;
     te_errno rc;
@@ -423,40 +422,33 @@ get_ethtool_value(const char *if_name, unsigned int gid,
     }
     else
     {
-        memset(val_local, 0, val_size);
+        *ptr_out = calloc(val_size, 1);
+        if (*ptr_out == NULL)
+        {
+            ERROR("%s(): not enough memory", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        }
 
         if (cmd == TA_ETHTOOL_LINKSETTINGS)
-            rc = get_ethtool_lsets(if_name, val_local);
+            rc = get_ethtool_lsets(if_name, *ptr_out);
         else
-            rc = call_ethtool_ioctl(if_name, native_cmd, val_local);
+            rc = call_ethtool_ioctl(if_name, native_cmd, *ptr_out);
 
         if (rc != 0)
+        {
+            free(*ptr_out);
+            *ptr_out = NULL;
             return rc;
-
-        if (do_set)
-        {
-            *ptr_out = calloc(val_size, 1);
-            if (*ptr_out == NULL)
-            {
-                ERROR("%s(): not enough memory", __FUNCTION__);
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-            }
-
-            rc = ta_obj_add(obj_type, if_name, "", gid,
-                            *ptr_out, &free, NULL);
-            if (rc != 0)
-            {
-                ERROR("%s(): failed to add a new object", __FUNCTION__);
-                free(*ptr_out);
-                *ptr_out = NULL;
-                return TE_RC(TE_TA_UNIX, rc);
-            }
-
-            memcpy(*ptr_out, val_local, val_size);
         }
-        else
+
+        rc = ta_obj_add(obj_type, if_name, "", gid,
+                        *ptr_out, &free, &obj);
+        if (rc != 0)
         {
-            *ptr_out = val_local;
+            ERROR("%s(): failed to add a new object", __FUNCTION__);
+            free(*ptr_out);
+            *ptr_out = NULL;
+            return TE_RC(TE_TA_UNIX, rc);
         }
     }
 

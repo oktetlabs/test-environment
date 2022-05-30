@@ -198,7 +198,6 @@ coalesce_param_get(unsigned int gid,
                    const char *coalesce_name,
                    const char *param_name)
 {
-    struct ethtool_coalesce ecmd;
     struct ethtool_coalesce *eptr;
     unsigned int param_val;
     te_errno rc;
@@ -207,7 +206,7 @@ coalesce_param_get(unsigned int gid,
     UNUSED(coalesce_name);
 
     rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_COALESCE,
-                           &ecmd, (void **)&eptr, FALSE);
+                           (void **)&eptr);
     if (rc != 0)
         return rc;
 
@@ -246,7 +245,6 @@ coalesce_param_set(unsigned int gid,
                    const char *coalesce_name,
                    const char *param_name)
 {
-    struct ethtool_coalesce ecmd;
     struct ethtool_coalesce *eptr;
     unsigned long int parsed_val;
     unsigned int param_val;
@@ -256,7 +254,7 @@ coalesce_param_set(unsigned int gid,
     UNUSED(coalesce_name);
 
     rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_COALESCE,
-                           &ecmd, (void **)&eptr, TRUE);
+                           (void **)&eptr);
     if (rc != 0)
         return rc;
 

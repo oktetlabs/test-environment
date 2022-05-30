@@ -308,26 +308,18 @@ extern te_errno call_ethtool_ioctl(const char *if_name, int cmd,
 
 /**
  * Get a pointer to Ethtool command structure to work with.
- * It the structure is needed for set request, pointer will be to
- * a dynamically allocated structure associated with a given interface.
- * Otherwise - to locally declared structure.
- * Structure fields are filled with help of related Ethtool get command.
- * Dynamically allocated structure is filled only when it is requested
- * the first time.
+ * Structure fields are filled with help of related Ethtool get command
+ * when it is requested the first time (for a given @p gid).
  *
  * @param if_name         Interface name
  * @param gid             Group ID
  * @param cmd             Ethtool command ID
- * @param ecmd_local      Pointer to locally declared
- *                        command structure. Must not be @c NULL
- * @param ecmd_out        Here requested pointer will be saved
- * @param do_set          If @c TRUE, it is a set request
+ * @param ptr_out         Here requested pointer will be saved
  *
  * @return Status code.
  */
 extern te_errno get_ethtool_value(const char *if_name, unsigned int gid,
-                                  ta_ethtool_cmd cmd, void *val_local,
-                                  void **ptr_out, te_bool do_set);
+                                  ta_ethtool_cmd cmd, void **ptr_out);
 
 /**
  * Commit configuration changes via @c SIOCETHTOOL.
