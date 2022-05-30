@@ -3027,7 +3027,8 @@ route_add(unsigned int gid, const char *oid, const char *value,
 {
     UNUSED(oid);
 
-    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, value, gid, NULL, NULL);
+    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, value, gid,
+                      NULL, NULL, NULL);
 }
 
 /**
@@ -3045,7 +3046,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
 {
     UNUSED(oid);
 
-    return ta_obj_del(TA_OBJ_TYPE_ROUTE, route, NULL, gid, NULL);
+    return ta_obj_del(TA_OBJ_TYPE_ROUTE, route, NULL, NULL, gid, NULL);
 }
 
 /** Get the value of the route.
@@ -3209,8 +3210,8 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
     memset(&rt, 0, sizeof(rt));
 
     route = ((cfg_inst_subid *)(p_oid->ids))[p_oid->len - 1].name;
-    
-    if ((obj = ta_obj_find(TA_OBJ_TYPE_ROUTE, route)) == NULL)
+
+    if ((obj = ta_obj_find(TA_OBJ_TYPE_ROUTE, route, gid)) == NULL)
     {
         WARN("Commit for %s route which has not been updated", route);
         return 0;

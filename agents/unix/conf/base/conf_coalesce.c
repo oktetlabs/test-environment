@@ -293,7 +293,7 @@ if_coalesce_commit(unsigned int gid, const cfg_oid *p_oid)
     UNUSED(gid);
     if_name = CFG_OID_GET_INST_NAME(p_oid, 2);
 
-    return commit_ethtool_value(if_name, TA_ETHTOOL_COALESCE);
+    return commit_ethtool_value(if_name, gid, TA_ETHTOOL_COALESCE);
 }
 
 /* Predeclaration */

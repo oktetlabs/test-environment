@@ -57,6 +57,7 @@
 #include "agentlib.h"
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
+#include "rcf_pch_ta_cfg.h"
 #include "logger_ta.h"
 
 /** Include static array with string representation of types */
@@ -1337,6 +1338,7 @@ exit:
         TE_RC_UPDATE(rc, rc2);
     }
     rcf_ch_conf_fini();
+    ta_obj_cleanup();
     rcf_pch_rpc_shutdown();
     if (opcode == RCFOP_SHUTDOWN &&
         rcf_ch_shutdown(conn, cmd, cmd_buf_len, answer_plen) < 0)

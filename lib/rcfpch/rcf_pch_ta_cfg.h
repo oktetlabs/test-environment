@@ -107,18 +107,29 @@ typedef enum ta_cfg_obj_action {
     TA_CFG_OBJ_GET, /**< Find/get an entry */
 } ta_cfg_obj_action_e;
 
+/** Type of the function used to free user-provided data */
+typedef void (ta_cfg_obj_data_free)(void *data);
+
 /** Object data structure, which is inserted into collection */
 typedef struct ta_cfg_obj {
     te_bool  in_use;    /**< Whether this entry is in use */
     char    *type;      /**< Object type in string representation */
     char    *name;      /**< Object name - actually, instance name */
     char    *value;     /**< Object value - actually, instance value */
+
     void    *user_data; /**< Pointer to user-provided data */
+    ta_cfg_obj_data_free *user_free; /**< Function for releasing
+                                          user-provided data */
 
     unsigned int         gid;    /**< Group ID */
     ta_cfg_obj_action_e  action; /**< Object action */
     ta_cfg_obj_attr_t   *attrs;  /**< List of object's attributes */
 } ta_cfg_obj_t;
+
+/**
+ * Release all the objects which are still marked as being in use.
+ */
+extern void ta_obj_cleanup(void);
 
 /**
  * Set (or add if there is no such attribute) specified value to
@@ -157,10 +168,12 @@ extern void ta_obj_free(ta_cfg_obj_t *obj);
  *
  * @param type  Object type - user-defined constant
  * @param name  Object name - actually, instance name
+ * @param gid   Request group ID
  *
  * @return Pointer to object in case of success, @c NULL otherwise.
  */
-extern ta_cfg_obj_t *ta_obj_find(const char *type, const char *name);
+extern ta_cfg_obj_t *ta_obj_find(const char *type, const char *name,
+                                 unsigned int gid);
 
 /**
  * Prototype for callback function used to fill created
@@ -195,13 +208,15 @@ extern te_errno ta_obj_find_create(const char *type, const char *name,
  * @param value       Object value
  * @param gid         Request group ID
  * @param user_data   Some user-data value associated with this object
+ * @param user_free   Function that can be used to release @p user_data
  * @param new_obj     Object entry (OUT)
  *
  * @return Error code or 0
  */
 extern int ta_obj_add(const char *type, const char *name,
                       const char *value, unsigned int gid,
-                      void *user_data, ta_cfg_obj_t **new_obj);
+                      void *user_data, ta_cfg_obj_data_free *user_free,
+                      ta_cfg_obj_t **new_obj);
 
 /**
  * Set the value of the object.
@@ -249,12 +264,14 @@ extern int ta_obj_set(const char *type, const char *name,
  * @param type        Object type - user-defined constant
  * @param name        Object name - actually, instance name
  * @param user_data   Some user-data value associated with this object
+ * @param user_free   Function that can be used to release @p user_data
  * @param gid         Request group ID
  * @param cb_func     Callback function to be called for created object
  *
  * @return Error code or 0
  */
 extern int ta_obj_del(const char *type, const char *name, void *user_data,
+                      ta_cfg_obj_data_free *user_free,
                       unsigned int gid, ta_obj_cb cb_func);
 
 /**

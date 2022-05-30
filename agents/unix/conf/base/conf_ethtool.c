@@ -412,7 +412,7 @@ get_ethtool_value(const char *if_name, unsigned int gid,
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    obj = ta_obj_find(obj_type, if_name);
+    obj = ta_obj_find(obj_type, if_name, gid);
     if (obj != NULL)
     {
         *ptr_out = obj->user_data;
@@ -438,7 +438,8 @@ get_ethtool_value(const char *if_name, unsigned int gid,
                 return TE_RC(TE_TA_UNIX, TE_ENOMEM);
             }
 
-            rc = ta_obj_add(obj_type, if_name, "", gid, *ptr_out, NULL);
+            rc = ta_obj_add(obj_type, if_name, "", gid,
+                            *ptr_out, &free, NULL);
             if (rc != 0)
             {
                 ERROR("%s(): failed to add a new object", __FUNCTION__);
@@ -460,7 +461,8 @@ get_ethtool_value(const char *if_name, unsigned int gid,
 
 /* See description in conf_ethtool.h */
 te_errno
-commit_ethtool_value(const char *if_name, ta_ethtool_cmd cmd)
+commit_ethtool_value(const char *if_name, unsigned int gid,
+                     ta_ethtool_cmd cmd)
 {
     const char *obj_type;
     ta_cfg_obj_t *obj;
@@ -488,7 +490,7 @@ commit_ethtool_value(const char *if_name, ta_ethtool_cmd cmd)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    obj = ta_obj_find(obj_type, if_name);
+    obj = ta_obj_find(obj_type, if_name, gid);
     if (obj == NULL)
     {
         ERROR("%s(): object of type '%s' was not found for "
@@ -501,7 +503,6 @@ commit_ethtool_value(const char *if_name, ta_ethtool_cmd cmd)
     else
         rc = call_ethtool_ioctl(if_name, native_cmd, obj->user_data);
 
-    free(obj->user_data);
     ta_obj_free(obj);
 
     return rc;

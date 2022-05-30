@@ -72,8 +72,21 @@ extern int inet_pton(int af, const char *src, void *dst);
 
 #endif
 
-#define TA_OBJS_NUM 10
+#define TA_OBJS_NUM 1000
 static ta_cfg_obj_t ta_objs[TA_OBJS_NUM];
+
+/* See the description in rcf_pch_ta_cfg.h */
+void
+ta_obj_cleanup(void)
+{
+    unsigned int i;
+
+    for (i = 0; i < TA_OBJS_NUM; i++)
+    {
+        if (ta_objs[i].in_use)
+            ta_obj_free(&ta_objs[i]);
+    }
+}
 
 /* See the description in rcf_pch_ta_cfg.h */
 int
@@ -141,12 +154,19 @@ ta_obj_free(ta_cfg_obj_t *obj)
         free(cur_attr);
     }
 
+    if (obj->user_free != NULL)
+    {
+        obj->user_free(obj->user_data);
+        obj->user_data = NULL;
+    }
+
     obj->in_use = FALSE;
 }
 
 /* See the description in rcf_pch_ta_cfg.h */
 ta_cfg_obj_t *
-ta_obj_find(const char *type, const char *name)
+ta_obj_find(const char *type, const char *name,
+            unsigned int gid)
 {
     int i;
 
@@ -156,7 +176,8 @@ ta_obj_find(const char *type, const char *name)
     {
         if (ta_objs[i].in_use &&
             strcmp(ta_objs[i].type, type) == 0 &&
-            strcmp(ta_objs[i].name, name) == 0)
+            strcmp(ta_objs[i].name, name) == 0 &&
+            ta_objs[i].gid == gid)
         {
             return &ta_objs[i];
         }
@@ -174,7 +195,7 @@ ta_obj_find_create(const char *type, const char *name,
     ta_cfg_obj_t *tmp = NULL;
     int           rc;
 
-    tmp = ta_obj_find(type, name);
+    tmp = ta_obj_find(type, name, gid);
     if (tmp != NULL)
     {
         if (created != NULL)
@@ -185,7 +206,7 @@ ta_obj_find_create(const char *type, const char *name,
         return 0;
     }
 
-    rc = ta_obj_add(type, name, NULL, gid, NULL, &tmp);
+    rc = ta_obj_add(type, name, NULL, gid, NULL, NULL, &tmp);
     if (rc != 0)
         return rc;
 
@@ -208,11 +229,12 @@ ta_obj_find_create(const char *type, const char *name,
 /* See the description in rcf_pch_ta_cfg.h */
 int
 ta_obj_add(const char *type, const char *name, const char *value,
-           unsigned int gid, void *user_data, ta_cfg_obj_t **new_obj)
+           unsigned int gid, void *user_data,
+           ta_cfg_obj_data_free *user_free, ta_cfg_obj_t **new_obj)
 {
     int           i;
-    ta_cfg_obj_t *obj = ta_obj_find(type, name);
-    
+    ta_cfg_obj_t *obj = ta_obj_find(type, name, gid);
+
     if (obj != NULL)
         return TE_EEXIST;
     
@@ -221,6 +243,18 @@ ta_obj_add(const char *type, const char *name, const char *value,
     {
         if (!ta_objs[i].in_use)
             break;
+
+        if (ta_objs[i].gid != gid)
+        {
+            /*
+             * Assume that objects with not matching group ID are
+             * outdated and can be released. gid is incremented
+             * with every new request that is not within a group
+             * in rcf_pch_configure().
+             */
+            ta_obj_free(&ta_objs[i]);
+            break;
+        }
     }
 
     if (i == TA_OBJS_NUM)
@@ -230,7 +264,6 @@ ta_obj_add(const char *type, const char *name, const char *value,
     ta_objs[i].type = strdup(type);
     ta_objs[i].name = strdup(name);
     ta_objs[i].value = ((value != NULL) ? strdup(value) : NULL);
-    ta_objs[i].user_data = user_data;
     ta_objs[i].gid = gid;
     ta_objs[i].action = TA_CFG_OBJ_CREATE;
     ta_objs[i].attrs = NULL;
@@ -241,6 +274,9 @@ ta_obj_add(const char *type, const char *name, const char *value,
         ta_obj_free(&ta_objs[i]);
         return TE_ENOMEM;
     }
+
+    ta_objs[i].user_data = user_data;
+    ta_objs[i].user_free = user_free;
 
     if (new_obj != NULL)
         *new_obj = &ta_objs[i];
@@ -311,9 +347,10 @@ ta_obj_set(const char *type, const char *name,
 /* See the description in rcf_pch_ta_cfg.h */
 int
 ta_obj_del(const char *type, const char *name, void *user_data,
+           ta_cfg_obj_data_free *user_free,
            unsigned int gid, ta_obj_cb cb_func)
 {
-    ta_cfg_obj_t *obj = ta_obj_find(type, name);
+    ta_cfg_obj_t *obj = ta_obj_find(type, name, gid);
     int           rc;
 
     if (obj != NULL)
@@ -323,7 +360,8 @@ ta_obj_del(const char *type, const char *name, void *user_data,
     }
 
     /* Add object, but reset add flag */
-    if ((rc = ta_obj_add(type, name, NULL, gid, user_data, &obj)) != 0)
+    if ((rc = ta_obj_add(type, name, NULL, gid,
+                         user_data, user_free, &obj)) != 0)
         return rc;
 
     obj->action = TA_CFG_OBJ_DELETE;

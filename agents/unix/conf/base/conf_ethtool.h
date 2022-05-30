@@ -336,11 +336,13 @@ extern te_errno get_ethtool_value(const char *if_name, unsigned int gid,
  * retrieved with ta_obj_find().
  *
  * @param if_name         Interface name
+ * @param gid             Request group ID
  * @param cmd             Ethtool command ID telling what to commit
  *
  * @return Status code.
  */
 extern te_errno commit_ethtool_value(const char *if_name,
+                                     unsigned int gid,
                                      ta_ethtool_cmd cmd);
 
 /**
