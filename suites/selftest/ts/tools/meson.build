@@ -2,7 +2,8 @@
 
 tests = [
     'readlink',
-    'enum_map'
+    'enum_map',
+    'units'
 ]
 
 foreach test : tests

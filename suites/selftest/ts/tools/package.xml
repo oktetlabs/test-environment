@@ -11,5 +11,9 @@
         <run>
             <script name="enum_map"/>
         </run>
+
+        <run>
+            <script name="units"/>
+        </run>
     </session>
 </package>

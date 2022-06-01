@@ -1,0 +1,6 @@
+<test name="units" type="script">
+    <objective>Testing unit conversion correctness</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>
