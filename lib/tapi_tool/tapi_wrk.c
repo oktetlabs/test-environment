@@ -38,6 +38,7 @@ const tapi_wrk_opt tapi_wrk_default_opt = {
     .script_content = NULL,
     .latency = FALSE,
     .host = NULL,
+    .rate = {.value = 1000, .defined = FALSE},
 };
 
 static const tapi_job_opt_bind wrk_binds[] = TAPI_JOB_OPT_SET(
@@ -49,7 +50,8 @@ static const tapi_job_opt_bind wrk_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_ARRAY(tapi_wrk_opt, n_headers, headers,
                        TAPI_JOB_OPT_STRING("--header", FALSE,
                                            tapi_wrk_opt, headers[0])),
-    TAPI_JOB_OPT_STRING("--script", FALSE, tapi_wrk_opt, script_path)
+    TAPI_JOB_OPT_STRING("--script", FALSE, tapi_wrk_opt, script_path),
+    TAPI_JOB_OPT_UINT_T("--rate", FALSE, NULL, tapi_wrk_opt, rate)
 );
 
 static char *
@@ -82,9 +84,10 @@ tapi_wrk_args2str(te_vec *vec)
 
 /** Time units starting from microseconds */
 static const te_unit_list time_units_us = {
-    .scale = 1000,
+    .scale = 1,
     .start_pow = 0,
-    .units = (const char * const[]){ "us", "ms", "s", NULL },
+    .non_uniform_scale = (double[]){ 1e-9, 1e-3, 1.0, 60.0, 3600.0 },
+    .units = (const char * const[]){ "us", "ms", "s", "m", "h", NULL },
 };
 
 /** Time units starting from microseconds */

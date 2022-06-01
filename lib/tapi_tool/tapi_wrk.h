@@ -60,6 +60,9 @@ typedef struct tapi_wrk_opt {
     te_bool latency;
     /** Host to connect to */
     const char *host;
+
+    /** wrk2: work rate (throughput) in requests/sec (total). */
+    tapi_job_opt_uint_t rate;
 } tapi_wrk_opt;
 
 /** Default options initializer */
