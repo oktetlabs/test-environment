@@ -193,6 +193,13 @@ te_unit_list_value_from_string(const char *str, const te_unit_list *type,
     int power;
     te_errno rc;
 
+    if (type->non_uniform_scale != NULL &&
+        (type->scale > 1 || type->start_pow != 0))
+    {
+        ERROR("Non-uniform and uniform scaling cannot be used together");
+        return TE_EINVAL;
+    }
+
     rc = te_unit_parse_unit(str, &val, &prefix_str);
     if (rc != 0)
         return rc;
@@ -201,7 +208,12 @@ te_unit_list_value_from_string(const char *str, const te_unit_list *type,
     {
         if (strcmp(prefix_str, type->units[i]) == 0)
         {
-            *value = val * pow(type->scale, power);
+            if (type->non_uniform_scale != NULL)
+                val *= type->non_uniform_scale[i];
+            else
+                val *= pow(type->scale, power);
+
+            *value = val;
 
             return 0;
         }

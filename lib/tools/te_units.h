@@ -126,20 +126,30 @@ extern te_errno te_unit_from_string(const char *str, te_unit *value);
 
 /** Customizable unit type */
 typedef struct te_unit_list {
-    /** Scale of each unit comparing to previous */
+    /**
+     * Relative scaling factor of each unit.
+     *
+     * If @a non_uniform_scale is not `NULL`,
+     * the scale must not be greater than `1`
+     * (basically, it is not used in this case)
+     */
     unsigned int scale;
     /**
-     * To which power the scale is raised for the first unit name.
-     * It can be negative in case when a unit names list starts
-     * from a name that represent fraction. e.g. if the list is:
-     * \code{.c}
-     * te_unit_list units = {
-     *     .scale = 1000,
-     *     .start_pow = -1,
-     *     .units = (const char * const[]){ "mHz", "Hz", "kHz", NULL },
-     * };
-     * \endcode
-     * Then @c "300mHz" converts into @c 0.3 double value.
+     * A set of non-uniform scale factors.
+     *
+     * Unlike @a scale, those are absolute factors applied
+     * to a base value
+     *
+     * If the field is not @c NULL, the array must contain
+     * at least as many elements as @a units.
+     */
+    const double *non_uniform_scale;
+    /**
+     * The initial power of @p scale which the first unit in
+     * the list corresponds to. If the value is negative,
+     * first `-start_pow` units denote fractions of the base unit.
+     *
+     * The value should be 0 if @a non_uniform_scale is provided.
      */
     int start_pow;
     /** NULL-terminated list of unit names */
@@ -156,6 +166,27 @@ typedef struct te_unit_list {
  * @note    The API is independent and if the returned value is used
  *          in te_unit_*pack calls, the resulting `te_unit` will not be
  *          consistent with @p type.
+ *
+ * Example:
+ *
+ * @code{.c}
+ * te_unit_list units = {
+ *     .scale = 1000,
+ *     .start_pow = -1,
+ *     .units = (const char * const[]){ "mHz", "Hz", "kHz", NULL },
+ * };
+ * @endcode
+ *
+ * `"300mHz"` would be converted to `0.3`.
+ *
+ * @code{.c}
+ * te_unit_list units = {
+ *     .non_uniform_scale = { 1e-9, 1e-3, 1.0, 60.0, 3600.0 }
+ *     .units = (const char * const[]){ "ns", "ms", "s", "m", "h", NULL },
+ * };
+ * @endcode
+ *
+ * `"10h"` would be converted to `36000.0` and `"10ms"` to `0.01`
  *
  * @return Status code.
  */
