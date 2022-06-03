@@ -23,7 +23,6 @@ fi
 declare -a RSYNC_TO_ARGS
 RSYNC_TO_ARGS+=(--delete-during)
 RSYNC_TO_ARGS+=(--delete-excluded)
-RSYNC_TO_ARGS+=("--filter=:- .gitignore")
 # External libraries may contain symlinks outside of build
 # root and may be unavailable on the target build host.
 # With --copy-unsafe-links, rsync takes care of this.
@@ -32,6 +31,7 @@ RSYNC_TO_ARGS+=(--copy-unsafe-links)
 # This is used when copying sources
 declare -a RSYNC_VCS_IGNORES
 RSYNC_VCS_IGNORES+=("--exclude=.git")
+RSYNC_VCS_IGNORES+=("--filter=:- .gitignore")
 
 error() {
     echo ERROR: $* >&2
