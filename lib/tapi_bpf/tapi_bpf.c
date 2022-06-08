@@ -921,7 +921,7 @@ tapi_bpf_map_delete_kvpair(const char *ta, unsigned int bpf_id, const char *map,
         return TE_RC(TE_TAPI, TE_EPERM);
     }
 
-    if ((rc == tapi_bpf_map_get_key_size(ta, bpf_id, map, &real_key_size)) != 0)
+    if ((rc = tapi_bpf_map_get_key_size(ta, bpf_id, map, &real_key_size)) != 0)
         return rc;
 
     if (key_size != real_key_size)
