@@ -826,6 +826,74 @@
          Name: none
          Value: any value means that reset is requested
 
+    - oid: "/agent/interface/rss"
+      access: read_only
+      type: none
+      d: |
+         Network interface RSS parameters
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/rss/rx_queues"
+      access: read_only
+      type: integer
+      d: |
+         Number of available RX rings/queues
+         Name: none
+         Value: Number of queues
+
+    - oid: "/agent/interface/rss/context"
+      access: read_only
+      type: none
+      d: |
+         RSS context
+         Name: Ordinal number
+         Value: none
+
+    - oid: "/agent/interface/rss/context/id"
+      access: read_only
+      type: none
+      d: |
+         RSS context ID
+         Name: none
+         Value: Numerical ID
+
+    - oid: "/agent/interface/rss/context/hash_indir"
+      access: read_only
+      type: none
+      d: |
+         Network interface RSS hash key and indirection table
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/rss/context/hash_indir/hash_key"
+      access: read_write
+      type: string
+      d: |
+         RSS hash key
+         Name: none
+         Value: Hash key (written as sequence of bytes delimited by ':',
+                like "7e:eb:5f:98:...")
+
+    - oid: "/agent/interface/rss/context/hash_indir/hash_func"
+      access: read_write
+      type: integer
+      d: |
+         RSS hash function
+         Name: Hash function name
+         Value: 1 - enabled,
+                0 - disabled
+
+    - oid: "/agent/interface/rss/context/hash_indir/indir"
+      access: read_write
+      type: integer
+      depends:
+        - oid: "/agent/interface/channels"
+      d: |
+         Indirection table entry
+         Name: Hash function value
+         Value: RX queue number (zero-based)
+
     - oid: "/agent/stats"
       access: read_only
       type: string

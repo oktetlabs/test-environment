@@ -271,6 +271,7 @@ extern te_errno ta_unix_conf_sys_tree_init(void);
 extern te_errno ta_unix_conf_sys_tree_fini(void);
 extern te_errno ta_unix_conf_phy_init(void);
 extern te_errno ta_unix_conf_if_coalesce_init(void);
+extern te_errno ta_unix_conf_if_rss_init(void);
 extern te_errno ta_unix_conf_eth_init(void);
 extern te_errno ta_unix_conf_iommu_init(void);
 extern te_errno ta_unix_conf_macvlan_init(void);
@@ -1385,6 +1386,9 @@ rcf_ch_conf_init(void)
             goto fail;
 
         if (ta_unix_conf_if_coalesce_init() != 0)
+            goto fail;
+
+        if (ta_unix_conf_if_rss_init() != 0)
             goto fail;
 
         if (ta_unix_conf_configfs_init() != 0)

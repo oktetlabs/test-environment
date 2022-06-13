@@ -393,6 +393,34 @@ foreach d : link_modes
     endif
 endforeach
 
+
+string_sets_list = [
+    'ETH_SS_TEST',
+    'ETH_SS_STATS',
+    'ETH_SS_PRIV_FLAGS',
+    'ETH_SS_NTUPLE_FILTERS',
+    'ETH_SS_FEATURES',
+    'ETH_SS_RSS_HASH_FUNCS',
+    'ETH_SS_TUNABLES',
+    'ETH_SS_PHY_STATS',
+    'ETH_SS_PHY_TUNABLES',
+    'ETH_SS_LINK_MODES',
+    'ETH_SS_MSG_CLASSES',
+    'ETH_SS_WOL_MODES',
+    'ETH_SS_SOF_TIMESTAMPING',
+    'ETH_SS_TS_TX_TYPES',
+    'ETH_SS_TS_RX_FILTERS',
+    'ETH_SS_UDP_TUNNEL_TYPES',
+]
+
+foreach d : string_sets_list
+    if cc.has_header_symbol('linux/ethtool.h', d)
+        conf_data.set('HAVE_DECL_' + d.to_upper(), '1')
+    else
+        conf_data.set('HAVE_DECL_' + d.to_upper(), '0')
+    endif
+endforeach
+
 #
 # Without input template, meson will generate defines for all
 # things from conf_data automatically.

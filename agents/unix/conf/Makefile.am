@@ -57,6 +57,7 @@ libconf_a_SOURCES = \
 	base/conf_rlimits.c \
 	base/conf_block.c \
 	base/conf_ethtool.c \
+	base/conf_rss.c \
 	process/conf_process.c \
 	route/conf_route.c \
 	route/conf_route_libnetconf.c \
