@@ -288,6 +288,14 @@ Generic options:
  --sniff-log-conv-disable       Option to disable capture logs conversion
                                 and merge with the main log.
 
+Interrupt options:
+    Any test as well as prologue and epilogue may be stopped with a few ways:
+    Ctrl+C (SIGINT)     Interrupt a test immediately and stop testing campaign
+                        gracefully.
+
+    Ctrl+\ (SIGQUIT)    Interrupt a test immediately and stop testing campaign
+                        roughly (with core dump).
+
 Environment variables defining where raw log is stored:
 
     TE_LOG_RAW          Where to save raw log file, by default tmp_raw_log
