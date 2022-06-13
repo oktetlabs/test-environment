@@ -306,6 +306,18 @@ extern void ta_cfg_obj_log(const ta_cfg_obj_t *obj);
  */
 #define TA_OBJ_TYPE_IF_LINK_SETS "if_link_sets"
 
+/**
+ * Name for the object type containing set of strings related
+ * to network interface (like list of names of Ethernet features).
+ */
+#define TA_OBJ_TYPE_IF_STRINGS "if_strings"
+
+/**
+ * Name for the object type containing RSS hash key and indirection
+ * table.
+ */
+#define TA_OBJ_TYPE_IF_RSSH "if_rssh"
+
 /** System-independent route types */
 typedef enum ta_route_type {
     TA_RT_TYPE_UNSPECIFIED,

@@ -17,6 +17,7 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "te_defs.h"
+#include "te_alloc.h"
 #include "rcf_pch.h"
 #include "rcf_pch_ta_cfg.h"
 
@@ -36,6 +37,9 @@
 #include "conf_ethtool.h"
 
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
+
+/* Maximum length of object name */
+#define MAX_OBJ_NAME_LEN 1024
 
 /*
  * Information about link mode: its name, new and old native constants
@@ -507,6 +511,221 @@ commit_ethtool_value(const char *if_name, unsigned int gid,
 
     return rc;
 }
+
+te_errno
+ta_ethtool_get_strings(unsigned int gid, const char *if_name,
+                       unsigned int set_id, const ta_ethtool_strings **strs)
+{
+    te_errno rc;
+    te_string obj_name = TE_STRING_INIT_STATIC(MAX_OBJ_NAME_LEN);
+    size_t req_size;
+    size_t strs_num;
+    struct ethtool_gstrings *strings = NULL;
+    ta_ethtool_strings *result;
+    ta_cfg_obj_t *obj;
+    unsigned int i;
+
+    /*
+     * FIXME: this comment was moved from conf_eth.c, have no idea
+     * what it means.
+     * The data buffer definition in the structure below follows the
+     * same approach as one used in Ethtool application, although that
+     * approach seems to be unreliable under any standard except the GNU C
+     */
+    struct {
+        struct ethtool_sset_info hdr;
+        uint32_t buf[1];
+    } sset_info;
+
+    rc = te_string_append(&obj_name, "%s.%u",
+                          if_name, set_id);
+    if (rc != 0)
+        return rc;
+
+    obj = ta_obj_find(TA_OBJ_TYPE_IF_STRINGS, te_string_value(&obj_name),
+                      gid);
+    if (obj != NULL)
+    {
+        *strs = obj->user_data;
+        return 0;
+    }
+
+    memset(&sset_info, 0, sizeof(sset_info));
+    sset_info.hdr.cmd = ETHTOOL_GSSET_INFO;
+    sset_info.hdr.sset_mask = 1ULL << set_id;
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_GSSET_INFO, &sset_info);
+    if (rc != 0)
+        return rc;
+
+    strs_num = sset_info.hdr.data[0];
+    req_size = sizeof(struct ethtool_gstrings) +
+                            ETH_GSTRING_LEN * strs_num;
+
+    strings = TE_ALLOC(req_size);
+    if (strings == NULL)
+        return TE_ENOMEM;
+
+    strings->cmd = ETHTOOL_GSTRINGS;
+    strings->string_set = set_id;
+    strings->len = strs_num;
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_GSTRINGS, strings);
+    if (rc != 0)
+    {
+        free(strings);
+        return rc;
+    }
+
+    req_size = sizeof(ta_ethtool_strings) +
+               (ETH_GSTRING_LEN + 1) * strs_num;
+
+    result = TE_ALLOC(req_size);
+    if (result == NULL)
+    {
+        free(strings);
+        return rc;
+    }
+
+    result->num = strs_num;
+    for (i = 0; i < strs_num; i++)
+    {
+        strncpy(result->strings[i],
+                (char *)(strings->data + i * ETH_GSTRING_LEN),
+                ETH_GSTRING_LEN);
+        result->strings[i][ETH_GSTRING_LEN] = '\0';
+    }
+    free(strings);
+
+    rc = ta_obj_add(TA_OBJ_TYPE_IF_STRINGS, te_string_value(&obj_name),
+                    "", gid, result, &free, &obj);
+    if (rc != 0)
+    {
+        free(result);
+        return rc;
+    }
+
+    *strs = result;
+    return rc;
+}
+
+#ifdef ETHTOOL_GRSSH
+
+static te_errno
+get_ethtool_rssh(const char *if_name, unsigned int rss_context,
+                 struct ethtool_rxfh **data)
+{
+    struct ethtool_rxfh sizes;
+    struct ethtool_rxfh *full_data;
+    te_errno rc = 0;
+    size_t new_size;
+
+    memset(&sizes, 0, sizeof(sizes));
+
+    sizes.rss_context = rss_context;
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_GRSSH, &sizes);
+    if (rc != 0)
+        return rc;
+
+    new_size = sizeof(struct ethtool_rxfh) +
+               sizes.indir_size * sizeof(uint32_t) + sizes.key_size;
+    full_data = TE_ALLOC(new_size);
+    if (full_data == NULL)
+        return TE_ENOMEM;
+
+    full_data->rss_context = rss_context;
+    full_data->indir_size = sizes.indir_size;
+    full_data->key_size = sizes.key_size;
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_GRSSH, full_data);
+    if (rc != 0)
+        return rc;
+
+    *data = full_data;
+    return 0;
+}
+
+/* Fill object name for ETHTOOL_GRSSH/ETHTOOL_SRSSH */
+static te_errno
+rssh_object_name(te_string *str, const char *if_name,
+                 unsigned int rss_context)
+{
+    return te_string_append(str, "%s.%u",
+                            if_name, rss_context);
+}
+
+/* See description in conf_ethtool.h */
+te_errno
+ta_ethtool_get_rssh(unsigned int gid, const char *if_name,
+                    unsigned int rss_context,
+                    struct ethtool_rxfh **rxfh)
+{
+    te_errno rc;
+    te_string obj_name = TE_STRING_INIT_STATIC(MAX_OBJ_NAME_LEN);
+    struct ethtool_rxfh *result = NULL;
+    ta_cfg_obj_t *obj;
+
+    rc = rssh_object_name(&obj_name, if_name, rss_context);
+    if (rc != 0)
+        return rc;
+
+    obj = ta_obj_find(TA_OBJ_TYPE_IF_RSSH, te_string_value(&obj_name),
+                      gid);
+    if (obj != NULL)
+    {
+        *rxfh = obj->user_data;
+        return 0;
+    }
+
+    rc = get_ethtool_rssh(if_name, rss_context, &result);
+    if (rc != 0)
+    {
+        free(result);
+        return rc;
+    }
+
+    rc = ta_obj_add(TA_OBJ_TYPE_IF_RSSH, te_string_value(&obj_name),
+                    "", gid, result, &free, &obj);
+    if (rc != 0)
+    {
+        free(result);
+        return rc;
+    }
+
+    *rxfh = result;
+    return 0;
+}
+
+#ifdef ETHTOOL_SRSSH
+te_errno
+ta_ethtool_commit_rssh(unsigned int gid, const char *if_name,
+                       unsigned int rss_context)
+{
+    te_errno rc;
+    te_string obj_name = TE_STRING_INIT_STATIC(MAX_OBJ_NAME_LEN);
+    ta_cfg_obj_t *obj;
+
+    rc = rssh_object_name(&obj_name, if_name, rss_context);
+    if (rc != 0)
+        return rc;
+
+    obj = ta_obj_find(TA_OBJ_TYPE_IF_RSSH, te_string_value(&obj_name),
+                      gid);
+    if (obj == NULL)
+    {
+        ERROR("%s(): failed to find object %s",
+              __FUNCTION__, te_string_value(&obj_name));
+        return TE_ENOENT;
+    }
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_SRSSH, obj->user_data);
+    ta_obj_free(obj);
+    return rc;
+}
+#endif
+
+#endif
 
 /* See description in conf_ethtool.h */
 te_errno

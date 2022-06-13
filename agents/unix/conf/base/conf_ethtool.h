@@ -361,4 +361,64 @@ extern te_errno ta_ethtool_lmode_list_names(ta_ethtool_lsets *lsets,
                                             te_bool link_partner,
                                             te_string *list_str);
 
+/** Set of strings returned by ETHTOOL_GSTRINGS */
+typedef struct ta_ethtool_strings {
+    size_t num; /**< Number of strings */
+    char strings[][ETH_GSTRING_LEN + 1]; /**< Array of null-terminated
+                                              strings */
+} ta_ethtool_strings;
+
+/**
+ * Get set of strings (like set of RSS hash function names or
+ * Ethernet features).
+ *
+ * @param gid         Request group ID
+ * @param if_name     Interface name
+ * @param set_id      String set ID
+ * @param strs        Where to save pointer to filled ta_ethtool_strings
+ *                    (caller should not release it)
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_get_strings(unsigned int gid,
+                                       const char *if_name,
+                                       unsigned int set_id,
+                                       const ta_ethtool_strings **strs);
+
+#ifdef ETHTOOL_GRSSH
+/**
+ * Get RX flow hash configuration via ETHTOOL_GRSSH.
+ * This may return pointer to cached structure if it was already
+ * obtained for the current @p gid. Changes made to the obtained
+ * structure should be committed via ta_ethtool_commit_rssh().
+ *
+ * @param gid           Request group ID
+ * @param if_name       Interface name
+ * @param rss_context   RSS context ID
+ * @param rxfh          Where to save pointer to obtained structure
+ *                      (caller should not release it)
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_get_rssh(unsigned int gid, const char *if_name,
+                                    unsigned int rss_context,
+                                    struct ethtool_rxfh **rxfh);
+
+#ifdef ETHTOOL_SRSSH
+/**
+ * Commit changes to RX flow hash configuration via ETHTOOL_SRSSH.
+ *
+ * @param gid           Request group ID
+ * @param if_name       Interface name
+ * @param rss_context   RSS context ID
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_commit_rssh(unsigned int gid,
+                                       const char *if_name,
+                                       unsigned int rss_context);
+#endif
+
+#endif
+
 #endif /* !__TE_AGENTS_UNIX_CONF_BASE_CONF_ETHTOOL_H_ */
