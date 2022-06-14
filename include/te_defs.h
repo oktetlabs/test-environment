@@ -506,6 +506,30 @@ te_round_up_pow2(unsigned long long num)
 #define TE_COMPILE_TIME_ASSERT(x) ((void)TE_COMPILE_TIME_ASSERT_EXPR(x))
 
 /**
+ * Cast away constness from a pointer.
+ *
+ * The rationale for the macro is twofold:
+ * - the only legal ISO C way to cast away constness is through
+ *   an intermediate cast to `uintptr_t` and some compilers in some
+ *   modes __do__ enforce this
+ * - the macro tries to be type-safe and assert at compile time that
+ *   the object type is indeed compatible
+ *
+ * @note Casting away constness may still be dangerous, use with caution
+ *
+ * @param _type  The expected type of the pointer @p _ptr
+ * @param _ptr   Object pointer
+ */
+#ifdef __GNUC__
+#define TE_CONST_PTR_CAST(_type, _ptr) \
+    (TE_COMPILE_TIME_ASSERT_EXPR(                                        \
+        __builtin_types_compatible_p(__typeof__(_ptr), const _type *)) ? \
+     ((_type *)(uintptr_t)(_ptr)) : NULL)
+#else
+#define TE_CONST_PTR_CAST(_type, _ptr) ((_type *)(uintptr_t)(_ptr))
+#endif
+
+/**
  * Void function pointer. Can be casted to any other function
  * pointer type without cast-function-type warning.
  */
