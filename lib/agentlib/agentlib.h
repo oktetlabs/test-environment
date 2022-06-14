@@ -342,4 +342,31 @@ extern te_errno agent_alloc_l4_specified_port(int socket_family,
                                               int socket_type,
                                               uint16_t port);
 
+
+/** Supported key managers */
+typedef enum agent_key_manager {
+    AGENT_KEY_MANAGER_SSH, /**< ssh-keygen */
+} agent_key_manager;
+
+/**
+ * Generate a key with a given @p manager.
+ *
+ * @param manager           Key manager to use
+ * @param type              Key type.
+ *                          For AGENT_KEY_MANAGER_SSH:
+ *                          the value of -t option of `ssh-keygen`
+ * @param bitsize           Bit length of a key
+ * @param user              The name of the key owner
+ *                          (@c NULL means the current user)
+ * @param private_key_file  The path to a file where the new private key
+ *                          will be stored
+ *
+ * @return                  Status code
+ */
+extern te_errno agent_key_generate(agent_key_manager manager,
+                                   const char *type,
+                                   unsigned bitsize,
+                                   const char *user,
+                                   const char *private_key_file);
+
 #endif /* __TE_AGENTLIB_H__ */

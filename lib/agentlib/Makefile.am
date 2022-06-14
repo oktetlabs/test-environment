@@ -18,7 +18,8 @@ lib@with_name@_a_SOURCES=\
     telephony.c \
     power_sw.c \
     symbols.c \
-    unistd.c
+    unistd.c \
+    keys.c
 
 install-exec-hook:
 	touch -c -r lib@with_name@.a $(DESTDIR)/$(libdir)/lib@with_name@.*

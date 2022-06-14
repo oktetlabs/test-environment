@@ -66,6 +66,9 @@ dnl
    AC_CHECK_HEADERS([linux/ppdev.h])
 fi
 
+AC_CHECK_HEADERS([pwd.h])
+AC_CHECK_FUNC([getpwnam_r])
+
 AC_ARG_ENABLE([dlfcn-lookup],
               AS_HELP_STRING([--enable-dlfcn-lookup],
                              [enable symbol lookup via dlsym() in addition to explicit symbol tables (disabled by default)]),

@@ -7971,14 +7971,15 @@ user_add(unsigned int gid, const char *oid, const char *value,
     ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
 #endif
 
-    sprintf(buf, "su - %s -c 'ssh-keygen -t dsa -N \"\" "
-                 "-f /tmp/%s/.ssh/id_dsa' >/dev/null 2>&1", user, user);
 
-    if ((rc = ta_system(buf)) != 0)
+    TE_SPRINTF(buf, "/tmp/%s/.ssh/id_dsa", user);
+    /* 1024 is the only allowed size for a DSA key */
+    rc = agent_key_generate(AGENT_KEY_MANAGER_SSH, "dsa", 1024, user, buf);
+    if (rc != 0)
     {
-        ERROR("\"%s\" command failed with %d", buf, rc);
+        ERROR("Cannot create ssh key: %r", rc);
         user_del(gid, oid, user);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        return rc;
     }
 
     return 0;

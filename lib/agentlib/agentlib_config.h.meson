@@ -48,3 +48,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #mesondefine HAVE_UNISTD_H
+
+/* Define to 1 if you have the <pwd.h> header file. */
+#mesondefine HAVE_PWD_H
+
+/* Define to 1 if you have getpwnam_r function file. */
+#mesondefine HAVE_GETPWNAM_R

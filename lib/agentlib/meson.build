@@ -17,12 +17,17 @@ foreach opt : lib_opts_agentlib
 endforeach
 
 if get_variable('opt-agentlib-power-sw'.underscorify())
-    foreach h : [ 'termios.h', 'linux/ppdev.h' ]
+    foreach h : [ 'termios.h', 'linux/ppdev.h', 'pwd.h']
         if cc.has_header(h, args: c_args)
             conf.set('HAVE_' + h.to_upper().underscorify(), 1)
         endif
     endforeach
 endif
+
+if cc.has_function('getpwnam_r')
+   conf.set('HAVE_PWNAM_R', 1)
+endif
+
 
 agentlib_config_h = configure_file(input: 'agentlib_config.h.meson',
                                    output: 'agentlib_config.h',
@@ -38,6 +43,7 @@ headers += files(
 
 sources += files(
     'ftp.c',
+    'keys.c',
     'net.c',
     'l4_port.c',
     'power_sw.c',
