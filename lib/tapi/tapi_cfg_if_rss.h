@@ -134,6 +134,35 @@ extern te_errno tapi_cfg_if_rss_hash_indir_commit(const char *ta,
                                                   const char *if_name,
                                                   unsigned int rss_context);
 
+/**
+ * Fill RSS hash indirection table by assigning to all its entries
+ * queues from [@p queue_from, @p queue_to]. Made changes should be
+ * committed with tapi_cfg_if_rss_hash_indir_commit().
+ *
+ * Example: if queue_from = 2 and queue_to = 3, then table will look like:
+ * entry 0: 2
+ * entry 1: 3
+ * entry 2: 2
+ * entry 3: 3
+ * ...
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Network interface name
+ * @param rss_context   RSS context
+ * @param queue_from    The first RX queue number
+ * @param queue_to      The second RX queue number (if it is less than the
+ *                      first one, queues are assigned in backwards order)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_rss_fill_indir_table(
+                                          const char *ta,
+                                          const char *if_name,
+                                          unsigned int rss_context,
+                                          unsigned int queue_from,
+                                          unsigned int queue_to);
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

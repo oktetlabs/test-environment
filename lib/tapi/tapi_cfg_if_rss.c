@@ -152,3 +152,40 @@ tapi_cfg_if_rss_hash_indir_commit(const char *ta,
                 "/agent:%s/interface:%s/rss:/context:%u/hash_indir:",
                 ta, if_name, rss_context);
 }
+
+/* See description in tapi_cfg_if_rss.h */
+te_errno
+tapi_cfg_if_rss_fill_indir_table(const char *ta,
+                                 const char *if_name,
+                                 unsigned int rss_context,
+                                 unsigned int queue_from,
+                                 unsigned int queue_to)
+{
+    unsigned int table_size;
+    unsigned int i;
+    int queue;
+    int incr;
+    te_errno rc;
+
+    rc = tapi_cfg_if_rss_indir_table_size(ta, if_name, rss_context,
+                                          &table_size);
+    if (rc != 0)
+        return rc;
+
+    incr = (queue_from <= queue_to ? 1 : -1);
+
+    for (i = 0, queue = queue_from; i < table_size; i++)
+    {
+        rc = tapi_cfg_if_rss_indir_set_local(ta, if_name, rss_context,
+                                             i, queue);
+        if (rc != 0)
+            return rc;
+
+        if (queue == queue_to)
+            queue = queue_from;
+        else
+            queue += incr;
+    }
+
+    return 0;
+}
