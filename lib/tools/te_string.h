@@ -124,6 +124,33 @@ te_string_reset(te_string *str)
 }
 
 /**
+ * Safely move the string content to a pointer variable.
+ *
+ * te_strings are regularly used as temporary containers,
+ * with the resulting data being passed upstream as a plain
+ * character pointer. The function ensures that the pointer
+ * won't be freed by an accidental te_string_free() etc.
+ *
+ * @param[out]      dest   Location of a destination pointer
+ * @param[in,out]   src    Source string
+ *
+ * @note The function must not be used with an external-buffer
+ *       te_strings --- it is a logic error: the function
+ *       does transfer the ownership of the memory but
+ *       an external-buffer te_string does *not* own the memory
+ */
+static inline void
+te_string_move(char **dest, te_string *src)
+{
+    assert(!src->ext_buf);
+    *dest = src->ptr;
+
+    src->size = 0;
+    src->len  = 0;
+    src->ptr  = NULL;
+}
+
+/**
  * Reserve space for at least @p size elements in @p str string
  * (including null byte at the end).
  *
