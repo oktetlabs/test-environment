@@ -20,6 +20,7 @@ cm_files = files(
     'cm_iptables.yml',
     'cm_iptables_global.yml',
     'cm_iscsi.yml',
+    'cm_keys.yml',
     'cm_l2tp_server.yml',
     'cm_l4_port.yml',
     'cm_local.yml',
