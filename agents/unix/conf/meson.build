@@ -23,6 +23,7 @@ sources += files(
     'base/conf_ethtool.c',
     'base/conf_iommu.c',
     'base/conf_ipvlan.c',
+    'base/conf_key.c',
     'base/conf_l4_port.c',
     'base/conf_macvlan.c',
     'base/conf_mem.c',

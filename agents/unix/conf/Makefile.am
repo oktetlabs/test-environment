@@ -46,6 +46,7 @@ libconf_a_SOURCES = \
 	base/conf_configfs.c \
 	base/conf_cpu.c \
 	base/conf_ipvlan.c \
+	base/conf_key.c \
 	base/conf_l4_port.c \
 	base/conf_macvlan.c \
 	base/conf_module.c \

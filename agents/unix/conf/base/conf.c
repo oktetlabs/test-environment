@@ -283,6 +283,9 @@ extern te_errno ta_unix_conf_bridge_init(void);
 extern te_errno ta_unix_conf_block_dev_init(void);
 extern te_errno ta_unix_conf_l4_port_init(void);
 
+extern te_errno ta_unix_conf_key_init(void);
+extern void ta_unix_conf_key_fini(void);
+
 #ifdef WITH_OPENVPN
 extern te_errno ta_unix_conf_openvpn_init(void);
 #endif
@@ -1523,6 +1526,9 @@ rcf_ch_conf_init(void)
         if (ta_unix_conf_l4_port_init() != 0)
             goto fail;
 
+        if (ta_unix_conf_key_init() != 0)
+            goto fail;
+
         init = TRUE;
 
     }
@@ -1587,6 +1593,8 @@ rcf_ch_conf_fini(void)
 #endif
 
     ta_unix_conf_memory_cleanup();
+
+    ta_unix_conf_key_fini();
 
    (void)ta_unix_conf_sys_tree_fini();
 
