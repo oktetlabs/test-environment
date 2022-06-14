@@ -150,6 +150,29 @@ extern pid_t te_file_read_pid(const char *pid_path);
  */
 extern te_errno te_file_check_executable(const char *path);
 
+/**
+ * Read the contents of the file @p path into @p buffer.
+ *
+ * The function ensures that the contents of the file is no
+ * larger than @p bufsize minus one and that the contents contain
+ * no embedded zeroes. The resulting string will be zero-terminated.
+ * If there are trailing newlines, they are stripped off.
+ *
+ * @note The file should be random-access, so the function cannot read
+ * from sockets, named FIFOs and most kinds of character devices.
+ *
+ * @param[in]  path     Pathname to read
+ * @param[out] buffer   Destination buffer
+ * @param[in]  bufsize  The size of @p buffer including terminating zero.
+ *
+ * @return Status code
+ * @retval TE_EFBIG     The file size is larger than @p bufsize
+ * @retval TE_ESPIPE    The file is not random-access
+ * @retval TE_EILSEQ    The file contains embedded zeroes
+ */
+extern te_errno te_file_read_text(const char *path, char *buffer,
+                                  size_t bufsize);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

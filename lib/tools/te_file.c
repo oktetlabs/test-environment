@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 #if HAVE_STDARG_H
@@ -314,4 +316,72 @@ out:
     te_string_free(&full_path);
     free(env_path_tmp);
     return rc;
+}
+
+te_errno
+te_file_read_text(const char *path, char *buffer, size_t bufsize)
+{
+    int fd = open(path, O_RDONLY);
+    off_t size;
+    ssize_t actual;
+    ssize_t i;
+    int saved_errno;
+
+    if (fd < 0)
+        return TE_OS_RC(TE_MODULE_NONE, errno);
+    size = lseek(fd, 0, SEEK_END);
+    if (size == (off_t)-1)
+    {
+        saved_errno = errno;
+        close(fd);
+        return TE_OS_RC(TE_MODULE_NONE, saved_errno);
+    }
+
+    if (size >= bufsize)
+    {
+        ERROR("File %s's size (%zu) is larger than %zu", path,
+              (size_t)size, bufsize);
+        close(fd);
+        return TE_RC(TE_MODULE_NONE, TE_EFBIG);
+    }
+
+    if (lseek(fd, 0, SEEK_SET) == (off_t)-1)
+    {
+        saved_errno = errno;
+        close(fd);
+        return TE_OS_RC(TE_MODULE_NONE, saved_errno);
+    }
+
+    actual = read(fd, buffer, size);
+    if (actual < 0)
+    {
+        saved_errno = errno;
+        close(fd);
+        return TE_OS_RC(TE_MODULE_NONE, saved_errno);
+    }
+    close(fd);
+
+    if (actual != size)
+    {
+        ERROR("Could not read %zu bytes from %s, only %zu were read", size,
+              path, (size_t)actual);
+        return TE_RC(TE_MODULE_NONE, TE_EIO);
+    }
+
+    for (i = 0; i < actual; i++)
+    {
+        if (buffer[i] == '\0')
+        {
+            ERROR("File '%s' contains an embedded zero at %zu", path, actual);
+            return TE_RC(TE_MODULE_NONE, TE_EILSEQ);
+        }
+    }
+    buffer[actual] = '\0';
+    while (actual > 0 && buffer[actual - 1] == '\n')
+    {
+        actual--;
+        buffer[actual] = '\0';
+    }
+
+    return 0;
 }
