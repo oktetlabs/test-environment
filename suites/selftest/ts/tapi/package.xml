@@ -9,6 +9,10 @@
         </run>
 
         <run>
+            <package name="cfg_key"/>
+        </run>
+
+        <run>
             <package name="job"/>
         </run>
 

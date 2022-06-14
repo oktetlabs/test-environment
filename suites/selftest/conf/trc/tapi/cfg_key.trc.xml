@@ -1,0 +1,13 @@
+<test name="cfg_key" type="package">
+    <objective>TAPI Key management testing</objective>
+    <iter result="PASSED">
+        <test name="sample" type="script">
+            <objective>Sanity check that options of all types are constructed correctly</objective>
+
+            <iter result="PASSED">
+                <arg name="env">{{{'pco_iut':IUT}}}</arg>
+                <notes/>
+            </iter>
+        </test>
+    </iter>
+</test>
