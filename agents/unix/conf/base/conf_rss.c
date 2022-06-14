@@ -158,7 +158,7 @@ hash_func_list(unsigned int gid,
     *list_out = NULL;
     return 0;
 #else
-    struct ta_ethtool_strings *func_names = NULL;
+    const struct ta_ethtool_strings *func_names = NULL;
     unsigned int i;
     te_string str = TE_STRING_INIT;
     te_errno rc;
