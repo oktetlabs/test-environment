@@ -352,6 +352,22 @@ extern void te_vec_deep_free(te_vec *vec);
  */
 extern te_errno te_vec_append_strarray(te_vec *vec, const char **elements);
 
+
+/**
+ * Return an index of an element of @p vec pointed to by @p ptr.
+ *
+ * @return Zero-based index. The result is undefined if @p ptr is
+ *         not pointing to the actual vector data
+ */
+static inline size_t
+te_vec_get_index(const te_vec *vec, const void *ptr)
+{
+    size_t offset = (const uint8_t *)ptr - (const uint8_t *)vec->data.ptr;
+    assert(offset < vec->data.len);
+
+    return offset / vec->element_size;
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
