@@ -391,6 +391,19 @@ typedef enum {
     ((_error && (TE_RC_GET_MODULE(_error) == 0)) ? \
      ((int)(_mod_id) << TE_RC_MODULE_SHIFT) | (_error) : (_error))
 
+/**
+ * If @p _rc is not zero, replace its module identifier with @p _mod_id.
+ * Its purpose is to pass errors from underlying utility modules up the stack.
+ *
+ * @param _rc        Downstream return code
+ * @param _mod_id    Current module id
+ *
+ * @return Updated return code
+ */
+#define TE_RC_UPSTREAM(_mod_id, _rc)                        \
+    ((_rc) == 0 ? 0 : TE_RC(_mod_id, TE_RC_GET_ERROR(_rc)))
+
+
 /** Create error code from OS errno and module identifier */
 #define TE_OS_RC(_mod_id, _error) TE_RC(_mod_id, te_rc_os2te(_error))
 
