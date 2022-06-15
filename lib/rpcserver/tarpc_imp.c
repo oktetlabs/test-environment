@@ -2760,6 +2760,39 @@ TARPC_FUNC(preadv,
 
 #endif /* HAVE_PREADV */
 
+/*-------------- preadv2() ------------------------------*/
+
+#if HAVE_PREADV2
+
+TARPC_FUNC(preadv2,
+{
+    if (out->vector.vector_len > RCF_RPC_MAX_IOVEC)
+    {
+        ERROR("Too long iovec is provided");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return TRUE;
+    }
+    COPY_ARG(vector);
+},
+{
+    struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+    struct iovec *res = NULL;
+
+    if (out->vector.vector_val != NULL)
+    {
+        rpcs_iovec_tarpc2h(out->vector.vector_val, iovec_arr,
+                           out->vector.vector_len, TRUE,
+                           arglist);
+        res = iovec_arr;
+    }
+
+    MAKE_CALL(out->retval = func(in->fd, res, in->count, in->offset,
+                                 preadv2_pwritev2_flags_rpc2h(in->flags)));
+}
+)
+
+#endif /* HAVE_PREADV2 */
+
 /*-------------- writev() ------------------------------*/
 
 TARPC_FUNC(writev,

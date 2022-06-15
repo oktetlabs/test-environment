@@ -5522,6 +5522,7 @@ program tarpc
 
         RPC_DEF(readv)
         RPC_DEF(preadv)
+        RPC_DEF(preadv2)
         RPC_DEF(writev)
         RPC_DEF(pwritev)
         RPC_DEF(pwritev2)
