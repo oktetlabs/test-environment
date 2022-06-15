@@ -2328,7 +2328,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
                 {
                     ret = 1;
                     if (tester_sigint_received)
-                        kill(pid, SIGINT);
+                        kill(-pid, SIGINT);
                     continue;
                 }
                 ERROR("Failed to poll() stdin: %s", strerror(errno));
