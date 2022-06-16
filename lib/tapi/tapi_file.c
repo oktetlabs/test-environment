@@ -149,60 +149,52 @@ tapi_file_create(size_t len, char *buf, te_bool random)
  * @param fmt           Format string for the file content
  * @param ap            Format string arguments
  *
- * @return 0 (success) or -1 (failure)
+ * @return Status code
  */
-static int
+static te_errno
 tapi_file_create_ta_gen(const char *ta,
                         const char *lfile,
                         const char *rfile,
                         const char *fmt, va_list ap)
 {
     FILE *f;
-    int   rc;
+    te_errno rc;
 
     if ((f = fopen(lfile, "w")) == NULL)
     {
-        ERROR("Cannot open file %s errno %d\n", lfile, errno);
-        return -1;
+        rc = TE_OS_RC(TE_TAPI, errno);
+        ERROR("Cannot open file %s: %r", lfile, rc);
+        return rc;
     }
 
     vfprintf(f, fmt, ap);
 
     if (fclose(f) < 0)
     {
-        ERROR("fclose() failed: file %s errno=%d", lfile, errno);
+        rc = TE_OS_RC(TE_TAPI, errno);
+        ERROR("fclose() failed: file %s: %r", lfile, rc);
         unlink(lfile);
-        return -1;
+        return rc;
     }
     if ((rc = rcf_ta_put_file(ta, 0, lfile, rfile)) != 0)
     {
-        ERROR("Cannot put file %s on TA %s; errno %d", rfile, ta, rc);
+        ERROR("Cannot put file %s on TA %s: %r", rfile, ta, rc);
         unlink(lfile);
-        return -1;
+        return rc;
     }
 
     unlink(lfile);
     return 0;
 }
 
-/**
- * Create file in the specified directory on the TA.
- *
- * @param ta            Test Agent name
- * @param filename      pathname of the file
- * @param fmt           format string for the file content
- *
- * @return 0 (success) or -1 (failure)
- *
- * @note the function is not thread-safe
- */
-int
+/* See description in tapi_file.h */
+te_errno
 tapi_file_create_ta(const char *ta, const char *filename,
                     const char *fmt, ...)
 {
     char *pathname = tapi_file_generate_pathname();
     va_list ap;
-    int rc;
+    te_errno rc;
 
     va_start(ap, fmt);
     rc = tapi_file_create_ta_gen(ta, pathname, filename, fmt, ap);
@@ -212,14 +204,14 @@ tapi_file_create_ta(const char *ta, const char *filename,
 }
 
 /* See description in tapi_file.h */
-int
+te_errno
 tapi_file_create_ta_r(const char *ta,
                       const char *lfile,
                       const char *rfile,
                       const char *fmt, ...)
 {
     va_list ap;
-    int rc;
+    te_errno rc;
 
     va_start(ap, fmt);
     rc = tapi_file_create_ta_gen(ta, lfile, rfile, fmt, ap);
@@ -228,62 +220,50 @@ tapi_file_create_ta_r(const char *ta,
     return rc;
 }
 
-/*
- * Copy file from the one TA to other.
- *
- * @param ta_src        source Test Agent
- * @param src           source file name
- * @param ta_dst        destination Test Agent
- * @param dst           destination file name
- *
- * @return 0 (success) or -1 (failure)
- */
-int
+/* See description in tapi_file.h */
+te_errno
 tapi_file_copy_ta(const char *ta_src, const char *src,
                   const char *ta_dst, const char *dst)
 {
     char *pathname = tapi_file_generate_pathname();
-    int   rc;
+    te_errno rc;
+    struct stat st;
 
     if ((rc = rcf_ta_get_file(ta_src, 0, src, pathname)) != 0)
     {
-        ERROR("Cannot get file %s from TA %s; errno %d", src, ta_src, rc);
-        return -1;
+        ERROR("Cannot get file %s from TA %s: %r", src, ta_src, rc);
+        return rc;
     }
 
     if ((rc = rcf_ta_put_file(ta_dst, 0, pathname, dst)) != 0)
     {
-        ERROR("Cannot put file %s to TA %s; errno %d", dst, ta_dst, rc);
+        ERROR("Cannot put file %s to TA %s: %r", dst, ta_dst, rc);
         unlink(pathname);
-        return -1;
+        return rc;
     }
+
+    if (stat(pathname, &st) != 0)
     {
-        struct stat st;
-        rc = stat(pathname, &st);
-        RING("Copy file %s:%s to %s:%s using local %s size %lld",
-             ta_src, src, ta_dst, dst, pathname,
-             rc == 0 ? (long long)st.st_size : (long long)-errno);
+        rc = TE_OS_RC(TE_TAPI, errno);
+        ERROR("Cannot stat local file %s: %r", pathname, rc);
+        unlink(pathname);
+        return rc;
     }
+
+    RING("Copy file %s:%s to %s:%s using local %s size %lld",
+         ta_src, src, ta_dst, dst, pathname,
+         (long long)st.st_size);
+
     unlink(pathname);
     return 0;
 }
 
-/**
- * Read file content from the TA.
- *
- * @param ta            Test Agent name
- * @param filename      pathname of the file
- * @param pbuf          location for buffer allocated by the routine
- *
- * @return 0 (success) or -1 (failure)
- *
- * @note the function is not thread-safe
- */
-int
+/* See description in tapi_file.h */
+te_errno
 tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
 {
     char *pathname = tapi_file_generate_pathname();
-    int   rc;
+    te_errno rc;
     char *buf;
     FILE *f;
 
@@ -291,34 +271,36 @@ tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
 
     if ((rc = rcf_ta_get_file(ta, 0, filename, pathname)) != 0)
     {
-        ERROR("Cannot get file %s from TA %s; errno %d", filename, ta, rc);
-        return -1;
+        ERROR("Cannot get file %s from TA %s: %r", filename, ta, rc);
+        return rc;
     }
     if (stat(pathname, &st) != 0)
     {
-        ERROR("Failed to stat file %s; errno %d", pathname, errno);
-        return -1;
+        rc = TE_OS_RC(TE_TAPI, errno);
+        ERROR("Failed to stat file %s: %r", pathname, rc);
+        return rc;
     }
 
     if ((buf = calloc(st.st_size + 1, 1)) == NULL)
     {
         ERROR("Out of memory");
         unlink(pathname);
-        return -1;
+        return TE_RC(TE_TAPI, TE_ENOMEM);
     }
 
     if ((f = fopen(pathname, "r")) == NULL)
     {
-        ERROR("Failed to open file %s; errno %d", pathname, errno);
+        rc = TE_OS_RC(TE_TAPI, errno);
+        ERROR("Failed to open file %s: %r", pathname, rc);
         unlink(pathname);
-        return -1;
+        return rc;
     }
 
     if (fread(buf, 1, st.st_size, f) != (size_t)st.st_size)
     {
         ERROR("Failed to read from file %s", pathname);
         unlink(pathname);
-        return -1;
+        return TE_RC(TE_TAPI, TE_EIO);
     }
 
     fclose(f);
@@ -330,35 +312,32 @@ tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
 }
 
 /* See description in tapi_file.h */
-int
+te_errno
 tapi_file_ta_unlink_fmt(const char *ta, const char *path_fmt, ...)
 {
     va_list ap;
     char    path[RCF_MAX_PATH];
-    int     rc, rc2;
+    te_errno rc;
+    te_errno ta_rc;
 
     va_start(ap, path_fmt);
-    rc = vsnprintf(path, sizeof(path), path_fmt, ap);
+    rc = te_vsnprintf(path, sizeof(path), path_fmt, ap);
     va_end(ap);
-    if ((rc < 0) || ((size_t)rc >= sizeof(path)))
-    {
-        ERROR("Path to the file to be deleted too long, increase "
-              "RCF_MAX_PATH");
-        return TE_RC(TE_TAPI, TE_ESMALLBUF);
-    }
+    if (rc != 0)
+        return TE_RC_UPSTREAM(TE_TAPI, rc);
 
-    rc2 = rcf_ta_call(ta, 0, "ta_rtn_unlink", &rc, 1, FALSE,
-                      RCF_STRING, path);
-    if (rc2 != 0)
-    {
-        ERROR("%s(): rcf_ta_call() failed: %r", __FUNCTION__, rc2);
-        return rc2;
-    }
+    rc = rcf_ta_call(ta, 0, "ta_rtn_unlink", &ta_rc, 1, FALSE,
+                     RCF_STRING, path);
     if (rc != 0)
     {
-        ERROR("%s(): ta_rtn_unlink(%s, %s) failed: %r", __FUNCTION__,
-              ta, path, rc);
+        ERROR("%s(): rcf_ta_call() failed: %r", __FUNCTION__, rc);
         return rc;
+    }
+    if (ta_rc != 0)
+    {
+        ERROR("%s(): ta_rtn_unlink(%s, %s) failed: %r", __FUNCTION__,
+              ta, path, ta_rc);
+        return ta_rc;
     }
 
     return 0;

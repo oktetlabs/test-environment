@@ -112,12 +112,12 @@ extern char *tapi_file_create(size_t len, char *buf, te_bool random);
  * @param filename      pathname of the file
  * @param fmt           format string for the file content
  *
- * @return 0 (success) or -1 (failure)
+ * @return Status code
  *
  * @note the function is not thread-safe
  */
-extern int tapi_file_create_ta(const char *ta, const char *filename,
-                               const char *fmt, ...);
+extern te_errno tapi_file_create_ta(const char *ta, const char *filename,
+                                    const char *fmt, ...);
 
 /**
  * Create local file, copy it to TA, remove local file.
@@ -131,12 +131,12 @@ extern int tapi_file_create_ta(const char *ta, const char *filename,
  * @param rfile         pathname of the file on TA
  * @param fmt           format string for the file content
  *
- * @return 0 (success) or -1 (failure)
+ * @return Status code
  */
-extern int tapi_file_create_ta_r(const char *ta,
-                                 const char *lfile,
-                                 const char *rfile,
-                                 const char *fmt, ...);
+extern te_errno tapi_file_create_ta_r(const char *ta,
+                                      const char *lfile,
+                                      const char *rfile,
+                                      const char *fmt, ...);
 
 /**
  * Read file content from the TA.
@@ -145,12 +145,12 @@ extern int tapi_file_create_ta_r(const char *ta,
  * @param filename      pathname of the file
  * @param pbuf          location for buffer allocated by the routine
  *
- * @return 0 (success) or -1 (failure)
+ * @return Status code
  *
  * @note the function is not thread-safe
  */
-extern int tapi_file_read_ta(const char *ta, const char *filename,
-                             char **pbuf);
+extern te_errno tapi_file_read_ta(const char *ta, const char *filename,
+                                  char **pbuf);
 
 /**
  * Copy file from the one TA to other.
@@ -160,10 +160,10 @@ extern int tapi_file_read_ta(const char *ta, const char *filename,
  * @param ta_dst        destination Test Agent
  * @param dst           destination file name
  *
- * @return 0 (success) or -1 (failure)
+ * @return Status code
  */
-extern int tapi_file_copy_ta(const char *ta_src, const char *src,
-                             const char *ta_dst, const char *dst);
+extern te_errno tapi_file_copy_ta(const char *ta_src, const char *src,
+                                  const char *ta_dst, const char *dst);
 
 /**
  * Unlink file on the TA.
@@ -173,8 +173,8 @@ extern int tapi_file_copy_ta(const char *ta_src, const char *src,
  *
  * @return Status code.
  */
-extern int tapi_file_ta_unlink_fmt(const char *ta,
-                                   const char *path_fmt, ...);
+extern te_errno tapi_file_ta_unlink_fmt(const char *ta,
+                                        const char *path_fmt, ...);
 
 #ifdef __cplusplus
 } /* extern "C" */
