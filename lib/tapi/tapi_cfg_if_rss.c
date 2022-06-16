@@ -189,3 +189,153 @@ tapi_cfg_if_rss_fill_indir_table(const char *ta,
 
     return 0;
 }
+
+/* See description in tapi_cfg_if_rss.h */
+te_errno
+tapi_cfg_if_rss_hfuncs_get(const char *ta,
+                           const char *if_name,
+                           unsigned int rss_context,
+                           tapi_cfg_if_rss_hfunc **hfuncs,
+                           unsigned int *hfuncs_num)
+{
+    cfg_val_type type;
+    tapi_cfg_if_rss_hfunc *result = NULL;
+    cfg_handle *funcs_nodes = NULL;
+    unsigned int funcs_num;
+    unsigned int i;
+    char *name;
+    int enabled;
+    te_errno rc = 0;
+
+    rc = cfg_find_pattern_fmt(
+          &funcs_num, &funcs_nodes,
+          "/agent:%s/interface:%s/rss:/context:%u/hash_indir:/hash_func:*",
+          ta, if_name, rss_context);
+    if (rc != 0)
+        goto cleanup;
+
+    if (funcs_num == 0)
+    {
+        *hfuncs = NULL;
+        *hfuncs_num = 0;
+        return 0;
+    }
+
+    result = TE_ALLOC(sizeof(tapi_cfg_if_rss_hfunc) * funcs_num);
+    if (result == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    for (i = 0; i < funcs_num; i++)
+    {
+        type = CVT_INTEGER;
+        rc = cfg_get_instance(funcs_nodes[i], &type, &enabled);
+        if (rc != 0)
+            goto cleanup;
+
+        result[i].enabled = enabled;
+
+        rc = cfg_get_inst_name(funcs_nodes[i], &name);
+        if (rc != 0)
+            goto cleanup;
+
+        rc = te_snprintf(result[i].name,
+                         TAPI_CFG_IF_RSS_HFUNC_NAME_LEN,
+                         "%s", name);
+        free(name);
+        if (rc != 0)
+            goto cleanup;
+    }
+
+    *hfuncs = result;
+    *hfuncs_num = funcs_num;
+
+cleanup:
+
+    free(funcs_nodes);
+
+    if (rc != 0)
+        free(result);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_if_rss.h */
+te_errno
+tapi_cfg_if_rss_hfunc_set_local(const char *ta,
+                                const char *if_name,
+                                unsigned int rss_context,
+                                const char *func_name,
+                                int state)
+{
+    return cfg_set_instance_local_fmt(
+          CFG_VAL(INTEGER, state),
+          "/agent:%s/interface:%s/rss:/context:%u/hash_indir:/hash_func:%s",
+          ta, if_name, rss_context, func_name);
+}
+
+/* See description in tapi_cfg_if_rss.h */
+te_errno
+tapi_cfg_if_rss_hfunc_set_single_local(const char *ta,
+                                       const char *if_name,
+                                       unsigned int rss_context,
+                                       const char *func_name)
+{
+    tapi_cfg_if_rss_hfunc *hfuncs = NULL;
+    unsigned int hfuncs_count;
+    unsigned int i;
+    te_errno rc = 0;
+    te_bool found = FALSE;
+
+    rc = tapi_cfg_if_rss_hfuncs_get(ta, if_name, rss_context,
+                                    &hfuncs, &hfuncs_count);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < hfuncs_count; i++)
+    {
+        if (strcmp(hfuncs[i].name, func_name) == 0)
+        {
+            found = TRUE;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        rc = TE_RC(TE_TAPI, TE_ENOENT);
+        goto cleanup;
+    }
+
+    for (i = 0; i < hfuncs_count; i++)
+    {
+        if (strcmp(hfuncs[i].name, func_name) == 0)
+        {
+            /*
+             * Do at least this set even if there is no need,
+             * so that if user calls commit() next, it does not
+             * fail.
+             */
+            rc = tapi_cfg_if_rss_hfunc_set_local(ta, if_name, rss_context,
+                                                 hfuncs[i].name, 1);
+            if (rc != 0)
+                goto cleanup;
+        }
+        else
+        {
+            if (hfuncs[i].enabled)
+            {
+                rc = tapi_cfg_if_rss_hfunc_set_local(ta, if_name,
+                                                     rss_context,
+                                                     hfuncs[i].name, 0);
+                if (rc != 0)
+                    goto cleanup;
+            }
+        }
+    }
+
+cleanup:
+
+    free(hfuncs);
+
+    return rc;
+}

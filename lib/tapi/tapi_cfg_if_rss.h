@@ -162,6 +162,72 @@ extern te_errno tapi_cfg_if_rss_fill_indir_table(
                                           unsigned int queue_from,
                                           unsigned int queue_to);
 
+/** Maximum length of RSS hash function name */
+#define TAPI_CFG_IF_RSS_HFUNC_NAME_LEN 128
+
+/** Information about RSS hash function */
+typedef struct tapi_cfg_if_rss_hfunc {
+    char name[TAPI_CFG_IF_RSS_HFUNC_NAME_LEN];  /**< Function name */
+    te_bool enabled; /**< Whether function is enabled */
+} tapi_cfg_if_rss_hfunc;
+
+/**
+ * Get information about all RSS hash functions for a given interface.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Network interface name
+ * @param rss_context   RSS context
+ * @param hfuncs        Where to save pointer to array of
+ *                      tapi_cfg_if_rss_hfunc structures
+ * @param hfuncs_num    Where to save number of hash functions
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_rss_hfuncs_get(
+                          const char *ta,
+                          const char *if_name,
+                          unsigned int rss_context,
+                          tapi_cfg_if_rss_hfunc **hfuncs,
+                          unsigned int *hfuncs_num);
+
+/**
+ * Set locally the state of RSS hash function.
+ * This change should be committed with
+ * tapi_cfg_if_rss_hash_indir_commit().
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Network interface name
+ * @param rss_context   RSS context
+ * @param func_name     Function name
+ * @param state         @c 0 - disabled,
+ *                      @c 1 - enabled
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_rss_hfunc_set_local(
+                                             const char *ta,
+                                             const char *if_name,
+                                             unsigned int rss_context,
+                                             const char *func_name,
+                                             int state);
+
+/**
+ * Enable specified hash function, disable all the other functions.
+ * This change should be committed with
+ * tapi_cfg_if_rss_hash_indir_commit().
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Network interface name
+ * @param rss_context   RSS context
+ * @param func_name     Function name
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_rss_hfunc_set_single_local(
+                                             const char *ta,
+                                             const char *if_name,
+                                             unsigned int rss_context,
+                                             const char *func_name);
 
 #ifdef __cplusplus
 } /* extern "C" */
