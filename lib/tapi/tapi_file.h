@@ -152,6 +152,25 @@ extern te_errno tapi_file_create_ta_r(const char *ta,
 extern te_errno tapi_file_read_ta(const char *ta, const char *filename,
                                   char **pbuf);
 
+
+/**
+ * Like tapi_file_create_ta(), but it appends data to the file.
+ *
+ * If the file does not exist, it is created.
+ *
+ * @param ta            Test Agent name
+ * @param filename      pathname of the file
+ * @param fmt           format string for the file content
+ *
+ * @return Status code
+ *
+ * @note the function is not thread-safe
+ */
+extern te_errno tapi_file_append_ta(const char *ta, const char *filename,
+                                    const char *fmt, ...);
+
+
+
 /**
  * Copy file from the one TA to other.
  *

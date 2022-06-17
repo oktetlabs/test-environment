@@ -145,7 +145,9 @@ tapi_file_create(size_t len, char *buf, te_bool random)
  *
  * @param ta            Test Agent name
  * @param lfile         Pathname of the local file
+ *                      (generate it if it is @c NULL)
  * @param rfile         Pathname of the file on TA
+ * @param header        If not @c NULL, put it before @p fmt contents
  * @param fmt           Format string for the file content
  * @param ap            Format string arguments
  *
@@ -155,10 +157,14 @@ static te_errno
 tapi_file_create_ta_gen(const char *ta,
                         const char *lfile,
                         const char *rfile,
+                        const char *header,
                         const char *fmt, va_list ap)
 {
     FILE *f;
     te_errno rc;
+
+    if (lfile == NULL)
+        lfile = tapi_file_generate_pathname();
 
     if ((f = fopen(lfile, "w")) == NULL)
     {
@@ -167,6 +173,8 @@ tapi_file_create_ta_gen(const char *ta,
         return rc;
     }
 
+    if (header != NULL)
+        fputs(header, f);
     vfprintf(f, fmt, ap);
 
     if (fclose(f) < 0)
@@ -192,12 +200,11 @@ te_errno
 tapi_file_create_ta(const char *ta, const char *filename,
                     const char *fmt, ...)
 {
-    char *pathname = tapi_file_generate_pathname();
     va_list ap;
     te_errno rc;
 
     va_start(ap, fmt);
-    rc = tapi_file_create_ta_gen(ta, pathname, filename, fmt, ap);
+    rc = tapi_file_create_ta_gen(ta, NULL, filename, NULL, fmt, ap);
     va_end(ap);
 
     return rc;
@@ -214,7 +221,7 @@ tapi_file_create_ta_r(const char *ta,
     te_errno rc;
 
     va_start(ap, fmt);
-    rc = tapi_file_create_ta_gen(ta, lfile, rfile, fmt, ap);
+    rc = tapi_file_create_ta_gen(ta, lfile, rfile, NULL, fmt, ap);
     va_end(ap);
 
     return rc;
@@ -258,9 +265,9 @@ tapi_file_copy_ta(const char *ta_src, const char *src,
     return 0;
 }
 
-/* See description in tapi_file.h */
-te_errno
-tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
+static te_errno
+tapi_file_read_ta_gen(const char *ta, const char *filename,
+                      te_bool may_not_exist, char **pbuf)
 {
     char *pathname = tapi_file_generate_pathname();
     te_errno rc;
@@ -271,6 +278,12 @@ tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
 
     if ((rc = rcf_ta_get_file(ta, 0, filename, pathname)) != 0)
     {
+        if (may_not_exist && TE_RC_GET_ERROR(rc) == TE_ENOENT)
+        {
+            *pbuf = strdup("");
+            return 0;
+        }
+
         ERROR("Cannot get file %s from TA %s: %r", filename, ta, rc);
         return rc;
     }
@@ -309,6 +322,32 @@ tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
     *pbuf = buf;
 
     return 0;
+}
+
+/* See description in tapi_file.h */
+te_errno
+tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
+{
+    return tapi_file_read_ta_gen(ta, filename, FALSE, pbuf);
+}
+
+/* See description in tapi_file.h */
+te_errno
+tapi_file_append_ta(const char *ta, const char *filename, const char *fmt, ...)
+{
+    va_list ap;
+    char *old_contents = NULL;
+    te_errno rc = tapi_file_read_ta_gen(ta, filename, TRUE, &old_contents);
+
+    if (rc != 0)
+        return rc;
+
+    va_start(ap, fmt);
+    rc = tapi_file_create_ta_gen(ta, NULL, filename, old_contents, fmt, ap);
+    va_end(ap);
+
+    free(old_contents);
+    return rc;
 }
 
 /* See description in tapi_file.h */
