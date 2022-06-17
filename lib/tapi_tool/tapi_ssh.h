@@ -62,6 +62,34 @@ typedef struct tapi_ssh_client_opt {
     char *path;
 
     /**
+     * Allow remote hosts to connect to
+     * local forwarded ports.
+     *
+     * ssh -g
+     */
+    te_bool gateway_ports;
+
+    /**
+     * String representation of
+     * connection to the given TCP port
+     * or Unix socket on the local (client)
+     * host has to be forwarded to the given
+     * host and port, or Unix socket, on the
+     * remote side.
+     *
+     * ssh -L <local_port_forwarding>
+     */
+    char *local_port_forwarding;
+
+    /**
+     * Do not execute a remote command.
+     * @note This is useful for just forwarding ports.
+     *
+     * ssh -N
+     */
+    te_bool forbid_remote_commands_execution;
+
+    /**
      * File with identity (private key) for public key
      * authentication
      *
@@ -105,6 +133,16 @@ typedef struct tapi_ssh_client_opt {
      *  ssh -p <port>
      */
     unsigned int port;
+
+    /**
+     * String representation of
+     * connection to the given TCP port
+     * or Unix socket on the remote (server)
+     * host has to be forwarded to the local side.
+     *
+     * ssh -R <remote_port_forwarding>
+     */
+    char *remote_port_forwarding;
 
     /** Server to connect to */
     char *destination;
