@@ -62,7 +62,7 @@ typedef enum te_conf_obj_compare_result {
 /**
  * Transform a specific structure to a structure @b te_string
  *
- * @param [inout]str    String with data
+ * @param [in,out]str   String with data
  * @param [in]name      Field name
  * @param [in]arg       Pointer to a value of specific structure
  *

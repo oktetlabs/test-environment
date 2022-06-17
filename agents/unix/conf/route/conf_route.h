@@ -36,7 +36,7 @@ extern te_errno ta_unix_conf_route_init(void);
 /**
  * Find route and return its attributes.
  *
- * @param[inout] rt_info    Route related information
+ * @param[in,out] rt_info   Route related information
  *
  * @return Status code.
  */

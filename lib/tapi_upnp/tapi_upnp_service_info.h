@@ -466,7 +466,7 @@ extern void tapi_upnp_free_service_info(tapi_upnp_services *services);
  *
  * @param[in]    rpcs       RPC server handle.
  * @param[in]    service    Service context.
- * @param[inout] action     Requested action to invoke.
+ * @param[in,out] action    Requested action to invoke.
  *
  * @return Status code.
  */

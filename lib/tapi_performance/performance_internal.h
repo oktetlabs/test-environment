@@ -91,7 +91,7 @@ extern te_errno perf_app_read_output(tapi_job_channel_t *out_filter,
 /**
  * Stop perf application.
  *
- * @param[inout] app        Application context.
+ * @param[in,out] app       Application context.
  *
  * @return Status code.
  *

@@ -172,7 +172,7 @@ tapi_job_opt_create_enum_bool(const void *value, const void *priv, te_vec *args)
  *                          first element if the appropriate flag is set in
  *                          @p bind, suffix is always concatenated with the last
  *                          element.
- * @param[inout] args       Vector to put resulting argument to.
+ * @param[in,out] args      Vector to put resulting argument to.
  */
 static te_errno
 tapi_job_opt_append_arg_with_affixes(const tapi_job_opt_bind *bind,

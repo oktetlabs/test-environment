@@ -123,8 +123,8 @@ id_nodes_equal(const id_node *node, const rpc_ptr_id_namespace ns,
  * @param [in]    item_size     Size of one element of the @b array
  * @param [in]    limit         Limit maximum number of elements in the
  *                              @b array
- * @param [inout] array         Pointer to an array for reallocate memory
- * @param [inout] array_len     Number of elements in the @b array
+ * @param [in,out] array        Pointer to an array for reallocate memory
+ * @param [in,out] array_len    Number of elements in the @b array
  *
  * @return Status code
  */

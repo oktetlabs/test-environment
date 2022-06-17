@@ -483,7 +483,7 @@ extern int ta_rt_parse_obj(ta_cfg_obj_t *obj, ta_rt_info_t *rt_info);
  * Create a lock for the resource with specified name.
  *
  * @param name                  resource name
- * @param shared[inout]         create lock in shared (@c TRUE) or exclusive
+ * @param[in,out] shared        create lock in shared (@c TRUE) or exclusive
  *                              (@c FALSE) mode. On success contains actual
  *                              mode of the acquired lock.
  * @param fallback_shared       Should the attempt to acquire lock in shared

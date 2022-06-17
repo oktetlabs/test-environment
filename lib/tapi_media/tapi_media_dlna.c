@@ -25,7 +25,7 @@
  * Build pathname of dlna file recursively.
  *
  * @param[in]    dlna_file      Remote DLNA file.
- * @param[inout] pathname       Pathname which is recursively built.
+ * @param[in,out] pathname      Pathname which is recursively built.
  */
 static void
 build_dlna_pathname(const tapi_upnp_cd_container_node *dlna_file,

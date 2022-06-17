@@ -36,7 +36,7 @@ extern te_errno ta_unix_conf_rule_init(void);
  * Find a rule and fill the optional fields.
  *
  * @param [in]   required   Required fields for comparison
- * @param [inout]rule       Rule related information
+ * @param [in,out]rule      Rule related information
  *
  * @return Status code.
  */

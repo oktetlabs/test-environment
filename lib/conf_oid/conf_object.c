@@ -27,7 +27,7 @@
 /**
  * Convert @b te_bool field to string.
  *
- * @param [inout] str    String to append with converted value.
+ * @param [in,out] str   String to append with converted value.
  * @param [in]    name   Field name.
  * @param [in]    arg    Pointer to a value.
  *
@@ -132,7 +132,7 @@ DECLARE_NUMERIC_TYPE(uint32_t, "%u", strtoul);
 /**
  * Transform a structure @b sockaddr to a structure @b te_string
  *
- * @param [inout]str    String with data
+ * @param [in,out]str   String with data
  * @param [in]   name   Field name
  * @param [in]   arg    Pointer to a value
  *
@@ -208,7 +208,7 @@ sockaddr_compare(const void *a, const void *b)
 /**
  * Transform a string @b char * to a structure @b te_string
  *
- * @param [inout]str    String with data
+ * @param [in,out]str   String with data
  * @param [in]name      Field name
  * @param [in]arg       Pointer to a value
  *

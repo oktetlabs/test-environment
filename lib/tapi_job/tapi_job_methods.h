@@ -24,7 +24,7 @@ extern "C" {
 /**
  * Method that creates a job on backend side
  *
- * @param[inout] job               Job instance handle.
+ * @param[in,out] job              Job instance handle.
  *                                 On input, job factory must be set.
  *                                 On output, backend specific data for the job
  *                                 will be set.
@@ -222,7 +222,7 @@ typedef te_errno (tapi_job_method_get_autorestart)(const tapi_job_t *job,
  * Method that retrieves information about a job that was once created and
  * hasn't been destroyed.
  *
- * @param[inout] job               Job instance handle.
+ * @param[in,out] job              Job instance handle.
  *                                 On input, job factory must be set.
  *                                 On ouput, job is filled with the retrieved
  *                                 data.

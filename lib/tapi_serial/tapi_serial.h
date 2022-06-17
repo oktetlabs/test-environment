@@ -136,7 +136,7 @@ extern te_errno tapi_serial_flush(tapi_serial_handle handle, size_t amount);
  *
  * @param [in]      handle      Session handle
  * @param [in]      buffer      Input buffer
- * @param [inout]   buffer_len  On input: buffer length; on output: length of
+ * @param [in,out]  buffer_len  On input: buffer length; on output: length of
  *                              data written
  * @param [in]      timeout_ms  Timeout of the operation in milliseconds, @c -1
  *                              to block until data are received or error occurs

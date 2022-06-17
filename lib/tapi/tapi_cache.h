@@ -311,7 +311,7 @@ extern te_errno tapi_cache_find(cfg_handle_cb_func cb_func, void *opaque,
 /**
  * Get a value of certain instance of cache area
  *
- * @param[inout] type       Value type location, may be @c NULL. If it
+ * @param[in,out] type      Value type location, may be @c NULL. If it
  *                          is @ref CVT_UNSPECIFIED, it will be updated with
  *                          obtained value type
  * @param[out]   value      Value location

@@ -111,7 +111,7 @@ typedef char *(*csap_layer_get_param_cb_t)(csap_p        csap,
  * @param[in]    csap CSAP instance.
  * @param[in]    layer      numeric index of layer in CSAP type
  *                          to be processed
- * @param[inout] layer_pdu  ASN.1 value with PDU
+ * @param[in,out] layer_pdu ASN.1 value with PDU
  * @param[out]   p_opaque   Location for opaque data pointer to be
  *                          passed later to binary data generation
  *                          callback

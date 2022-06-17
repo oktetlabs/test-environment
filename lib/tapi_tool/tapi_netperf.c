@@ -196,7 +196,7 @@ set_test_rr_opt(te_vec *args, int32_t response_size,
  * @{
  *
  * @param[in]     value     Pointer to an argument.
- * @param[inout]  args      Argument vector to which formatted argument
+ * @param[in,out] args      Argument vector to which formatted argument
  *                          is appended.
  */
 

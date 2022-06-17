@@ -1036,7 +1036,7 @@ parse_services(const json_t *jarray, tapi_upnp_services *services)
  * object.
  *
  * @param[in]    jin        JSON object contains results of invoked action.
- * @param[inout] action     Action context.
+ * @param[in,out] action    Action context.
  *
  * @return Status code. On success, @c 0.
  */

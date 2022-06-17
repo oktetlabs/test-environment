@@ -213,7 +213,7 @@ extern te_errno tapi_upnp_cd_get_root(
  *
  * @param[in]    rpcs       RPC server handle.
  * @param[in]    service    ContentDirectory service context.
- * @param[inout] container  The container location which contains parent
+ * @param[in,out] container The container location which contains parent
  *                          content.
  *
  * @return Status code. On success, @c 0.
@@ -235,7 +235,7 @@ extern te_errno tapi_upnp_cd_get_children(
  * @param[in]    path_filter    Root path to retrieve data from. May be
                                 @c NULL or empty string to retrieve all
                                 content.
- * @param[inout] container      Container to put data to.
+ * @param[in,out] container     Container to put data to.
  *
  * @return Status code. On success, @c 0, on error @p container will be not
  *         changed.

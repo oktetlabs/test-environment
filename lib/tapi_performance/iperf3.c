@@ -425,7 +425,7 @@ end:
  *
  * @param[in]    jrpt       JSON object contains report data.
  * @param[in]    kind       Report kind.
- * @param[inout] report     Report.
+ * @param[in,out] report    Report.
  *
  * @note    Only statistics fields of @p report are updated
  *          if the function succeeds.

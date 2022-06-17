@@ -441,7 +441,7 @@ extern te_errno tapi_ndn_pkt_inject_vlan_tag(asn_value *pkt,
 /**
  * Inject VLAN tags to outer Ethernet PDU in a PDU sequence.
  *
- * @param[inout]  pdus          PDU sequence
+ * @param[in,out] pdus          PDU sequence
  * @param[in]     vid           VLAN IDs
  * @param[in]     prio          VLAN priority fields
  * @param[in]     cfi           VLAN CFI fields
@@ -465,7 +465,7 @@ extern te_errno tapi_ndn_pdus_inject_vlan_tags(asn_value *pdus,
 /**
  * Remove VLAN tags from outer Ethernet PDU in a PDU sequence.
  *
- * @param[inout]  pdus          PDU sequence
+ * @param[in,out] pdus          PDU sequence
  * @param[in]     n_tags        Number of tags to remove
  *
  * @note    The API works only with exactly specified or not set
@@ -480,7 +480,7 @@ extern te_errno tapi_ndn_pdus_remove_vlan_tags(asn_value *pdus,
  * Read TCI value of VLAN tags of a Ethernet PDU.
  *
  * @param[in]     eth           ASN.1 value of ethernet PDU
- * @param[inout]  n_tags        Size of the @p vid, @p prio and @p cfi arrays,
+ * @param[in,out] n_tags        Size of the @p vid, @p prio and @p cfi arrays,
  *                              on success contains the number of tags that
  *                              were read (may be @c 0 if @p eth does not have
  *                              any VLAN tags)

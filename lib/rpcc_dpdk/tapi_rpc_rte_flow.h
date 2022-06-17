@@ -86,7 +86,7 @@ extern int rpc_rte_flow_destroy(rcf_rpc_server *rpcs,
  * @param[in]  port_id     Port number
  * @param[in]  flow        RTE flow pointer
  * @param[in]  action      Action definition as defined in original flow rule
- * @param[inout] data      Pointer to storage for the associated query data type
+ * @param[in,out] data     Pointer to storage for the associated query data type
  * @param[out] error       Perform verbose error reporting if not @c NULL
  *
  * @return @c 0 on success; jumps out in case of failure

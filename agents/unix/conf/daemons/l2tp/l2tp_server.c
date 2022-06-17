@@ -470,7 +470,7 @@ l2tp_secret_is_set(te_l2tp_server *l2tp, enum l2tp_secret_prot protocol)
 /**
  * Create a new file with unique name.
  *
- * @param[inout] file_name  File name template.
+ * @param[in,out] file_name File name template.
  * @param[out]   file       File stream.
  *
  * @return Status code.
@@ -631,7 +631,7 @@ l2tp_secrets_recover(const char *filename)
  * Create a temporary file to save L2TP secrets.
  *
  * @param[in]    secrets_fname  Name of global (system) secrets file.
- * @param[inout] fname          Template of name of file to create, should not
+ * @param[in,out] fname         Template of name of file to create, should not
  *                              be a string constant because it will be
  *                              replaced by real name of created file.
  * @param[out]   file           File stream.

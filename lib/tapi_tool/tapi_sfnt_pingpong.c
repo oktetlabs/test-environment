@@ -52,7 +52,7 @@ struct tapi_sfnt_pp_app_server_t {
  * @{
  *
  * @param[in]     value     Pointer to an argument.
- * @param[inout]  args      Argument vector to which formatted argument
+ * @param[in,out] args      Argument vector to which formatted argument
  *                          is appended.
  */
 

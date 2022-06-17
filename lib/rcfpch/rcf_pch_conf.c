@@ -901,7 +901,7 @@ get_instance_oid_by_object_oid(const char *object, cfg_inst_subid *p_ids,
  * Processing of the configurator node substitution
  *
  * @param[in]    obj    Configuration tree node
- * @param[inout] value  The string in which the substitution is performed.
+ * @param[in,out] value The string in which the substitution is performed.
  * @param[in]    sub_id Value of the subid for substitution
  * @param[in]    p_ids  Pointer to array of instance OID elements
  *

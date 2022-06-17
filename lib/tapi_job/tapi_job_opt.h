@@ -138,7 +138,7 @@ typedef struct tapi_job_opt_double_t {
  * @{
  *
  * @param[in]     value     Pointer to an argument.
- * @param[inout]  args      Argument vector to which formatted argument
+ * @param[in,out] args      Argument vector to which formatted argument
  *                          is appended.
  */
 

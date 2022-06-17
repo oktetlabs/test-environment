@@ -1444,7 +1444,7 @@ asn_get_indexed(const asn_value *container, asn_value **subval,
  *
  * @param[in]    value      ASN.1 value with primitive syntax.
  * @param[out]   data       Pointer to buffer for read data
- * @param[inout] d_len      Length of available buffer / read data; measured in
+ * @param[in,out] d_len     Length of available buffer / read data; measured in
  *                          octets for all types except OID and BIT_STRING;
  *                          for OID measured in sizeof(int),
  *                          for BIT_STRING measured in bits

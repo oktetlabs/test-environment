@@ -327,7 +327,7 @@ extern te_errno ta_job_receive_last(ta_job_manager_t *manager,
  * @param[in]    timeout_ms    Time to wait for data to appear on some filter
  * @param[out]   buffers       Where to save pointer to array of buffers with
  *                             messages
- * @param[inout] count         On input, maximum number of messages to retrieve.
+ * @param[in,out] count        On input, maximum number of messages to retrieve.
  *                             If zero, all available messages will be
  *                             retrieved. On output - number of actually
  *                             retrieved messages.

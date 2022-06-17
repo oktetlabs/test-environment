@@ -111,7 +111,7 @@ make_pathname(const char *path, const char *name)
  *
  * @param[in]    localfs_path   Local file system pathname.
  * @param[in]    name           Name of file.
- * @param[inout] file           Local file.
+ * @param[in,out] file          Local file.
  *
  * @return Status code.
  */

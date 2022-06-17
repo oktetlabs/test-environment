@@ -31,7 +31,7 @@ extern "C" {
 /**
  * Add a QUEUE action to an action list at specified index.
  *
- * @param[inout]  ndn_actions   Action list
+ * @param[in,out] ndn_actions   Action list
  * @param[in]     action_index  Index at which the action is put to list
  * @param[in]     queue         Queue index of the action
  */
@@ -42,7 +42,7 @@ extern void tapi_rte_flow_add_ndn_action_queue(asn_value *ndn_actions,
 /**
  * Add a DROP action to an action list at specified index.
  *
- * @param[inout]  ndn_actions   Action list
+ * @param[in,out] ndn_actions   Action list
  * @param[in]     action_index  Index at which the action is put to list
  */
 extern void tapi_rte_flow_add_ndn_action_drop(asn_value *ndn_actions,
@@ -51,7 +51,7 @@ extern void tapi_rte_flow_add_ndn_action_drop(asn_value *ndn_actions,
 /**
  * Add a COUNT action to an action list at specified index.
  *
- * @param[inout]  ndn_actions   Action list
+ * @param[in,out] ndn_actions   Action list
  * @param[in]     action_index  Index at which the action is put to list
  * @param[in]     counter_id    Counter index
  */
@@ -62,7 +62,7 @@ extern void tapi_rte_flow_add_ndn_action_count(asn_value *ndn_actions,
 /**
  * Add a encap action to an action list at specified index.
  *
- * @param[inout]  ndn_actions       Action list
+ * @param[in,out] ndn_actions       Action list
  * @param[in]     action_index      Index at which the action is put to list
  * @paran[in]     type              Type of the encapsulation
  * @param[in]     encap_hdr         Flow rule pattern that is used as a
@@ -76,7 +76,7 @@ extern void tapi_rte_flow_add_ndn_action_encap(asn_value *ndn_actions,
 /**
  * Add a decap action to an action list at specified index.
  *
- * @param[inout]  ndn_actions       Action list
+ * @param[in,out] ndn_actions       Action list
  * @param[in]     action_index      Index at which the action is put to list
  * @paran[in]     type              Type of the encapsulation
  */
@@ -87,7 +87,7 @@ extern void tapi_rte_flow_add_ndn_action_decap(asn_value *ndn_actions,
 /**
  * Add a pop VLAN action to an action list at specified index.
  *
- * @param[inout]  ndn_actions       Action list
+ * @param[in,out] ndn_actions       Action list
  * @param[in]     action_index      Index at which the action is put to list
  */
 extern void tapi_rte_flow_add_ndn_action_of_pop_vlan(asn_value *ndn_actions,
@@ -96,7 +96,7 @@ extern void tapi_rte_flow_add_ndn_action_of_pop_vlan(asn_value *ndn_actions,
 /**
  * Add a push vlan action to an action list at specified index.
  *
- * @param[inout]  ndn_actions       Action list
+ * @param[in,out] ndn_actions       Action list
  * @param[in]     action_index      Index at which the action is put to list
  * @paran[in]     ethertype         VLAN EtherType
  */
@@ -107,7 +107,7 @@ extern void tapi_rte_flow_add_ndn_action_of_push_vlan(asn_value *ndn_actions,
 /**
  * Add a set vlan vid action to an action list at specified index.
  *
- * @param[inout]  ndn_actions       Action list
+ * @param[in,out] ndn_actions       Action list
  * @param[in]     action_index      Index at which the action is put to list
  * @paran[in]     vlan_vid          VLAN ID
  */
@@ -120,7 +120,7 @@ extern void tapi_rte_flow_add_ndn_action_of_set_vlan_vid(asn_value *ndn_actions,
  *
  * @param[in]     type            The action type
  * @param[in]     ethdev_port_id  The representor's ethdev port ID
- * @param[inout]  actions         The list of actions
+ * @param[in,out] actions         The list of actions
  * @param[in]     entry_idx       The entry index
  */
 extern void tapi_rte_flow_add_ndn_action_port(ndn_rte_flow_action_type_t type,
@@ -131,7 +131,7 @@ extern void tapi_rte_flow_add_ndn_action_port(ndn_rte_flow_action_type_t type,
 /**
  * Add a JUMP action to an action list at specified index.
  *
- * @param[inout]  ndn_actions       Action list
+ * @param[in,out] ndn_actions       Action list
  * @param[in]     action_index      Index at which the action is put to list
  * @param[in]     group             Group to redirect packets to
  */
@@ -144,7 +144,7 @@ extern void tapi_rte_flow_add_ndn_action_jump(asn_value *ndn_actions,
  *
  * @param[in]     type            The item type
  * @param[in]     ethdev_port_id  The representor's ethdev port ID
- * @param[inout]  items           The list of items
+ * @param[in,out] items           The list of items
  * @param[in]     entry_idx       The entry index
  */
 extern void tapi_rte_flow_add_ndn_item_port(ndn_rte_flow_item_type_t type,
