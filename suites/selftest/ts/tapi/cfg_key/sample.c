@@ -32,8 +32,10 @@
 
 #include "te_config.h"
 #include "tapi_cfg_key.h"
+#include "tapi_cfg_base.h"
 #include "tapi_test.h"
 #include "tapi_env.h"
+#include "tapi_file.h"
 
 typedef struct key_data
 {
@@ -199,6 +201,41 @@ main(int argc, char **argv)
 
         if (*keys[i].private_key_path == '\0')
             TEST_VERDICT("Private key path for '%s' is empty", keys[i].name);
+    }
+
+    TEST_STEP("Make a list of public keys");
+    for (i = 0; i < keys_added; i++)
+    {
+        CHECK_RC(tapi_cfg_key_append_public(pco_iut->ta, keys[i].name,
+                                            pco_iut->ta, "keylist"));
+    }
+    {
+        char *dirname = tapi_cfg_base_get_ta_dir(pco_iut->ta,
+                                                 TAPI_CFG_BASE_TA_DIR_TMP);
+        char list_name[RCF_MAX_PATH];
+        char *result = NULL;
+        char *iter;
+
+        CHECK_NOT_NULL(dirname);
+        TE_SPRINTF(list_name, "%s/%s", dirname, "keylist");
+        free(dirname);
+
+        CHECK_RC(tapi_file_read_ta(pco_iut->ta, list_name, &result));
+        for (i = 0, iter = result; i < keys_added; i++)
+        {
+            size_t klen = strlen(keys[i].public_key);
+
+            if (strncmp(iter, keys[i].public_key, klen) != 0)
+            {
+                TEST_VERDICT("%u'th key differ in the list: %.*s vs %s",
+                             i, (int)klen, iter, keys[i].public_key);
+            }
+            iter += klen;
+            if (*iter != '\n')
+                TEST_VERDICT("No newline after %u'th key", i);
+            iter++;
+        }
+        free(result);
     }
 
     TEST_STEP("Reusing keys");
