@@ -52,6 +52,7 @@
 #include "logger_api.h"
 #include "conf_api.h"
 #include "te_sockaddr.h"
+#include "te_enum.h"
 
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_sys.h"
@@ -59,6 +60,32 @@
 #include "tapi_host_ns.h"
 #include "tapi_mem.h"
 #include "tapi_test_behaviour.h"
+
+/* See the description in tapi_cfg_base.h */
+char *
+tapi_cfg_base_get_ta_dir(const char *ta, tapi_cfg_base_ta_dir kind)
+{
+    char *value = NULL;
+    te_errno rc;
+    static const te_enum_map dir_map[] = {
+        {.name = "dir", .value = TAPI_CFG_BASE_TA_DIR_AGENT},
+        {.name = "tmp_dir", .value = TAPI_CFG_BASE_TA_DIR_TMP},
+        {.name = "lib_mod_dir", .value = TAPI_CFG_BASE_TA_DIR_KMOD},
+        {.name = "lib_bin_dir", .value = TAPI_CFG_BASE_TA_DIR_BIN},
+        TE_ENUM_MAP_END
+    };
+
+    rc = cfg_get_instance_string_fmt(&value, "/agent:%s/%s:",
+                                     ta, te_enum_map_from_value(dir_map, kind));
+    if (rc != 0)
+    {
+        ERROR("Cannot get /agent:%s/%s: %r", ta,
+              te_enum_map_from_value(dir_map, kind), rc);
+        return NULL;
+    }
+
+    return value;
+}
 
 /* See the description in tapi_cfg_base.h */
 te_errno

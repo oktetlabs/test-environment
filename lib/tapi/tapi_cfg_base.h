@@ -37,6 +37,25 @@
 extern "C" {
 #endif
 
+/** Kind of a TA directory */
+typedef enum tapi_cfg_base_ta_dir {
+    TAPI_CFG_BASE_TA_DIR_AGENT, /**< Agent directory */
+    TAPI_CFG_BASE_TA_DIR_TMP,   /**< Directory of temporary files */
+    TAPI_CFG_BASE_TA_DIR_KMOD,  /**< Kernel module directory */
+    TAPI_CFG_BASE_TA_DIR_BIN,   /**< Library files directory */
+} tapi_cfg_base_ta_dir;
+
+/**
+ * Get a TA directory as specified by @p kind.
+ *
+ * @param ta    Agent name
+ * @param kind  Kind of a directory (see tapi_cfg_base_ta_dir type)
+ *
+ * @return Directory path (must be free()'d) or @c NULL on error
+ */
+extern char *tapi_cfg_base_get_ta_dir(const char *ta,
+                                      tapi_cfg_base_ta_dir kind);
+
 /**
  * @defgroup tapi_conf_base_net Network Base configuration
  * @ingroup tapi_conf
