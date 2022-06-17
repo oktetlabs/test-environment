@@ -13,6 +13,8 @@
 #include "logger_api.h"
 #include "conf_api.h"
 #include "tapi_cfg_key.h"
+#include "tapi_cfg_base.h"
+#include "tapi_file.h"
 #include "te_enum.h"
 
 te_bool
@@ -250,4 +252,46 @@ te_errno
 tapi_cfg_key_del(const char *ta, const char *key_name)
 {
     return cfg_del_instance_fmt(FALSE, "/agent:%s/key:%s", ta, key_name);
+}
+
+te_errno
+tapi_cfg_key_append_public(const char *ta, const char *key_name,
+                           const char *dst_ta, const char *list_name)
+{
+    te_string full_path = TE_STRING_INIT;
+    const char *full_list_name;
+    char *public_key = tapi_cfg_key_get_public_key(ta, key_name);
+    te_errno rc = 0;
+
+    if (public_key == NULL)
+    {
+        rc = TE_RC(TE_TAPI, TE_EBADSLT);
+        goto cleanup;
+    }
+
+    if (*list_name == '/')
+        full_list_name = list_name;
+    else
+    {
+        char *tmp_dir = tapi_cfg_base_get_ta_dir(dst_ta, TAPI_CFG_BASE_TA_DIR_TMP);
+
+        if (tmp_dir == NULL)
+        {
+            rc = TE_RC(TE_TAPI, TE_ENOCONF);
+            goto cleanup;
+        }
+        rc = te_string_append(&full_path, "%s/%s", tmp_dir, list_name);
+        free(tmp_dir);
+        if (rc != 0)
+            goto cleanup;
+        full_list_name = full_path.ptr;
+    }
+
+    rc = tapi_file_append_ta(dst_ta, full_list_name, "%s\n", public_key);
+
+cleanup:
+    te_string_free(&full_path);
+    free(public_key);
+
+    return rc;
 }

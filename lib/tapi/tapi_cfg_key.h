@@ -169,6 +169,24 @@ extern char *tapi_cfg_key_get_public_key(const char *ta, const char *key_name);
 extern te_errno tapi_cfg_key_del(const char *ta, const char *key_name);
 
 
+/**
+ * Append a public key to a list of keys.
+ *
+ * Append the public key of @p key_name from @p ta to a file @p list_name
+ * on @p dst_ta. If the file does not exist, it is created.
+ * If @p list_name is relative, it is relative to @c /agent:dst_ta/tmp_dir
+ *
+ * @param ta        Source agent name
+ * @param key_name  Key name
+ * @param dst_ta    Destination agent name
+ * @param list_name Key list file name
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_key_append_public(const char *ta, const char *key_name,
+                                           const char *dst_ta,
+                                           const char *list_name);
+
 /**@} <!-- END tapi_conf_key --> */
 
 #ifdef __cplusplus
