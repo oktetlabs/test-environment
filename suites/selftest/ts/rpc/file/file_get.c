@@ -12,6 +12,7 @@
  *
  * @par Scenario:
  *
+ * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  * @author Eugene Suslov <Eugene.Suslov@oktetlabs.ru>
  */
 
@@ -22,10 +23,11 @@
 int
 main(int argc, char **argv)
 {
-    char           *lfile = NULL;
     char           *rfile = NULL;
     te_string       rpath = TE_STRING_INIT;
     rcf_rpc_server *rpcs = NULL;
+    char           *contents = NULL;
+    static char     expected[] = "First Second";
 
     TEST_START;
     TEST_GET_RPCS(AGT_A, "rpcs", rpcs);
@@ -34,35 +36,26 @@ main(int argc, char **argv)
 
     rfile = tapi_file_generate_name();
     CHECK_RC(te_string_append(&rpath, "%s/%s", TMP_DIR, rfile));
-    if (tapi_file_create_ta(rpcs->ta, rpath.ptr, "") != 0)
-    {
-        TEST_VERDICT("tapi_file_create_ta() failed");
-    }
+    CHECK_RC(tapi_file_append_ta(rpcs->ta, rpath.ptr, "NULL"));
+    CHECK_RC(tapi_file_create_ta(rpcs->ta, rpath.ptr, "First"));
+    CHECK_RC(tapi_file_append_ta(rpcs->ta, rpath.ptr, " Second"));
 
     TEST_STEP("Get the file from TA");
-    lfile = tapi_file_generate_name();
-    if ((rc = rcf_ta_get_file(rpcs->ta, 0, rpath.ptr, lfile)) != 0)
-    {
-        TEST_VERDICT("rcf_ta_get_file() failed; errno=%r", rc);
-    }
+    CHECK_RC(tapi_file_read_ta(rpcs->ta, rpath.ptr, &contents));
 
-    TEST_STEP("Check if the file exists on TEN");
-    if (access(lfile, F_OK) != 0)
+    TEST_STEP("Check the expected contents");
+    if (strcmp(contents, expected) != 0)
     {
-        TEST_VERDICT("File doesn't exist on TEN");
+        TEST_VERDICT("Unexpected contents of the file: '%s' vs '%s'",
+                     contents, expected);
     }
 
     TEST_SUCCESS;
 
 cleanup:
 
+    free(contents);
     CLEANUP_CHECK_RC(rcf_ta_del_file(rpcs->ta, 0, rpath.ptr));
-
-    if (unlink(lfile) != 0)
-    {
-        ERROR("File '%s' is not deleted", lfile);
-    }
-
     te_string_free(&rpath);
 
     TEST_END;
