@@ -16,6 +16,7 @@
 #include "te_ethernet.h"
 #include "te_alloc.h"
 #include "te_vector.h"
+#include "te_sleep.h"
 #include "te_str.h"
 
 #if HAVE_CTYPE_H
@@ -756,6 +757,7 @@ tapi_reuse_eal(tapi_env         *env,
         const char *dev_name = ps_if->iface->if_info.if_name;
         uint16_t    port_id;
         const char *net_bonding_prefix = "net_bonding";
+        const char *net_af_xdp_prefix = "net_af_xdp";
 
         if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
             bus_name = "pci";
@@ -790,6 +792,11 @@ tapi_reuse_eal(tapi_env         *env,
             rc = tapi_eal_close_bond_slave_pci_devices(env, ps_if, rpcs);
             if (rc != 0)
                 goto out;
+        }
+        else if (strncmp(dev_name, net_af_xdp_prefix,
+                 strlen(net_af_xdp_prefix)) == 0)
+        {
+            te_motivated_msleep(100, "Wait for AF_XDP async cleanup be over");
         }
     }
 
