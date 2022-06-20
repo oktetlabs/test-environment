@@ -23,6 +23,7 @@
 
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_vector.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -241,6 +242,21 @@ extern te_errno te_string_append_shell_args_as_is(te_string *str, ...)
  */
 extern te_errno te_string_append_shell_arg_as_is(te_string *str,
                                                  const char *arg);
+
+
+/**
+ * Append the elements of @p vec (which must be C strings),
+ * separated by @p sep.
+ *
+ * @param str     TE string
+ * @param strvec  Vector of C strings
+ * @param sep     Separator
+ *
+ * @return Status code.
+ */
+extern te_errno te_string_join_vec(te_string *str, const te_vec *strvec,
+                                   const char *sep);
+
 /**
  * Return a char * that is a result of sprintf into allocated memory.
  *

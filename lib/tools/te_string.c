@@ -293,6 +293,26 @@ te_string_append_shell_args_as_is(te_string *str, ...)
     return rc;
 }
 
+te_errno
+te_string_join_vec(te_string *str, const te_vec *strvec,
+                   const char *sep)
+{
+    te_bool need_sep = FALSE;
+    const char * const *item;
+
+    TE_VEC_FOREACH(strvec, item)
+    {
+        te_errno rc = te_string_append(str, "%s%s",
+                                       need_sep ? sep : "",
+                                       *item);
+        if (rc != 0)
+            return rc;
+        need_sep = TRUE;
+    }
+
+    return 0;
+}
+
 char *
 te_string_fmt_va(const char *fmt,
                  va_list     ap)
