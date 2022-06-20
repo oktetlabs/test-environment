@@ -89,6 +89,11 @@ main(int argc, char **argv)
             TAPI_JOB_OPT_ARRAY(data_sample, n_array, array,
                                TAPI_JOB_OPT_STRING("--item=", TRUE,
                                                    data_sample, array[0])),
+            TAPI_JOB_OPT_EMBED_ARRAY("--items={", TRUE, ",", "}",
+                                     data_sample, n_array, array,
+                                     TAPI_JOB_OPT_STRING(NULL, TRUE,
+                                                         data_sample,
+                                                         array[0])),
             TAPI_JOB_OPT_DUMMY("--dummy"),
 #ifdef HAVE_NETINET_IN_H
             TAPI_JOB_OPT_SOCKADDR_PTR("--ip", FALSE, data_sample, addr),
@@ -139,6 +144,7 @@ main(int argc, char **argv)
         "-s", "string",
         "--flag1",
         "--item=value1", "--item=value2", "--item=value3",
+        "--items={value1,value2,value3}",
         "--dummy",
 #ifdef HAVE_NETINET_IN_H
         "--ip", "127.0.0.1",
