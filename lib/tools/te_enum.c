@@ -67,6 +67,32 @@ te_enum_translate(const te_enum_trn trn[], int value, te_bool reverse,
     return unknown_val;
 }
 
+int
+te_enum_translate_bitmap(const te_enum_trn trn[], int value, te_bool reverse)
+{
+    int result = 0;
+
+    if (value == 0)
+        return te_enum_translate(trn, 0, reverse, 0);
+
+    for (; trn->from != INT_MIN; trn++)
+    {
+        int mask = reverse ? trn->to : trn->from;
+        int newval = reverse ? trn->from : trn->to;
+
+        if (mask == 0)
+            continue;
+
+        if ((value & mask) == mask)
+        {
+            value &= ~mask;
+            result |= newval;
+        }
+    }
+
+    return result;
+}
+
 void
 te_enum_trn_fill_by_conversion(te_enum_trn trn[],
                                int minval, int maxval,
