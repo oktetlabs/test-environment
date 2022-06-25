@@ -103,7 +103,9 @@ dnl       list of environment variables to export to the build script
 dnl       (this only matters for remote builds)
 dnl       additional parameters, may be empty or:
 dnl           --with-vcs-stuff: copy vcs-specific files/directories to
-dnl                             the source directory for build
+dnl                             the source directory for build (.git for now)
+dnl           --disable-vcs-ignores: always copy files, mentioned in vcs ignore
+dnl                                  list (.gitignore for now)
 dnl
 define([TE_PLATFORM_EXT],
 [[
@@ -394,7 +396,10 @@ dnl       list of environment variables to export to the build script
 dnl       (this only matters for remote builds)
 dnl       additional parameters, may be empty or:
 dnl           --with-vcs-stuff: copy vcs-specific files/directories to
-dnl                             the source directory for build
+dnl                             the source directory for build (.git for now)
+dnl           --disable-vcs-ignores: always copy files, mentioned in vcs ignore
+dnl                                  list to the source directory for build
+dnl                                  (.gitignore for now)
 dnl
 define([TE_TA_APP],
 [[

@@ -29,8 +29,9 @@ RSYNC_TO_ARGS+=(--delete-excluded)
 RSYNC_TO_ARGS+=(--copy-unsafe-links)
 
 # This is used when copying sources
+declare -a RSYNC_VCS_STUFF
+RSYNC_VCS_STUFF+=("--exclude=.git")
 declare -a RSYNC_VCS_IGNORES
-RSYNC_VCS_IGNORES+=("--exclude=.git")
 RSYNC_VCS_IGNORES+=("--filter=:- .gitignore")
 
 error() {
@@ -74,7 +75,8 @@ mk_platform_src() {
     local src_ws="$1"; shift
     local l
 
-    rsync_to "${p}" "${TE_BASE}"/ "${src_ws}" "${RSYNC_VCS_IGNORES[@]}"
+    rsync_to "${p}" "${TE_BASE}"/ "${src_ws}" "${RSYNC_VCS_STUFF[@]}" \
+        "${RSYNC_VCS_IGNORES[@]}"
 
     local libs="${p}_LIBS"
     for l in ${!libs} ; do
@@ -82,7 +84,7 @@ mk_platform_src() {
         local src="${!src_var}"
         test -z "${src}" -o "${src}" = "${TE_BASE}/lib/${l}" ||
             rsync_to "${p}" "${src}"/ "${src_ws}/lib/${l}" \
-                "${RSYNC_VCS_IGNORES[@]}"
+                "${RSYNC_VCS_STUFF[@]}" "${RSYNC_VCS_IGNORES[@]}"
     done
 }
 
@@ -167,16 +169,30 @@ process_ext_and_apps_parms() {
     local var_name="$1" ; shift
     local -n ref_arr=$1 ; shift
 
-    case "${!var_name}" in
-        "")
-            local i
-            for i in "${RSYNC_VCS_IGNORES[@]}"; do
-                ref_arr+=("$i")
-            done
-            ;;
-        --with-vcs-stuff) ;;
-        *) error "unsupported '${!var_name}' value in $var_name" ;;
-    esac
+    local with_vcs_stuff=false
+    local disable_vcs_ignores=false
+    local i
+    local param
+
+    for param in ${!var_name} ; do
+        case "$param" in
+            --with-vcs-stuff) with_vcs_stuff=true ;;
+            --disable-vcs-ignores) disable_vcs_ignores=true ;;
+            *) error "unsupported '${!var_name}' value in $var_name" ;;
+        esac
+    done
+
+    if [[ "$with_vcs_stuff" == false ]] ; then
+        for i in "${RSYNC_VCS_STUFF[@]}"; do
+            ref_arr+=("$i")
+        done
+    fi
+
+    if [[ "$disable_vcs_ignores" == false ]] ; then
+        for i in "${RSYNC_VCS_IGNORES[@]}"; do
+            ref_arr+=("$i")
+        done
+    fi
 }
 
 build_ext() {
