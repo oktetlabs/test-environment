@@ -303,8 +303,8 @@ wait_connectivity_changes(tsa_session *ss)
 {
     if (ss->config.flags & TSA_NO_CONNECTIVITY_CHANGE)
         return;
-
-    CFG_WAIT_CHANGES;
+    if (!(ss->config.flags & TSA_NO_CFG_WAIT_CHANGES))
+       CFG_WAIT_CHANGES;
 }
 
 /* See the tapi_tcp_states.h file for the description. */

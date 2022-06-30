@@ -79,6 +79,8 @@ typedef enum tsa_flags {
     TSA_ESTABLISH_PASSIVE = 0x40,     /**< Use passive opening of TCP
                                            connection to obtain
                                            TCP_ESTABLISHED state */
+    TSA_NO_CFG_WAIT_CHANGES = 0x80,   /**< Do not Wait for changes
+                                           in connectivity */
 } tsa_flags;
 
 /** Environment configuration for current working session with TSA */
