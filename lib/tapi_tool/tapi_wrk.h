@@ -63,6 +63,8 @@ typedef struct tapi_wrk_opt {
 
     /** wrk2: work rate (throughput) in requests/sec (total). */
     tapi_job_opt_uint_t rate;
+    /** wrk2/patched: affinity list (for example 0,2,4,6). */
+    const char *affinity;
 } tapi_wrk_opt;
 
 /** Default options initializer */

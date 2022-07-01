@@ -39,6 +39,7 @@ const tapi_wrk_opt tapi_wrk_default_opt = {
     .latency = FALSE,
     .host = NULL,
     .rate = {.value = 1000, .defined = FALSE},
+    .affinity = NULL,
 };
 
 static const tapi_job_opt_bind wrk_binds[] = TAPI_JOB_OPT_SET(
@@ -51,7 +52,8 @@ static const tapi_job_opt_bind wrk_binds[] = TAPI_JOB_OPT_SET(
                        TAPI_JOB_OPT_STRING("--header", FALSE,
                                            tapi_wrk_opt, headers[0])),
     TAPI_JOB_OPT_STRING("--script", FALSE, tapi_wrk_opt, script_path),
-    TAPI_JOB_OPT_UINT_T("--rate", FALSE, NULL, tapi_wrk_opt, rate)
+    TAPI_JOB_OPT_UINT_T("--rate", FALSE, NULL, tapi_wrk_opt, rate),
+    TAPI_JOB_OPT_STRING("--affinity", FALSE, tapi_wrk_opt, affinity)
 );
 
 static char *
