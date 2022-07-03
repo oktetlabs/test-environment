@@ -183,6 +183,8 @@ foreach l : all_libs
         libname = l
         # List of headers to install
         headers = []
+        # List of scripts to install
+        scripts = []
         # List of sources to build library
         sources = []
         # List of include directories required to build
@@ -247,6 +249,11 @@ foreach l : all_libs
         if install_lib and headers.length() != 0
             install_headers(headers)
         endif
+
+        if install_lib and scripts.length() != 0
+            install_data(scripts, install_dir: get_option('bindir'))
+        endif
+
         # If there are sources to be compiled as library, do it
         if sources.length() != 0
             # Automatically add the library itself to search for headers
