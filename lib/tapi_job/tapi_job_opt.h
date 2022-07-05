@@ -196,6 +196,10 @@ te_errno tapi_job_opt_create_sockaddr_ptr(const void *value, const void *priv,
 te_errno tapi_job_opt_create_addr_port_ptr(const void *value, const void *priv,
                                            te_vec *args);
 
+/** value type: 'struct sockaddr *' */
+te_errno tapi_job_opt_create_sockport_ptr(const void *value, const void *priv,
+                                          te_vec *args);
+
 /** value type: any enum */
 te_errno tapi_job_opt_create_enum(const void *value, const void *priv,
                                   te_vec *args);
@@ -459,6 +463,20 @@ te_errno tapi_job_opt_create_enum_bool(const void *value, const void *priv,
 #define TAPI_JOB_OPT_ADDR_PORT_PTR(_prefix, _concat_prefix, _struct, _field) \
     { tapi_job_opt_create_addr_port_ptr, _prefix, _concat_prefix, NULL,      \
       TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                        \
+                                     struct sockaddr *), NULL }
+
+/**
+ * Bind `struct sockaddr *` argument (formatted as "port").
+ * The argument won't be included in command line if the field is @c NULL.
+ *
+ * @param[in]   _prefix         Argument prefix.
+ * @param[in]   _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in]   _struct         Option struct.
+ * @param[in]   _field          Field name of the address in option struct.
+ */
+#define TAPI_JOB_OPT_SOCKPORT_PTR(_prefix, _concat_prefix, _struct, _field) \
+    { tapi_job_opt_create_sockport_ptr, _prefix, _concat_prefix, NULL,      \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                       \
                                      struct sockaddr *), NULL }
 
 /**

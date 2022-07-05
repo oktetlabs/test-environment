@@ -159,6 +159,21 @@ tapi_job_opt_create_addr_port_ptr(const void *value, const void *priv,
 }
 
 te_errno
+tapi_job_opt_create_sockport_ptr(const void *value, const void *priv,
+                                 te_vec *args)
+{
+    const struct sockaddr **sa = (const struct sockaddr **)value;
+
+    UNUSED(priv);
+
+    if (sa == NULL || *sa == NULL)
+        return TE_ENOENT;
+
+    return te_vec_append_str_fmt(args, "%" PRIu16,
+                                 ntohs(te_sockaddr_get_port(*sa)));
+}
+
+te_errno
 tapi_job_opt_create_enum(const void *value, const void *priv, te_vec *args)
 {
     int ival = *(const int *)value;

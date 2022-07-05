@@ -99,7 +99,8 @@ main(int argc, char **argv)
             TAPI_JOB_OPT_DUMMY("--dummy"),
 #ifdef HAVE_NETINET_IN_H
             TAPI_JOB_OPT_SOCKADDR_PTR("--ip", FALSE, data_sample, addr),
-            TAPI_JOB_OPT_ADDR_PORT_PTR("--port", FALSE, data_sample, addr),
+            TAPI_JOB_OPT_SOCKPORT_PTR("--port", FALSE, data_sample, addr),
+            TAPI_JOB_OPT_ADDR_PORT_PTR("--addr_port", FALSE, data_sample, addr),
 #endif
             TAPI_JOB_OPT_ENUM("--enum", FALSE, data_sample, e1, enum_mapping),
             TAPI_JOB_OPT_ENUM_BOOL("--", TRUE, data_sample, e2, yesno_mapping),
@@ -152,7 +153,8 @@ main(int argc, char **argv)
         "--dummy",
 #ifdef HAVE_NETINET_IN_H
         "--ip", "127.0.0.1",
-        "--port", "127.0.0.1:8888",
+        "--port", "8888",
+        "--addr_port", "127.0.0.1:8888",
 #endif
         "--enum", "E2",
         "--yes", "--no"
