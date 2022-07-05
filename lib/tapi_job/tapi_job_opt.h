@@ -152,6 +152,10 @@ te_errno tapi_job_opt_create_uint_t(const void *value, const void *priv,
 te_errno tapi_job_opt_create_uint_t_hex(const void *value, const void *priv,
                                         te_vec *args);
 
+/** value type: `tapi_job_opt_uint_t` */
+te_errno tapi_job_opt_create_uint_t_octal(const void *value, const void *priv,
+                                          te_vec *args);
+
 /** value type: `unsigned int` */
 te_errno tapi_job_opt_create_uint(const void *value, const void *priv,
                                   te_vec *args);
@@ -248,6 +252,22 @@ te_errno tapi_job_opt_create_enum_bool(const void *value, const void *priv,
                                 _struct, _field)                        \
     { tapi_job_opt_create_uint_t_hex, _prefix, _concat_prefix, _suffix, \
       TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                   \
+                                     tapi_job_opt_uint_t), NULL }
+
+/**
+ * Bind `tapi_job_opt_uint_t` argument, specifying it in octal
+ * format in command line.
+ *
+ * @param[in] _prefix         Argument prefix.
+ * @param[in] _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in] _suffix         Argument suffix.
+ * @param[in] _struct         Option struct.
+ * @param[in] _field          Field name in option struct.
+ */
+#define TAPI_JOB_OPT_UINT_T_OCTAL(_prefix, _concat_prefix, _suffix, \
+                                  _struct, _field)                        \
+    { tapi_job_opt_create_uint_t_octal, _prefix, _concat_prefix, _suffix, \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                     \
                                      tapi_job_opt_uint_t), NULL }
 
 /**
