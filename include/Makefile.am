@@ -46,6 +46,7 @@ te_headers = \
 	logger_defs.h \
 	logger_int.h \
 	rcf_internal.h \
+	te_bpf_common.h \
 	te_config.h \
 	ta_common.h \
 	te_win_defs.h \

@@ -1,0 +1,137 @@
+#!/bin/bash
+#
+# Helper script for building BPF programs, to be used in
+# TE_TA_APP() macro in builder configuration files.
+#
+# Copyright (C) 2022 OKTET Labs, St.-Petersburg, Russia
+#
+# Author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
+#
+
+set -e
+
+declare -a sources
+declare -a compiler_opts
+inst_dir=
+def_inst_subdir="bpf_programs"
+
+# This will help to find the problem if the script terminates due
+# to unhandled error (as "set -e" is specified).
+function err_handler() {
+    echo "te_build_bpf: at line $2 unexpected status code $1 was got"
+}
+
+trap 'err_handler $? $LINENO' ERR
+
+function usage() {
+cat <<EOF
+Usage: te_build_bpf [<options>] <one or more C files of BPF programs>
+  --inst-dir=<filepath>         Where to install compiled object files
+                                (may be a path relative to TA installation
+                                 directory; if empty or not set, programs
+                                 will be installed in '${def_inst_subdir}'
+                                 subdirectory in TA installation directory)
+  -D<macro>[=<definition>]      Pass macro definition to the compiler
+EOF
+}
+
+function process_opts() {
+    while [[ "$#" -gt 0 ]] ; do
+        case "$1" in
+            "") ;; # Ignore empty arguments
+
+            -h | --help) usage ; exit 0 ;;
+
+            --inst-dir=*)
+                inst_dir=${1#--inst-dir=}
+                ;;
+
+            -D*)
+                compiler_opts+=("${1}")
+                ;;
+
+            *)
+                sources+=("$1")
+                ;;
+
+        esac
+        shift 1
+    done
+}
+
+function test_compiler() {
+    test_file=$(mktemp --suffix=.c test_bpf.XXXXX)
+    test_file_compiled=$(mktemp --suffix=.ll test_compiled.XXXXX)
+
+    cat >"${test_file}" << END
+#include <linux/bpf.h>
+#include <bpf/bpf_helpers.h>
+
+SEC("prog")
+int
+dummy_xdp_callback(struct xdp_md *ctx)
+{
+    return XDP_PASS;
+}
+END
+
+    test_log="${PWD}/bpf_test.log"
+    success=0
+    clang -S -target bpf -O2 -emit-llvm -c -g \
+         -o "${test_file_compiled}" "${test_file}" \
+         >"${test_log}" 2>&1 && success=1
+    rm -f "${test_file}" "${test_file_compiled}"
+    if [[ "${success}" -eq 0 ]] ; then
+        echo "Cannot compile sample BPF program,"\
+             "see ${test_log} on $(hostname)"
+        echo "Not building ${EXT_SOURCES} in ${TE_PREFIX}."
+        exit 0
+    fi
+}
+
+function main() {
+    process_opts "$@"
+
+    #
+    # Check whether a sample BPF program can be compiled for a given
+    # platform. Do not try to build requested programs and avoid
+    # breaking platform build if it is not supported.
+    #
+    test_compiler
+
+    for file_c in "${sources[@]}" ; do
+        file_ll="${file_c%.c}.ll"
+        file_o="${file_c%.c}.o"
+
+        set -x
+
+        clang -S -target bpf -Wall -Wno-unused-value \
+            -Wno-pointer-sign -Wno-compare-distinct-pointer-types \
+            -O2 -emit-llvm -c -g -I"${TE_PREFIX}/include" \
+            "${compiler_opts[@]}" -o "${file_ll}" \
+            "${EXT_SOURCES}/${file_c}"
+
+        llc -march=bpf -filetype=obj -o "${file_o}" "${file_ll}"
+
+        # This way "set +x" itself is not logged
+        { set +x; } 2>/dev/null
+
+        for ta_type in "${TE_TA_TYPES}" ; do
+            dst="${TE_AGENTS_INST}/${ta_type}/"
+            if [[ -n "${inst_dir}" ]] ; then
+                if [[ ${inst_dir:0:1} = "/" ]] ; then
+                    dst="${inst_dir}"
+                else
+                    dst="${dst}/${inst_dir}"
+                fi
+            else
+                dst="${dst}/${def_inst_subdir}/"
+            fi
+
+            mkdir -p "${dst}"
+            cp "${file_o}" "${dst}/"
+        done
+    done
+}
+
+main "$@"

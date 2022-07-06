@@ -354,6 +354,7 @@ headers += [
     'rcf_rpc_defs.h',
     'ta_common.h',
     'tad_common.h',
+    'te_bpf_common.h',
     'te_config.h',
     'te_cwmp.h',
     'te_defs.h',
