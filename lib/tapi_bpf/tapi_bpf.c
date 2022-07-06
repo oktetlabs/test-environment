@@ -19,6 +19,7 @@
 #include "tapi_mem.h"
 #include "tapi_bpf.h"
 #include "tapi_cfg_qdisc.h"
+#include "te_sockaddr.h"
 
 static const char *tapi_bpf_states[] =
 {
@@ -1326,6 +1327,65 @@ tapi_bpf_map_check_type(const char *ta,
               __FUNCTION__, tapi_bpf_map_types[type], tapi_bpf_map_types[exp_map_type]);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
+
+    return 0;
+}
+
+/* See description in tapi_bpf.h */
+te_errno
+tapi_bpf_ip_tcpudp_filter_from_sa(te_bpf_ip_tcpudp_filter *filter,
+                                  int family, int protocol,
+                                  const struct sockaddr *src_addr,
+                                  const struct sockaddr *dst_addr)
+{
+    memset(filter, 0, sizeof(*filter));
+
+    if (family == AF_INET)
+    {
+        filter->ipv4 = 1;
+    }
+    else if (family == AF_INET6)
+    {
+        filter->ipv4 = 0;
+    }
+    else
+    {
+        ERROR("%s(): unsupported address family", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (src_addr != NULL && src_addr->sa_family != family)
+    {
+        ERROR("%s(): source address has unexpected family", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (dst_addr != NULL && dst_addr->sa_family != family)
+    {
+        ERROR("%s(): destination address has unexpected family",
+              __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (src_addr != NULL)
+    {
+        memcpy(filter->src_ip_addr, te_sockaddr_get_netaddr(src_addr),
+               te_netaddr_get_size(family));
+
+        memcpy(filter->src_port, te_sockaddr_get_port_ptr(src_addr),
+               sizeof(filter->src_port));
+    }
+
+    if (dst_addr != NULL)
+    {
+        memcpy(filter->dst_ip_addr, te_sockaddr_get_netaddr(dst_addr),
+               te_netaddr_get_size(family));
+
+        memcpy(filter->dst_port, te_sockaddr_get_port_ptr(dst_addr),
+               sizeof(filter->dst_port));
+    }
+
+    filter->protocol = protocol;
 
     return 0;
 }

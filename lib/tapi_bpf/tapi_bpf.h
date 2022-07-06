@@ -19,6 +19,16 @@
 extern "C" {
 #endif
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+#define TE_BPF_U8 uint8_t
+#include "te_bpf_common.h"
+
 /**
  * BPF object states
  */
@@ -606,6 +616,26 @@ tapi_bpf_map_check_type(const char *ta,
                         unsigned int bpf_id,
                         const char *map_name,
                         tapi_bpf_map_type exp_map_type);
+
+/**
+ * Fill IP TCP/UDP filter for BPF/XDP hook from provided sockaddr
+ * structures.
+ *
+ * @param filter        Filter to fill
+ * @param family        @c AF_INET or @c AF_INET6
+ * @param protocol      @c IPPROTO_TCP or @c IPPROTO_UDP
+ * @param src_addr      Source address/port (may be @c NULL to match
+ *                      everything)
+ * @param dst_addr      Destination address/port (may be @c NULL to
+ *                      match everything)
+ *
+ * @return Status code.
+ */
+extern te_errno
+tapi_bpf_ip_tcpudp_filter_from_sa(te_bpf_ip_tcpudp_filter *filter,
+                                  int family, int protocol,
+                                  const struct sockaddr *src_addr,
+                                  const struct sockaddr *dst_addr);
 
 /**@} <!-- END tapi_bpf --> */
 
