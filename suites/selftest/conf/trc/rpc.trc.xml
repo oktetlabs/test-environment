@@ -8,5 +8,7 @@
                     href="rpc/server.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="rpc/unistd.trc.xml" parse="xml"/>
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="rpc/memory.trc.xml" parse="xml"/>
     </iter>
 </test>

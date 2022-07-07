@@ -63,6 +63,8 @@ typedef struct {
     rpc_ptr_id_namespace    ns;     /**< Memory pointer namespace */
     void                   *memory; /**< Memory pointer */
     te_bool                 used;   /**< If the node is used */
+    /** The offset of @p memory relative to the allocated buffer */
+    size_t                  offset;
 } id_node;
 
 /** Synchronization object */
@@ -108,6 +110,10 @@ static te_bool
 id_nodes_equal(const id_node *node, const rpc_ptr_id_namespace ns,
                const void *memory)
 {
+    /*
+     * We think that offset doesn't play any role in equality of
+     * nodes.
+     */
     return node->used && node->ns == ns && node->memory == memory;
 }
 
@@ -336,10 +342,23 @@ rcf_pch_mem_index_alloc(void *mem, rpc_ptr_id_namespace ns,
     ids[index].memory   = mem;
     ids[index].ns       = ns;
     ids[index].used     = TRUE;
+    ids[index].offset   = 0;
     ids_used++;
 
     thread_mutex_unlock(lock);
     return RPC_PTR_ID_MAKE(ns, index);
+}
+
+/* See description in rcf_pch_mem.h */
+void
+rcf_pch_mem_alloc_set_offset(tarpc_int p_id, size_t offset)
+{
+    rpc_ptr_id_index index = RPC_PTR_ID_GET_INDEX(p_id);
+
+    assert(index < ids_len);
+    assert(ids[index].offset == 0);
+
+    ids[index].offset = offset;
 }
 
 /* See description in rcf_pch_mem.h */
@@ -477,6 +496,30 @@ rcf_pch_mem_index_mem_to_ptr(rpc_ptr id, rpc_ptr_id_namespace ns,
                   ids[index].ns, ns);
         }
     }
+
+    thread_mutex_unlock(lock);
+    return memory;
+}
+
+/* See description in rcf_pch_mem.h */
+void *
+rcf_pch_mem_base_ptr(rpc_ptr id)
+{
+    void *memory;
+    rpc_ptr_id_namespace ns;
+    rpc_ptr_id_index index;
+
+    if (id == RPC_NULL)
+        return NULL;
+
+    ns = RPC_PTR_ID_GET_NS(id);
+
+    thread_mutex_lock(lock);
+
+    index = RPC_PTR_ID_GET_INDEX(id);
+    assert(index < ids_len);
+    assert(ids[index].used && ids[index].ns == ns);
+    memory = (char *)ids[index].memory - ids[index].offset;
 
     thread_mutex_unlock(lock);
     return memory;

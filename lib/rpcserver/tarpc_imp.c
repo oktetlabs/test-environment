@@ -10073,7 +10073,7 @@ TARPC_FUNC(malloc, {},
 TARPC_FUNC(free, {},
 {
     UNUSED(out);
-    func_ptr(rcf_pch_mem_get(in->buf));
+    func_ptr(rcf_pch_mem_base_ptr(in->buf));
     rcf_pch_mem_free(in->buf);
 }
 )
@@ -10254,6 +10254,45 @@ integer2raw(tarpc_integer2raw_in *in,
 TARPC_FUNC(integer2raw, {},
 {
     MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+
+/*-------------- malloc_misaligned() ------------------------------*/
+TARPC_FUNC_STANDALONE(malloc_misaligned, {},
+{
+    void *buf;
+    int rc;
+
+    api_func_ptr func_posix_memalign;
+
+    if (in->offset >= in->alignment)
+    {
+        ERROR("Offset %zu should be less than alignment %zu",
+              in->offset, in->alignment);
+        out->common._errno = TE_RC(TE_TA_UNIX, EINVAL);
+    }
+    else if ((tarpc_find_func(in->common.lib_flags, "posix_memalign",
+                        (api_func*)&func_posix_memalign)) != 0)
+    {
+        ERROR("Failed to resolve posix_memalign() function address");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+    }
+    else
+    {
+        rc = func_posix_memalign(&buf, in->alignment, in->size + in->offset);
+        if (rc != 0)
+        {
+            out->common._errno = TE_OS_RC(TE_TA_UNIX, rc);
+        }
+        else
+        {
+            buf = (char *)buf + in->offset;
+            out->retval = rcf_pch_mem_alloc(buf);
+            rcf_pch_mem_alloc_set_offset(out->retval, in->offset);
+        }
+    }
+
 }
 )
 

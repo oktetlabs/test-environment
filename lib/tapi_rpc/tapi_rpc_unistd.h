@@ -1183,6 +1183,22 @@ rpc_free_off(rcf_rpc_server *rpcs, rpc_ptr_off *buf)
 
 /**
  * Allocate a buffer of specified size in the TA address space
+ * that should be misaligned. That means that an aligned memory
+ * is allocated, however it should be considered as an allocated
+ * memory that starts with some offset that is less than size.
+ *
+ * @param rpcs          RPC server handle
+ * @param alignment     buffer alignment
+ * @param size          size of the buffer to be allocated
+ * @param offset        offset
+ *
+ * @return   Allocated buffer identifier or @c RPC_NULL
+ */
+extern rpc_ptr rpc_malloc_misaligned(rcf_rpc_server *rpcs, size_t alignment,
+                                     size_t size, size_t offset);
+
+/**
+ * Allocate a buffer of specified size in the TA address space
  * aligned at a specified boundary
  *
  * @param rpcs          RPC server handle

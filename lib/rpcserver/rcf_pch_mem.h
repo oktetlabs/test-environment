@@ -53,6 +53,15 @@ extern rpc_ptr rcf_pch_mem_index_alloc(
     RCF_PCH_MEM_INDEX_ALLOC((_mem), rcf_pch_mem_ns_generic())
 
 /**
+ * Mark the memory identifier corresponding to the pointer ID with
+ * the offset (it is asserted to be zero before the start).
+ *
+ * @param      p_id         Pointer ID
+ * @param      offset       The offset that should be set
+ */
+extern void rcf_pch_mem_alloc_set_offset(tarpc_int id, size_t offset);
+
+/**
  * Mark the memory identifier corresponding to the memory address with
  * the @b ns as "unused".
  *
@@ -125,6 +134,19 @@ extern void *rcf_pch_mem_index_mem_to_ptr(
 /** Wrapper for @b RCF_PCH_MEM_INDEX_MEM_TO_PTR() with generic @b ns */
 #define rcf_pch_mem_get(_id)                                        \
     RCF_PCH_MEM_INDEX_MEM_TO_PTR((_id), rcf_pch_mem_ns_generic())
+
+/**
+ * Obtain the base address of the real memory by its identifier and namespace.
+ * It should only be used to free or reallocate the memory. In most cases
+ * (e.g. if the memory was initially allocated by a standard malloc())
+ * rcf_pch_mem_base_ptr() and rfc_pch_mem_get() yield the same result.
+ *
+ * @param id Memory id returned by @b rcf_pch_mem_index_alloc
+ *
+ * @return Memory address or @c NULL
+ */
+extern void *rcf_pch_mem_base_ptr(rpc_ptr id);
+
 
 /**
  * Wrapper for @b rcf_pch_mem_index_mem_to_ptr() with details for error

@@ -12,5 +12,8 @@
         <run>
             <package name="unistd"/>
         </run>
+        <run>
+            <package name="memory"/>
+        </run>
     </session>
 </package>

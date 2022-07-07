@@ -2168,6 +2168,23 @@ struct tarpc_get_addr_by_id_out {
     uint64_t             retval; /**< Address value */
 };
 
+/* malloc_misaligned */
+struct tarpc_malloc_misaligned_in {
+	struct tarpc_in_arg common;
+	tarpc_size_t alignment;     /**< Alignment of a block */
+	tarpc_size_t size;          /**< Bytes to allocate */
+	tarpc_size_t offset;        /**< Offset to misalign */
+};
+
+struct tarpc_malloc_misaligned_out {
+	struct tarpc_out_arg common;
+/**
+ * A pointer in the TA address space that is greater than allocated
+ * pointer by offset
+ */
+	tarpc_ptr retval;
+};
+
 /* raw2integer */
 struct tarpc_raw2integer_in {
     struct tarpc_in_arg     common;
@@ -5786,5 +5803,6 @@ program tarpc
         RPC_DEF(copy_fd2fd)
 
         RPC_DEF(remove_dir_with_files)
+        RPC_DEF(malloc_misaligned)
     } = 1;
 } = 1;

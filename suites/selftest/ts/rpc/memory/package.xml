@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>Package for demonstrating memory tests</description>
+    <author mailto="nikolai.kosovskii@oktetlabs.ru"/>
+    <session track_conf="silent">
+        <run>
+            <script name="memory"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+
+        </run>
+    </session>
+</package>

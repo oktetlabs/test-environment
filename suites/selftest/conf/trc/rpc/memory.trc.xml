@@ -1,0 +1,15 @@
+<test name="memory" type="package">
+    <objective>Package for demonstrating memory tests</objective>
+    <notes/>
+    <iter result="PASSED">
+        <notes/>
+        <test name="memory" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+		<arg name="env">{{{'pco_iut':IUT}}}</arg>
+                <notes/>
+            </iter>
+        </test>
+    </iter>
+</test>
