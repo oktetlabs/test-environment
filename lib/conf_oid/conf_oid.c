@@ -270,6 +270,36 @@ cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2)
     return 0;
 }
 
+/* See description in conf_oid.h */
+te_bool
+cfg_oid_match(const cfg_oid *inst_oid, const cfg_oid *obj_oid,
+              te_bool match_prefix)
+{
+    unsigned i;
+    const cfg_object_subid *obj_subids;
+    const cfg_inst_subid *inst_subids;
+
+    assert(inst_oid->inst);
+    assert(!obj_oid->inst);
+
+    obj_subids = obj_oid->ids;
+    inst_subids = inst_oid->ids;
+
+    if (inst_oid->len < obj_oid->len)
+        return FALSE;
+
+    if (!match_prefix && obj_oid->len != inst_oid->len)
+        return FALSE;
+
+    for (i = 0; i < obj_oid->len; i++)
+    {
+        if (strcmp(inst_subids[i].subid, obj_subids[i].subid) != 0)
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
 
 /* See description in conf_oid.h */
 cfg_oid *

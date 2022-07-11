@@ -188,6 +188,21 @@ extern int cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2);
 
 
 /**
+ * Checks whether @p inst_oid is an instance of @p obj_oid.
+ *
+ * @param inst_oid      Instance OID
+ * @param obj_oid       Object OID
+ * @param match_subtree If @c TRUE, @p inst_oid should be within
+ *                      a subtree defined by @p obj_oid, i.e.
+ *                      there should be a prefix of @p inst_oid
+ *                      matching @p obj_oid. Otherwise, the whole
+ *                      @p inst_oid shall match.
+ * @return @c TRUE iff @p inst_oid matches @p obj_oid
+ */
+extern te_bool cfg_oid_match(const cfg_oid *inst_oid, const cfg_oid *obj_oid,
+                             te_bool match_prefix);
+
+/**
  * Determines a common part of two OIDs. 
  * If both OIDs are object OIDs, an object OID is returned.
  * Otherwise, an instance OID is returned that starts with
