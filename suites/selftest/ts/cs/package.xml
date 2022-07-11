@@ -20,6 +20,11 @@
         </run>
 
         <run>
+            <script name="oid">
+            </script>
+        </run>
+
+        <run>
             <script name="vlans">
                 <req id="CS_VLAN"/>
                 <req id="BROKEN"/>

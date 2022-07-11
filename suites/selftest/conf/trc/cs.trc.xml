@@ -17,6 +17,14 @@
                 <notes/>
             </iter>
         </test>
+        <test name="oid" type="script">
+            <objective>Testing OID parsing and comparison correctness</objective>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+
         <test name="vm" type="script">
             <objective>Check that virtual machine may be created and test agent started on it.</objective>
             <notes/>
