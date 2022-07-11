@@ -1354,6 +1354,8 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
     }
     current->buffer_in = (te_dbuf)TE_DBUF_INIT(100);
 
+    current->buffer_out = (te_string)TE_STRING_INIT;
+
 #define SET_CURL_OPT(OPT, ARG) \
     do {                                                                  \
         CURLcode ret;                                                     \
