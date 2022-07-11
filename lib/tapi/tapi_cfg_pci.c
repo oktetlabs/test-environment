@@ -653,6 +653,62 @@ out:
 }
 
 static te_errno
+pci_oid_copy(const char *pci_oid, const cfg_oid *parsed_oid, void *ctx)
+{
+    UNUSED(parsed_oid);
+    *(char **)ctx = strdup(pci_oid);
+    return 0;
+}
+
+static te_errno
+pci_oid_do_resolve(const char *pci_oid, const cfg_oid *parsed_oid, void *ctx)
+{
+    cfg_val_type type = CVT_STRING;
+    UNUSED(parsed_oid);
+    return cfg_get_instance_str(&type, ctx, pci_oid);
+}
+
+static cfg_oid_rule pci_oid_resolve_rules[] = {
+    CFG_OID_RULE(FALSE, pci_oid_copy, {"agent"}, {"hardware"},
+                 {"pci"}, {"device"}),
+    CFG_OID_RULE(FALSE, pci_oid_do_resolve, {"agent"}, {"hardware"},
+                 {"pci"}, {"vendor"}, {"device"}, {"instance"}),
+    CFG_OID_RULE_END
+};
+
+te_errno
+tapi_cfg_pci_resolve_device_oid(const char *pci_inst_oid, char **pci_dev_oid)
+{
+    assert(pci_inst_oid != NULL);
+    assert(pci_dev_oid != NULL);
+
+    return cfg_oid_dispatch(pci_oid_resolve_rules, pci_inst_oid, pci_dev_oid);
+}
+
+te_errno
+tapi_cfg_pci_resolve_device_fmt(char **pci_dev_oid, const char *pci_inst_fmt,
+                                ...)
+{
+    te_string pci_inst_oid = TE_STRING_INIT;
+    te_errno rc;
+    va_list args;
+
+    va_start(args, pci_inst_fmt);
+    rc = te_string_append_va(&pci_inst_oid, pci_inst_fmt, args);
+    va_end(args);
+    if (rc != 0)
+    {
+        te_string_free(&pci_inst_oid);
+        return TE_RC_UPSTREAM(TE_TAPI, rc);
+    }
+
+    rc = tapi_cfg_pci_resolve_device_oid(pci_inst_oid.ptr, pci_dev_oid);
+    te_string_free(&pci_inst_oid);
+
+    return rc;
+}
+
+static te_errno
 tapi_cfg_pci_get_pcioid_by_vend_dev_inst(const char *ta, const char *vendor,
                                          const char *device,
                                          unsigned int instance,
