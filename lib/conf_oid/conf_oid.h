@@ -19,6 +19,8 @@
 extern "C" {
 #endif
 
+#include "te_defs.h"
+
 #define CFG_SUBID_MAX       128  /**< Maximum length of sub-identifier
                                       including trailing 0 */
 #define CFG_INST_NAME_MAX   256  /**< Instance name, including trailing 0 */
@@ -46,6 +48,31 @@ typedef struct cfg_oid {
     void   *ids;  /**< Pointer to array of identifier elements */
 } cfg_oid;
 
+/**
+ * Object OID literal.
+ *
+ * The constructed value is a cfg_oid structure, not a pointer.
+ *
+ * @param ...   The list of subids. cfg_object_subid is a one-element
+ *              structure, so string literals need to be wrapped in `{..}`.
+ *              The first subid is implicitly set to "".
+ *
+ * @code{.c}
+ * static cfg_oid object_oid = CFG_OBJ_OID_LITERAL({"agent"},
+ *                                                 {"interface"},
+ *                                                 {"status"});
+ * ...
+ * cfg_oid *parsed = cfg_oid_convert_str(oid_str);
+ * status = cfg_oid_cmp(&object_oid, parsed);
+ * cfg_free_oid(parsed);
+ * @endcode
+ */
+#define CFG_OBJ_OID_LITERAL(...) \
+    ((cfg_oid){                                                             \
+        .len = 1 + TE_ARRAY_LEN(((const cfg_object_subid[]){__VA_ARGS__})), \
+        .inst = FALSE,                                                      \
+        .ids = (cfg_object_subid[]){{""}, __VA_ARGS__}                     \
+    })
 
 /**
  * Get instance name of the i-th sub-identifier.
