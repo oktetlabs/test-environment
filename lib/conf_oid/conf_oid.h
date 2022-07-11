@@ -227,6 +227,24 @@ typedef struct cfg_oid_rule {
 } cfg_oid_rule;
 
 /**
+ * A helper macro to construct cfg_oid_rule entries.
+ *
+ * @param _match_prefix    See cfg_oid_rule::match_prefix
+ * @param _action          Action to execute
+ * @param ...              A list of subids as passed to 
+ *                         CFG_OBJ_OID_LITERAL
+ */
+#define CFG_OID_RULE(_match_prefix, _action, ...) \
+    {                                                   \
+        .object_oid = &CFG_OBJ_OID_LITERAL(__VA_ARGS__),\
+        .match_prefix = (_match_prefix),                \
+        .action = (_action)                             \
+    }
+
+/** Terminating entry for cfg_oid_rule table */
+#define CFG_OID_RULE_END {.object_oid = NULL}
+
+/**
  * Calls an action depending on the object OID.
  *
  * The function parses @p inst_oid, then searchers @p actions

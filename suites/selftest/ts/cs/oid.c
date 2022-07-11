@@ -29,10 +29,49 @@
 
 static const cfg_oid object_oid = CFG_OBJ_OID_LITERAL({"agent"},
                                                       {"interface"});
+static te_errno
+oid_action1(const char *oid, const cfg_oid *parsed_oid, void *ctx)
+{
+    *(int *)ctx = 0;
+    UNUSED(oid);
+    UNUSED(parsed_oid);
+    return 0;
+}
+
+static te_errno
+oid_action2(const char *oid, const cfg_oid *parsed_oid, void *ctx)
+{
+    *(int *)ctx = 1;
+    UNUSED(oid);
+    UNUSED(parsed_oid);
+    return 0;
+}
+
+static te_errno
+oid_action3(const char *oid, const cfg_oid *parsed_oid, void *ctx)
+{
+    *(int *)ctx = 2;
+    UNUSED(oid);
+    UNUSED(parsed_oid);
+    return 0;
+}
+
+static const cfg_oid_rule oid_rules[] = {
+    {
+        .object_oid = &object_oid,
+        .match_prefix = TRUE,
+        .action = oid_action1
+    },
+    CFG_OID_RULE(FALSE, oid_action2, {"agent"}, {"route"}),
+    CFG_OID_RULE(FALSE, oid_action3, {"agent"}, {"route"}, {"type"}),
+    CFG_OID_RULE_END
+};
+
 int
 main(int argc, char **argv)
 {
     cfg_oid *inst_oid;
+    int value = -1;
 
     TEST_START;
 
@@ -91,6 +130,28 @@ main(int argc, char **argv)
                      "was requested");
     }
     cfg_free_oid(inst_oid);
+
+    TEST_STEP("Checking OID dispatching");
+    CHECK_RC(cfg_oid_dispatch(oid_rules, "/agent:Agt_A/interface:eth0/status:",
+                              &value));
+    if (value != 0)
+        TEST_VERDICT("Unexpected value, expected 0, got %d", value);
+
+    CHECK_RC(cfg_oid_dispatch(oid_rules, "/agent:Agt_A/route:1.2.3.4|24",
+                              &value));
+    if (value != 1)
+        TEST_VERDICT("Unexpected value, expected 1, got %d", value);
+
+    CHECK_RC(cfg_oid_dispatch(oid_rules, "/agent:Agt_A/route:1.2.3.4|24/type:",
+                              &value));
+    if (value != 2)
+        TEST_VERDICT("Unexpected value, expected 2, got %d", value);
+
+
+    rc = cfg_oid_dispatch(oid_rules, "/agent:Agt_A/route:1.2.3.4|24/mtu:",
+                          &value);
+    if (TE_RC_GET_ERROR(rc) != TE_ESRCH)
+        TEST_VERDICT("Unexpected status for OID dispatcher: %r", rc);
 
     TEST_SUCCESS;
 
