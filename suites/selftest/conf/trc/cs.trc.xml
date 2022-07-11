@@ -9,6 +9,14 @@
                 <notes/>
             </iter>
         </test>
+        <test name="key" type="script">
+            <objective>Check that key management routines work correctly</objective>
+
+            <iter result="PASSED">
+                <arg name="env">{{{'pco_iut':IUT}}}</arg>
+                <notes/>
+            </iter>
+        </test>
         <test name="vm" type="script">
             <objective>Check that virtual machine may be created and test agent started on it.</objective>
             <notes/>

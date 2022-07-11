@@ -13,6 +13,13 @@
         </run>
 
         <run>
+            <script name="key"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="vlans">
                 <req id="CS_VLAN"/>
                 <req id="BROKEN"/>

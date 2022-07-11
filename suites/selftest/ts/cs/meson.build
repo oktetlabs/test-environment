@@ -2,6 +2,7 @@
 
 tests = [
     'dir',
+    'key',
     'phy',
     'process',
     'process_autorestart',
