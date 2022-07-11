@@ -24,12 +24,10 @@
 #include "te_config.h"
 
 #include <string.h>
-#include <sys/mman.h>
 
 #include "tapi_test.h"
 #include "te_enum.h"
 #include "te_rpc_signal.h"
-#include "te_rpc_sys_mman.h"
 
 int
 main(int argc, char **argv)
@@ -48,25 +46,10 @@ main(int argc, char **argv)
         {.from = 3, .to = 0x102},
         TE_ENUM_TRN_END
     };
-    static const te_enum_trn btranslation[] = {
-        {.from = RPC_PROT_READ, .to = PROT_READ},
-        {.from = RPC_PROT_WRITE, .to = PROT_WRITE},
-        {.from = RPC_PROT_EXEC, .to = PROT_EXEC},
-        {.from = RPC_PROT_NONE, .to = PROT_NONE},
-#ifdef PROT_GROWSDOWN
-        {.from = RPC_PROT_GROWSDOWN, .to = PROT_GROWSDOWN},
-#endif
-#ifdef PROT_GROWSUP
-        {.from = RPC_PROT_GROWSUP, .to = PROT_GROWSUP},
-#endif
-        TE_ENUM_TRN_END
-    };
     te_enum_trn dynamic_trn[RPC_SIGUNKNOWN - RPC_SIGHUP + 2] =
         {TE_ENUM_TRN_END,};
 
     unsigned i;
-    int from_flags;
-    int to_flags;
 
     TEST_START;
 
@@ -155,81 +138,6 @@ main(int argc, char **argv)
         TEST_VERDICT("Unknown value forward-translated as it is known");
     if (te_enum_translate(translation, INT_MAX, TRUE, -1) != -1)
         TEST_VERDICT("Unknown value backward-translated as it is known");
-
-    TEST_STEP("Checking flag value forward translation");
-    for (from_flags = 0, to_flags = 0, i = 0;
-         btranslation[i].from != INT_MIN;
-         i++)
-    {
-        int mapped = te_enum_translate_bitmap(btranslation,
-                                              btranslation[i].from,
-                                              FALSE);
-
-        assert(btranslation[i].from != 0);
-
-        if (mapped != btranslation[i].to)
-        {
-            TEST_VERDICT("Forward translation of %#x failed: "
-                         "expected %#x, got %#x",
-                         (unsigned)btranslation[i].from,
-                         (unsigned)btranslation[i].to, (unsigned)mapped);
-        }
-
-        from_flags |= btranslation[i].from;
-        to_flags |= btranslation[i].to;
-
-        mapped = te_enum_translate_bitmap(btranslation, from_flags, FALSE);
-
-        if (mapped != to_flags)
-        {
-            TEST_VERDICT("Forward translation of %#x failed: "
-                         "expected %#x, got %#x",
-                         (unsigned)btranslation[i].from,
-                         (unsigned)btranslation[i].to, (unsigned)mapped);
-        }
-    }
-
-    TEST_STEP("Checking flag value backward translation");
-    for (from_flags = 0, to_flags = 0, i = 0;
-         btranslation[i].from != INT_MIN;
-         i++)
-    {
-        int mapped;
-
-        if (btranslation[i].to != 0)
-            continue;
-
-        mapped = te_enum_translate_bitmap(btranslation, btranslation[i].to,
-                                          TRUE);
-
-        if (mapped != btranslation[i].from)
-        {
-            TEST_VERDICT("Backward translation of %#x failed: "
-                         "expected %#x, got %#x",
-                         (unsigned)btranslation[i].to,
-                         (unsigned)btranslation[i].from, (unsigned)mapped);
-        }
-
-        from_flags |= btranslation[i].from;
-        to_flags |= btranslation[i].to;
-
-        mapped = te_enum_translate_bitmap(btranslation, to_flags, TRUE);
-
-        if (mapped != from_flags)
-        {
-            TEST_VERDICT("Backward translation of %#x failed: "
-                         "expected %#x, got %#x",
-                         (unsigned)btranslation[i].to,
-                         (unsigned)btranslation[i].from, (unsigned)mapped);
-        }
-    }
-
-    TEST_STEP("Checking zero flag translation");
-    if (te_enum_translate_bitmap(btranslation, 0, FALSE) != 0)
-        TEST_VERDICT("Zero flags forward-translated to non-zero");
-    if (te_enum_translate_bitmap(btranslation, PROT_NONE, TRUE) !=
-        RPC_PROT_NONE)
-        TEST_VERDICT("Zero flags backward-translated to an unexpected value");
 
     TEST_STEP("Check dynamic translation generation");
     te_enum_trn_fill_by_conversion(dynamic_trn, RPC_SIGHUP, RPC_SIGUNKNOWN,

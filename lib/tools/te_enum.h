@@ -146,27 +146,6 @@ extern int te_enum_translate(const te_enum_trn trn[],
                              int value, te_bool reverse,
                              int unknown_val);
 
-
-/**
- * Translate a @p value which is a disjunction of values listed in @p trn.
- *
- * So, unlike te_enum_translate() enum members are treated as bitmasks.
- * Bits that have no corresponding values in @p trn would be discarded.
- *
- * The input value of zero is treated specially: if a @p trn has entry
- * with the key equal to zero, it is used for translation. Otherwise,
- * zero would be returned.
- *
- * @param trn         Translation table
- * @param value       Value
- * @param reverse     If `TRUE`, the @a to field of the translation is
- *                    used as a key, i.e. a reverse translation is
- *                    performed.
- * @return            Value translated according to @p trn
- */
-extern int te_enum_translate_bitmap(const te_enum_trn trn[],
-                                    int value, te_bool reverse);
-
 /**
  * Fill in an enum translation array based on the translation function.
  *
