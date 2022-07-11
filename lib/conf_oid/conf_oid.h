@@ -202,6 +202,49 @@ extern int cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2);
 extern te_bool cfg_oid_match(const cfg_oid *inst_oid, const cfg_oid *obj_oid,
                              te_bool match_prefix);
 
+
+/** Function type for actions for cfg_oid_rule
+ *
+ * @param inst_oid    Instance OID as passed to cfg_oid_dispatch()
+ * @param parsed_oid  Instance OID represented as cfg_oid
+ * @param ctx         User data as passed to cfg_oid_dispatch()
+ */
+typedef te_errno cfg_oid_action(const char *inst_oid,
+                                const cfg_oid *parsed_oid,
+                                void *ctx);
+
+/** A rule entry for cfg_oid_dispatch() */
+typedef struct cfg_oid_rule {
+    /** Object OID */
+    const cfg_oid *object_oid;
+    /**
+     * If @c TRUE, the prefix of an instance OID is
+     * matched, otherwise the whole OID
+     */
+    te_bool match_prefix;
+    /** Action to execute */
+    cfg_oid_action *action;
+} cfg_oid_rule;
+
+/**
+ * Calls an action depending on the object OID.
+ *
+ * The function parses @p inst_oid, then searchers @p actions
+ * for an entry with a matching @a object_oid (as per cfg_oid_match).
+ * Then a corresponding handler is called.
+ *
+ * @param rules     The array of rules, the last entry shall have
+ *                  @c NULL in @a object_oid field.
+ * @param inst_oid  Instance OID
+ * @param ctx       User data passed to the handler
+ *
+ * @return Status code (may be returned from a handler)
+ * @retval TE_ESRCH  No matching entry is found
+ */
+extern te_errno cfg_oid_dispatch(const cfg_oid_rule rules[],
+                                 const char *inst_oid,
+                                 void *ctx);
+
 /**
  * Determines a common part of two OIDs. 
  * If both OIDs are object OIDs, an object OID is returned.

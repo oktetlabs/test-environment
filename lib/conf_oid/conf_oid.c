@@ -300,6 +300,41 @@ cfg_oid_match(const cfg_oid *inst_oid, const cfg_oid *obj_oid,
     return TRUE;
 }
 
+te_errno
+cfg_oid_dispatch(const cfg_oid_rule rules[], const char *inst_oid, void *ctx)
+{
+    unsigned i;
+    cfg_oid *parsed_inst_oid = cfg_convert_oid_str(inst_oid);
+
+    if (parsed_inst_oid == NULL)
+    {
+        ERROR("Cannot parse '%s'", inst_oid);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (!parsed_inst_oid->inst)
+    {
+        ERROR("'%s' is not an instance OID", inst_oid);
+        cfg_free_oid(parsed_inst_oid);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    for (i = 0; rules[i].object_oid != NULL; i++)
+    {
+        if (cfg_oid_match(parsed_inst_oid, rules[i].object_oid,
+                          rules[i].match_prefix))
+        {
+            te_errno rc = rules[i].action(inst_oid, parsed_inst_oid, ctx);
+
+            cfg_free_oid(parsed_inst_oid);
+            return rc;
+        }
+    }
+
+    ERROR("No matching rule found for '%s'", inst_oid);
+    cfg_free_oid(parsed_inst_oid);
+
+    return TE_RC(TE_TAPI, TE_ESRCH);
+}
 
 /* See description in conf_oid.h */
 cfg_oid *
