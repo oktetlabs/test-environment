@@ -123,6 +123,7 @@ trc_tags_json_to_list(tqh_strings *parsed_tags, char *json_buf)
 
     json_array_foreach(tags, i, tag)
     {
+        cur_tag_value = NULL;
         ret = json_unpack_ex(tag, &err, JSON_STRICT, "{s:s, s?s}",
                              "name", &cur_tag, "value", &cur_tag_value);
         if (ret != 0)
