@@ -4,6 +4,7 @@ tests = [
     'dir',
     'key',
     'oid',
+    'pci',
     'phy',
     'process',
     'process_autorestart',
