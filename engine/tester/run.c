@@ -207,7 +207,7 @@ typedef struct tester_run_data {
 
 #if WITH_TRC
     const te_trc_db            *trc_db;     /**< TRC database handle */
-    const tqh_strings          *trc_tags;   /**< TRC tags */
+    tqh_strings                 trc_tags;   /**< TRC tags */
 #endif
 
     SLIST_HEAD(, tester_ctx)    ctxs;       /**< Stack of contexts */
@@ -3215,7 +3215,7 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
                     TAILQ_FOREACH(cur_tag, &new_tags, links)
                     {
-                        rc = trc_add_tag(gctx->trc_tags, cur_tag->v);
+                        rc = trc_add_tag(&gctx->trc_tags, cur_tag->v);
                         if (rc != 0)
                         {
                             ERROR("Update of TRC tags failed: %r", rc);
@@ -3908,7 +3908,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         ctx->do_trc_walker = TRUE;
 
         ctx->current_result.exp_result =
-            trc_db_walker_get_exp_result(ctx->trc_walker, gctx->trc_tags);
+            trc_db_walker_get_exp_result(ctx->trc_walker, &gctx->trc_tags);
     }
     else
     {
@@ -4635,7 +4635,10 @@ tester_run(testing_scenario   *scenario,
     data.direction = TESTING_FORWARD;
 #if WITH_TRC
     data.trc_db = trc_db;
-    data.trc_tags = trc_tags;
+    TAILQ_INIT(&data.trc_tags);
+    rc = tq_strings_copy(&data.trc_tags, trc_tags);
+    if (rc != 0)
+        TE_FATAL_ERROR("Failed to copy the list of trc_tags: %r", rc);
 #else
     UNUSED(trc_db);
     UNUSED(trc_tags);
@@ -4770,6 +4773,9 @@ tester_run(testing_scenario   *scenario,
 
     tester_run_destroy_ctx(&data);
     scenario_free(&data.fixed_scen);
+#if WITH_TRC
+    tq_strings_free(&data.trc_tags, free);
+#endif
 
     rc2 = tester_test_msg_listener_stop(&data.vl);
     if (rc2 != 0)
