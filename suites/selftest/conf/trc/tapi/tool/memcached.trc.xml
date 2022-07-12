@@ -1,0 +1,11 @@
+<test name="memcached" type="package">
+    <objective>TAPI memcached implementation</objective>
+    <iter result="PASSED">
+        <test name="memcached">
+            <objective/>
+            <iter result="PASSED">
+                <arg name="env"/>
+            </iter>
+        </test>
+    </iter>
+</test>

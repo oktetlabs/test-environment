@@ -5,6 +5,10 @@
 
     <session>
         <run>
+            <package name="memcached"/>
+        </run>
+
+        <run>
             <package name="nptcp"/>
         </run>
 

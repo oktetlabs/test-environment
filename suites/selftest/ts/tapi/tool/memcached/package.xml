@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package version="1.0">
+
+    <description>Test Suite to test TAPI memcached implementation</description>
+
+    <author mailto="Daniil.Byshenko@oktetlabs.ru"/>
+
+    <session>
+        <run>
+            <script name="memcached"/>
+            <arg name="env">
+                <value>{{{'iut_rpcs':IUT},addr:'iut_addr':inet:unicast}}</value>
+            </arg>
+        </run>
+    </session>
+</package>

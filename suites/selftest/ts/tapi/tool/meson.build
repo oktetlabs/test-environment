@@ -1,6 +1,7 @@
 # Copyright (C) 2020 OKTET Labs. All rights reserved.
 
 packages = [
+    'memcached',
     'nptcp',
     'torrent',
 ]
