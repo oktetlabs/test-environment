@@ -334,6 +334,13 @@ if have_aio_read
     conf.set('HAVE_' + f.to_upper().underscorify(), 1)
 endif
 
+unistd_funcs = [ 'pwritev', 'preadv' ]
+foreach f : unistd_funcs
+    if cc.has_function(f, args: te_cflags)
+        conf.set('HAVE_' + f.to_upper().underscorify(), 1)
+    endif
+endforeach
+
 #
 # FreeBSD 4.x has no svc_exit().
 # NetBSD has no svcunix_create().
