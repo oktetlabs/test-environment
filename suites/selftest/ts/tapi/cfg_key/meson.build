@@ -1,13 +1,7 @@
-# Copyright (C) 2019 OKTET Labs. All rights reserved.
+# Copyright (C) 2022 OKTET Labs. All rights reserverd.
 
 tests = [
-    'dir',
-    'phy',
-    'process',
-    'process_autorestart',
-    'process_ping',
-    'vlans',
-    'vm',
+    'sample'
 ]
 
 foreach test : tests

@@ -19,8 +19,6 @@
 extern "C" {
 #endif
 
-#include "te_defs.h"
-
 #define CFG_SUBID_MAX       128  /**< Maximum length of sub-identifier
                                       including trailing 0 */
 #define CFG_INST_NAME_MAX   256  /**< Instance name, including trailing 0 */
@@ -48,31 +46,6 @@ typedef struct cfg_oid {
     void   *ids;  /**< Pointer to array of identifier elements */
 } cfg_oid;
 
-/**
- * Object OID literal.
- *
- * The constructed value is a cfg_oid structure, not a pointer.
- *
- * @param ...   The list of subids. cfg_object_subid is a one-element
- *              structure, so string literals need to be wrapped in `{..}`.
- *              The first subid is implicitly set to "".
- *
- * @code{.c}
- * static cfg_oid object_oid = CFG_OBJ_OID_LITERAL({"agent"},
- *                                                 {"interface"},
- *                                                 {"status"});
- * ...
- * cfg_oid *parsed = cfg_oid_convert_str(oid_str);
- * status = cfg_oid_cmp(&object_oid, parsed);
- * cfg_free_oid(parsed);
- * @endcode
- */
-#define CFG_OBJ_OID_LITERAL(...) \
-    ((cfg_oid){                                                             \
-        .len = 1 + TE_ARRAY_LEN(((const cfg_object_subid[]){__VA_ARGS__})), \
-        .inst = FALSE,                                                      \
-        .ids = (cfg_object_subid[]){{""}, __VA_ARGS__}                     \
-    })
 
 /**
  * Get instance name of the i-th sub-identifier.
@@ -186,82 +159,6 @@ extern void cfg_free_oid(cfg_oid *oid);
  */
 extern int cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2);
 
-
-/**
- * Checks whether @p inst_oid is an instance of @p obj_oid.
- *
- * @param inst_oid      Instance OID
- * @param obj_oid       Object OID
- * @param match_subtree If @c TRUE, @p inst_oid should be within
- *                      a subtree defined by @p obj_oid, i.e.
- *                      there should be a prefix of @p inst_oid
- *                      matching @p obj_oid. Otherwise, the whole
- *                      @p inst_oid shall match.
- * @return @c TRUE iff @p inst_oid matches @p obj_oid
- */
-extern te_bool cfg_oid_match(const cfg_oid *inst_oid, const cfg_oid *obj_oid,
-                             te_bool match_prefix);
-
-
-/** Function type for actions for cfg_oid_rule
- *
- * @param inst_oid    Instance OID as passed to cfg_oid_dispatch()
- * @param parsed_oid  Instance OID represented as cfg_oid
- * @param ctx         User data as passed to cfg_oid_dispatch()
- */
-typedef te_errno cfg_oid_action(const char *inst_oid,
-                                const cfg_oid *parsed_oid,
-                                void *ctx);
-
-/** A rule entry for cfg_oid_dispatch() */
-typedef struct cfg_oid_rule {
-    /** Object OID */
-    const cfg_oid *object_oid;
-    /**
-     * If @c TRUE, the prefix of an instance OID is
-     * matched, otherwise the whole OID
-     */
-    te_bool match_prefix;
-    /** Action to execute */
-    cfg_oid_action *action;
-} cfg_oid_rule;
-
-/**
- * A helper macro to construct cfg_oid_rule entries.
- *
- * @param _match_prefix    See cfg_oid_rule::match_prefix
- * @param _action          Action to execute
- * @param ...              A list of subids as passed to 
- *                         CFG_OBJ_OID_LITERAL
- */
-#define CFG_OID_RULE(_match_prefix, _action, ...) \
-    {                                                   \
-        .object_oid = &CFG_OBJ_OID_LITERAL(__VA_ARGS__),\
-        .match_prefix = (_match_prefix),                \
-        .action = (_action)                             \
-    }
-
-/** Terminating entry for cfg_oid_rule table */
-#define CFG_OID_RULE_END {.object_oid = NULL}
-
-/**
- * Calls an action depending on the object OID.
- *
- * The function parses @p inst_oid, then searchers @p actions
- * for an entry with a matching @a object_oid (as per cfg_oid_match).
- * Then a corresponding handler is called.
- *
- * @param rules     The array of rules, the last entry shall have
- *                  @c NULL in @a object_oid field.
- * @param inst_oid  Instance OID
- * @param ctx       User data passed to the handler
- *
- * @return Status code (may be returned from a handler)
- * @retval TE_ESRCH  No matching entry is found
- */
-extern te_errno cfg_oid_dispatch(const cfg_oid_rule rules[],
-                                 const char *inst_oid,
-                                 void *ctx);
 
 /**
  * Determines a common part of two OIDs. 
