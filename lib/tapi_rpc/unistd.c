@@ -695,7 +695,7 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
 
     if (riovcnt > RCF_RPC_MAX_IOVEC)
     {
-        rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(readv, -1);
     }
 
@@ -916,7 +916,7 @@ rpc_writev(rcf_rpc_server *rpcs,
 
     if (iovcnt > RCF_RPC_MAX_IOVEC)
     {
-        rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(writev, -1);
     }
 

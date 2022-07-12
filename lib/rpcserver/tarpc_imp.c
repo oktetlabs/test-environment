@@ -2706,7 +2706,7 @@ TARPC_FUNC(readv,
     if (out->vector.vector_len > RCF_RPC_MAX_IOVEC)
     {
         ERROR("Too long iovec is provided");
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
         return TRUE;
     }
     COPY_ARG(vector);
@@ -2800,7 +2800,7 @@ TARPC_FUNC(writev,
     if (in->vector.vector_len > RCF_RPC_MAX_IOVEC)
     {
         ERROR("Too long iovec is provided");
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
         return TRUE;
     }
 },
