@@ -411,7 +411,7 @@ extern void rpc_iovec_cmp_strict(rpc_iovec *iov1, rpc_iovec *iov2,
                                  size_t iovcnt);
 
 /**
- * Attempt to write data to file with descriptor @b fd from the specified
+ * Write data to file with descriptor @b fd from the specified
  * vector of buffer.
  *
  * @param rpcs     RPC server handle
@@ -465,7 +465,7 @@ extern int rpc_pwritev2(rcf_rpc_server *rpcs, int fd,
                         tarpc_off_t offset, rpc_preadv2_pwritev2_flags flags);
 
 /**
- * Attempt to read data from specified file with descriptor @b fd
+ * Read data from specified file with descriptor @b fd
  * into a vector of buffer @b iov.
  *
  * @param rpcs     RPC server handle
