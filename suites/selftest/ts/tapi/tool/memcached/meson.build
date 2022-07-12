@@ -3,6 +3,7 @@
 install_headers('memcached.h')
 
 tests = [
+    'memaslap',
     'memcached',
 ]
 
