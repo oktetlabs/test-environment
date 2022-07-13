@@ -46,6 +46,24 @@ extern te_errno tapi_cfg_pci_get_pci_vendor_device(const char *ta,
                                                    char **device);
 
 /**
+ * Get a PCI device OID (/agent/hardware/pci/device) by PCI instance OID
+ * (/agent/hardware/pci/vendor/device/instance).
+ *
+ * If a PCI device OID is provided, a copy of it is returned.
+ *
+ * The OID is constructed from a format string @p fmt and arguments.
+ *
+ * @param[out]  pci_dev_oid   PCI device OID (should be free()'d)
+ * @param[in]   pci_inst_fmt  A printf() format for a PCI instance OID
+ * @param       ...           Arguments
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_resolve_device_oid(char **pci_dev_oid,
+                                                const char *pci_inst_fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+
+/**
  * Get PCI addresses of PCI functions with specified vendor and device
  * identifiers.
  *
