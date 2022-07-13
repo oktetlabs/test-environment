@@ -11,10 +11,6 @@
         </run>
 
         <run>
-            <package name="cfg_key"/>
-        </run>
-
-        <run>
             <package name="file"/>
         </run>
 

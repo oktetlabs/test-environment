@@ -7,7 +7,7 @@
  * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
  */
 
-/** @page cfg_key-sample A sample of key management TAPI
+/** @page cs-key A sample of key management TAPI
  *
  * @objective Check that key management routines work correctly
  *
@@ -15,7 +15,7 @@
  *
  */
 
-#define TE_TEST_NAME "cfg_key/sample"
+#define TE_TEST_NAME "cs/key"
 
 
 #ifndef TEST_START_VARS
