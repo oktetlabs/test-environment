@@ -2185,6 +2185,21 @@ struct tarpc_malloc_misaligned_out {
 	tarpc_ptr retval;
 };
 
+/* posix_memalign */
+struct tarpc_posix_memalign_in {
+    struct tarpc_in_arg common;
+    tarpc_size_t alignment;     /**< Alignment of a block */
+    tarpc_size_t size;          /**< Bytes to allocate */
+};
+typedef struct tarpc_posix_memalign_in tarpc_posix_memalign_in;
+
+struct tarpc_posix_memalign_out {
+    struct tarpc_out_arg common;
+    int                  retval;/**< Code of error */
+    tarpc_ptr            ptr;   /**< A pointer in the TA address space */
+};
+typedef struct tarpc_posix_memalign_out tarpc_posix_memalign_out;
+
 /* raw2integer */
 struct tarpc_raw2integer_in {
     struct tarpc_in_arg     common;
@@ -5804,5 +5819,6 @@ program tarpc
 
         RPC_DEF(remove_dir_with_files)
         RPC_DEF(malloc_misaligned)
+        RPC_DEF(posix_memalign)
     } = 1;
 } = 1;

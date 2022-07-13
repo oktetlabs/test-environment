@@ -10312,6 +10312,21 @@ TARPC_FUNC_DYNAMIC_UNSAFE(memalign, {},
 }
 )
 
+
+/*-------------- posix_memalign() ------------------------------*/
+
+TARPC_FUNC(posix_memalign, {},
+{
+    void *buf;
+    int rc;
+
+    rc = func_ret_ptr(&buf, in->alignment, in->size);
+    out->retval = TE_RC(TE_TA_UNIX, rc);
+    if (rc == 0)
+        out->ptr = rcf_pch_mem_alloc(buf);
+}
+)
+
 /*-------------- mmap() ------------------------------*/
 
 TARPC_FUNC(mmap, {},

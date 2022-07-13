@@ -1211,6 +1211,19 @@ extern rpc_ptr rpc_memalign(rcf_rpc_server *rpcs,
                             size_t alignment,
                             size_t size);
 
+/**
+ * Allocate a buffer of specified size in the TA address space
+ * aligned at a specified boundary.
+ *
+ * @param rpcs          RPC server handle
+ * @param ptr           allocated buffer identifier
+ * @param alignment     alignment of the buffer
+ * @param size          size of the buffer to be allocated
+ *
+ * @return  @c 0 on success or code of the error on failure
+ */
+extern int rpc_posix_memalign(rcf_rpc_server *rpcs, rpc_ptr *ptr,
+                                  size_t alignment, size_t size);
 
 /**
  * Free memory allocated on RPC server in cleanup part of the test.

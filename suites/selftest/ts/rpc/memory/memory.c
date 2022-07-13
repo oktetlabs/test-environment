@@ -107,6 +107,35 @@ main(int argc, char **argv)
     }
     rpc_free(pco_iut, ptr);
 
+    TEST_STEP("Allocate memory on TA using posix_memalign several steps");
+    alignment = sizeof(void *);
+    for (i = 0; i++ < number_of_alignments; alignment *= 2)
+    {
+        for (size = size_interval_begin; size < size_interval_end; size ++)
+        {
+            RPC_AWAIT_ERROR(pco_iut);
+
+            rc = rpc_posix_memalign(pco_iut, &ptr, alignment, size);
+            if (RPC_ERRNO(pco_iut) != TE_RC(TE_TA_UNIX, 0))
+                TEST_VERDICT("rpc_malloc_misaligned() failed via errno");
+            if (rc != TE_RC(TE_TA_UNIX, 0))
+                TEST_VERDICT("rpc_malloc_misaligned() failed via rc");
+            rpc_free(pco_iut, ptr);
+        }
+    }
+
+    TEST_STEP("Try to allocate memory on TA using posix_memalign "
+              "with wrong alignment");
+    alignment = sizeof(void *) + 5; /* to be not power of 2 */
+    size = size_interval_begin;
+    RPC_AWAIT_ERROR(pco_iut);
+
+    rc = rpc_posix_memalign(pco_iut, &ptr, alignment, size);
+
+    if (rc != TE_RC(TE_TA_UNIX, EINVAL))
+        TEST_VERDICT("rpc_malloc_misaligned() should fail with another error");
+    rpc_free(pco_iut, ptr);
+
     TEST_SUCCESS;
 
 cleanup:

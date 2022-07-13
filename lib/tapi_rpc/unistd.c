@@ -2608,6 +2608,35 @@ rpc_memalign(rcf_rpc_server *rpcs, size_t alignment, size_t size)
     RETVAL_RPC_PTR(memalign, (rpc_ptr)out.retval);
 }
 
+/* See description in 'tapi_rpc_unistd.h' */
+extern int
+rpc_posix_memalign(rcf_rpc_server *rpcs, rpc_ptr *ptr,
+                   size_t alignment, size_t size)
+{
+    tarpc_posix_memalign_in in;
+    tarpc_posix_memalign_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_RPC_PTR(posix_memalign, 0);
+    }
+
+    in.alignment = alignment;
+    in.size = size;
+
+    rcf_rpc_call(rpcs, "posix_memalign", &in, &out);
+    *ptr = out.ptr;
+
+    TAPI_RPC_LOG(rpcs, posix_memalign, "%p{%u} ""%" TE_PRINTF_SIZE_T "u "
+                 "%" TE_PRINTF_SIZE_T "u", "%u",
+                 ptr, ptr == NULL ? 0 : *ptr, alignment, size, out.retval);
+    RETVAL_RPC_PTR(posix_memalign, out.retval);
+}
+
 int
 rpc_setrlimit(rcf_rpc_server *rpcs,
               int resource, const tarpc_rlimit *rlim)
