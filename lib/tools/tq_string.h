@@ -123,7 +123,7 @@ extern te_errno tq_strings_move(tqh_strings *dst,
  * @return Status code.
  */
 extern te_errno tq_strings_copy(tqh_strings *dst,
-                                tqh_strings *src);
+                                const tqh_strings *src);
 
 /**
  * Copy members from source queue to destination queue but
@@ -135,7 +135,7 @@ extern te_errno tq_strings_copy(tqh_strings *dst,
  * @return Status code.
  */
 extern te_errno tq_strings_shallow_copy(tqh_strings *dst,
-                                        tqh_strings *src);
+                                        const tqh_strings *src);
 
 #ifdef __cplusplus
 } /* extern "C" */
