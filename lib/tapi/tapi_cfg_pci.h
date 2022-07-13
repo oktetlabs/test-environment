@@ -11,6 +11,7 @@
 #ifndef __TE_TAPI_CFG_PCI_H__
 #define __TE_TAPI_CFG_PCI_H__
 
+#include "te_pci.h"
 #include "conf_api.h"
 
 #ifdef __cplusplus
@@ -357,6 +358,31 @@ extern te_errno tapi_cfg_pci_get_driver_by_vend_dev_inst(const char *ta,
  */
 extern te_errno tapi_cfg_pci_get_serialno(const char *pci_oid,
                                           char **serialno);
+
+/**
+ * Get PCI class, subclass and prog. interface of a device.
+ *
+ * @note All output parameters may be passed @c NULL, then they are
+ *       ignored.
+ * @note The output parameters are all @c unsigned, not the corresponding
+ *       enum types, because the enums above may not be exhaustive ---
+ *       the caller must be prepared to deal with unlisted values.
+ *
+ * @param[in]  pci_oid      PCI device OID or instance OID
+ *                          (/agent/hardware/pci/device or
+ *                           /agent/hardware/pci/vendor/device/instance,
+ *                           see tapi_cfg_pci_resolve_device_oid())
+ * @param[out] class_id     Class ID (see tapi_cfg_pci_class)
+ * @param[out] subclass_id  Subclass ID (see tapi_cfg_pci_subclass)
+ * @param[out] intf_id      Prog. interface ID (see tapi_cfg_pci_prog_interface)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_pci_get_class(const char *pci_oid,
+                                       unsigned int *class_id,
+                                       unsigned int *subclass_id,
+                                       unsigned int *intf_id);
+
 
 /** Device parameter configuration mode */
 typedef enum tapi_cfg_pci_param_cmode {

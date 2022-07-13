@@ -50,6 +50,62 @@ for_each_pci_instance(cfg_handle handle, void *data)
     return 0;
 }
 
+static void
+check_pci_class(const char *oid)
+{
+    unsigned int class_id;
+    unsigned int subclass_id;
+    unsigned int intf_id;
+
+    CHECK_RC(tapi_cfg_pci_get_class(oid, &class_id, &subclass_id, &intf_id));
+
+    /*
+     * We assume that all reserved PCI functions are either network devices
+     * or NVMe controllers. That may change in the future.
+     */
+
+    if (class_id == TE_PCI_CLASS_NETWORK_CONTROLLER)
+    {
+        if (subclass_id != TE_PCI_SUBCLASS_ETHERNET_CONTROLLER)
+        {
+            TEST_VERDICT("Unexpected subclass %s (%04x)",
+                         te_pci_subclass_id2str(subclass_id), subclass_id);
+        }
+
+        if (intf_id !=
+            te_pci_progintf_default(TE_PCI_SUBCLASS_ETHERNET_CONTROLLER))
+        {
+            TEST_VERDICT("Unexpected interface %s (%06x)",
+                         te_pci_progintf_id2str(intf_id), intf_id);
+        }
+    }
+    else if (class_id == TE_PCI_CLASS_MASS_STORAGE_CONTROLLER)
+    {
+        if (subclass_id != TE_PCI_SUBCLASS_NON_VOLATILE_MEMORY_CONTROLLER)
+            TEST_VERDICT("Unexpected subclass %s (%04x)",
+                         te_pci_subclass_id2str(subclass_id), subclass_id);
+
+        if (intf_id != TE_PCI_PROG_INTERFACE_NVM_CONTROLLER_NVME)
+        {
+            TEST_VERDICT("Unexpected interface %s (%06x)",
+                         te_pci_progintf_id2str(intf_id), intf_id);
+        }
+    }
+    else
+    {
+        TEST_VERDICT("Unexpected class %s (%02x)",
+                     te_pci_class_id2str(class_id),
+                     class_id);
+    }
+
+    RING("Reported class for %s is %s (%02x)", oid,
+         te_pci_class_id2str(class_id), class_id);
+    RING("Reported subclass for %s is %s (%04x)", oid,
+         te_pci_subclass_id2str(subclass_id), subclass_id);
+    RING("Reported interface for %s is %s (%06x)", oid,
+         te_pci_progintf_id2str(intf_id), intf_id);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -90,6 +146,17 @@ main(int argc, char **argv)
                          "got '%s' instead", pci_oid, *oid);
         }
         free(pci_oid);
+    }
+
+    TEST_STEP("Retrieve the device class by PCI instance OID");
+    TE_VEC_FOREACH(&vnd_oids, oid)
+    {
+        check_pci_class(*oid);
+    }
+    TEST_STEP("Retrieve the device class by PCI OID");
+    TE_VEC_FOREACH(&pci_oids, oid)
+    {
+        check_pci_class(*oid);
     }
 
     TEST_SUCCESS;

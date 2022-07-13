@@ -810,6 +810,48 @@ tapi_cfg_pci_get_serialno(const char *pci_oid, char **serialno)
     return cfg_get_instance_string_fmt(serialno, "%s/serialno:", pci_oid);
 }
 
+te_errno
+tapi_cfg_pci_get_class(const char *pci_oid, unsigned int *class_id,
+                       unsigned int *subclass_id, unsigned int *intf_id)
+{
+    char *resolved_oid = NULL;
+    char *class_str = NULL;
+    te_errno rc;
+    unsigned int class_code;
+
+    rc = tapi_cfg_pci_resolve_device_oid(&resolved_oid, "%s", pci_oid);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_get_instance_string_fmt(&class_str, "%s/class:", resolved_oid);
+    free(resolved_oid);
+    if (rc != 0)
+        return rc;
+
+    rc = te_strtoui(class_str, 16, &class_code);
+    free(class_str);
+    if (rc != 0)
+        return TE_RC_UPSTREAM(TE_TAPI, rc);
+
+    /* High byte should be zero */
+    if ((class_code >> 24) != 0)
+    {
+        ERROR("Invalid class code %08x", class_code);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (class_id != NULL)
+        *class_id = te_pci_progintf2class(class_code);
+
+    if (subclass_id != NULL)
+        *subclass_id = te_pci_progintf2subclass(class_code);
+
+    if (intf_id != NULL)
+        *intf_id = class_code;
+
+    return 0;
+}
+
 /* Convert configuration mode constant to string name */
 static const char *
 cmode_to_str(tapi_cfg_pci_param_cmode cmode)
