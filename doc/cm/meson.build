@@ -44,6 +44,7 @@ cm_files = files(
     'cm_radius.yml',
     'cm_rcf.yml',
     'cm_rshd.yml',
+    'cm_rss.yml',
     'cm_serial.yml',
     'cm_serial_parse.yml',
     'cm_sfptpd.yml',
