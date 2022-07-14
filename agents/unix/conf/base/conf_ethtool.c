@@ -214,6 +214,14 @@ ethtool_cmd2str(int cmd)
         CASE_CMD(ETHTOOL_SSET);
         CASE_CMD(ETHTOOL_GLINKSETTINGS);
         CASE_CMD(ETHTOOL_SLINKSETTINGS);
+        CASE_CMD(ETHTOOL_GSSET_INFO);
+        CASE_CMD(ETHTOOL_GSTRINGS);
+#ifdef ETHTOOL_GRSSH
+        CASE_CMD(ETHTOOL_GRSSH);
+#endif
+#ifdef ETHTOOL_SRSSH
+        CASE_CMD(ETHTOOL_SRSSH);
+#endif
     }
 
     return "<UNKNOWN>";
