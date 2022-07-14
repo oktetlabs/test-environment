@@ -1492,12 +1492,16 @@ struct tarpc_rte_eth_dev_rss_reta_update_in {
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_rss_reta_update_out;
 
 /** rte_eth_dev_rss_hash_conf_get() */
-typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_rss_hash_conf_get_in;
+struct tarpc_rte_eth_dev_rss_hash_conf_get_in {
+    struct tarpc_in_arg                    common;
+    uint16_t                               port_id;
+    struct tarpc_rte_eth_rss_conf          rss_conf<>;
+};
 
 struct tarpc_rte_eth_dev_rss_hash_conf_get_out {
     struct tarpc_out_arg                   common;
     tarpc_int                              retval;
-    struct tarpc_rte_eth_rss_conf          rss_conf;
+    struct tarpc_rte_eth_rss_conf          rss_conf<>;
 };
 
 enum tarpc_rte_eth_fc_mode {

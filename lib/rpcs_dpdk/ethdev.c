@@ -1717,47 +1717,72 @@ done:
     free(reta_conf_p);
 })
 
-TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
+TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,
+{
+    COPY_ARG(rss_conf);
+},
 {
     struct rte_eth_rss_conf  rss_conf;
     struct rte_eth_rss_conf *rss_conf_p;
 
-    rss_conf_p = &rss_conf;
-    rss_conf_p->rss_key = TE_ALLOC(RPC_RSS_HASH_KEY_LEN_DEF);
-    if (rss_conf_p->rss_key == NULL)
+    if (out->rss_conf.rss_conf_val != NULL)
     {
-        out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-        out->retval = -out->common._errno;
-        goto done;
+        /*
+         * Buffer length provided to function must be less o equal to
+         * the real buffer length to avoid memory corruption.
+         */
+        if (out->rss_conf.rss_conf_val->rss_key_len >
+            out->rss_conf.rss_conf_val->rss_key.rss_key_len)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_EINVAL);
+            out->retval = -out->common._errno;
+            goto done;
+        }
+
+        memset(&rss_conf, 0, sizeof(rss_conf));
+        rss_conf.rss_key = out->rss_conf.rss_conf_val->rss_key.rss_key_val;
+        rss_conf.rss_key_len = out->rss_conf.rss_conf_val->rss_key_len;
+        /*
+         * Ignore result since conversion of theoretically unused value
+         * is not that important.
+         */
+        rte_rss_hf_rpc2h(out->rss_conf.rss_conf_val->rss_hf, &rss_conf.rss_hf);
+        rss_conf_p = &rss_conf;
     }
-
-    out->rss_conf.rss_key.rss_key_len = RPC_RSS_HASH_KEY_LEN_DEF;
-    out->rss_conf.rss_key.rss_key_val =
-        TE_ALLOC(out->rss_conf.rss_key.rss_key_len);
-
-    if (out->rss_conf.rss_key.rss_key_val == NULL)
+    else
     {
-        out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-        out->retval = -out->common._errno;
-        goto done;
+        rss_conf_p = NULL;
     }
 
     MAKE_CALL(out->retval = func(in->port_id, rss_conf_p));
     neg_errno_h2rpc(&out->retval);
 
-    if (out->retval == 0)
+    if (out->retval == 0 && rss_conf_p != NULL)
     {
-        out->rss_conf.rss_key_len = rss_conf_p->rss_key_len;
-
-        memcpy(out->rss_conf.rss_key.rss_key_val,
-               rss_conf_p->rss_key,
-               out->rss_conf.rss_key.rss_key_len);
-
-        out->rss_conf.rss_hf = rte_rss_hf_h2rpc(rss_conf_p->rss_hf);
+        /*
+         * It is unexpected, but still possible that the function
+         * changes rss_key pointer. We can handle NULL case gracefully
+         * here.
+         */
+        if (rss_conf_p->rss_key == NULL)
+        {
+            free(out->rss_conf.rss_conf_val->rss_key.rss_key_val);
+            out->rss_conf.rss_conf_val->rss_key.rss_key_val = NULL;
+            out->rss_conf.rss_conf_val->rss_key.rss_key_len = 0;
+        }
+        else if (rss_conf_p->rss_key !=
+                 out->rss_conf.rss_conf_val->rss_key.rss_key_val)
+        {
+            ERROR("rte_eth_dev_rss_hash_conf_get(): changed rss_key pointer in an unexpected way");
+            out->retval = -TE_RC(TE_RPCS, TE_EFAULT);
+        }
+        out->rss_conf.rss_conf_val->rss_key_len = rss_conf_p->rss_key_len;
+        out->rss_conf.rss_conf_val->rss_hf =
+            rte_rss_hf_h2rpc(rss_conf_p->rss_hf);
     }
 
 done:
-    free(rss_conf_p->rss_key);
+    ;
 })
 
 static int
