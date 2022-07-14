@@ -148,11 +148,31 @@ if conf.contains('ovs')
 endif
 
 if conf.contains('bpf')
-    c_args += [ '-DWITH_BPF -DCFG_BPF_SUPPORT' ]
-    deps += dependency('libelf')
-    # The libbpf.so library is build by TE_PLATFORM_EXT
-    deps += [ cc.find_library('bpf', dirs: platform_lib_dir) ]
-    sources += files('util/conf_bpf.c')
+    # The libbpf.so library may be built by TE_PLATFORM_EXT,
+    # or it may be installed on the host. In the former case
+    # dependency() may not be able to find it if pkg-config
+    # is not provided.
+    bpf_deps = []
+    dep_bpf = dependency('libbpf', required: false)
+    if not dep_bpf.found()
+        dep_bpf = cc.find_library('bpf', dirs: platform_lib_dir,
+                                  required: false)
+    endif
+
+    if dep_bpf.found()
+        dep_elf = dependency('libelf', required: false)
+        if dep_elf.found()
+            bpf_deps += [dep_elf, dep_bpf]
+        endif
+    endif
+
+    if bpf_deps.length() > 0
+        c_args += [ '-DWITH_BPF -DCFG_BPF_SUPPORT' ]
+        deps += bpf_deps
+        sources += files('util/conf_bpf.c')
+    else
+        warning('No libbpf and/or libelf was found, TA will not support BPF')
+    endif
 endif
 
 if conf.contains('disable-networkmanager-check')

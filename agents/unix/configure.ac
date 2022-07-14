@@ -827,12 +827,16 @@ AC_ARG_WITH([bpf],
             [with_bpf=yes],
             [with_bpf=""])
 
-AM_CONDITIONAL(CFG_BPF_SUPPORT, test -n "$with_bpf")
 if test -n "$with_bpf"; then
-    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_BPF"
-    LIBS="$LIBS -lelf -lbpf"
-    DYNAMIC_LIBS="${DYNAMIC_LIBS} -lelf -lbpf"
+    AC_CHECK_LIB(
+      [bpf], [bpf_program__fd],
+      [EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_BPF";
+       LIBS="$LIBS -lelf -lbpf";
+       DYNAMIC_LIBS="${DYNAMIC_LIBS} -lelf -lbpf"],
+      [AC_MSG_WARN([No libbpf was found, TA will not support BPF])
+       with_bpf=""])
 fi
+AM_CONDITIONAL(CFG_BPF_SUPPORT, test -n "$with_bpf")
 
 #if ! test "$cross_compiling" = "yes" ; then
 case "$host" in
