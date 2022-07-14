@@ -218,6 +218,7 @@ build_ext() {
         local pextinstl="TE_BS_EXT_${p}_${pext}_INSTALL_LIBS"
         local pextenv="TE_BS_EXT_${p}_${pext}_ENV_VARS"
         local pparms="TE_BS_EXT_${p}_${pext}_PARMS"
+        local pextinsth_dest="TE_BS_EXT_${p}_${pext}_INSTALL_HEADERS_DEST"
         local enable_tce=""
         local extbuild
 
@@ -246,6 +247,7 @@ build_ext() {
             --builddir="${ws_ext_builddir}" \
             --build="${extbuild}" \
             --expheaders="${!pextinsth}" \
+            --expheaders-dest="${!pextinsth_dest}" \
             --explibs="${!pextinstl}" \
             --envvars="${!pextenv} ${USE_ENV_CCACHE_DIR}" \
             $enable_tce --build-meson || exit 1

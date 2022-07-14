@@ -106,6 +106,9 @@ dnl           --with-vcs-stuff: copy vcs-specific files/directories to
 dnl                             the source directory for build (.git for now)
 dnl           --disable-vcs-ignores: always copy files, mentioned in vcs ignore
 dnl                                  list (.gitignore for now)
+dnl       relative path for installed headers
+dnl           Useful when you need to install headers into some subdirectory
+dnl           in include/
 dnl
 define([TE_PLATFORM_EXT],
 [[
@@ -148,6 +151,7 @@ declare "${EXTLIST}_${EXTNAME}_INSTALL_HEADERS"="$7"
 declare "${EXTLIST}_${EXTNAME}_INSTALL_LIBS"="$8"
 declare "${EXTLIST}_${EXTNAME}_ENV_VARS"="$9"
 declare "${EXTLIST}_${EXTNAME}_PARMS"="$10"
+declare "${EXTLIST}_${EXTNAME}_INSTALL_HEADERS_DEST"="$11"
 ]])
 
 dnl Specifies list of external static libraries that should be

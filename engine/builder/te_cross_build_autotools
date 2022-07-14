@@ -110,6 +110,7 @@ build_platform() {
              local pextbuild="TE_BS_EXT_${p}_${pext}_BUILD"
              local pextinsth="TE_BS_EXT_${p}_${pext}_INSTALL_HEADERS"
              local pextinstl="TE_BS_EXT_${p}_${pext}_INSTALL_LIBS"
+             local pextinsth_dest="TE_BS_EXT_${p}_${pext}_INSTALL_HEADERS_DEST"
              local pextenv="TE_BS_EXT_${p}_${pext}_ENV_VARS"
              local enable_tce=""
 
@@ -120,6 +121,7 @@ build_platform() {
                           --builddir="${!pextbuilddir/#${TE_BUILD}/${sbd}}" \
                           --build="${!pextbuild}" \
                           --expheaders="${!pextinsth}" \
+                          --expheaders-dest="${!pextinsth_dest}" \
                           --explibs="${!pextinstl}" \
                           --envvars="${!pextenv}" $enable_tce \
                 || { echo "Extension ${pext} for ${p} build failed" >&2; return 1; }
