@@ -509,7 +509,8 @@ rss_ctx_list(unsigned int gid,
     rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
     if (rc != 0)
     {
-        if (TE_RC_GET_ERROR(rc) == TE_EOPNOTSUPP)
+        if (TE_RC_GET_ERROR(rc) == TE_EOPNOTSUPP ||
+            TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
             *list_out = NULL;
             return 0;
