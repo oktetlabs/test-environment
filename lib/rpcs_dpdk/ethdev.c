@@ -636,6 +636,8 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
                                &out->dev_info.tx_desc_lim);
     out->dev_info.speed_capa =
         tarpc_rte_eth_link_speeds2rpc(dev_info.speed_capa);
+    out->dev_info.nb_rx_queues = dev_info.nb_rx_queues;
+    out->dev_info.nb_tx_queues = dev_info.nb_tx_queues;
 #ifdef HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA
     out->dev_info.dev_capa =
         tarpc_rte_eth_dev_capa2rpc(dev_info.dev_capa);

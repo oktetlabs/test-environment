@@ -377,6 +377,11 @@ tarpc_rte_eth_dev_info2str(te_log_buf *tlbp,
     te_log_buf_append(tlbp, ", speed_capa=");
     tarpc_rte_eth_speeds2str(tlbp, dev_info->speed_capa);
 
+    te_log_buf_append(tlbp, ", nb_rx_queues=");
+    tarpc_rte_eth_speeds2str(tlbp, dev_info->nb_rx_queues);
+    te_log_buf_append(tlbp, ", nb_tx_queues=");
+    tarpc_rte_eth_speeds2str(tlbp, dev_info->nb_tx_queues);
+
     te_log_buf_append(tlbp, ", default_rxportconf=");
     tarpc_rte_eth_dev_portconf2str(tlbp, &dev_info->default_rxportconf);
     te_log_buf_append(tlbp, ", default_txportconf=");

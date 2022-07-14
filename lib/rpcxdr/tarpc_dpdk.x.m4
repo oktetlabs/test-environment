@@ -977,6 +977,8 @@ struct tarpc_rte_eth_dev_info {
     struct tarpc_rte_eth_desc_lim   rx_desc_lim;
     struct tarpc_rte_eth_desc_lim   tx_desc_lim;
     uint32_t                        speed_capa;
+    uint16_t                        nb_rx_queues;
+    uint16_t                        nb_tx_queues;
     uint64_t                        dev_capa;
     tarpc_rte_eth_dev_portconf      default_rxportconf;
     tarpc_rte_eth_dev_portconf      default_txportconf;
