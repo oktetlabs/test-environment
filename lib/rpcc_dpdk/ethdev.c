@@ -2042,7 +2042,9 @@ tarpc_rte_reta_conf2str(te_log_buf *tlbp,
 
     te_log_buf_append(tlbp, "reta_conf={");
 
-    for (cur_group = 0; cur_group < reta_size / RPC_RTE_RETA_GROUP_SIZE; cur_group++)
+    for (cur_group = 0;
+         cur_group < TE_DIV_ROUND_UP(reta_size, RPC_RTE_RETA_GROUP_SIZE);
+         cur_group++)
     {
         te_log_buf_append(tlbp, " mask=%llx", reta_conf[cur_group].mask);
         te_log_buf_append(tlbp, ", reta=");
@@ -2072,7 +2074,8 @@ rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs, uint16_t port_id,
 
     if (reta_conf != NULL)
     {
-        in.reta_conf.reta_conf_len = reta_size / RPC_RTE_RETA_GROUP_SIZE;
+        in.reta_conf.reta_conf_len =
+            TE_DIV_ROUND_UP(reta_size, RPC_RTE_RETA_GROUP_SIZE);
         in.reta_conf.reta_conf_val = calloc(in.reta_conf.reta_conf_len,
                                             sizeof(*reta_conf));
         for (cur_group = 0; cur_group < in.reta_conf.reta_conf_len; cur_group++)
@@ -2599,7 +2602,8 @@ rpc_rte_eth_dev_rss_reta_update(rcf_rpc_server *rpcs, uint16_t port_id,
 
     if (reta_conf != NULL)
     {
-        in.reta_conf.reta_conf_len = reta_size / RPC_RTE_RETA_GROUP_SIZE;
+        in.reta_conf.reta_conf_len =
+            TE_DIV_ROUND_UP(reta_size, RPC_RTE_RETA_GROUP_SIZE);
         in.reta_conf.reta_conf_val = calloc(in.reta_conf.reta_conf_len,
                                             sizeof(*reta_conf));
         if (in.reta_conf.reta_conf_val == NULL)
