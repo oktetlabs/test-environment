@@ -1153,6 +1153,7 @@ te_rgt_parse_mi_trc_tags_message(te_rgt_mi *mi)
         {
             te_rgt_mi_trc_tag_entry tag_entry;
 
+            tag_value = NULL;
             ret = json_unpack_ex(tag, &err, JSON_STRICT, "{s:s, s?s}",
                                  "name", &tag_name, "value", &tag_value);
             if (ret != 0)
