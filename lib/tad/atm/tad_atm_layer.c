@@ -519,7 +519,7 @@ tad_atm_match_do_cb(csap_p           csap,
 
         gfc_shift = (proto_data->type == NDN_ATM_UNI) ? 1 : 0;
 
-        assert(pkt_data->hdr.dus[2 + gfc_shift].du_type = TAD_DU_I32);
+        assert(pkt_data->hdr.dus[2 + gfc_shift].du_type == TAD_DU_I32);
         cell_ctrl->user_data = !(pkt_data->hdr.dus[2 + gfc_shift].val_i32 &
                                  TAD_ATM_CONTROL_CELL);
 
@@ -527,9 +527,9 @@ tad_atm_match_do_cb(csap_p           csap,
             !!(pkt_data->hdr.dus[2 + gfc_shift].val_i32 & TAD_ATM_U2U_IND) :
             0;
 
-        assert(pkt_data->hdr.dus[0 + gfc_shift].du_type = TAD_DU_I32);
+        assert(pkt_data->hdr.dus[0 + gfc_shift].du_type == TAD_DU_I32);
         cell_ctrl->vpi = pkt_data->hdr.dus[0 + gfc_shift].val_i32;
-        assert(pkt_data->hdr.dus[1 + gfc_shift].du_type = TAD_DU_I32);
+        assert(pkt_data->hdr.dus[1 + gfc_shift].du_type == TAD_DU_I32);
         cell_ctrl->vci = pkt_data->hdr.dus[1 + gfc_shift].val_i32;
     }
 
