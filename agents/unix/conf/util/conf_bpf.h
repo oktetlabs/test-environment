@@ -12,7 +12,7 @@
 #define __TE_CONF_BPF_H__
 
 #ifdef CFG_BPF_SUPPORT
-#include "bpf.h"
+#include <bpf/bpf.h>
 #endif
 
 #ifdef __cplusplus

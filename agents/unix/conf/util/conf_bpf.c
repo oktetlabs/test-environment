@@ -51,6 +51,9 @@
 #include <sys/epoll.h>
 #include <sys/sysinfo.h>
 
+#include <bpf/bpf.h>
+#include <bpf/libbpf.h>
+
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -65,8 +68,6 @@
 #include "rcf_pch.h"
 #include "rcf_pch_ta_cfg.h"
 #include "unix_internal.h"
-#include "bpf.h"
-#include "libbpf.h"
 #include "conf_bpf.h"
 
 #ifndef XDP_FLAGS_UPDATE_IF_NOEXIST
