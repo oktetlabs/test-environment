@@ -49,6 +49,7 @@ libconf_a_SOURCES = \
 	base/conf_key.c \
 	base/conf_l4_port.c \
 	base/conf_macvlan.c \
+	base/conf_mem.c \
 	base/conf_module.c \
 	base/conf_ns_net.c \
 	base/conf_veth.c \
