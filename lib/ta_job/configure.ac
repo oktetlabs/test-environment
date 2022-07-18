@@ -28,6 +28,13 @@ AC_CHECK_LIB([pcre], [pcre_exec], [],
 
 AC_SUBST([PCRE_LIBS])
 
+dnl Used here because tarpc.h includes rpc/rpc.h which requires extra
+dnl -I option in the case of libtirpc. There is no easy way to inherit
+dnl it from rpcxdr findings so just repeat the check here
+PKG_CHECK_MODULES([TIRPC], [libtirpc], [],
+                  [AC_MSG_NOTICE([libtirpc not found])])
+AC_SUBST([TIRPC_CFLAGS])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
