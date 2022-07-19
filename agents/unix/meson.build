@@ -57,6 +57,7 @@ check_headers = [
     'linux/if_vlan.h',
     'search.h',
     'sys/klog.h',
+    'linux/major.h',
 ]
 
 foreach h : check_headers
