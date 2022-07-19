@@ -2572,42 +2572,6 @@ rpc_malloc_misaligned(rcf_rpc_server *rpcs, size_t alignment,
     RETVAL_RPC_PTR(malloc_misaligned, (rpc_ptr)out.retval);
 }
 
-/**
- * Allocate a buffer of specified size in the TA address space
- * aligned at a specified boundary.
- *
- * @param rpcs          RPC server handle
- * @param alignment     buffer alignment
- * @param size          size of the buffer to be allocated
- *
- * @return   Allocated buffer identifier or RPC_NULL
- */
-rpc_ptr
-rpc_memalign(rcf_rpc_server *rpcs, size_t alignment, size_t size)
-{
-    tarpc_memalign_in     in;
-    tarpc_memalign_out    out;
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
-    if (rpcs == NULL)
-    {
-        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_RPC_PTR(malloc, 0);
-    }
-
-    in.alignment = alignment;
-    in.size      = size;
-
-    rcf_rpc_call(rpcs, "memalign", &in, &out);
-
-    TAPI_RPC_LOG(rpcs, memalign, "%" TE_PRINTF_SIZE_T "u "
-                 "%" TE_PRINTF_SIZE_T "u", "%u",
-                 alignment, size, out.retval);
-    RETVAL_RPC_PTR(memalign, (rpc_ptr)out.retval);
-}
-
 /* See description in 'tapi_rpc_unistd.h' */
 extern int
 rpc_posix_memalign(rcf_rpc_server *rpcs, rpc_ptr *ptr,

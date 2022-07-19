@@ -1199,20 +1199,6 @@ extern rpc_ptr rpc_malloc_misaligned(rcf_rpc_server *rpcs, size_t alignment,
 
 /**
  * Allocate a buffer of specified size in the TA address space
- * aligned at a specified boundary
- *
- * @param rpcs          RPC server handle
- * @param alignment     alignment of the buffer
- * @param size          size of the buffer to be allocated
- *
- * @return   Allocated buffer identifier or RPC_NULL
- */
-extern rpc_ptr rpc_memalign(rcf_rpc_server *rpcs,
-                            size_t alignment,
-                            size_t size);
-
-/**
- * Allocate a buffer of specified size in the TA address space
  * aligned at a specified boundary.
  *
  * @param rpcs          RPC server handle

@@ -2229,18 +2229,6 @@ struct tarpc_integer2raw_out {
     uint8_t     data<>;     /**< Converted number */
 };
 
-/* memalign */
-struct tarpc_memalign_in {
-    struct tarpc_in_arg  common;
-    tarpc_size_t         alignment; /**< Alignment of a block */
-    tarpc_size_t         size;      /**< Bytes to allocate */
-};
-
-struct tarpc_memalign_out {
-    struct tarpc_out_arg common;
-    tarpc_ptr            retval; /**< A pointer in the TA address space */
-};
-
 struct tarpc_mmap_in {
     struct tarpc_in_arg  common;
 
@@ -5502,7 +5490,6 @@ program tarpc
         RPC_DEF(get_addr_by_id)
         RPC_DEF(raw2integer)
         RPC_DEF(integer2raw)
-        RPC_DEF(memalign)
         RPC_DEF(mmap)
         RPC_DEF(munmap)
         RPC_DEF(madvise)

@@ -10296,22 +10296,6 @@ TARPC_FUNC_STANDALONE(malloc_misaligned, {},
 }
 )
 
-/*-------------- memalign() ------------------------------*/
-
-/* FIXME: provide prototype (proper header inclusion?) */
-TARPC_FUNC_DYNAMIC_UNSAFE(memalign, {},
-{
-    void *buf;
-
-    buf = func_ret_ptr(in->alignment, in->size);
-
-    if (buf == NULL)
-        out->common._errno = TE_RC(TE_TA_UNIX, errno);
-    else
-        out->retval = rcf_pch_mem_alloc(buf);
-}
-)
-
 
 /*-------------- posix_memalign() ------------------------------*/
 
