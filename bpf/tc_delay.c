@@ -12,23 +12,24 @@
  * @author Sergey Nikitin <Sergey.Nikitin@oktetlabs.ru>
  */
 
-dnl Declare frame size constants needed for delaying a frame.
-dnl $1 - The frame size to delay.
-dnl $2 - The chunk size.
-define(`te_frame_size_declare',
-`
-`#'define FRAME_SAVE_CHUNK_SIZE         $2
-`#'define FRAME_SAVE_SIZE               $1
-`#'define FRAME_SAVE_CHUNKS_NUM         eval($1 / $2)
-`#'define FRAME_SAVE_LAST_CHUNK_SIZE    eval($1 % $2)
-'
-)
-
 #include <linux/bpf.h>
 #include <linux/pkt_cls.h>
 #include "bpf_stim_helpers.h"
 
-te_frame_size_declare(frame_size, chunk_size)
+#ifndef TC_DELAY_FRAME_SIZE
+#define TC_DELAY_FRAME_SIZE 1514
+#endif
+
+/*
+* Size of a frame chunk stored in a single entry of the map containing
+* delayed frame. Such chunks are used due to RCF restrictions.
+* See bug 11019.
+*/
+#define FRAME_SAVE_CHUNK_SIZE 256
+
+#define FRAME_SAVE_CHUNKS_NUM (TC_DELAY_FRAME_SIZE / FRAME_SAVE_CHUNK_SIZE)
+#define FRAME_SAVE_LAST_CHUNK_SIZE \
+      (TC_DELAY_FRAME_SIZE % FRAME_SAVE_CHUNK_SIZE)
 
 /**
  * Key to access 'ctrl' map field to read an interface index to which
@@ -247,7 +248,7 @@ tc_delay(struct __sk_buff *skb)
          * do not send it.
          */
 
-        if (skb->len != FRAME_SAVE_SIZE)
+        if (skb->len != TC_DELAY_FRAME_SIZE)
         {
             printk("Ignoring frame with size %u\n", skb->len);
             return TC_ACT_OK;
@@ -299,7 +300,7 @@ tc_delay(struct __sk_buff *skb)
             *cloned = 0;
 
         /* Update bpf context with saved frame. */
-        bpf_skb_change_tail(skb, FRAME_SAVE_SIZE, 0);
+        bpf_skb_change_tail(skb, TC_DELAY_FRAME_SIZE, 0);
         if (store_frame(skb) == 0)
         {
             /* Send the delayed frame. */
