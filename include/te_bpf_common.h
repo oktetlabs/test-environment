@@ -40,4 +40,13 @@ typedef struct te_bpf_ip_tcpudp_filter {
                                 matches) */
 } te_bpf_ip_tcpudp_filter;
 
+/**
+ * Parameters for rxq_stats BPF program.
+ */
+typedef struct te_bpf_rxq_stats_params {
+    TE_BPF_U8 enabled; /**< Nonzero if packets processing is enabled */
+    te_bpf_ip_tcpudp_filter filter; /**< Filter telling which packets
+                                         should be counted */
+} te_bpf_rxq_stats_params;
+
 #endif /* !__TE_BPF_COMMON_H__ */

@@ -7,7 +7,7 @@
 declare -a progs
 declare -a opts
 
-all_progs=(tc_delay.c tc_drop.c tc_dup.c)
+all_progs=(tc_delay.c tc_drop.c tc_dup.c rxq_stats.c)
 
 function usage() {
     cat <<EOF
