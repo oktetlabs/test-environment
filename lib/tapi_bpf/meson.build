@@ -2,10 +2,12 @@
 
 headers += files(
     'tapi_bpf.h',
+    'tapi_bpf_rxq_stats.h',
     'tapi_bpf_stim.h',
 )
 sources += files(
     'tapi_bpf.c',
+    'tapi_bpf_rxq_stats.c',
     'tapi_bpf_stim.c',
 )
 te_libs += [
