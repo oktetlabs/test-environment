@@ -252,20 +252,24 @@ static te_errno
 call_ioctl(struct ifreq *ifr, const char *if_name, int cmd)
 {
     int rc;
+    te_errno te_err;
 
     rc = ioctl(cfg_socket, SIOCETHTOOL, ifr);
     if (rc < 0)
     {
+        te_err = te_rc_os2te(errno);
+
         /*
          * Avoid extra logs if this command is simply not supported
          * for a given interface.
          */
         if (errno != EOPNOTSUPP)
         {
-            ERROR("%s(if_name=%s, cmd=%s): ioctl() failed", __FUNCTION__,
-                  if_name, ethtool_cmd2str(cmd));
+            ERROR("%s(if_name=%s, cmd=%s): ioctl() failed, errno=%r",
+                  __FUNCTION__, if_name, ethtool_cmd2str(cmd), te_err);
         }
-        return TE_OS_RC(TE_TA_UNIX, errno);
+
+        return TE_RC(TE_TA_UNIX, te_err);
     }
 
     return 0;
