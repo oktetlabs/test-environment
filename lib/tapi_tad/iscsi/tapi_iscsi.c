@@ -2836,7 +2836,7 @@ realloc_buffer(iscsi_io_handle_t *ioh, size_t bufsize)
     {
         if (ioh->buffer != RPC_NULL)
             rpc_free(ioh->rpcs, ioh->buffer);
-        ioh->buffer = rpc_memalign(ioh->rpcs, 512, bufsize);
+        rpc_posix_memalign(&ioh->buffer, ioh->rpcs, 512, bufsize);
     }
     return ioh->buffer != RPC_NULL;
 }
