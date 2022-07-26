@@ -15,25 +15,35 @@
 
 #include "te_toeplitz.h"
 #include "te_config.h"
+#include "logger_api.h"
 
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
 
+/** Default size of Toeplitz hash key */
+#define TE_TOEPLITZ_DEF_KEY_SIZE 40
+
+/** Maximum size of input data for a given hash key length */
+#define TE_TOEPLITZ_IN_MAX(_key_len) ((_key_len) - 4)
 
 /**
- * Maximum size of input data for Toeplitz function
+ * Hash key is 4 bytes longer than maximum input data length, so it
+ * should be at least 5 bytes to be useful.
  */
-#define TE_TOEPLITZ_IN_MAX \
-    (2 * (sizeof(struct in6_addr) + sizeof (in_port_t)))
+#define TE_TOEPLITZ_MIN_KEY_SIZE 5
 
 /**
- * Maximum size of Toeplitz cache
+ * Size of Toeplitz cache for a given key length.
+ *
+ * @param _key_len    Hash key length.
  */
-#define TE_TOEPLITZ_CACHE_SIZE (TE_TOEPLITZ_IN_MAX * (UINT8_MAX + 1))
+#define TE_TOEPLITZ_CACHE_SIZE(_key_len) \
+        (TE_TOEPLITZ_IN_MAX(_key_len) * (UINT8_MAX + 1))
 
 struct te_toeplitz_hash_cache {
-        unsigned int cache[TE_TOEPLITZ_CACHE_SIZE];
+    unsigned int *cache;
+    size_t size;
 };
 
 /* See description in te_toeplitz.h */
@@ -83,16 +93,30 @@ te_toeplitz_hash(const te_toeplitz_hash_cache *toeplitz_hash_cache,
 
 /* See description in te_toeplitz.h */
 te_toeplitz_hash_cache *
-te_toeplitz_cache_init(const uint8_t *key)
+te_toeplitz_cache_init_size(const uint8_t *key, size_t key_size)
 {
     unsigned int i;
     te_toeplitz_hash_cache *toeplitz_hash_cache;
+
+    if (key_size < TE_TOEPLITZ_MIN_KEY_SIZE)
+    {
+        ERROR("%s(): too short hash key", __FUNCTION__);
+        return NULL;
+    }
 
     toeplitz_hash_cache = malloc(sizeof(*toeplitz_hash_cache));
     if (toeplitz_hash_cache == NULL)
         return NULL;
 
-    for (i = 0; i < TE_TOEPLITZ_IN_MAX; i++, key++)
+    toeplitz_hash_cache->cache = calloc(TE_TOEPLITZ_CACHE_SIZE(key_size),
+                                        sizeof(unsigned int));
+    if (toeplitz_hash_cache->cache == NULL)
+    {
+        free(toeplitz_hash_cache);
+        return NULL;
+    }
+
+    for (i = 0; i < TE_TOEPLITZ_IN_MAX(key_size); i++, key++)
     {
         unsigned int key_bits[CHAR_BIT] = {};
         unsigned int j;
@@ -128,8 +152,17 @@ te_toeplitz_cache_init(const uint8_t *key)
 }
 
 /* See description in te_toeplitz.h */
+te_toeplitz_hash_cache *
+te_toeplitz_cache_init(const uint8_t *key)
+{
+    return te_toeplitz_cache_init_size(key, TE_TOEPLITZ_DEF_KEY_SIZE);
+}
+
+/* See description in te_toeplitz.h */
 void
 te_toeplitz_hash_fini(te_toeplitz_hash_cache *cache)
 {
+    if (cache != NULL)
+        free(cache->cache);
     free(cache);
 }

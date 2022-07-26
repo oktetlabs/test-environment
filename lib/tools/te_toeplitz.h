@@ -83,6 +83,19 @@ extern void te_toeplitz_hash_fini(
  */
 extern te_toeplitz_hash_cache *te_toeplitz_cache_init(const uint8_t *key);
 
+/**
+ * Pre-construct cache to use it for faster calculation of
+ * Toeplitz hash function.
+ *
+ * @param key        Hash key
+ * @param key_size   Length of the key in bytes
+ *
+ * @retval cache or NULL in case of error
+ */
+extern te_toeplitz_hash_cache *te_toeplitz_cache_init_size(
+                                                    const uint8_t *key,
+                                                    size_t key_size);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
