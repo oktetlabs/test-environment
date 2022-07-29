@@ -112,7 +112,7 @@ tapi_bpf_get_inst_list(const char *ptrn, char ***names,
 {
     cfg_handle     *hdl_names = NULL;
     unsigned int    count;
-    unsigned int    i, j;
+    unsigned int    i;
     char           *name = NULL;
     char          **str = NULL;
     te_errno        rc = 0;
@@ -135,8 +135,8 @@ tapi_bpf_get_inst_list(const char *ptrn, char ***names,
 
     if ((str = TE_ALLOC(sizeof(char *) * (count + 1))) == NULL)
     {
-        free(hdl_names);
-        return TE_RC(TE_TAPI, TE_ENOMEM);
+        rc = TE_RC(TE_TAPI, TE_ENOMEM);
+        goto finish;
     }
     str[count] = NULL;
 
@@ -145,16 +145,31 @@ tapi_bpf_get_inst_list(const char *ptrn, char ***names,
         if ((rc = cfg_get_inst_name(hdl_names[i], &name)) != 0)
         {
             ERROR("%s(): Failed to get instance name: %r", __FUNCTION__, rc);
-            for (j = 0; j < i; j++)
-                free(str[i]);
-            free(str);
-            free(hdl_names);
-            return rc;
+            goto finish;
         }
         str[i] = name;
     }
-    *names = str;
-    return 0;
+
+finish:
+
+    free(hdl_names);
+
+    if (rc == 0)
+    {
+        *names = str;
+    }
+    else
+    {
+        if (str != NULL)
+        {
+            for (i = 0; i < count; i++)
+                free(str[i]);
+        }
+
+        free(str);
+    }
+
+    return rc;
 }
 
 /**
