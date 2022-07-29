@@ -97,6 +97,9 @@ typedef struct tapi_fio_report {
 typedef enum {
     TAPI_FIO_IOENGINE_SYNC,      /**< Use read/write */
     TAPI_FIO_IOENGINE_PSYNC,     /**< Use pread/pwrite */
+    TAPI_FIO_IOENGINE_VSYNC,     /**< Use readv/writev */
+    TAPI_FIO_IOENGINE_PVSYNC,    /**< Use preadv/pwritev */
+    TAPI_FIO_IOENGINE_PVSYNC2,   /**< Use preadv2/pwritev2 */
     TAPI_FIO_IOENGINE_LIBAIO,    /**< Use Kernel Asynchronous I/O */
     TAPI_FIO_IOENGINE_POSIXAIO,  /**< Use POSIX asynchronous IO */
     TAPI_FIO_IOENGINE_RBD,       /**< I/O engine supporting direct access
@@ -106,6 +109,9 @@ typedef enum {
 #define TAPI_FIO_IOENGINE_MAPPING_LIST \
     {"sync", TAPI_FIO_IOENGINE_SYNC},         \
     {"psync", TAPI_FIO_IOENGINE_PSYNC},       \
+    {"vsync", TAPI_FIO_IOENGINE_VSYNC},       \
+    {"pvsync", TAPI_FIO_IOENGINE_PVSYNC},     \
+    {"pvsync2", TAPI_FIO_IOENGINE_PVSYNC2},   \
     {"libaio", TAPI_FIO_IOENGINE_LIBAIO},     \
     {"posixaio", TAPI_FIO_IOENGINE_POSIXAIO}, \
     {"rbd", TAPI_FIO_IOENGINE_RBD}

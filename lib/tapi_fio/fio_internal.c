@@ -73,8 +73,11 @@ ioengine_argument(const void *value, const void *priv, te_vec *args)
 {
     static const char *ioengines[] = {
         [TAPI_FIO_IOENGINE_LIBAIO] = "libaio",
-        [TAPI_FIO_IOENGINE_PSYNC] = "psync",
         [TAPI_FIO_IOENGINE_SYNC] = "sync",
+        [TAPI_FIO_IOENGINE_PSYNC] = "psync",
+        [TAPI_FIO_IOENGINE_VSYNC] = "vsync",
+        [TAPI_FIO_IOENGINE_PVSYNC] = "pvsync",
+        [TAPI_FIO_IOENGINE_PVSYNC2] = "pvsync2",
         [TAPI_FIO_IOENGINE_POSIXAIO] = "posixaio",
         [TAPI_FIO_IOENGINE_RBD] = "rbd"
     };
