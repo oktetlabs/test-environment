@@ -76,6 +76,18 @@ te_errno tapi_cfg_cpu_grab_by_prop(const char *ta, const tapi_cpu_prop_t *prop,
                                    tapi_cpu_index_t *cpu_id);
 
 /**
+ * Get number of CPU cores on a test agent.
+ *
+ * @param[in]  ta               Test Agent name.
+ * @param[out] size             Number of CPU cores (size of @p indices).
+ * @param[out] indices          CPU core indices (might be @c NULL).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_get_cpu_cores(const char *ta, size_t *size,
+                                       tapi_cpu_index_t **indices);
+
+/**
  * Get all available CPU threads indices on a test agents.
  *
  * @param[in]  ta               Test Agent

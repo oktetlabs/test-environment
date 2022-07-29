@@ -252,6 +252,17 @@ tapi_cfg_cpu_release_by_id(const char *ta, const tapi_cpu_index_t *cpu_id)
     return cfg_del_instance_fmt(FALSE, "%s", cpu_rsrc_oid);
 }
 
+/* See description in tapi_cfg_cpu.h */
+te_errno
+tapi_cfg_get_cpu_cores(const char *ta, size_t *size,
+                       tapi_cpu_index_t **indices)
+{
+    char pattern[CFG_OID_MAX] = {0};
+
+    TE_SPRINTF(pattern, "/agent:%s/hardware:/node:*/cpu:*/core:*", ta);
+    return find_cpu_generic(pattern, "CPU cores", size, indices);
+}
+
 te_errno
 tapi_cfg_get_all_threads(const char *ta,  size_t *size,
                          tapi_cpu_index_t **indices)
