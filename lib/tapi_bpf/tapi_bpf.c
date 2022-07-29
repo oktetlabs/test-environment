@@ -911,7 +911,9 @@ tapi_bpf_map_lookup_kvpair(const char *ta,
         return rc;
     }
 
-    return te_str_hex_str2raw(val_str, val, val_size);
+    rc = te_str_hex_str2raw(val_str, val, val_size);
+    free(val_str);
+    return rc;
 }
 
 /* See description in tapi_bpf.h */
