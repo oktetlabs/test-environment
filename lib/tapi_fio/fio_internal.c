@@ -28,10 +28,12 @@ get_default_timeout(const tapi_fio_opts *opts)
 }
 
 static te_errno
-runtime_argument(const void *value, te_vec *args)
+runtime_argument(const void *value, const void *priv, te_vec *args)
 {
     int seconds = *(const unsigned int *)value;
     te_errno rc;
+
+    UNUSED(priv);
 
     if (seconds < 0)
         return TE_ENOENT;
@@ -53,18 +55,21 @@ enum_argument(unsigned int value, const char **map, size_t size, te_vec *args)
 }
 
 static te_errno
-rwtype_argument(const void *value, te_vec *args)
+rwtype_argument(const void *value, const void *priv, te_vec *args)
 {
     static const char *rwtypes[] = {
         [TAPI_FIO_RWTYPE_SEQ] = "rw",
         [TAPI_FIO_RWTYPE_RAND] = "randrw"
     };
+
+    UNUSED(priv);
+
     tapi_fio_rwtype enum_value = *(const tapi_fio_rwtype *)value;
     return enum_argument(enum_value, rwtypes, TE_ARRAY_LEN(rwtypes), args);
 }
 
 static te_errno
-ioengine_argument(const void *value, te_vec *args)
+ioengine_argument(const void *value, const void *priv, te_vec *args)
 {
     static const char *ioengines[] = {
         [TAPI_FIO_IOENGINE_LIBAIO] = "libaio",
@@ -73,18 +78,23 @@ ioengine_argument(const void *value, te_vec *args)
         [TAPI_FIO_IOENGINE_POSIXAIO] = "posixaio",
         [TAPI_FIO_IOENGINE_RBD] = "rbd"
     };
+
+    UNUSED(priv);
+
     tapi_fio_ioengine enum_value = *(const tapi_fio_ioengine *)value;
     return enum_argument(enum_value, ioengines, TE_ARRAY_LEN(ioengines), args);
 }
 
 static te_errno
-user_argument(const void *value, te_vec *args)
+user_argument(const void *value, const void *priv, te_vec *args)
 {
     const char *str = *(const char **)value;
     char *saveptr;
     te_errno rc;
     char *arg;
     char *dup;
+
+    UNUSED(priv);
 
     if (str == NULL)
         return TE_ENOENT;
@@ -110,7 +120,7 @@ user_argument(const void *value, te_vec *args)
 }
 
 static te_errno
-rand_generator_argument(const void *value, te_vec *args)
+rand_generator_argument(const void *value, const void *priv, te_vec *args)
 {
     static const char *generators[] = {
         "lfsr",
@@ -119,6 +129,8 @@ rand_generator_argument(const void *value, te_vec *args)
     };
     const char *str = *(const char **)value;
     size_t i;
+
+    UNUSED(priv);
 
     if (str == NULL)
         return TE_ENOENT;
@@ -138,23 +150,37 @@ static const tapi_job_opt_bind fio_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_STRING("--filename=", TRUE, tapi_fio_opts, filename),
     TAPI_JOB_OPT_UINT("--blocksize=", TRUE, NULL, tapi_fio_opts, blocksize),
     TAPI_JOB_OPT_UINT("--iodepth=", TRUE, NULL, tapi_fio_opts, iodepth),
-    { runtime_argument, "--runtime=", TRUE, NULL,
-      offsetof(tapi_fio_opts, runtime_sec) },
+    {
+        runtime_argument, "--runtime=", TRUE, NULL,
+        TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(tapi_fio_opts, runtime_sec, int), NULL
+    },
     TAPI_JOB_OPT_UINT("--rwmixread=", TRUE, NULL, tapi_fio_opts, rwmixread),
     TAPI_JOB_OPT_DUMMY("--output-format=json"),
     TAPI_JOB_OPT_DUMMY("--group_reporting"),
     TAPI_JOB_OPT_STRING("--output=", TRUE, tapi_fio_opts, output_path.ptr),
     TAPI_JOB_OPT_BOOL("--direct=1", tapi_fio_opts, direct),
     TAPI_JOB_OPT_BOOL("--exitall_on_error=1", tapi_fio_opts, exit_on_error),
-    { rand_generator_argument, "--random_generator=", TRUE, NULL,
-      offsetof(tapi_fio_opts, rand_gen) },
-    { rwtype_argument, "--readwrite=", TRUE, NULL,
-      offsetof(tapi_fio_opts, rwtype) },
-    { ioengine_argument, "--ioengine=", TRUE, NULL,
-      offsetof(tapi_fio_opts, ioengine) },
+    {
+        rand_generator_argument, "--random_generator=", TRUE, NULL,
+        TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(tapi_fio_opts, rand_gen, char *), NULL
+    },
+    {
+        rwtype_argument, "--readwrite=", TRUE, NULL,
+        TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(tapi_fio_opts, rwtype, tapi_fio_rwtype),
+        NULL
+    },
+    {
+        ioengine_argument, "--ioengine=", TRUE, NULL,
+        TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(tapi_fio_opts, ioengine,
+                                       tapi_fio_ioengine),
+        NULL
+    },
     TAPI_JOB_OPT_UINT("--numjobs=", TRUE, NULL, tapi_fio_opts, numjobs.value),
     TAPI_JOB_OPT_DUMMY("--thread"),
-    { user_argument, NULL, FALSE, NULL, offsetof(tapi_fio_opts, user) },
+    {
+        user_argument, NULL, FALSE, NULL,
+        TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(tapi_fio_opts, user, char *), NULL
+    },
     TAPI_JOB_OPT_STRING("--rbdname=", TRUE, tapi_fio_opts, rbdname),
     TAPI_JOB_OPT_STRING("--pool=", TRUE, tapi_fio_opts, pool),
     TAPI_JOB_OPT_STRING("--size=", TRUE, tapi_fio_opts, size)
