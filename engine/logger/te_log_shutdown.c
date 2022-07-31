@@ -28,6 +28,8 @@
 #include "logger_internal.h"
 #include "logger_ten.h"
 
+/* How long to wait for Logger shutdown, in seconds */
+#define SHUTDOWN_TIMEOUT 120
 
 static te_bool logger_finished = FALSE;
 static te_bool signal_received = FALSE;
@@ -89,7 +91,7 @@ main(void)
     /* Do not wait for signal if failed to send the shutdown request */
     if (result != EXIT_FAILURE)
     {
-        alarm(30);
+        alarm(SHUTDOWN_TIMEOUT);
         while (!signal_received)
             pause();
 
