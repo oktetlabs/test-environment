@@ -149,15 +149,13 @@ endif
 
 if conf.contains('bpf')
     # The libbpf.so library may be built by TE_PLATFORM_EXT,
-    # or it may be installed on the host. In the former case
-    # dependency() may not be able to find it if pkg-config
-    # is not provided.
+    # or it may be installed on the host. cc.find_library()
+    # will look for libbpf.so in platform build directory
+    # first, so use it here to make sure that libbpf.so
+    # built with TA is used if it is present.
     bpf_deps = []
-    dep_bpf = dependency('libbpf', required: false)
-    if not dep_bpf.found()
-        dep_bpf = cc.find_library('bpf', dirs: platform_lib_dir,
-                                  required: false)
-    endif
+    dep_bpf = cc.find_library('bpf', dirs: platform_lib_dir,
+                              required: false)
 
     if dep_bpf.found()
         dep_elf = dependency('libelf', required: false)
