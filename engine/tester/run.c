@@ -3346,8 +3346,8 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     if (ctx->flags & TESTER_PRERUN)
     {
-        EXIT("CONT");
-        return TESTER_CFG_WALK_CONT;
+        EXIT("SKIP");
+        return TESTER_CFG_WALK_SKIP;
     }
 
     if (ctx->keepalive_ctx == NULL)
@@ -3442,8 +3442,8 @@ run_exception_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     if (gctx->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN))
     {
-        EXIT("CONT");
-        return TESTER_CFG_WALK_CONT;
+        EXIT("SKIP");
+        return TESTER_CFG_WALK_SKIP;
     }
 
     /* Exceptin handler is always run in a new context */
