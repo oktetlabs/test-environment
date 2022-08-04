@@ -180,6 +180,20 @@ typedef struct te_trc_db_walker te_trc_db_walker;
 extern te_trc_db_walker *trc_db_new_walker(te_trc_db *trc_db);
 
 /**
+ * Make a copy of existing database walker. It is helpful when
+ * you need to save current position in TRC database to work
+ * with it again later.
+ *
+ * @note If you remove something from database, saved walker
+ *       may become invalid.
+ *
+ * @param walker        Walker instance
+ *
+ * @return Copy of the walker instance.
+ */
+extern te_trc_db_walker *trc_db_walker_copy(const te_trc_db_walker *walker);
+
+/**
  * Release resources allocated for TRC database tree walker.
  *
  * @param walker        TRC database tree walker

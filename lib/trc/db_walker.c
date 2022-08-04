@@ -47,6 +47,24 @@ struct te_trc_db_walker {
 };
 
 /* See the description in te_trc.h */
+te_trc_db_walker *
+trc_db_walker_copy(const te_trc_db_walker *walker)
+{
+    te_trc_db_walker *new_walker;
+
+    if (walker == NULL)
+        return NULL;
+
+    new_walker = TE_ALLOC(sizeof(*new_walker));
+    if (new_walker == NULL)
+        return NULL;
+
+    memcpy(new_walker, walker, sizeof(*walker));
+
+    return new_walker;
+}
+
+/* See the description in te_trc.h */
 te_bool
 trc_db_walker_is_iter(const te_trc_db_walker *walker)
 {

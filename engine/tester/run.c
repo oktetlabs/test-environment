@@ -168,6 +168,9 @@ typedef struct tester_ctx {
 #if WITH_TRC
     te_trc_db_walker   *trc_walker;     /**< Current position in TRC
                                              database */
+    te_trc_db_walker   *keepalive_walker; /**< Position in TRC database
+                                               from which to look for
+                                               keepalive test */
     te_bool             do_trc_walker;  /**< Move TRC walker or not? */
 #endif
 } tester_ctx;
@@ -217,12 +220,21 @@ typedef struct tester_run_data {
 
 } tester_run_data;
 
-
 static enum interactive_mode_opts tester_run_interactive(
                                       tester_run_data *gctx);
 
 /* Forward declarations */
 static json_t *persons_info_to_json(const persons_info *persons);
+
+/* Check whether run item has keepalive handler */
+static te_bool
+run_item_has_keepalive(run_item *ri)
+{
+    return (ri->type == RUN_ITEM_SESSION &&
+            ri->u.session.keepalive != NULL) ||
+           (ri->type == RUN_ITEM_PACKAGE &&
+            ri->u.package->session.keepalive != NULL);
+}
 
 /**
  * Output Tester control log message (i.e. message about
@@ -799,6 +811,7 @@ tester_run_new_ctx(tester_flags flags, const logic_expr *targets)
 
 #if WITH_TRC
     new_ctx->trc_walker = NULL;
+    new_ctx->keepalive_walker = NULL;
     new_ctx->do_trc_walker = FALSE;
 #endif
 
@@ -850,6 +863,7 @@ tester_run_clone_ctx(const tester_ctx *ctx, te_bool new_group)
 
 #if WITH_TRC
     new_ctx->trc_walker = ctx->trc_walker;
+    new_ctx->keepalive_walker = ctx->keepalive_walker;
     new_ctx->do_trc_walker = ctx->do_trc_walker;
 #endif
 
@@ -3063,6 +3077,22 @@ run_session_start(run_item *ri, test_session *session,
         return TESTER_CFG_WALK_FAULT;
     }
 
+#if WITH_TRC
+    if (~ctx->flags & TESTER_NO_TRC)
+    {
+        if (run_item_has_keepalive(ri))
+        {
+            /*
+             * Save current position in TRC DB to know later where to
+             * look for keepalive test when it is run between other
+             * tests' iterations.
+             */
+            ctx->keepalive_walker = trc_db_walker_copy(ctx->trc_walker);
+            assert(ctx->keepalive_walker != NULL);
+        }
+    }
+#endif
+
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
 }
@@ -3081,6 +3111,17 @@ run_session_end(run_item *ri, test_session *session,
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
+
+#if WITH_TRC
+    if (~ctx->flags & TESTER_NO_TRC)
+    {
+        if (run_item_has_keepalive(ri))
+        {
+            trc_db_free_walker(ctx->keepalive_walker);
+            ctx->keepalive_walker = NULL;
+        }
+    }
+#endif
 
     tester_run_destroy_ctx(gctx);
 
@@ -3370,6 +3411,20 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     }
 
     SLIST_INSERT_HEAD(&gctx->ctxs, ctx, links);
+
+#if WITH_TRC
+    if (~ctx->flags & TESTER_NO_TRC)
+    {
+        /*
+         * keepalive handler is run before every iteration of any test
+         * in a session. To match TRC DB for it correctly, we need
+         * to go back to session level.
+         */
+
+        ctx->trc_walker = ctx->keepalive_walker;
+        ctx->do_trc_walker = TRUE;
+    }
+#endif
 
     VERB("Running test session keep-alive validation...");
 
