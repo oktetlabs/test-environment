@@ -397,8 +397,6 @@ create_test()
  * ${TEST_DESCR}
  *
  * Copyright (C) 2005 OKTET Labs, St.-Petersburg, Russia
- * 
- * \$Id: $
  */
 
 /** @page ${SUITE_NAME}${TEST_NAME}  ${TEST_DESCR}
