@@ -46,10 +46,6 @@ rpc_files() {
 #
 # @param list List of tools for checksum.
 #
-# @note if you'd like to limit che checksummed data by SVN ID only,
-#       you can add such a line after "xargs cat":
-#        sed -n '/^ \* \$Id: .*\$$/p' |
-#
 generate() {
     echo -n "rcf_consistency_checks;sha512sum;"
     rpc_files |
