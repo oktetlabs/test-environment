@@ -59,7 +59,7 @@ dnl
 dnl Parameters:
 dnl       platform name; may be empty for host platform (name "default"
 dnl           is used for it); shouldn't contain '-'
-dnl       build system to use; autotools or meson
+dnl       build system to use; meson
 dnl
 define([TE_PLATFORM_BUILD],
 [
@@ -68,7 +68,7 @@ if test -z "$PLATFORM" ; then
     PLATFORM=default
 fi
 case "$2" in
-    autotools|meson|"") ;;
+    meson|"") ;;
     *)
         TE_BS_CONF_ERR="wrong build system $2 for platform $1" ;
         break 2 ;;

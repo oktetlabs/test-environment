@@ -182,8 +182,6 @@ done
                       ${exports}
                       $build"
 )
-# If te_builder_dir is empty, use SCRIPT_DIR: this is an autotools build.
-test -z "$te_builder_dir" && te_builder_dir="${SCRIPT_DIR}"
 
 install_extension_parts "$expheaders" \
     "$prefix/$platform/include/${expheaders_dest}"

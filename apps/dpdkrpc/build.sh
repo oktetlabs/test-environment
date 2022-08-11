@@ -87,9 +87,7 @@ build_using_meson() {
     done
 }
 
-# DPDK build location depends on meson vs autotools build
 RTE_SDK_BIN="$(pwd -P)/../../../ext/dpdk/build"
-test -d ${RTE_SDK_BIN} || RTE_SDK_BIN="$(pwd -P)/../../lib/dpdk"
 
 if test -f "${RTE_SDK_BIN}/.config" ; then
     build_using_make

@@ -91,8 +91,6 @@ Generic options:
   --no-cs                       Do not run Configurator
   --no-rcf                      Do not run RCF
   --no-run                      Do not run Logger, RCF, Configurator and Tester
-  --no-autotool                 Do not try to perform autoconf/automake after
-                                package configure failure
 
   --opts=<filename>             Get additional command-line options from file
 
@@ -545,7 +543,6 @@ process_opts()
             --no-cs) CS= ;;
             --no-rcf) RCF= ;;
             --no-run) RCF= ; CS= ; TESTER= ; LOGGER= ;;
-            --no-autotool) TE_NO_AUTOTOOL=yes ;;
 
             --conf-dir=*) CONF_DIRS="${1#--conf-dir=}" ;;
             --conf-dirs=*)
@@ -652,10 +649,6 @@ process_opts()
 
             --cs-*) CS_OPTS="${CS_OPTS} --${1#--cs-}" ;;
 
-            --build-autotools)
-                echo "autotools build is not supported any more" >&2
-                exit 1 ;;
-            --build-meson)      ;;
             --builder-debug)    BUILDER_DEBUG=yes ;;
 
             --build-only) RCF= ; CS=
@@ -855,7 +848,6 @@ if test -z "$TE_BASE" -a -n "$BUILDER" ; then
     exit 1
 fi
 
-export TE_NO_AUTOTOOL
 export TE_NO_PROMPT
 
 for i in BUILDER LOGGER TESTER CS RCF RGT NUT ; do

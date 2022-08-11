@@ -14,15 +14,9 @@ Builder
 Introduction
 ~~~~~~~~~~~~
 
-Builder subsystem is not a separate closed software but rather set of principles, conventions, standard files, templates and scripts that allow to built TE libraries, applications, NUT bootable images and Test Suites in a single, convenient, standard and portable way. TE Builder is based on GNU autotools (autoconf, automake).
+Builder subsystem is not a separate closed software but rather set of principles, conventions, standard files, templates and scripts that allow to built TE libraries, applications, NUT bootable images and Test Suites in a single, convenient, standard and portable way. TE Builder is based on meson.
 
-From the Builder point of view Test Environment consists of a lot of packages: libraries, applications, tools and Test Agents. Each package has input files for autotools:
-
-* configure.ac for autoconf;
-
-* Makefile.am for automake;
-
-* optionally files for autoheader.
+From the Builder point of view Test Environment consists of a lot of packages: libraries, applications, tools and Test Agents. Each package has input files for meson: meson.build and meson_options.txt.
 
 Each package may be built for one or several platforms. The platform for which TEN applications, Test API libraries and tests are built is called host platform. Test Agents and libraries linked with them may be built for platforms other than host platform.
 
@@ -415,7 +409,7 @@ Test Environment build should be initiated **ONLY** by :ref:`Dispatcher <doxid-g
 
 Building is performed as follows:
 
-#. The root configure script analyses :ref:`Builder <doxid-group__te__engine__builder>` configuration file. It creates directories for all packages to be built and calls configure script for all host packages. If configure script or Makefile.in file are missing in the package source directory, autotools are used to generate them;
+#. The root configure script analyses :ref:`Builder <doxid-group__te__engine__builder>` configuration file. It creates directories for all packages to be built and calls configure script for all host packages;
 
 #. make is called. It builds and installs libraries, TEN applications and Test Agents for the host platform;
 

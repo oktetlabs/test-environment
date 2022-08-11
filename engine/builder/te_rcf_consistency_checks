@@ -23,7 +23,6 @@ EXT_FILES=te_rcf_consistency_checks_files
 #
 rpc_files() {
     echo "$TE_BASE/lib/rpcxdr/tarpc_base.x.m4"
-    echo "$TE_BASE/agents/unix/Makefile.am"
     echo "$TE_BASE/engine/rcf/meson.build"
 
     find $TE_BASE/agents \
@@ -35,10 +34,9 @@ rpc_files() {
         -type f -name "*.c" -o -name "*.h"
 
     # The meson build system uses EXT_FILE both for engine and agents.
-    # The autotools build system uses EXT_FILES for agents but TE_RCF_
-    # variable for the engine.
-    test -f "${EXT_FILES}" && cat "${EXT_FILES}" \
-        || echo "$TE_RCF_CONSISTENCY_CHECKS_EXT_FILES"
+    test -f "${EXT_FILES}" && cat "${EXT_FILES}"
+
+    return 0
 }
 
 ##

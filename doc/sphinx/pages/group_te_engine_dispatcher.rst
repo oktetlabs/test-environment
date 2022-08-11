@@ -175,8 +175,6 @@ The Dispatcher script accepts a lot of command-line options. Some of them are it
 	no-cs                       Do not run :ref:`Configurator <doxid-group__te__engine__conf>`
 	no-rcf                      Do not run :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>`
 	no-run                      Do not run :ref:`Logger <doxid-group__te__engine__logger>`, :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>`, :ref:`Configurator <doxid-group__te__engine__conf>` and :ref:`Tester <doxid-group__te__engine__tester>`
-	no-autotool                 Do not try to perform autoconf/automake after
-	                              package configure failure
 
 .. code-block:: none
 
@@ -186,11 +184,6 @@ The Dispatcher script accepts a lot of command-line options. Some of them are it
 
 	cs-print-trees              Print configurator trees.
 	cs-log-diff                 Log backup diff unconditionally.
-
-.. code-block:: none
-
-	build-autotools             Build using autotools (autoconf, automake, make)
-	build-meson                 Build using meson/ninja
 
 .. code-block:: none
 

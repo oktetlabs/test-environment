@@ -27,7 +27,7 @@ It is possible to run the same test with different parameters. Parameters for a 
 
 Some tests may be marked as (associated with) checking the particular requirement(s) of the product. :ref:`Tester <doxid-group__te__engine__tester>` allows to run tests checking a particular set of requirements. See :ref:`Test Requirements <doxid-group__te__engine__tester_1te_engine_tester_req>`.
 
-:ref:`Tester <doxid-group__te__engine__tester>` may be asked to build the tests from sources. In this case tests should be built using GNU tools (make/autoconf/automake). All TE libraries used by the tests should be specified in the :ref:`Builder <doxid-group__te__engine__builder>` configuration file and be built/installed before :ref:`Tester <doxid-group__te__engine__tester>` starting.
+:ref:`Tester <doxid-group__te__engine__tester>` may be asked to build the tests from sources. In this case tests should be built using meson or GNU tools (make/autoconf/automake). All TE libraries used by the tests should be specified in the :ref:`Builder <doxid-group__te__engine__builder>` configuration file and be built/installed before :ref:`Tester <doxid-group__te__engine__tester>` starting.
 
 :ref:`Tester <doxid-group__te__engine__tester>` is responsible for the error recovery. It utilizes a service provided by :ref:`Configurator <doxid-group__te__engine__conf>` to make a backup configuration for each package and test and to restore backups if necessary.
 

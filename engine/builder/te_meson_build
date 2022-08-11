@@ -780,8 +780,6 @@ process_platforms() {
     for p in ${TE_BS_PLATFORMS} ; do
         local build=${p}_BUILD
 
-        test "${!build}" = autotools && continue
-
         # Non-volatile arguments which require build workspace bootstrap
         # --libdir is required to avoid host type subdir in lib/
         local meson_nv_args="--prefix=${TE_INSTALL}/${p} --libdir=lib"
@@ -830,11 +828,6 @@ build_platform() {
     local build=${p}_BUILD
 
     case "${!build}" in
-        autotools)
-            ${SCRIPT_DIR}/te_cross_build_autotools \
-                "${TE_INSTALL}" "${p}" "${BUILD_TA}" \
-                || error "Platform ${p} cross build using autotools failed"
-            ;;
         ""|meson)
             local pmeson_nv_args="TE_BS_MESON_${p}_NV_ARGS"
             local pmeson_args="TE_BS_MESON_${p}_ARGS"
