@@ -81,7 +81,6 @@ fi
 
 TS_DEFAULT_OPTS+="--conf-dirs=${TS_CONF_DIRS} "
 TS_DEFAULT_OPTS+="--build-parallel "
-TS_DEFAULT_OPTS+="--build-meson "
 TS_DEFAULT_OPTS+="--trc-db=\"${TS_TOPDIR}\"/conf/trc.xml "
 
 eval "${TE_BASE}/dispatcher.sh ${TS_DEFAULT_OPTS} ${TS_OPTS}"
