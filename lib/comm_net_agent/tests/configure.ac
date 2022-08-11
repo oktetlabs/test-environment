@@ -2,7 +2,6 @@
 # Process this file with autoconf to produce a configure script.
 AC_INIT([comm_net_agent_tests],[1.0],
   [Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>])
-AC_REVISION([$Id: configure.ac,v 1.1 2003/10/28 09:35:42 arybchik Exp $])
 AC_CONFIG_SRCDIR([init01.c])
 
 AC_CONFIG_AUX_DIR([../../../auxdir])
