@@ -24,7 +24,7 @@ TE_TOOLS([rgt trc tce millicom])
 #
 TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
             [tools logic_expr conf_oid rpcxdr rpc_types asn ndn \
-             comm_net_agent loggerta rcfpch tce tad tad_dummy \
+             comm_net_agent loggerta rcfpch tad tad_dummy \
              iscsi_unh_target iscsi_initiator_conf log_proc \
              ipc bsapi loggerten rcfapi confapi comm_net_engine rcfunix \
              tapi rcfrpc tapi_rpc tapi_env tapi_tad tapi_radius trc netconf])
