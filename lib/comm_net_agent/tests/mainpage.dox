@@ -120,14 +120,6 @@ http://www.oktet.ru
   -  - Test plan document.
   -->
 
-@refs_start
-
-@ref_ref        TP TP
-@ref_title      Proteos: Test Protocol Specification
-@ref_identifier OKT-HLD-0000057-TE_PROTO
-
-@refs_end
-
 
 
 @section introduction Introduction

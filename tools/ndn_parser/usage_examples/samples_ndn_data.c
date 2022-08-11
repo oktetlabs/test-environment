@@ -1,7 +1,6 @@
 /*****************************************************************
  * 
  * Test Environment. Research document. 
- * DocId: OKT-DD-0000123-TE_NDN_DATA
  * API samples for template, patterns, and packets handling.
  * 
  * Author: Konstantin Abramenko <konst@oktetlabs.ru>

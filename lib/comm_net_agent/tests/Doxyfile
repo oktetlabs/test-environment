@@ -33,9 +33,8 @@ PROJECT_NAME           = "RCF Network Communication Library Test Specification"
 # if some version control system is used.
 
 ### TE
-### Document identifier must be used in PROJECT_NUMBER tag.
 
-PROJECT_NUMBER         = OKT-TS-0000194
+PROJECT_NUMBER         =
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) 
 # base path where the generated documentation will be put. 
@@ -274,7 +273,6 @@ GENERATE_DEPRECATEDLIST= YES
 
 ### TE
 ### Many aliases are defined for Test Specification.
-### See Appendix A in OKT-GL-0000083-TS for details.
 
 ALIASES                = copyright="@par Copiright Notice:\n" \
                          revs_start="<table><tr><td><b>Date</b></td><td><b>Revision</b></td><td><b>Author</b></td><td><b>Changes</b></td>" \
