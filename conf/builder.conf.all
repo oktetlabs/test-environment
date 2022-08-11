@@ -17,7 +17,7 @@ TE_SHELL([if test "$TE64" ; then \
               LINUX64_PLATFORM=linux_other ; \
           fi])
 
-TE_TOOLS([rgt rpcgen trc tce millicom])
+TE_TOOLS([rgt trc tce millicom])
 
 #
 # Host platform
