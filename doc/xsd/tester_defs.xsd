@@ -2,7 +2,6 @@
 
 <schema targetNamespace="http://www.oktetlabs.ru/proteos"
         xmlns:proteos="http://www.oktetlabs.ru/proteos"
-        version="$Id$"
         xml:lang="en"
         xmlns="http://www.w3.org/2001/XMLSchema">
 

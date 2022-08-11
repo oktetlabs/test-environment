@@ -2,8 +2,7 @@
 
 <xsd:schema xml:lang="en" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             targetNamespace="http://www.oktetlabs.ru/te/trc"
-            xmlns:te-trc="http://www.oktetlabs.ru/te/trc"
-            version="$Id$">
+            xmlns:te-trc="http://www.oktetlabs.ru/te/trc">
 
     <xsd:annotation>
         <xsd:documentation>

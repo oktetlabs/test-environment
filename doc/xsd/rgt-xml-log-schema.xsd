@@ -4,7 +4,6 @@
   -->
 <xs:schema targetNamespace="http://www.oktetlabs.ru/proteos"
         xmlns:proteos="http://www.oktetlabs.ru/proteos"
-        version="$Id: rgt-xml-log-schema.xsd,v 1.1 2003/10/28 09:35:42 arybchik Exp $"
         xml:lang="en"
         xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
