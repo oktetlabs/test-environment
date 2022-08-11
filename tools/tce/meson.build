@@ -21,15 +21,3 @@ install_subdir(
     'tce_py',
     install_dir : 'lib',
     )
-
-tce_src_files = files(
-    'bbhook.c',
-    'modules/Makefile',
-    'modules/tce_bbinit.c',
-    'modules/tce_bbinit_defs.h',
-)
-
-install_data(
-    tce_src_files,
-    install_dir: join_paths(get_option('datadir'), 'tce'),
-)
