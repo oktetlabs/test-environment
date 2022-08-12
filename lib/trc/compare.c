@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -59,7 +59,7 @@ te_test_results_equal(const te_test_result *lhv,
         RING("Diff at %u\n'%s'\n'%s'", i, v1->str + i, v2->str + i);
     }
 #endif
-    
+
     return (v1 == NULL) && (v2 == NULL);
 }
 

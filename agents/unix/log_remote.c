@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
@@ -67,7 +67,7 @@ map_name_to_level(const char *name)
                   {"INFO",  TE_LL_INFO},
                   {"VERB",  TE_LL_VERB}};
     unsigned i;
-    
+
     for (i = 0; i < sizeof(levels) / sizeof(*levels); i++)
     {
         if (!strcmp(levels[i].name, name))
@@ -103,7 +103,7 @@ close_cleanup_wrapper(void *p)
  *                     as a conserver connection designator)
  *                    - sharing mode (opt)
  */
-int 
+int
 log_remote(void *ready, int argc, char *argv[])
 {
     char               user[64];
@@ -130,7 +130,7 @@ log_remote(void *ready, int argc, char *argv[])
     /* address */
     if (0 != strcmp(argv[0], "any"))
         addr = inet_addr(argv[0]);
-    
+
     /* log_level */
     log_level = map_name_to_level(argv[1]);
     if (log_level == 0)
@@ -148,7 +148,7 @@ log_remote(void *ready, int argc, char *argv[])
         sem_post(ready);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
+
 #define TE_LOG_REMOTE_DEFAULT_PORT_NUMBER 10239
     /* port number to listen on, default it 10239 */
     port = strtol(argv[3], NULL, 10);
@@ -167,18 +167,18 @@ log_remote(void *ready, int argc, char *argv[])
     if (s < 0)
     {
         int rc = errno;
-        
+
         ERROR("%s: failed to open socket for incomming logs: %s",
               __FUNCTION__, strerror(rc));
         sem_post(ready);
-        
+
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
     /* set reuseaddr */
     {
         int optval = 1;
-        
+
         if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
                        &optval, sizeof(optval)) != 0)
         {
@@ -199,16 +199,16 @@ log_remote(void *ready, int argc, char *argv[])
             close(s);
             return rc;
         }
-        
-    }
-    
 
-    
+    }
+
+
+
     /* fill address */
     saddr.sin_port = htons(port);
     saddr.sin_addr.s_addr = addr;
     saddr.sin_family = AF_INET;
-    
+
     rc = bind(s, (struct sockaddr *)&saddr, sizeof(saddr));
     if (rc != 0)
     {
@@ -226,7 +226,7 @@ log_remote(void *ready, int argc, char *argv[])
     {
         int rc = errno;
 
-        ERROR("%s: malloc failed at line %d: %d", __FUNCTION__, 
+        ERROR("%s: malloc failed at line %d: %d", __FUNCTION__,
               __LINE__, rc);
         sem_post(ready);
         return TE_OS_RC(TE_TA_UNIX, rc);
@@ -237,18 +237,18 @@ log_remote(void *ready, int argc, char *argv[])
     pthread_cleanup_push(&close_cleanup_wrapper,
                          (void *)&s);
     pthread_cleanup_push(free, buffer);
-    
+
     for (;;)
     {
         pthread_testcancel();
-        
+
         FD_ZERO(&r_set);
         FD_SET(s, &r_set);
-        
+
         timeout.tv_sec = 0;
         timeout.tv_usec = interval;
-        
-        
+
+
         rc = select(s + 1, &r_set, NULL, NULL, &timeout);
         if (rc < 1)
             continue;
@@ -268,6 +268,6 @@ log_remote(void *ready, int argc, char *argv[])
     }
     pthread_cleanup_pop(1);
     pthread_cleanup_pop(1);
-    
+
     return 0;
 }

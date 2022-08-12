@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * Simple RCF test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "snmp/snmp_get_if_table"
@@ -51,7 +51,7 @@ main(int argc, char *argv[])
     TEST_GET_STRING_PARAM(mib_name);
     TEST_GET_STRING_PARAM(snmp_agt);
     TEST_GET_INT_PARAM(snmp_version);
-    
+
     /* Session */
     {
         if ((rc = rcf_ta_create_session(ta, &sid)) != 0)
@@ -65,14 +65,14 @@ main(int argc, char *argv[])
         tapi_snmp_oid_t ifTable_oid;
         int num;
 
-        rc = tapi_snmp_csap_create(ta, sid, snmp_agt, "public", 
-                                   snmp_version, &snmp_csap); 
-        if (rc) 
+        rc = tapi_snmp_csap_create(ta, sid, snmp_agt, "public",
+                                   snmp_version, &snmp_csap);
+        if (rc)
             TEST_FAIL("Csap create error %r", rc);
-        VERB("New csap %d", snmp_csap); 
+        VERB("New csap %d", snmp_csap);
 
-        
-        if ((rc = tapi_snmp_load_mib_with_path("/usr/share/snmp/mibs", 
+
+        if ((rc = tapi_snmp_load_mib_with_path("/usr/share/snmp/mibs",
                                                 mib_name)) != 0)
         {
             TEST_FAIL("snmp_load_mib(%s) failed, rc %r", mib_name, rc);
@@ -89,12 +89,12 @@ main(int argc, char *argv[])
 
         iftable_result = NULL;
 
-        rc = tapi_snmp_get_table(ta, sid, snmp_csap, &ifTable_oid, &num, 
+        rc = tapi_snmp_get_table(ta, sid, snmp_csap, &ifTable_oid, &num,
                                  &iftable_result);
         if (rc)
             TEST_FAIL("SNMP GET NEXT failed with rc %r", rc);
 
-        INFO("snmp get table got num: %d, ptr %x", num, iftable_result); 
+        INFO("snmp get table got num: %d, ptr %x", num, iftable_result);
 
         if (num > 0)
         {
@@ -103,7 +103,7 @@ main(int argc, char *argv[])
             {
                 INFO("row %d: ", i );
                 if (iftable_result[i].index_suffix)
-                    INFO(" index_suffix %s", 
+                    INFO(" index_suffix %s",
                             print_oid(iftable_result[i].index_suffix));
         #if 1
                 if (iftable_result[i].ifDescr)
@@ -113,7 +113,7 @@ main(int argc, char *argv[])
             }
         }
 
-        rcf_ta_csap_destroy(ta, sid, snmp_csap); 
+        rcf_ta_csap_destroy(ta, sid, snmp_csap);
 
     } while(0);
 
@@ -136,7 +136,7 @@ main()
     int  len = sizeof(ta);
     int  sid = 2;
     tapi_snmp_if_table_row_t * iftable_result;
-    
+
     printf("Starting test\n");
 
     if (rcf_get_ta_list(ta, &len) != 0)
@@ -145,7 +145,7 @@ main()
         return 1;
     }
     printf("Agent: %s\n", ta);
-    
+
     if (rcf_ta_create_session(ta, &sid) != 0)
     {
         printf("rcf_ta_create_session failed\n");
@@ -159,7 +159,7 @@ main()
     }
 
 
-    do { 
+    do {
         int csap;
         int rc;
         int errstat = 0;
@@ -171,29 +171,29 @@ main()
         tapi_snmp_oid_t ctp_num_pkts =
             {14, {1,3,6,1,4,1,4491,2,4,5,1,2,6, 0}};
         tapi_snmp_oid_t ifTable      =
-            {9, {1,3,6,1,2,1,2,2,1}}; 
+            {9, {1,3,6,1,2,1,2,2,1}};
         tapi_snmp_oid_t ctp_ping_sent=
             {14, {1,3,6,1,4,1,4491,2,4,5,1,3,11,0}};
 
         memset (&vb, 0, sizeof(vb));
-        
-        
+
+
         printf ("before csap create\n");
         fflush(stdout);
-        rc =  tapi_snmp_csap_create(ta, sid, "192.168.253.224", 
+        rc =  tapi_snmp_csap_create(ta, sid, "192.168.253.224",
                                     "public", 2, &csap);
-        printf("csap_create rc: %d\n", rc); 
+        printf("csap_create rc: %d\n", rc);
 
-        if (rc == 0) 
+        if (rc == 0)
             rc = tapi_snmp_get_integer(ta, sid, csap, &ctp_num_pkts, &num);
-        printf("snmp get integer rc: %d, got num: %d\n", rc, num); 
+        printf("snmp get integer rc: %d, got num: %d\n", rc, num);
 
 #if 1
         num = 50;
-        if (rc == 0) 
+        if (rc == 0)
             rc = tapi_snmp_getbulk(ta, sid, csap, &ctp_ping_sent, &num,
                                    vb);
-        printf("snmp getbulk rc: %d\n", rc); 
+        printf("snmp getbulk rc: %d\n", rc);
 
         if (rc == 0)
         {
@@ -207,10 +207,10 @@ main()
         }
 #endif
 #if 1
-        if (rc == 0) 
-            rc = tapi_snmp_get_table(ta, sid, csap, &ifTable, &num, 
+        if (rc == 0)
+            rc = tapi_snmp_get_table(ta, sid, csap, &ifTable, &num,
                                      &iftable_result);
-        printf("snmp get table rc: %d; num: %d\n", rc, num); 
+        printf("snmp get table rc: %d; num: %d\n", rc, num);
                 fflush(stdout);
         printf ("iftable_result: %p\n",iftable_result);
 
@@ -230,11 +230,11 @@ main()
         #endif
             }
         }
-        
+
 #endif
-#if 1 
-        printf("csap_destroy: %d\n", 
-               rcf_ta_csap_destroy(ta, sid, csap)); 
+#if 1
+        printf("csap_destroy: %d\n",
+               rcf_ta_csap_destroy(ta, sid, csap));
 #endif
 
     } while(0);

@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -173,7 +173,7 @@ extern void scenario_apply_to(testing_scenario *scenario,
 /**
  * Update testing scenario to have all items starting from the mininum
  * identifier up to the @a to identifier.
- * 
+ *
  * @param scenario      Testing scenario
  * @param to            Maximum identifier
  */
@@ -182,7 +182,7 @@ extern void scenario_apply_from(testing_scenario *scenario,
 
 /**
  * Add flags to all acts of the testing scenario.
- * 
+ *
  * @param scenario      A testing scenario
  * @param flags         Flags to add
  */

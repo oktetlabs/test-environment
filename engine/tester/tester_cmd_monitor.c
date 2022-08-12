@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
@@ -56,7 +56,7 @@ free_cmd_monitors(cmd_monitor_descrs *monitors)
 int
 start_cmd_monitors(cmd_monitor_descrs *monitors)
 {
-    cmd_monitor_descr *monitor; 
+    cmd_monitor_descr *monitor;
     int                rc = 0;
 
     TAILQ_FOREACH(monitor, monitors, links)
@@ -85,7 +85,7 @@ int
 stop_cmd_monitors(cmd_monitor_descrs *monitors)
 {
     int rc = 0;
-    cmd_monitor_descr *monitor; 
+    cmd_monitor_descr *monitor;
 
     TAILQ_FOREACH(monitor, monitors, links)
     {

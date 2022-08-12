@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief Test Environment: RGT - log index utilities - common declarations
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
  *

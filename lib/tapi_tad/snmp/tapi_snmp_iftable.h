@@ -1,18 +1,18 @@
 /** @file
- * @brief Test Environment: 
+ * @brief Test Environment:
  *
  * Traffic Application Domain Command Handler
  * SNMP protocol implementaion internal declarations.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 #ifndef __TE__TAPI_SNMP_IFTABLE_H__
-#define __TE__TAPI_SNMP_IFTABLE_H__ 
+#define __TE__TAPI_SNMP_IFTABLE_H__
 
 /** Rows in an instance of an ifTable */
 typedef struct tapi_snmp_if_table_row_t {

@@ -1,4 +1,4 @@
-/** @file 
+/** @file
  * @brief Common library for test agents which is very useful
  * in supporting read-create instances implementing "commit" operation.
  *
@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
@@ -60,12 +60,12 @@
  *
  * Which way to choose depends on the implementation of Test Agent,
  * because from programmer's point of view the only difference in these
- * two ways is that to support the second approach they should provide 
- * callback function for COMMIT operation, and save all the information 
+ * two ways is that to support the second approach they should provide
+ * callback function for COMMIT operation, and save all the information
  * obtained in ADD and SET callbacks in some local data structures.
  *
  * This library plays a role of such local data structure where all the
- * information can be locally stored (in ADD, or SET callbacks) and 
+ * information can be locally stored (in ADD, or SET callbacks) and
  * then extracted (in COMMIT callback).
  *
  * How to work with it:
@@ -80,7 +80,7 @@
  * In addition, each object keeps "action" value, which defines the type of
  * operation that should be performed with it (in most of the cases this
  * value is used in commit callback to define what to do - whether to add
- * a new instance, delete an existing instance, or just update some 
+ * a new instance, delete an existing instance, or just update some
  * attributes of an existing instance).
  */
 #ifdef __cplusplus
@@ -331,10 +331,10 @@ typedef enum ta_route_type {
     TA_RT_TYPE_THROW,
     TA_RT_TYPE_NAT,
     TA_RT_TYPE_MAX_VALUE
-} ta_route_type;    
+} ta_route_type;
 
 /**
- * Converts a route type id to a string representation 
+ * Converts a route type id to a string representation
  *
  * @param   Route type id
  *
@@ -441,7 +441,7 @@ ta_rt_info_init(ta_route_type type, ta_rt_info_t *rt_info)
 }
 
 /**
- * Parses route instance name and fills in a part of rt_info 
+ * Parses route instance name and fills in a part of rt_info
  * data structure.
  *
  * @param name     Route instance name
@@ -458,7 +458,7 @@ extern int ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info);
 extern int ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info);
 
 /**
- * Parses route object attributes and fills in a part of rt_info 
+ * Parses route object attributes and fills in a part of rt_info
  * data structure.
  *
  * @param attrs    Route attributes

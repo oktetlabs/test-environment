@@ -1,14 +1,14 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side - Library
  * Connections API
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 #ifndef __TE_COMM_NET_AGENT_TESTS_LIB_CONNECTION_H__
 #define __TE_COMM_NET_AGENT_TESTS_LIB_CONNECTION_H__
@@ -84,7 +84,7 @@ extern int remote_connection_init(void);
 extern void remote_connection_close(void);
 
 /**
- * Allocates memory for the input buffer of size 'size' with declared size 
+ * Allocates memory for the input buffer of size 'size' with declared size
  * 'declared_size'.
  *
  * @param   size           total size of the buffer
@@ -95,7 +95,7 @@ extern void remote_connection_close(void);
 extern char *alloc_input_buffer(int size, int declared_size);
 
 /**
- * Allocates memory for the output buffer of size 'size' with declared size 
+ * Allocates memory for the output buffer of size 'size' with declared size
  * 'declared_size'.
  *
  * @param   size           total size of the buffer
@@ -111,7 +111,7 @@ extern char *alloc_output_buffer(int size, int declared_size);
  *
  *
  * @retval 0     Transmission successful
- * @retval 1     Transmission failed due to a failure (or improper 
+ * @retval 1     Transmission failed due to a failure (or improper
  *               behavior) at the local station.
  */
 extern int remote_presend_random();

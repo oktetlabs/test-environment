@@ -1,4 +1,4 @@
-/** @file 
+/** @file
  * @brief Common library for test agents which is very useful
  * in supporting read-create instances implementing "commit" operation.
  *
@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
@@ -133,7 +133,7 @@ ta_obj_attr_find(ta_cfg_obj_t *obj, const char *name)
 }
 
 /* See the description in rcf_pch_ta_cfg.h */
-void 
+void
 ta_obj_free(ta_cfg_obj_t *obj)
 {
     ta_cfg_obj_attr_t *attr;
@@ -236,7 +236,7 @@ ta_obj_add(const char *type, const char *name, const char *value,
 
     if (obj != NULL)
         return TE_EEXIST;
-    
+
     /* Find a free slot */
     for (i = 0; i < TA_OBJS_NUM; i++)
     {
@@ -422,7 +422,7 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
     family = (strchr(inst_copy, ':') == NULL) ? AF_INET : AF_INET6;
 
     ((struct sockaddr *)&(rt_info->dst))->sa_family = family;
-    
+
     if ((family == AF_INET &&
          inet_pton(family, inst_copy, &(SIN(&(rt_info->dst))->sin_addr))
          == 0) ||
@@ -451,7 +451,7 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
         rt_info->metric = atoi(ptr);
         rt_info->flags |= TA_RT_INFO_FLG_METRIC;
     }
-    
+
     if ((ptr = strstr(tmp, "tos=")) != NULL)
     {
         ptr += strlen("tos=");
@@ -480,11 +480,11 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
      * route types.
      */
     rt_info->type = TA_RT_TYPE_UNICAST;
-    
+
     return 0;
 }
 
-static char *rt_type_names[TA_RT_TYPE_MAX_VALUE] = 
+static char *rt_type_names[TA_RT_TYPE_MAX_VALUE] =
 {
     "",
     "unicast",
@@ -514,9 +514,9 @@ static ta_route_type
 ta_rt_name2type(const char *name)
 {
     char **iter;
-    
-    for (iter = rt_type_names + 1;  
-         iter < rt_type_names + TE_ARRAY_LEN(rt_type_names); 
+
+    for (iter = rt_type_names + 1;
+         iter < rt_type_names + TE_ARRAY_LEN(rt_type_names);
          iter++)
     {
         if (strcmp(name, *iter) == 0)
@@ -536,7 +536,7 @@ ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info)
     {
         if (index(value, ':') != NULL)
             family = AF_INET6;
-        
+
         rt_info->gw.ss_family = family;
         if (family == AF_INET)
         {
@@ -545,7 +545,7 @@ ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info)
             if (SIN(&rt_info->gw)->sin_addr.s_addr != INADDR_ANY)
             {
                 rt_info->flags |= TA_RT_INFO_FLG_GW;
-            }            
+            }
         }
         else if (family == AF_INET6)
         {
@@ -554,13 +554,13 @@ ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info)
             if (!IN6_IS_ADDR_UNSPECIFIED(&SIN6(&rt_info->gw)->sin6_addr))
             {
                 rt_info->flags |= TA_RT_INFO_FLG_GW;
-            } 
+            }
         }
-        
+
         if (rc <= 0)
         {
             /* Clear gateway flag */
-            rt_info->flags &= (~TA_RT_INFO_FLG_GW); 
+            rt_info->flags &= (~TA_RT_INFO_FLG_GW);
             ERROR("Invalid value of route: '%s'", value);
             return TE_EINVAL;
         }
@@ -571,7 +571,7 @@ ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info)
     }
 
     return 0;
-}        
+}
 
 /* See the description in rcf_pch_ta_cfg.h */
 int
@@ -649,7 +649,7 @@ ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
             rt_info->src.ss_family = (strchr(attr->value, ':') != NULL) ?
                                      AF_INET6 : AF_INET;
             if (inet_pton(rt_info->src.ss_family, attr->value,
-                          (rt_info->src.ss_family == AF_INET)? 
+                          (rt_info->src.ss_family == AF_INET)?
                           (void *)(&SIN(&rt_info->src)->sin_addr) :
                           (void *)(&SIN6(&rt_info->src)->sin6_addr)) <= 0)
             {

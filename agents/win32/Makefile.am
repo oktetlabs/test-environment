@@ -9,7 +9,7 @@ AM_LDFLAGS=$(TE_LDFLAGS) -L$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib
 
 tadir=$(prefix)/@with_name@
 
-noinst_HEADERS=tarpc_server.h 
+noinst_HEADERS=tarpc_server.h
 
 ta_SOURCES=win32.c win32conf.c inet_pton.c inet_ntop.c common.c
 
@@ -26,7 +26,7 @@ ta_DEPENDENCIES=$(TE_DEPENDENCIES) symtbl.o \
 
 CLEANFILES=symtbl.c
 
-SYMTBL_OBJECTS=win32.o 
+SYMTBL_OBJECTS=win32.o
 SYMTBL_LIBS= $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
              $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfpch.a \
              $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib${TAD}.a
@@ -39,7 +39,7 @@ LDADD=symtbl.o \
 -llogger_core -lcygwin -lexpat -lpcap -lole32 -loleaut32
 
 AM_CPPFLAGS+=-DRCF_RPC -I.
-ta_SOURCES+=tarpc_server.c 
+ta_SOURCES+=tarpc_server.c
 nodist_ta_SOURCES=rpc_unsupported.c rpc_supported.h
 
 BUILT_SOURCES=rpc_unsupported.c rpc_supported.h
@@ -51,8 +51,8 @@ CLEANFILES+=rpc_unsupported.c rpc_supported.h
 rpc_unsupported.c: $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include/tarpc.h \
                    rpc_supported.h \
                    $(srcdir)/../../include/rpc_unsupported.m4
-	$(srcdir)/../../engine/builder/te_rpc_unsupported $< 
-        
+	$(srcdir)/../../engine/builder/te_rpc_unsupported $<
+
 rpc_supported.h: tarpc_server.o @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" $^
 
@@ -60,7 +60,7 @@ rpc_supported.h: tarpc_server.o @TE_DEPENDENCIES@
 if CFG_STANDALONE_RPCSERVER
 
 ta_PROGRAMS=ta rpcserver rpcserver32 rpcserver64
- 
+
 CLEANFILES+=rpcserver_symtbl.c
 
 rpcserver_DEPENDENCIES=\
@@ -70,7 +70,7 @@ rpcserver_DEPENDENCIES=\
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpc_types.a \
-    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcxdrta.a 
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcxdrta.a
 
 rpcserver_SOURCES=tarpc_server.c rpcserver.c \
                   common.c inet_pton.c inet_ntop.c
@@ -80,11 +80,11 @@ rpcserver64_SOURCES=
 
 rpcserver_LDADD=rpcserver_symtbl.o $(TE_LDADD) -lrpcxdrta \
                 -lrpc_types -lrcfpch -lloggerta -ltools -llogger_core -lrpc \
-                -lws2_32 -lmswsock -lwsock32 -liphlpapi 
+                -lws2_32 -lmswsock -lwsock32 -liphlpapi
 
 rpcserver_symtbl.c: tarpc_server.o common.o $(RPCSERVER_SYMTBL_ADD)
 	$(srcdir)/../../engine/builder/te_generate_symtbl \
-            "${NM}" empty empty $@ $^ 
+            "${NM}" empty empty $@ $^
 
 # Native build
 
@@ -101,7 +101,7 @@ rpcserver32$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
         PATH="$${PATH}:$(TE_BASE)/engine/builder:$(TE_PATH)" \
         te_build_win_app $(srcdir) $(TE_PLATFORM) \
                          windows $@ \"$(RPCSERVER_LIBS)\" $^
-        
+
 rpcserver64$(EXEEXT): $(RPCSERVER_SRC) $(rpcserver_DEPENDENCIES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
         PATH="$${PATH}:$(TE_BASE)/engine/builder:$(TE_PATH)" \
@@ -166,5 +166,5 @@ endif
 
 symtbl.c: $(SYMTBL_OBJECTS) $(SYMTBL_LIBS) $(TE_DEPENDENCIES)
 	$(srcdir)/../../engine/builder/te_generate_symtbl \
-            "${NM}" empty empty $@ $^ 
+            "${NM}" empty empty $@ $^
 

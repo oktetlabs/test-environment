@@ -2,18 +2,18 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from linux/net_tstamps.h.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
  *
  */
 
- 
+
 #ifndef __TE_RPC_LINUX_NET_TSTAMP_H__
 #define __TE_RPC_LINUX_NET_TSTAMP_H__
 

@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * Common definitions for Self-TAD IP stack test suite.
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
- * 
+ *
  */
 
 #ifndef __IPSTACK_SUITE_H__

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Andrey G. Ivanov <andron@oktetlabs.ru>
  *
@@ -31,12 +31,12 @@
 struct rcf_net_connection;
 
 
-/** 
+/**
  * Connects to the Test Agent side of Network Communication library.
  *
  * @param  addr         - network address of the test agent
  * @param  port         - port of the test agent
- * @param  p_rnc        - pointer to to pointer to the rcf_net_connection 
+ * @param  p_rnc        - pointer to to pointer to the rcf_net_connection
  *                        structure to be filled, used as handler
  * @param  p_select_set - pointer to the fdset for reading to be modified
  *
@@ -44,8 +44,8 @@ struct rcf_net_connection;
  * @retval 0            - success
  * @retval other value  - errno
  */
-extern int rcf_net_engine_connect(const char *addr, const char *port, 
-                                  struct rcf_net_connection **p_rnc, 
+extern int rcf_net_engine_connect(const char *addr, const char *port,
+                                  struct rcf_net_connection **p_rnc,
                                   fd_set *p_select_set);
 
 
@@ -89,7 +89,7 @@ extern te_bool rcf_net_engine_is_ready(struct rcf_net_connection *rnc);
  *                          returned (success);
  *                          unchanged if TE_ESMALLBUF returned;
  *                          number of bytes in the message (with
- *                          attachment) 
+ *                          attachment)
  *                      if TE_EPENDING returned. (Note: If the
  *                      function called a number of times to receive
  *                      one big message, a full number of bytes will
@@ -127,10 +127,10 @@ extern int rcf_net_engine_receive(struct rcf_net_connection *rnc,
 
 
 /**
- * Close connection (socket) to the Test Agent and release the memory used 
+ * Close connection (socket) to the Test Agent and release the memory used
  * by struct rcf_net_connection *rnc.
  *
- * @param p_rnc         Pointer to variable with handler received from 
+ * @param p_rnc         Pointer to variable with handler received from
  *                      rcf_net_engine_connect
  * @param p_select_set  Pointer to the fdset for reading to be modified
  *

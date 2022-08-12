@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  *
@@ -240,7 +240,7 @@ xsupplicant_start(const char *ifname, const char *conf_fname)
         }
     }
     RING("Starting xsupplicant on %s", ifname);
-    snprintf(buf, sizeof(buf), "xsupplicant -i %s -c %s -dA >/dev/null 2>&1", 
+    snprintf(buf, sizeof(buf), "xsupplicant -i %s -c %s -dA >/dev/null 2>&1",
              ifname, conf_fname);
     if (ta_system(buf) != 0)
     {
@@ -258,7 +258,7 @@ xsupplicant_start(const char *ifname, const char *conf_fname)
 static void
 xsupplicant_write_config(FILE *f, const supplicant *supp)
 {
-    const char template[] = 
+    const char template[] =
         "network_list = all\n"
         "default_netname = %s\n"
         "logfile = /tmp/te_supp_%s.log\n"
@@ -681,7 +681,7 @@ supp_create(const char *ifname)
 }
 
 /**
- * Free the memory allocated for the supplicant structure 
+ * Free the memory allocated for the supplicant structure
  * and its parameters
  *
  * @param supp      Supplicant to destroy
@@ -891,12 +891,12 @@ DS_SUPP_PARAM_SET(ds_supp_eapmd5_passwd_set, SP_MD5_PASSWORD)
 
 RCF_PCH_CFG_NODE_RW(node_ds_supp_eapmd5_passwd, "passwd",
                     NULL, NULL,
-                    ds_supp_eapmd5_passwd_get, 
+                    ds_supp_eapmd5_passwd_get,
                     ds_supp_eapmd5_passwd_set);
 
 RCF_PCH_CFG_NODE_RW(node_ds_supp_eapmd5_username, "username",
                     NULL, &node_ds_supp_eapmd5_passwd,
-                    ds_supp_eapmd5_username_get, 
+                    ds_supp_eapmd5_username_get,
                     ds_supp_eapmd5_username_set);
 
 RCF_PCH_CFG_NODE_RO(node_ds_supp_eapmd5, "eap-md5",

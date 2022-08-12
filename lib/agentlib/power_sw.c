@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Igor Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  * @author Ivan V. Soloduha <Ivan.Soloducha@oktetlabs.ru>
@@ -19,7 +19,7 @@
 #include "te_config.h"
 #include "agentlib_config.h"
 
-#if defined (ENABLE_POWER_SW) 
+#if defined (ENABLE_POWER_SW)
 
 #include "logger_api.h"
 #include "te_errno.h"

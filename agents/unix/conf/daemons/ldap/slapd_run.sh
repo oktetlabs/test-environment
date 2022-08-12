@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Script to create SLAPD database and run slapd 
+# Script to create SLAPD database and run slapd
 # Intended to be used from the Test Agent.
 # Parameters:
 #    port to listen

@@ -2,11 +2,11 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from sys/stat.h.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -14,7 +14,7 @@
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_SYS_STAT_H__
 #define __TE_RPC_SYS_STAT_H__
 
@@ -91,7 +91,7 @@ typedef enum rpc_access_mode_flags {
 /**
  * access_mode_flags_rpc2str()
  */
-RPCBITMAP2STR(access_mode_flags, ACCESS_MODE_FLAGS_MAPPING_LIST)    
+RPCBITMAP2STR(access_mode_flags, ACCESS_MODE_FLAGS_MAPPING_LIST)
 
 /** Convert RPC access mode to native flags */
 extern int access_mode_flags_rpc2h(int mode);

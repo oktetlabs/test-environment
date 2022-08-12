@@ -2,11 +2,11 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from sys/wait.h.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -14,7 +14,7 @@
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_SYS_WAIT_H__
 #define __TE_RPC_SYS_WAIT_H__
 
@@ -30,9 +30,9 @@ extern "C" {
  */
 typedef enum rpc_waitpid_opts {
     RPC_WNOHANG    = 0x1, /**< return immediately if no child has exited */
-    RPC_WUNTRACED  = 0x2, /**< also return for children which are 
+    RPC_WUNTRACED  = 0x2, /**< also return for children which are
                                stopped and not traced */
-    RPC_WCONTINUED = 0x4, /**< also return for children which are 
+    RPC_WCONTINUED = 0x4, /**< also return for children which are
                                resumed by SIGCONT */
     RPC_WSYSTEM    = 0x8, /**< Call waitpid() not using ta_waitpid() */
 } rpc_waitpid_opts;

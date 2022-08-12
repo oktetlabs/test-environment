@@ -1,11 +1,11 @@
-/** @file 
+/** @file
  * @brief RCF Portable Command Handler
  *
  * RCF Portable Commands Handler implementation.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -84,7 +84,7 @@ static char rcf_pch_id[RCF_PCH_MAX_ID_LEN];
 
 /**
  * Get the rcf session identifier.
- * 
+ *
  * @param id    Pointer to copy of RCF session indentifier (OUT).
  */
 void
@@ -96,7 +96,7 @@ rcf_pch_get_id(char *id)
 
 /**
  * Initialization of the rcf session identifier.
- * 
+ *
  * @param port      RCF connection port.
  */
 static void
@@ -155,7 +155,7 @@ transform_str(char **ptr, char **str)
 {
     char   *p = *ptr;
     char   *s;
-    
+
     te_bool quotes = FALSE;
 
     SKIP_SPACES(p);
@@ -308,9 +308,9 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, void **param)
             {
 #if (SIZEOF_VOID_P == 8)
                 param[n] = (void *)val;
-#else                
+#else
                 param[n] = (void *)(uint32_t)val;
-#endif                
+#endif
                 n++;
             }
         }
@@ -427,7 +427,7 @@ transmit_log(struct rcf_comm_connection *conn, char *cbuf,
 }
 
 /** Detach from the Test Engine after fork() */
-static void 
+static void
 rcf_pch_detach(void)
 {
     rcf_comm_agent_close(&conn);
@@ -437,7 +437,7 @@ rcf_pch_detach(void)
 static void *pch_vfork_saved_conn;
 
 /** Detach from the Test Engine before vfork() */
-static void 
+static void
 rcf_pch_detach_vfork(void)
 {
     pch_vfork_saved_conn = conn;
@@ -445,7 +445,7 @@ rcf_pch_detach_vfork(void)
 }
 
 /** Attach to the Test Engine after vfork() in the parent process */
-static void 
+static void
 rcf_pch_attach_vfork(void)
 {
     /* Close connection created after vfork() but before exec(). */
@@ -470,7 +470,7 @@ rcf_pch_run(const char *confstr, const char *info)
     int   rc = 0;
     int   sid = 0;
     int   cmd_buf_len = RCF_MAX_LEN;
-    
+
     size_t   answer_plen = 0;
     rcf_op_t opcode = 0;
     te_errno rc2;
@@ -567,20 +567,20 @@ rcf_pch_run(const char *confstr, const char *info)
         if (TE_RC_GET_ERROR(rc) == TE_EPENDING)
         {
             size_t tmp;
-            
+
             int received = cmd_buf_len;
             int ba_offset = (ba == NULL) ? 0 :
                                 ((uint8_t *)ba - (uint8_t *)cmd);
-            
+
             char *old_cmd = cmd;
-            
+
             if ((cmd = realloc(cmd, len)) == NULL)
             {
                 old_cmd[128] = 0;
 
                 LOG_PRINT("Failed to allocate enough memory for command <%s>",
                       old_cmd);
-                
+
                 free(old_cmd);
                 return -1;
             }
@@ -588,8 +588,8 @@ rcf_pch_run(const char *confstr, const char *info)
             tmp = len - received;
             if (ba_offset > 0)
                 ba = (uint8_t *)cmd + ba_offset;
-            
-            if ((rc = rcf_comm_agent_wait(conn, cmd + received, 
+
+            if ((rc = rcf_comm_agent_wait(conn, cmd + received,
                                           &tmp, NULL)) != 0)
             {
                 LOG_PRINT("Failed to read binary attachment for command <%s>",
@@ -653,7 +653,7 @@ rcf_pch_run(const char *confstr, const char *info)
 
                 if (rc < 0)
                     rc = rcf_pch_configure(conn, cmd, cmd_buf_len,
-                                           answer_plen, ba, len, 
+                                           answer_plen, ba, len,
                                            op, NULL, NULL);
 
                 if (rc != 0)
@@ -700,7 +700,7 @@ rcf_pch_run(const char *confstr, const char *info)
 
                 if (rc < 0)
                     rc = rcf_pch_configure(conn, cmd, cmd_buf_len,
-                                           answer_plen, ba, len, 
+                                           answer_plen, ba, len,
                                            op, oid, val);
 
                 if (rc != 0)
@@ -842,7 +842,7 @@ rcf_pch_run(const char *confstr, const char *info)
                     rc = rcf_ch_vread(conn, cmd, cmd_buf_len,
                                       answer_plen, type, var);
                     if (rc < 0)
-                        rc = rcf_pch_vread(conn, cmd, cmd_buf_len, 
+                        rc = rcf_pch_vread(conn, cmd, cmd_buf_len,
                                            answer_plen, type, var);
                     if (rc != 0)
                         goto communication_problem;
@@ -879,7 +879,7 @@ rcf_pch_run(const char *confstr, const char *info)
             {
                 char *params = NULL;
                 char *stack;
-                
+
                 if (*ptr == 0 || transform_str(&ptr, &stack) != 0)
                     goto bad_protocol;
 
@@ -898,7 +898,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (rcf_ch_csap_create(conn, cmd, cmd_buf_len, answer_plen,
                                        ba, len, stack, params) < 0)
                 {
-                    ERROR("CSAP stack %s (%s) is NOT supported", stack, 
+                    ERROR("CSAP stack %s (%s) is NOT supported", stack,
                           params);
                     SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
                 }
@@ -919,7 +919,7 @@ rcf_pch_run(const char *confstr, const char *info)
                     *ptr != 0)
                     goto bad_protocol;
 
-                if (rcf_ch_csap_param(conn, cmd, cmd_buf_len, 
+                if (rcf_ch_csap_param(conn, cmd, cmd_buf_len,
                                       answer_plen, handle, var) < 0)
                 {
                     ERROR("CSAP parameter '%s' is NOT supported",
@@ -1022,10 +1022,10 @@ rcf_pch_run(const char *confstr, const char *info)
             {
                 int handle;
                 int postponed = 0;
-                
+
                 if (*ptr == 0 || ba == NULL)
                     goto bad_protocol;
-                    
+
                 READ_INT(handle);
                 if (strcmp_start("postponed", ptr) == 0)
                 {
@@ -1093,7 +1093,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (*ptr != 0)
                     goto bad_protocol;
 
-                if (rcf_ch_trrecv_start(conn, cmd, cmd_buf_len, 
+                if (rcf_ch_trrecv_start(conn, cmd, cmd_buf_len,
                                         answer_plen, ba, len, handle,
                                         num, timeout, mode) < 0)
                 {
@@ -1144,9 +1144,9 @@ rcf_pch_run(const char *confstr, const char *info)
                 int      argc;
                 te_bool  is_argv;
                 int      priority = -1;
-                
-                rcf_execute_mode mode; 
-                
+
+                rcf_execute_mode mode;
+
                 if (strcmp_start(TE_PROTO_FUNC " ", ptr) == 0)
                 {
                     mode = RCF_FUNC;
@@ -1186,26 +1186,26 @@ rcf_pch_run(const char *confstr, const char *info)
                 {
                     case RCF_FUNC:
                     {
-                        rc = rcf_ch_call(conn, cmd, cmd_buf_len, 
+                        rc = rcf_ch_call(conn, cmd, cmd_buf_len,
                                          answer_plen,
                                          rtn, is_argv, argc, param);
                         if (rc < 0)
-                            rc = rcf_pch_call(conn, cmd, cmd_buf_len, 
+                            rc = rcf_pch_call(conn, cmd, cmd_buf_len,
                                               answer_plen,
                                               rtn, is_argv, argc, param);
 
                         if (rc != 0)
                             goto communication_problem;
-                        
+
                         break;
                     }
-                        
+
                     case RCF_PROCESS:
                     {
                         pid_t pid;
-                        
-                        if ((rc = rcf_ch_start_process(&pid, priority, 
-                                                       rtn, is_argv, 
+
+                        if ((rc = rcf_ch_start_process(&pid, priority,
+                                                       rtn, is_argv,
                                                        argc, param)) != 0)
                         {
                             SEND_ANSWER("%d", rc);
@@ -1214,16 +1214,16 @@ rcf_pch_run(const char *confstr, const char *info)
                         {
                             SEND_ANSWER("0 %ld", (long)pid);
                         }
-                        
+
                         break;
                     }
-                    
+
                     case RCF_THREAD:
                     {
                         int tid;
-                        
-                        if ((rc = rcf_ch_start_thread(&tid, priority, 
-                                                      rtn, is_argv, 
+
+                        if ((rc = rcf_ch_start_thread(&tid, priority,
+                                                      rtn, is_argv,
                                                       argc, param)) != 0)
                         {
                             SEND_ANSWER("%d", rc);
@@ -1232,10 +1232,10 @@ rcf_pch_run(const char *confstr, const char *info)
                         {
                             SEND_ANSWER("0 %d", tid);
                         }
-                        
+
                         break;
                     }
-                        
+
                     default:
                         SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
                 }
@@ -1246,12 +1246,12 @@ rcf_pch_run(const char *confstr, const char *info)
             {
                 char    *server;
                 uint32_t timeout;
-                
+
                 if (*ptr == 0 || transform_str(&ptr, &server) != 0)
                     goto bad_protocol;
-                    
+
                 READ_INT(timeout);
-                
+
                 if (ba != NULL)
                 {
                     len -= ((uint8_t *)ba - (uint8_t *)cmd);
@@ -1261,7 +1261,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 {
                     /* XML */
                     char *tmp;
-                      
+
                     if (transform_str(&ptr, &tmp) != 0)
                         goto bad_protocol;
                     ptr = tmp;
@@ -1269,19 +1269,19 @@ rcf_pch_run(const char *confstr, const char *info)
                 }
 
                 rc = rcf_pch_rpc(conn, sid, ptr, len, server, timeout);
-                                                 
+
                 if (rc != 0)
                      goto communication_problem;
-                
+
                 break;
             }
-            
+
             case RCFOP_KILL:
             {
                 unsigned int pid;
 
-                rcf_execute_mode mode; 
-                
+                rcf_execute_mode mode;
+
                 if (*ptr == 0 || ba != NULL)
                     goto bad_protocol;
 

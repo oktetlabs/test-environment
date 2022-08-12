@@ -2,14 +2,14 @@
  * @brief Test Environment
  *
  * Simple BPDU CSAP test: create CSAP and send dummy BPDU from it
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #include "te_config.h"
@@ -48,7 +48,7 @@ main()
     char ta[32];
     int  len = sizeof(ta);
     int  sid;
-    
+
     VERB("Starting test\n");
     if (rcf_get_ta_list(ta, &len) != 0)
     {
@@ -56,28 +56,28 @@ main()
         return 1;
     }
     VERB(" Using agent: %s\n", ta);
-    
+
     /* Type test */
     {
         char type[16];
         if (rcf_ta_name2type(ta, type) != 0)
         {
             fprintf(stderr, "rcf_ta_name2type failed\n");
-            VERB("rcf_ta_name2type failed\n"); 
+            VERB("rcf_ta_name2type failed\n");
             return 1;
         }
-        VERB("TA type: %s\n", type); 
+        VERB("TA type: %s\n", type);
     }
-    
+
     /* Session */
     {
         if (rcf_ta_create_session(ta, &sid) != 0)
         {
             fprintf(stderr, "rcf_ta_create_session failed\n");
-            VERB("rcf_ta_create_session failed\n"); 
+            VERB("rcf_ta_create_session failed\n");
             return 1;
         }
-        VERB("Test: Created session: %d\n", sid); 
+        VERB("Test: Created session: %d\n", sid);
     }
 
     /* CSAP tests */
@@ -91,7 +91,7 @@ main()
         asn_value *asn_pdu;
         asn_value *asn_bpdu;
         asn_value *asn_eth_hdr;
-        char eth_device[] = "eth0"; 
+        char eth_device[] = "eth0";
 
         uint8_t own_addr[6] = {0x01,0x02,0x03,0x04,0x05,0x06};
         uint8_t root_id[] = {0x12, 0x13, 0x14, 0x15, 0, 0, 0, 0};
@@ -113,9 +113,9 @@ main()
 
         template = asn_init_value(ndn_traffic_template);
         asn_pdus = asn_init_value(ndn_generic_pdu_sequence);
-        asn_pdu = asn_init_value(ndn_generic_pdu); 
-        asn_eth_hdr = asn_init_value(ndn_eth_header); 
-        
+        asn_pdu = asn_init_value(ndn_generic_pdu);
+        asn_eth_hdr = asn_init_value(ndn_eth_header);
+
         memset(payload, 0, sizeof(payload));
 
         asn_write_value_field (asn_bpdu, payload, 2, "proto-id.#plain");
@@ -123,28 +123,28 @@ main()
         rc = asn_write_component_value(asn_pdu, asn_bpdu, "#bridge");
         if (rc == 0)
             rc = asn_insert_indexed(asn_pdus, asn_pdu, 0, "");
- 
-        asn_pdu = asn_init_value(ndn_generic_pdu); 
+
+        asn_pdu = asn_init_value(ndn_generic_pdu);
         if (rc == 0)
             rc = asn_write_component_value(asn_pdu, asn_eth_hdr, "#eth");
         if (rc == 0)
             rc = asn_insert_indexed(asn_pdus, asn_pdu, 1, "");
 
         if (rc == 0)
-            rc = asn_write_component_value(template, asn_pdus, "pdus"); 
+            rc = asn_write_component_value(template, asn_pdus, "pdus");
 
         CHECK_STATUS(rc, "Template create failed with rc %x\n", rc);
 
-        rc = tapi_stp_plain_csap_create(ta, sid, eth_device, own_addr, 
-                                        NULL, &csap); 
-        printf ("tapi_stp_plain_csap_create rc: %x, csap: %d\n", rc, csap); 
+        rc = tapi_stp_plain_csap_create(ta, sid, eth_device, own_addr,
+                                        NULL, &csap);
+        printf ("tapi_stp_plain_csap_create rc: %x, csap: %d\n", rc, csap);
         CHECK_STATUS(rc, "csap create failed with rc %x\n", rc);
 
         rc = tapi_stp_bpdu_send(ta, sid, csap, template);
-        CHECK_STATUS(rc, "BDPU send failed with rc %x\n", rc); 
+        CHECK_STATUS(rc, "BDPU send failed with rc %x\n", rc);
 
-        rc = rcf_ta_csap_destroy(ta,sid, csap); 
-        CHECK_STATUS(rc, "csap destroy failed with rc %x\n", rc); 
+        rc = rcf_ta_csap_destroy(ta,sid, csap);
+        CHECK_STATUS(rc, "csap destroy failed with rc %x\n", rc);
 
     } while (0);
 

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author  Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
@@ -89,7 +89,7 @@ answer_user_request(usrreq *req)
     }
 }
 
-/** 
+/**
  * Returns pointer to the current handler for the
  * given event type.
  */
@@ -121,7 +121,7 @@ get_handler(rcf_op_t opcode)
     }
 }
 
-/** 
+/**
  * Writes buffer to the file with name msg->file.
  *
  * @param msg        Message the data of which should be written to
@@ -168,7 +168,7 @@ write_binary_attachment(rcf_msg *msg,  char *buf, uint32_t buf_len)
  * @param req           user request structure
  *
  * @return              Error returned by the request handler or:
- * @retval TE_EIPC      no handler is registered for 
+ * @retval TE_EIPC      no handler is registered for
  *                      the req->message->opcode type of request
  * @retval TE_EINVAL       if wrong opcode is given
  */
@@ -183,13 +183,13 @@ process_user_request(usrreq *req)
     int      data_len;
 
     msg->error = 0;
-    VERB("Request %s is received, msg->id = %s", 
+    VERB("Request %s is received, msg->id = %s",
          rcf_op_to_string(msg->opcode),
          msg->id);
 
 #if SUPPORT_TE_LOGGER
     /**
-     * TODO: dirty hack, it is required to handle logger's 
+     * TODO: dirty hack, it is required to handle logger's
      * ta_list request, which is received before any of the
      * request handlers is registered.
      */
@@ -200,7 +200,7 @@ process_user_request(usrreq *req)
         rcfrh_agents_list(buf, MAX_AGENTS_NUMBER * AGENT_NAME_MAX_LENGTH + 1);
         strcpy(msg->data, buf);
         msg->data_len = strlen(msg->data) + 1;
-        goto answer;        
+        goto answer;
     }
     else if (msg->opcode == RCFOP_TATYPE)
     {
@@ -228,7 +228,7 @@ process_user_request(usrreq *req)
     handler = get_handler(msg->opcode);
     if (handler == NULL)
     {
-        ERROR("No handler is set for %s type of request", 
+        ERROR("No handler is set for %s type of request",
               rcf_op_to_string(msg->opcode));
         msg->error = TE_EIPC;
         goto answer;
@@ -260,9 +260,9 @@ process_user_request(usrreq *req)
                 msg->error = rc;
             break;
         case RCFOP_CONFGET:
-            rc = ((rcfrh_conf_get) handler)(msg->ta, 
-                                            msg->id, 
-                                            &data, 
+            rc = ((rcfrh_conf_get) handler)(msg->ta,
+                                            msg->id,
+                                            &data,
                                             &data_len);
             if (rc < 0)
             {
@@ -317,7 +317,7 @@ process_user_request(usrreq *req)
                                             msg->id);
             if (rc != 0)
             {
-                ERROR("Failed to delete entity with id : %s", 
+                ERROR("Failed to delete entity with id : %s",
                       msg->id);
                 msg->error = rc;
             }
@@ -351,7 +351,7 @@ answer:
     return msg->error;
 }
 
-/** 
+/**
  * Inits RCF Emulator and related structures (database).
  *
  * @return     error, returned by the db_init() call
@@ -427,13 +427,13 @@ rcfrh_set_default_handler(rcf_op_t opcode, request_handler *conf)
 }
 
 /**
- * Sets default handlers for all request in the configuration 
+ * Sets default handlers for all request in the configuration
  * with the given ID.
  */
 int
 rcfrh_set_default_handlers(int conf_id)
 {
-    if (conf_id < 0 || conf_id > MAX_CONF_NUMBER || 
+    if (conf_id < 0 || conf_id > MAX_CONF_NUMBER ||
         handler_conf[conf_id] == NULL)
         return TE_EINVAL;
 
@@ -490,7 +490,7 @@ rcf_emulate(void* param)
         fd_set          set = set0;
         size_t          len;
         rcf_msg        *msg;
-        
+
         req = NULL;
         rc = -1;
 
@@ -540,7 +540,7 @@ error:
         ERROR("Error exit");
     else
         RING("Exit");
-    
+
     rcfrh_shutdown();
     return NULL;
 }
@@ -556,7 +556,7 @@ rcfrh_ta_list_default(char **ta_list)
     if (agents == NULL)
         return TE_ENOMEM;
     rcfrh_agents_list(agents, MAX_AGENTS_NUMBER * AGENT_NAME_MAX_LENGTH + 1);
-    
+
     *ta_list = agents;
     return 0;
 }
@@ -564,7 +564,7 @@ rcfrh_ta_list_default(char **ta_list)
 /**
  * TA Check default request handler.
  */
-int 
+int
 rcfrh_ta_check_default(char *ta_name, int *result)
 {
     if (rcfrh_is_agent(ta_name) > 0)
@@ -679,7 +679,7 @@ rcfrh_conf_add_default(char *ta_name, char *oid, char *value)
 /**
  * Conf del default request handler.
  */
-int 
+int
 rcfrh_conf_del_default(char *ta_name, char *oid)
 {
     int rc;
@@ -693,7 +693,7 @@ rcfrh_conf_del_default(char *ta_name, char *oid)
             return rc;
         }
     }
-    else 
+    else
         return TE_EINVAL;
 
     return 0;
@@ -772,9 +772,9 @@ rcfrh_configuration_delete(int conf_id)
 /**
  * Changes the crrent configuration.
  */
-int 
+int
 rcfrh_configuration_set_current(int conf_id)
-{    
+{
     if (conf_id < 0 || conf_id > MAX_CONF_NUMBER ||
         handler_conf[conf_id] == NULL)
         return TE_EINVAL;
@@ -808,7 +808,7 @@ rcfrh_agent_add(char *agents_name, agent_type type)
 {
     int i = 0;
     agent_t *agt;
-    
+
     while (agents_list[i] != NULL)
         i++;
 
@@ -896,7 +896,7 @@ rcfrh_agent_get_type(char *agents_name)
         i++;
     if (i == MAX_AGENTS_NUMBER)
         return 0;
-    
+
     return rcfrh_agent_type2str(agents_list[i]->type);
 }
 

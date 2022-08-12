@@ -1,14 +1,14 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side - Library
  * Thread Synchronization
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 
 
@@ -33,11 +33,11 @@ static pthread_barrier_t barrier;
 static sem_t barrier; /* done as a semaphore */
 #endif /* HAVE_PTHREAD_BARRIER_T != 1 */
 
-/* 
+/*
  * This variable indicates that no error has occured so far. If it
  * is false, threads MUST NOT continue carrying out their execution.
  *
- * This variable should only be accessed via CHECK_PROCEED() and 
+ * This variable should only be accessed via CHECK_PROCEED() and
  * SET_PROCEED() macros.
  */
 int proceed = 1;
@@ -47,7 +47,7 @@ int local_synch_point;  /* point at which the local station is waiting
 int remote_synch_point; /* point at which the remote station is waiting
                         for synchronization */
 
-/* 
+/*
  * This semaphore allows the local station to access the initial_messages_no
  * variable
  */
@@ -62,7 +62,7 @@ sem_t random_number_semaphore;
 sem_t random_messages_semaphore;
 
 /**
- * Synchronizes the local station with the remote station at the 
+ * Synchronizes the local station with the remote station at the
  * synchronization point referenced by 'synch_point'.
  *
  * This function is supposed to be called by the remote station.
@@ -72,7 +72,7 @@ sem_t random_messages_semaphore;
  *                      equal to 'synch_point' after the synchronization.
  *
  * @return n/a
- * 
+ *
  * @se If the remote station has reached a point further then the one
  *     being requested, the function will abort the execution.
  */
@@ -89,7 +89,7 @@ local_synch(int synch_point)
 }
 
 /**
- * Synchronizes the remote station with the local station at the 
+ * Synchronizes the remote station with the local station at the
  * synchronization point referenced by 'synch_point'.
  *
  * This function is supposed to be called by the remote station.
@@ -99,7 +99,7 @@ local_synch(int synch_point)
  *                      equal to 'synch_point' after the synchronization.
  *
  * @return n/a
- * 
+ *
  * @se If the local station has reached a point further then the one
  *     being requested, the function will abort the execution.
  */
@@ -129,7 +129,7 @@ remote_synch(int synch_point)
  *                      current point of the other thread
  *
  * @return n/a
- * 
+ *
  * @se If the other station has reached a point further then the one
  *     being requested, the function will abort the execution.
  */
@@ -187,15 +187,15 @@ synch(int synch_point, int *curr_point, int other_side_point)
            exit(1);
        }
     }
-#endif /* HAVE_PTHREAD_BARRIER_T != 1 */    
+#endif /* HAVE_PTHREAD_BARRIER_T != 1 */
 }
 
 /**
- * Initialize the barrier. The function must be called at the 
+ * Initialize the barrier. The function must be called at the
  * test startup.
  *
  * @return n/a
- * 
+ *
  * @se If the function fails to initialize the barrier, it will
  *     abort the execution.
  */
@@ -205,7 +205,7 @@ barrier_init(void)
     int rc;
 
 #if (HAVE_PTHREAD_BARRIER_T == 1)
-    rc = pthread_barrier_init(&barrier, 
+    rc = pthread_barrier_init(&barrier,
                            NULL,    /* default attributes */
                            2);      /* two threads must be synchronized */
     if (rc != EOK)
@@ -217,7 +217,7 @@ barrier_init(void)
        exit(1);
     }
 #else
-    rc = sem_init(&barrier, 
+    rc = sem_init(&barrier,
                 0,          /* no sharing between processes */
                 0);         /* initial count value must be zero */
     if (rc < 0)
@@ -234,9 +234,9 @@ barrier_init(void)
     local_synch_point = 0;
     remote_synch_point = 0;
 
-    /* 
-     * Initialize the semaphores of the random number and 
-     * of the random messages 
+    /*
+     * Initialize the semaphores of the random number and
+     * of the random messages
      */
     if (sem_init(&random_number_semaphore, 0, 0) < 0)
     {
@@ -259,11 +259,11 @@ barrier_init(void)
 }
 
 /**
- * Shutdown the barrier. The function must be called after 
+ * Shutdown the barrier. The function must be called after
  * test execution (and so no error checking is performed).
  *
  * @return n/a
- * 
+ *
  */
 void
 barrier_close(void)

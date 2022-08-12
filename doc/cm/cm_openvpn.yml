@@ -305,7 +305,7 @@ a---
       d: |
          Number of connected users (server only)
          Name: any
-         Value: Number of successfully connected users 
+         Value: Number of successfully connected users
 
 
     - oid: "/agent/openvpn/client"

@@ -2,17 +2,17 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from sys/epoll.h.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_SYS_EPOLL_H__
 #define __TE_RPC_SYS_EPOLL_H__
 

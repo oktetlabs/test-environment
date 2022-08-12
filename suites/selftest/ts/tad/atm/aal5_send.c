@@ -2,11 +2,11 @@
  * @brief Test Environment
  *
  * AAL5 CSAP create and send.
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
- * 
+ *
+ *
  */
 
 /** @page atm-aal5_send Create AAL5.ATM over Socket CSAP and send one SDU

@@ -10,7 +10,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Albert Podusenko <albert.podusenko@oktetlabs.ru>

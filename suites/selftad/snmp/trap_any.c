@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * Simple RCF test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * 
+ *
  */
 #define TE_TEST_NAME    "snmp/trap_any"
 
@@ -34,7 +34,7 @@
 
 void
 trap_handler(char *fn, void *p)
-{ 
+{
     RING("snmp TRAP handler, file: %s", fn);
 }
 
@@ -53,18 +53,18 @@ main(int argc, char *argv[])
     TEST_GET_STRING_PARAM(ta);
     TEST_GET_INT_PARAM(snmp_version);
 
-   
+
     INFO("Agent: %s", ta);
-   
-    
+
+
     {
         if (rcf_ta_create_session(ta, &sid) != 0)
             TEST_FAIL("rcf_ta_create_session failed");
-        
-        INFO("Test: Created session: %d", sid); 
+
+        INFO("Test: Created session: %d", sid);
     }
 
-    do { 
+    do {
         asn_value *pattern;
 
 #if 0
@@ -77,7 +77,7 @@ main(int argc, char *argv[])
                                        snmp_version,
                                        0, 162, 2000, &trap_csap);
         if (rc != 0)
-            TEST_FAIL("CSAP for trap recv creation fails %X", rc); 
+            TEST_FAIL("CSAP for trap recv creation fails %X", rc);
 
 #if 0
         rc = tapi_snmp_trap_recv_start(ta, sid, trap_csap, pattern, );
@@ -89,7 +89,7 @@ main(int argc, char *argv[])
 
 cleanup:
     if (trap_csap != CSAP_INVALID_HANDLE)
-        rcf_ta_csap_destroy(ta, sid, trap_csap); 
+        rcf_ta_csap_destroy(ta, sid, trap_csap);
 
     TEST_END;
 }

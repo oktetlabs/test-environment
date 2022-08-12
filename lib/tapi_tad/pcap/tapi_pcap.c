@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
@@ -55,7 +55,7 @@ tapi_pcap_add_csap_layer(asn_value     **csap_spec,
                          unsigned int    recv_mode)
 {
     asn_value  *layer;
-    
+
     CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_pcap_csap, "#pcap",
                                      &layer));
 
@@ -138,7 +138,7 @@ tapi_pcap_pkt_handler(asn_value *frame_val, void *user_param)
     }
 
     tmp_len = sizeof(int);
-    rc = asn_read_value_field(pcap_filtered_pdu, &filter_id, 
+    rc = asn_read_value_field(pcap_filtered_pdu, &filter_id,
                               &tmp_len, "filter-id");
     if (rc < 0)
     {
@@ -152,7 +152,7 @@ tapi_pcap_pkt_handler(asn_value *frame_val, void *user_param)
         return;
     }
     pkt_len = rc;
-    
+
     VERB("%s(): Packet payload length %u bytes",
          __FUNCTION__, (unsigned)pkt_len);
 
@@ -162,7 +162,7 @@ tapi_pcap_pkt_handler(asn_value *frame_val, void *user_param)
         ERROR("There is no enough memory to allocate for packet data");
         return;
     }
-    
+
     rc = asn_read_value_field(frame_val, pkt, &pkt_len, "payload.#bytes");
     if (rc < 0)
     {
@@ -194,7 +194,7 @@ tapi_pcap_trrecv_cb_data(tapi_pcap_recv_callback  callback,
     }
     cb_data->callback = callback;
     cb_data->user_data = user_data;
-    
+
     res = tapi_tad_trrecv_make_cb_data(tapi_pcap_pkt_handler, cb_data);
     if (res == NULL)
         free(cb_data);
@@ -251,7 +251,7 @@ tapi_pcap_pattern_add(const char *filter,
         ERROR("Cannot initialise PCAP PDU value");
         return rc;
     }
-    
+
     VERB("Call asn_write_component_value()");
     if ((rc = asn_write_component_value(pcap_pattern, pcap_pdu,
                                         "pdus.0.#pcap")) != 0)
@@ -271,7 +271,7 @@ tapi_pcap_pattern_add(const char *filter,
             return rc;
         }
     }
-    
+
     VERB("Call asn_insert_indexed()");
     if ((rc = asn_insert_indexed(*pattern, pcap_pattern, -1, "")) != 0)
     {

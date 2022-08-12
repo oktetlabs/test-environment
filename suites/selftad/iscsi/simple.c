@@ -1,14 +1,14 @@
 /** @file
  * @brief Test Environment
  *
- * iSCSI CSAP and TAPI test, twice CSAPs. 
- * 
+ * iSCSI CSAP and TAPI test, twice CSAPs.
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "iscsi/simple"
@@ -74,8 +74,8 @@ uint8_t iscsi_login_request[] = {
 };
 
 int
-main(int argc, char *argv[]) 
-{ 
+main(int argc, char *argv[])
+{
     csap_handle_t iscsi_csap = CSAP_INVALID_HANDLE;
 
     char  ta[32];
@@ -86,15 +86,15 @@ main(int argc, char *argv[])
 
     size_t  len = sizeof(ta);
 
-    TEST_START; 
-    
+    TEST_START;
+
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
     agt_a = ta;
-    if (strlen(ta) + 1 >= len) 
+    if (strlen(ta) + 1 >= len)
         TEST_FAIL("There is no second Test Agent");
 
     agt_b = ta + strlen(ta) + 1;
@@ -109,23 +109,23 @@ main(int argc, char *argv[])
                                     ISCSI_DIGEST_NONE,
                                     &iscsi_csap);
     if (rc != 0)
-        TEST_FAIL("iSCSI csap 1 create failed: %r", rc); 
+        TEST_FAIL("iSCSI csap 1 create failed: %r", rc);
 
 
     rc = tapi_iscsi_send_pkt(agt_a, sid, iscsi_csap, NULL,
-                             iscsi_login_request, 
+                             iscsi_login_request,
                              sizeof(iscsi_login_request));
     if (rc != 0)
-        TEST_FAIL("send on CSAP 1 failed: %r", rc); 
+        TEST_FAIL("send on CSAP 1 failed: %r", rc);
 
 
     len = sizeof(rx_buffer);
     memset(rx_buffer, 0, len);
-    rc = tapi_iscsi_recv_pkt(agt_a, sid, iscsi_csap, 2000, 
+    rc = tapi_iscsi_recv_pkt(agt_a, sid, iscsi_csap, 2000,
                              CSAP_INVALID_HANDLE,
                              NULL, rx_buffer, &len);
     if (rc != 0)
-        TEST_FAIL("recv on CSAP 1 failed: %r", rc); 
+        TEST_FAIL("recv on CSAP 1 failed: %r", rc);
 
 
     INFO("+++++++++++ Received data: %tm", rx_buffer, len);

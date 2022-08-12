@@ -3,8 +3,8 @@
 # This script extracts comments from a `package.xml' file and converts them
 # to the form suitable for Doxygen processing
 
-/\/\*\*.*@/ { 
-    if (header_finished == 1) 
+/\/\*\*.*@/ {
+    if (header_finished == 1)
     {
         print "*/\n";
     }

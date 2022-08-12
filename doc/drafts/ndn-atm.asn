@@ -14,7 +14,7 @@ ATM-Header ::= SEQUENCE {
     hec           DATA-UNIT{INTEGER (0..255)} OPTIONAL
 }
 
-ATM-CSAP ::= SEQUENCE { 
+ATM-CSAP ::= SEQUENCE {
     vpi           DATA-UNIT{INTEGER (0..4095)} OPTIONAL,
     vci           DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     payload-type  DATA-UNIT{INTEGER (0..7)} OPTIONAL,

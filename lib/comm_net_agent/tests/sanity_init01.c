@@ -1,13 +1,13 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 
 #include <stdio.h>
@@ -36,7 +36,7 @@ remote_station_proc(void *arg)
 {
     DEBUG("\t\t\tRemote Station Thread started\n");
 
-    /* 
+    /*
      * Now the local station does its actions
      */
 
@@ -54,7 +54,7 @@ local_station_proc(void *arg)
 {
     int    rc;
     char   buffer[BUFSIZ];
-    struct rcf_comm_connection 
+    struct rcf_comm_connection
          *my_handle;
 
     DEBUG("Local Station Thread started\n");
@@ -68,8 +68,8 @@ local_station_proc(void *arg)
        exit(3);
     }
 
-    /* 
-     * The second call is disabled because it will case a coredump 
+    /*
+     * The second call is disabled because it will case a coredump
      * in the current implementation of RCF agent library
      */
     strcpy(buffer, local_port_no);
@@ -91,7 +91,7 @@ local_station_proc(void *arg)
  * the parameter @b config_str set to NULL, and the second time with the
  * parameter @b p_rcc set to NULL. Both times the function must return
  * a bad parameter failure.
- * 
+ *
  * @author Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  * @return Test result
@@ -99,7 +99,7 @@ local_station_proc(void *arg)
  * @retval positive     Test failed
  *
  */
-int 
+int
 main(int argc, char *argv[])
 {
     int rc;
@@ -111,10 +111,10 @@ main(int argc, char *argv[])
     TEST_BUFFER_SANITY();
 
     /* launch the remote station thread */
-    rc = pthread_create(&remote_thread, /* attr */ NULL, 
+    rc = pthread_create(&remote_thread, /* attr */ NULL,
                      remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {           
+    {
        char err_buf[BUFSIZ];
 
        strerror_r(errno, err_buf, sizeof(err_buf));

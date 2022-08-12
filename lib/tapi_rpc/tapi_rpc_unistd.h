@@ -8,7 +8,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -53,7 +53,7 @@ extern "C" {
  * @param path      File or device name
  * @param flags     How to open
  * @param mode      The permissions to use in case a new file is created
- * 
+ *
  * @return File descriptor on success or -1 on failure
  */
 extern int rpc_open(rcf_rpc_server         *rpcs,
@@ -68,7 +68,7 @@ extern int rpc_open(rcf_rpc_server         *rpcs,
  * @param path      File or device name
  * @param flags     How to open
  * @param mode      The permissions to use in case a new file is created
- * 
+ *
  * @return File descriptor on success or -1 on failure
  */
 extern int rpc_open64(rcf_rpc_server         *rpcs,
@@ -119,7 +119,7 @@ extern int rpc_dup(rcf_rpc_server *rpcs,
                    int oldfd);
 /**
  * Duplicate an open file descriptor on RPC server side.
- * 
+ *
  * @note See @b dup2 manual page for more information
  *
  * @param rpcs    RPC server handle
@@ -133,7 +133,7 @@ extern int rpc_dup2(rcf_rpc_server *rpcs,
 
 /**
  * Duplicate an open file descriptor on RPC server side.
- * 
+ *
  * @note See @b dup3 manual page for more information
  *
  * @param rpcs    RPC server handle
@@ -147,7 +147,7 @@ extern int rpc_dup3(rcf_rpc_server *rpcs,
                     int oldfd, int newfd, int flags);
 
 /**
- * Write up to @b count bytes from buffer @b buf to file with descriptor 
+ * Write up to @b count bytes from buffer @b buf to file with descriptor
  * @b fd.
  * @note See write(2) manual page for more information
  *
@@ -181,7 +181,7 @@ extern int rpc_write_via_splice(rcf_rpc_server *rpcs,
                                 int fd, const void *buf, size_t count);
 
 /**
- * Write up to @b count bytes from buffer @b buf to file with descriptor 
+ * Write up to @b count bytes from buffer @b buf to file with descriptor
  * @b fd and close this file descriptor.
  *
  * @param rpcs     RPC server handle
@@ -214,17 +214,17 @@ rpc_writebuf(rcf_rpc_server *rpcs, int fd, rpc_ptr buf, size_t count)
     return rpc_writebuf_gen(rpcs, fd, buf, 0, count);
 }
 static inline tarpc_ssize_t
-rpc_writebuf_off(rcf_rpc_server *rpcs, int fd, 
+rpc_writebuf_off(rcf_rpc_server *rpcs, int fd,
                  rpc_ptr_off *buf, size_t count)
 {
     return rpc_writebuf_gen(rpcs, fd, buf->base, buf->offset, count);
 }
 
 /**
- * This generic routine attemps to read up to @b count bytes from file 
+ * This generic routine attemps to read up to @b count bytes from file
  * with descriptor @b fdinto buffer pointed by @b buf.
  * The behavior of this call depends on the following operations
- * - @b RCF_RPC_CALL do not wait the remote procedure to complete 
+ * - @b RCF_RPC_CALL do not wait the remote procedure to complete
  *   (non-blocking call)
  * - @b RCF_RPC_WAIT wait for non-blocking call to complete
  * - @b RCF_RPC_CALL_WAIT wait for remote procedure to complete before
@@ -249,7 +249,7 @@ extern int rpc_read_via_splice(rcf_rpc_server *rpcs,
  * Attemp to read up to @b count bytes from file with descriptor @b fd
  * into buffer pointed by @b buf.
  * The behavior of this call depends on the following operations
- * - @b RCF_RPC_CALL do not wait the remote procedure to complete 
+ * - @b RCF_RPC_CALL do not wait the remote procedure to complete
  *   (non-blocking call)
  * - @b RCF_RPC_WAIT wait for non-blocking call to complete
  * - @b RCF_RPC_CALL_WAIT wait for remote procedure to complete before
@@ -291,9 +291,9 @@ extern int rpc_pread(rcf_rpc_server *rpcs, int fd, void* buf, size_t count,
                      tarpc_off_t offset);
 
 /**
- * Like rpc_read() but uses a buffer allocated by the user 
+ * Like rpc_read() but uses a buffer allocated by the user
  * on the TA earlier.
- * 
+ *
  * @param rpcs     RPC server handle
  * @param fd       file descriptor
  * @param buf      pointer to buffer into where data is read
@@ -310,7 +310,7 @@ rpc_readbuf(rcf_rpc_server *rpcs, int fd, rpc_ptr buf, size_t count)
     return rpc_readbuf_gen(rpcs, fd, buf, 0, count);
 }
 static inline tarpc_ssize_t
-rpc_readbuf_off(rcf_rpc_server *rpcs, int fd, rpc_ptr_off *buf, 
+rpc_readbuf_off(rcf_rpc_server *rpcs, int fd, rpc_ptr_off *buf,
                 size_t count)
 {
     return rpc_readbuf_gen(rpcs, fd, buf->base, buf->offset, count);
@@ -425,7 +425,7 @@ extern void rpc_iovec_cmp_strict(rpc_iovec *iov1, rpc_iovec *iov2,
  * @param iov      vector of buffers to be written.
  * @param iovcnt   number of buffers
  *
- * @return Number of bytes really written, otherwise -1 is returned 
+ * @return Number of bytes really written, otherwise -1 is returned
  *         on error
  * @note See writev manual page for more information
  */
@@ -463,14 +463,14 @@ extern int rpc_pwritev(rcf_rpc_server *rpcs, int fd,
  *
  * @return Number of bytes read,otherwise -1 is returned when an
  *         error occured.
- * @note See @b readv manual page for more information 
+ * @note See @b readv manual page for more information
  */
 extern int rpc_readv_gen(rcf_rpc_server *rpcs,
                          int fd, const struct rpc_iovec *iov,
                          size_t iovcnt, size_t riovcnt);
 
 /**
- * Attempt to read data from specified file with descriptor @b fd 
+ * Attempt to read data from specified file with descriptor @b fd
  * into a vector of buffer @b iov.
  *
  * @param rpcs     RPC server handle
@@ -480,7 +480,7 @@ extern int rpc_readv_gen(rcf_rpc_server *rpcs,
  *
  * @return Number of bytes read,otherwise -1 is returned when an
  *         error occured.
- * @note See @b readv manual page for more information 
+ * @note See @b readv manual page for more information
  */
 static inline int
 rpc_readv(rcf_rpc_server *rpcs,
@@ -517,7 +517,7 @@ extern int rpc_preadv(rcf_rpc_server *rpcs, int fd, const struct rpc_iovec *iov,
 extern rpc_fd_set_p rpc_fd_set_new(rcf_rpc_server *rpcs);
 
 /**
- * Destroy a specified set of file descriptors allocated by 
+ * Destroy a specified set of file descriptors allocated by
  * @b rpc_fd_set_new.
  *
  * @param rpcs     RPC server handle
@@ -557,20 +557,20 @@ extern void rpc_do_fd_clr(rcf_rpc_server *rpcs,
                           int fd, rpc_fd_set_p set);
 
 /**
- * Test existance of specified descriptor @b fd in a given set of 
+ * Test existance of specified descriptor @b fd in a given set of
  * descriptor @b set.
  *
  * @param rpcs    RPC server handle
  * @param fd      descriptor to test
  * @param set     set of descriptor
  *
- * @return Value other than zero, other return 0 when failed. 
+ * @return Value other than zero, other return 0 when failed.
  */
 extern int  rpc_do_fd_isset(rcf_rpc_server *rpcs,
                             int fd, rpc_fd_set_p set);
 
 /**
- * Examine the file descriptor sets whose addresses are passed in the 
+ * Examine the file descriptor sets whose addresses are passed in the
  * @b readfds, @b writefds, and @b exceptfds parameters to see whether
  * some of there file descriptors are ready for reading, writing or have
  * and exceptional condition pending, respectively.
@@ -578,11 +578,11 @@ extern int  rpc_do_fd_isset(rcf_rpc_server *rpcs,
  * @c RCF_RPC_CALL - return immediately without waiting for remote procedure
  *    to complete (non-blocking call).
  * @c RCF_RPC_WAIT - wait for non-blocking call to complete
- * @c RCF_RPC_CALL_WAIT - wait for remote procedure to complete before 
+ * @c RCF_RPC_CALL_WAIT - wait for remote procedure to complete before
  *    returning (blocking call)
 
  * @param rpcs      RPC server handle
- * @param n         range of descriptors to be tested. The first @b n 
+ * @param n         range of descriptors to be tested. The first @b n
  *                  descriptors should be checked in each defined set. That
  *                  is the descriptors from 0 to @b n-1 shall be examined.
  * @param readfds   checked file descrpitors for readability
@@ -590,10 +590,10 @@ extern int  rpc_do_fd_isset(rcf_rpc_server *rpcs,
  * @param exceptfds checked file descriptors for exceptional conditions
  * @param timeout   upper bound of time elapsed before remote @b select
  *                  procedure return.
- * 
+ *
  * @return Total number of file descriptors contained in the whole defined
- *         set upon successful completion, which may be zero if the 
- *         timeout expires before anything interesting happens, 
+ *         set upon successful completion, which may be zero if the
+ *         timeout expires before anything interesting happens,
  *         otherwise -1 is returned.
  */
 extern int rpc_select(rcf_rpc_server *rpcs,
@@ -602,7 +602,7 @@ extern int rpc_select(rcf_rpc_server *rpcs,
                       struct tarpc_timeval *timeout);
 
 /**
- * Examine the file descriptor sets whose addresses are passed in the 
+ * Examine the file descriptor sets whose addresses are passed in the
  * @b readfds, @b writefds, and @b exceptfds parameters to see whether
  * some of there file descriptors are ready for reading, writing or have
  * and exceptional condition pending, respectively.
@@ -612,11 +612,11 @@ extern int rpc_select(rcf_rpc_server *rpcs,
  * @c RCF_RPC_CALL - return immediately without waiting for remote procedure
  *    to complete (non-blocking call).
  * @c RCF_RPC_WAIT - wait for non-blocking call to complete
- * @c RCF_RPC_CALL_WAIT - wait for remote procedure to complete before 
+ * @c RCF_RPC_CALL_WAIT - wait for remote procedure to complete before
  *    returning (blocking call)
  *
  * @param rpcs      RPC server handle
- * @param n         Range of descriptors to be tested. The first @b n 
+ * @param n         Range of descriptors to be tested. The first @b n
  *                  descriptors should be checked in each defined set. That
  *                  is the descriptors from 0 to @b n-1 shall be examined.
  * @param readfds   checked file descrpitors for readability
@@ -625,17 +625,17 @@ extern int rpc_select(rcf_rpc_server *rpcs,
  * @param timeout   Upper bound of time elapsed before remote @b select
  *                  procedure return.
  * @param sigmask   Pointer to a signal mask (See @b sigprocmask(2))
- * 
+ *
  * @return Total number of file descriptors contained in the whole defined
- *         set upon successful completion, which may be zero if the 
- *         timeout expires before anything interesting happens, 
+ *         set upon successful completion, which may be zero if the
+ *         timeout expires before anything interesting happens,
  *         otherwise -1 is returned.
  *
  * @note See @b pselect manual page for more information
  */
 extern int rpc_pselect(rcf_rpc_server *rpcs,
                        int n, rpc_fd_set_p readfds, rpc_fd_set_p writefds,
-                       rpc_fd_set_p exceptfds, 
+                       rpc_fd_set_p exceptfds,
                        struct tarpc_timespec *timeout,
                        const rpc_sigset_p sigmask);
 
@@ -706,7 +706,7 @@ rpc_epoll_pwait(rcf_rpc_server *rpcs, int epfd,
 
 /**
  * Provide a generic mechanism for reporting I/O conditions associated with
- * a set of file descriptors and waiting for one or more specified 
+ * a set of file descriptors and waiting for one or more specified
  * conditions becomes true. Specified condition include the ability to
  * read or write data without blocking and error conditions;
  *
@@ -715,15 +715,15 @@ rpc_epoll_pwait(rcf_rpc_server *rpcs, int epfd,
  *                  each file descriptor of interest.
  * @param nfds      number of @b rpc_pollfd in the array of @b rpc_pollfd
  *                  structure
- * @param timeout   maximum length of time(in milliseconds) to wait before 
+ * @param timeout   maximum length of time(in milliseconds) to wait before
  *                  at least one of the specified condition occures.
  *                  A negative value means an infinite timeout.
  * @param rnfds    real size of the array of @b rpc_pollfd structures
  *
- * @return  A positive number is returned upon successful completion. 
- *         That's the number of @b rpc_pollfd structure that have non-zero 
- *         revents fields. A value of zero indicates that the timed out 
- *         and no file descriptors have been selcted. -1 is returned 
+ * @return  A positive number is returned upon successful completion.
+ *         That's the number of @b rpc_pollfd structure that have non-zero
+ *         revents fields. A value of zero indicates that the timed out
+ *         and no file descriptors have been selcted. -1 is returned
  *         on error.
  */
 extern int rpc_poll_gen(rcf_rpc_server *rpcs,
@@ -732,7 +732,7 @@ extern int rpc_poll_gen(rcf_rpc_server *rpcs,
 
 /**
  * Provide a mechanism for reporting I/O conditions associated with
- * a set of file descriptors and waiting for one or more specified 
+ * a set of file descriptors and waiting for one or more specified
  * conditions becomes true. Specified condition include the ability to
  * read or write data without blocking and error conditions;
  *
@@ -741,17 +741,17 @@ extern int rpc_poll_gen(rcf_rpc_server *rpcs,
  *                  each file descriptor of interest.
  * @param nfds      number of @b rpc_pollfd in the array of @b rpc_pollfd
  *                  strudture
- * @param timeout   maximum length of time(in milliseconds) to wait before 
+ * @param timeout   maximum length of time(in milliseconds) to wait before
  *                  at least one of the specified condition occures.
  *                  A negative value means an infinite timeout.
  *
- * @return  A positive number is returned upon successful completion. 
- *         That's the number of @b rpc_pollfd structure that have non-zero 
- *         revents fields. A value of zero indicates that the timed out 
- *         and no file descriptors have been selcted. -1 is returned 
+ * @return  A positive number is returned upon successful completion.
+ *         That's the number of @b rpc_pollfd structure that have non-zero
+ *         revents fields. A value of zero indicates that the timed out
+ *         and no file descriptors have been selcted. -1 is returned
  *         on error.
  *
- * @note See @b poll manual page for more information        
+ * @note See @b poll manual page for more information
  */
 static inline int
 rpc_poll(rcf_rpc_server *rpcs,
@@ -807,7 +807,7 @@ extern ssize_t rpc_splice(rcf_rpc_server *rpcs, int fd_in,
  *
  * @param rpcs     RPC server handle
  * @param fd       opened file descriptor
- * @param request  request code 
+ * @param request  request code
  *                 (See te_rpc_sys_socket.h for availlable request codes)
  * @param ...      optional parameter for request specific information
  *
@@ -821,7 +821,7 @@ extern int rpc_ioctl(rcf_rpc_server *rpcs,
 
 /**
  * Perform various miscellaneous operation on files descriptor @b fd.
- * The operation in question is determined by @b cmd 
+ * The operation in question is determined by @b cmd
  *
  * @param rpcs   RPC server handle
  * @param fd     opened file descriptor
@@ -836,7 +836,7 @@ extern int rpc_fcntl(rcf_rpc_server *rpcs,
                      int fd, int cmd, ...);
 
 /**
- * Create a pair file descriptor on RPC server side, pointing to a pipe 
+ * Create a pair file descriptor on RPC server side, pointing to a pipe
  * inode and place them in the array @b filedes
  * The file descriptor of index zero (filedes[0]) is used for reading,
  * and the other file descriptor for writing.
@@ -851,7 +851,7 @@ extern int rpc_pipe(rcf_rpc_server *rpcs,
                     int filedes[2]);
 
 /**
- * Create a pair file descriptor on RPC server side, pointing to a pipe 
+ * Create a pair file descriptor on RPC server side, pointing to a pipe
  * inode and place them in the array @b filedes
  * The file descriptor of index zero (filedes[0]) is used for reading,
  * and the other file descriptor for writing.
@@ -996,11 +996,11 @@ extern int rpc_gettid(rcf_rpc_server *rpcs);
 extern tarpc_uid_t rpc_getuid(rcf_rpc_server *rpcs);
 
 /**
- * Set the effective user ID of the RPC server process. If the 
- * effective user ID is root, then the real and saved user ID's are also 
- * set. Under Linux @b setuid is implemented like POSIX version with 
+ * Set the effective user ID of the RPC server process. If the
+ * effective user ID is root, then the real and saved user ID's are also
+ * set. Under Linux @b setuid is implemented like POSIX version with
  * _POSIX_SAVED_IDS future. This allows a setuid program to drop all of its
- * user privileges, do some un-privileged work, and then re-engage the 
+ * user privileges, do some un-privileged work, and then re-engage the
  * original user ID for secure manner
  *
  * @param rpcs     RPC server handle
@@ -1027,7 +1027,7 @@ extern int rpc_access(rcf_rpc_server *rpcs,
                       int mode);
 
 /**
- * Query information about the broken out fields of a line from 
+ * Query information about the broken out fields of a line from
  * @b /etc/passwd for the entry that matches the user name @b name on
  * RPC server side
  *
@@ -1101,7 +1101,7 @@ extern void rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf);
  * @param rpcs    RPC server handle
  * @param id      Address ID
  *
- * @return  Value of address in the TA address space 
+ * @return  Value of address in the TA address space
  */
 extern uint64_t rpc_get_addr_by_id(rcf_rpc_server *rpcs, rpc_ptr id);
 
@@ -1111,7 +1111,7 @@ extern uint64_t rpc_get_addr_by_id(rcf_rpc_server *rpcs, rpc_ptr id);
  * @param rpcs    RPC server handle
  * @param size    size of the buffer to be allocated
  *
- * @return  Allocated buffer identifier with offset. 
+ * @return  Allocated buffer identifier with offset.
  *          It should be validated by RPC_PTR_OFF_IS_VALID()
  */
 static inline te_bool
@@ -1134,12 +1134,12 @@ rpc_malloc_off(rcf_rpc_server *rpcs, size_t size, rpc_ptr_off **buf)
  * @param buf    Identifier of the buffer to be freed with offset. Offset
  *               should be zero.
  */
-static inline void 
+static inline void
 rpc_free_off(rcf_rpc_server *rpcs, rpc_ptr_off *buf)
 {
     if (buf->offset != 0)
     {
-        ERROR("Attempt to free buffer %u with non-zero offset %u on %s", 
+        ERROR("Attempt to free buffer %u with non-zero offset %u on %s",
               buf->base, buf->offset, rpcs->ta);
         rpcs->iut_err_jump = TRUE;
         TAPI_JMP_DO(TE_EFAIL);
@@ -1165,7 +1165,7 @@ extern rpc_ptr rpc_memalign(rcf_rpc_server *rpcs,
 
 
 /**
- * Free memory allocated on RPC server in cleanup part of the test. 
+ * Free memory allocated on RPC server in cleanup part of the test.
  *
  * @param _rpcs     RPC server handle
  * @param _ptr      memory identifier
@@ -1399,7 +1399,7 @@ extern int rpc_rm_ta_libs(rcf_rpc_server *rpcs, char *path);
 
 /**
  * Execute program @a filename
- * 
+ *
  * @param rpcs      RPC server
  * @param filename  Pathname to the program or script
  * @param argv      Array of argument strings

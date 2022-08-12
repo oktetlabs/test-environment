@@ -8,7 +8,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>

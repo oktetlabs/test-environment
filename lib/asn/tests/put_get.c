@@ -1,7 +1,7 @@
 /**
  * ASN.1 library
  *
- * self test, for put and get methods 
+ * self test, for put and get methods
  *
  */
 #include "te_config.h"
@@ -23,21 +23,21 @@ char buffer [1000];
 #define BUF_TO_READ 100
 char buf_to_read[BUF_TO_READ];
 
-int 
+int
 main(void)
-{ 
+{
     asn_value  *seq_val = asn_init_value(&at_plain_seq1);
-    asn_value  *int_val; 
-    asn_value  *str_val; 
-    asn_value  *child_val; 
-    asn_value  *choice_val; 
-    ssize_t     syms; 
+    asn_value  *int_val;
+    asn_value  *str_val;
+    asn_value  *child_val;
+    asn_value  *choice_val;
+    ssize_t     syms;
     int         rc;
 
     asn_parse_value_text("15", asn_base_integer, &int_val, &syms);
 
     rc = asn_put_child_value(seq_val, int_val, PRIVATE, SEQ_NUMBER_TAG);
-    if (rc) 
+    if (rc)
     {
         result = 1;
         fprintf(stderr, "put int child value failed 0x%X\n", rc);
@@ -47,7 +47,7 @@ main(void)
                          &str_val, &syms);
 
     rc = asn_put_child_value(seq_val, str_val, PRIVATE, SEQ_STRING_TAG);
-    if (rc) 
+    if (rc)
     {
         result = 1;
         fprintf(stderr, "put string child value failed 0x%X\n", rc);
@@ -63,7 +63,7 @@ main(void)
 
     rc = asn_get_child_value(seq_val, (const asn_value **)&child_val,
                              PRIVATE, SEQ_STRING_TAG);
-    if (rc) 
+    if (rc)
     {
         result = 1;
         fprintf(stderr, "get child value failed 0x%X\n", rc);
@@ -72,7 +72,7 @@ main(void)
     printf("got child value: \n%s\n", buffer);
 
     rc = asn_free_child_value(seq_val,  PRIVATE, SEQ_STRING_TAG);
-    if (rc) 
+    if (rc)
     {
         result = 1;
         fprintf(stderr, "free child value failed 0x%X\n", rc);

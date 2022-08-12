@@ -78,7 +78,7 @@ expr:
 
         if ((p == NULL) || ($1 == NULL))
         {
-            ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed", 
+            ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed",
                   __FUNCTION__, sizeof(*p));
             return -1;
         }
@@ -124,7 +124,7 @@ expr:
 
         if (p == NULL)
         {
-            ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed", 
+            ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed",
                   __FUNCTION__, sizeof(*p));
             return -1;
         }

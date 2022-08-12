@@ -30,13 +30,13 @@ awk 'BEGIN { yescount = nocount = 0;
 }
 skip { if ($0 ~ endcond) skip = 0; next }
 $0 ~ begincond { skip = FNR; next }
-$0 ~ nopattern { nocount++ } 
+$0 ~ nopattern { nocount++ }
 $0 ~ yespattern { yescount++ }
 END { sum = yescount + nocount
       if (sum == 0)
           print "0.00 0"
       else
-          printf "%.2f %d\n", (yescount * 100) / sum, sum; 
+          printf "%.2f %d\n", (yescount * 100) / sum, sum;
       if (skip) print "Unclosed conditional at " FILENAME ":" FNR > "/dev/stderr";
 }
 ' $outfile

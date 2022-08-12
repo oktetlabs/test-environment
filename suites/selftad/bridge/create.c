@@ -3,13 +3,13 @@
  *
  * Simple BPDU CSAP test: create.
  * from first ('eth0') network card.
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #include "te_config.h"
@@ -39,7 +39,7 @@ main()
     char ta[32];
     int  len = sizeof(ta);
     int  sid;
-    
+
     VERB("Starting test\n");
     if (rcf_get_ta_list(ta, &len) != 0)
     {
@@ -47,28 +47,28 @@ main()
         return 1;
     }
     VERB(" Using agent: %s\n", ta);
-    
+
     /* Type test */
     {
         char type[16];
         if (rcf_ta_name2type(ta, type) != 0)
         {
             fprintf(stderr, "rcf_ta_name2type failed\n");
-            VERB("rcf_ta_name2type failed\n"); 
+            VERB("rcf_ta_name2type failed\n");
             return 1;
         }
-        VERB("TA type: %s\n", type); 
+        VERB("TA type: %s\n", type);
     }
-    
+
     /* Session */
     {
         if (rcf_ta_create_session(ta, &sid) != 0)
         {
             fprintf(stderr, "rcf_ta_create_session failed\n");
-            VERB("rcf_ta_create_session failed\n"); 
+            VERB("rcf_ta_create_session failed\n");
             return 1;
         }
-        VERB("Test: Created session: %d\n", sid); 
+        VERB("Test: Created session: %d\n", sid);
     }
 
     /* CSAP tests */
@@ -80,10 +80,10 @@ main()
         ndn_eth_header_plain plain_hdr;
         asn_value *asn_eth_hdr;
         asn_value *pattern;
-        char eth_device[] = "eth0"; 
+        char eth_device[] = "eth0";
 
         uint8_t own_addr[6] = {0x01,0x02,0x03,0x04,0x05,0x06};
-        uint8_t out_addr[6] = {0xff,0xff,0xff,0xff,0xff,0xff}; 
+        uint8_t out_addr[6] = {0xff,0xff,0xff,0xff,0xff,0xff};
 
         rc = tapi_stp_plain_csap_create(ta, sid, eth_device, own_addr,
                                         NULL, &csap);

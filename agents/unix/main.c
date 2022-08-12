@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -173,7 +173,7 @@ static rcf_symbol_entry essential_symbols[] = {
 /** Tasks to be killed during TA shutdown */
 static unsigned int     tasks_len = 0;
 static unsigned int     tasks_index = 0;
-static pid_t           *tasks = NULL; 
+static pid_t           *tasks = NULL;
 
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -235,7 +235,7 @@ kill_tasks(void)
 {
     unsigned int i;
     int          rc;
-    
+
     if (tasks_index == 0)
         return;
 
@@ -249,7 +249,7 @@ kill_tasks(void)
                 LOG_PRINT("Sent SIGTERM to PID=%ld - rc=%d, errno=%d",
                           (long)-tasks[i], rc, (rc == 0) ? 0 : errno);
             }
-            else 
+            else
                 tasks[i] = 0;
         }
     }
@@ -320,17 +320,17 @@ rcf_ch_reboot(struct rcf_comm_connection *handle,
               const uint8_t *ba, size_t cmdlen, const char *params)
 {
     size_t len = answer_plen;
-    
+
     UNUSED(ba);
     UNUSED(cmdlen);
     UNUSED(params);
-    
-    len += snprintf(cbuf + answer_plen,             
+
+    len += snprintf(cbuf + answer_plen,
                      buflen - answer_plen, "0") + 1;
     RCF_CH_LOCK;
-    rcf_comm_agent_reply(handle, cbuf, len);         
+    rcf_comm_agent_reply(handle, cbuf, len);
     RCF_CH_UNLOCK;
-    
+
     ta_system("/sbin/reboot");
     return 0;
 }
@@ -805,20 +805,20 @@ rcf_ch_thread_wrapper(void *arg)
 
     if (parm->is_argv)
         parm->rc = ((rcf_argv_thr_rtn)(parm->addr))(
-                        &parm->params_processed, parm->argc, 
+                        &parm->params_processed, parm->argc,
                         (char **)(parm->params));
     else
     {
         parm->rc = ((rcf_thr_rtn)(parm->addr))(&parm->params_processed,
-                                               parm->params[0], 
-                                               parm->params[1], 
-                                               parm->params[2], 
-                                               parm->params[3], 
-                                               parm->params[4], 
+                                               parm->params[0],
+                                               parm->params[1],
+                                               parm->params[2],
+                                               parm->params[3],
+                                               parm->params[4],
                                                parm->params[5],
-                                               parm->params[6], 
-                                               parm->params[7], 
-                                               parm->params[8], 
+                                               parm->params[6],
+                                               parm->params[7],
+                                               parm->params[8],
                                                parm->params[9]);
     }
     VERB("thread is terminating");
@@ -835,7 +835,7 @@ rcf_ch_start_thread(int *tid,
                     int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
-    
+
     struct rcf_thread_parameter *iter;
 
     UNUSED(priority);
@@ -844,7 +844,7 @@ rcf_ch_start_thread(int *tid,
         VERB("start thread with entry point '%s'", rtn);
 
         pthread_mutex_lock(&thread_pool_mutex);
-        for (iter = thread_pool; 
+        for (iter = thread_pool;
              iter < thread_pool + TA_MAX_THREADS;
              iter++)
         {
@@ -863,7 +863,7 @@ rcf_ch_start_thread(int *tid,
                     sem_init(&iter->params_processed, FALSE, 0);
                     iter->sem_created = TRUE;
                 }
-                if ((rc = pthread_create(&iter->id, NULL, 
+                if ((rc = pthread_create(&iter->id, NULL,
                                          rcf_ch_thread_wrapper, iter)) != 0)
                 {
                     pthread_mutex_unlock(&thread_pool_mutex);
@@ -885,12 +885,12 @@ rcf_ch_start_thread(int *tid,
 }
 
 /* Kill all the threads started by rcf_ch_start_task_thr */
-static void 
+static void
 kill_threads(void)
 {
     struct rcf_thread_parameter *iter;
 
-    for (iter = thread_pool; 
+    for (iter = thread_pool;
          iter < thread_pool + TA_MAX_THREADS;
          iter++)
     {
@@ -1004,7 +1004,7 @@ shell(int argc, char * const argv[])
     int             i;
     unsigned int    used = 0;
     int             rc;
-    
+
     for (i = 0; (i < argc) && (used < cmdlen); ++i)
     {
         used += snprintf(cmdbuf + used, cmdlen - used, "%s ", argv[i]);
@@ -1014,11 +1014,11 @@ shell(int argc, char * const argv[])
 
     VERB("SHELL: run %s, errno before the run is %d\n", cmdbuf, errno);
     rc = ta_system(cmdbuf);
-    
+
     if (rc == -1)
     {
         int err = errno;
-        
+
         VERB("The command fails with errno %d\n", err);
         return TE_OS_RC(TE_TA_UNIX, err);
     }
@@ -1069,12 +1069,12 @@ create_data_file(char *pathname, char c, int len)
 {
     char  buf[1024];
     FILE *f;
-    
+
     if ((f = fopen(pathname, "w")) == NULL)
         return TE_OS_RC(TE_TA_UNIX, errno);
-    
+
     memset(buf, c, sizeof(buf));
-    
+
     while (len > 0)
     {
         int copy_len = ((unsigned int)len  > sizeof(buf)) ?
@@ -1116,7 +1116,7 @@ long_lseek_set(int fd, int64_t offset)
 {
 #if TA_USE_SLOW_LSEEK
     off_t off;
-    
+
     if (lseek(fd, 0, SEEK_SET) < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
@@ -1130,7 +1130,7 @@ long_lseek_set(int fd, int64_t offset)
         offset -= off;
     }
     return offset;
-    
+
 #else
     return llseek(fd, offset, SEEK_SET);
 #endif
@@ -1177,7 +1177,7 @@ create_sparse_file(char *path_name, int64_t offset,
         close(fd);
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
-    
+
     while (payload_length > 0)
     {
         int copy_len = (payload_length > TA_SPARSE_BUF_SIZE) ?
@@ -1209,15 +1209,15 @@ compare_files(char *path_name1, int64_t offset1,
 {
     int fd1 = -1;
     int fd2 = -1;
-    
+
     int size1;
     int size2;
-    
+
     char buf1[TA_CMP_BUF_SIZE];
     char buf2[TA_CMP_BUF_SIZE];
 
     int len;
-    
+
     if ((fd1 = open(path_name1, O_RDONLY)) < 0)
     {
         ERROR("Failed to create sparse file \"%s\"", path_name1);
@@ -1273,13 +1273,13 @@ compare_files(char *path_name1, int64_t offset1,
         {
             break;
         }
-        
+
         cmp_length -= len;
     }
 
     close(fd1);
     close(fd2);
-    
+
     return (cmp_length > 0) ? -1 : 0;
 
 error:
@@ -1306,7 +1306,7 @@ ta_rtn_unlink(char *arg)
 
 /**
  * Signal handler to be registered for SIGINT signal.
- * 
+ *
  * @note It is declared as non-static to be visible in TA symbol table.
  */
 /* static, see above */ void
@@ -1322,7 +1322,7 @@ ta_sigint_handler(void)
 
 /**
  * Signal handler to be registered for SIGPIPE signal.
- * 
+ *
  * @note It is declared as non-static to be visible in TA symbol table.
  */
 /* static, see above */ void
@@ -1352,16 +1352,16 @@ int (*tce_notify_function)(void);
 int (*tce_get_peer_function)(void);
 const char *(*tce_get_conn_function)(void);
 
-static void 
+static void
 init_tce_subsystem(void)
 {
     tce_stop_function =
         rcf_ch_symbol_addr("tce_stop_collector", TRUE);
     tce_notify_function =
         rcf_ch_symbol_addr("tce_notify_collector", TRUE);
-    tce_get_peer_function = 
+    tce_get_peer_function =
         rcf_ch_symbol_addr("tce_obtain_principal_peer_id", TRUE);
-    tce_get_conn_function = 
+    tce_get_conn_function =
         rcf_ch_symbol_addr("tce_obtain_principal_connect", TRUE);
 }
 
@@ -1401,7 +1401,7 @@ rcf_ch_shutdown(struct rcf_comm_connection *handle,
                 char *cbuf, size_t buflen, size_t answer_plen)
 {
     int rc;
-    
+
     UNUSED(handle);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -1423,8 +1423,8 @@ rcf_ch_shutdown(struct rcf_comm_connection *handle,
     return -1; /* Call default callback as well */
 }
 
-/** 
- * Get identifier of the current thread. 
+/**
+ * Get identifier of the current thread.
  *
  * @return Thread identifier
  */
@@ -1434,7 +1434,7 @@ thread_self()
     return (unsigned int)pthread_self();
 }
 
-/** 
+/**
  * Create a mutex.
  *
  * @return Mutex handle
@@ -1443,33 +1443,33 @@ void *
 thread_mutex_create(void)
 {
     static pthread_mutex_t init = PTHREAD_MUTEX_INITIALIZER;
-    
+
     pthread_mutex_t *mutex = (pthread_mutex_t *)calloc(1, sizeof(*mutex));
-    
+
     if (mutex != NULL)
         *mutex = init;
-        
+
     return (void *)mutex;
 }
 
-/** 
+/**
  * Destroy a mutex.
  *
  * @param mutex     mutex handle
  */
-void 
+void
 thread_mutex_destroy(void *mutex)
 {
     free(mutex);
 }
 
-/** 
+/**
  * Lock the mutex.
  *
  * @param mutex     mutex handle
  *
  */
-void 
+void
 thread_mutex_lock(void *mutex)
 {
     if (mutex == NULL)
@@ -1478,17 +1478,17 @@ thread_mutex_lock(void *mutex)
         pthread_mutex_lock(mutex);
 }
 
-/** 
+/**
  * Unlock the mutex.
  *
  * @param mutex     mutex handle
  */
-void 
+void
 thread_mutex_unlock(void *mutex)
 {
     if (mutex == NULL)
         ERROR("%s: try to unlock NULL mutex", __FUNCTION__);
-    else        
+    else
         pthread_mutex_unlock(mutex);
 }
 
@@ -1512,15 +1512,15 @@ rcf_rpc_server_finalize(void)
  *
  * @param ready         semaphore to be posted after params processing
  * @param argc          number of arguments in argv array
- * @param argv          arguments (RPC server name first)     
+ * @param argv          arguments (RPC server name first)
  *
  * @return Status code.
  */
-te_errno 
+te_errno
 rcf_ch_rpc_server_thread(void *ready, int argc, char *argv[])
 {
     char *name;
-    
+
     if (argc < 1)
     {
         ERROR("Too few parameters for rcf_ch_rpcserver_thread");
@@ -1532,7 +1532,7 @@ rcf_ch_rpc_server_thread(void *ready, int argc, char *argv[])
         sem_post(ready);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    
+
     sem_post(ready);
     rcf_pch_rpc_server(name);
 
@@ -1550,7 +1550,7 @@ int
 main(int argc, char **argv)
 {
     int rc, retval = 0;
-    
+
     pthread_t   logfork_tid;
 
     struct sigaction    sigact;
@@ -1715,7 +1715,7 @@ main(int argc, char **argv)
 
     /* FIXME */
     sigemptyset(&rpcs_received_signals);
-    
+
     if (strcmp(argv[1], "exec") == 0)
     {
         void (* func)(int, char **);
@@ -1755,7 +1755,7 @@ main(int argc, char **argv)
 
     /* FIXME Is it OK position? */
     init_tce_subsystem();
-    
+
     rc = rcf_pch_run(argv[2], buf);
     if (rc != 0)
     {

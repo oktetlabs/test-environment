@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
@@ -35,7 +35,7 @@
 #error This source should not be compiled without tr069 configured support.
 #endif
 // #include "tapi_rpc_internal.h"
-#include "tapi_rpc_tr069.h" 
+#include "tapi_rpc_tr069.h"
 
 
 
@@ -43,8 +43,8 @@ te_errno
 rpc_cwmp_op_call(rcf_rpc_server *rpcs,
                  const char *acs_name, const char *cpe_name,
                  te_cwmp_rpc_cpe_t cwmp_rpc,
-                 uint8_t *buf, size_t buflen, 
-                 acse_request_id_t *request_id) 
+                 uint8_t *buf, size_t buflen,
+                 acse_request_id_t *request_id)
 {
     tarpc_cwmp_op_call_in  in;
     tarpc_cwmp_op_call_out out;

@@ -11,7 +11,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -153,8 +153,8 @@ extern te_errno tapi_tad_csap_destroy(const char *ta_name, int session,
  * CSAP.
  * Started sending process may be managed via standard function rcf_ta_*.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0   
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
  * @param csap          CSAP handle
  * @param templ         ASN value of type Traffic-Template
  * @param blk_mode      mode of the operation:
@@ -163,12 +163,12 @@ extern te_errno tapi_tad_csap_destroy(const char *ta_name, int session,
  *
  * @return zero on success or error code
  */
-extern int tapi_tad_trsend_start(const char *ta_name, int session, 
+extern int tapi_tad_trsend_start(const char *ta_name, int session,
                                  csap_handle_t csap, const asn_value *templ,
                                  rcf_call_mode_t blk_mode);
 
 /**
- * Start receiving of traffic via already created CSAP. 
+ * Start receiving of traffic via already created CSAP.
  * Started receiving process may be managed via standard function rcf_ta_*.
  *
  * @param ta_name       Test Agent name
@@ -206,7 +206,7 @@ extern te_errno tapi_tad_trrecv_start(const char      *ta_name,
  * @param user_data     Pointer to opaque data, specified by user for his
  *                      callback,
  *
- * @return none 
+ * @return none
  */
 typedef void (*tapi_tad_trrecv_cb)(asn_value *packet,
                                    void      *user_data);
@@ -232,13 +232,13 @@ extern tapi_tad_trrecv_cb_data *tapi_tad_trrecv_make_cb_data(
                                     void               *user_data);
 
 /**
- * Continue already started receiving process on CSAP. 
- * Blocks until reception is finished. 
+ * Continue already started receiving process on CSAP.
+ * Blocks until reception is finished.
  *
  * @param ta_name       Test Agent name
  * @param session       TA session or 0
  * @param handle        CSAP handle
- * @param cb_data       Struct with user-specified data for 
+ * @param cb_data       Struct with user-specified data for
  *                      catching packets
  * @param num           Location for number of received packets
  *
@@ -251,12 +251,12 @@ extern te_errno tapi_tad_trrecv_wait(const char              *ta_name,
                                      unsigned int            *num);
 
 /**
- * Stops already started receiving process on CSAP. 
+ * Stops already started receiving process on CSAP.
  *
  * @param ta_name       Test Agent name
  * @param session       TA session or 0
  * @param handle        CSAP handle
- * @param cb_data       Struct with user-specified data for 
+ * @param cb_data       Struct with user-specified data for
  *                      catching packets
  * @param num           Location for number of received packets
  *
@@ -269,7 +269,7 @@ extern te_errno tapi_tad_trrecv_stop(const char              *ta_name,
                                      unsigned int            *num);
 
 /**
- * Get received packets from already started receiving process on CSAP. 
+ * Get received packets from already started receiving process on CSAP.
  * Don't block, don't stop receiving process.
  * Received packets are removed from CSAP cache, and will not be returned
  * again, on _wait, _stop or _get calls.
@@ -277,7 +277,7 @@ extern te_errno tapi_tad_trrecv_stop(const char              *ta_name,
  * @param ta_name       Test Agent name
  * @param session       TA session or 0
  * @param handle        CSAP handle
- * @param cb_data       Struct with user-specified data for 
+ * @param cb_data       Struct with user-specified data for
  *                      catching packets
  * @param num           Location for number of received packets
  *
@@ -293,10 +293,10 @@ extern te_errno tapi_tad_trrecv_get(const char              *ta_name,
 
 /**
  * Insert arithmetical progression iterator argument into Traffic-Template
- * ASN value, at the end of iterator list. 
- * New iterator became most internal. 
- * 
- * @param templ         ASN value of Traffic-Template type 
+ * ASN value, at the end of iterator list.
+ * New iterator became most internal.
+ *
+ * @param templ         ASN value of Traffic-Template type
  * @param begin         start of arithmetic progression
  * @param end           end of arithmetic progression
  * @param step          step of arithmetic progression
@@ -308,10 +308,10 @@ extern int tapi_tad_add_iterator_for(asn_value *templ, int begin, int end,
 
 /**
  * Insert 'enumeration' iterator argument into Traffic-Template ASN value,
- * at the end of iterator list. 
- * New iterator became most internal. 
- * 
- * @param templ         ASN value of Traffic-Template type 
+ * at the end of iterator list.
+ * New iterator became most internal.
+ *
+ * @param templ         ASN value of Traffic-Template type
  * @param array         pointer to array with enumerated values
  * @param length        length of array
  *
@@ -323,9 +323,9 @@ extern int tapi_tad_add_iterator_ints(asn_value *templ, int *array,
 
 
 /**
- * Receive all data which currently are waiting for receive in 
- * specified CSAP and forward them into another CSAP, without 
- * passing via RCF to test. 
+ * Receive all data which currently are waiting for receive in
+ * specified CSAP and forward them into another CSAP, without
+ * passing via RCF to test.
  *
  * @param ta_name       TA name
  * @param session       RCF session id

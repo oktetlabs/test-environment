@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
  *
@@ -16,7 +16,7 @@
 #endif
 
 #ifdef RPC_XML
- 
+
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -52,7 +52,7 @@
 
 /**
  * Find attribute 'value' and extract it's value
- */ 
+ */
 #define EXTRACT_VALUE(atts, value) \
     do                                                                  \
     {                                                                   \
@@ -65,11 +65,11 @@
                 break;                                                  \
             }                                                           \
         }                                                               \
-    }  while (0)   
+    }  while (0)
 
 /**
  * Find attribute 'rc' and extract it's value
- */ 
+ */
 #define EXTRACT_RC(atts, value) \
     do                                                                  \
     {                                                                   \
@@ -82,19 +82,19 @@
                 break;                                                  \
             }                                                           \
         }                                                               \
-    }  while (0)   
+    }  while (0)
 
 
 /**
  * Forward declarations of string handlers.
  * TODO: must be removed after removing 'char' from tarpc.m4 header
- */ 
+ */
 static void start_string(void *data, const XML_Char *elem, const XML_Char **atts);
 static void end_string(void *data, const XML_Char *elem);
-   
+
 /**
  * Structure for uint8_t buffer.
- */ 
+ */
 typedef struct hex_buf
 {
     uint8_t *buf;
@@ -103,7 +103,7 @@ typedef struct hex_buf
 
 /**
  * Start handler for compound data (structure)
- */ 
+ */
 void
 start_compound_data(void *data, const XML_Char *elem, const XML_Char **atts)
 {
@@ -111,19 +111,19 @@ start_compound_data(void *data, const XML_Char *elem, const XML_Char **atts)
     char  *rc_string = NULL;
 
     UNUSED(elem);
-    
+
     EXTRACT_RC(atts, rc_string);
-    rc = (rc_string != NULL && 
+    rc = (rc_string != NULL &&
           strncmp(rc_string, "FALSE", strlen("FALSE")) == 0) ?
          FALSE : TRUE;
     ((xml_app_data *)data)->rc = rc;
-    
+
     return;
 }
 
 /**
  * End handler for compound data (structure)
- */ 
+ */
 void
 end_compound_data(void *data, const XML_Char *elem)
 {
@@ -134,32 +134,32 @@ end_compound_data(void *data, const XML_Char *elem)
 
 /**
  * Start handler for int type
- */ 
+ */
 static void
 start_int(void *data, const XML_Char *elem, const XML_Char **atts)
 {
     int  value;
     char *endptr = NULL;
     char *value_str = NULL;
-    
+
     value = 0;
 
     UNUSED(elem);
-    
+
     EXTRACT_VALUE(atts, value_str);
     if (value_str != NULL)
-    {    
+    {
         value = strtol(value_str, &endptr, 0);
         if (value == LONG_MIN || value == LONG_MAX || endptr == NULL)
             value = 0;
-    }    
+    }
     *(int *)data = value;
     return;
 }
 
 /**
  * End handler for int type
- */ 
+ */
 static void
 end_int(void *data, const XML_Char *elem)
 {
@@ -170,7 +170,7 @@ end_int(void *data, const XML_Char *elem)
 
 /**
  * Convertion procedure for int type
- */ 
+ */
 bool_t
 xmlxdr_int(XDR *xdrs, int *ip)
 {
@@ -179,7 +179,7 @@ xmlxdr_int(XDR *xdrs, int *ip)
     xml_app_data *data = (xml_app_data *)(xdrs->x_private);
     char         *format;
     int           printed;
-    
+
     switch (xdrs->x_op)
     {
         case XDR_ENCODE:
@@ -188,35 +188,35 @@ xmlxdr_int(XDR *xdrs, int *ip)
             u_int indent = (data->depth) * INDENT;
 
             buf = xdrs->x_public + strlen(xdrs->x_public);
-            
+
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
             }
-            
+
             memset(buf, ' ', indent);
             *buflen -= indent;
             buf += indent;
 
             format = (name == NULL) ? "<param value=\"%d\"/>\n" :
                                       "<param name=\"%s\" value=\"%d\"/>\n";
-            
+
             if ((u_int)(printed = snprintf(buf, *buflen,
                                            format,
                                            (name == NULL) ? "" : name, *ip))
                 >= *buflen || printed < 0)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;    
-            }    
+                return FALSE;
+            }
             *buflen -= printed;
             break;
         }
         case XDR_DECODE:
         {
             char *end;
-            
+
             XML_Parser parser = data->parser;
             XML_SetUserData(parser, (void *)ip);
             XML_SetElementHandler(parser, start_int, end_int);
@@ -228,7 +228,7 @@ xmlxdr_int(XDR *xdrs, int *ip)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                 return FALSE;
-            }        
+            }
             else
             {
                 printed = end - buf;
@@ -258,32 +258,32 @@ xmlxdr_int(XDR *xdrs, int *ip)
 
 /**
  * Start handler for uint8_t type
- */ 
+ */
 static void
 start_uint8_t(void *data, const XML_Char *elem, const XML_Char **atts)
 {
     uint32_t  value;
     char     *value_str = NULL;
     char     *endptr = NULL;
-    
+
     value = 0;
 
     UNUSED(elem);
-    
+
     EXTRACT_VALUE(atts, value_str);
-    if (value_str != NULL) 
-    {    
+    if (value_str != NULL)
+    {
         value = strtoul(value_str, &endptr, 0);
         if (value == ULONG_MAX || endptr == NULL)
             value = 0;
-    }    
+    }
     *(uint8_t *)data = (uint8_t)value;
     return;
 }
 
 /**
  * End handler for uint8_t type
- */ 
+ */
 static void
 end_uint8_t(void *data, const XML_Char *elem)
 {
@@ -294,7 +294,7 @@ end_uint8_t(void *data, const XML_Char *elem)
 
 /**
  * Converion procedure for uint8_t type
- */ 
+ */
 bool_t
 xmlxdr_uint8_t(XDR *xdrs, uint8_t *ip)
 {
@@ -303,7 +303,7 @@ xmlxdr_uint8_t(XDR *xdrs, uint8_t *ip)
     xml_app_data *data = (xml_app_data *)(xdrs->x_private);
     char         *format;
     int           printed;
-    
+
     switch (xdrs->x_op)
     {
         case XDR_ENCODE:
@@ -312,35 +312,35 @@ xmlxdr_uint8_t(XDR *xdrs, uint8_t *ip)
             u_int indent = (data->depth) * INDENT;
 
             buf = xdrs->x_public + strlen(xdrs->x_public);
-            
+
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
             }
-            
+
             memset(buf, ' ', indent);
             *buflen -= indent;
             buf += indent;
-   
+
             format = (name == NULL) ? "<param value=\"%u\"/>\n" :
                                       "<param name=\"%s\" value=\"%d\"/>\n";
-            
+
             if ((u_int)(printed = snprintf(buf, *buflen,
                                            format,
-                                           (name == NULL) ? "" : name, *ip)) 
+                                           (name == NULL) ? "" : name, *ip))
                 >= *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;    
-            }    
+                return FALSE;
+            }
             *buflen -= printed;
             break;
         }
         case XDR_DECODE:
         {
             char *end;
-            
+
             XML_Parser parser = data->parser;
             XML_SetUserData(parser, (void *)ip);
             XML_SetElementHandler(parser, start_uint8_t, end_uint8_t);
@@ -352,7 +352,7 @@ xmlxdr_uint8_t(XDR *xdrs, uint8_t *ip)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                 return FALSE;
-            }        
+            }
             else
             {
                 printed = end - buf;
@@ -382,32 +382,32 @@ xmlxdr_uint8_t(XDR *xdrs, uint8_t *ip)
 
 /**
  * Start handler for uint16_t type
- */ 
+ */
 static void
 start_uint16_t(void *data, const XML_Char *elem, const XML_Char **atts)
 {
     uint32_t  value;
     char     *value_str = NULL;
     char     *endptr = NULL;
-    
+
     value = 0;
 
     UNUSED(elem);
-    
+
     EXTRACT_VALUE(atts, value_str);
-    if (value_str != NULL) 
-    {    
+    if (value_str != NULL)
+    {
         value = strtoul(value_str, &endptr, 0);
         if (value == ULONG_MAX || endptr == NULL)
             value = 0;
-    }    
+    }
     *(uint16_t *)data = (uint16_t)value;
     return;
 }
 
 /**
  * End handler for uint16_t type
- */ 
+ */
 static void
 end_uint16_t(void *data, const XML_Char *elem)
 {
@@ -418,7 +418,7 @@ end_uint16_t(void *data, const XML_Char *elem)
 
 /**
  * Converion procedure for uint16_t type
- */ 
+ */
 bool_t
 xmlxdr_uint16_t(XDR *xdrs, uint16_t *ip)
 {
@@ -427,7 +427,7 @@ xmlxdr_uint16_t(XDR *xdrs, uint16_t *ip)
     xml_app_data *data = (xml_app_data *)(xdrs->x_private);
     char         *format;
     int           printed;
-    
+
     switch (xdrs->x_op)
     {
         case XDR_ENCODE:
@@ -436,35 +436,35 @@ xmlxdr_uint16_t(XDR *xdrs, uint16_t *ip)
             u_int indent = (data->depth) * INDENT;
 
             buf = xdrs->x_public + strlen(xdrs->x_public);
-            
+
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
             }
-            
+
             memset(buf, ' ', indent);
             *buflen -= indent;
             buf += indent;
-   
+
             format = (name == NULL) ? "<param value=\"%u\"/>\n" :
                                       "<param name=\"%s\" value=\"%d\"/>\n";
-            
+
             if ((u_int)(printed = snprintf(buf, *buflen,
                                            format,
-                                           (name == NULL) ? "" : name, *ip)) 
+                                           (name == NULL) ? "" : name, *ip))
                 >= *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;    
-            }    
+                return FALSE;
+            }
             *buflen -= printed;
             break;
         }
         case XDR_DECODE:
         {
             char *end;
-            
+
             XML_Parser parser = data->parser;
             XML_SetUserData(parser, (void *)ip);
             XML_SetElementHandler(parser, start_uint16_t, end_uint16_t);
@@ -476,7 +476,7 @@ xmlxdr_uint16_t(XDR *xdrs, uint16_t *ip)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                 return FALSE;
-            }        
+            }
             else
             {
                 printed = end - buf;
@@ -506,32 +506,32 @@ xmlxdr_uint16_t(XDR *xdrs, uint16_t *ip)
 
 /**
  * Start handler for int16_t type
- */ 
+ */
 static void
 start_int16_t(void *data, const XML_Char *elem, const XML_Char **atts)
 {
     int32_t   value;
     char     *value_str = NULL;
     char     *endptr = NULL;
-    
+
     value = 0;
 
     UNUSED(elem);
-    
+
     EXTRACT_VALUE(atts, value_str);
-    if (value_str != NULL) 
-    {    
+    if (value_str != NULL)
+    {
         value = strtol(value_str, &endptr, 0);
         if (value == LONG_MIN || value == LONG_MAX || endptr == NULL)
             value = 0;
-    }    
+    }
     *(int16_t *)data = (int16_t)value;
     return;
 }
 
 /**
  * End handler for int16_t type
- */ 
+ */
 static void
 end_int16_t(void *data, const XML_Char *elem)
 {
@@ -542,7 +542,7 @@ end_int16_t(void *data, const XML_Char *elem)
 
 /**
  * Converion procedure for int16_t type
- */ 
+ */
 bool_t
 xmlxdr_int16_t(XDR *xdrs, int16_t *ip)
 {
@@ -551,7 +551,7 @@ xmlxdr_int16_t(XDR *xdrs, int16_t *ip)
     xml_app_data *data = (xml_app_data *)(xdrs->x_private);
     char         *format;
     int           printed;
-    
+
     switch (xdrs->x_op)
     {
         case XDR_ENCODE:
@@ -560,35 +560,35 @@ xmlxdr_int16_t(XDR *xdrs, int16_t *ip)
             u_int indent = (data->depth) * INDENT;
 
             buf = xdrs->x_public + strlen(xdrs->x_public);
-            
+
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
             }
-            
+
             memset(buf, ' ', indent);
             *buflen -= indent;
             buf += indent;
-   
+
             format = (name == NULL) ? "<param value=\"%d\"/>\n" :
                                       "<param name=\"%s\" value=\"%d\"/>\n";
-            
+
             if ((u_int)(printed = snprintf(buf, *buflen,
                                            format,
-                                           (name == NULL) ? "" : name, *ip)) 
+                                           (name == NULL) ? "" : name, *ip))
                 >= *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;    
-            }    
+                return FALSE;
+            }
             *buflen -= printed;
             break;
         }
         case XDR_DECODE:
         {
             char *end;
-            
+
             XML_Parser parser = data->parser;
             XML_SetUserData(parser, (void *)ip);
             XML_SetElementHandler(parser, start_int16_t, end_int16_t);
@@ -600,7 +600,7 @@ xmlxdr_int16_t(XDR *xdrs, int16_t *ip)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                 return FALSE;
-            }        
+            }
             else
             {
                 printed = end - buf;
@@ -630,32 +630,32 @@ xmlxdr_int16_t(XDR *xdrs, int16_t *ip)
 
 /**
  * Start handler for int32_t type
- */ 
+ */
 static void
 start_int32_t(void *data, const XML_Char *elem, const XML_Char **atts)
 {
     int32_t   value;
     char     *value_str = NULL;
     char     *endptr = NULL;
-    
+
     value = 0;
 
     UNUSED(elem);
-    
+
     EXTRACT_VALUE(atts, value_str);
-    if (value_str != NULL) 
-    {    
+    if (value_str != NULL)
+    {
         value = strtol(value_str, &endptr, 0);
         if (value == LONG_MIN || value == LONG_MAX || endptr == NULL)
             value = 0;
-    }    
+    }
     *(int32_t *)data = value;
     return;
 }
 
 /**
  * End handler for int32_t type
- */ 
+ */
 static void
 end_int32_t(void *data, const XML_Char *elem)
 {
@@ -666,7 +666,7 @@ end_int32_t(void *data, const XML_Char *elem)
 
 /**
  * Converion procedure for int32_t type
- */ 
+ */
 bool_t
 xmlxdr_int32_t(XDR *xdrs, int32_t *ip)
 {
@@ -675,7 +675,7 @@ xmlxdr_int32_t(XDR *xdrs, int32_t *ip)
     xml_app_data *data = (xml_app_data *)(xdrs->x_private);
     char  *format;
     int  printed;
-    
+
     switch (xdrs->x_op)
     {
         case XDR_ENCODE:
@@ -684,35 +684,35 @@ xmlxdr_int32_t(XDR *xdrs, int32_t *ip)
             u_int indent = (data->depth) * INDENT;
 
             buf = xdrs->x_public + strlen(xdrs->x_public);
-            
+
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
             }
-            
+
             memset(buf, ' ', indent);
             *buflen -= indent;
             buf += indent;
-   
+
             format = (name == NULL) ? "<param value=\"%ld\"/>\n" :
                                       "<param name=\"%s\" value=\"%d\"/>\n";
-            
+
             if ((u_int)(printed = snprintf(buf, *buflen,
                                            format,
-                                           (name == NULL) ? "" : name, *ip)) 
+                                           (name == NULL) ? "" : name, *ip))
                 >= *buflen)
             {
                 printf("%s %d: small biffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;    
-            }    
+                return FALSE;
+            }
             *buflen -= printed;
             break;
         }
         case XDR_DECODE:
         {
             char *end;
-            
+
             XML_Parser parser = data->parser;
             XML_SetUserData(parser, (void *)ip);
             XML_SetElementHandler(parser, start_int32_t, end_int32_t);
@@ -724,7 +724,7 @@ xmlxdr_int32_t(XDR *xdrs, int32_t *ip)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                 return FALSE;
-            }        
+            }
             else
             {
                 printed = end - buf;
@@ -755,32 +755,32 @@ xmlxdr_int32_t(XDR *xdrs, int32_t *ip)
 
 /**
  * Start handler for uint32_t type
- */ 
+ */
 static void
 start_uint32_t(void *data, const XML_Char *elem, const XML_Char **atts)
 {
     uint32_t  value;
     char     *value_str = NULL;
     char     *endptr = NULL;
-    
+
     value = 0;
 
     UNUSED(elem);
-    
+
     EXTRACT_VALUE(atts, value_str);
-    if (value_str != NULL) 
-    {    
+    if (value_str != NULL)
+    {
         value = strtoul(value_str, &endptr, 0);
         if (value == ULONG_MAX || endptr == NULL)
             value = 0;
-    }    
+    }
     *(uint32_t *)data = value;
     return;
 }
 
 /**
  * End handler for uint32_t type
- */ 
+ */
 static void
 end_uint32_t(void *data, const XML_Char *elem)
 {
@@ -791,7 +791,7 @@ end_uint32_t(void *data, const XML_Char *elem)
 
 /**
  * Converion procedure for uint32_t type
- */ 
+ */
 bool_t
 xmlxdr_uint32_t(XDR *xdrs, uint32_t *ip)
 {
@@ -800,7 +800,7 @@ xmlxdr_uint32_t(XDR *xdrs, uint32_t *ip)
     xml_app_data *data = (xml_app_data *)(xdrs->x_private);
     char         *format;
     int           printed;
-    
+
     switch (xdrs->x_op)
     {
         case XDR_ENCODE:
@@ -809,35 +809,35 @@ xmlxdr_uint32_t(XDR *xdrs, uint32_t *ip)
             u_int indent = (data->depth) * INDENT;
 
             buf = xdrs->x_public + strlen(xdrs->x_public);
-            
+
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
             }
-            
+
             memset(buf, ' ', indent);
             *buflen -= indent;
             buf += indent;
-   
+
             format = (name == NULL) ? "<param value=\"%lu\"/>\n" :
                                       "<param name=\"%s\" value=\"%d\"/>\n";
-            
+
             if ((u_int)(printed = snprintf(buf, *buflen,
                                            format,
-                                           (name == NULL) ? "" : name, *ip)) 
+                                           (name == NULL) ? "" : name, *ip))
                 >= *buflen)
             {
                 printf("%s %d: small biffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;    
-            }    
+                return FALSE;
+            }
             *buflen -= printed;
             break;
         }
         case XDR_DECODE:
         {
             char *end;
-            
+
             XML_Parser parser = data->parser;
             XML_SetUserData(parser, (void *)ip);
             XML_SetElementHandler(parser, start_uint32_t, end_uint32_t);
@@ -849,7 +849,7 @@ xmlxdr_uint32_t(XDR *xdrs, uint32_t *ip)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                 return FALSE;
-            }        
+            }
             else
             {
                 printed = end - buf;
@@ -879,33 +879,33 @@ xmlxdr_uint32_t(XDR *xdrs, uint32_t *ip)
 
 /**
  * Start handler for uint64_t type
- */ 
+ */
 static void
 start_uint64_t(void *data, const XML_Char *elem, const XML_Char **atts)
 {
     uint64_t  value;
     char     *value_str = NULL;
     char     *endptr = NULL;
-    
+
     value = 0;
 
     UNUSED(elem);
-    
+
     EXTRACT_VALUE(atts, value_str);
-    
-    if (value_str != NULL) 
-    {    
+
+    if (value_str != NULL)
+    {
         value = strtoull(value_str, &endptr, 0);
         if (value == ULONG_MAX || endptr == NULL)
             value = 0;
-    }    
+    }
     *(uint64_t *)data = value;
     return;
 }
 
 /**
  * End handler for uint64_t type
- */ 
+ */
 static void
 end_uint64_t(void *data, const XML_Char *elem)
 {
@@ -916,7 +916,7 @@ end_uint64_t(void *data, const XML_Char *elem)
 
 /**
  * Convertion procedure for uint64_t type
- */ 
+ */
 bool_t
 xmlxdr_uint64_t(XDR *xdrs, uint64_t *ip)
 {
@@ -925,7 +925,7 @@ xmlxdr_uint64_t(XDR *xdrs, uint64_t *ip)
     xml_app_data *data = (xml_app_data *)(xdrs->x_private);
     char  *format;
     u_int  printed;
-    
+
     switch (xdrs->x_op)
     {
         case XDR_ENCODE:
@@ -934,17 +934,17 @@ xmlxdr_uint64_t(XDR *xdrs, uint64_t *ip)
             u_int indent = (data->depth) * INDENT;
 
             buf = xdrs->x_public + strlen(xdrs->x_public);
-            
+
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
             }
-          
+
             memset(buf, ' ', indent);
             *buflen -= indent;
             buf += indent;
-            
+
             format = (name == NULL) ? "<param value=\"%llu\"/>\n" :
                                       "<param name=\"%s\" value=\"%d\"/>\n";
             if ((printed = snprintf(buf, *buflen,
@@ -952,15 +952,15 @@ xmlxdr_uint64_t(XDR *xdrs, uint64_t *ip)
                                     (name == NULL) ? "" : name, *ip)) >= *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;    
-            }    
+                return FALSE;
+            }
             *buflen -= printed;
             break;
         }
         case XDR_DECODE:
         {
             char *end;
-            
+
             XML_Parser parser = data->parser;
             XML_SetUserData(parser, (void *)ip);
             XML_SetElementHandler(parser, start_uint64_t, end_uint64_t);
@@ -968,12 +968,12 @@ xmlxdr_uint64_t(XDR *xdrs, uint64_t *ip)
             buf = xdrs->x_public + (strlen(xdrs->x_public)  + 1 - *buflen);
             end = strchr(buf, '>');
             end++;
-            
+
             if (end == NULL)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                 return FALSE;
-            }        
+            }
             else
             {
                 printed = end - buf;
@@ -1003,7 +1003,7 @@ xmlxdr_uint64_t(XDR *xdrs, uint64_t *ip)
 
 /**
  * Start handler for uint8_t array type
- */ 
+ */
 static void
 start_array(void *data, const XML_Char *elem, const XML_Char **atts)
 {
@@ -1012,7 +1012,7 @@ start_array(void *data, const XML_Char *elem, const XML_Char **atts)
     char      *value_str = NULL;
     int        i = 0;
     int        j = 0;
-    char      *endptr = NULL; 
+    char      *endptr = NULL;
 
     UNUSED(elem);
 
@@ -1021,13 +1021,13 @@ start_array(void *data, const XML_Char *elem, const XML_Char **atts)
 
     EXTRACT_VALUE(atts, value_str);
 
-    if (value_str != NULL) 
+    if (value_str != NULL)
     {
         i = strlen(value_str);
-   
+
         if (i != 0)
             i = (i + 1)/3;
-        
+
         value->buf = (uint8_t *)calloc(i, sizeof(uint8_t));
         if (value->buf == NULL)
             return;
@@ -1073,9 +1073,9 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
 {
     char  *buf;
     u_int *buflen = &(xdrs->x_handy);
-    
+
     xml_app_data *data = (xml_app_data *)(xdrs->x_private);
-    
+
     const char   *name = data->name;
     const char   *type = data->type;
     char          format[MAXBUFSIZE + 1] = {0,};
@@ -1083,7 +1083,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
     bool_t        uint8_t_type;
 
     bool_t        char_type;
-    
+
     u_int    i;
 
     UNUSED(maxsize);
@@ -1093,20 +1093,20 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
         case XDR_ENCODE:
         {
             void       *elem = *addrp;
-            
+
             u_int indent = (data->depth) * INDENT;
 
             buf = xdrs->x_public + strlen(xdrs->x_public);
 
             uint8_t_type = (strcmp(type, "uint8_t") == 0);
             char_type = (strcmp(type, "char") == 0);
-            
+
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
             }
-            
+
             memset(buf, ' ', indent);
             *buflen -= indent;
             buf += indent;
@@ -1124,14 +1124,14 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
-            }    
+            }
             buf += printed;
             *buflen -= printed;
             printed = 0;
 
             if (char_type)
             {
-                
+
                 if ((printed = snprintf(buf, *buflen, "%s\"/>\n", *addrp)) >= *buflen)
                 {
                     printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
@@ -1152,7 +1152,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                         return FALSE;
                     }
                     buf += printed;
-                    *buflen -= printed; 
+                    *buflen -= printed;
                 }
                 else
                 {
@@ -1170,9 +1170,9 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                 buf -= 1;
                 *buflen -= 1;
             }
-            
+
             if (uint8_t_type)
-            {    
+            {
                 if ((printed = snprintf(buf, *buflen,
                                         "\"/>\n")) >= *buflen)
                 {
@@ -1205,7 +1205,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
 
             uint8_t_type = (strcmp(type, "uint8_t") == 0);
             char_type = (strcmp(type, "char") == 0);
-            
+
             if (uint8_t_type)
             {
                 hex_buf array;
@@ -1216,12 +1216,12 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                 buf = xdrs->x_public + (strlen(xdrs->x_public)  + 1 - *buflen);
                 end = strchr(buf, '>');
                 end++;
-            
+
                 if (end == NULL)
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                     return FALSE;
-                }        
+                }
                 else
                 {
                     printed = end - buf;
@@ -1249,12 +1249,12 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                 buf = xdrs->x_public + (strlen(xdrs->x_public)  + 1 - *buflen);
                 end = strchr(buf, '>');
                 end++;
-            
+
                 if (end == NULL)
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                     return FALSE;
-                }        
+                }
                 else
                 {
                     printed = end - buf;
@@ -1273,8 +1273,8 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
             else
             {
                 void       *array = NULL;
-                uint32_t    array_size = 0;      
-               
+                uint32_t    array_size = 0;
+
                 XML_SetUserData(parser, (void *)data);
                 XML_SetElementHandler(parser, start_compound_data, end_compound_data);
                 buf = xdrs->x_public + (strlen(xdrs->x_public)  + 1 - *buflen);
@@ -1284,7 +1284,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                     return FALSE;
-                }        
+                }
                 else
                 {
                     printed = end - buf;
@@ -1303,7 +1303,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                 {
                     buf = xdrs->x_public + (strlen(xdrs->x_public)  + 1 - *buflen);
                     for (end = buf; *end == ' ' || *end == '\n'; end++);
-                    
+
                     if (strncmp(end, "</param>", strlen("</param>")) == 0)
                         break;
                     array = realloc(array, (++array_size) * elsize);
@@ -1314,7 +1314,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                     }
                     if (!elproc(xdrs, (void *)(array + (array_size - 1) * elsize), LASTUNSIGNED))
                         return FALSE;
-                    
+
                 }
                 XML_SetUserData(parser, (void *)data);
                 XML_SetElementHandler(parser, start_compound_data, end_compound_data);
@@ -1325,7 +1325,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                     return FALSE;
-                }        
+                }
                 else
                 {
                     printed = end - buf;
@@ -1360,7 +1360,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
 
 /**
  * Start handler for uint8_t vector type
- */ 
+ */
 static void
 start_vector(void *data, const XML_Char *elem, const XML_Char **atts)
 {
@@ -1369,7 +1369,7 @@ start_vector(void *data, const XML_Char *elem, const XML_Char **atts)
     char      *value_str = NULL;
     u_int      i = 0;
     u_int      j = 0;
-    char      *endptr = NULL; 
+    char      *endptr = NULL;
 
     UNUSED(elem);
 
@@ -1377,16 +1377,16 @@ start_vector(void *data, const XML_Char *elem, const XML_Char **atts)
 
     memset(value->buf, 0, value->size);
 
-    if (value_str != NULL) 
+    if (value_str != NULL)
     {
         i = strlen(value_str);
-   
+
         if (i != 0)
             i = (i + 1)/3;
 
         if (i != value->size)
             return;
-        
+
         current = value_str;
         while (j < i)
         {
@@ -1424,35 +1424,35 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
 {
     char  *buf;
     u_int *buflen = &(xdrs->x_handy);
-    
+
     xml_app_data *data = (xml_app_data *)(xdrs->x_private);
-    
+
     const char   *name = data->name;
     const char   *type = data->type;
     char          format[MAXBUFSIZE + 1] = {0,};
     u_int         printed;
     bool_t        uint8_t_type;
-   
+
     u_int         i;
-    
+
     switch (xdrs->x_op)
     {
         case XDR_ENCODE:
         {
             void       *elem = basep;
-            
+
             u_int indent = (data->depth) * INDENT;
 
             buf = xdrs->x_public + strlen(xdrs->x_public);
 
             uint8_t_type = (strcmp(type, "uint8_t") == 0);
-            
+
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
             }
-            
+
             memset(buf, ' ', indent);
             *buflen -= indent;
             buf += indent;
@@ -1470,11 +1470,11 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
-            }    
+            }
             buf += printed;
             *buflen -= printed;
             printed = 0;
-            
+
             for (i = 0; i < nelem; i++)
             {
                 if (uint8_t_type)
@@ -1485,7 +1485,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                         return FALSE;
                     }
                     buf += printed;
-                    *buflen -= printed; 
+                    *buflen -= printed;
                 }
                 else
                 {
@@ -1503,9 +1503,9 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                 buf -= 1;
                 *buflen -= 1;
             }
-            
+
             if (uint8_t_type)
-            {    
+            {
                 if ((printed = snprintf(buf, *buflen,
                                         "\"/>\n")) >= *buflen)
                 {
@@ -1537,13 +1537,13 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
             XML_Parser parser = data->parser;
 
             uint8_t_type = (strcmp(type, "uint8_t") == 0);
-            
+
             if (uint8_t_type)
             {
                 hex_buf array;
 
                 array.buf = basep;
-                array.size = nelem;     
+                array.size = nelem;
 
                 XML_SetUserData(parser, (void *)&array);
                 XML_SetElementHandler(parser, start_vector, end_vector);
@@ -1551,12 +1551,12 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                 buf = xdrs->x_public + (strlen(xdrs->x_public) + 1  - *buflen);
                 end = strchr(buf, '>');
                 end++;
-            
+
                 if (end == NULL)
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                     return FALSE;
-                }        
+                }
                 else
                 {
                     printed = end - buf;
@@ -1574,8 +1574,8 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
             else
             {
                 void       *array = basep;
-                uint32_t    array_size = 0;      
-               
+                uint32_t    array_size = 0;
+
                 XML_SetUserData(parser, (void *)data);
                 XML_SetElementHandler(parser, start_compound_data, end_compound_data);
                 buf = xdrs->x_public + (strlen(xdrs->x_public)  + 1 - *buflen);
@@ -1585,7 +1585,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                     return FALSE;
-                }        
+                }
                 else
                 {
                     printed = end - buf;
@@ -1604,7 +1604,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                 {
                     buf = xdrs->x_public + (strlen(xdrs->x_public)  + 1 - *buflen);
                     for (end = buf; *end == ' ' || *end == '\n'; end++);
-                    
+
                     if (strncmp(end, "</param>", strlen("</param>")) == 0)
                         break;
                     if (++array_size > nelem)
@@ -1620,7 +1620,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                     printf("%s %d: parse error", __FUNCTION__, __LINE__);
                     return FALSE;
                 }
-               
+
                 XML_SetUserData(parser, (void *)data);
                 XML_SetElementHandler(parser, start_compound_data, end_compound_data);
                 buf = xdrs->x_public + (strlen(xdrs->x_public)  + 1 - *buflen);
@@ -1630,7 +1630,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                     return FALSE;
-                }        
+                }
                 else
                 {
                     printed = end - buf;
@@ -1671,7 +1671,7 @@ start_string(void *data, const XML_Char *elem, const XML_Char **atts)
     caddr_t    value;
 
     UNUSED(elem);
-    
+
     EXTRACT_VALUE(atts, value_str);
     if (value_str != NULL)
     {
@@ -1686,7 +1686,7 @@ start_string(void *data, const XML_Char *elem, const XML_Char **atts)
 
 /**
  * End handler for string type
- */ 
+ */
 static void
 end_string(void *data, const XML_Char *elem)
 {
@@ -1697,7 +1697,7 @@ end_string(void *data, const XML_Char *elem)
 
 /**
  * Convertion procedure for string type
- */ 
+ */
 bool_t
 xmlxdr_string(XDR *xdrs, caddr_t *addrp, u_int maxsize)
 {
@@ -1717,17 +1717,17 @@ xmlxdr_string(XDR *xdrs, caddr_t *addrp, u_int maxsize)
             u_int indent = (data->depth) * INDENT;
 
             buf = xdrs->x_public + strlen(xdrs->x_public);
-            
+
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
             }
-            
+
             memset(buf, ' ', indent);
             *buflen -= indent;
             buf += indent;
-            
+
             format = (name == NULL) ? "<param value=\"%d\"/>\n" :
                                       "<param name=\"%s\" value=\"%s\"/>\n";
             if ((printed = snprintf(buf, *buflen,
@@ -1736,7 +1736,7 @@ xmlxdr_string(XDR *xdrs, caddr_t *addrp, u_int maxsize)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
                 return FALSE;
-            }    
+            }
             buf += printed;
             *buflen -= printed;
             break;
@@ -1752,12 +1752,12 @@ xmlxdr_string(XDR *xdrs, caddr_t *addrp, u_int maxsize)
             buf = xdrs->x_public + (strlen(xdrs->x_public)  + 1 - *buflen);
             end = strchr(buf, '>');
             end++;
-            
+
             if (end == NULL)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
                 return FALSE;
-            }        
+            }
             else
             {
                 printed = end - buf;
@@ -1787,10 +1787,10 @@ xmlxdr_string(XDR *xdrs, caddr_t *addrp, u_int maxsize)
 }
 
 /**
- * Dummy function for 'char' type. 
+ * Dummy function for 'char' type.
  * TODO: must be removed after removing 'char' from
  * tarpc.m4 header
- */ 
+ */
 bool_t
 xmlxdr_char(XDR *xdrs, char *ip)
 {
@@ -1813,9 +1813,9 @@ xmlxdr_char(XDR *xdrs, char *ip)
  * @param x_op      XDR_ENCODE, XDR_DECODE of XDR_FREE
  *
  * @return TRUE of FALSE (in case of memory allocation failure)
- */ 
+ */
 bool_t
-xdrxml_create(XDR *xdrs, caddr_t buf, u_int buflen, 
+xdrxml_create(XDR *xdrs, caddr_t buf, u_int buflen,
               rpc_xml_op op, bool_t rc,
               const char *name, enum xdr_op x_op)
 {
@@ -1851,7 +1851,7 @@ xdrxml_create(XDR *xdrs, caddr_t buf, u_int buflen,
  * xdrxml_create()
  *
  * @param xdrs  XDR structure
- */ 
+ */
 bool_t
 xdrxml_free(XDR *xdrs)
 {
@@ -1867,7 +1867,7 @@ xdrxml_free(XDR *xdrs)
  * attached to XDR structure
  *
  * @param xdrs  XDR structure
- */ 
+ */
 bool_t
 xdrxml_return_code(XDR *xdrs)
 {

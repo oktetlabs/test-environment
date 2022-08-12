@@ -11,7 +11,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
@@ -19,12 +19,12 @@
  */
 
 #ifndef __TE_TAPI_SNMP_H__
-#define __TE_TAPI_SNMP_H__ 
+#define __TE_TAPI_SNMP_H__
 
 #if HAVE_NET_SNMP_DEFINITIONS_H
 #include <net-snmp/net-snmp-config.h>
-#include <net-snmp/definitions.h> 
-#include <net-snmp/mib_api.h> 
+#include <net-snmp/definitions.h>
+#include <net-snmp/mib_api.h>
 #endif
 
 #undef PACKAGE_BUGREPORT
@@ -34,7 +34,7 @@
 #undef PACKAGE_VERSION
 
 #if 0
-/* If there is no NET-SNMP package on your system, but there is UCD-SNMP, 
+/* If there is no NET-SNMP package on your system, but there is UCD-SNMP,
  * include these headers: */
 #include <sys/types.h>
 #include <ucd-snmp/asn1.h>
@@ -50,7 +50,7 @@
 #include "te_errno.h"
 
 #include "asn_impl.h"
-#include "asn_usr.h" 
+#include "asn_usr.h"
 #include "ndn_snmp.h"
 
 #ifdef __cplusplus
@@ -76,8 +76,8 @@ extern "C" {
 /** Maximum length of label */
 #define MAX_LABLE_LEN 50
 #endif
-       
-       
+
+
 /** SNMP Object Identifier */
 typedef struct {
     size_t length;          /**< length of Object id */
@@ -127,13 +127,13 @@ typedef enum tapi_snmp_priv_proto_t {
     TAPI_SNMP_PRIV_PROTO_AES,
 } tapi_snmp_priv_proto_t;
 
-/** 
+/**
  * Type codes for SNMP variable binding values. Really SNMP uses some of
  * ASN.1 codes. Not all possible codes are defined, only usually used and
  * supported in TAD SNMP module.
  */
 typedef enum tapi_snmp_vartypes_t {
-    TAPI_SNMP_OTHER     = 0,       
+    TAPI_SNMP_OTHER     = 0,
     TAPI_SNMP_INTEGER   = ASN_INTEGER,  /**<    2 */
     TAPI_SNMP_OCTET_STR = ASN_OCTET_STR,/**<    4 */
     TAPI_SNMP_OBJECT_ID = ASN_OBJECT_ID,/**<    6 */
@@ -164,7 +164,7 @@ typedef enum tapi_snmp_mib_access {
     TAPI_SNMP_MIB_ACCESS_READONLY   = MIB_ACCESS_READONLY, /* 18 */
     TAPI_SNMP_MIB_ACCESS_READWRITE  = MIB_ACCESS_READWRITE, /* 19 */
     TAPI_SNMP_MIB_ACCESS_CREATE     = MIB_ACCESS_CREATE, /* 48 */
-} tapi_snmp_mib_access;       
+} tapi_snmp_mib_access;
 
 /** Store mib status */
 typedef enum tapi_snmp_mib_status {
@@ -178,16 +178,16 @@ typedef enum tapi_snmp_mib_status {
 /** SNMP type getting */
 typedef enum {
     TAPI_SNMP_EXACT,
-    TAPI_SNMP_NEXT, 
+    TAPI_SNMP_NEXT,
 } tapi_snmp_get_type_t;
 
 /** SNMP variable binding */
-typedef struct { 
+typedef struct {
     tapi_snmp_oid_t      name;   /**< Object identifier of variable. */
     tapi_snmp_vartypes_t type;   /**< Type of variable. */
-    size_t               v_len;  /**< length of data in variable value: 
+    size_t               v_len;  /**< length of data in variable value:
                                    quantity of bytes for octet-sting types,
-                                   number of sub-identifiers for OID type, 
+                                   number of sub-identifiers for OID type,
                                    not used for integer types. */
     union {
         unsigned char   *oct_string;  /**< Octet string value. */
@@ -201,13 +201,13 @@ typedef struct {
 /** SNMP Message */
 typedef struct {
     ndn_snmp_msg_t type;    /**< type of message */
-    int err_status;         /**< SNMP error, values: SNMP_ERR_* from 
-                                  <net-snmp/library/snmp.h>; 
+    int err_status;         /**< SNMP error, values: SNMP_ERR_* from
+                                  <net-snmp/library/snmp.h>;
                                   used only  in SNMP replies. */
-    int err_index;          /**< Index of wrong variable binding in request 
+    int err_index;          /**< Index of wrong variable binding in request
                                  used only  in SNMP replies. */
     size_t num_var_binds;   /**< Number of variables in message. */
-    tapi_snmp_varbind_t *vars;  /**< Pointer to array with variables.  */ 
+    tapi_snmp_varbind_t *vars;  /**< Pointer to array with variables.  */
 
     /**< Trap v1 only fields */
     tapi_snmp_oid_t   enterprise; /**< Enterprise */
@@ -224,16 +224,16 @@ typedef struct {
 
 /**
  * Structure to contain snmp variable mib access
- */ 
+ */
 typedef struct tapi_snmp_var_access {
     struct tapi_snmp_var_access  *next; /**< The next peer in sense of
-                                             MIB structure */       
+                                             MIB structure */
     char                   label[MAX_LABLE_LEN];  /**< variable label */
     tapi_snmp_oid_t               oid;    /**< Object identifier */
     oid                           subid;  /**< subobject id */
     tapi_snmp_mib_access          access; /**< mib access type */
     tapi_snmp_mib_status          status; /**< mib status */
-} tapi_snmp_var_access;    
+} tapi_snmp_var_access;
 
 /** Definitions of values for SNMP TruthValue type */
 typedef enum tapi_snmp_truth_value {
@@ -248,7 +248,7 @@ typedef enum {
     TAPI_SNMP_VB_VMP_FULL, /**< Compare both their OIDs and values */
 } tapi_snmp_vb_cmp_type;
 
-/** 
+/**
  * Structure that contains generic part of all SNMP table rows -
  * INDEX part of row.
  * It could be useful when casting unknown type of table to get at
@@ -266,7 +266,7 @@ typedef struct tapi_snmp_security_s {
     union {
         const char                  *community;  /**< v2c community */
         struct {
-            tapi_snmp_sec_level_t    level;      /**< Security level */ 
+            tapi_snmp_sec_level_t    level;      /**< Security level */
             const char              *name;       /**< User name */
             tapi_snmp_auth_proto_t   auth_proto; /**< Auth protocol */
             const char              *auth_pass;  /**< Auth passphrase */
@@ -284,32 +284,32 @@ struct tapi_snmp_v1_gen_trap_name {
 
 
 /**
- * Concatenate two object identifiers and put result into first one. 
- * Mainly intended for table indexes. 
- * 
+ * Concatenate two object identifiers and put result into first one.
+ * Mainly intended for table indexes.
+ *
  * @param base          base OID, will contain result (IN/OUT).
- * @param suffix        second OID, to be added to the base. 
+ * @param suffix        second OID, to be added to the base.
  *
  * @return zero on success, otherwise error code.
  */
-extern int tapi_snmp_cat_oid(tapi_snmp_oid_t *base, 
+extern int tapi_snmp_cat_oid(tapi_snmp_oid_t *base,
                              const tapi_snmp_oid_t *suffix);
 
 
 /**
  * Boolean check is the first OID contained in second one.
- * 
+ *
  * @param tree          OID of MIB sub-tree.
  * @param node          OID of node to be checked on presence in sub-tree.
  *
  * @retval 1 node is in tree
  * @retval 0 otherwise
  */
-extern int tapi_snmp_is_sub_oid(const tapi_snmp_oid_t *tree, 
+extern int tapi_snmp_is_sub_oid(const tapi_snmp_oid_t *tree,
                                 const tapi_snmp_oid_t *node);
 
 
-/** 
+/**
  * Callback function for the tapi_snmp_walk() routine, it is called
  * for each variable in a walk subtree.
  *
@@ -331,7 +331,7 @@ typedef int (*walk_callback)(const tapi_snmp_varbind_t *varbind,
 extern void tapi_snmp_free_varbind(tapi_snmp_varbind_t *varbind);
 
 /**
- * Free memory allocated in snmp message structure got from 
+ * Free memory allocated in snmp message structure got from
  * tapi_snmp_packet_to_plain function
  *
  * @param snmp_message  converted structure
@@ -364,29 +364,29 @@ extern void tapi_snmp_free_oct_string(tapi_snmp_oct_string_t *oct_string);
  * Convert SNMP-Message ASN.1 value to plain C structure.
  *
  * @param pkt           ASN.1 value of type SNMP-Message or Generic-PDU
- *                      with choice "snmp" 
+ *                      with choice "snmp"
  * @param snmp_message  Converted structure (OUT)
  *
  * @return Zero on success or error code.
  */
-extern int tapi_snmp_packet_to_plain(asn_value *pkt, 
+extern int tapi_snmp_packet_to_plain(asn_value *pkt,
                                      tapi_snmp_message_t *snmp_message);
 
 
 /**
- * Creates usual SNMP (community-based security model) CSAP 
+ * Creates usual SNMP (community-based security model) CSAP
  * on specified Test Agent and got its handle.
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF Session ID
  * @param snmp_agent    Address of SNMP agent
  * @param community     SNMP community
  * @param snmp_version  SNMP version
  * @param csap_id       identifier of an SNMP CSAP (OUT)
- * 
+ *
  * @return zero on success or error code.
  */
-extern te_errno tapi_snmp_csap_create(const char *ta, int sid, 
+extern te_errno tapi_snmp_csap_create(const char *ta, int sid,
                                       const char *snmp_agent,
                                       const char *community,
                                       tapi_snmp_version_t snmp_version,
@@ -395,7 +395,7 @@ extern te_errno tapi_snmp_csap_create(const char *ta, int sid,
 
 /**
  * Creates generic SNMP CSAP on specified Test Agent and got its handle.
- * 
+ *
  * @param ta            Test Agent name.
  * @param sid           RCF Session ID.
  * @param snmp_agent    Address of SNMP agent.
@@ -403,14 +403,14 @@ extern te_errno tapi_snmp_csap_create(const char *ta, int sid,
  * @param snmp_version  SNMP version.
  * @param rem_port      Remote UDP port.
  * @param loc_port      Local UDP port.
- * @param timeout       Default timeout, measured in milliseconds. 
+ * @param timeout       Default timeout, measured in milliseconds.
  * @param csap_id       identifier of an SNMP CSAP. (OUT)
- * 
+ *
  * @return zero on success or error code.
  */
-extern te_errno tapi_snmp_gen_csap_create(const char *ta, int sid, 
-                                          const char *snmp_agent, 
-                                          tapi_snmp_security_t *security, 
+extern te_errno tapi_snmp_gen_csap_create(const char *ta, int sid,
+                                          const char *snmp_agent,
+                                          tapi_snmp_security_t *security,
                                           tapi_snmp_version_t snmp_version,
                                           uint16_t rem_port,
                                           uint16_t loc_port,
@@ -423,7 +423,7 @@ extern te_errno tapi_snmp_gen_csap_create(const char *ta, int sid,
  * agent, associated with a particular SNMP CSAP.
  *
  * @note The function waits for SNMP agent response.
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF Session id.
  * @param csap_id       identifier of an SNMP CSAP.
@@ -433,10 +433,10 @@ extern te_errno tapi_snmp_gen_csap_create(const char *ta, int sid,
  *                      message (OUT), may be zero if not need.
  * @param errindex      Rhe value of error-index field in response
  *                      message (OUT), may be zero if not need.
- * 
+ *
  * @return zero on success or error code.
  */
-extern int tapi_snmp_set_vbs(const char *ta, int sid, int csap_id, 
+extern int tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
                              const tapi_snmp_varbind_t *var_binds,
                              size_t num_vars, int *errstat, int *errindex);
 
@@ -451,26 +451,26 @@ extern int tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
  *                      message (OUT), may be zero if not need.
  * @param errindex      The value of error-index field in response
  *                      message (OUT), may be zero if not need.
- * @param ...           Sequence of "varbind groups": 
+ * @param ...           Sequence of "varbind groups":
  *                      Symbolic label of MIB leaf (usually literal contant)
- *                      and value, which may be either integer 
+ *                      and value, which may be either integer
  *                      (for INTEGER syntax leafs),
  *                      or tapi_snmp_oct_string_t* for OCTET_STRING types,
  *                      or tapi_snmp_oid_t*;  ended by NULL.
  *                      Passed pointers are considered as 'const',
  *                      i.e. OID and data are not changed.
- * 
+ *
  * @return zero on success or error code.
  */
-extern int tapi_snmp_set(const char *ta, int sid, int csap_id, 
+extern int tapi_snmp_set(const char *ta, int sid, int csap_id,
                          int *errstat, int *errindex, ...);
 
 /**
  * The function send SNMP-SET request for specified objects to the SNMP
- * agent, associated with a particular SNMP CSAP. 
+ * agent, associated with a particular SNMP CSAP.
  *
  * @note The function waits for SNMP agent response.
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF Session id.
  * @param csap_id       identifier of an SNMP CSAP.
@@ -479,26 +479,26 @@ extern int tapi_snmp_set(const char *ta, int sid, int csap_id,
  * @param errindex      The value of error-index field in response
  *                      message (OUT), may be zero if not need.
  * @param common_index  Common index part of OID, which should be concatened
- *                      to all varbind's OIDs below; may be NULL. 
+ *                      to all varbind's OIDs below; may be NULL.
  * @param ...           Sequence of "varbind groups": label of MIB leaf
- *                      and value, which may be either integer, 
+ *                      and value, which may be either integer,
  *                      or tapi_snmp_oct_string_t*, for OCTET_STRING types,
  *                      or tapi_snmp_oid_t*;  ended by NULL.
  *                      Passed pointers are considered as 'const',
  *                      i.e. OID and data are not changed.
- * 
+ *
  * @return zero on success or error code.
  */
-extern int tapi_snmp_set_row(const char *ta, int sid, int csap_id, 
+extern int tapi_snmp_set_row(const char *ta, int sid, int csap_id,
                              int *errstat, int *errindex,
                              const tapi_snmp_oid_t *common_index, ...);
 
 
 /**
  * The function send SNMP-GET request for specified objects to the SNMP
- * agent, associated with a particular SNMP CSAP. 
+ * agent, associated with a particular SNMP CSAP.
  * Note, that the function waits for SNMP agent response.
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF Session id.
  * @param csap_id       identifier of an SNMP CSAP.
@@ -507,17 +507,17 @@ extern int tapi_snmp_set_row(const char *ta, int sid, int csap_id,
  * @param errindex      The value of error-index field in response
  *                      message (OUT), may be zero if not need.
  * @param common_index  Common index part of OID, which should be concatened
- *                      to all varbind's OIDs below; may be NULL. 
+ *                      to all varbind's OIDs below; may be NULL.
  * @param ...           Sequence of "varbind groups": label of MIB leaf
- *                      and value, which may be either integer, 
+ *                      and value, which may be either integer,
  *                      or tapi_snmp_oct_string_t*, for OCTET_STRING types,
  *                      or tapi_snmp_oid_t*;  ended by NULL.
  *                      Passed pointers are desired as 'const',
  *                      i.e. OID and data are not changed.
- * 
+ *
  * @return zero on success or error code.
  */
-extern int tapi_snmp_get_row(const char *ta, int sid, int csap_id, 
+extern int tapi_snmp_get_row(const char *ta, int sid, int csap_id,
                              int *errstatus, int *errindex,
                              const tapi_snmp_oid_t *common_index, ...);
 
@@ -527,7 +527,7 @@ extern int tapi_snmp_get_row(const char *ta, int sid, int csap_id,
  * by means of SNMP Set request, which is sent to the SNMP agent, associated
  * with a particular SNMP CSAP. Note, that the function waits for SNMP agent
  * response.
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF Session id.
  * @param csap_id       identifier of an SNMP CSAP.
@@ -535,19 +535,19 @@ extern int tapi_snmp_get_row(const char *ta, int sid, int csap_id,
  * @param value         integer value.
  * @param errstat       the value of error-status field in response
  *                      message (OUT), may be zero if not need.
- * 
+ *
  * @return zero on success or error code.
  */
-extern int tapi_snmp_set_integer(const char *ta, int sid, int csap_id, 
-                                 const tapi_snmp_oid_t *oid, 
+extern int tapi_snmp_set_integer(const char *ta, int sid, int csap_id,
+                                 const tapi_snmp_oid_t *oid,
                                  int value, int *errstat);
 
 /**
- * The function makes an attempt to set an unsigned integer value 
- * for an SNMP object by means of SNMP Set request, which is sent 
+ * The function makes an attempt to set an unsigned integer value
+ * for an SNMP object by means of SNMP Set request, which is sent
  * to the SNMP agent, associated with a particular SNMP CSAP. Note,
  * that the function waits for SNMP agent response.
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF Session id.
  * @param csap_id       identifier of an SNMP CSAP.
@@ -555,11 +555,11 @@ extern int tapi_snmp_set_integer(const char *ta, int sid, int csap_id,
  * @param value         unsigned integer value.
  * @param errstat       the value of error-status field in response
  *                      message (OUT), may be zero if not need.
- * 
+ *
  * @return zero on success or error code.
  */
-extern int tapi_snmp_set_unsigned(const char *ta, int sid, int csap_id, 
-                                  const tapi_snmp_oid_t *oid, 
+extern int tapi_snmp_set_unsigned(const char *ta, int sid, int csap_id,
+                                  const tapi_snmp_oid_t *oid,
                                   unsigned int value, int *errstat);
 
 /**
@@ -567,7 +567,7 @@ extern int tapi_snmp_set_unsigned(const char *ta, int sid, int csap_id,
  * object by means of SNMP Set request, which is sent to the SNMP agent,
  * associated with an SNMP CSAP. Note, that the function waits for SNMP
  * agent response.
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF Session id.
  * @param csap_id       identifier of an SNMP CSAP.
@@ -576,10 +576,10 @@ extern int tapi_snmp_set_unsigned(const char *ta, int sid, int csap_id,
  * @param size          octet string size.
  * @param errstat       the value of error-status field in response
  *                      message (OUT), may be zero if not need.
- * 
+ *
  * @return zero on success or error code.
  */
-extern int tapi_snmp_set_octetstring(const char *ta, int sid, int csap_id, 
+extern int tapi_snmp_set_octetstring(const char *ta, int sid, int csap_id,
                                      const tapi_snmp_oid_t *oid,
                                      const uint8_t *value, size_t size,
                                      int *errstat);
@@ -591,7 +591,7 @@ extern int tapi_snmp_set_octetstring(const char *ta, int sid, int csap_id,
  * printable characters. For a general octet string use
  * tapi_snmp_set_octetstring() function. Note, that the function waits for
  * SNMP agent response.
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF Session id.
  * @param csap_id       identifier of an SNMP CSAP.
@@ -599,10 +599,10 @@ extern int tapi_snmp_set_octetstring(const char *ta, int sid, int csap_id,
  * @param value         zero-terminated string.
  * @param errstat       the value of error-status field in response
  *                      message (OUT), may be zero if not need.
- * 
+ *
  * @return zero on success or error code.
  */
-extern int tapi_snmp_set_string(const char *ta, int sid, int csap_id, 
+extern int tapi_snmp_set_string(const char *ta, int sid, int csap_id,
                                 const tapi_snmp_oid_t *oid,
                                 const char *value, int *errstat);
 
@@ -624,17 +624,17 @@ extern int tapi_snmp_set_string(const char *ta, int sid, int csap_id,
  *                      be freed by user. (OUT)
  * @param errstatus     The value of error-status field in response
  *                      message (OUT), may be zero if not need.
- * 
+ *
  * @return zero on success or error code.
  */
-extern int tapi_snmp_get(const char *ta, int sid, int csap_id, 
-                         const tapi_snmp_oid_t *oid, 
+extern int tapi_snmp_get(const char *ta, int sid, int csap_id,
+                         const tapi_snmp_oid_t *oid,
                          tapi_snmp_get_type_t next,
                          tapi_snmp_varbind_t *varbind, int *errstatus);
 
 
 /**
- * The function can be used to send either SNMP Get-Bulk request 
+ * The function can be used to send either SNMP Get-Bulk request
  * to the SNMP agent, associated with an SNMP CSAP, and obtain
  * a variable binding agent have responded.
  *
@@ -649,11 +649,11 @@ extern int tapi_snmp_get(const char *ta, int sid, int csap_id,
  *                      be freed by user. (OUT)
  * @param errstatus     The value of error-status field in response
  *                      message (OUT), may be zero if not need
- * 
+ *
  * @return Zero on success or error code.
  */
-extern int tapi_snmp_getbulk(const char *ta, int sid, int csap_id, 
-                  const tapi_snmp_oid_t *v_oid, 
+extern int tapi_snmp_getbulk(const char *ta, int sid, int csap_id,
+                  const tapi_snmp_oid_t *v_oid,
                   int *num, tapi_snmp_varbind_t *varbind, int *errstatus);
 
 /**
@@ -669,11 +669,11 @@ extern int tapi_snmp_getbulk(const char *ta, int sid, int csap_id,
  * @param oid           OID which defines a subtree to work with
  * @param userdata      Opaque data to be passed into the callback function
  * @param callback      Callback function, which is executed for each leaf
- * 
+ *
  * @return Zero on success or error code.
  */
-extern int tapi_snmp_walk(const char *ta, int sid, int csap_id, 
-                          const tapi_snmp_oid_t *oid, void *userdata, 
+extern int tapi_snmp_walk(const char *ta, int sid, int csap_id,
+                          const tapi_snmp_oid_t *oid, void *userdata,
                           walk_callback callback);
 
 
@@ -696,13 +696,13 @@ extern int tapi_snmp_walk(const char *ta, int sid, int csap_id,
  * @return zero on success or error code
  */
 extern int tapi_snmp_get_ipaddr(const char *ta, int sid, int csap_id,
-                                const tapi_snmp_oid_t *oid, void *addr, 
+                                const tapi_snmp_oid_t *oid, void *addr,
                                 int *errstat);
 
 
 /**
- * Sends SNMP Get request on MIB object with type DateAndTime 
- * to the SNMP agent, associated with an SNMP CSAP and obtains a value 
+ * Sends SNMP Get request on MIB object with type DateAndTime
+ * to the SNMP agent, associated with an SNMP CSAP and obtains a value
  * the agent have responded.
  *
  * @param ta                Test Agent name
@@ -744,7 +744,7 @@ extern int tapi_snmp_get_integer(const char *ta, int sid,
 
 /**
  * Sends SNMP Get request on MIB object with type Unsigned (or Gauge)
- * to the SNMP agent, associated with an SNMP CSAP and obtains a value 
+ * to the SNMP agent, associated with an SNMP CSAP and obtains a value
  * the agent have responded.
  *
  * @param ta            Test Agent name
@@ -757,18 +757,18 @@ extern int tapi_snmp_get_integer(const char *ta, int sid,
  *
  * @return Zero on success or error code
  */
-static inline unsigned int tapi_snmp_get_unsigned(const char *ta, int sid, 
+static inline unsigned int tapi_snmp_get_unsigned(const char *ta, int sid,
                                          int csap_id,
-                                         const tapi_snmp_oid_t *oid, 
+                                         const tapi_snmp_oid_t *oid,
                                          unsigned int *val, int *errstat)
 {
-    return tapi_snmp_get_integer(ta, sid, csap_id, oid, 
+    return tapi_snmp_get_integer(ta, sid, csap_id, oid,
                                  (int *)val, errstat);
 }
 
 /**
  * Sends SNMP Get request on MIB object with type DisplayString to
- * the SNMP agent, associated with an SNMP CSAP and obtains a value 
+ * the SNMP agent, associated with an SNMP CSAP and obtains a value
  * the agent have responded.
  *
  * @param ta            Test Agent name
@@ -784,12 +784,12 @@ static inline unsigned int tapi_snmp_get_unsigned(const char *ta, int sid,
  */
 extern int tapi_snmp_get_string(const char *ta, int sid, int csap_id,
                                 const tapi_snmp_oid_t *oid,
-                                char *buf, size_t buf_size, 
+                                char *buf, size_t buf_size,
                                  int *errstat);
 
 /**
  * Sends SNMP Get request on MIB object with type OctetString to
- * the SNMP agent, associated with an SNMP CSAP and obtains a value 
+ * the SNMP agent, associated with an SNMP CSAP and obtains a value
  * the agent have responded.
  *
  * @param ta            Test Agent name
@@ -806,12 +806,12 @@ extern int tapi_snmp_get_string(const char *ta, int sid, int csap_id,
  */
 extern int tapi_snmp_get_oct_string(const char *ta, int sid, int csap_id,
                                     const tapi_snmp_oid_t *oid,
-                                    void *buf, size_t *buf_size, 
+                                    void *buf, size_t *buf_size,
                                     int *errstat);
 
 /**
  * Sends SNMP Get request on MIB object with type ObjectIdentifier to
- * the SNMP agent, associated with an SNMP CSAP and obtains a value 
+ * the SNMP agent, associated with an SNMP CSAP and obtains a value
  * the agent have responded.
  *
  * @param ta            Test Agent name
@@ -826,17 +826,17 @@ extern int tapi_snmp_get_oct_string(const char *ta, int sid, int csap_id,
  */
 extern int tapi_snmp_get_objid(const char *ta, int sid, int csap_id,
                                const tapi_snmp_oid_t *oid,
-                               tapi_snmp_oid_t *ret_oid, 
+                               tapi_snmp_oid_t *ret_oid,
                                int *errstat);
 
 
 /**
  * Get SNMP table or one column from it, depends on passed OID.
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF session ID
  * @param csap_id       SNMP CSAP handle
- * @param table_oid     OID of SNMP table Entry object, or one leaf in this 
+ * @param table_oid     OID of SNMP table Entry object, or one leaf in this
  *                      entry
  * @param num           Number of raws in table = height of matrix below
  *                      (OUT)
@@ -864,7 +864,7 @@ extern int tapi_snmp_get_table(const char *ta, int sid, int csap_id,
  * @param suffix        Array with index suffixes of desired table rows
  * @param result        Pointer to the allocated matrix with results,
  *                      matrix width is greatest subid of Table entry (OUT)
- * 
+ *
  * @return Zero on success or error code
  */
 extern int tapi_snmp_get_table_rows(const char *ta, int sid, int csap_id,
@@ -874,8 +874,8 @@ extern int tapi_snmp_get_table_rows(const char *ta, int sid, int csap_id,
 
 /**
  * Get SNMP table dimension.
- * 
- * @param table_oid     OID of SNMP table Entry object, or one leaf in this 
+ *
+ * @param table_oid     OID of SNMP table Entry object, or one leaf in this
  *                      entry
  * @param dimension     Table dimension (OUT)
  *
@@ -893,14 +893,14 @@ extern int tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid,
  * @param ...           Values to be inserted in index.id
  *
  * @return Zero on success or error code
- */ 
+ */
 extern int tapi_snmp_make_table_index(tapi_snmp_oid_t *tbl,
                                       tapi_snmp_oid_t *index, ...);
-       
+
 
 /**
  * Get SNMP table columns.
- * 
+ *
  * @param table_oid     OID of SNMP table Entry object, or one leaf in
  *                      this entry
  * @param columns       Pointer to the allocated array of columns (OUT)
@@ -973,7 +973,7 @@ extern int tapi_snmp_make_oid(const char *oid_str, tapi_snmp_oid_t *oid);
 
 /**
  * Finds VarBind by name (OID) among the array of VarBinds.
- * 
+ *
  * @param [in]  var_binds  Pointer to the array of VarBinds
  * @param [in]  num        The number of entries in @a var_binds array
  * @param [in]  oid        VarBind name we are interested in
@@ -1005,7 +1005,7 @@ tapi_snmp_find_vb_str(const tapi_snmp_varbind_t *var_binds, size_t num,
 
     if ((rc = tapi_snmp_make_oid(oid, &bin_oid)) != 0)
         return rc;
-    
+
     return tapi_snmp_find_vb(var_binds, num, &bin_oid, vb, pos);
 }
 
@@ -1021,8 +1021,8 @@ tapi_snmp_find_vb_str(const tapi_snmp_varbind_t *var_binds, size_t num,
 extern int tapi_snmp_get_syntax(tapi_snmp_oid_t *oid,
                                 tapi_snmp_vartypes_t *syntax);
 
-/** 
- * Callback function for the catching of SNMP traps. 
+/**
+ * Callback function for the catching of SNMP traps.
  *
  * @param trap          SNMP message with trap.
  * @param user_data     Parameter, provided by the caller of
@@ -1061,7 +1061,7 @@ extern int tapi_snmp_make_instance(const char *oid_str,
 /**
  * Create VarBind for specified OID with the particular value.
  *
- * @param vb        Pointer to VarBind data structure to be filled in 
+ * @param vb        Pointer to VarBind data structure to be filled in
  *                  by the function (OUT)
  * @param oid_str   OID string representation
  * @param type      Type of the value, can be one of the following:
@@ -1076,12 +1076,12 @@ extern int tapi_snmp_make_instance(const char *oid_str,
  *                    a  IPADDRESS
  *                    b  BITS
  * @param value     VarBind value
- * @param ...       For tabular objects, index of the entry - 
+ * @param ...       For tabular objects, index of the entry -
  *                  type tapi_snmp_oid_t
  *
  * @return Status of the operation
  */
-extern int tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, 
+extern int tapi_snmp_make_vb(tapi_snmp_varbind_t *vb,
                              const char *oid_str,
                              const char *type, const char *value, ...);
 
@@ -1107,20 +1107,20 @@ extern int tapi_snmp_cmp_vb(const tapi_snmp_varbind_t *vb1,
  * @param oid2       Second OID
  *
  * @return Function return an integer less than, equal to,
- * or greater than zero if @a oid1 is found, respectively, 
+ * or greater than zero if @a oid1 is found, respectively,
  * to be less than, to match, or be greater than @a oid2.
  */
 extern int tapi_snmp_cmp_oid(const tapi_snmp_oid_t *oid1,
                              const tapi_snmp_oid_t *oid2);
 
 /**
- * Print SNMP OID struct to string and return pointer to this string. 
- * Note, that buffer with string is static and behaviour of this function 
- * in multithread usage may be unpredictable. 
+ * Print SNMP OID struct to string and return pointer to this string.
+ * Note, that buffer with string is static and behaviour of this function
+ * in multithread usage may be unpredictable.
  *
- * @param oid       - pointer to structure with OID to be printed. 
+ * @param oid       - pointer to structure with OID to be printed.
  *
- * @return Pointer to buffer with printed OID. 
+ * @return Pointer to buffer with printed OID.
  */
 extern const char *print_oid(const tapi_snmp_oid_t *oid);
 

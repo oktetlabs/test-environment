@@ -1,11 +1,11 @@
 /** @file
  * @brief Windows Test Agent
  *
- * RPC server implementation 
+ * RPC server implementation
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -24,7 +24,7 @@ LPFN_TRANSMITFILE         pf_transmit_file;
 LPFN_TRANSMITPACKETS      pf_transmit_packets;
 LPFN_WSARECVMSG           pf_wsa_recvmsg;
 
-void 
+void
 wsa_func_handles_discover()
 {
     GUID  guid_connect_ex = WSAID_CONNECTEX;
@@ -35,9 +35,9 @@ wsa_func_handles_discover()
     GUID  guid_transmit_packets = WSAID_TRANSMITPACKETS;
     GUID  guid_wsa_recvmsg = WSAID_WSARECVMSG;
     DWORD bytes_returned;
-    int   s = socket(AF_INET, SOCK_STREAM, 
+    int   s = socket(AF_INET, SOCK_STREAM,
                      wsp_proto_rpc2h(RPC_SOCK_STREAM, RPC_IPPROTO_TCP));
-    
+
 #define DISCOVER_FUNC(_func, _func_cup) \
     do {                                                                \
         if (WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER,             \
@@ -56,11 +56,11 @@ wsa_func_handles_discover()
     DISCOVER_FUNC(accept_ex, ACCEPTEX);
     DISCOVER_FUNC(get_accept_ex_sockaddrs, GETACCEPTEXSOCKADDRS);
     DISCOVER_FUNC(transmit_packets, TRANSMITPACKETS);
-    DISCOVER_FUNC(transmit_file, TRANSMITFILE);    
+    DISCOVER_FUNC(transmit_file, TRANSMITFILE);
     DISCOVER_FUNC(wsa_recvmsg, WSARECVMSG);
-    
-#undef DISCOVER_FUNC    
-    
+
+#undef DISCOVER_FUNC
+
     closesocket(s);
 }
 
@@ -95,7 +95,7 @@ typedef struct {
     char           type_name[MAX_TYPE_NAME_SIZE];
     tarpc_ssize_t  type_size;
 } type_info_t;
- 
+
 static type_info_t type_info[] =
 {
     {"char", sizeof(char)},
@@ -127,7 +127,7 @@ int32_t
 get_sizeof(tarpc_get_sizeof_in *in)
 {
     uint32_t i;
-    
+
     if (in->typename == NULL)
     {
         ERROR("Type name not specified");
@@ -138,7 +138,7 @@ get_sizeof(tarpc_get_sizeof_in *in)
     {
         return sizeof(void *);
     }
-    
+
     for (i = 0; i < sizeof(type_info) / sizeof(type_info_t); i++)
     {
         if (strcmp(in->typename, type_info[i].type_name) == 0)
@@ -146,32 +146,32 @@ get_sizeof(tarpc_get_sizeof_in *in)
             return type_info[i].type_size;
         }
     }
-    
+
     ERROR("Unknown type (%s)", in->typename);
     return -1;
 }
 
 TARPC_FUNC(get_sizeof, {},
-{        
+{
     MAKE_CALL(out->size = get_sizeof(in));
 }
 )
 
 /*-------------- protocol_info_cmp() ---------------------------------*/
 bool_t
-_protocol_info_cmp_1_svc(tarpc_protocol_info_cmp_in *in, 
+_protocol_info_cmp_1_svc(tarpc_protocol_info_cmp_in *in,
                          tarpc_protocol_info_cmp_out *out,
                          struct svc_req *rqstp)
 {
     WSAPROTOCOL_INFO *info1, *info2;
-   
+
     int protocol_len = 0;
-    int protocol_widelen = 0;    
+    int protocol_widelen = 0;
 
     char info1_char[sizeof(info1->szProtocol) * 2];
     char info2_char[sizeof(info1->szProtocol) * 2];
-    
-    UNUSED(rqstp); 
+
+    UNUSED(rqstp);
 
     info1 = (WSAPROTOCOL_INFO *)(in->buf1.buf1_val);
     info2 = (WSAPROTOCOL_INFO *)(in->buf2.buf2_val);
@@ -186,16 +186,16 @@ _protocol_info_cmp_1_svc(tarpc_protocol_info_cmp_in *in,
     else if (!in->is_wide2)
         protocol_len = sizeof(info2->szProtocol);
     else
-        protocol_len = protocol_widelen;  
-  
-    out->retval = TRUE;   
+        protocol_len = protocol_widelen;
 
-    if ( (info1->dwServiceFlags1 != info2->dwServiceFlags1) || 
+    out->retval = TRUE;
+
+    if ( (info1->dwServiceFlags1 != info2->dwServiceFlags1) ||
        (info1->dwServiceFlags2 != info2->dwServiceFlags2) ||
        (info1->dwServiceFlags3 != info2->dwServiceFlags3) ||
        (info1->dwServiceFlags4 != info2->dwServiceFlags4) ||
        (info1->dwProviderFlags != info2->dwProviderFlags) ||
-       (memcmp(&(info1->ProviderId), &(info2->ProviderId), 
+       (memcmp(&(info1->ProviderId), &(info2->ProviderId),
                   sizeof(GUID)) != 0) ||
        (info1->dwCatalogEntryId != info2->dwCatalogEntryId) ||
        (memcmp(&(info1->ProtocolChain), &(info2->ProtocolChain),
@@ -204,37 +204,37 @@ _protocol_info_cmp_1_svc(tarpc_protocol_info_cmp_in *in,
        (info1->iAddressFamily != info2->iAddressFamily) ||
        (info1->iMaxSockAddr != info2->iMaxSockAddr) ||
        (info1->iSocketType != info2->iSocketType) ||
-       (info1->iMinSockAddr != info2->iMinSockAddr) || 
+       (info1->iMinSockAddr != info2->iMinSockAddr) ||
        (info1->iProtocol != info2->iProtocol) ||
        (info1->iProtocolMaxOffset != info2->iProtocolMaxOffset) ||
        (info1->iNetworkByteOrder != info2->iNetworkByteOrder) ||
        (info1->iSecurityScheme != info2->iSecurityScheme) ||
        (info1->dwMessageSize != info2->dwMessageSize) )
         out->retval = FALSE;
-    
+
     if (in->is_wide1 && !in->is_wide2)
-    {    
-        WideCharToMultiByte(CP_ACP, 0, (wchar_t *)&(info1->szProtocol), 
-                            protocol_widelen, info1_char, 
+    {
+        WideCharToMultiByte(CP_ACP, 0, (wchar_t *)&(info1->szProtocol),
+                            protocol_widelen, info1_char,
                             protocol_len, NULL, NULL);
         strncpy(info2_char, info2->szProtocol, protocol_len);
     }
-    if (in->is_wide2 && !in->is_wide1)  
-    {  
-        WideCharToMultiByte(CP_ACP, 0, (wchar_t *)&(info2->szProtocol), 
-                            protocol_widelen, info2_char, 
+    if (in->is_wide2 && !in->is_wide1)
+    {
+        WideCharToMultiByte(CP_ACP, 0, (wchar_t *)&(info2->szProtocol),
+                            protocol_widelen, info2_char,
                             protocol_len, NULL, NULL);
         strncpy(info1_char, info1->szProtocol, protocol_len);
     }
     if (!in->is_wide1 && !in->is_wide2)
     {
         if (strcmp(info1->szProtocol, info2->szProtocol) != 0)
-            out->retval = FALSE; 
+            out->retval = FALSE;
     }
-    else 
+    else
     {
         if (strcmp(info1_char, info2_char) != 0)
-             out->retval = FALSE; 
+             out->retval = FALSE;
     }
 
     return TRUE;
@@ -246,9 +246,9 @@ _get_addrof_1_svc(tarpc_get_addrof_in *in, tarpc_get_addrof_out *out,
                   struct svc_req *rqstp)
 {
     void *addr = rcf_ch_symbol_addr(in->name, 0);
-    
+
     UNUSED(rqstp);
-    
+
     out->addr = addr == NULL ? 0 : rcf_pch_mem_alloc(addr);
 
     return TRUE;
@@ -260,18 +260,18 @@ _get_var_1_svc(tarpc_get_var_in *in, tarpc_get_var_out *out,
                    struct svc_req *rqstp)
 {
     void *addr = rcf_ch_symbol_addr(in->name, 0);
-    
+
     UNUSED(rqstp);
-    
+
     if (addr == NULL)
     {
         ERROR("Variable %s is not found", in->name);
         out->found = FALSE;
         return TRUE;
     }
-    
+
     out->found = TRUE;
-    
+
     switch (in->size)
     {
         case 1: out->val = *(uint8_t *)addr; break;
@@ -290,19 +290,19 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
                struct svc_req *rqstp)
 {
     void *addr = rcf_ch_symbol_addr(in->name, 0);
-    
+
     UNUSED(rqstp);
     UNUSED(out);
-    
+
     if (addr == NULL)
     {
         ERROR("Variable %s is not found", in->name);
         out->found = FALSE;
         return TRUE;
     }
-    
+
     out->found = TRUE;
-    
+
     switch (in->size)
     {
         case 1: *(uint8_t *)addr  = in->val; break;
@@ -331,20 +331,20 @@ create_process_rpc_server(const char *name, int32_t *pid, int flags)
     char  cmdline[256];
     char *tmp;
     char *val;
-    
-    const char *postfix[] = { 
+
+    const char *postfix[] = {
         "rpcserver64 %s %s",
-        "rpcserver32 %s %s",  
-        "rpcserver %s %s",  
+        "rpcserver32 %s %s",
+        "rpcserver %s %s",
         "ta rpcserver %s %s"
     };
-    
+
     int i = 0;
-    
+
     PROCESS_INFORMATION info;
     STARTUPINFO         si;
     SYSTEM_INFO         sys_info;
-    
+
     strcpy(cmdline, GetCommandLine());
     if ((tmp = strstr(cmdline, " ")) == NULL)
     {
@@ -362,7 +362,7 @@ create_process_rpc_server(const char *name, int32_t *pid, int flags)
 
     memset(&sys_info, 0, sizeof(sys_info));
     GetNativeSystemInfo(&sys_info);
-    
+
     if (sys_info.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL)
         i = 1;
     else if ((val =  getenv_reliable("TE_WIN32_TA")) != NULL &&
@@ -370,15 +370,15 @@ create_process_rpc_server(const char *name, int32_t *pid, int flags)
     {
         i = 1;
     }
-    
+
     for (; i < (int)TE_ARRAY_LEN(postfix); i++)
     {
         sprintf(tmp, postfix[i], name,
                 (flags & RCF_RPC_SERVER_GET_NET_INIT) ? "net_init" : "");
         memset(&si, 0, sizeof(si));
         si.cb = sizeof(si);
-        
-        if (CreateProcess(NULL, cmdline, NULL, NULL, 
+
+        if (CreateProcess(NULL, cmdline, NULL, NULL,
                           !!(flags & RCF_RPC_SERVER_GET_INHERIT),
                           0, NULL, NULL,
                           &si, &info))
@@ -393,10 +393,10 @@ create_process_rpc_server(const char *name, int32_t *pid, int flags)
 }
 
 /*-------------- create_process() ---------------------------------*/
-TARPC_FUNC(create_process, {}, 
+TARPC_FUNC(create_process, {},
 {
-    MAKE_CALL(out->common._errno = 
-                  create_process_rpc_server(in->name.name_val, 
+    MAKE_CALL(out->common._errno =
+                  create_process_rpc_server(in->name.name_val,
                                             &out->pid, flags));
 }
 )
@@ -405,7 +405,7 @@ TARPC_FUNC(create_process, {},
 TARPC_FUNC(thread_create, {},
 {
     MAKE_CALL(out->common._errno = thread_create(rcf_pch_rpc_server,
-                                                 strdup(in->name.name_val), 
+                                                 strdup(in->name.name_val),
                                                  &out->tid));
     out->retval = out->common._errno != 0 ? -1 : 0;
 }
@@ -416,7 +416,7 @@ TARPC_FUNC(thread_create, {},
 TARPC_FUNC(thread_cancel, {},
 {
     te_errno err;
-    
+
     MAKE_CALL(err = thread_cancel(in->tid));
     out->common._errno = err;
     out->retval = err != 0 ? -1 : 0;
@@ -434,21 +434,21 @@ TARPC_FUNC(socket, {},
 )
 
 /*-------------- WSAStartup() ------------------------------*/
-TARPC_FUNC(wsa_startup, {}, 
-{ 
+TARPC_FUNC(wsa_startup, {},
+{
     WSADATA wsaData;
-    WORD version;    
+    WORD version;
     version = MAKEWORD(2, 0);
-    
-    MAKE_CALL(out->retval = WSAStartup(version, &wsaData)); 
-    
+
+    MAKE_CALL(out->retval = WSAStartup(version, &wsaData));
+
 })
 
 
 /*-------------- WSACleanup() ------------------------------*/
-TARPC_FUNC(wsa_cleanup, {}, 
-{ 
-    MAKE_CALL(out->retval = WSACleanup()); 
+TARPC_FUNC(wsa_cleanup, {},
+{
+    MAKE_CALL(out->retval = WSACleanup());
 })
 
 
@@ -461,7 +461,7 @@ TARPC_FUNC(wsa_socket, {},
                                   socktype_rpc2h(in->type),
                                   wsp_proto_rpc2h(in->type, in->proto),
                                   (LPWSAPROTOCOL_INFO)(in->info.info_val),
-                                  0, 
+                                  0,
                                   open_sock_flags_rpc2h(in->flags)));
 
 }
@@ -469,9 +469,9 @@ TARPC_FUNC(wsa_socket, {},
 
 /*-------------- CloseHandle() ------------------------------*/
 
-TARPC_FUNC(close, {}, 
-{ 
-    MAKE_CALL(out->retval = CloseHandle((HANDLE)(in->fd)) ? 0 : -1); 
+TARPC_FUNC(close, {},
+{
+    MAKE_CALL(out->retval = CloseHandle((HANDLE)(in->fd)) ? 0 : -1);
 })
 
 /*-------------- bind() ------------------------------*/
@@ -650,24 +650,24 @@ TARPC_FUNC(accept_ex,
     COPY_ARG(count);
 },
 {
-    
+
     MAKE_CALL(out->retval =
               (*pf_accept_ex)(in->fd, in->fd_a,
-                              rcf_pch_mem_get(in->out_buf), 
+                              rcf_pch_mem_get(in->out_buf),
                               in->buflen,
                               in->laddr_len,
                               in->raddr_len,
                               out->count.count_len == 0 ? NULL :
-                              (LPDWORD)out->count.count_val, 
-                              (LPWSAOVERLAPPED)IN_OVERLAPPED)); 
-    
-    
+                              (LPDWORD)out->count.count_val,
+                              (LPWSAOVERLAPPED)IN_OVERLAPPED));
+
+
 }
 )
 
 /*-------------- GetAcceptExSockAddr() ---------------------------*/
 
-TARPC_FUNC(get_accept_addr, 
+TARPC_FUNC(get_accept_addr,
 {
     COPY_ARG(l_sa_len);
     COPY_ARG(r_sa_len);
@@ -682,9 +682,9 @@ TARPC_FUNC(get_accept_addr,
                                   in->buflen,
                                   in->laddr_len,
                                   in->raddr_len,
-                                  in->l_sa_null ? NULL : &la, 
-                                  (LPINT)out->l_sa_len.l_sa_len_val, 
-                                  in->r_sa_null ? NULL : &ra, 
+                                  in->l_sa_null ? NULL : &la,
+                                  (LPINT)out->l_sa_len.l_sa_len_val,
+                                  in->r_sa_null ? NULL : &ra,
                                   (LPINT)out->r_sa_len.r_sa_len_val);
 
     if (!in->l_sa_null)
@@ -720,7 +720,7 @@ TARPC_FUNC(transmit_packets, {},
     {
         memset(&tmp, 0, sizeof(tmp));
         overlapped = &tmp;
-    }    
+    }
 
     transmit_buffers = (TRANSMIT_PACKETS_ELEMENT *)
                        calloc(in->packet_array.packet_array_len,
@@ -751,29 +751,29 @@ TARPC_FUNC(transmit_packets, {},
                     tarpc_transmit_packet_source_u.buf.buf_val = NULL;
                 in->packet_array.packet_array_val[i].packet_src.
                     tarpc_transmit_packet_source_u.buf.buf_len = 0;
-                
+
                 break;
-            
+
             case TARPC_TP_FILE:
             {
                 overlapped->buffers[i].buf = NULL;
                 overlapped->buffers[i].len = 0;
                 transmit_buffers[i].dwElFlags = TP_ELEMENT_FILE;
-                transmit_buffers[i].hFile = 
+                transmit_buffers[i].hFile =
                     (HANDLE)in->packet_array.packet_array_val[i].packet_src.
                     tarpc_transmit_packet_source_u.file_data.file;
-                transmit_buffers[i].nFileOffset.QuadPart = 
+                transmit_buffers[i].nFileOffset.QuadPart =
                     in->packet_array.packet_array_val[i].packet_src.
                     tarpc_transmit_packet_source_u.file_data.offset;
                 break;
              }
-                
+
             default:
                 ERROR("Incorrect data source: %d",
                       in->packet_array.packet_array_val[i].packet_src.type);
                 out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
         }
-        transmit_buffers[i].cLength = 
+        transmit_buffers[i].cLength =
             in->packet_array.packet_array_val[i].length;
     }
     MAKE_CALL( out->retval =
@@ -870,7 +870,7 @@ TARPC_FUNC(transmitfile_tabufs, {},
 
 /*------------------------- CreateFile() -------------------------
  *------ Attention: not all flags currently are supported. ------*/
-static inline DWORD 
+static inline DWORD
 cf_access_right_rpc2h(unsigned int ar)
 {
     return (!!(ar & RPC_CF_GENERIC_EXECUTE) * GENERIC_EXECUTE) |
@@ -878,7 +878,7 @@ cf_access_right_rpc2h(unsigned int ar)
            (!!(ar & RPC_CF_GENERIC_WRITE) * GENERIC_WRITE);
 }
 
-static inline DWORD 
+static inline DWORD
 cf_share_mode_rpc2h(unsigned int sm)
 {
     return (!!(sm & RPC_CF_FILE_SHARE_DELETE) * FILE_SHARE_DELETE) |
@@ -886,7 +886,7 @@ cf_share_mode_rpc2h(unsigned int sm)
            (!!(sm & RPC_CF_FILE_SHARE_WRITE) * FILE_SHARE_WRITE);
 }
 
-static inline DWORD 
+static inline DWORD
 cf_creation_disposition_rpc2h(unsigned int cd)
 {
     return (!!(cd & RPC_CF_CREATE_ALWAYS) * CREATE_ALWAYS) |
@@ -896,7 +896,7 @@ cf_creation_disposition_rpc2h(unsigned int cd)
            (!!(cd & RPC_CF_TRUNCATE_EXISTING) * TRUNCATE_EXISTING);
 }
 
-static inline DWORD 
+static inline DWORD
 cf_flags_attributes_rpc2h(unsigned int fa)
 {
     return (!!(fa & RPC_CF_FILE_ATTRIBUTE_NORMAL) * FILE_ATTRIBUTE_NORMAL);
@@ -1011,16 +1011,16 @@ vm_trasher_thread(void *arg)
 
     gettimeofday(&tv, NULL);
     srand(tv.tv_usec);
-    
+
     /* Perform VM trashing to keep memory pressure */
     while (vm_trasher_stop == FALSE)
     {
         /* Choose a random page */
         dpos = (double)rand() / (double)RAND_MAX * (double)(len / 4096 - 1);
         /* Read and write a byte of the chosen page */
-        buf[(SIZE_T)dpos * 4096] |= 0x5A;    
+        buf[(SIZE_T)dpos * 4096] |= 0x5A;
     }
-    
+
     free(buf);
     return (void *)0;
 }
@@ -1029,7 +1029,7 @@ TARPC_FUNC(vm_trasher, {},
 {
     UNUSED(list);
     UNUSED(out);
-    
+
     if (vm_trasher_lock == NULL)
         vm_trasher_lock = thread_mutex_create();
 
@@ -1050,7 +1050,7 @@ TARPC_FUNC(vm_trasher, {},
         if (vm_trasher_thread_id != 0)
         {
             int rc;
-            
+
             /* Stop the VM trasher thread */
             vm_trasher_stop = TRUE;
             /* Wait for VM trasher thread exit */
@@ -1073,10 +1073,10 @@ TARPC_FUNC(vm_trasher, {},
 TARPC_FUNC(write_at_offset, {},
 {
     MAKE_CALL(
-        out->offset = SetFilePointer((HANDLE)(in->fd), in->offset, 
+        out->offset = SetFilePointer((HANDLE)(in->fd), in->offset,
                                      NULL, FILE_BEGIN);
         if (out->offset != INVALID_SET_FILE_POINTER)
-            WriteFile((HANDLE)(in->fd), in->buf.buf_val, 
+            WriteFile((HANDLE)(in->fd), in->buf.buf_val,
                       in->buf.buf_len, &(out->written), NULL);
     );
 }
@@ -1102,7 +1102,7 @@ TARPC_FUNC(recvfrom,
                                      from,
                                      out->fromlen.fromlen_len == 0 ? NULL :
                                      (int *)(out->fromlen.fromlen_val)));
-    
+
     sockaddr_output_h2rpc(from, fromlen,
                           out->fromlen.fromlen_len == 0 ? 0 :
                               *(out->fromlen.fromlen_val),
@@ -1165,7 +1165,7 @@ set_overlapped_filepos(WSAOVERLAPPED *ovr, HANDLE handle)
         {
              WARN("Unable to get file position");
              ovr->Offset = 0;
-        } 
+        }
     }
 }
 
@@ -1177,9 +1177,9 @@ TARPC_FUNC(read,
 },
 {
     DWORD rc;
-    
+
     WSAOVERLAPPED overlapped;
-    
+
     memset(&overlapped, 0, sizeof(overlapped));
 
     overlapped.hEvent = WSACreateEvent();
@@ -1187,20 +1187,20 @@ TARPC_FUNC(read,
 
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
 
-    MAKE_CALL(out->retval = ReadFile((HANDLE)(in->fd), out->buf.buf_val, 
+    MAKE_CALL(out->retval = ReadFile((HANDLE)(in->fd), out->buf.buf_val,
                                       in->len, &rc, &overlapped));
 
     if (out->retval == 0)
     {
         if (out->common._errno != RPC_E_IO_PENDING)
         {
-            INFO("read(): ReadFile() failed with error %r (%d)", 
+            INFO("read(): ReadFile() failed with error %r (%d)",
                   out->common._errno, GetLastError());
             rc = -1;
             goto finish;
         }
 
-        if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
+        if (GetOverlappedResult((HANDLE)(in->fd), &overlapped,
                                      &rc, 1) == 0)
         {
             out->common._errno = RPC_ERRNO;
@@ -1212,7 +1212,7 @@ TARPC_FUNC(read,
 
         out->common._errno = RPC_ERRNO;
     }
-finish:    
+finish:
     WSACloseEvent(overlapped.hEvent);
     out->retval = rc;
 }
@@ -1223,30 +1223,30 @@ finish:
 TARPC_FUNC(write, {},
 {
     DWORD rc;
-    
+
     WSAOVERLAPPED overlapped;
-    
+
     memset(&overlapped, 0, sizeof(overlapped));
-    
+
     overlapped.hEvent = WSACreateEvent();
     set_overlapped_filepos(&overlapped, (HANDLE)in->fd);
-    
+
     INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, 0);
 
-    MAKE_CALL(out->retval = WriteFile((HANDLE)(in->fd), in->buf.buf_val, 
+    MAKE_CALL(out->retval = WriteFile((HANDLE)(in->fd), in->buf.buf_val,
                                       in->len, &rc, &overlapped));
 
     if (out->retval == 0)
     {
         if (out->common._errno != RPC_E_IO_PENDING)
         {
-            INFO("write(): WriteFile() failed with error %r (%d)", 
+            INFO("write(): WriteFile() failed with error %r (%d)",
                   out->common._errno, GetLastError());
             rc = -1;
             goto finish;
         }
 
-        if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
+        if (GetOverlappedResult((HANDLE)(in->fd), &overlapped,
                                      &rc, 1) == 0)
         {
             out->common._errno = RPC_ERRNO;
@@ -1258,7 +1258,7 @@ TARPC_FUNC(write, {},
 
         out->common._errno = RPC_ERRNO;
     }
-finish:    
+finish:
     WSACloseEvent(overlapped.hEvent);
     out->retval = rc;
 }
@@ -1270,15 +1270,15 @@ TARPC_FUNC(readbuf,
 {},
 {
     DWORD rc;
-    
+
     WSAOVERLAPPED overlapped;
-    
+
     memset(&overlapped, 0, sizeof(overlapped));
 
     overlapped.hEvent = WSACreateEvent();
     set_overlapped_filepos(&overlapped, (HANDLE)in->fd);
-    
-    MAKE_CALL(out->retval = ReadFile((HANDLE)(in->fd), 
+
+    MAKE_CALL(out->retval = ReadFile((HANDLE)(in->fd),
                            (char *)rcf_pch_mem_get(in->buf) + in->off,
                            in->len, &rc, &overlapped));
 
@@ -1286,13 +1286,13 @@ TARPC_FUNC(readbuf,
     {
         if (out->common._errno != RPC_E_IO_PENDING)
         {
-            INFO("read(): ReadFile() failed with error %r (%d)", 
+            INFO("read(): ReadFile() failed with error %r (%d)",
                   out->common._errno, GetLastError());
             rc = -1;
             goto finish;
         }
 
-        if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
+        if (GetOverlappedResult((HANDLE)(in->fd), &overlapped,
                                      &rc, 1) == 0)
         {
             out->common._errno = RPC_ERRNO;
@@ -1304,7 +1304,7 @@ TARPC_FUNC(readbuf,
 
         out->common._errno = RPC_ERRNO;
     }
-finish:    
+finish:
     WSACloseEvent(overlapped.hEvent);
     out->retval = rc;
 }
@@ -1315,15 +1315,15 @@ finish:
 TARPC_FUNC(writebuf, {},
 {
     DWORD rc;
-    
+
     WSAOVERLAPPED overlapped;
-    
+
     memset(&overlapped, 0, sizeof(overlapped));
-    
+
     overlapped.hEvent = WSACreateEvent();
     set_overlapped_filepos(&overlapped, (HANDLE)in->fd);
-    
-    MAKE_CALL(out->retval = WriteFile((HANDLE)(in->fd), 
+
+    MAKE_CALL(out->retval = WriteFile((HANDLE)(in->fd),
                                       rcf_pch_mem_get(in->buf) + in->off,
                                       in->len, &rc, &overlapped));
 
@@ -1331,13 +1331,13 @@ TARPC_FUNC(writebuf, {},
     {
         if (out->common._errno != RPC_E_IO_PENDING)
         {
-            INFO("write(): WriteFile() failed with error %r (%d)", 
+            INFO("write(): WriteFile() failed with error %r (%d)",
                   out->common._errno, GetLastError());
             rc = -1;
             goto finish;
         }
 
-        if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
+        if (GetOverlappedResult((HANDLE)(in->fd), &overlapped,
                                      &rc, 1) == 0)
         {
             out->common._errno = RPC_ERRNO;
@@ -1349,7 +1349,7 @@ TARPC_FUNC(writebuf, {},
 
         out->common._errno = RPC_ERRNO;
     }
-finish:    
+finish:
     WSACloseEvent(overlapped.hEvent);
     out->retval = rc;
 }
@@ -1406,19 +1406,19 @@ TARPC_FUNC(read_file,
         out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
         goto finish;
     }
-    
+
     if (buf2overlapped(overlapped, out->buf.buf_len, out->buf.buf_val) != 0)
     {
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         goto finish;
     }
-    
-    MAKE_CALL(out->retval = ReadFile((HANDLE)(in->fd), 
+
+    MAKE_CALL(out->retval = ReadFile((HANDLE)(in->fd),
                                      overlapped->buffers[0].buf,
-                                     in->len, 
+                                     in->len,
                                      (LPDWORD)(out->received.received_val),
                                      (LPWSAOVERLAPPED)overlapped));
-                                     
+
     if (out->retval)
     {
         /* Non-overlapped operation */
@@ -1433,7 +1433,7 @@ TARPC_FUNC(read_file,
     }
     else
     {
-        /* 
+        /*
          * Overlapped request is posted, let's avoid releasing of the
          * buffer by RPC.
          */
@@ -1457,7 +1457,7 @@ TARPC_FUNC(read_file_ex, {},
         out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
         goto finish;
     }
-    
+
     if (buf2overlapped(overlapped, in->buf.buf_len, in->buf.buf_val) != 0)
     {
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
@@ -1465,13 +1465,13 @@ TARPC_FUNC(read_file_ex, {},
     }
     in->buf.buf_val = NULL;
     in->buf.buf_len = 0;
-    
-    MAKE_CALL(out->retval = ReadFileEx((HANDLE)(in->fd), 
+
+    MAKE_CALL(out->retval = ReadFileEx((HANDLE)(in->fd),
                                        overlapped->buffers[0].buf,
-                                       in->len, 
+                                       in->len,
                                        (LPWSAOVERLAPPED)overlapped,
                                        IN_FILE_CALLBACK));
-                                     
+
     if (!out->retval)
         rpc_overlapped_free_memory(overlapped);
 
@@ -1482,7 +1482,7 @@ TARPC_FUNC(read_file_ex, {},
 
 /*-------------- WriteFile() ------------------------------*/
 
-TARPC_FUNC(write_file, 
+TARPC_FUNC(write_file,
 {
     COPY_ARG(sent);
 },
@@ -1506,17 +1506,17 @@ TARPC_FUNC(write_file,
 
     MAKE_CALL(out->retval = WriteFile((HANDLE)(in->fd),
                                       overlapped->buffers[0].buf,
-                                      in->len, 
+                                      in->len,
                                       (LPDWORD)(out->sent.sent_val),
                                       (LPWSAOVERLAPPED)overlapped));
-                        
-    /* 
-     * If the operation is not overlapped or fatal error occured,  
+
+    /*
+     * If the operation is not overlapped or fatal error occured,
      * release memory.
      */
     if (out->retval || out->common._errno != RPC_E_IO_PENDING)
         rpc_overlapped_free_memory(overlapped);
-        
+
     finish:
     ;
 }
@@ -1534,7 +1534,7 @@ TARPC_FUNC(write_file_ex, {},
         out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
         goto finish;
     }
-    
+
     if (buf2overlapped(overlapped, in->buf.buf_len, in->buf.buf_val) != 0)
     {
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
@@ -1542,13 +1542,13 @@ TARPC_FUNC(write_file_ex, {},
     }
     in->buf.buf_val = NULL;
     in->buf.buf_len = 0;
-    
-    MAKE_CALL(out->retval = WriteFileEx((HANDLE)(in->fd), 
+
+    MAKE_CALL(out->retval = WriteFileEx((HANDLE)(in->fd),
                                         overlapped->buffers[0].buf,
-                                        in->len, 
+                                        in->len,
                                         (LPWSAOVERLAPPED)overlapped,
                                         IN_FILE_CALLBACK));
-                                     
+
     if (!out->retval)
         rpc_overlapped_free_memory(overlapped);
 
@@ -1604,7 +1604,7 @@ TARPC_FUNC(getsockname,
     MAKE_CALL(out->retval = getsockname(in->fd, name,
                                         out->len.len_len == 0 ? NULL :
                                         (int *)(out->len.len_val)));
-                                        
+
     sockaddr_output_h2rpc(name, namelen,
                           out->len.len_len == 0 ? 0 : *(out->len.len_val),
                           &(out->addr));
@@ -1625,7 +1625,7 @@ TARPC_FUNC(getpeername,
     MAKE_CALL(out->retval = getpeername(in->fd, name,
                                         out->len.len_len == 0 ? NULL :
                                         (int *)(out->len.len_val)));
-                                        
+
     sockaddr_output_h2rpc(name, namelen,
                           out->len.len_len == 0 ? 0 : *(out->len.len_val),
                           &(out->addr));
@@ -1749,7 +1749,7 @@ TARPC_FUNC(select,
         tv.tv_usec = out->timeout.timeout_val[0].tv_usec;
     }
 
-    MAKE_CALL(out->retval = select(in->n, 
+    MAKE_CALL(out->retval = select(in->n,
                                    (fd_set *)rcf_pch_mem_get(in->readfds),
                                    (fd_set *)rcf_pch_mem_get(in->writefds),
                                    (fd_set *)rcf_pch_mem_get(in->exceptfds),
@@ -1782,22 +1782,22 @@ TARPC_FUNC(setsockopt, {},
         char           *opt;
         int             optlen;
         HANDLE          handle;
-        
+
         struct linger           linger;
         struct in_addr          addr;
         struct timeval          tv;
         struct ip_mreq          mreq;
         struct ipv6_mreq        mreq6;
         struct in6_addr         addr6;
-        
-        if (in->optname == RPC_SO_SNDTIMEO || 
+
+        if (in->optname == RPC_SO_SNDTIMEO ||
             in->optname == RPC_SO_RCVTIMEO)
         {
             static int optval;
-            optval = 
-                in_optval->option_value_u.opt_timeval.tv_sec * 1000 + 
+            optval =
+                in_optval->option_value_u.opt_timeval.tv_sec * 1000 +
                 in_optval->option_value_u.opt_timeval.tv_usec / 1000;
-            
+
             opt = (char *)&optval;
             optlen = sizeof(int);
         }
@@ -1865,13 +1865,13 @@ TARPC_FUNC(setsockopt, {},
                        sizeof(struct in_addr));
                 mreq.imr_interface.s_addr
                     = htonl(mreq.imr_interface.s_addr);
-                
+
                 optlen = sizeof(mreq);
                 break;
             }
 
             case OPT_MREQ6:
-            {                
+            {
                 opt = (char *)&mreq6;
 
                 memcpy(&mreq6.ipv6mr_multiaddr,
@@ -1925,7 +1925,7 @@ TARPC_FUNC(getsockopt,
 {
     if (out->optval.optval_val == NULL)
     {
-        MAKE_CALL(out->retval = 
+        MAKE_CALL(out->retval =
                       getsockopt(in->s, socklevel_rpc2h(in->level),
                                  sockopt_rpc2h(in->optname),
                                  out->raw_optval.raw_optval_val,
@@ -1946,7 +1946,7 @@ TARPC_FUNC(getsockopt,
             case OPT_INT:
                 optlen_in = optlen_out = sizeof(int);
                 break;
-                
+
             case OPT_LINGER:
                 optlen_in = optlen_out = sizeof(struct linger);
                 break;
@@ -1963,7 +1963,7 @@ TARPC_FUNC(getsockopt,
             case OPT_MREQN:
                 optlen_in = optlen_out = sizeof(struct ip_mreq);
                 break;
-                
+
             case OPT_MREQ6:
                 optlen_in = optlen_out = sizeof(struct ipv6_mreq);
                 break;
@@ -1977,7 +1977,7 @@ TARPC_FUNC(getsockopt,
         memset(opt, 0, sizeof(opt));
         INIT_CHECKED_ARG(opt, sizeof(opt), optlen_in);
 
-        MAKE_CALL(out->retval = 
+        MAKE_CALL(out->retval =
                       getsockopt(in->s, socklevel_rpc2h(in->level),
                                  sockopt_rpc2h(in->optname),
                                  opt, &optlen_out));
@@ -2051,11 +2051,11 @@ TARPC_FUNC(getsockopt,
 
             case OPT_TIMEVAL:
             {
-                if (in->optname == RPC_SO_SNDTIMEO || 
+                if (in->optname == RPC_SO_SNDTIMEO ||
                     in->optname == RPC_SO_RCVTIMEO)
                 {
                     int msec = *(int *)opt;
-                    
+
                     out->optval.optval_val[0].option_value_u.
                         opt_timeval.tv_sec = msec / 1000;
                     out->optval.optval_val[0].option_value_u.
@@ -2064,7 +2064,7 @@ TARPC_FUNC(getsockopt,
                 else
                 {
                     struct timeval *tv = (struct timeval *)opt;
-                
+
                     out->optval.optval_val[0].option_value_u.
                         opt_timeval.tv_sec = tv->tv_sec;
                     out->optval.optval_val[0].option_value_u.
@@ -2311,8 +2311,8 @@ TARPC_FUNC(gethostbyaddr, {},
                 strlen(out->buf._dst._dst##_val) + 1;               \
         } while (0)
 
-TARPC_FUNC(uname, {}, 
-{ 
+TARPC_FUNC(uname, {},
+{
     SYSTEM_INFO sysinfo;
     OSVERSIONINFO verinfo;
     char buf[100];
@@ -2360,7 +2360,7 @@ TARPC_FUNC(uname, {},
         goto finish;
     }
     PUT_STR(nodename, buf);
-    
+
 finish:
     if (!RPC_IS_ERRNO_RPC(out->common._errno))
     {
@@ -2433,7 +2433,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         SleepEx(delay / 1000 + 1, TRUE);
 
         len = send(in->s, buf, size, 0);
-    
+
         if (len < 0)
         {
             int err = 0;
@@ -2703,7 +2703,7 @@ flooder(tarpc_flooder_in *in)
                          time2run_not_expired ? &wfds : NULL,
                          NULL, &call_timeout)) < 0)
         {
-            ERROR("%s(): (p)select() failed: %d", __FUNCTION__, 
+            ERROR("%s(): (p)select() failed: %d", __FUNCTION__,
                   GetLastError());
             return -1;
         }
@@ -3050,7 +3050,7 @@ TARPC_FUNC(set_event, {},
 TARPC_FUNC(event_select, {},
 {
     UNUSED(list);
-    SetLastError(ERROR_UNSPEC);  
+    SetLastError(ERROR_UNSPEC);
     out->retval = WSAEventSelect(in->fd, IN_HEVENT,
                                  network_event_rpc2h(in->event));
     out->common._errno = RPC_ERRNO;
@@ -3074,12 +3074,12 @@ TARPC_FUNC(enum_network_events,
                                        &events_occured);
     if (out->events.events_len != 0)
     {
-    
+
         out->events.events_val[0].network_events =
             network_event_h2rpc(events_occured.lNetworkEvents);
         for(i = 0; i < 10; i++)
         {
-            out->events.events_val[0].error_code[i] = 
+            out->events.events_val[0].error_code[i] =
             win_rpc_errno(events_occured.iErrorCode[i]);
         }
     }
@@ -3167,7 +3167,7 @@ _wsa_async_select_1_svc(tarpc_wsa_async_select_in *in,
 
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
-    SetLastError(ERROR_UNSPEC);  
+    SetLastError(ERROR_UNSPEC);
     out->retval = WSAAsyncSelect(in->sock, IN_HWND, WM_USER + 1,
                                  network_event_rpc2h(in->event));
     out->common._errno = RPC_ERRNO;
@@ -3223,7 +3223,7 @@ TARPC_FUNC(create_overlapped, {},
         tmp->cookie2 = in->cookie2;
         out->common._errno = 0;
         out->retval = rcf_pch_mem_alloc(tmp);
-        RING("Overlapped structure %x (index %d) is allocated", tmp, 
+        RING("Overlapped structure %x (index %d) is allocated", tmp,
              out->retval);
     }
 }
@@ -3235,7 +3235,7 @@ TARPC_FUNC(delete_overlapped, {},
 {
     UNUSED(list);
     UNUSED(out);
-    
+
     rpc_overlapped_free_memory(IN_OVERLAPPED);
     free(IN_OVERLAPPED);
     rcf_pch_mem_free(in->overlapped);
@@ -3250,7 +3250,7 @@ static tarpc_overlapped completion_overlapped = 0;
 static void *completion_lock;
 
 void CALLBACK
-default_completion_callback(DWORD error, DWORD bytes, 
+default_completion_callback(DWORD error, DWORD bytes,
                             LPWSAOVERLAPPED overlapped,
                             DWORD flags)
 {
@@ -3260,13 +3260,13 @@ default_completion_callback(DWORD error, DWORD bytes,
     completion_called++;
     completion_error = win_rpc_errno(error);
     completion_bytes = bytes;
-    completion_overlapped = 
+    completion_overlapped =
         (tarpc_overlapped)rcf_pch_mem_get_id(overlapped);
     thread_mutex_unlock(completion_lock);
 }
 
 void CALLBACK
-default_file_completion_callback(DWORD error, DWORD bytes, 
+default_file_completion_callback(DWORD error, DWORD bytes,
                                  LPOVERLAPPED overlapped)
 {
     default_completion_callback(error, bytes, overlapped, 0);
@@ -3274,7 +3274,7 @@ default_file_completion_callback(DWORD error, DWORD bytes,
 
 /** Dummy callback */
 void CALLBACK
-empty_file_completion_callback(DWORD error, DWORD bytes, 
+empty_file_completion_callback(DWORD error, DWORD bytes,
                                LPOVERLAPPED overlapped)
 {
     UNUSED(error);
@@ -3286,10 +3286,10 @@ TARPC_FUNC(completion_callback, {},
 {
     UNUSED(list);
     UNUSED(in);
-    
+
     completion_callback_register("default_completion_callback",
                                  default_completion_callback);
-                                 
+
     completion_callback_register("default_file_completion_callback",
                                  default_file_completion_callback);
 
@@ -3376,7 +3376,7 @@ TARPC_FUNC(wsa_recv,
     {
         out->flags.flags_val[0] =
             send_recv_flags_rpc2h(out->flags.flags_val[0]);
-    }       
+    }
 
     MAKE_CALL(out->retval =
                   WSARecv(in->s, overlapped->buffers, in->count,
@@ -3388,7 +3388,7 @@ TARPC_FUNC(wsa_recv,
                           in->overlapped == 0 ? NULL :
                           (LPWSAOVERLAPPED)overlapped,
                           IN_CALLBACK));
-     
+
     if ((out->retval >= 0) || (out->common._errno == RPC_EMSGSIZE))
     {
         overlapped2iovec(overlapped, &(out->vector.vector_len),
@@ -3476,8 +3476,8 @@ TARPC_FUNC(duplicate_handle, {},
     HANDLE tgt;
     HANDLE old_fd;
     HANDLE new_fd;
-    
-    if ((src = OpenProcess(SYNCHRONIZE | PROCESS_DUP_HANDLE, 
+
+    if ((src = OpenProcess(SYNCHRONIZE | PROCESS_DUP_HANDLE,
                            FALSE, in->src)) == NULL)
     {
         out->common._errno = RPC_ERRNO;
@@ -3486,7 +3486,7 @@ TARPC_FUNC(duplicate_handle, {},
         goto finish;
     }
 
-    if ((tgt = OpenProcess(SYNCHRONIZE | PROCESS_DUP_HANDLE, FALSE, 
+    if ((tgt = OpenProcess(SYNCHRONIZE | PROCESS_DUP_HANDLE, FALSE,
                            in->tgt)) == NULL)
     {
         out->common._errno = RPC_ERRNO;
@@ -3495,15 +3495,15 @@ TARPC_FUNC(duplicate_handle, {},
         CloseHandle(src);
         goto finish;
     }
-    
+
     old_fd = (HANDLE)(in->fd);
-    
+
     MAKE_CALL(out->retval = DuplicateHandle(src, old_fd, tgt, &new_fd,
-                                            0, TRUE, 
+                                            0, TRUE,
                                             DUPLICATE_SAME_ACCESS));
-                                            
-    out->fd = (tarpc_int)new_fd;   
-                      
+
+    out->fd = (tarpc_int)new_fd;
+
     finish:
     ;
 }
@@ -3511,7 +3511,7 @@ TARPC_FUNC(duplicate_handle, {},
 
 /*-------------- WSAWaitForMultipleEvents() -------------------------*/
 #define MULTIPLE_EVENTS_MAX     128
-TARPC_FUNC(wait_for_multiple_events, 
+TARPC_FUNC(wait_for_multiple_events,
 {
     if (in->events.events_len > MULTIPLE_EVENTS_MAX)
     {
@@ -3523,16 +3523,16 @@ TARPC_FUNC(wait_for_multiple_events,
 {
     WSAEVENT events[MULTIPLE_EVENTS_MAX];
     uint32_t i;
-    
+
     for (i = 0; i < in->events.events_len; i++)
         events[i] = rcf_pch_mem_get(in->events.events_val[i]);
-    
+
     INIT_CHECKED_ARG((char *)events, sizeof(events), 0);
 
     MAKE_CALL(out->retval = WSAWaitForMultipleEvents(in->events.events_len,
                                                      events,
-                                                     in->wait_all, 
-                                                     in->timeout, 
+                                                     in->wait_all,
+                                                     in->timeout,
                                                      in->alertable));
     switch (out->retval)
     {
@@ -3644,7 +3644,7 @@ TARPC_FUNC(wsa_recv_from,
                 (LPINT)out->fromlen.fromlen_val,
             in->overlapped == 0 ? NULL : (LPWSAOVERLAPPED)overlapped,
             IN_CALLBACK));
-    
+
     if ((out->retval >= 0) || (out->common._errno == RPC_EMSGSIZE))
     {
         overlapped2iovec(overlapped, &(out->vector.vector_len),
@@ -3683,7 +3683,7 @@ TARPC_FUNC(wsa_send_disconnect, {},
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         goto finish;
     }
-    
+
     MAKE_CALL(out->retval = WSASendDisconnect(in->s, overlapped->buffers));
 
     if (out->retval >= 0)
@@ -3701,7 +3701,7 @@ TARPC_FUNC(wsa_recv_disconnect, {},
     rpc_overlapped *overlapped = &tmp;
 
     memset(&tmp, 0, sizeof(tmp));
-    
+
     if (iovec2overlapped(overlapped, in->vector.vector_len,
                          in->vector.vector_val) != 0)
     {
@@ -3728,7 +3728,7 @@ TARPC_FUNC(wsa_recv_disconnect, {},
 static te_errno
 wsa_recv_msg_control_in(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
 {
-#ifdef WINDOWS             
+#ifdef WINDOWS
     int len = calculate_msg_controllen(rpc_msg);
     int rlen = len * 2;
     int data_len = rpc_msg->msg_control.msg_control_val[0].data.data_len;
@@ -3748,8 +3748,8 @@ wsa_recv_msg_control_in(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
     UNUSED(msg);
     ERROR("Non-zero Control is not supported");
     return TE_RC(TE_TA_WIN32, TE_EINVAL);
-#endif            
-}                            
+#endif
+}
 
 /** Copy control-related stuff to RPC */
 static te_errno
@@ -3766,14 +3766,14 @@ wsa_recv_msg_control_out(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
          c != NULL;
          i++, c = WSA_CMSG_NXTHDR(msg, c));
 
-    rpc_c = rpc_msg->msg_control.msg_control_val = 
+    rpc_c = rpc_msg->msg_control.msg_control_val =
         calloc(1, sizeof(*rpc_c) * i);
 
     if (rpc_msg->msg_control.msg_control_val == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
     /* Fill the array */
-    for (i = 0, c = WSA_CMSG_FIRSTHDR(msg); 
+    for (i = 0, c = WSA_CMSG_FIRSTHDR(msg);
          c != NULL;
          i++, c = WSA_CMSG_NXTHDR(msg, c))
     {
@@ -3782,7 +3782,7 @@ wsa_recv_msg_control_out(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
         rpc_c->level = socklevel_h2rpc(c->cmsg_level);
         rpc_c->type = cmsg_type_h2rpc(c->cmsg_level,
                                       c->cmsg_type);
-        if ((rpc_c->data.data_len = 
+        if ((rpc_c->data.data_len =
              c->cmsg_len - (data - (char *)c)) > 0)
         {
             rpc_c->data.data_val = malloc(rpc_c->data.data_len);
@@ -3799,11 +3799,11 @@ wsa_recv_msg_control_out(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
         }
     }
     rpc_msg->msg_control.msg_control_len = i;
-#endif    
+#endif
 
     UNUSED(rpc_msg);
     UNUSED(msg);
-    
+
     return 0;
 }
 
@@ -3830,7 +3830,7 @@ TARPC_FUNC(wsa_recv_msg,
     if (overlapped == NULL)
     {
         memset(&tmp, 0, sizeof(tmp));
-        overlapped = &tmp;    
+        overlapped = &tmp;
     }
 
     msg = &overlapped->msg;
@@ -3850,7 +3850,7 @@ TARPC_FUNC(wsa_recv_msg,
     else
     {
         PREPARE_ADDR(name, rpc_msg->msg_name, rpc_msg->msg_namelen);
-        
+
         msg->namelen = rpc_msg->msg_namelen;
         msg->name = name;
 
@@ -3865,7 +3865,7 @@ TARPC_FUNC(wsa_recv_msg,
             }
             msg->lpBuffers = overlapped->buffers;
         }
-    
+
         if (rpc_msg->msg_control.msg_control_len > 0)
         {
             out->common._errno = wsa_recv_msg_control_in(rpc_msg, msg);
@@ -3875,7 +3875,7 @@ TARPC_FUNC(wsa_recv_msg,
                 goto finish;
             }
         }
-        
+
         msg->dwFlags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
 
         /*
@@ -3884,12 +3884,12 @@ TARPC_FUNC(wsa_recv_msg,
          * msg_namelen, msg_controllen and msg_flags MAY be changed.
          */
         INIT_CHECKED_ARG((char *)&msg->name, sizeof(msg->name), 0);
-        INIT_CHECKED_ARG((char *)&msg->lpBuffers, 
+        INIT_CHECKED_ARG((char *)&msg->lpBuffers,
                          sizeof(msg->lpBuffers), 0);
         INIT_CHECKED_ARG((char *)&msg->dwBufferCount,
                          sizeof(msg->dwBufferCount), 0);
         INIT_CHECKED_ARG((char *)&msg->Control, sizeof(msg->Control), 0);
-            
+
         MAKE_CALL(out->retval =
             (*pf_wsa_recvmsg)(in->s, msg,
                 out->bytes_received.bytes_received_len == 0 ? NULL :
@@ -3921,7 +3921,7 @@ TARPC_FUNC(wsa_recv_msg,
 
             if (msg->Control.buf != NULL && out->retval >= 0)
             {
-                out->common._errno = 
+                out->common._errno =
                     wsa_recv_msg_control_out(rpc_msg, msg);
                 if (out->common._errno != 0)
                 {
@@ -3948,7 +3948,7 @@ TARPC_FUNC(kill, {},
 {
     HANDLE hp;
 
-    if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE, 
+    if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE,
                           in->pid)) == NULL)
     {
         out->common._errno = RPC_ERRNO;
@@ -3960,7 +3960,7 @@ TARPC_FUNC(kill, {},
     MAKE_CALL(out->retval = TerminateProcess(hp, 0) ? 0 : -1);
 
     CloseHandle(hp);
-    
+
     finish:
     ;
 }
@@ -3974,7 +3974,7 @@ TARPC_FUNC(ta_kill_death, {},
     HANDLE hp;
     DWORD ex_code;
 
-    if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE, 
+    if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE,
                           in->pid)) == NULL)
     {
         out->common._errno = RPC_ERRNO;
@@ -3982,21 +3982,21 @@ TARPC_FUNC(ta_kill_death, {},
         ERROR("Cannot open process, error = %d\n", GetLastError());
         goto finish;
     }
-    
+
     GetExitCodeProcess(hp, &ex_code);
     if (ex_code != STILL_ACTIVE)
     {
         RING("The process was already terminated");
         goto finish;
     }
-                
+
     if (!TerminateProcess(hp, ex_code))
     {
         ERROR("TerminateProcess failed with error %d", GetLastError());
         out->common._errno = RPC_ERRNO;
         out->retval = -1;
     }
-                                                
+
     finish:
     CloseHandle(hp);
 }
@@ -4004,11 +4004,11 @@ TARPC_FUNC(ta_kill_death, {},
 
 /*-------------- te_shell_cmd() --------------------------------*/
 /* This possibility has not been debugged yet */
-#if 0  
+#if 0
     if (in->in_fd || in->out_fd || in->err_fd)
         si.dwFlags = STARTF_USESTDHANDLES;
 
-    if (in->in_fd) 
+    if (in->in_fd)
         si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
 
     if (in->out_fd)
@@ -4037,7 +4037,7 @@ TARPC_FUNC(te_shell_cmd,{},
     memset(&si, 0, sizeof(si));
     memset(&info, 0, sizeof(info));
     si.cb = sizeof(si);
-    
+
     /* INSERT content of the first #if 0 here */
 
     if (CreateProcess(NULL, in->cmd.cmd_val, NULL, NULL,
@@ -4053,7 +4053,7 @@ TARPC_FUNC(te_shell_cmd,{},
         ERROR("CreateProcess() failed with error %d", GetLastError());
         out->common._errno = RPC_ERRNO;
     }
-finish:    
+finish:
     ;
 }
 )
@@ -4090,10 +4090,10 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         do {
             rc = send(in->sock, &c, 1, 0);
             err = GetLastError();
-            
+
             if (rc == -1 && err != WSAEWOULDBLOCK)
             {
-                ERROR("%s(): send() failed; error %r", __FUNCTION__, 
+                ERROR("%s(): send() failed; error %r", __FUNCTION__,
                       win_rpc_errno(err));
                 goto overfill_buffers_exit;
             }
@@ -4115,7 +4115,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         rc = 0;
         err = 0;
     } while (unchanged != 30);
-    
+
 overfill_buffers_exit:
     if (!in->is_nonblocking)
     {
@@ -4193,9 +4193,9 @@ TARPC_FUNC(wsa_cancel_async_request, {},
 TARPC_FUNC(malloc, {},
 {
     void *buf;
-    
+
     UNUSED(list);
-    
+
     buf = malloc(in->size);
 
     if (buf == NULL)
@@ -4215,7 +4215,7 @@ TARPC_FUNC(free, {},
 {
     UNUSED(list);
     UNUSED(out);
-    
+
     free(rcf_pch_mem_get(in->buf));
     rcf_pch_mem_free(in->buf);
 }
@@ -4223,7 +4223,7 @@ TARPC_FUNC(free, {},
 
 /*-------------- memalign() ------------------------------*/
 /** Note: this is a temporary solution. It does not
- *  actually allocate aligned memory. 
+ *  actually allocate aligned memory.
  *  We definitely need to do something with that and with
  *  memalign() in *nix RPC server, if stability and portability
  *  is to be achieved.
@@ -4231,7 +4231,7 @@ TARPC_FUNC(free, {},
 TARPC_FUNC(memalign, {},
 {
     void *buf;
-    
+
     buf = malloc(in->size);
 
     if (buf == NULL)
@@ -4243,12 +4243,12 @@ TARPC_FUNC(memalign, {},
 
 
 /*-------------------------- Fill buffer ----------------------------*/
-void 
-set_buf(const char *src_buf, 
+void
+set_buf(const char *src_buf,
         tarpc_ptr dst_buf_base, size_t dst_offset, size_t len)
 {
     char *dst_buf = rcf_pch_mem_get(dst_buf_base);
-    
+
     if (dst_buf != NULL && len != 0)
         memcpy(dst_buf + dst_offset, src_buf, len);
     else if (len != 0)
@@ -4257,7 +4257,7 @@ set_buf(const char *src_buf,
 
 TARPC_FUNC(set_buf, {},
 {
-    MAKE_CALL(set_buf(in->src_buf.src_buf_val, in->dst_buf, in->dst_off, 
+    MAKE_CALL(set_buf(in->src_buf.src_buf_val, in->dst_buf, in->dst_off,
                       in->src_buf.src_buf_len));
 }
 )
@@ -4265,7 +4265,7 @@ TARPC_FUNC(set_buf, {},
 
 
 ssize_t
-sendbuf(int fd, rpc_ptr buf_base, size_t buf_offset, 
+sendbuf(int fd, rpc_ptr buf_base, size_t buf_offset,
         size_t count, int flags)
 {
     return send(fd, rcf_pch_mem_get(buf_base) + buf_offset, count, flags);
@@ -4280,7 +4280,7 @@ TARPC_FUNC(sendbuf, {},
 
 /*-------------------------- Read buffer ----------------------------*/
 void
-get_buf(tarpc_ptr src_buf_base, size_t src_offset, 
+get_buf(tarpc_ptr src_buf_base, size_t src_offset,
         char **dst_buf, size_t *len)
 {
     char *src_buf = rcf_pch_mem_get(src_buf_base);
@@ -4310,8 +4310,8 @@ get_buf(tarpc_ptr src_buf_base, size_t src_offset,
 TARPC_FUNC(get_buf, {},
 {
     out->dst_buf.dst_buf_len = in->len;
-    MAKE_CALL(get_buf(in->src_buf, in->src_off, 
-              &out->dst_buf.dst_buf_val, 
+    MAKE_CALL(get_buf(in->src_buf, in->src_off,
+              &out->dst_buf.dst_buf_val,
               &out->dst_buf.dst_buf_len));
 }
 )
@@ -4322,7 +4322,7 @@ set_buf_pattern(int pattern,
                 tarpc_ptr dst_buf_base, size_t dst_offset, size_t len)
 {
     char *dst_buf = rcf_pch_mem_get(dst_buf_base);
-    
+
     if (dst_buf != NULL && len != 0)
     {
         if (pattern < TAPI_RPC_BUF_RAND)
@@ -4488,10 +4488,10 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
             int                  i;
 
             res->type = WSA_IOCTL_SAA;
-        
+
             sal = (SOCKET_ADDRESS_LIST *)buf;
             tsa = (tarpc_sa *)calloc(sal->iAddressCount, sizeof(tarpc_sa));
-        
+
             for (i = 0; i < sal->iAddressCount; i++)
             {
                 sockaddr_output_h2rpc(sal->Address[i].lpSockaddr,
@@ -4502,7 +4502,7 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
 
             res->wsa_ioctl_request_u.req_saa.req_saa_val = tsa;
             res->wsa_ioctl_request_u.req_saa.req_saa_len = i;
-            
+
             break;
         }
 
@@ -4518,7 +4518,7 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
 
         case RPC_SIO_GET_EXTENSION_FUNCTION_POINTER:
             res->type = WSA_IOCTL_PTR;
-            res->wsa_ioctl_request_u.req_ptr = 
+            res->wsa_ioctl_request_u.req_ptr =
                 rcf_pch_mem_alloc(*(void **)buf);
             break;
 
@@ -4527,20 +4527,20 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
         {
             QOS       *qos;
             tarpc_qos *tqos;
-            
+
             res->type = WSA_IOCTL_QOS;
-            
+
             qos = (QOS *)buf;
             tqos = &res->wsa_ioctl_request_u.req_qos;
 
             flowspec_h2rpc(&qos->SendingFlowspec, &tqos->sending);
             flowspec_h2rpc(&qos->ReceivingFlowspec, &tqos->receiving);
-                                             
+
             if (qos->ProviderSpecific.len != 0)
             {
                tqos->provider_specific_buf.provider_specific_buf_val =
                    malloc(qos->ProviderSpecific.len);
-               if (tqos->provider_specific_buf.provider_specific_buf_val == 
+               if (tqos->provider_specific_buf.provider_specific_buf_val ==
                    NULL)
                {
                    ERROR("Failed to allocate memory for ProviderSpecific");
@@ -4557,7 +4557,7 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
                tqos->provider_specific_buf.provider_specific_buf_len = 0;
             }
         }
-        
+
         default:
             res->type = WSA_IOCTL_INT;
             res->wsa_ioctl_request_u.req_int = *(int *)buf;
@@ -4567,7 +4567,7 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
 }
 
 /*-------------- WSAIoctl -------------------------------*/
-TARPC_FUNC(wsa_ioctl, 
+TARPC_FUNC(wsa_ioctl,
 {
     COPY_ARG(outbuf);
     COPY_ARG(bytes_returned);
@@ -4582,7 +4582,7 @@ TARPC_FUNC(wsa_ioctl,
     GUID                      guid;
     int                       inbuf_len = 0;
     wsa_ioctl_request        *req = in->inbuf.inbuf_val;
-    
+
     /* Prepare output buffer */
     if (out->outbuf.outbuf_val != NULL)
     {
@@ -4613,7 +4613,7 @@ TARPC_FUNC(wsa_ioctl,
         }
     }
 
-    
+
     /* Prepare input data */
     if (in->inbuf.inbuf_val == NULL)
         goto call;
@@ -4651,8 +4651,8 @@ TARPC_FUNC(wsa_ioctl,
                 p->iSockaddrLength = (q->sa_family == RPC_AF_INET)?
                                      sizeof(SOCKADDR_IN) :
                                      sizeof(SOCKADDR_IN6);
-            } 
-            
+            }
+
             break;
         }
 
@@ -4702,7 +4702,7 @@ TARPC_FUNC(wsa_ioctl,
                 inqos->provider_specific_buf.provider_specific_buf_val;
             qos.ProviderSpecific.len =
                 inqos->provider_specific_buf.provider_specific_buf_len;
-            INIT_CHECKED_ARG(qos.ProviderSpecific.buf, 
+            INIT_CHECKED_ARG(qos.ProviderSpecific.buf,
                              qos.ProviderSpecific.len, 0);
             inbuf = &qos;
             inbuf_len = sizeof(QOS);
@@ -4731,7 +4731,7 @@ call:
     if (out->retval == 0)
     {
         if (outbuf != NULL && out->outbuf.outbuf_val != NULL)
-            convert_wsa_ioctl_result(in->code, outbuf, 
+            convert_wsa_ioctl_result(in->code, outbuf,
                                      out->outbuf.outbuf_val);
 
         if (overlapped != NULL)
@@ -4759,10 +4759,10 @@ TARPC_FUNC(get_wsa_ioctl_overlapped_result,
     rpc_overlapped *overlapped = IN_OVERLAPPED;
 
     UNUSED(list);
-    
+
     out->result.type = WSA_IOCTL_INT;
     out->result.wsa_ioctl_request_u.req_int = 0;
-    
+
     MAKE_CALL(out->retval = WSAGetOverlappedResult(in->s,
                                 (LPWSAOVERLAPPED)overlapped,
                                 out->bytes.bytes_len == 0 ? NULL :
@@ -4838,7 +4838,7 @@ TARPC_FUNC(wsa_async_get_serv_by_port, {},
 {
     MAKE_CALL(out->retval = rcf_pch_mem_alloc(WSAAsyncGetServByPort(
                                 IN_HWND, in->wmsg, in->port,
-                                in->proto.proto_val, 
+                                in->proto.proto_val,
                                 rcf_pch_mem_get(in->buf), in->buflen)));
 }
 )
@@ -4868,7 +4868,7 @@ TARPC_FUNC(wsa_join_leaf, {},
                                        rcf_pch_mem_get(in->caller_wsabuf),
                                        (LPWSABUF)
                                        rcf_pch_mem_get(in->callee_wsabuf),
-                                       psqos, NULL, 
+                                       psqos, NULL,
                                        join_leaf_flags_rpc2h(in->flags)));
 }
 )
@@ -4911,7 +4911,7 @@ TARPC_FUNC(create_io_completion_port,
                   INVALID_HANDLE_VALUE : (HANDLE)in->file_handle;
 
     MAKE_CALL(out->retval = (tarpc_int)CreateIoCompletionPort(file_handle,
-                         (HANDLE)(in->existing_completion_port), 
+                         (HANDLE)(in->existing_completion_port),
                          (ULONG_PTR)in->completion_key,
                          (DWORD)in->number_of_concurrent_threads)
     );
@@ -4930,7 +4930,7 @@ TARPC_FUNC(get_queued_completion_status,
 
     MAKE_CALL(out->retval = GetQueuedCompletionStatus(
         (HANDLE)(in->completion_port),
-        (DWORD *)&out->number_of_bytes, &key, 
+        (DWORD *)&out->number_of_bytes, &key,
         &overlapped, (DWORD)in->milliseconds)
     );
 
@@ -4938,7 +4938,7 @@ TARPC_FUNC(get_queued_completion_status,
         out->overlapped = (tarpc_overlapped)rcf_pch_mem_get_id(overlapped);
     else
         out->overlapped = (tarpc_overlapped)0;
-    out->completion_key = key;        
+    out->completion_key = key;
 }
 )
 
@@ -4948,7 +4948,7 @@ TARPC_FUNC(post_queued_completion_status,
 {},
 {
     UNUSED(list);
-    
+
     RING("Before call PostQueuedCompletionStatus()");
 
     MAKE_CALL(out->retval = PostQueuedCompletionStatus(
@@ -4980,7 +4980,7 @@ TARPC_FUNC(gettimeofday,
     }
     else
     {
-        MAKE_CALL(out->retval = 
+        MAKE_CALL(out->retval =
                       gettimeofday(out->tv.tv_len == 0 ? NULL : &tv,
                                    NULL));
         if (out->tv.tv_len != 0)
@@ -4997,18 +4997,18 @@ TARPC_FUNC(cmsg_data_parse_ip_pktinfo,
     IN_PKTINFO *pktinfo = (IN_PKTINFO *)(in->data.data_val);
 
     UNUSED(list);
- 
+
     if (in->data.data_len < sizeof(IN_PKTINFO))
     {
         ERROR("Too small buffer is provided as pktinfo data");
         out->retval = -1;
-    }    
+    }
     else
     {
         out->ipi_spec_dst = 0;
         out->ipi_addr = pktinfo->ipi_addr.S_un.S_addr;
         out->ipi_ifindex = pktinfo->ipi_ifindex;
-        out->retval = 0; 
+        out->retval = 0;
     }
 }
 )
@@ -5030,7 +5030,7 @@ TARPC_FUNC(mcast_join_leave,
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
         return;
     }
-*/   
+*/
     memset(&addr, 0, sizeof(addr));
 
     if (in->family != RPC_AF_INET)
@@ -5038,7 +5038,7 @@ TARPC_FUNC(mcast_join_leave,
         out->common._errno = RPC_EAFNOSUPPORT;
         out->retval = -1;
     }
-    
+
     else if ((in->ifindex != 0) &&
              (rc = get_addr_by_ifindex(in->ifindex, &addr)) != 0)
     {
@@ -5064,10 +5064,10 @@ TARPC_FUNC(mcast_join_leave,
                     out->common._errno = TE_RC(TE_TA_WIN32, rc);
                     out->retval = -1;
                 }
-                else 
+                else
                 {
                     SOCKET rc;
-                    
+
                     memset(&a, 0, sizeof(a));
                     a.ss_family = addr_family_rpc2h(in->family);
                     assert(te_netaddr_get_size(a.ss_family) ==
@@ -5075,7 +5075,7 @@ TARPC_FUNC(mcast_join_leave,
                     memcpy(te_sockaddr_get_netaddr(SA(&a)),
                            in->multiaddr.multiaddr_val,
                            in->multiaddr.multiaddr_len);
-                    
+
                     MAKE_CALL(rc = WSAJoinLeaf(in->fd, SA(&a),
                                                sizeof(struct sockaddr_in),
                                                NULL, NULL, NULL, NULL,
@@ -5089,13 +5089,13 @@ TARPC_FUNC(mcast_join_leave,
                 }
             }
             break;
-            
+
         case TARPC_MCAST_ADD_DROP:
 
             memcpy(&mreq.imr_multiaddr, in->multiaddr.multiaddr_val,
                    sizeof(struct in_addr));
             memcpy(&mreq.imr_interface, &addr, sizeof(struct in_addr));
-            
+
             MAKE_CALL(rc = setsockopt(in->fd, IPPROTO_IP,
                                       in->leave_group?
                                       IP_DROP_MEMBERSHIP :
@@ -5107,7 +5107,7 @@ TARPC_FUNC(mcast_join_leave,
             }
             out->retval = rc;
             break;
-            
+
         default:
             ERROR("Unsupported joining method requested");
             out->common._errno = TE_RC(TE_RPC, TE_EOPNOTSUPP);
@@ -5122,9 +5122,9 @@ TARPC_FUNC(mcast_join_leave,
 static struct {
     const char *name;
     void       *callback;
-} callback_registry[MAX_CALLBACKS] = { 
-    { "default_completion_callback", default_completion_callback }, 
-    { "default_file_completion_callback", 
+} callback_registry[MAX_CALLBACKS] = {
+    { "default_completion_callback", default_completion_callback },
+    { "default_file_completion_callback",
       default_file_completion_callback },
     { "empty_file_completion_callback", empty_file_completion_callback },
 };
@@ -5135,25 +5135,25 @@ static struct {
  * @param name  name of the callback
  *
  * @return Callback address
- */                          
+ */
 void *
 completion_callback_addr(const char *name)
 {
     int i;
-    
+
     if (name == NULL || *name == 0)
         return NULL;
-    
-    for (i = 0; 
-         i < MAX_CALLBACKS && callback_registry[i].name != NULL; 
+
+    for (i = 0;
+         i < MAX_CALLBACKS && callback_registry[i].name != NULL;
          i++)
     {
         if (strcmp(callback_registry[i].name, name) == 0)
             return callback_registry[i].callback;
     }
-    
+
     ERROR("Failed to find completion callback for %s", name);
-    
+
     return NULL;
 }
 
@@ -5166,44 +5166,44 @@ completion_callback_addr(const char *name)
  * @return Status code
  */
 te_errno
-completion_callback_register(const char *name, 
+completion_callback_register(const char *name,
                              void *callback)
 {
     int i;
-    
+
     if (name == NULL || *name == 0 || callback == NULL)
     {
         ERROR("Try to register completion callback "
               "with invalid name/address");
         return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
-    
-    for (i = 0; 
-         i < MAX_CALLBACKS && callback_registry[i].name != NULL; 
+
+    for (i = 0;
+         i < MAX_CALLBACKS && callback_registry[i].name != NULL;
          i++)
     {
         if (strcmp(callback_registry[i].name, name) == 0)
             return 0;
     }
-    
+
     if (i == MAX_CALLBACKS)
     {
         ERROR("Too many callbacks are registered");
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
     }
-    
+
     callback_registry[i].name = name;
     callback_registry[i].callback = callback;
 
     return 0;
-}                             
+}
 
 /** Sleep in waitable state */
-void 
+void
 sleep_ex(int msec)
 {
     SleepEx(msec, TRUE);
-} 
+}
 
 /*-------------- memcmp() ------------------------------*/
 

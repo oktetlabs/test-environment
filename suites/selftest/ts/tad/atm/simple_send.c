@@ -2,11 +2,11 @@
  * @brief Test Environment
  *
  * A test example
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
- * 
+ *
+ *
  */
 
 /** @page atm-simple_send Create ATM over Socket CSAP and send one cell

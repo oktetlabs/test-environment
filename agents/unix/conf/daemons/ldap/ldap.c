@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Alexandra N. Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -71,18 +71,18 @@ slapd_exists(char *port)
 }
 
 static te_errno
-ds_slapd_get(unsigned int gid, const char *oid, char *value, 
+ds_slapd_get(unsigned int gid, const char *oid, char *value,
              const char *port)
 {
     FILE *f;
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     TE_SPRINTF(buf, "/tmp/te_ldap_%s/ldif", port);
     if ((f = fopen(buf, "r")) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-        
+
     memset(value, 0, RCF_MAX_VAL);
     fread(value, 1, RCF_MAX_VAL - 1, f);
     fclose(f);
@@ -220,12 +220,12 @@ ds_slapd_list(unsigned int gid, const char *oid,
     return 0;
 }
 
-static rcf_pch_cfg_object node_ds_slapd = { "slapd", 0, NULL, NULL,                       
-                                            (rcf_ch_cfg_get)ds_slapd_get, 
+static rcf_pch_cfg_object node_ds_slapd = { "slapd", 0, NULL, NULL,
+                                            (rcf_ch_cfg_get)ds_slapd_get,
                                             NULL,
-                                            (rcf_ch_cfg_add)ds_slapd_add, 
-                                            (rcf_ch_cfg_del)ds_slapd_del, 
-                                            (rcf_ch_cfg_list)ds_slapd_list, 
+                                            (rcf_ch_cfg_add)ds_slapd_add,
+                                            (rcf_ch_cfg_del)ds_slapd_del,
+                                            (rcf_ch_cfg_list)ds_slapd_list,
                                             NULL, NULL, NULL };
 
 /**
@@ -233,7 +233,7 @@ static rcf_pch_cfg_object node_ds_slapd = { "slapd", 0, NULL, NULL,
  *
  * @return Status code.
  */
-te_errno 
+te_errno
 slapd_add(void)
 {
     return rcf_pch_add_node("/agent", &node_ds_slapd);

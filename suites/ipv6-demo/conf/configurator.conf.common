@@ -26,7 +26,7 @@
             volatile="true"/>
     <object oid="/volatile/sockaddr_port" access="read_create" type="integer"
             volatile="true"/>
-    <object oid="/volatile/ta_sockets" 
+    <object oid="/volatile/ta_sockets"
             access="read_create" type="string" volatile="true"/>
   </register>
 

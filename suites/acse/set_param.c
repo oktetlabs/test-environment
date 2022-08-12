@@ -2,13 +2,13 @@
  * @brief ACSE Test Suite
  *
  * ACSE Test Suite
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
- * 
+ *
  */
 
 
@@ -27,13 +27,13 @@ main(int argc, char *argv[])
     cwmp_values_array_t          *set_values;
     string_array_t               *get_names_resp = NULL;
 
-    char *param_path = 
+    char *param_path =
             "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."
             "IPInterface.";
     char *lan_ip_conn_path;
 
     te_errno te_rc;
-    tapi_acse_context_t *ctx; 
+    tapi_acse_context_t *ctx;
 
     TEST_START;
 

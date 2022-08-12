@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -68,17 +68,17 @@ static inline char *
 getenv_reliable(const char *name)
 {
     char *tmp = getenv(name);
-    
+
     if (tmp == NULL)
     {
         static char buf[128];
-        
+
         *buf = 0;
         GetEnvironmentVariable(name, buf, sizeof(buf));
         if (*buf != 0)
             tmp = buf;
     }
-    
+
     return tmp;
 }
 
@@ -96,7 +96,7 @@ getenv_reliable(const char *name)
 
 #define WSP_IPPROTO_TCP 200
 #define WSP_IPPROTO_UDP 201
-static inline int 
+static inline int
 wsp_proto_rpc2h(int socktype, int proto)
 {
     static int use_private_wsp = -1;
@@ -253,7 +253,7 @@ extern LPFN_WSARECVMSG           pf_wsa_recvmsg;
  * @param name  name of the callback
  *
  * @return Callback address
- */                          
+ */
 extern void *completion_callback_addr(const char *name);
 
 /**
@@ -264,7 +264,7 @@ extern void *completion_callback_addr(const char *name);
  *
  * @return Status code
  */
-extern te_errno completion_callback_register(const char *name, 
+extern te_errno completion_callback_register(const char *name,
                                              void *callback);
 
 /**
@@ -279,8 +279,8 @@ extern te_errno get_addr_by_ifindex(int if_index, struct in_addr *addr);
 
 /**
  * Converts the windows error to RPC one.
- */ 
-static inline te_errno 
+ */
+static inline te_errno
 win_rpc_errno(int err)
 {
     switch (err)
@@ -322,7 +322,7 @@ win_rpc_errno(int err)
         case WSA_INVALID_HANDLE: return RPC_EBADF;
         case WSASYSCALLFAILURE: return RPC_EINVAL;
         case WSAEINTR: return RPC_EINTR;
-        
+
         case ERROR_UNEXP_NET_ERR: return RPC_E_UNEXP_NET_ERR;
         case ERROR_OPERATION_ABORTED: return RPC_E_OPERATION_ABORTED;
         case ERROR_IO_INCOMPLETE: return RPC_E_IO_INCOMPLETE;
@@ -339,12 +339,12 @@ win_rpc_errno(int err)
         case ERROR_PORT_UNREACHABLE: return RPC_E_PORT_UNREACHABLE;
         case WAIT_TIMEOUT: return RPC_E_WAIT_TIMEOUT;
 
-        
+
         case ERROR_UNSPEC: return RPC_EUNSPEC;
-        
-        default: 
+
+        default:
             WARN("Unknown windows error code %d", err);
-            return RPC_EUNKNOWN; 
+            return RPC_EUNKNOWN;
     }
 }
 
@@ -362,18 +362,18 @@ thread_create(void *func, void *arg, uint32_t *tid)
 {
     DWORD  tmp;
     HANDLE hp = CreateThread(NULL, 0, func, arg, 0, &tmp);
-    
+
     if (hp == NULL)
         return win_rpc_errno(GetLastError());
-    
+
     *tid = rcf_pch_mem_alloc(hp);
-    
+
     SetLastError(0);
 
     return 0;
 }
 
-/** 
+/**
  * Cancel the thread.
  *
  * @param tid   thread identifier
@@ -387,13 +387,13 @@ thread_cancel(uint32_t tid)
 
     if (!TerminateThread(hp, 0))
         return win_rpc_errno(GetLastError());
-        
+
     rcf_pch_mem_free(tid);
 
     return 0;
 }
 
-/** 
+/**
  * Exit from the thread returning DWORD exit code.
  *
  * @param argument to return
@@ -402,22 +402,22 @@ static inline void
 thread_exit(void *ret)
 {
     DWORD rc = rcf_pch_mem_alloc(ret);
-    
+
     if (rc == STILL_ACTIVE)
     {
         DWORD new_rc = rcf_pch_mem_alloc(ret);
-        
+
         rcf_pch_mem_free(rc);
-        
+
         ExitThread(new_rc);
-        
+
         return;
     }
 
     ExitThread(rc);
 }
 
-/** 
+/**
  * Join the thread.
  *
  * @param tid   thread identifier
@@ -435,32 +435,32 @@ thread_join(uint32_t tid, void **arg)
     {
         if (!GetExitCodeThread(hp, &rc))
             return win_rpc_errno(GetLastError());
-            
+
         if (rc != STILL_ACTIVE)
             break;
-            
+
         SleepEx(10, TRUE);
     }
-    
+
     if (arg != NULL)
         *arg = rcf_pch_mem_get(rc);
-    
+
     rcf_pch_mem_free(rc);
     rcf_pch_mem_free(tid);
-            
+
     return 0;
 }
 
-/** 
+/**
  * Overlapped object with additional parameters - memory associated
- * with overlapped information  
+ * with overlapped information
  */
 typedef struct rpc_overlapped {
     WSAOVERLAPPED  overlapped; /**< WSAOVERLAPPED object itself */
     LPWSABUF       buffers;    /**< List of allocated buffers   */
     int            bufnum;     /**< Number of allocated buffers */
     WSAMSG         msg;        /**< Memory for WSAMSG */
-    
+
     /** Test-specific cookies */
     uint32_t       cookie1;
     uint32_t       cookie2;
@@ -495,7 +495,7 @@ iovec2overlapped(rpc_overlapped *overlapped, int vector_len,
                  struct tarpc_iovec *vector)
 {
     rpc_overlapped_free_memory(overlapped);
-    
+
     if (vector_len == 0)
     {
         overlapped->buffers = NULL;
@@ -537,7 +537,7 @@ overlapped2iovec(rpc_overlapped *overlapped, int *vector_len,
                  struct tarpc_iovec **vector_val)
 {
     int i;
-    
+
     if (overlapped->bufnum == 0)
     {
         *vector_val = NULL;
@@ -628,7 +628,7 @@ typedef struct checked_arg {
 
 /** Initialise the checked argument and add it into the list */
 static inline void
-init_checked_arg(checked_arg **list, char *real_arg, int len, 
+init_checked_arg(checked_arg **list, char *real_arg, int len,
                  int len_visible)
 {
     checked_arg *arg;

@@ -2,14 +2,14 @@
  * @brief Test Environment
  *
  * Simple RCF test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "cli/simple"
@@ -32,7 +32,7 @@
 
 void
 cli_msg_handler(char *fn, void *p)
-{ 
+{
     UNUSED(p);
     VERB("CLI message handler, file with NDS: %s\n", fn);
 }
@@ -46,7 +46,7 @@ main(int argc, char *argv[])
     char *passwd;
     int   sid;
     csap_handle_t  cli_csap;
-   
+
     TEST_START;
     TEST_GET_STRING_PARAM(ta);
     TEST_GET_STRING_PARAM(host);
@@ -56,7 +56,7 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_ta_create_session(ta, &sid));
 
     VERB("Try to create SSH CLI session");
-    
+
     TAPI_CLI_CSAP_CREATE_SSH(ta, sid, host, user, passwd,
                              tapi_cli_redhat_cprompt_dflt, &cli_csap);
 

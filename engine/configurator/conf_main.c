@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -53,7 +53,7 @@ static struct ipc_server *server = NULL; /**< IPC Server handle */
 
 #define MAX_CFG_FILES 16
 /** Configuration file names */
-static const char *cs_cfg_file[16] =  {NULL, };  
+static const char *cs_cfg_file[16] =  {NULL, };
 static const char *cs_sniff_cfg_file = NULL;  /**< Configuration file name
                                                    for sniffer framework */
 
@@ -2868,7 +2868,7 @@ process_cmd_line_opts(int argc, char **argv)
            cs_cfg_file[cfg_file_num++] != NULL) {
       cs_cfg_file[cfg_file_num] = strtok(NULL, " ");
       INFO("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[cfg_file_num]);
-    } 
+    }
     if (cs_cfg_file[0] == NULL)
     {
       ERROR("No configuration file in command-line arguments");

@@ -3,13 +3,13 @@
  *
  * Definition of the C API provided by Builder to Tester (Test Suite
  * building)
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * 
+ *
  */
 
 #ifndef __TE_BUILDER_TS_H__
@@ -23,7 +23,7 @@ extern "C" {
 
 /**
  * This function is called by Tester subsystem to build dynamically
- * a Test Suite. Test Suite is installed to 
+ * a Test Suite. Test Suite is installed to
  * ${TE_INSTALL_SUITE}/bin/<suite>.
  *
  * Test Suite may be linked with TE libraries. If ${TE_INSTALL} or

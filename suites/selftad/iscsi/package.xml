@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package version="1.0">
-    
+
     <description>Tests on TAD iSCSI csap functionality.</description>
 
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
@@ -14,11 +14,11 @@
         <run>
             <script name="simple">
             </script>
-        </run> 
+        </run>
         <run>
             <script name="double">
             </script>
-        </run> 
+        </run>
     </session>
 
 </package>

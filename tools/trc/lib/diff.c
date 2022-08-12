@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -74,7 +74,7 @@ trc_diff_entry_init(trc_diff_entry *entry, te_bool is_iter)
 /**
  * Clean up TRC diff result entry.
  *
- * @param entry Pointer to an entry to clean up 
+ * @param entry Pointer to an entry to clean up
  */
 static void
 trc_diff_entry_cleanup(trc_diff_entry *entry)
@@ -103,7 +103,7 @@ trc_diff_entry_cleanup(trc_diff_entry *entry)
 /**
  * Inherit requested expected results from parent to entry.
  *
- * @param parent        Parent entry 
+ * @param parent        Parent entry
  * @param entry         Entry to fill in
  */
 static void
@@ -130,7 +130,7 @@ trc_diff_entry_inherit(const trc_diff_entry *parent,
  * Allocate a new TRC diff result entry and inherit requested results
  * from parent.
  *
- * @param parent        Parent entry 
+ * @param parent        Parent entry
  *
  * @return              Pointer to an allocated entry.
  */
@@ -184,7 +184,7 @@ trc_diff_entry_exp_results(const trc_diff_sets    *sets,
             //assert(entry->results[set->id] != NULL);
             if (entry->results[set->id] == NULL)
                 VERB("No expected result found");
-            if ((entry->results[set->id] == NULL) || 
+            if ((entry->results[set->id] == NULL) ||
                 trc_is_exp_result_skipped(entry->results[set->id]))
             {
                 /* Skipped results should be inherited */
@@ -235,7 +235,7 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
         (str_or_null_cmp(lhv->notes, rhv->notes) != 0))
         return FALSE;
 
-    /* 
+    /*
      * Check that each entry in left-hand value has equal entry in
      * right-hand value.
      */
@@ -246,7 +246,7 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
             (str_or_null_cmp(p->key, q->key) != 0) ||
             (str_or_null_cmp(p->notes, q->notes) != 0))
         {
-            /* 
+            /*
              * The expected result entry does not correspond to any
              * in another expected result or key/notes do not match.
              */
@@ -254,7 +254,7 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
         }
     }
 
-    /* 
+    /*
      * Check that each entry in right-hand value has equal entry in
      * left-hand value.
      */
@@ -265,7 +265,7 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
             (str_or_null_cmp(p->key, q->key) != 0) ||
             (str_or_null_cmp(p->notes, q->notes) != 0))
         {
-            /* 
+            /*
              * The expected result entry does not correspond to any
              * in another expected result or key/notes do not match.
              */
@@ -379,7 +379,7 @@ trc_diff_check_key(trc_diff_set *set, const char *key)
 
     if (key == NULL)
         key = "";
- 
+
     for (p = TAILQ_FIRST(&set->ignore);
          p != NULL && !ignore;
          p  = TAILQ_NEXT(p, links))
@@ -424,7 +424,7 @@ test_status_te2trc(const te_test_status status)
 static trc_test_status
 trc_test_status_merge(trc_test_status result, trc_test_status add)
 {
-    /* 
+    /*
      * In initial state accumulated result is equal to
      * TRC_TEST_STATUS_MAX.
      */
@@ -554,7 +554,7 @@ trc_diff_iter_hash_get(const trc_test_iter *test_iter, int db_uid)
 
 /**
  * Increment statistic for two compared sets.
- * 
+ *
  * @param stats         Location of the statistics to update
  * @param set_i         Index of the first set
  * @param status_i      Status for the first set
@@ -704,21 +704,21 @@ trc_diff_compare(trc_diff_sets  *sets,
     result1 = entry->results[id1];
     result2 = entry->results[id2];
 
-    /* 
+    /*
      * Check that each entry in the expecred result for the first set
      * has equal entry in the expected result for the second set.
      */
     main_key_used = FALSE;
     TAILQ_FOREACH(p, &result1->results, links)
     {
-        /* 
+        /*
          * If pointers to expected result for the first and the second
          * sets are equal, expected results are definitely equal.
          */
         if ((result1 != result2) &&
             trc_is_result_expected(result2, &p->result) == NULL)
         {
-            /* 
+            /*
              * The expected result entry from the first set does not
              * match any entry from the second set.
              * Check key and collect per-key statistics.
@@ -754,14 +754,14 @@ trc_diff_compare(trc_diff_sets  *sets,
                       test_status_te2trc(p->result.status));
     }
 
-    /* 
+    /*
      * No entries in expected result for the first set, therefore,
      * it is unspecified.
      */
     if (status1 == TRC_TEST_STATUS_MAX)
         status1 = TRC_TEST_UNSPECIFIED;
 
-    /* 
+    /*
      * If pointers are equal, expected results are equal and we have
      * all information required to update statistics.
      * Since results are equal, no per-key statistics should be updated.
@@ -775,7 +775,7 @@ trc_diff_compare(trc_diff_sets  *sets,
         return TRC_DIFF_MATCH;
     }
 
-    /* 
+    /*
      * Check that each entry in the expecred result for the second set
      * has equal entry in the expected result for the first set.
      */
@@ -784,9 +784,9 @@ trc_diff_compare(trc_diff_sets  *sets,
     {
         if (trc_is_result_expected(result1, &p->result) == NULL)
         {
-            /* 
+            /*
              * The expected result entry does not correspond to any
-             * in another expected result. Therefore, this entry is 
+             * in another expected result. Therefore, this entry is
              * unexpected.
              */
             ignore = trc_diff_check_key(set2, (p->key != NULL) ?
@@ -820,7 +820,7 @@ trc_diff_compare(trc_diff_sets  *sets,
                       test_status_te2trc(p->result.status));
     }
 
-    /* 
+    /*
      * No entries in expected result for the second set, therefore,
      * it is unspecified.
      */
@@ -1039,7 +1039,7 @@ trc_diff_entry_has_diff(const trc_diff_sets *sets,
          * If comparison of the first entry with the rest does not
          * show any differences, we can be sure that all entries
          * match. However, special processing is required to update
-         * statistics. 
+         * statistics.
          */
     }
 
@@ -1117,7 +1117,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                 }
                 else
                 {
-                    /* 
+                    /*
                      * Save current 'parent' and its 'has_diff' in the
                      * stack.
                      */
@@ -1177,7 +1177,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                 if (entry->is_iter)
                 {
                     entry->ptr.iter = trc_db_walker_get_iter(walker);
-                    /* 
+                    /*
                      * We have to get expected results for packages,
                      * since it may be skipped and should be inherited
                      * by its tests.
@@ -1200,7 +1200,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                                 break;
 
                             case 0:
-                                /* 
+                                /*
                                  * Some children does not have differences.
                                  * Therefore, it is necessary to show which
                                  * one has differences.
@@ -1256,7 +1256,7 @@ trc_diff_do(trc_diff_ctx *ctx)
 
                     if (hide_children)
                     {
-                        /* 
+                        /*
                          * It is allowed to hide all children,
                          * therefore remove them from result.
                          */
@@ -1268,7 +1268,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                     }
                     else if (children == 1 && !parent->is_iter)
                     {
-                        /* 
+                        /*
                          * Test group has only one iteration. Therefore,
                          * it is not interesting to look at parameters.
                          */
@@ -1291,7 +1291,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                     entry = parent;
                     assert(!entry_to_result);
                 }
-                
+
                 /* Extract state from the stack and restore */
                 state = SLIST_FIRST(&states);
                 assert(state != NULL);

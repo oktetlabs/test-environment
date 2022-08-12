@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -47,7 +47,7 @@ extern rpc_aiocb_p rpc_create_aiocb(rcf_rpc_server *rpcs);
 extern void rpc_delete_aiocb(rcf_rpc_server *rpcs, rpc_aiocb_p cb);
 
 /**
- * Delete AIO control block in cleanup part of the test. 
+ * Delete AIO control block in cleanup part of the test.
  *
  * @param _rpcs     RPC server handle
  * @param _cb       AIO control block
@@ -77,7 +77,7 @@ extern void rpc_delete_aiocb(rcf_rpc_server *rpcs, rpc_aiocb_p cb);
  * @param nbytes   buffer length
  * @param sigevent notification mode description
  */
-extern void rpc_fill_aiocb(rcf_rpc_server *rpcs, rpc_aiocb_p cb, 
+extern void rpc_fill_aiocb(rcf_rpc_server *rpcs, rpc_aiocb_p cb,
                            int fildes, rpc_lio_opcode opcode,
                            int reqprio, rpc_ptr buf, size_t nbytes,
                            const tarpc_sigevent *sigevent);
@@ -86,7 +86,7 @@ extern void rpc_fill_aiocb(rcf_rpc_server *rpcs, rpc_aiocb_p cb,
  * Request asynchronous read operation.
  *
  * @param rpcs     RPC server handle
- * @param cb       control block 
+ * @param cb       control block
  *
  * @return 0 (success) or -1 (failure)
  */
@@ -96,7 +96,7 @@ extern int rpc_aio_read(rcf_rpc_server *rpcs, rpc_aiocb_p cb);
  * Request asynchronous write operation.
  *
  * @param rpcs     RPC server handle
- * @param cb       control block 
+ * @param cb       control block
  *
  * @return 0 (success) or -1 (failure)
  */
@@ -106,14 +106,14 @@ extern int rpc_aio_write(rcf_rpc_server *rpcs, rpc_aiocb_p cb);
  * Retrieve final return status for asynchronous I/O request.
  *
  * @param rpcs     RPC server handle
- * @param cb       control block 
+ * @param cb       control block
  *
  * @return Return status of AIO request
  *
- * @note The function converting OS errno to OS-independent one is also 
- * applied to value returned by aio_return() on RPC server. The result of 
- * the conversion is stored as errno in RPC server structure. This is 
- * necessary to obtain correct aio_return() result when it is called for 
+ * @note The function converting OS errno to OS-independent one is also
+ * applied to value returned by aio_return() on RPC server. The result of
+ * the conversion is stored as errno in RPC server structure. This is
+ * necessary to obtain correct aio_return() result when it is called for
  * failre request.
  */
 extern ssize_t rpc_aio_return(rcf_rpc_server *rpcs, rpc_aiocb_p cb);
@@ -122,7 +122,7 @@ extern ssize_t rpc_aio_return(rcf_rpc_server *rpcs, rpc_aiocb_p cb);
  * Get status of the asynchronous I/O request.
  *
  * @param rpcs     RPC server handle
- * @param cb       control block 
+ * @param cb       control block
  *
  * @return OS-independent error code
  */
@@ -145,7 +145,7 @@ extern int rpc_aio_error(rcf_rpc_server *rpcs, rpc_aiocb_p cb);
 extern int rpc_aio_cancel(rcf_rpc_server *rpcs, int fd, rpc_aiocb_p cb);
 
 /**
- * Do a sync on all outstanding asynchronous I/O operations associated 
+ * Do a sync on all outstanding asynchronous I/O operations associated
  * with cb->aio_fildes.
  *
  * @param rpcs     RPC server handle
@@ -155,13 +155,13 @@ extern int rpc_aio_cancel(rcf_rpc_server *rpcs, int fd, rpc_aiocb_p cb);
  *
  * @return 0 (success) or -1 (failure)
  */
-extern int rpc_aio_fsync(rcf_rpc_server *rpcs, 
+extern int rpc_aio_fsync(rcf_rpc_server *rpcs,
                          rpc_fcntl_flags op, rpc_aiocb_p cb);
 
 /**
- * Suspend the calling process until at least one of the asynchronous I/O 
- * requests in the list cblist  of  length n have  completed, a signal is 
- * delivered, or timeout is not NULL and the time interval it indicates 
+ * Suspend the calling process until at least one of the asynchronous I/O
+ * requests in the list cblist  of  length n have  completed, a signal is
+ * delivered, or timeout is not NULL and the time interval it indicates
  * has passed.
  *
  * @param rpcs     RPC server handle
@@ -186,7 +186,7 @@ extern int rpc_aio_suspend(rcf_rpc_server *rpcs, const rpc_aiocb_p *cblist,
  *
  * @return 0 (success) or -1 (failure)
  */
-extern int rpc_lio_listio(rcf_rpc_server *rpcs, 
+extern int rpc_lio_listio(rcf_rpc_server *rpcs,
                           rpc_lio_mode mode, const rpc_aiocb_p *cblist,
                           int nent, const tarpc_sigevent *sigevent);
 /**@} <!-- END te_lib_rpc_aio --> */

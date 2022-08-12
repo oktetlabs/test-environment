@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -52,7 +52,7 @@
 
 #include "tester.h"
 
-/** 
+/**
  * Cast 'const char *' to 'const xmlChar *' required by libxml2
  * routines.
  */
@@ -479,7 +479,7 @@ alloc_and_get_test_suite_info(xmlNodePtr        node,
 /**
  * Get information about person.
  *
- * @param node      Node with information about person 
+ * @param node      Node with information about person
  * @param persons   List with information about persons
  *
  * @return Status code.
@@ -984,7 +984,7 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
 
 /**
  * Get script call description.
- * 
+ *
  * @param node      XML node with script call description
  * @param cfg       Tester configuration context
  * @param script    Location for script call description
@@ -1149,7 +1149,7 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
     }
     else
     {
-        /* 
+        /*
          * Type of the value is not specified, may be it is specified
          * for all values.
          */
@@ -1170,7 +1170,7 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
             INFO("Ignore self-reference of the value '%s'", p->name);
             p->ref = NULL;
         }
-        /* 
+        /*
          * If type is specified, referencies to type values are the next
          * priority.
          */
@@ -1207,14 +1207,14 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
                 free(tmp);
                 return TE_RC(TE_TESTER, TE_ENOMEM);
             }
-            TAILQ_INSERT_TAIL(&p->reqs, req, links); 
+            TAILQ_INSERT_TAIL(&p->reqs, req, links);
 
             end = (s[len] == '\0');
             s += len + (end ? 0 : 1);
         } while (!end);
         free(tmp);
     }
-    
+
     /* Simple text content is represented as 'text' elements */
     if (node->children != NULL)
     {
@@ -1311,7 +1311,7 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
     if (p->name == NULL)
     {
         ERROR("Name is required for types");
-        /* 
+        /*
          * Do not insert before tester_find_type() including indirect
          * from alloc_and_get_value(), but required for clean up.
          */
@@ -1329,7 +1329,7 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
         {
             ERROR("Type '%s' not found", tmp);
             free(tmp);
-            /* 
+            /*
              * Do not insert before tester_find_type() including indirect
              * from alloc_and_get_value(), but required for clean up.
              */
@@ -1350,7 +1350,7 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
         {
             ERROR("Processing of the type '%s' value failed: %r",
                   p->name, rc);
-            /* 
+            /*
              * Do not insert before tester_find_type() including indirect
              * from alloc_and_get_value(), but required for clean up.
              */
@@ -1360,7 +1360,7 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
         node = xmlNodeNext(node);
     }
 
-    /* 
+    /*
      * Do not insert before tester_find_type() including indirect
      * from alloc_and_get_value(), but required for clean up.
      */
@@ -1557,7 +1557,7 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
         }
         VERB("%s: getenv->%s", __FUNCTION__, getenv(env_name));
     }
-    
+
     return 0;
 }
 
@@ -1701,7 +1701,7 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                 if ((rc = cmd_monitor_get_prop(&p, &monitor->command,
                                                "command")) != 0)
                 {
-                    free_cmd_monitor(monitor); 
+                    free_cmd_monitor(monitor);
                     return rc;
                 }
             }
@@ -1711,7 +1711,7 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                 if ((rc = cmd_monitor_get_prop(&p, &monitor->ta,
                                                "ta")) != 0)
                 {
-                    free_cmd_monitor(monitor); 
+                    free_cmd_monitor(monitor);
                     return rc;
                 }
             }
@@ -1721,7 +1721,7 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                 if ((rc = cmd_monitor_get_prop(&p, &time_to_wait,
                                                "time_to_wait")) != 0)
                 {
-                    free_cmd_monitor(monitor); 
+                    free_cmd_monitor(monitor);
                     return rc;
                 }
                 monitor->time_to_wait = atoi(time_to_wait);
@@ -1733,7 +1733,7 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                 if ((rc = cmd_monitor_get_prop(&p, &run_monitor,
                                                "run_monitor")) != 0)
                 {
-                    free_cmd_monitor(monitor); 
+                    free_cmd_monitor(monitor);
                     return rc;
                 }
                 if (strcasecmp(run_monitor, "yes") == 0)
@@ -1749,7 +1749,7 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
             {
                 ERROR("%s(): unexpected node name '%s' encountered",
                       __FUNCTION__, XML2CHAR(p->name));
-                free_cmd_monitor(monitor); 
+                free_cmd_monitor(monitor);
                 return TE_RC(TE_TESTER, TE_EINVAL);
             }
         }
@@ -1977,7 +1977,7 @@ get_package(xmlNodePtr node, tester_cfg *cfg, const test_session *session,
  * @param runs      List of run items or @c NULL
  * @param p_run     Location for pointer to allocated run item or @c NULL
  *
- * One of @a runs or @a p_run arguments must be @c NULL and another 
+ * One of @a runs or @a p_run arguments must be @c NULL and another
  * not @c NULL.
  *
  * @return Status code.
@@ -2095,7 +2095,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
     node = xmlNodeNext(node);
-    
+
     /* Get information about arguments */
     while (node != NULL &&
            xmlStrcmp(node->name, CONST_CHAR2XML("arg")) == 0)
@@ -2109,7 +2109,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         }
         node = xmlNodeNext(node);
     }
-    
+
     if (node != NULL)
     {
         ERROR("Unexpected element '%s' in run item",
@@ -2146,7 +2146,7 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg,
     if (root == NULL)
     {
         VERB("Empty configuration file is provided");
-        return 0;  
+        return 0;
     }
 #ifndef XML_DOC_ASSUME_VALID
     if (xmlStrcmp(root->name, CONST_CHAR2XML("package")) != 0)
@@ -2302,7 +2302,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg,
     if (root == NULL)
     {
         VERB("Empty configuration file is provided");
-        return 0;  
+        return 0;
     }
 #ifndef XML_DOC_ASSUME_VALID
     if (xmlStrcmp(root->name, CONST_CHAR2XML("tester_cfg")) != 0)
@@ -2354,7 +2354,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg,
               (node != NULL) ? XML2CHAR(node->name) : "(NULL)");
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
-    
+
     /* Get optional description */
     if (node != NULL &&
         (rc = get_node_with_text_content(&node, "description",
@@ -2397,7 +2397,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg,
     while (node != NULL &&
            xmlStrcmp(node->name, CONST_CHAR2XML("run")) == 0)
     {
-        rc = alloc_and_get_run_item(node, cfg, 0, NULL, 
+        rc = alloc_and_get_run_item(node, cfg, 0, NULL,
                                     &cfg->runs, NULL);
         if (rc != 0)
             return rc;
@@ -2493,7 +2493,7 @@ get_tests_info(xmlNodePtr node, tests_info *ti)
     if (node == NULL)
     {
         VERB("Empty configuration file is provided");
-        return 0;  
+        return 0;
     }
     if (xmlStrcmp(node->name, CONST_CHAR2XML("tests-info")) != 0)
     {
@@ -2680,7 +2680,7 @@ parse_test_package(tester_cfg *cfg, const test_session *session,
                           pkg, ritem);
     if (rc != 0)
     {
-        ERROR("Preprocessing of Test Package '%s' from file '%s' failed", 
+        ERROR("Preprocessing of Test Package '%s' from file '%s' failed",
               pkg->name, pkg->path);
     }
     else
@@ -2688,7 +2688,7 @@ parse_test_package(tester_cfg *cfg, const test_session *session,
         INFO("Test Package '%s' from file '%s' preprocessed successfully",
              pkg->name, pkg->path);
     }
-    
+
 cleanup:
     pkg->ti = NULL;
     cfg->cur_pkg = cur_pkg_save;
@@ -2699,7 +2699,7 @@ cleanup:
     xmlFreeParserCtxt(parser);
     xmlCleanupParser();
 
-    return rc;  
+    return rc;
 }
 
 
@@ -2751,7 +2751,7 @@ tester_parse_config(tester_cfg *cfg, te_bool build, te_bool verbose)
     rc = get_tester_config(xmlDocGetRootElement(doc), cfg, build, verbose);
     if (rc != 0)
     {
-        ERROR("Preprocessing of Tester configuration file '%s' failed", 
+        ERROR("Preprocessing of Tester configuration file '%s' failed",
               cfg->filename);
     }
     else
@@ -2759,12 +2759,12 @@ tester_parse_config(tester_cfg *cfg, te_bool build, te_bool verbose)
         INFO("Tester configuration file '%s' preprocessed successfully",
              cfg->filename);
     }
-    
+
     xmlFreeDoc(doc);
     xmlFreeParserCtxt(parser);
     xmlCleanupParser();
 
-    return rc;  
+    return rc;
 }
 
 /* See the description in tester_conf.h */

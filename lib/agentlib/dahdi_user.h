@@ -662,20 +662,20 @@ struct dahdi_tone_def {
 
 	/* Now come the constants we need to make tones */
 
-	/* 
+	/*
 		Calculate the next 6 factors using the following equations:
 		l = <level in dbm>, f1 = <freq1>, f2 = <freq2>
 		gain = pow(10.0, (l - 3.14) / 20.0) * 65536.0 / 2.0;
 
-		// Frequency factor 1 
+		// Frequency factor 1
 		fac_1 = 2.0 * cos(2.0 * M_PI * (f1/8000.0)) * 32768.0;
-		// Last previous two samples 
+		// Last previous two samples
 		init_v2_1 = sin(-4.0 * M_PI * (f1/8000.0)) * gain;
 		init_v3_1 = sin(-2.0 * M_PI * (f1/8000.0)) * gain;
 
-		// Frequency factor 2 
+		// Frequency factor 2
 		fac_2 = 2.0 * cos(2.0 * M_PI * (f2/8000.0)) * 32768.0;
-		// Last previous two samples 
+		// Last previous two samples
 		init_v2_2 = sin(-4.0 * M_PI * (f2/8000.0)) * gain;
 		init_v3_2 = sin(-2.0 * M_PI * (f2/8000.0)) * gain;
 	*/
@@ -700,12 +700,12 @@ struct dahdi_tone_def_header {
 #define DAHDI_LOADZONE			_IOW(DAHDI_CODE, 25, struct dahdi_tone_def_header)
 
 /*
- * Free a tone zone 
+ * Free a tone zone
  */
 #define DAHDI_FREEZONE			_IOW(DAHDI_CODE, 26, int)
 
 /*
- * Get/Set buffer policy 
+ * Get/Set buffer policy
  */
 struct dahdi_bufferinfo {
 	int txbufpolicy;	/* Policy for handling receive buffers */
@@ -748,7 +748,7 @@ struct dahdi_dialoperation {
 #define DAHDI_AUDIOMODE			_IOW(DAHDI_CODE, 32, int)
 
 /*
- * Enable or disable echo cancellation on a channel 
+ * Enable or disable echo cancellation on a channel
  *
  * For ECHOCANCEL:
  * The number is zero to disable echo cancellation and non-zero
@@ -797,15 +797,15 @@ struct dahdi_echocanparams {
  */
 #define DAHDI_HDLCFCSMODE		_IOW(DAHDI_CODE, 37, int)
 
-/* 
+/*
  * Specify a channel on generic channel selector - must be done before
  * performing any other ioctls
  */
 #define DAHDI_SPECIFY			_IOW(DAHDI_CODE, 38, int)
 
 /*
- * Temporarily set the law on a channel to 
- * DAHDI_LAW_DEFAULT, DAHDI_LAW_ALAW, or DAHDI_LAW_MULAW.  Is reset on close.  
+ * Temporarily set the law on a channel to
+ * DAHDI_LAW_DEFAULT, DAHDI_LAW_ALAW, or DAHDI_LAW_MULAW.  Is reset on close.
  */
 #define DAHDI_SETLAW			_IOW(DAHDI_CODE, 39, int)
 
@@ -960,8 +960,8 @@ struct dahdi_dynamic_span {
 
 #define DAHDI_DYNAMIC_CREATE		_IOWR(DAHDI_CODE, 80, struct dahdi_dynamic_span)
 
-/* 
- * Destroy a dynamic span 
+/*
+ * Destroy a dynamic span
  */
 #define DAHDI_DYNAMIC_DESTROY		_IOW(DAHDI_CODE, 81, struct dahdi_dynamic_span)
 
@@ -998,7 +998,7 @@ struct dahdi_hwgain {
 #define DAHDI_TC_GETINFO		_IOWR(DAHDI_TC_CODE, 2, struct dahdi_transcoder_info)
 
 /*
- * VMWI Specification 
+ * VMWI Specification
  */
 struct dahdi_vmwi_info {
 	unsigned int vmwi_type;
@@ -1032,7 +1032,7 @@ struct dahdi_vmwi_info {
 
 #define DAHDI_RADSTAT_RX	1	/* currently "receiving " */
 #define DAHDI_RADSTAT_TX	2	/* currently "transmitting" */
-#define DAHDI_RADSTAT_RXCT	4	/* currently receiving continuous tone with 
+#define DAHDI_RADSTAT_RXCT	4	/* currently receiving continuous tone with
 				   current settings */
 #define DAHDI_RADSTAT_RXCOR	8	/* currently receiving COR (irrelevant of COR
 				   ignore) */
@@ -1041,7 +1041,7 @@ struct dahdi_vmwi_info {
 #define DAHDI_RADSTAT_NOENCODE 64	/* currently blocking CTCSS/DCS encode */
 
 struct dahdi_radio_stat {
-	unsigned short ctcode_rx;	/* code of currently received CTCSS 
+	unsigned short ctcode_rx;	/* code of currently received CTCSS
 					   or DCS, 0 for none */
 	unsigned short ctclass;		/* class of currently received CTCSS or
 					    DCS code */
@@ -1069,10 +1069,10 @@ struct dahdi_radio_stat {
 				   or 0 meaning no tone, set index also (1-15) */
 #define DAHDI_RADPAR_RXTONECLASS 10	/* Tone class (0-65535), set index also (1-15) */
 #define DAHDI_RADPAR_TXTONE 11	/* CTCSS tone (1-32) or DCS tone (1-777) or 0
-				   to indicate no tone, to transmit 
+				   to indicate no tone, to transmit
 				   for this tone index (0-32, 0 disables
 				   transmit CTCSS), set index also (0-15) */
-#define DAHDI_RADPAR_DEBOUNCETIME 12	/* receive indication debounce time, 
+#define DAHDI_RADPAR_DEBOUNCETIME 12	/* receive indication debounce time,
 				   milliseconds (1-999) */
 #define DAHDI_RADPAR_BURSTTIME 13	/* end of transmit with no CT tone in
 				   milliseconds (0-999) */
@@ -1081,7 +1081,7 @@ struct dahdi_radio_stat {
 #define DAHDI_RADPAR_UIODATA 14	/* read/write UIOA and UIOB data. Bit 0 is
 				   UIOA, bit 1 is UIOB */
 #define DAHDI_RADPAR_UIOMODE 15	/* 0 means UIOA and UIOB are both outputs, 1
-				   means UIOA is input, UIOB is output, 2 
+				   means UIOA is input, UIOB is output, 2
 				   means UIOB is input and UIOA is output,
 				   3 means both UIOA and UIOB are inputs. Note
 				   mode for UIOA is overridden when in
@@ -1095,13 +1095,13 @@ struct dahdi_radio_stat {
 
 #define DAHDI_RADPAR_REMCOMMAND 17	/* Remote conrtol write data block & do cmd */
 
-#define DAHDI_RADPAR_DEEMP 18 /* Audio De-empahsis (on or off) */ 
+#define DAHDI_RADPAR_DEEMP 18 /* Audio De-empahsis (on or off) */
 
-#define DAHDI_RADPAR_PREEMP 19 /* Audio Pre-empahsis (on or off) */ 
+#define DAHDI_RADPAR_PREEMP 19 /* Audio Pre-empahsis (on or off) */
 
-#define DAHDI_RADPAR_RXGAIN 20 /* Audio (In to system) Rx Gain */ 
+#define DAHDI_RADPAR_RXGAIN 20 /* Audio (In to system) Rx Gain */
 
-#define DAHDI_RADPAR_TXGAIN 21 /* Audio (Out from system) Tx Gain */ 
+#define DAHDI_RADPAR_TXGAIN 21 /* Audio (Out from system) Tx Gain */
 
 #define RAD_SERIAL_BUFLEN 128
 

@@ -2,13 +2,13 @@
  * @brief ACSE Test Suite
  *
  * ACSE Test Suite
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
- * 
+ *
  */
 
 
@@ -65,7 +65,7 @@ main(int argc, char *argv[])
 
     CHECK_RC(tapi_acse_cpe_connect(ctx));
 
-    CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE)); 
+    CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));
     CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_PENDING));
 
     CHECK_RC(tapi_acse_download(ctx, &download_pars));
@@ -120,8 +120,8 @@ main(int argc, char *argv[])
         if (0 == te_rc)
         {
             cwmp_transfer_complete_t *tc = from_cpe.transfer_complete;
-            RING("TransferComplete, key %s, fault: %s (%s)", 
-                 tc->CommandKey, tc->FaultStruct->FaultCode, 
+            RING("TransferComplete, key %s, fault: %s (%s)",
+                 tc->CommandKey, tc->FaultStruct->FaultCode,
                  tc->FaultStruct->FaultString);
         }
         else
@@ -132,12 +132,12 @@ main(int argc, char *argv[])
     TEST_SUCCESS;
     return result;
 
-cleanup: 
+cleanup:
     CLEANUP_CHECK_RC(tapi_acse_cpe_disconnect(ctx));
 
-    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY, 
+    CLEANUP_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
                                           "sync_mode", FALSE,
-                                          "hold_requests", FALSE, 
+                                          "hold_requests", FALSE,
                                           VA_END_LIST));
     CLEANUP_CHECK_RC(tapi_acse_manage_acs(ctx, ACSE_OP_MODIFY,
                                           "http_root", "", VA_END_LIST));

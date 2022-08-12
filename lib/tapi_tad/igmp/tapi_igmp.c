@@ -2,10 +2,10 @@
  * @brief Test API for TAD IGMP CSAP
  *
  * Implementation of Test API
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
@@ -199,7 +199,7 @@ tapi_igmp_add_ip4_pdu_gen(asn_value **tmpl_or_ptrn,
         return rc;
 
     /* Add manndatory Router Alert IP option */
-    rc = asn_write_value_field(ip4_pdu, 
+    rc = asn_write_value_field(ip4_pdu,
                              ip_opt_router_alert,
                              sizeof(ip_opt_router_alert),
                              "options.#plain");
@@ -263,7 +263,7 @@ tapi_igmp_add_ip4_eth_pdu_gen(asn_value **tmpl_or_ptrn,
         return rc;
 
     /* Add manndatory Router Alert IP option */
-    rc = asn_write_value_field(ip4_pdu, 
+    rc = asn_write_value_field(ip4_pdu,
                              ip_opt_router_alert,
                              sizeof(ip_opt_router_alert),
                              "options.#plain");

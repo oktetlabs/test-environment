@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>

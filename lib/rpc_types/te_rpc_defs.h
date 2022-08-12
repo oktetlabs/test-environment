@@ -2,17 +2,17 @@
  * @brief RPC types definitions
  *
  * Macros to be used for all RPC types definitions.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_DEFS_H__
 #define __TE_RPC_DEFS_H__
 
@@ -33,7 +33,7 @@ extern "C" {
     case RPC_ ## name_: return name_
 
 /**
- * Converts a constant from RPC namespace to string representation 
+ * Converts a constant from RPC namespace to string representation
  */
 #define RPC2STR(name_) \
     case RPC_ ## name_: return #name_
@@ -62,7 +62,7 @@ bitmap_name_ ## _rpc2str(int bitmap_name_)         \
 
 
 /**
- * Convert an arbitrary bitmask to string according to 
+ * Convert an arbitrary bitmask to string according to
  * the mapping passed
  *
  * @param maps  an array of mappings

@@ -1,7 +1,7 @@
 /**
  * Test for ASN library.
  *
- * Parse plain syntax values. 
+ * Parse plain syntax values.
  *
  */
 
@@ -25,7 +25,7 @@ test_string_parse(const char *string, const asn_type *type)
 {
     int rc;
     int s_parsed;
-    asn_value *new_val; 
+    asn_value *new_val;
     int i, slen;
 
     rc = asn_parse_value_text(string, type, &new_val, &s_parsed);
@@ -57,35 +57,35 @@ test_string_parse(const char *string, const asn_type *type)
         if (rc != slen)
         {
             printf("++++ rc = %d, from underlen sprint(%d) wrong, "
-                   "should be %d\n     printed <%s>", 
+                   "should be %d\n     printed <%s>",
                    rc, i, slen, buffer);
             break;
         }
         if ((rc = strlen(buffer)) != i)
         {
             printf("++++ strlen = %d after underlen sprint wrong, "
-                   "should be %d\n     printed <%s>", 
+                   "should be %d\n     printed <%s>",
                    rc, i, buffer);
             break;
         }
     }
     printf("partial print ended on %d length\n\n", i);
-} 
+}
 
-int 
+int
 main (void)
-{ 
+{
 
 #if 1
     test_string_parse("\"berb\\\"erber\"", asn_base_charstring);
     test_string_parse("\"Somethins long string with ''' oo   \n aaa\"",
-                      asn_base_charstring); 
+                      asn_base_charstring);
     test_string_parse("'00 01 03 05 23 5F 8A 5B CC 00 00 0 0 'H",
-                      asn_base_octstring); 
+                      asn_base_octstring);
 
     test_string_parse("0", asn_base_integer);
     test_string_parse("14", asn_base_integer);
-    test_string_parse("-2000001", asn_base_integer); 
+    test_string_parse("-2000001", asn_base_integer);
     test_string_parse("{1 3 6 1 2 1 }", asn_base_objid);
     test_string_parse("{ number 16, string \"lalala\" }", &at_plain_seq1);
     test_string_parse("{ name \"uuu\" , array {1, 2, 35  , 55 } }",
@@ -97,7 +97,7 @@ main (void)
     test_string_parse("{ pdus { }, "
                       "arg-sets {simple-for:{ begin 1, end 10 } },"
                       " payload function:\"eth_udp_payload64\" }",
-                      ndn_traffic_template); 
+                      ndn_traffic_template);
 #endif
     test_string_parse(
 " {       src-addr plain:'00 0E A6 41 D5 2E 'H,"
@@ -118,7 +118,7 @@ main (void)
 "    actions {"
 "      function:\"tad_eth_arp_reply:01:02:03:04:05:06\""
 "} } }",
-                      ndn_traffic_pattern); 
+                      ndn_traffic_pattern);
 #endif
 #if 1
     test_string_parse(
@@ -161,7 +161,7 @@ main (void)
   },\
   payload bytes:''H\
 }",
-                      ndn_raw_packet); 
+                      ndn_raw_packet);
 #endif
     return result;
 }

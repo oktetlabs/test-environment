@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -1002,7 +1002,7 @@ rpcprovider_get(unsigned int gid, const char *oid, char *value,
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
- * @param value         executable path 
+ * @param value         executable path
  *                      (empty or absolute or relative to TA dir)
  * @param name          unused
  *

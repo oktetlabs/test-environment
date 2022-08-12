@@ -2,17 +2,17 @@
  * @brief Test Environment
  *
  * Check ICMP4/IP4/ETH CSAP data-sending behaviour
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  */
 
 /** @page ipstack-ip4_send_icmp Send ICMP datagram via icmp4.ip4.eth CSAP and receive it via RAW socket
  *
- * @objective Check that ip4.eth CSAP can send ICMP 
- *            datagrams with user-specified type, code and 
+ * @objective Check that ip4.eth CSAP can send ICMP
+ *            datagrams with user-specified type, code and
  *            checksum fields.
  *
  * @param host_csap     TA with CSAP
@@ -23,17 +23,17 @@
  * @param sock_hwaddr   CSAP remote MAC address
  * @param type          ICMP message's type
  * @param code          ICMP message's code
- * @param chksum        ICMP message's checksum 
+ * @param chksum        ICMP message's checksum
  *                      (correct or corrupted by user)
  *
  * @par Scenario:
  *
- * -# Create icmp4.ip4.eth CSAP on @p pco_csap. 
+ * -# Create icmp4.ip4.eth CSAP on @p pco_csap.
  * -# Create IPv4 raw socket on @p pco_sock.
  * -# Send IPv4 datagram with ICMP message having
  *    user-specified type, code and checksum.
  * -# Receive datagram via socket.
- * -# In case @p chksum is specified as 'correct', check that 
+ * -# In case @p chksum is specified as 'correct', check that
  *    ICMP message has correctly formed type, code and checksum fields
  * -# In other cases check that ICMP message has incorrect
  *    checksum field.
@@ -99,7 +99,7 @@ main(int argc, char *argv[])
     csap_handle_t               send_csap = CSAP_INVALID_HANDLE;
     asn_value                  *csap_spec = NULL;
     asn_value                  *template = NULL;
-    
+
     int                         recv_socket = -1;
 
     void                       *recv_buf = NULL;
@@ -109,8 +109,8 @@ main(int argc, char *argv[])
     uint8_t                     ip_header_len;
 
     te_bool                     sum_ok;
-    
-    TEST_START; 
+
+    TEST_START;
 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(pco);
@@ -125,23 +125,23 @@ main(int argc, char *argv[])
     TEST_GET_STRING_PARAM(chksum);
 
     /* Create buffer to receive ICMP message */
-    recv_buf_len = sizeof(struct icmphdr) + 
-                   sizeof(struct iphdr) + 
+    recv_buf_len = sizeof(struct icmphdr) +
+                   sizeof(struct iphdr) +
                    MAX_IPOPTLEN;
     recv_buf = te_make_buf_by_len(recv_buf_len);
 
     /* Create RAW socket */
-    recv_socket = rpc_socket(pco, RPC_PF_INET, 
+    recv_socket = rpc_socket(pco, RPC_PF_INET,
                              RPC_SOCK_RAW, RPC_IPPROTO_ICMP);
-    
+
     /* Add icmp4 layer to the CSAP */
-    CHECK_RC(tapi_tad_csap_add_layer(&csap_spec, 
+    CHECK_RC(tapi_tad_csap_add_layer(&csap_spec,
                                      ndn_icmp4_csap,
                                      "#icmp4",
                                      NULL));
     /* Add ip4 layer to the CSAP */
-    CHECK_RC(tapi_ip4_add_csap_layer(&csap_spec, 
-                                     SIN(csap_addr)->sin_addr.s_addr, 
+    CHECK_RC(tapi_ip4_add_csap_layer(&csap_spec,
+                                     SIN(csap_addr)->sin_addr.s_addr,
                                      SIN(sock_addr)->sin_addr.s_addr,
                                      IPPROTO_ICMP,
                                      -1,
@@ -160,7 +160,7 @@ main(int argc, char *argv[])
                                   "icmp4.ip4.eth",
                                   csap_spec,
                                   &send_csap));
-            
+
     /* Prepare data-sending template */
     CHECK_RC(tapi_icmp4_add_pdu(&template, NULL,
                                 FALSE, type, code));
@@ -169,7 +169,7 @@ main(int argc, char *argv[])
                               SIN(csap_addr)->sin_addr.s_addr,
                               SIN(sock_addr)->sin_addr.s_addr,
                               IPPROTO_ICMP,
-                              -1, 
+                              -1,
                               -1));
     CHECK_RC(tapi_eth_add_pdu(&template, NULL,
                               FALSE,
@@ -180,17 +180,17 @@ main(int argc, char *argv[])
                               TE_BOOL3_ANY));
 
     if (type == 0 || type == 8 || type == 13 || type == 14
-            || type == 15 || type == 16 
+            || type == 15 || type == 16
             || type == 17 || type == 18)
     {
-        /* 
-         * More fields should be filled in the case 
+        /*
+         * More fields should be filled in the case
          * of echo request/reply (type == 8/0),
          * timestamp request/reply (type == 13/14),
          * information request/replu (type == 15/16)
          * or address mask request/reply (type == 17/18)
          */
-        
+
         /* identifier field */
         CHECK_RC(asn_write_int32(template, rpc_getpid(pco),
                                 "pdus.0.#icmp4.id.#plain"));
@@ -198,9 +198,9 @@ main(int argc, char *argv[])
         CHECK_RC(asn_write_int32(template, 0,
                                 "pdus.0.#icmp4.seq.#plain"));
 
-        /* 
+        /*
          * timestamps fields should be filled in the case
-         * of timestamps request/reply 
+         * of timestamps request/reply
          */
         if (type == 13 || type == 14)
         {
@@ -251,7 +251,7 @@ main(int argc, char *argv[])
     }
     else
         TEST_FAIL("Invalide 'chksum' parameter value '%s'", chksum);
-    
+
     /* Start sending data via CSAP */
     CHECK_RC(tapi_tad_trsend_start(host_csap->ta, 0, send_csap,
                                    template, RCF_MODE_NONBLOCKING));
@@ -265,7 +265,7 @@ main(int argc, char *argv[])
 
     if (r < (ssize_t)(sizeof(struct icmphdr) + sizeof(struct iphdr)))
         TEST_FAIL("Number of received bytes is less than "
-                  "minimal expected %d", 
+                  "minimal expected %d",
                   sizeof(struct icmphdr) + sizeof(struct iphdr));
 
     /* Check received data */
@@ -289,7 +289,7 @@ main(int argc, char *argv[])
             TEST_FAIL("ICMP message was received with "
                       "corrupted code field");
         /* Check checksum field */
-        if (~(short)calculate_checksum(recv_buf + ip_header_len * 4, 
+        if (~(short)calculate_checksum(recv_buf + ip_header_len * 4,
                                     sizeof(struct icmphdr)))
             TEST_FAIL("ICMP message was unexpectedly "
                       "received with "
@@ -298,7 +298,7 @@ main(int argc, char *argv[])
     else
     {
         /* Check checksum field */
-        if (~(short)calculate_checksum(recv_buf + ip_header_len * 4, 
+        if (~(short)calculate_checksum(recv_buf + ip_header_len * 4,
                                     sizeof(struct icmphdr)))
             ;
         else
@@ -312,13 +312,13 @@ main(int argc, char *argv[])
 cleanup:
 
     CLEANUP_RPC_CLOSE(pco, recv_socket);
-    
+
     asn_free_value(template);
     asn_free_value(csap_spec);
-    
+
     if (host_csap != NULL)
-        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_csap->ta, 
-                                             0, 
+        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_csap->ta,
+                                             0,
                                              send_csap));
 
     free(recv_buf);

@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Alexandra Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>

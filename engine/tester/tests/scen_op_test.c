@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author  Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
@@ -114,7 +114,7 @@ parse_flags(const char *buf)
             ptr = (next == NULL) ? NULL : next + 1;
             continue;
         }
-        
+
         for (flag_no = 0; flag_no < known_flags; flag_no++)
         {
             if (strncmp(flag_names[flag_no], ptr, len) == 0)
@@ -122,7 +122,7 @@ parse_flags(const char *buf)
                 break;
             }
         }
-        
+
         if (flag_no >= known_flags)
         {
             /* Found new flag */
@@ -206,7 +206,7 @@ static const char *
 flags_to_str(unsigned int flags)
 {
     static char flags_str_buf[FLAGS_TO_STR_BUF_SIZE];
-    
+
     sprint_flags(flags_str_buf, FLAGS_TO_STR_BUF_SIZE, flags);
 
     return flags_str_buf;
@@ -331,7 +331,7 @@ parse_scenario_act(const char *buf, testing_scenario *ts)
     unsigned int    last;
     unsigned int    flags;
     int             flags_len;
-    
+
     char  flags_buf[FLAGS_BUF_SIZE];
 
     VERB("Parse scenario act: \"%s\"", buf);
@@ -369,7 +369,7 @@ parse_scenario_act(const char *buf, testing_scenario *ts)
 
     if (sscanf(first_ptr, "%u", &first) != 1)
         return NULL;
-        
+
     if (sscanf(last_ptr, "%u", &last) != 1)
         return NULL;
 
@@ -379,8 +379,8 @@ parse_scenario_act(const char *buf, testing_scenario *ts)
          first, last, flags);
 
     scenario_add_act(ts, first, last, flags);
-    
-    return ptr;    
+
+    return ptr;
 }
 
 /**
@@ -438,7 +438,7 @@ parse_scenario(const char *buf, testing_scenario *ts)
  * Format of the testing act data:
  *   [first,last,<flag1>+<flag2>+...]
  * If there are no flags, then use 0 instead of flags field ([fist,last,0])
- * Supported operations are: 
+ * Supported operations are:
  *   'or'  - OR operation
  *   'sub' - Subtrate operation
  *   'ex'  - Exclude operation
@@ -464,7 +464,7 @@ parse_input(const char *buf,
     char *ts2_ptr = NULL;
     char *ts_r_ptr = NULL;
     char *op_ptr = NULL;
-    
+
     if ((ptr = parse_scenario(ts1_ptr, ts1)) == NULL)
     {
         ERROR("Failed to parse the first scenario");
@@ -487,7 +487,7 @@ parse_input(const char *buf,
         ERROR("Failed to find the operation symbol");
         return -1;
     }
-    
+
     if ((ts2_ptr = strchr(op_ptr, '[')) == NULL)
     {
         ERROR("Failed to find the second scenario");
@@ -518,7 +518,7 @@ parse_input(const char *buf,
         return -1;
     }
 
-    return 0;    
+    return 0;
 }
 
 /**
@@ -533,7 +533,7 @@ static int
 compare_scenarios(const testing_scenario *ts1, const testing_scenario *ts2)
 {
     int          act_no = 0;
-    
+
     char         act1_str[SCENARIO_ACT_TO_STR_BUF_SIZE];
     char         act2_str[SCENARIO_ACT_TO_STR_BUF_SIZE];
 
@@ -542,7 +542,7 @@ compare_scenarios(const testing_scenario *ts1, const testing_scenario *ts2)
 
     act1 = TAILQ_FIRST(ts1);
     act2 = TAILQ_FIRST(ts2);
-    
+
     while ((act1 != NULL) && (act2 != NULL))
     {
         if ((act1->first != act2->first) ||
@@ -575,7 +575,7 @@ compare_scenarios(const testing_scenario *ts1, const testing_scenario *ts2)
               act_no + 1, act2_str);
         return -1;
     }
-    
+
     return 0;
 }
 

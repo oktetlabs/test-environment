@@ -1,15 +1,15 @@
 /** @file
  * @brief Test Environment
  *
- * IPv4 CSAP test: send packet through ip4.eth CSAP with UDP payload, 
- * caught it with UDP socket. 
- * 
+ * IPv4 CSAP test: send packet through ip4.eth CSAP with UDP payload,
+ * caught it with UDP socket.
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "ipstack/ip4_fragments"
@@ -27,7 +27,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "ipstack-ts.h" 
+#include "ipstack-ts.h"
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -76,7 +76,7 @@ main(int argc, char *argv[])
     rcf_rpc_server *pco = NULL;
     rcf_rpc_server *pco_a = NULL;
 
-    asn_value *template = NULL; /* template for traffic generation */ 
+    asn_value *template = NULL; /* template for traffic generation */
     asn_value *ip4_pdu = NULL;
 
     /* src port = 20000, dst port = 20001, checksum = 0 */
@@ -99,7 +99,7 @@ main(int argc, char *argv[])
     const struct if_nameindex *csap_if;
 
 
-    TEST_START; 
+    TEST_START;
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(pco);
     TEST_GET_PCO(pco_a);
@@ -110,7 +110,7 @@ main(int argc, char *argv[])
 
     agt_a = host_csap->ta;
 
-    CHECK_RC(tapi_cfg_get_hwaddr(pco->ta, pco_if->if_name, 
+    CHECK_RC(tapi_cfg_get_hwaddr(pco->ta, pco_if->if_name,
                                  pco_mac, &pco_mac_len));
 
     /* set SRC UDP port in datagram image, both are in NET byte order */
@@ -124,7 +124,7 @@ main(int argc, char *argv[])
     {
         TEST_FAIL("rcf_ta_create_session failed");
     }
-    INFO("Test: Created session for A agt: %d", sid); 
+    INFO("Test: Created session for A agt: %d", sid);
 
 
 
@@ -142,10 +142,10 @@ main(int argc, char *argv[])
         TEST_FAIL("bind failed");
 
     /******** Create Traffic Template *************/
-    udp_dgm_image[5] = sizeof(udp_dgm_image); 
+    udp_dgm_image[5] = sizeof(udp_dgm_image);
 
-    frags[1].hdr_length = 
-        20 + (frags[1].real_length = 
+    frags[1].hdr_length =
+        20 + (frags[1].real_length =
               (sizeof(udp_dgm_image) - frags[0].real_length));
 
     rc = tapi_ip4_add_pdu(&template, &ip4_pdu, FALSE,
@@ -159,9 +159,9 @@ main(int argc, char *argv[])
     rc = tapi_ip4_pdu_tmpl_fragments(NULL, &ip4_pdu,
                                      frags, TE_ARRAY_LEN(frags));
     if (rc != 0)
-        TEST_FAIL("Failed to fragments specification to IPv4 PDU: %r", rc); 
+        TEST_FAIL("Failed to fragments specification to IPv4 PDU: %r", rc);
 
-    rc = tapi_eth_add_pdu(&template, NULL, FALSE /* template */, 
+    rc = tapi_eth_add_pdu(&template, NULL, FALSE /* template */,
                           pco_mac, NULL, NULL,
                           TE_BOOL3_FALSE /* untagged */,
                           TE_BOOL3_FALSE /* Ethernet2 */);
@@ -180,24 +180,24 @@ main(int argc, char *argv[])
                                   -1 /* unspecified protocol */,
                                   &ip4_send_csap);
     if (rc != 0)
-        TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 
-                    TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
+        TEST_FAIL("CSAP create failed, rc from module %d is %r\n",
+                    TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc));
 
 
     /***************** Issue datagram via CSAP *****************/
     rc = tapi_tad_trsend_start(agt_a, sid, ip4_send_csap,
                                template, RCF_MODE_BLOCKING);
-    if (rc != 0) 
-        TEST_FAIL("send start failed %X", rc); 
+    if (rc != 0)
+        TEST_FAIL("send start failed %X", rc);
     RPC_AWAIT_IUT_ERROR(pco);
     te_sleep(1);
     from_len = sizeof(from_sa);
     rc = rpc_recvfrom(pco, udp_socket,
-                      rcv_buffer, sizeof(rcv_buffer), RPC_MSG_DONTWAIT, 
+                      rcv_buffer, sizeof(rcv_buffer), RPC_MSG_DONTWAIT,
                       SA(&from_sa), &from_len);
     if (rc <= 0)
         TEST_FAIL("wanted UDP datagram not received!");
-    RING("receive %d bytes on UDP socket", rc); 
+    RING("receive %d bytes on UDP socket", rc);
     TEST_SUCCESS;
 
 cleanup:
@@ -211,7 +211,7 @@ cleanup:
             TEST_FAIL("CSAP destroy %d on agt %s failure %X",           \
                       csap_tmp, ta_, rc);                               \
     } while (0)                                                         \
-                                                                    
+
     CLEANUP_CSAP(agt_a, sid, ip4_send_csap);
 
     if (udp_socket > 0)

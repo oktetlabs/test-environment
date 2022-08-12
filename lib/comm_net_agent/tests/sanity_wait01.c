@@ -1,13 +1,13 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 
 #include <stdio.h>
@@ -42,7 +42,7 @@ remote_station_proc(void *arg)
     /* synchronize at this point */
     remote_synch(10);
 
-    /* 
+    /*
      * Now the local station does its actions
      */
 
@@ -76,7 +76,7 @@ local_station_proc(void *arg)
     /* now call the rcf_comm_agent_wait() function three times */
     len = sizeof(buffer);
     if ((rc = rcf_comm_agent_wait(NULL, buffer, &len, NULL)) == 0 ||
-       TE_RC_GET_ERROR(rc) == TE_ESMALLBUF || 
+       TE_RC_GET_ERROR(rc) == TE_ESMALLBUF ||
        TE_RC_GET_ERROR(rc) == TE_EPENDING)
     {
        fprintf(stderr, "ERROR: the call of "
@@ -87,7 +87,7 @@ local_station_proc(void *arg)
 
     len = sizeof(buffer);
     if ((rc = rcf_comm_agent_wait(handle, NULL, &len, NULL)) == 0 ||
-       TE_RC_GET_ERROR(rc) == TE_ESMALLBUF || 
+       TE_RC_GET_ERROR(rc) == TE_ESMALLBUF ||
        TE_RC_GET_ERROR(rc) == TE_EPENDING)
     {
        fprintf(stderr, "ERROR: the call of "
@@ -98,7 +98,7 @@ local_station_proc(void *arg)
 
     len = sizeof(buffer);
     if ((rc = rcf_comm_agent_wait(handle, buffer, NULL, NULL)) == 0 ||
-       TE_RC_GET_ERROR(rc) == TE_ESMALLBUF || 
+       TE_RC_GET_ERROR(rc) == TE_ESMALLBUF ||
        TE_RC_GET_ERROR(rc) == TE_EPENDING)
     {
        fprintf(stderr, "ERROR: the call of "
@@ -118,10 +118,10 @@ local_station_proc(void *arg)
  *
  * @descr A connection between the local and the remote station is established.
  * Then the function @b rcf_comm_agent_wait() is called three times, setting
- * one of its first three parameters to NULL and the others to valid values, 
- * so that all three first parameters will have held the value NULL. 
+ * one of its first three parameters to NULL and the others to valid values,
+ * so that all three first parameters will have held the value NULL.
  * The function must return a bad parameter failure each time.
- * 
+ *
  * @author Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  * @return Test result
@@ -129,7 +129,7 @@ local_station_proc(void *arg)
  * @retval positive     Test failed
  *
  */
-int 
+int
 main(int argc, char *argv[])
 {
     int rc;
@@ -141,10 +141,10 @@ main(int argc, char *argv[])
     TEST_BUFFER_SANITY();
 
     /* launch the remote station thread */
-    rc = pthread_create(&remote_thread, /* attr */ NULL, 
+    rc = pthread_create(&remote_thread, /* attr */ NULL,
                      remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {           
+    {
        char err_buf[BUFSIZ];
 
        strerror_r(errno, err_buf, sizeof(err_buf));

@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  *
@@ -62,7 +62,7 @@
 /** Default targets port */
 #define ISCSI_TARGET_DEFAULT_PORT 3260
 
-/** 
+/**
  * Host bus adapter default value.
  */
 #define ISCSI_DEFAULT_HOST_BUS_ADAPTER            0
@@ -111,7 +111,7 @@ typedef struct iscsi_connection_req {
 
 /**
  *  Function type for iSCSI initiator controlling routines
- *  (i.e. responsible for configuring an Initiator, 
+ *  (i.e. responsible for configuring an Initiator,
  *   starting and closing connections)
  */
 typedef te_errno (*iscsi_initiator_control_t)(iscsi_connection_req *req);
@@ -129,17 +129,17 @@ typedef enum {
  * is CHAP.
  */
 typedef struct iscsi_tgt_chap_data {
-    char        chap[ISCSI_AUTH_METHOD_LENGTH];  /**< AuthMethod: 
+    char        chap[ISCSI_AUTH_METHOD_LENGTH];  /**< AuthMethod:
                                                 (None|CHAP|CHAP,None) */
     enc_fmt_e   enc_fmt;                   /**< Encoding of challenge
                                                 and response */
     int         challenge_length;          /**< Length of the challenge */
-    
+
     char        peer_name[ISCSI_SECURITY_VALUE_LENGTH]; /**< Peer Name (pn in UNH
                                                            notation) */
     char        peer_secret[ISCSI_SECURITY_VALUE_LENGTH]; /**< Peer Secret (px in
                                                              UNH notation) */
-    
+
     char        local_name[ISCSI_SECURITY_VALUE_LENGTH]; /**< Local Name (ln in UNH
                                                          notation) */
     char        local_secret[ISCSI_SECURITY_VALUE_LENGTH]; /**< Local Secret (lx in
@@ -159,7 +159,7 @@ typedef struct iscsi_connection_data {
 
     int               conf_params; /**< OR of OFFER_XXX flags */
 
-    char              initiator_name[ISCSI_MAX_NAME_LENGTH]; /**< InitiatorName */ 
+    char              initiator_name[ISCSI_MAX_NAME_LENGTH]; /**< InitiatorName */
     char              initiator_alias[ISCSI_MAX_NAME_LENGTH]; /**< InitiatorAlias */
     int               max_connections;               /**< MaxConnections */
     char              initial_r2t[ISCSI_BOOLEAN_LENGTH];    /**< InitialR2T */
@@ -169,7 +169,7 @@ typedef struct iscsi_connection_data {
     /** MaxRecvDataSegmentLength */
     int               max_recv_data_segment_length;
     int               first_burst_length; /**< FirstBurstLength */
-    int               max_burst_length;   /**< MaxBurstLength 
+    int               max_burst_length;   /**< MaxBurstLength
                                                (>= FirstBurstLength) */
     int               default_time2wait;  /**< DefaultTime2Wait */
     int               default_time2retain; /**< DefaultTime2Retain */
@@ -183,9 +183,9 @@ typedef struct iscsi_connection_data {
     iscsi_tgt_chap_data_t chap; /**< Serurity related data */
     char              device_name[ISCSI_MAX_DEVICE_NAME_LEN];
     char              scsi_generic_device_name[ISCSI_MAX_DEVICE_NAME_LEN];
-    char              connection_id[ISCSI_SESSION_ID_LENGTH]; 
+    char              connection_id[ISCSI_SESSION_ID_LENGTH];
                       /**< Windows iSCSI connection ID */
-    int               prepare_device_attempts; 
+    int               prepare_device_attempts;
                       /**< How many checks were made for device readiness */
     pthread_mutex_t   status_mutex; /**< Mutex to guard status field */
 } iscsi_connection_data_t;
@@ -201,9 +201,9 @@ typedef struct iscsi_target_data {
     te_bool           is_active;
 
     int               number_of_open_connections;
-                                 /**< Number of initiated connections 
-                                   *  to the target */   
-    
+                                 /**< Number of initiated connections
+                                   *  to the target */
+
     char              target_name[ISCSI_MAX_NAME_LENGTH];  /**< TargetName */
     char              target_addr[ISCSI_MAX_ADDR_LENGTH];  /**< TargetAddr */
     int               target_port;                   /**< TargetPort */
@@ -223,20 +223,20 @@ typedef struct iscsi_target_data {
 typedef struct iscsi_initiator_data {
     iscsi_initiator_type       init_type; /**< Type of the Initiator */
     iscsi_initiator_control_t  handler; /**< Connection request handler */
-    int                        host_bus_adapter;  /**< Number of the host bus 
+    int                        host_bus_adapter;  /**< Number of the host bus
                                                   adapter. Usually 0 */
     int                        verbosity; /**< Initiator verbosity level */
                                /**< Win32 iSCSI Service Restart Requirement */
     int                        win32_service_restart;
                                /** A time slice to wait for device readiness (usecs) */
-    unsigned long              retry_timeout; 
+    unsigned long              retry_timeout;
                                /** Number of times to probe iSCSI device readiness */
     int                        retry_attempts;
 
-    char                       script_path[ISCSI_MAX_CMD_SIZE]; 
+    char                       script_path[ISCSI_MAX_CMD_SIZE];
                                      /**< Path to iSCSI config scripts */
     int                        n_targets; /**< Number of configured targets */
-    int                        n_connections; 
+    int                        n_connections;
                           /**< Total number of brought up connections */
     iscsi_target_data_t        targets[ISCSI_MAX_TARGETS_NUMBER]; /**< Per target data */
     pthread_mutex_t            mutex; /**< Structure mutex */
@@ -252,7 +252,7 @@ typedef struct iscsi_initiator_data {
 /**
  * Varieties of configuration parameters
  */
-enum iscsi_target_param_kind_t { 
+enum iscsi_target_param_kind_t {
     ISCSI_FIXED_PARAM, /**< Constant value */
     ISCSI_GLOBAL_PARAM, /**< Per-target values */
     ISCSI_OPER_PARAM,  /**< iSCSI operational parameters */
@@ -266,7 +266,7 @@ enum iscsi_target_param_kind_t {
 typedef char *(*iscsi_param_formatter_t)(void *);
 
 /**
- * A function type for predicates determining 
+ * A function type for predicates determining
  * whether a given parameter need to be configured
  */
 typedef te_bool (*iscsi_param_predicate_t)(iscsi_target_data_t *,
@@ -284,7 +284,7 @@ typedef struct iscsi_target_param_descr_t
                          *  is `char *`,
                          *  FALSE if it is `int`
                          */
-    enum iscsi_target_param_kind_t kind; 
+    enum iscsi_target_param_kind_t kind;
                          /**< Parameter type.
                           *  It is used to choose one of data
                           *  structures to take a field from
@@ -307,7 +307,7 @@ typedef struct iscsi_target_param_descr_t
 #define ISCSI_END_PARAM_TABLE {0, NULL, FALSE, 0, -1, NULL, NULL}
 
 
-/** Returns a pointer to master iSCSI initiator parameter table 
+/** Returns a pointer to master iSCSI initiator parameter table
  *
  *  @return the pointer
  */
@@ -346,10 +346,10 @@ extern int iscsi_get_cid(const char *oid);
  * @param target_id     Target number
  * @param cid           Connection number
  * @param status        New status
- * @param urgent        If TRUE, the request will be put into the head 
+ * @param urgent        If TRUE, the request will be put into the head
  *                      of the queue, instead of the tail
  */
-extern te_errno iscsi_post_connection_request(int target_id, int cid, 
+extern te_errno iscsi_post_connection_request(int target_id, int cid,
                                               int status, te_bool urgent);
 
 extern te_errno iscsi_initiator_start_thread(void);
@@ -400,11 +400,11 @@ extern te_errno iscsi_send_to_win32_iscsicli(const char *fmt, ...);
  *                              each holding at least @p maxsize bytes.
  *                              May be NULL if @p nparts == 0
  */
-extern te_errno iscsi_win32_wait_for(regex_t *pattern, 
+extern te_errno iscsi_win32_wait_for(regex_t *pattern,
                                      regex_t *abort_pattern,
                                      regex_t *terminal_pattern,
-                                     int first_part, 
-                                     int nparts, 
+                                     int first_part,
+                                     int nparts,
                                      int maxsize, char **buffers);
 
 /**
@@ -425,11 +425,11 @@ extern te_errno iscsi_win32_finish_cli(void);
 
 /**
  * Logs a Win32 error.
- * 
+ *
  * @param function      Function name
  * @param line          Line of code
- * @param errcode       Win32 error code. 
- *                      If 0, then actual error code is obtained 
+ * @param errcode       Win32 error code.
+ *                      If 0, then actual error code is obtained
  *                      from GetLastError()
  */
 extern void iscsi_win32_report_error(const char *function, int line,
@@ -437,7 +437,7 @@ extern void iscsi_win32_report_error(const char *function, int line,
 
 /**
  * Logs the latest Win32 system error in the current location.
- * 
+ *
  * @sa iscsi_win32_report_error()
  */
 #define ISCSI_WIN32_REPORT_ERROR() iscsi_win32_report_error(__FUNCTION__, __LINE__, 0)
@@ -453,7 +453,7 @@ extern void iscsi_win32_report_error(const char *function, int line,
 
 /**
  * Wait for Win32 SCSI device associated with the Initiator is ready.
- * 
+ *
  * @return              Status code
  * @param conn          Connection data
  * @param target_id     Target ID
@@ -540,7 +540,7 @@ extern te_errno iscsi_initiator_l5_set(iscsi_connection_req *req);
 
 
 /**
- * Connection request handler for MS iSCSI 
+ * Connection request handler for MS iSCSI
  *
  *  @return    Status code
  *  @param req Connection request
@@ -549,7 +549,7 @@ extern te_errno iscsi_initiator_win32_set(iscsi_connection_req *req);
 
 
 /**
- * Check whether a given parameter @p param needs to be configured 
+ * Check whether a given parameter @p param needs to be configured
  * in a certain situation.
  *
  * @return TRUE if the parameter should be configured
@@ -566,7 +566,7 @@ iscsi_is_param_needed(iscsi_target_param_descr_t *param,
                       iscsi_tgt_chap_data_t *auth_data)
 {
     return (param->predicate != NULL ?
-            param->predicate(tgt_data, conn_data, auth_data) : 
+            param->predicate(tgt_data, conn_data, auth_data) :
             TRUE);
 }
 
@@ -617,7 +617,7 @@ extern void iscsi_append_to_buf(void *destination, char *what);
 
 /**
  * Predicate function for iscsi_write_param().
- * 
+ *
  * @return TRUE if target authentication is requested
  *
  * @param param         Parameter description
@@ -631,7 +631,7 @@ extern te_bool iscsi_when_tgt_auth(iscsi_target_data_t *target_data,
 
 /**
  * Predicate function for iscsi_write_param().
- * 
+ *
  * @return TRUE if target authentication is not requested
  *
  * @param param         Parameter description
@@ -645,7 +645,7 @@ extern te_bool iscsi_when_not_tgt_auth(iscsi_target_data_t *target_data,
 
 /**
  * Predicate function for iscsi_write_param().
- * 
+ *
  * @return TRUE if any authentication is requested
  *
  * @param param         Parameter description
@@ -659,7 +659,7 @@ extern te_bool iscsi_when_chap(iscsi_target_data_t *target_data,
 
 
 /**
- * Detect SCSI device name 
+ * Detect SCSI device name
  *
  * @param conn          Connection data
  * @param target_id     Target ID
@@ -669,8 +669,8 @@ extern te_bool iscsi_when_chap(iscsi_target_data_t *target_data,
  *
  * @return Status code
  */
-extern te_errno iscsi_get_device_name(iscsi_connection_data_t *conn, 
-                                      int target_id, 
+extern te_errno iscsi_get_device_name(iscsi_connection_data_t *conn,
+                                      int target_id,
                                       te_bool is_generic, char *outbuffer);
 
 #endif

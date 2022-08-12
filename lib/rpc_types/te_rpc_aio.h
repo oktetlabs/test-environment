@@ -2,11 +2,11 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from aio.h.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -14,7 +14,7 @@
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_AIO_H__
 #define __TE_RPC_AIO_H__
 
@@ -32,7 +32,7 @@ typedef enum rpc_lio_opcode {
     RPC_LIO_WRITE,
     RPC_LIO_NOP,
     RPC_LIO_UNKNOWN
-} rpc_lio_opcode; 
+} rpc_lio_opcode;
 
 /** Convert RPC lio_listio opcode to string */
 extern const char * lio_opcode_rpc2str(rpc_lio_opcode opcode);
@@ -49,7 +49,7 @@ typedef enum rpc_lio_mode {
     RPC_LIO_WAIT,
     RPC_LIO_NOWAIT,
     RPC_LIO_MODE_UNKNOWN
-} rpc_lio_mode; 
+} rpc_lio_mode;
 
 /** Convert RPC lio_listio mode to string */
 extern const char * lio_mode_rpc2str(rpc_lio_mode mode);
@@ -68,7 +68,7 @@ typedef enum rpc_aio_cancel_retval {
     RPC_AIO_ALLDONE,
     RPC_AIO_UNKNOWN,
     RPC_AIO__MINUS_ONE = -1,
-} rpc_aio_cancel_retval; 
+} rpc_aio_cancel_retval;
 
 /** Convert RPC aio_cancel return to string */
 extern const char * aio_cancel_retval_rpc2str(rpc_aio_cancel_retval ret);

@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * Simple RCF test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "snmp_gets"
@@ -42,8 +42,8 @@ walk_cb(const tapi_snmp_varbind_t *vb, void *userdata)
         ERROR("%s: zero varbind ptr passed!", __FUNCTION__);
         return TE_EWRONGPTR;
     }
-    INFO("%s: oid %s received, type %d(%s), len %d", 
-         __FUNCTION__, print_oid(&vb->name), 
+    INFO("%s: oid %s received, type %d(%s), len %d",
+         __FUNCTION__, print_oid(&vb->name),
          vb->type, tapi_snmp_val_type_h2str(vb->type), vb->v_len);
 
     if (counter != NULL)
@@ -70,7 +70,7 @@ main(int argc, char *argv[])
     TEST_GET_STRING_PARAM(mib_name);
     TEST_GET_STRING_PARAM(snmp_agt);
     TEST_GET_INT_PARAM(snmp_version);
-    
+
     /* Session */
     {
         if ((rc = rcf_ta_create_session(ta, &sid)) != 0)
@@ -86,14 +86,14 @@ main(int argc, char *argv[])
         int timeout = 30;
         int number;
 
-        rc = tapi_snmp_csap_create(ta, sid, snmp_agt, "public", 
-                                   snmp_version, &snmp_csap); 
-        if (rc) 
+        rc = tapi_snmp_csap_create(ta, sid, snmp_agt, "public",
+                                   snmp_version, &snmp_csap);
+        if (rc)
             TEST_FAIL("Csap create error %X", rc);
-        VERB("New csap %d", snmp_csap); 
+        VERB("New csap %d", snmp_csap);
 
-        
-        if ((rc = tapi_snmp_load_mib_with_path("/usr/share/snmp/mibs", 
+
+        if ((rc = tapi_snmp_load_mib_with_path("/usr/share/snmp/mibs",
                                                 mib_name)) != 0)
             TEST_FAIL("snmp_load_mib(%s) failed, rc %x\n", mib_name, rc);
 
@@ -104,7 +104,7 @@ main(int argc, char *argv[])
         rc = tapi_snmp_walk(ta, sid, snmp_csap, &oid, &number, walk_cb);
 
         if (rc)
-            TEST_FAIL("SNMP WALK failed with rc %X", rc); 
+            TEST_FAIL("SNMP WALK failed with rc %X", rc);
 
         INFO("SNMP walk passed, got %d varbinds", number);
 
@@ -114,7 +114,7 @@ main(int argc, char *argv[])
 
 cleanup:
     if (snmp_csap != CSAP_INVALID_HANDLE)
-        rcf_ta_csap_destroy(ta, sid, snmp_csap); 
+        rcf_ta_csap_destroy(ta, sid, snmp_csap);
 
     TEST_END;
 }

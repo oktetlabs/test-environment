@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
@@ -401,7 +401,7 @@ route_entry_process(const mib2_ipRouteEntry_t *rt)
         ta_rt_info_t rt_info;
 
         ta_rt_info_init(TA_RT_TYPE_UNICAST, &rt_info);
-        
+
         rt_info.dst.ss_family = AF_INET;
         SIN(&rt_info)->sin_addr.s_addr = rt->ipRouteNextHop;
 
@@ -411,12 +411,12 @@ route_entry_process(const mib2_ipRouteEntry_t *rt)
         assert(sizeof(ifname) > strlen(rt_info.ifname));
         strcpy(ifname, rt_info.ifname);
     }
-    
+
     if (!ta_interface_is_mine(ifname))
         return 0;
 
     MASK2PREFIX(ntohl(rt->ipRouteMask), prefixlen);
-        
+
     inet_ntop(AF_INET, &rt->ipRouteDest, p, INET_ADDRSTRLEN);
     p += strlen(p);
     p += sprintf(p, "|%u", prefixlen);

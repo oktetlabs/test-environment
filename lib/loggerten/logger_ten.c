@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
@@ -105,12 +105,12 @@ ten_log_message(const char *file, unsigned int line,
                 te_log_ts_sec sec, te_log_ts_usec usec,
                 unsigned int level,
                 const char *entity, const char *user,
-                const char *fmt, va_list ap) 
+                const char *fmt, va_list ap)
 {
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&lgr_lock);
 #endif
-    
+
     if (lgr_client == NULL)
     {
         int  rc;
@@ -202,13 +202,13 @@ log_flush_ten(const char *ta_name)
     char    answer[strlen(msg)];
     size_t  answer_len = sizeof(answer);
     char    clnt_name[64];
-    
+
     if (ta_name == NULL)
     {
         ERROR("Invalid TA name");
         return TE_EINVAL;
     }
-    
+
     snprintf(clnt_name, sizeof(clnt_name), "LOGGER_FLUSH_%s", ta_name);
 
     rc = ipc_init_client(clnt_name, LOGGER_IPC, &log_client);

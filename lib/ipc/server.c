@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Ivanov <andron@oktet.ru>
@@ -83,7 +83,7 @@ typedef int (*ipc_send)(struct ipc_server *ipcs,
 
 /**
  * The ipc_server_client structure is used to store information about
- * sender of the message. This structure used in both UDP/UNIX and 
+ * sender of the message. This structure used in both UDP/UNIX and
  * TCP/IP implementations of IPC, but has different fields.
  */
 struct ipc_server_client {
@@ -253,7 +253,7 @@ ipc_register_server(const char *name, te_bool conn,
 #ifdef TE_IPC_AF_UNIX
     {
         struct sockaddr_un  sa;
-        
+
         /* Assign a name to socket */
         sa.sun_family = AF_UNIX;
         memset(sa.sun_path, 0, UNIX_PATH_MAX);
@@ -307,13 +307,13 @@ ipc_register_server(const char *name, te_bool conn,
 #endif /* !TE_IPC_AF_UNIX */
 
 #if HAVE_FCNTL_H
-    /* 
-     * Try to set close-on-exec flag, but ignore failures, 
+    /*
+     * Try to set close-on-exec flag, but ignore failures,
      * since it's not critical.
      */
     (void)fcntl(ipcs->socket, F_SETFD, FD_CLOEXEC);
 #endif
-    
+
     if (conn)
     {
         if (IPC_TCP_SERVER_BUFFER_SIZE != 0)
@@ -381,7 +381,7 @@ ipc_get_server_fds(const struct ipc_server *ipcs, fd_set *set)
             max_fd = MAX(max_fd, client->stream.socket);
         }
     }
-        
+
     return max_fd;
 }
 
@@ -446,7 +446,7 @@ ipc_is_server_ready(struct ipc_server *ipcs, const fd_set *set, int max_fd)
             }
         }
     }
-        
+
     return is_ready;
 }
 
@@ -587,7 +587,7 @@ ipc_dgram_receive_message(struct ipc_server *ipcs,
                             sizeof(struct ipc_dgram_header);
             if (data_size > ipch->left)
             {
-                /* 
+                /*
                  * Size of data in the current fragment is greater than
                  * declared total size of the message.
                  */
@@ -902,7 +902,7 @@ ipc_stream_receive_message(struct ipc_server *ipcs,
             ipcs->is_ready = FALSE;
 
             /* New connection requested. Accept it */
- 
+
             client = calloc(1, sizeof(*client));
             assert(client != NULL);
 
@@ -940,7 +940,7 @@ ipc_stream_receive_message(struct ipc_server *ipcs,
          */
         FD_ZERO(&my_set);
         max_fd = ipc_get_server_fds(ipcs, &my_set);
-        
+
         /* Waiting forever */
         rc = select(max_fd + 1, &my_set, NULL, NULL, NULL);
         if (rc <= 0) /* Error? */
@@ -1081,7 +1081,7 @@ ipc_int_client_by_addr(struct ipc_server *ipcs,
                 free(ipcsc);
                 ipcsc = NULL;
             }
-            else 
+            else
             {
                 LIST_INSERT_HEAD(&ipcs->clients, ipcsc, links);
             }

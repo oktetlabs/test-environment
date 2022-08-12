@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -67,7 +67,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
     char    fname[RCF_MAX_PATH * 2];
 
     ENTRY("conn=0x%x cbuf='%s' buflen=%u answer_plen=%u ba=0x%x "
-          "cmdlen=%u op=%d filename=%s\n", conn, cbuf, buflen, 
+          "cmdlen=%u op=%d filename=%s\n", conn, cbuf, buflen,
           answer_plen, ba, cmdlen, op, filename);
     VERB("Default file processing handler is executed");
 
@@ -161,7 +161,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
                 /* Not all data fit in command buffer */
                 more_len = cmdlen - buflen;
                 /* Write binary attachment to 'addr' on receive */
-                rc = rcf_comm_agent_wait(conn, 
+                rc = rcf_comm_agent_wait(conn,
                                          ((char *)addr) + got_len,
                                          &more_len, NULL);
                 if (rc != 0)
@@ -219,23 +219,23 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             closedir(dir);
         }
         /* Substiute filename */
-        sprintf(fname, RCF_FILE_TMP_DEF_DIR "%s", 
+        sprintf(fname, RCF_FILE_TMP_DEF_DIR "%s",
                 filename + strlen(RCF_FILE_TMP_PREFIX));
 #else
         rc = TE_RC(TE_RCF_PCH, TE_ENOENT);
         goto reject;
 #endif
     }
-    else if (strncmp(RCF_FILE_FTP_PREFIX, filename, 
+    else if (strncmp(RCF_FILE_FTP_PREFIX, filename,
                      strlen(RCF_FILE_FTP_PREFIX)) == 0)
     {
-        
-        sprintf(fname, "/var/ftp/%s", 
+
+        sprintf(fname, "/var/ftp/%s",
                 filename + strlen(RCF_FILE_FTP_PREFIX));
-    }            
+    }
     else
-        strcpy(fname, filename);    
-    
+        strcpy(fname, filename);
+
     if (op == RCFOP_FDEL)
     {
         if (unlink(fname) < 0)
@@ -246,8 +246,8 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         SEND_ANSWER("0");
     }
 
-    fd = open(fname, op == RCFOP_FPUT ? (O_WRONLY | O_CREAT | O_TRUNC) 
-                                      : O_RDONLY, 
+    fd = open(fname, op == RCFOP_FPUT ? (O_WRONLY | O_CREAT | O_TRUNC)
+                                      : O_RDONLY,
               S_IRWXU | S_IRWXG | S_IRWXO);
     if (fd < 0)
     {
@@ -290,7 +290,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             if (rw_len > reply_buflen)
                 rw_len = reply_buflen;
             rest -= rw_len;
-            if ((rw_len == 0) || 
+            if ((rw_len == 0) ||
                 ((TE_RC_GET_ERROR(rc) == TE_EPENDING) != (rest != 0)))
             {
                 ERROR("Communication error - %s",
@@ -347,7 +347,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         }
         EXIT("%r", rc);
         return rc;
-    } 
+    }
     /* Unreachable */
     assert(FALSE);
 

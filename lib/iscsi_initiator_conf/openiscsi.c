@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  *
@@ -94,7 +94,7 @@ iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, te_bool force_start)
     int   rc = 0;
     FILE *name_file;
     FILE *pid_file;
-    int   i;   
+    int   i;
 
     RING("Starting iscsid daemon");
 
@@ -139,7 +139,7 @@ iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, te_bool force_start)
         fprintf(name_file, "InitiatorAlias=%s\n", target->conns[0].initiator_alias);
     fclose(name_file);
 
-    iscsi_unix_cli("iscsid %s -c /dev/null -i /tmp/initiatorname.iscsi", 
+    iscsi_unix_cli("iscsid %s -c /dev/null -i /tmp/initiatorname.iscsi",
              iscsi_configuration()->verbosity > 0 ? "-d255" : "");
 
     for (i = 10; i != 0; i--)
@@ -152,7 +152,7 @@ iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, te_bool force_start)
     }
     ERROR("Cannot check that iscsid actually started");
     iscsi_openiscsi_stop_daemon();
-    
+
     return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
 }
 
@@ -213,64 +213,64 @@ iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
             TGT_PARAMETER(target_name, "node.name", TRUE),
             TGT_PARAMETER(target_addr, "node.conn[0].address", TRUE),
             TGT_PARAMETER(target_port, "node.conn[0].port", FALSE),
-            PARAMETER(max_connections, 
+            PARAMETER(max_connections,
                       "node.session.iscsi.MaxConnections", MAX_CONNECTIONS, FALSE),
-            PARAMETER(initial_r2t, 
+            PARAMETER(initial_r2t,
                       "node.session.iscsi.InitialR2T", INITIAL_R2T,  TRUE),
-            PARAMETER(header_digest, 
+            PARAMETER(header_digest,
                       "node.conn[0].iscsi.HeaderDigest", HEADER_DIGEST,  TRUE),
-            PARAMETER(data_digest, 
+            PARAMETER(data_digest,
                       "node.conn[0].iscsi.DataDigest", DATA_DIGEST,  TRUE),
-            PARAMETER(immediate_data, 
+            PARAMETER(immediate_data,
                       "node.session.iscsi.ImmediateData", IMMEDIATE_DATA,  TRUE),
-            PARAMETER(max_recv_data_segment_length, 
-                      "node.conn[0].iscsi.MaxRecvDataSegmentLength", 
-                      MAX_RECV_DATA_SEGMENT_LENGTH,  
+            PARAMETER(max_recv_data_segment_length,
+                      "node.conn[0].iscsi.MaxRecvDataSegmentLength",
+                      MAX_RECV_DATA_SEGMENT_LENGTH,
                       FALSE),
-            PARAMETER(first_burst_length, 
-                      "node.session.iscsi.FirstBurstLength", 
+            PARAMETER(first_burst_length,
+                      "node.session.iscsi.FirstBurstLength",
                       FIRST_BURST_LENGTH,  FALSE),
-            PARAMETER(max_burst_length, 
-                      "node.session.iscsi.MaxBurstLength", 
+            PARAMETER(max_burst_length,
+                      "node.session.iscsi.MaxBurstLength",
                       MAX_BURST_LENGTH,  FALSE),
-            PARAMETER(default_time2wait, 
-                      "node.session.iscsi.DefaultTime2Wait", 
+            PARAMETER(default_time2wait,
+                      "node.session.iscsi.DefaultTime2Wait",
                       DEFAULT_TIME2WAIT,  FALSE),
-            PARAMETER(default_time2retain, 
-                      "node.session.iscsi.DefaultTime2Retain", 
+            PARAMETER(default_time2retain,
+                      "node.session.iscsi.DefaultTime2Retain",
                       DEFAULT_TIME2RETAIN,  FALSE),
-            PARAMETER(max_outstanding_r2t, 
-                      "node.session.iscsi.MaxOutstandingr2t", 
+            PARAMETER(max_outstanding_r2t,
+                      "node.session.iscsi.MaxOutstandingr2t",
                       MAX_OUTSTANDING_R2T,  FALSE),
 #if 0 /* not implemented in open iscsi */
-            PARAMETER(data_pdu_in_order, 
-                      "node.session.iscsi.DataPDUInOrder", 
+            PARAMETER(data_pdu_in_order,
+                      "node.session.iscsi.DataPDUInOrder",
                       DATA_PDU_IN_ORDER,  TRUE),
-            PARAMETER(data_sequence_in_order, 
-                      "node.session.iscsi.DataSequenceInOrder", 
+            PARAMETER(data_sequence_in_order,
+                      "node.session.iscsi.DataSequenceInOrder",
                       DATA_SEQUENCE_IN_ORDER,  TRUE),
 #endif
 #if 0 /* not implemented in the initiator config tree */
-            PARAMETER(if_marker, 
-                      "node.session.iscsi.IFMarker", 
+            PARAMETER(if_marker,
+                      "node.session.iscsi.IFMarker",
                       IF_MARKER,  TRUE),
-            PARAMETER(of_marker, 
-                      "node.session.iscsi.OFMarker", 
+            PARAMETER(of_marker,
+                      "node.session.iscsi.OFMarker",
                       OF_MARKER,  TRUE),
 
 #endif
 #if 0 /* not implemented both in the initiator and the config tree */
-            PARAMETER(if_mark_int, 
-                      "node.session.iscsi.IFMarkInt", 
+            PARAMETER(if_mark_int,
+                      "node.session.iscsi.IFMarkInt",
                       IF_MARKER,  TRUE),
-            PARAMETER(of_mark_int, 
-                      "node.session.iscsi.OFMarkInt", 
+            PARAMETER(of_mark_int,
+                      "node.session.iscsi.OFMarkInt",
                       OF_MARKER,  TRUE),
 
 #endif
 
-            PARAMETER(error_recovery_level, 
-                      "node.session.iscsi.ERL", 
+            PARAMETER(error_recovery_level,
+                      "node.session.iscsi.ERL",
                       ERROR_RECOVERY_LEVEL,  FALSE),
             AUTH_PARAM(chap, "authmethod", NULL),
             AUTH_PARAM(peer_name, "username", NULL),
@@ -284,10 +284,10 @@ iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
 
     for (p = params; p->name != NULL; p++)
     {
-        if (p->offer == 0 || 
+        if (p->offer == 0 ||
             ((target->conns[0].conf_params & p->offer) == p->offer))
         {
-            if ((rc = iscsi_openiscsi_set_param(target->session_id, 
+            if ((rc = iscsi_openiscsi_set_param(target->session_id,
                                                 p, target, target->conns,
                                                 &target->conns[0].chap)) != 0)
             {
@@ -313,7 +313,7 @@ iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
  */
 static const char *
 iscsi_openiscsi_alloc_node(iscsi_initiator_data_t *data,
-                           const char *target, 
+                           const char *target,
                            int target_port)
 {
     char      buffer[80];
@@ -322,8 +322,8 @@ iscsi_openiscsi_alloc_node(iscsi_initiator_data_t *data,
 
     static char recid[ISCSI_SESSION_ID_LENGTH];
 
-    
-    snprintf(buffer, sizeof(buffer), 
+
+    snprintf(buffer, sizeof(buffer),
              "iscsiadm %s -m node --op=new --portal=%s:%d",
              data->verbosity != 0 ? "-d255" : "",
              target, target_port);
@@ -341,7 +341,7 @@ iscsi_openiscsi_alloc_node(iscsi_initiator_data_t *data,
         ERROR("EOF from iscsiadm, something's wrong");
         return NULL;
     }
-    
+
     RING("Got '%s' from iscsiadm", buffer);
     status = pclose(nodelist);
     if (status != 0)
@@ -349,10 +349,10 @@ iscsi_openiscsi_alloc_node(iscsi_initiator_data_t *data,
         if (status < 0)
             WARN("Error while waiting for iscsiadm: %s", strerror(errno));
         else
-            WARN("iscsiadm terminated abnormally wuth code %x", 
+            WARN("iscsiadm terminated abnormally wuth code %x",
                  (unsigned)status);
     }
-    
+
     *recid = '\0';
     if (sscanf(buffer, "new iSCSI node record added: [%[^]]]", recid) != 1)
     {
@@ -376,8 +376,8 @@ iscsi_initiator_openiscsi_set(iscsi_connection_req *req)
     iscsi_target_data_t    *target = iscsi_configuration()->targets + req->target_id;
     iscsi_connection_data_t *conn = target->conns + req->cid;
 
-    if (req->status == ISCSI_CONNECTION_DOWN || 
-        req->status == ISCSI_CONNECTION_REMOVED) 
+    if (req->status == ISCSI_CONNECTION_DOWN ||
+        req->status == ISCSI_CONNECTION_REMOVED)
     {
         if (*target->session_id == '\0')
         {
@@ -398,7 +398,7 @@ iscsi_initiator_openiscsi_set(iscsi_connection_req *req)
     }
     else if (conn->status == ISCSI_CONNECTION_DISCOVERING)
     {
-        rc = iscsi_openiscsi_start_daemon(target, 
+        rc = iscsi_openiscsi_start_daemon(target,
                                           iscsi_configuration()->n_connections == 0);
         if (rc != 0)
             return rc;
@@ -409,7 +409,7 @@ iscsi_initiator_openiscsi_set(iscsi_connection_req *req)
     }
     else
     {
-        rc = iscsi_openiscsi_start_daemon(target, 
+        rc = iscsi_openiscsi_start_daemon(target,
                                           iscsi_configuration()->n_connections == 0);
         if (rc != 0)
             return rc;
@@ -430,12 +430,12 @@ iscsi_initiator_openiscsi_set(iscsi_connection_req *req)
         {
             return rc;
         }
-        
+
         rc = iscsi_unix_cli("iscsiadm -m node --record=%s --login",
                              target->session_id);
         return TE_RC(ISCSI_AGENT_TYPE, rc);
     }
-    
+
     return 0;
 }
 

@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-/** 
+/**
  * Types of test paths.
  *
  * @attention Enum items have to be in the same order as corresponding

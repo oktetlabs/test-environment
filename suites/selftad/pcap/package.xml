@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package version="1.0">
-    
+
     <description>PCAP CSAP tests</description>
-    
+
     <author mailto="Alexander.Kukuta@oktetlabs.ru"/>
 
     <session>

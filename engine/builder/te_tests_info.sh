@@ -4,7 +4,7 @@
 #
 # Script for extracting of the test objective from .c files.
 #
-# Usage: te_tests_info.sh <directory> 
+# Usage: te_tests_info.sh <directory>
 #
 # Copyright (C) 2003-2018 OKTET Labs.
 #

@@ -40,7 +40,7 @@ Questions regarding this document may be forwarded to support@oktetlabs.ru
 @tdt_def  Internet Protocol Version 6
 
 @tdt_term DUT
-@tdt_def  Device Under Test 
+@tdt_def  Device Under Test
 
 @tdt_term RI
 @tdt_def  Reference Implementation
@@ -49,7 +49,7 @@ Questions regarding this document may be forwarded to support@oktetlabs.ru
 @tdt_def  Test Envirounment
 
 @tdt_end
- 
+
 
 @section references References
 
@@ -101,7 +101,7 @@ Questions regarding this document may be forwarded to support@oktetlabs.ru
   - Try to provide reasons why some aspect/feature is not tested.
   -->
 
- 
+
 @subsection quality_goals Quality goals
 
 <!--

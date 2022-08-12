@@ -10,7 +10,7 @@
  */
 %{
 #define TE_LGR_USER     "Test Path Lexer"
-    
+
 #include "te_config.h"
 #if HAVE_CONFIG_H
 #include <config.h>
@@ -74,7 +74,7 @@ extern int test_path_str_pos;
 %option prefix="test_path_"
 
 %x STR
-%x NUM 
+%x NUM
 
 %%
 
@@ -139,7 +139,7 @@ extern int test_path_str_pos;
                             string_buf_ptr = string_buf;
                             BEGIN(STR);
                         }
-<STR>\"                 { 
+<STR>\"                 {
                             BEGIN(INITIAL);
                             *string_buf_ptr = '\0';
                             yylval->str = strdup(string_buf);

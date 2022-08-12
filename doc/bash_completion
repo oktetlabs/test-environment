@@ -3,7 +3,7 @@ _item_comp()
     local cur
     local prev
     local options
-    
+
     cur=${COMP_WORDS[COMP_CWORD]}
     prev=${COMP_WORDS[COMP_CWORD-1]}
 
@@ -25,7 +25,7 @@ _item_comp()
             local ls_res=`ls ${search_dir}/${cur_prefix}/`
             local options_prefix=${cur_prefix:1}
             local sep="/"
-            
+
             if test -z $cur_prefix; then
                 sep=""
             fi

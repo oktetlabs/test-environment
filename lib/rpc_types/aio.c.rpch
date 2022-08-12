@@ -27,9 +27,9 @@ lio_opcode_rpc2str(rpc_lio_opcode opcode)
 {
     switch (opcode)
     {
-        RPC2STR(LIO_READ); 
+        RPC2STR(LIO_READ);
         RPC2STR(LIO_WRITE);
-        RPC2STR(LIO_NOP);  
+        RPC2STR(LIO_NOP);
         default: return "LIO_UNKNOWN";
     }
 }
@@ -44,17 +44,17 @@ lio_opcode_rpc2h(rpc_lio_opcode opcode)
     {
         RPC2H_CHECK(LIO_READ);
         RPC2H_CHECK(LIO_WRITE);
-        RPC2H_CHECK(LIO_NOP);   
-        default: return 
-#ifdef LIO_READ        
-            LIO_READ + 
-#endif            
+        RPC2H_CHECK(LIO_NOP);
+        default: return
+#ifdef LIO_READ
+            LIO_READ +
+#endif
 #ifdef LIO_WRITE
-            LIO_WRITE + 
-#endif            
+            LIO_WRITE +
+#endif
 #ifdef LIO_NOP
-            LIO_NOP + 
-#endif            
+            LIO_NOP +
+#endif
             1;
     }
 }
@@ -65,9 +65,9 @@ lio_opcode_h2rpc(int opcode)
 {
     switch (opcode)
     {
-        H2RPC_CHECK(LIO_READ); 
+        H2RPC_CHECK(LIO_READ);
         H2RPC_CHECK(LIO_WRITE);
-        H2RPC_CHECK(LIO_NOP);  
+        H2RPC_CHECK(LIO_NOP);
         default: return RPC_LIO_UNKNOWN;
     }
 }
@@ -81,7 +81,7 @@ lio_mode_rpc2str(rpc_lio_mode mode)
 {
     switch (mode)
     {
-        RPC2STR(LIO_WAIT); 
+        RPC2STR(LIO_WAIT);
         RPC2STR(LIO_NOWAIT);
         default: return "LIO_MODE_UNKNOWN";
     }
@@ -97,13 +97,13 @@ lio_mode_rpc2h(rpc_lio_mode mode)
     {
         RPC2H_CHECK(LIO_WAIT);
         RPC2H_CHECK(LIO_NOWAIT);
-        default: return 
-#ifdef LIO_WAIT        
-            LIO_WAIT + 
+        default: return
+#ifdef LIO_WAIT
+            LIO_WAIT +
 #endif
-#ifdef LIO_NOWAIT            
-            LIO_NOWAIT + 
-#endif            
+#ifdef LIO_NOWAIT
+            LIO_NOWAIT +
+#endif
             1;
     }
 }
@@ -114,7 +114,7 @@ lio_mode_h2rpc(int mode)
 {
     switch (mode)
     {
-        H2RPC_CHECK(LIO_WAIT); 
+        H2RPC_CHECK(LIO_WAIT);
         H2RPC_CHECK(LIO_NOWAIT);
         default: return RPC_LIO_MODE_UNKNOWN;
     }

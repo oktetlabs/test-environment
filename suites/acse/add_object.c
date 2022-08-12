@@ -2,13 +2,13 @@
  * @brief ACSE Test Suite
  *
  * ACSE Test Suite
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
- * 
+ *
  */
 
 
@@ -25,9 +25,9 @@ main(int argc, char *argv[])
     int object_number = 0, add_status, del_status, set_status;
 
     cwmp_values_array_t *set_values;
-    tapi_acse_context_t *ctx; 
+    tapi_acse_context_t *ctx;
 
-    char *param_path = 
+    char *param_path =
             "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."
             "IPInterface.";
     char *lan_ip_conn_path;
@@ -47,7 +47,7 @@ main(int argc, char *argv[])
 
     CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));
 
-    CHECK_RC(tapi_acse_add_object(ctx, param_path, "test")); 
+    CHECK_RC(tapi_acse_add_object(ctx, param_path, "test"));
 
     CHECK_RC(tapi_acse_add_object_resp(ctx, &object_number, &add_status));
 
@@ -77,7 +77,7 @@ main(int argc, char *argv[])
 
     /* TODO check here by some other way that LAN is added, before delete.*/
 
-    CHECK_RC(tapi_acse_delete_object(ctx, lan_ip_conn_path, "test")); 
+    CHECK_RC(tapi_acse_delete_object(ctx, lan_ip_conn_path, "test"));
 
     CHECK_RC(tapi_acse_delete_object_resp(ctx, &del_status));
 

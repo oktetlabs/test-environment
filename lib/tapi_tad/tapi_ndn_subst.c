@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Denis Pryazhennikov <Denis.Pryazhennikov@oktetlabs.ru>

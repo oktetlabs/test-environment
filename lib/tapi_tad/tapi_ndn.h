@@ -9,7 +9,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
@@ -103,7 +103,7 @@ struct tapi_ndn_gso_conf {
  *
  * @todo Check that ASN.1 value belongs to @a type
  */
-extern te_errno tapi_tad_init_asn_value(asn_value      **value, 
+extern te_errno tapi_tad_init_asn_value(asn_value      **value,
                                         const asn_type  *type);
 
 /**

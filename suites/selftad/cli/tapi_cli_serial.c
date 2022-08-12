@@ -2,14 +2,14 @@
  * @brief Test Environment
  *
  * Simple RCF test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "cli/serial"
@@ -32,7 +32,7 @@
 
 void
 cli_msg_handler(char *fn, void *p)
-{ 
+{
     UNUSED(p);
     VERB("CLI message handler, file with NDS: %s\n", fn);
 }
@@ -50,7 +50,7 @@ main(int argc, char *argv[])
     int   i;
     int   try_count = 10;
     char *cprompt = "--> ";
-   
+
     TEST_START;
     TEST_GET_STRING_PARAM(ta);
     TEST_GET_STRING_PARAM(device);
@@ -60,7 +60,7 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_ta_create_session(ta, &sid));
 
     VERB("Try to create CLI session on the local device %s", device);
-    
+
     TAPI_CLI_CSAP_CREATE_SERIAL(ta, sid, device, user,
                                 passwd, cprompt, &cli_csap);
 
@@ -74,7 +74,7 @@ main(int argc, char *argv[])
 
         CHECK_RC(tapi_cli_send(ta, sid, cli_csap, "snmp send trap abs2200"));
     }
-    
+
     VERB("Try to destroy CLI CSAP");
 
     CHECK_RC(rcf_ta_csap_destroy(ta, sid, cli_csap));

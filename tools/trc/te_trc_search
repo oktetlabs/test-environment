@@ -121,15 +121,15 @@ process_file()
     cat $1 | awk --assign TEST="$TEST" '
         BEGIN { INSIDE_TEST=0 ; }
 
-        /xi:include/ { 
-            f=substr($2, 7); f=substr(f, 0, length(f) - 1); 
-            printf("file %s\n", f) ; 
-            next ; 
+        /xi:include/ {
+            f=substr($2, 7); f=substr(f, 0, length(f) - 1);
+            printf("file %s\n", f) ;
+            next ;
         }
 
-        /<test name=/ && ($2 == "name=\""TEST"\"" || TEST == "all") { 
+        /<test name=/ && ($2 == "name=\""TEST"\"" || TEST == "all") {
             INSIDE_TEST=1 ; next ;
-        } 
+        }
 
         /<\/test/ { INSIDE_TEST=0; next ; }
 
@@ -137,7 +137,7 @@ process_file()
 
         /<\/iter>/ { if (INSIDE_TEST == 0) next; printf("\n"); }
 
-       /<arg name/ { 
+       /<arg name/ {
            if (INSIDE_TEST != 1) next;
 
            s=$0; s=substr($0, index($0, "<arg"));
@@ -145,18 +145,18 @@ process_file()
            printf(" %s ", substr(s, 0, i - 1));
 
            s=substr(s, i + 2); i=index(s, "</arg>");
-           if (i != 0) 
+           if (i != 0)
            {
                ARG_VAL=substr(s, 0, i - 1);
                gsub("\"", "\\\\\\\"", ARG_VAL);
                printf("\"%s\"", ARG_VAL);
            }
-           else 
+           else
                ARG_VAL=s;
            next;
        }
 
-       /<\/arg>/ && INSIDE_TEST == 1 { 
+       /<\/arg>/ && INSIDE_TEST == 1 {
            s=substr($0, i + 2); i=index(s, "</arg>");
            ARG_VAL=ARG_VAL""substr(s, 0, i - 1);
            gsub("\"", "\\\\\\\"", ARG_VAL);
@@ -168,7 +168,7 @@ process_file()
        INSIDE_TEST == 1 {
            ARG_VAL=ARG_VAL$0
        }
-    ' | while read l ; do 
+    ' | while read l ; do
         if echo $l | grep -q "^file" ; then
             process_file "$PREFIX/`echo $l | awk '{ print $2 }'`"
         else

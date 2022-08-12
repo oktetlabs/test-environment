@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -46,7 +46,7 @@ typedef struct trc_report_stats {
 
 /**
  * Get number of run test iterations with a given result status
- * 
+ *
  * @param   s       TRC statistics
  * @param   status  Test iteration result status
  *

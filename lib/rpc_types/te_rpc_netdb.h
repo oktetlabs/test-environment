@@ -2,11 +2,11 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from netdb.h.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -14,7 +14,7 @@
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_NETDB_H__
 #define __TE_RPC_NETDB_H__
 

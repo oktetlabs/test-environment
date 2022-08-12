@@ -2,16 +2,16 @@
  * @brief Test API for TAD. ipstack CSAP
  *
  * Implementation of Test API
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author: Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 
-#define TE_LGR_USER "TAPI UDP" 
+#define TE_LGR_USER "TAPI UDP"
 
 #include "te_config.h"
 
@@ -63,7 +63,7 @@ tapi_udp_add_csap_layer(asn_value **csap_spec,
 
     if (local_port > 0xffff || remote_port > 0xffff)
     {
-        WARN("%s() EINVAL: local port %d, remote port %d", 
+        WARN("%s() EINVAL: local port %d, remote port %d",
              __FUNCTION__, local_port, remote_port);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
@@ -116,7 +116,7 @@ tapi_udp_ip4_eth_csap_create(const char    *ta_name,
                              const char    *eth_dev,
                              unsigned int   receive_mode,
                              const uint8_t *loc_mac,
-                             const uint8_t *rem_mac, 
+                             const uint8_t *rem_mac,
                              in_addr_t      loc_addr,
                              in_addr_t      rem_addr,
                              int            loc_port,
@@ -218,7 +218,7 @@ tapi_udp_ip4_csap_create(const char    *ta_name,
 }
 
 /**
- * data for udp callback 
+ * data for udp callback
  */
 typedef struct {
     udp4_datagram  *dgram;
@@ -343,7 +343,7 @@ cleanup:
  *
  * @param src_addr      IPv4 source address (or NULL)
  * @param dst_addr      IPv4 destination address (or NULL)
- * @param src_port      UDP source port in network byte order or -1 
+ * @param src_port      UDP source port in network byte order or -1
  * @param dst_port      UDP destination port network byte order or -1
  * @param result_value  Location for resulting ASN pattern
  *
@@ -452,7 +452,7 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
 
     asn_insert_indexed(csap_layers, csap_layer_spec, 0, "");
 
-    rc = tapi_tad_csap_create(ta_name, sid, "socket", 
+    rc = tapi_tad_csap_create(ta_name, sid, "socket",
                               csap_spec, udp_csap);
 
     asn_free_value(csap_spec);
@@ -500,11 +500,11 @@ tapi_udp_ip4_eth_trrecv_cb_data(udp4_callback callback, void *user_data)
     }
     cb_data->callback = callback;
     cb_data->user_data = user_data;
-    
+
     res = tapi_tad_trrecv_make_cb_data(udp4_asn_pkt_handler, cb_data);
     if (res == NULL)
         free(cb_data);
-    
+
     return res;
 }
 
@@ -517,7 +517,7 @@ tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
                             rcf_trrecv_mode mode)
 {
     int              rc;
-    unsigned int     timeout = TAD_TIMEOUT_INF; 
+    unsigned int     timeout = TAD_TIMEOUT_INF;
     asn_value       *pattern;
     asn_value       *pattern_unit;
 

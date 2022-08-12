@@ -2,11 +2,11 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from net/if_arp.h.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -14,7 +14,7 @@
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_NET_IF_ARP_H__
 #define __TE_RPC_NET_IF_ARP_H__
 
@@ -32,7 +32,7 @@ typedef enum rpc_arp_flags {
     RPC_ATF_PUBL = 0x0004,        /**< Publish entry */
     RPC_ATF_NETMASK = 0x0008,     /**< Use a netmask */
     RPC_ATF_DONTPUB = 0x0010      /**< Don't answer */
-} rpc_arp_fl;    
+} rpc_arp_fl;
 
 #define RPC_ARP_FLAGS_ALL \
     (RPC_ATF_COM | RPC_ATF_PERM | RPC_ATF_PUBL |  \

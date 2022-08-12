@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -242,7 +242,7 @@ static const char *trc_diff_title = NULL;
 
 /**
  * Process command line options and parameters specified in argv.
- * The procedure contains "Option table" that should be updated 
+ * The procedure contains "Option table" that should be updated
  * if some new options are going to be added.
  *
  * @param argc  Number of elements in array "argv".
@@ -348,13 +348,13 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
 
 #undef TRC_DIFF_SET_OPTS
 
-        { "version", '\0', POPT_ARG_NONE, NULL, TRC_DIFF_OPT_VERSION, 
+        { "version", '\0', POPT_ARG_NONE, NULL, TRC_DIFF_OPT_VERSION,
           "Display version information.", NULL },
 
         POPT_AUTOHELP
         POPT_TABLEEND
     };
-    
+
     /* Process command line options */
     optCon = poptGetContext(NULL, argc, (const char **)argv,
                             options_table, 0);

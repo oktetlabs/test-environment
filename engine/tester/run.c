@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -774,7 +774,7 @@ static tester_ctx *
 tester_run_new_ctx(tester_flags flags, const logic_expr *targets)
 {
     tester_ctx *new_ctx = TE_ALLOC(sizeof(*new_ctx));
-    
+
     if (new_ctx == NULL)
         return NULL;
 
@@ -800,7 +800,7 @@ tester_run_new_ctx(tester_flags flags, const logic_expr *targets)
     new_ctx->targets_free = FALSE;
     new_ctx->dyn_targets = NULL;
     TAILQ_INIT(&new_ctx->reqs);
-    
+
     new_ctx->backup = NULL;
     new_ctx->backup_ok = FALSE;
     new_ctx->args = NULL;
@@ -933,7 +933,7 @@ static tester_ctx *
 tester_run_first_ctx(tester_run_data *data)
 {
     tester_ctx *new_ctx = tester_run_new_ctx(data->flags, data->targets);
-    
+
     if (new_ctx == NULL)
         return NULL;
 
@@ -985,7 +985,7 @@ tester_run_more_ctx(tester_run_data *data, te_bool new_group)
             TESTER_TEST_ERROR;
         return NULL;
     }
-    
+
     SLIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
 
     VERB("Tester context %p clonned %p: flags=0x%" TE_PRINTF_TESTER_FLAGS
@@ -1079,13 +1079,13 @@ tester_assemble_plan(tester_run_data *data, const tester_cfg_walk *cbs, const te
 
 /**
  * Update test group status.
- * 
+ *
  * @param group_status  Group status
  * @param iter_status   Test iteration status
  *
  * @return Updated group status.
  */
-static tester_test_status 
+static tester_test_status
 tester_group_status(tester_test_status group_status,
                     tester_test_status iter_status)
 {
@@ -1108,11 +1108,11 @@ tester_group_status(tester_test_status group_status,
 
 /**
  * Update test group result.
- * 
+ *
  * @param group_result  Group result to be updated
  * @param iter_result   Test iteration result
  */
-static void 
+static void
 tester_group_result(tester_test_result *group_result,
                     const tester_test_result *iter_result)
 {
@@ -1124,7 +1124,7 @@ tester_group_result(tester_test_result *group_result,
           iter_result->exp_status);
     if (iter_result->status != TESTER_TEST_EMPTY)
     {
-        /* 
+        /*
          * If group contains unknown or unexpected results, its
          * status is unexpected.
          */
@@ -1268,7 +1268,7 @@ test_param_space(const test_iter_arg *arg)
     size_t extra = 0;
 
     /*
-     * Calculate the number of extra bytes necessary to escape 
+     * Calculate the number of extra bytes necessary to escape
      * quotation marks '"' and back slashes "\":
      * we need to add an extra back slash for each of these symbols.
      */
@@ -1293,9 +1293,9 @@ test_param_space(const test_iter_arg *arg)
  *
  * @return Allocated/Reallocated string or NULL.
  *
- * @note If function fails to allocate enough space, the original buffer 
+ * @note If function fails to allocate enough space, the original buffer
  * @p str is left unchanged.
- * It is expected that a caller allocated @p str by means of 
+ * It is expected that a caller allocated @p str by means of
  * malloc/calloc/realloc functions.
  *
  */
@@ -1341,15 +1341,15 @@ test_params_to_string(char *str, const unsigned int n_args,
             v = nv;
         }
         rest -= sprintf(v + (len - rest), " %s=\"", p->name);
-        
-        /* 
-         * Add back slashes before '"' (quitation mark) and 
+
+        /*
+         * Add back slashes before '"' (quitation mark) and
          * "\" (back slash) characters.
          */
         {
             size_t prev_len = 0;
             size_t seg_len;
-            
+
             while ((seg_len = strcspn(p->value + prev_len, "\\\""),
                     p->value[prev_len + seg_len] != '\0'))
             {
@@ -1588,7 +1588,7 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
 
 /**
  * Log test (script, package, session) start.
- *  
+ *
  * @param ctx           Tester context
  * @param ri            Run item
  * @param tin           Test identification number
@@ -2091,7 +2091,7 @@ tester_test_status_to_te_test_result(tester_test_status status,
 
         if (id >= 0)
         {
-            /* 
+            /*
              * Put additional verdict into the log to have correct
              * results with off-line TRC tools if the result of
              * test script execution is considered.
@@ -2106,7 +2106,7 @@ tester_test_status_to_te_test_result(tester_test_status status,
         v = TE_ALLOC(sizeof(*v));
         if (v == NULL)
         {
-            /* 
+            /*
              * Make sure that test will report failed because of
              * internal error.
              */
@@ -2121,7 +2121,7 @@ tester_test_status_to_te_test_result(tester_test_status status,
             ERROR("%s(): strdup(%s) failed", __FUNCTION__, *error);
             free(v);
 
-            /* 
+            /*
              * Make sure that test will report failed because of
              * internal error.
              */
@@ -2211,7 +2211,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         ERROR("%s(): te_asprintf() failed", __FUNCTION__);
         return TE_RC(TE_TESTER, TE_ENOMEM);
     }
-    
+
     tmp = test_params_to_string(params_str, n_args, args);
     if (tmp == NULL)
     {
@@ -3055,7 +3055,7 @@ run_session_start(run_item *ri, test_session *session,
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    /* 
+    /*
      * If it is a standalone session (not a primary session of a test
      * package), create own context. Otherwise, context has been
      * created in run_pkg_start() routine.
@@ -3180,7 +3180,7 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     status = ctx->group_result.status;
     id = ctx->current_result.id;
     tester_run_destroy_ctx(gctx);
-    
+
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
@@ -3355,7 +3355,7 @@ run_epilogue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(ctx->flags & TESTER_INLOGUE);
     status = ctx->current_result.status;
     tester_run_destroy_ctx(gctx);
-    
+
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
@@ -3464,7 +3464,7 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     /* Remove keep-alive context (it is still stored in keepalive_ctx) */
     SLIST_REMOVE(&gctx->ctxs, ctx, tester_ctx, links);
- 
+
     /* Get current context and update its group status */
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
@@ -3475,7 +3475,7 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     {
         ERROR("Keep-alive validation failed: %u", status);
         ctx->group_result.status =
-            tester_group_status(ctx->group_result.status, 
+            tester_group_status(ctx->group_result.status,
                                 TESTER_TEST_KEEPALIVE);
         EXIT("INTR");
         return TESTER_CFG_WALK_INTR;
@@ -3555,7 +3555,7 @@ run_exception_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     /* Destroy exception handler context */
     tester_run_destroy_ctx(gctx);
- 
+
     /* Get current context and update its group status */
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
@@ -3564,7 +3564,7 @@ run_exception_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     {
         ERROR("Exception handler failed: %r", status);
         ctx->group_result.status =
-            tester_group_status(ctx->group_result.status, 
+            tester_group_status(ctx->group_result.status,
                                 TESTER_TEST_EXCEPTION);
         EXIT("INTR");
         return TESTER_CFG_WALK_INTR;
@@ -3650,7 +3650,7 @@ run_prepare_arg_value_collect_reqs(const test_entity_value *value,
 
     if (TE_RC_GET_ERROR(status) == TE_EEXIST)
     {
-        return test_requirements_clone(&value->reqs, reqs); 
+        return test_requirements_clone(&value->reqs, reqs);
     }
     return 0;
 }
@@ -3721,7 +3721,7 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
     {
         n_values = (ri_list == NULL) ? test_var_arg_values(va)->num :
                                        ri_list->len;
-                       
+
         assert(data->n_iters % n_values == 0);
         data->n_iters /= n_values;
 
@@ -3901,7 +3901,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
             args[i].value = (char *)ctx->args[i].value;
             args[i].variable = ctx->args[i].variable;
         }
-        /* 
+        /*
          * It is guaranteed that trc_db_walker_step_iter() does not
          * touch names and values with the last parameters equal to
          * FALSE/0/NULL.
@@ -4248,7 +4248,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         /* Test execution has been finished */
         tester_test_result_del(&gctx->results, &ctx->current_result);
 
-        /* 
+        /*
          * Convert internal test status to TE test status.
          * Do it before TRC processing, since it may cause verdicts
          * addition.
@@ -4272,7 +4272,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                 assert(run_item_container(ri));
                 assert(ctx->current_result.exp_status ==
                        TRC_VERDICT_UNKNOWN);
-                /* 
+                /*
                  * No tests have been run in this package/session,
                  * we don't want to scream that result is unexpected.
                  */
@@ -4301,7 +4301,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                       (ctx->current_result.result.status !=
                            TE_TEST_SKIPPED)))
             {
-                /* 
+                /*
                  * Expectations status can be either unknown, if
                  * everything is skipped inside or only unknown
                  * tests are run, or known otherwise.

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
@@ -108,7 +108,7 @@ RCF_PCH_CFG_NODE_RW(node_iptables_cmd, "cmd",
                     iptables_cmd_get,
                     iptables_cmd_set);
 
-static rcf_pch_cfg_object node_iptables_chain = 
+static rcf_pch_cfg_object node_iptables_chain =
 { "chain", 0, &node_iptables_cmd, NULL,
       (rcf_ch_cfg_get)iptables_chain_get,
       (rcf_ch_cfg_set)iptables_chain_set,
@@ -314,7 +314,7 @@ iptables_perif_chain_set(const char *ifname,
 }
 
 /**
- * Add per-interface chain and install jumping rule if required 
+ * Add per-interface chain and install jumping rule if required
  *
  * @param gid           group identifier (unused)
  * @param oid           full identifier of the father instance

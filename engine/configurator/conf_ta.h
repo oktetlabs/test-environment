@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -119,7 +119,7 @@ extern void cfg_ta_log_syncing(te_bool flag);
  * Perform check whether local commands sequence is started or not.
  * If started then set msg @a _cfg_msg rc to TE_EACCES and return from the
  * current function.
- * 
+ *
  * @param _cmd      Command name
  * @param _cfg_msg  cfg_msg argument
  * @param _ret_exp  Return expression

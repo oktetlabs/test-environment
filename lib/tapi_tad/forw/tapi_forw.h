@@ -9,12 +9,12 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
 #ifndef __TE_TAPI_FORW_H__
-#define __TE_TAPI_FORW_H__ 
+#define __TE_TAPI_FORW_H__
 
 
 #include "te_defs.h"
@@ -24,16 +24,16 @@
 
 
 /**
- * Create forwarding task according with specification. 
+ * Create forwarding task according with specification.
  *
- * @param ta            name of TA, on which forw. task should 
+ * @param ta            name of TA, on which forw. task should
  *                      be added
- * @param sid           RCF session ID. 
- * @param forw_action   plain C structure with specification of 
+ * @param sid           RCF session ID.
+ * @param forw_action   plain C structure with specification of
  *                      forwarder task
  * @param sendq_id      Id of destination sending queue
- * 
- * @return zero on success or error code. 
+ *
+ * @return zero on success or error code.
  */
 extern int tapi_forw_task_create(const char *ta,  int sid,
                                  const ndn_forw_action_plain *forw_action,
@@ -42,16 +42,16 @@ extern int tapi_forw_task_create(const char *ta,  int sid,
 /**
  * Create send queue with specified parameters.
  *
- * @param ta            name of TA, on which forw. task should 
+ * @param ta            name of TA, on which forw. task should
  *                      be added
- * @param sid           RCF session ID. 
- * @param csap          ID of CSAP, which should send data  
+ * @param sid           RCF session ID.
+ * @param csap          ID of CSAP, which should send data
  * @param band          Bandwidth of send queue in bytes per second,
  *                      zero for unlimited
  * @param bufsize       Buffer size of send queue
  * @param sendq_id      location for id of destination sending queue (OUT)
- * 
- * @return zero on success or error code. 
+ *
+ * @return zero on success or error code.
  */
 extern int tapi_forw_sendq_create(const char *ta,  int sid,
                                   csap_handle_t csap, int band,
@@ -61,11 +61,11 @@ extern int tapi_forw_sendq_create(const char *ta,  int sid,
 /**
  * Destroy send queue with specified ID.
  *
- * @param ta            name of TA, on which send queue is running. 
- * @param sid           RCF session ID. 
- * @param sendq_id      id of sending queue 
- * 
- * @return zero on success or error code. 
+ * @param ta            name of TA, on which send queue is running.
+ * @param sid           RCF session ID.
+ * @param sendq_id      id of sending queue
+ *
+ * @return zero on success or error code.
  */
 extern int tapi_forw_sendq_destroy(const char *ta, int sid, int sendq_id);
 
@@ -76,14 +76,14 @@ extern int tapi_forw_sendq_destroy(const char *ta, int sid, int sendq_id);
  * @param sid        RCF session ID.
  * @param ftask_name Name of forwarder task.
  * @param param      Parameter name, which should be ASN lib labels string,
- *                   see ASN lib docs and NDN specification for 
- *                   Forwarder-Action ASN type. 
+ *                   see ASN lib docs and NDN specification for
+ *                   Forwarder-Action ASN type.
  * @param val        New parameter value.
  *
  * @return zero on success or error code.
  */
 extern int tapi_forw_task_set_param(const char *ta, int sid,
-                                    const char *ftask_name, 
+                                    const char *ftask_name,
                                     const char *param, int val);
 
 /**
@@ -102,7 +102,7 @@ extern int tapi_forw_task_set_drop_rate(const char *ta, int sid,
 /**
  * Set forwarding task minimum delay.
  * Applicable for constant delay type. If delay was disabled, it becomes
- * 'constant' with specified value. 
+ * 'constant' with specified value.
  *
  * @param ta         name of TA, on which the send queue is situated
  * @param sid        RCF session ID
@@ -163,7 +163,7 @@ extern int tapi_forw_task_set_reorder_sz(const char *ta, int sid,
 /**
  * Set forwarding task maximum delay.
  * Applicable for constant delay type. If delay was disabled, it becomes
- * 'constant' with specified value. 
+ * 'constant' with specified value.
  *
  * @param ta         name of TA, on which the send queue is situated
  * @param sid        RCF session ID.
@@ -202,7 +202,7 @@ extern int tapi_forw_task_destroy(const char *ta, int sid,
  * @return zero on success or error code.
  */
 extern int tapi_forw_sendq_set_param(const char *ta, int sid,
-                                     const char *param, int val, 
+                                     const char *param, int val,
                                      int sendq_id);
 
 /**
@@ -218,7 +218,7 @@ extern int tapi_forw_sendq_set_param(const char *ta, int sid,
  * @return zero on success or error code.
  */
 extern int tapi_forw_sendq_get_param(const char *ta, int sid,
-                                     const char *param, int sendq_id, 
+                                     const char *param, int sendq_id,
                                      int *val);
 
 
@@ -230,7 +230,7 @@ extern int tapi_forw_sendq_get_param(const char *ta, int sid,
  *
  * @return zero on success or error code.
  */
-extern int tapi_forw_set_ftask_name(asn_value *pat_unit, 
+extern int tapi_forw_set_ftask_name(asn_value *pat_unit,
                                     const char *task_name);
 
 #endif /* __TE_TAPI_FORW_H__ */

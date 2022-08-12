@@ -93,7 +93,7 @@ if ($te_ext_libs_path ne "")
 {
     # Get list of all the static libraries in folder where
     # external libraries should be saved
-    $cmd_pid = open2($cmd_out, 0, "/usr/bin/find", 
+    $cmd_pid = open2($cmd_out, 0, "/usr/bin/find",
                      ($te_ext_libs_path,
                       "-maxdepth", 1, "-name", "lib*.a"));
 

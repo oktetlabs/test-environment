@@ -1,14 +1,14 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side - Library
  * Operations with Messages API
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 #ifndef __TE_COMM_NET_AGENT_TESTS_LIB_MESSAGES_H__
 #define __TE_COMM_NET_AGENT_TESTS_LIB_MESSAGES_H__
@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 /**
- * Compares binary contents of two buffers. 
+ * Compares binary contents of two buffers.
  *
  * @param buffer1       first buffer
  * @param len1          length of the first buffer
@@ -31,7 +31,7 @@ extern int compare_buffers(char *buffer1, int len1, char *buffer2, int len2);
 
 /**
  * Generates a command/answer of size 'cmd_size' plus 'attachment_size'.
- * Note that if attachment_size is not zero, cmd_size cannot be less 
+ * Note that if attachment_size is not zero, cmd_size cannot be less
  * than 20.
  *
  * @param buffer          Buffer to be filled with the command

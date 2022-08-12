@@ -2,14 +2,14 @@
  * @brief Test Environment
  *
  * Simple RCF test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "cli/shell"
@@ -90,10 +90,10 @@ main(int argc, char *argv[])
     asn_value      *pcap_pattern = NULL;
 
     int             pcap_num = 0;
-    
+
     int   i;
     int   try_count = 3;
-   
+
     TEST_START;
     TEST_GET_STRING_PARAM(ta);
 

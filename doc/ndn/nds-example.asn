@@ -38,7 +38,7 @@ udp-csap-1 CSAP-spec ::=
          remote-addr plain:{192 168 253 11},
          router   plain:{192 168 254 1}
         },
-    udp:{local-port script:"random", 
+    udp:{local-port script:"random",
          remote-port plain:1650
         }
 }
@@ -50,7 +50,7 @@ udp-csap-2 CSAP-spec ::=
          remote-addr env:{name "usertest.udp1.remoteIp",
                           type ip-addr },
         },
-    udp:{local-port script:"random", 
+    udp:{local-port script:"random",
          remote-port env:{name "usertest.udp1.remotePort",
                           type ip-addr }
         }
@@ -107,10 +107,10 @@ ip4-tmpl-0 Traffic-Template::=
 ip4-tmpl-0 Traffic-Template::=
 {
     dimension 1,
-    arg-sets {simple-for:{ begin 1, end 10}}, 
+    arg-sets {simple-for:{ begin 1, end 10}},
     pdus {
-        ip4:{ 
-            type-of-service plain:2, 
+        ip4:{
+            type-of-service plain:2,
             ip-len          plain:100,
             ip-ident        script:"$1"
         }
@@ -121,11 +121,11 @@ ip4-tmpl-0 Traffic-Template::=
 snmp-tmpl Traffic-Template ::=
 {
     pdus {
-        snmp:{  type get, 
-                vbs { 
-                  { name {ifDescr 0} } 
-                  { name {ifDescr 1} } 
-                  { name {ifDescr 15} } 
+        snmp:{  type get,
+                vbs {
+                  { name {ifDescr 0} }
+                  { name {ifDescr 1} }
+                  { name {ifDescr 15} }
                 }
         }
     }
@@ -137,7 +137,7 @@ tcp-pattern-0 Traffic-Pattern ::=
 	protocol plain:"6",
         src-addr script:"192.168.254.0/24"
     }
-    tcp:{ 
+    tcp:{
         src-port enum:{1200, 1220, 1221, 5640},
         seqn     intervals:{{b 0, e 20}, {b 100, e 105}},
         flags    mask:{v '05'H, m '07'H}

@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
@@ -163,7 +163,7 @@ extern te_errno tapi_iscsi_ini_csap_create(const char        *ta_name,
  * Create 'iscsi' CSAP over connectєd TCP socket on TA.
  *
  * @param ta_name       Test Agent name
- * @param socket        File descriptor of TCP socket on TA 
+ * @param socket        File descriptor of TCP socket on TA
  * @param hdr_dig       Header digests used by iSCSI protocol
  * @param data_dig      Data digests used by iSCSI protocol
  * @param csap          Location for handle of new CSAP
@@ -179,7 +179,7 @@ extern te_errno tapi_iscsi_sock_csap_create(const char        *ta_name,
 
 /**
  * Receive one message via iSCSI CSAP.
- * 
+ *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param csap          Identifier of CSAP
@@ -190,11 +190,11 @@ extern te_errno tapi_iscsi_sock_csap_create(const char        *ta_name,
  * @param params        Location for iSCSI current params (OUT)
  * @param buffer        Location for received data (OUT)
  * @param length        Length of buffer / received data (IN/OUT)
- * 
+ *
  * @return Zero on success or error code.
  */
 extern int tapi_iscsi_recv_pkt(const char            *ta_name,
-                               int                    sid, 
+                               int                    sid,
                                csap_handle_t          csap,
                                int                    timeout,
                                csap_handle_t          forward_csap,
@@ -223,7 +223,7 @@ extern int tapi_iscsi_start_poll_recv_pkt(unsigned n_csaps,
  * @param csaps         CSAP poll structures
  * @param timeout       Timeout of a receive in milliseconds
  * @param params        Location for iSCSI current params (OUT)
- * @param ready_index   An index in @p csaps of a CSAP on which 
+ * @param ready_index   An index in @p csaps of a CSAP on which
                         a message has been get, or (-1) in case of
                         a timeout on all CSAPs.
  * @param buffer        Location for received data (OUT)
@@ -233,24 +233,24 @@ extern int tapi_iscsi_start_poll_recv_pkt(unsigned n_csaps,
  */
 extern int tapi_iscsi_recv_polled_pkt(rcf_trpoll_csap *the_csap,
                                       iscsi_target_params_t *params,
-                                      uint8_t *buffer, 
+                                      uint8_t *buffer,
                                       size_t  *length);
 
 
 /**
  * Send one message via iSCSI CSAP.
- * 
+ *
  * @param ta_name       test Agent name
  * @param sid           RCF SID
  * @param csap          identifier of CSAP
  * @param params        iSCSI new params
  * @param buffer        data to be sent
  * @param length        length of buffer
- * 
+ *
  * @return Zero on success or error code.
  */
 extern int tapi_iscsi_send_pkt(const char            *ta_name,
-                               int                    sid, 
+                               int                    sid,
                                csap_handle_t          csap,
                                iscsi_target_params_t *params,
                                uint8_t               *buffer,
@@ -260,25 +260,25 @@ extern int tapi_iscsi_send_pkt(const char            *ta_name,
  * Send LAST message via iSCSI CSAP, and try to ensure sending
  * FIN in the last TCP push.
  * Note: use only with network TCP connection, not AF_LOCAL.
- * 
+ *
  * @param ta_name       test Agent name
  * @param sid           RCF SID
  * @param csap          identifier of CSAP
  * @param buffer        data to be sent
  * @param length        length of buffer
- * 
+ *
  * @return Zero on success or error code.
  */
 extern int tapi_iscsi_send_pkt_last(const char   *ta_name,
-                                    int           sid, 
+                                    int           sid,
                                     csap_handle_t csap,
                                     uint8_t      *buffer,
                                     size_t        length);
 
 /**
- * Receive all data which currently are waiting for receive in 
- * specified iSCSI CSAP and forward them into another CSAP, without 
- * passing via RCF to test. 
+ * Receive all data which currently are waiting for receive in
+ * specified iSCSI CSAP and forward them into another CSAP, without
+ * passing via RCF to test.
  *
  * @param ta            TA name
  * @param sid           RCF session id
@@ -297,9 +297,9 @@ extern int tapi_iscsi_forward_all(const char *ta_name, int session,
 
 
 /**
- * Pass all iSCSI PDUs from one iSCSI CSAP to another and reverse, 
- * until in both directions silence will be established during specified 
- * timeout. 
+ * Pass all iSCSI PDUs from one iSCSI CSAP to another and reverse,
+ * until in both directions silence will be established during specified
+ * timeout.
  *
  * @param ta            TA name
  * @param sid           RCF session id
@@ -310,15 +310,15 @@ extern int tapi_iscsi_forward_all(const char *ta_name, int session,
  * @return status code
  */
 extern te_errno tapi_iscsi_exchange_until_silent(const char *ta,
-                                                 int session, 
+                                                 int session,
                                                  csap_handle_t csap_a,
                                                  csap_handle_t csap_b,
                                                  unsigned int timeout);
 
 /**
- * Pass all iSCSI PDUs from one iSCSI CSAP to another and reverse, 
+ * Pass all iSCSI PDUs from one iSCSI CSAP to another and reverse,
  * until packet, matching to specified pattern, will be catched on
- * csap_a. 
+ * csap_a.
  * This packet will be passed to the test, if 'buffer' is not NULL.
  *
  * @param ta            TA name.
@@ -333,7 +333,7 @@ extern te_errno tapi_iscsi_exchange_until_silent(const char *ta,
  * @return status code
  */
 extern te_errno tapi_iscsi_exchange_until_pattern(const char *ta,
-                                                  int session, 
+                                                  int session,
                                                   csap_handle_t csap_a,
                                                   csap_handle_t csap_b,
                                                   asn_value *pattern,
@@ -341,12 +341,12 @@ extern te_errno tapi_iscsi_exchange_until_pattern(const char *ta,
                                                   size_t  *length,
                                                   unsigned int timeout);
 
-extern te_errno tapi_iscsi_exchange_until_stop(const char *ta, int session, 
+extern te_errno tapi_iscsi_exchange_until_stop(const char *ta, int session,
                                                csap_handle_t csap_a,
                                                csap_handle_t csap_b,
                                                unsigned int timeout);
 
-extern te_errno tapi_iscsi_exchange_stop(const char *ta, int session, 
+extern te_errno tapi_iscsi_exchange_stop(const char *ta, int session,
                                          csap_handle_t csap_a,
                                          csap_handle_t csap_b);
 
@@ -361,7 +361,7 @@ enum {
 };
 
 /**
- * Prepare pattern_unit with iSCSI PDU. 
+ * Prepare pattern_unit with iSCSI PDU.
  *
  * @param i_bit         Pattern for i-bit field.
  * @param opcode        Pattern for opcode field, while opcode has
@@ -387,9 +387,9 @@ extern te_errno tapi_iscsi_prepare_pattern_unit(iscsi_bit_spec_t i_bit,
  * Get number of keys in iSCSI PDU Segment Data.
  *
  * @param segment_data iSCSI PDU Segment Data in asn format
- * 
+ *
  * @return number of keys ot -1 if error occured.
- */ 
+ */
 extern int tapi_iscsi_get_key_num(iscsi_segment_data segment_data);
 
 /**
@@ -399,8 +399,8 @@ extern int tapi_iscsi_get_key_num(iscsi_segment_data segment_data);
  * @param key_index    key index in iSCSI PDU Segment Data
  *
  * @return key name or NULL if error occured.
- */ 
-extern char * tapi_iscsi_get_key_name(iscsi_segment_data segment_data, 
+ */
+extern char * tapi_iscsi_get_key_name(iscsi_segment_data segment_data,
                                       int key_index);
 
 /**
@@ -410,19 +410,19 @@ extern char * tapi_iscsi_get_key_name(iscsi_segment_data segment_data,
  * @param name         key name
  *
  * @return key index or TAPI_ISCSI_KEY_INVALID if error occured.
- */ 
+ */
 extern int tapi_iscsi_get_key_index_by_name(
-               iscsi_segment_data segment_data, 
+               iscsi_segment_data segment_data,
                char *name);
 
 /**
  * Get values of key from iSCSI PDU Segment Data.
  *
- * @param segment_data  iSCSI PDU Segment Data in asn format 
+ * @param segment_data  iSCSI PDU Segment Data in asn format
  * @param key_index     key index
  *
  * @return key values in asn format or NULL if error occured.
- */ 
+ */
 extern iscsi_key_values tapi_iscsi_get_key_values(
                             iscsi_segment_data segment_data,
                             int key_index);
@@ -433,7 +433,7 @@ extern iscsi_key_values tapi_iscsi_get_key_values(
  * @param values key values in asn format
  *
  * @return number of values or -1 if error occured.
- */ 
+ */
 extern int tapi_iscsi_get_key_values_num(iscsi_key_values values);
 
 /**
@@ -444,9 +444,9 @@ extern int tapi_iscsi_get_key_values_num(iscsi_key_values values);
  * @param value             location for value (OUT)
  *
  * @return 0 or error code
- */ 
-extern int tapi_iscsi_get_key_value(iscsi_key_values values, 
-                                    int key_value_index, 
+ */
+extern int tapi_iscsi_get_key_value(iscsi_key_values values,
+                                    int key_value_index,
                                     char **value);
 
 /* To modify iSCSI PDU Segment Data */
@@ -462,8 +462,8 @@ extern int tapi_iscsi_get_key_value(iscsi_key_values values,
  *                        of key list
  *
  * @return key index or -1 if error occured.
- */ 
-extern int tapi_iscsi_add_new_key(iscsi_segment_data segment_data, 
+ */
+extern int tapi_iscsi_add_new_key(iscsi_segment_data segment_data,
                                   char *name, int key_index);
 
 /**
@@ -474,8 +474,8 @@ extern int tapi_iscsi_add_new_key(iscsi_segment_data segment_data,
  *                 is iscsi_key_value_type_xxx, and value is
  *                 an appropriate type value
  *
- * @return list of values or NULL if error occured.                
- */ 
+ * @return list of values or NULL if error occured.
+ */
 extern iscsi_key_values tapi_iscsi_key_values_create(int num, ...);
 
 /**
@@ -486,16 +486,16 @@ extern iscsi_key_values tapi_iscsi_key_values_create(int num, ...);
  * @param values        list of key values in asn format
  *
  * @return 0 or error code.
- */ 
+ */
 extern int tapi_iscsi_set_key_values(iscsi_segment_data segment_data,
-                                     int key_index, 
+                                     int key_index,
                                      iscsi_key_values values);
 
 /**
  * Free list of key values
  *
  * @param values list of key values.
- */ 
+ */
 extern void tapi_iscsi_free_key_values(iscsi_key_values values);
 
 /**
@@ -505,8 +505,8 @@ extern void tapi_iscsi_free_key_values(iscsi_key_values values);
  * @param key_index       key index
  *
  * @return 0 or error code.
- */ 
-extern int tapi_iscsi_delete_key(iscsi_segment_data segment_data, 
+ */
+extern int tapi_iscsi_delete_key(iscsi_segment_data segment_data,
                                  int key_index);
 
 /**
@@ -517,7 +517,7 @@ extern int tapi_iscsi_delete_key(iscsi_segment_data segment_data,
  *
  * @return              iSCSI PDU Segment Data in  asn format
  *                      or NULL if error occured
- */                      
+ */
 extern iscsi_segment_data tapi_iscsi_keys_create(int num, ...);
 
 /**
@@ -530,8 +530,8 @@ extern iscsi_segment_data tapi_iscsi_keys_create(int num, ...);
  * @param num            number of key values to be checked
  * @param ...            List of key values, they should be
  *                       contained in key values list
- * @return Status code                      
- */ 
+ * @return Status code
+ */
 extern int tapi_iscsi_find_key_and_value(
     iscsi_segment_data segment_data,
     const char *key_name, int num, ...);
@@ -553,16 +553,16 @@ tapi_iscsi_return_key_value(iscsi_segment_data segment_data,
 
 /**
  * Type of action upon key values list.
- */ 
+ */
 typedef enum {
-    tapi_iscsi_insert_key_values, /**< Add new key values to key 
+    tapi_iscsi_insert_key_values, /**< Add new key values to key
                                        values list */
-    tapi_iscsi_replace_key_values,/**< Remove all key values, 
-                                       add new key values to key 
+    tapi_iscsi_replace_key_values,/**< Remove all key values,
+                                       add new key values to key
                                        values list */
     tapi_iscsi_remove_key_values, /**< Remove given key values, if
                                        any, from key values list */
-} tapi_iscsi_change_key_val_type;    
+} tapi_iscsi_change_key_val_type;
 
 /**
  * Change key values list according action given (See comments to
@@ -575,16 +575,16 @@ typedef enum {
  * @param ...             List of key values
  *
  * @return Status code
- */ 
+ */
 extern int tapi_iscsi_change_key_values(
     iscsi_segment_data segment_data,
-    char *key_name, 
+    char *key_name,
     tapi_iscsi_change_key_val_type change,
     int num, ...);
 
 /**
  * Free an iSCSI PDU Segment Data.
- */ 
+ */
 extern void tapi_iscsi_keys_data_free(iscsi_segment_data);
 
 typedef enum {
@@ -632,8 +632,8 @@ typedef enum {
 } tapi_iscsi_parameter_type;
 
 /* Target configuration */
-extern int tapi_iscsi_target_set_parameter(const char *ta, 
-                                           tapi_iscsi_parameter param, 
+extern int tapi_iscsi_target_set_parameter(const char *ta,
+                                           tapi_iscsi_parameter param,
                                            const char *value);
 
 extern int tapi_iscsi_target_customize(const char *ta,
@@ -641,17 +641,17 @@ extern int tapi_iscsi_target_customize(const char *ta,
                                        const char *key,
                                        const char *value);
 
-extern int tapi_iscsi_target_customize_intval(const char *ta, int id, 
+extern int tapi_iscsi_target_customize_intval(const char *ta, int id,
                                               const char *key, int value);
 
-extern int tapi_iscsi_target_cause_logout(const char *ta, int id, 
+extern int tapi_iscsi_target_cause_logout(const char *ta, int id,
                                           int timeout);
 
 
-extern int tapi_iscsi_target_cause_renegotiate(const char *ta, int id, 
+extern int tapi_iscsi_target_cause_renegotiate(const char *ta, int id,
                                                int timeout);
 
-extern int tapi_iscsi_target_will_drop(const char *ta, int id, 
+extern int tapi_iscsi_target_will_drop(const char *ta, int id,
                                        te_bool drop_all,
                                        int time2wait, int time2retain);
 
@@ -750,7 +750,7 @@ extern iscsi_cid tapi_iscsi_initiator_conn_add(const char *ta,
  * Function tries to establish the connection with the given cid
  * between the target and the initiator. Before calling this function
  * the tapi_iscsi_initiator_conn_add() function should be called.
- * 
+ *
  * @param ta         Name of the TA on which the Initiator is placed
  * @param tgt_id     Id of the Target to establish connection with
  * @param cid        ID of the connection to establish
@@ -792,7 +792,7 @@ extern int tapi_iscsi_initiator_conn_down(const char *ta,
 
 
 /**
- * Function converts string representation of iSCSI parameter to 
+ * Function converts string representation of iSCSI parameter to
  * corresponding enum value of tapi_iscsi_parameter type.
  *
  * @param param      Name of the TA on which the Initiator is placed
@@ -803,15 +803,15 @@ extern tapi_iscsi_parameter tapi_iscsi_get_param_map(const char *param);
 
 /**
  * Find specified key name in segment data and determine number of
- * key values for its name. 
+ * key values for its name.
  *
  * @param segment_data    iSCSI PDU Segment Data in asn format
  * @param key_name        the name of key (according to RFC3720)
  * @param key_array       location for pointer to found ASN value
  *                        to key values array (OUT)
  *
- * @return number of key values for passed key name, zero if none, 
- *         or -1 if error encountered. 
+ * @return number of key values for passed key name, zero if none,
+ *         or -1 if error encountered.
  */
 extern int tapi_iscsi_find_key_values(iscsi_segment_data segment_data,
                                       const char *key_name,
@@ -828,7 +828,7 @@ extern int tapi_iscsi_find_key_values(iscsi_segment_data segment_data,
  * @return status of operation
  */
 extern int tapi_iscsi_key_value_read(iscsi_key_values val_array,
-                                     int val_index, char *buf, 
+                                     int val_index, char *buf,
                                      size_t *buf_len);
 /**
  * Write key value by index of value in array.
@@ -843,11 +843,11 @@ extern int tapi_iscsi_key_value_write(iscsi_key_values val_array,
                                       int val_index, const char *string);
 
 
-/** The following functions are DEPRECATED!!! 
+/** The following functions are DEPRECATED!!!
     They will be removed as soon as all the tests use the new API
 */
 
-static inline int 
+static inline int
 tapi_iscsi_set_local_secret(const char *ta, const char *secret)
 {
     return tapi_iscsi_target_set_parameter(ta, ISCSI_PARAM_LOCAL_SECRET,
@@ -855,7 +855,7 @@ tapi_iscsi_set_local_secret(const char *ta, const char *secret)
 }
 
 
-static inline int 
+static inline int
 tapi_iscsi_set_local_name(const char *ta, const char *name)
 {
     return tapi_iscsi_target_set_parameter(ta, ISCSI_PARAM_LOCAL_NAME,
@@ -863,7 +863,7 @@ tapi_iscsi_set_local_name(const char *ta, const char *name)
 }
 
 
-static inline int 
+static inline int
 tapi_iscsi_set_peer_secret(const char *ta, const char *secret)
 {
     return tapi_iscsi_target_set_parameter(ta, ISCSI_PARAM_PEER_SECRET,
@@ -871,7 +871,7 @@ tapi_iscsi_set_peer_secret(const char *ta, const char *secret)
 }
 
 
-static inline int 
+static inline int
 tapi_iscsi_set_peer_name(const char *ta, const char *name)
 {
     return tapi_iscsi_target_set_parameter(ta, ISCSI_PARAM_PEER_NAME,
@@ -879,14 +879,14 @@ tapi_iscsi_set_peer_name(const char *ta, const char *name)
 }
 
 
-static inline int 
+static inline int
 tapi_iscsi_set_challenge_length(const char *ta, int len)
 {
     char buf[8];
     sprintf(buf, "%d", len);
-    return tapi_iscsi_target_set_parameter(ta, 
+    return tapi_iscsi_target_set_parameter(ta,
                                            ISCSI_PARAM_CHANLLENGE_LENGTH,
-                                           buf);    
+                                           buf);
 }
 
 
@@ -907,7 +907,7 @@ tapi_iscsi_set_tgt_auth_req(const char *ta, int tgt_auth)
 }
 
 
-static inline int 
+static inline int
 tapi_iscsi_set_security_negotiations_phase(const char *ta,
                                                int use)
 {
@@ -935,64 +935,64 @@ extern int tapi_iscsi_target_inform_new_test(const char *ta);
 
 /**
  * Mount a target backing store.
- * Note: this will work only if the target is using 
+ * Note: this will work only if the target is using
  * a file-based backing store.
- * 
+ *
  * @param ta    Test Agent name
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_iscsi_target_mount(const char *ta);
 
 /**
  * Unmount a target backing store.
- * 
+ *
  * @param ta    Test Agent name
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_iscsi_target_unmount(const char *ta);
 
 /**
- * Write data to a target's backing store filesystem 
+ * Write data to a target's backing store filesystem
  * to a file with a given name.
  *
- * Note: This function should be called only after 
+ * Note: This function should be called only after
  * tapi_iscsi_target_mount().
- * 
+ *
  * @param ta            Test Agent name
  * @param fname         A filename to write
  * @param data          Buffer to write
  * @param length        Length of data to write
  * @param multiply      Write the buffer that many times
- * 
+ *
  * @return Status code
  *
  * @sa tapi_iscsi_initiator_raw_read
  */
-extern te_errno tapi_iscsi_target_file_write(const char *ta, 
+extern te_errno tapi_iscsi_target_file_write(const char *ta,
                                              const char *fname,
                                              const void *data,
                                              size_t length,
                                              size_t multiply);
 
 /**
- * Read data from a target's backing store filesystem 
+ * Read data from a target's backing store filesystem
  * from a file with a given name.
  *
- * Note: This function should be called only after 
- * tapi_iscsi_target_mount(). 
- * 
+ * Note: This function should be called only after
+ * tapi_iscsi_target_mount().
+ *
  * @param ta            Test Agent name
  * @param fname         A filename to read from
  * @param data          Buffer to store data
  * @param length        Length of buffer
- * 
+ *
  * @return Status code
  *
  * @sa tapi_iscsi_initiator_raw_read
  */
-extern te_errno tapi_iscsi_target_file_read(const char *ta, 
+extern te_errno tapi_iscsi_target_file_read(const char *ta,
                                             const char *fname,
                                             void *data, size_t length);
 
@@ -1008,7 +1008,7 @@ extern te_errno tapi_iscsi_target_file_read(const char *ta,
  * @param data          Buffer to write
  * @param length        Length of data to write
  * @param multiply      Write the buffer that many times
- * 
+ *
  * @return Status code
  *
  * @sa tapi_iscsi_initiator_raw_read
@@ -1027,8 +1027,8 @@ extern te_errno tapi_iscsi_target_raw_write(const char *ta, off_t offset,
  * @param ta            Test Agent name
  * @param offset        A position to read from
  * @param data          Buffer to store data
- * @param length        Length of data  
- * 
+ * @param length        Length of data
+ *
  * @return Status code
  *
  * @sa tapi_iscsi_initiator_raw_write
@@ -1037,21 +1037,21 @@ extern te_errno tapi_iscsi_target_raw_read(const char *ta, off_t offset,
                                            void *data, size_t length);
 
 
-/*** Functions to initiate I/O on an iSCSI device at TA 
+/*** Functions to initiate I/O on an iSCSI device at TA
  *
  * This functions need to be asynchronous because they will
  * cause an initiator to generate traffic that is captured by
  * a test.
- * 
+ *
  * So, the basic action sequence in the test is as follows:
  * -# create a I/O handler with tapi_iscsi_io_prepare()
  * -# issues all the necessary I/O tasks, remembering
  *    the task id of the last task
  * -# proceed with passing iSCSI packets to/from the target,
- *    performing the necessary checks etc, until 
+ *    performing the necessary checks etc, until
  *    tapi_iscsi_io_is_complete() returns TRUE
  * -# destroy the handler with tapi_iscsi_io_finish()
- * 
+ *
  * Note: the processing thread will send a signal to the main thread,
  * so the user should be prepared to handle "interrupted system call"
  * condition, or use tapi_iscsi_io_block_signal()
@@ -1062,8 +1062,8 @@ typedef unsigned iscsi_io_taskid;
 #define ISCSI_IO_SIGNAL        SIGPOLL
 
 /**
- * Create a new asynchronous I/O handler 
- * 
+ * Create a new asynchronous I/O handler
+ *
  * @param ta            Test Agent name
  * @param id            target id to connect
  * @param use_signal    Should a signal be sent after
@@ -1072,13 +1072,13 @@ typedef unsigned iscsi_io_taskid;
  *                      an ISCSI device
  * @param bufsize       Buffer size for file copying operations,
  *                      that is, tapi_iscsi_initiator_read_file() and
- *                      tapi_iscsi_initiator_write_file(). 
+ *                      tapi_iscsi_initiator_write_file().
  * @param ioh           A pointer to resulting handler (OUT)
- * 
+ *
  * @return Status code
  */
-extern te_errno tapi_iscsi_io_prepare(const char *ta, 
-                                      iscsi_target_id id, 
+extern te_errno tapi_iscsi_io_prepare(const char *ta,
+                                      iscsi_target_id id,
                                       te_bool use_signal,
                                       te_bool use_fs,
                                       size_t  bufsize,
@@ -1087,9 +1087,9 @@ extern te_errno tapi_iscsi_io_prepare(const char *ta,
 
 /**
  * Resets the I/O handler task queue
- * 
+ *
  * @param ioh   I/O handler
- * 
+ *
  * @return Status code
  * @retval TE_EINPROGRESS   There are incomplete tasks pending
  */
@@ -1098,47 +1098,47 @@ extern te_errno tapi_iscsi_io_reset(iscsi_io_handle_t *ioh);
 
 /**
  * Destroy an asynchronous I/O handler
- * 
+ *
  * @param ioh   I/O handler
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_iscsi_io_finish(iscsi_io_handle_t *ioh);
 
 
 /**
- * 
- * 
+ *
+ *
  * @param ioh I/O handler
- * @param enable 
+ * @param enable
  *
  * @return Previous state
  */
-extern te_bool tapi_iscsi_io_enable_signal(iscsi_io_handle_t *ioh, 
+extern te_bool tapi_iscsi_io_enable_signal(iscsi_io_handle_t *ioh,
                                            te_bool enable);
 
 /**
  *  Gets the status code of a task of a I/O handler
- * 
+ *
  * @param ioh           I/O handle
  * @param taskid        Task ID
- * 
+ *
  * @return Status code of a given task
  * @retval TE_EINPROGRESS if the task has not completed
  */
-extern te_errno tapi_iscsi_io_get_status(iscsi_io_handle_t *ioh, 
+extern te_errno tapi_iscsi_io_get_status(iscsi_io_handle_t *ioh,
                                          iscsi_io_taskid taskid);
 
 
 /**
  *  Checks whether a task has completed
- * 
+ *
  * @param ioh           I/O handle
  * @param taskid        Task ID
- * 
+ *
  * @return TRUE if the task has completed
  */
-extern te_bool tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, 
+extern te_bool tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh,
                                          iscsi_io_taskid taskid);
 
 
@@ -1154,27 +1154,27 @@ extern te_bool tapi_iscsi_initiator_is_device_ready(const char *ta,
                                                     iscsi_target_id id);
 
 /**
- * Request mounting an iSCSI device on the TA, if the I/O handler 
+ * Request mounting an iSCSI device on the TA, if the I/O handler
  * has been created with "use_fs" == TRUE. Otherwise a no-op.
  *
  * Note: you need to call tapi_iscsi_target_mount() before this
  * function to create a filesystem on a target backing store.
- * 
+ *
  * @param ioh           I/O handler
  * @param taskid        A pointer to store a task ID or NULL (OUT)
- * 
+ *
  * @return Status code
  */
-extern te_errno tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, 
+extern te_errno tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh,
                                            iscsi_io_taskid *taskid);
 
 /**
  * Request unmounting an iSCSI device on the TA.
- * No-op if "use_fs" is not TRUE for the I/O handler. 
+ * No-op if "use_fs" is not TRUE for the I/O handler.
  *
  * @param ioh           I/O handler
  * @param taskid        A pointer to store a task ID or NULL (OUT)
- * 
+ *
  * @return Status code
  */
 extern te_errno tapi_iscsi_initiator_unmount(iscsi_io_handle_t *ioh,
@@ -1210,7 +1210,7 @@ extern te_errno tapi_iscsi_initiator_close(iscsi_io_handle_t *ioh,
                                            iscsi_io_taskid *taskid);
 
 /**
- * Does nothing. 
+ * Does nothing.
  * Its sole purpose is to providc a task to wait for that never fails
  * (useful when testing for a I/O failure).
  *
@@ -1224,7 +1224,7 @@ extern te_errno tapi_iscsi_initiator_noop(iscsi_io_handle_t *ioh,
 
 
 /**
- * Syncs the written data of an iSCSI-mounted filesystem file or 
+ * Syncs the written data of an iSCSI-mounted filesystem file or
  * a SCSI block device.
  *
  * @param ioh           I/O handler
@@ -1282,7 +1282,7 @@ extern te_errno tapi_iscsi_initiator_read(iscsi_io_handle_t *ioh,
 
 /**
  * Request a write operation on an iSCSI device using data from a file.
- * The copying is done in chunks of size 'bufsize' passed 
+ * The copying is done in chunks of size 'bufsize' passed
  * to iscsi_io_prepare().
  *
  * @param ioh           I/O handler
@@ -1298,7 +1298,7 @@ extern te_errno tapi_iscsi_initiator_write_file(iscsi_io_handle_t *ioh,
 
 /**
  * Request a read operation on an iSCSI device putting data to a file.
- * The copying is done in chunks of size 'bufsize' passed 
+ * The copying is done in chunks of size 'bufsize' passed
  * to iscsi_io_prepare().
  *
  * @param ioh           I/O handler

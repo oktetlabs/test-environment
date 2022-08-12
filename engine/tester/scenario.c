@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -204,7 +204,7 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     /* We have processed nothing yet */
     the_end_0 = the_end_1 = 0;
 
-    /* 
+    /*
      * Start from the first element of the list0 and the list1
      * correspondingly (may be NULL)
      */
@@ -222,7 +222,7 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     /* a single obj to pass parameters of all overlaps */
     if ((overlap = calloc(1, sizeof(*overlap))) == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
-    
+
     /*
      * will be allocated again each time the current one is finished
      * and inserted at the end of the resulting list
@@ -230,7 +230,7 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     if ((overlap_grow = calloc(1, sizeof(*overlap_grow))) == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
 
-    /* 
+    /*
      * Init, so it could only be either the first elm or the pregap.
      * Thus, definitely no worry about freeing elm0_prev
      */
@@ -257,10 +257,10 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
             get_operation_result(next0, next1, overlap, op_code);
 
             if (overlap_grow->flags != overlap->flags)
-            {   
+            {
                 /* a different overlap, push the previous into the list */
                 if (overlap_grow->flags != 0)
-                {   
+                {
                     /* insert only non-blank intervals */
                     TAILQ_INSERT_TAIL(&h_rslt, overlap_grow, links);
                     /* need to alloc a new obj to accumulate overlaps: */
@@ -284,7 +284,7 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
                     need_get_next1 = FALSE;
                 }
                 break; /* need to step forward next0 now */
-            }           
+            }
         }
 
         /* step forward next0 */
@@ -292,7 +292,7 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
         next0 = get_next_with_gaps(&elm0, gap0, &the_end_0);
 
         if (result_replace && elm0_prev != elm0)
-        {   
+        {
             /* we empty list0, one entry at a time as we can */
             TAILQ_REMOVE(h0, elm0_prev, links);
             free(elm0_prev); /* assuming elm's are malloc'ed properly */
@@ -317,7 +317,7 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     {
         assert(h0->tqh_first == NULL);
     }
-    
+
     TAILQ_CONCAT(h_rslt_p, &h_rslt, links);
 
     return 0;
@@ -704,7 +704,7 @@ scenario_apply_flags(testing_scenario *scenario,
             }
         }
     }
-        
+
     return 0;
 }
 

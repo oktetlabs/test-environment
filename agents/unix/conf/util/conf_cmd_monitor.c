@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
@@ -38,9 +38,9 @@ TAILQ_HEAD(, cmd_monitor_t) cmd_monitors_h;
 
 /**
  * Searching for the command monitor by name.
- * 
+ *
  * @param name        Command monitor name.
- * 
+ *
  * @return The command monitor structure pointer or @c NULL.
  */
 static cmd_monitor_t *
@@ -123,7 +123,7 @@ _monitor_set_enable(cmd_monitor_t *monitor, te_bool enable)
     }
     else
     {
-        rc = pthread_cancel(monitor->thread); 
+        rc = pthread_cancel(monitor->thread);
         if (rc != 0 && rc != ESRCH)
         {
             ERROR("Cannot cancel the monitor thread for command '%s'",

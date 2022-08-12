@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author: Konstantin Abramenko <konst@oktetlabs.ru>
  *
@@ -1529,7 +1529,7 @@ tapi_tcp_reset_hack_send(const char *ta_name, int session,
 }
 
 int
-tapi_tcp_reset_hack_clear(const char *ta_name, int session, 
+tapi_tcp_reset_hack_clear(const char *ta_name, int session,
                           tapi_tcp_reset_hack_t *context)
 {
     int rc = 0;

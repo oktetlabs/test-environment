@@ -1,14 +1,14 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side - Library
  * Connections API
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 #ifndef __TE_COMM_NET_AGENT_TESTS_LIB_WORKSHOP_H__
 #define __TE_COMM_NET_AGENT_TESTS_LIB_WORKSHOP_H__
@@ -20,7 +20,7 @@ extern "C" {
 
 /**
  * This macro checks the input and output buffers. If an inconsistency is
- * found, the macro bails out of the test. 
+ * found, the macro bails out of the test.
  *
  * @return n/a
  */
@@ -42,7 +42,7 @@ extern "C" {
     } while (0)
 
 /**
- * This macro reports the success of the test. 
+ * This macro reports the success of the test.
  * It should only be called from the main().
  *
  * @return n/a
@@ -64,7 +64,7 @@ extern "C" {
 /**
  * This macro must be called when a message with an attachment
  * was received via rcf_comm_agent_wait() function before trying
- * to compare the input and output buffers. 
+ * to compare the input and output buffers.
  *
  * This macro places a space character before the 'attach <len>'
  * sequence which was overwritten with a '\0' by the Network

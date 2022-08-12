@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -173,7 +173,7 @@ update_files(xmlNodePtr node)
          * work with non-element nodes with which original
          * xInclude nodes are replaced during processing.
          */
-        for (prop = node->properties; prop != NULL; prop = prop->next) 
+        for (prop = node->properties; prop != NULL; prop = prop->next)
         {
             if (xmlStrEqual(prop->name,
                             CONST_CHAR2XML("href")))
@@ -232,7 +232,7 @@ exp_defaults_free(void)
  *
  * @return Status code.
  */
-static void 
+static void
 exp_defaults_init(void)
 {
     if (!exp_defaults_inited)
@@ -276,7 +276,7 @@ exp_defaults_get(te_test_status status)
     TAILQ_INIT(&entry->result.verdicts);
     entry->result.status = status;
     TAILQ_INSERT_HEAD(&p->results, entry, links);
-    
+
     STAILQ_INSERT_TAIL(&exp_defaults, p, links);
 
     return p;
@@ -477,8 +477,8 @@ alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
         return TE_RC(TE_TRC, TE_EFMT);
     }
 
-    TAILQ_FOREACH_REVERSE(insert_after, &args->head, 
-                          trc_test_iter_args_head, 
+    TAILQ_FOREACH_REVERSE(insert_after, &args->head,
+                          trc_test_iter_args_head,
                           links)
     {
         if (strcmp(insert_after->name, p->name) < 0)
@@ -708,7 +708,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
         TAILQ_INIT(&result->results);
         STAILQ_INSERT_TAIL(results, result, links);
         get_expected_result(*node, result, FALSE);
-        *node = xmlNodeNext(*node); 
+        *node = xmlNodeNext(*node);
     }
 
     return 0;
@@ -745,7 +745,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
     }
 
     p->node = p->tests.node = node;
-    
+
     tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("n")));
     if (tmp != NULL)
     {
@@ -767,7 +767,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
         ERROR("Cannot get test iteration result: %r", rc);
         return rc;
     }
-    
+
     p->exp_default = exp_defaults_get(def);
     if (p->exp_default == NULL)
         return TE_ENOMEM;
@@ -940,7 +940,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
         ERROR("%s: failed to alloc\n", __FUNCTION__);
         return TE_RC(TE_TRC, TE_ENOMEM);
     }
-    
+
     if (inc_files != NULL)
     {
         file = TAILQ_LAST(inc_files, trc_files);
@@ -1569,7 +1569,7 @@ trc_exp_result_entry_to_xml(trc_exp_result_entry *res_entry,
 te_errno
 trc_exp_result_to_xml(trc_exp_result *exp_result, xmlNodePtr results_node,
                       te_bool is_default)
-{   
+{
     trc_exp_result_entry    *res_entry;
 
     if (exp_result == NULL)
@@ -1607,7 +1607,7 @@ trc_exp_result_to_xml(trc_exp_result *exp_result, xmlNodePtr results_node,
             trc_exp_result_entry_to_xml(res_entry, results_node);
     }
 
-    return 0; 
+    return 0;
 }
 
 te_errno
@@ -1634,7 +1634,7 @@ trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node,
         }
         else
             xmlAddChild(node, results_node);
-        
+
         trc_exp_result_to_xml(result, results_node, FALSE);
     }
 
@@ -1676,7 +1676,7 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
             xmlFreeNode(p->node);
             p->node = NULL;
         }
-        
+
         if (is_saved)
         {
             trc_test_iter_arg  *a;
@@ -1790,7 +1790,7 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
                         ERROR("xmlNewChild() failed for 'arg'");
                         return TE_ENOMEM;
                     }
-                    
+
                     xmlNodeSetContent(node, a->value == NULL ?
                                                 BAD_CAST a->value :
                                                 strlen(a->value) == 0 ?
@@ -1821,7 +1821,7 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
                         a = NULL;
                     }
                 }
-                    
+
                 if ((node = xmlNewNode(NULL, BAD_CAST "notes")) == NULL)
                 {
                     ERROR("xmlNewChild() failed for 'notes'");
@@ -2256,7 +2256,7 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
                     free(xml_cmd);
                     return TE_ENOMEM;
                 }
-                
+
                 if (xmlAddPrevSibling(child_node, cmd_node) == NULL)
                 {
                     ERROR("xmlPrevSibling() failed\n");

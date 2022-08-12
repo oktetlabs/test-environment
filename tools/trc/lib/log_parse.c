@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
@@ -49,7 +49,7 @@
 
 /**
  * Push value into the stack.
- * 
+ *
  * @param ctx           TRC report log parser context
  * @param value         Value to put on the stack
  *
@@ -74,7 +74,7 @@ trc_log_parse_stack_push(trc_log_parse_ctx *ctx,
 
 /**
  * Pop value from the stack.
- * 
+ *
  * @param ctx           TRC report log parser context
  *
  * @return Value from the stack.
@@ -112,7 +112,7 @@ trc_log_parse_start_document(void *user_data)
 }
 
 /**
- * Callback function that is called when XML parser reaches the end 
+ * Callback function that is called when XML parser reaches the end
  * of the document.
  *
  * @param user_data     Pointer to user-specific data (user context)
@@ -402,7 +402,7 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
         }
         TAILQ_INIT(&ctx->iter_data->runs);
         TAILQ_INSERT_TAIL(&ctx->iter_data->runs, entry, links);
-    
+
         if (ctx->app_id == TRC_LOG_PARSE_APP_UPDATE)
         {
             trc_update_ctx *app_ctx = (trc_update_ctx *)ctx->app_ctx;
@@ -848,7 +848,7 @@ trc_log_parse_start_element(void *user_data,
             {
                 ctx->state = TRC_LOG_PARSE_PARAMS;
             }
-            else 
+            else
             {
                 ctx->skip_state = ctx->state;
                 ctx->skip_depth = 1;
@@ -969,7 +969,7 @@ trc_log_parse_start_element(void *user_data,
 }
 
 /**
- * Callback function that is called when XML parser meets the end of 
+ * Callback function that is called when XML parser meets the end of
  * an element.
  *
  * @param user_data     Pointer to user-specific data (user context)
@@ -1057,7 +1057,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             {
                 trc_update_ctx *app_ctx = (trc_update_ctx *)ctx->app_ctx;
 
-               /* 
+               /*
                 * If we merge iterations from log
                 * into TRC already containing
                 * all currently possible
@@ -1145,7 +1145,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                                                      ctx->tags);
                     /* Update statistics */
                     if (ctx->type == TRC_TEST_SCRIPT)
-                        TAILQ_FIRST(&ctx->iter_data->runs)->is_exp = 
+                        TAILQ_FIRST(&ctx->iter_data->runs)->is_exp =
                             trc_report_test_iter_stats_update(
                                 &ctx->iter_data->stats,
                                 ctx->iter_data->exp_result,
@@ -1162,7 +1162,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                 {
                     /* Update statistics */
                     if (ctx->type == TRC_TEST_SCRIPT)
-                        TAILQ_FIRST(&ctx->iter_data->runs)->is_exp = 
+                        TAILQ_FIRST(&ctx->iter_data->runs)->is_exp =
                             trc_report_test_iter_stats_update(
                                 &iter_data->stats, iter_data->exp_result,
                                 &TAILQ_FIRST(&ctx->iter_data->runs)->
@@ -1287,7 +1287,7 @@ trc_log_parse_problem(void *user_data, const char *msg, ...)
     va_list ap;
 
     UNUSED(user_data);
-    
+
     va_start(ap, msg);
     vfprintf(stderr, msg, ap);
     va_end(ap);

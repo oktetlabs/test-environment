@@ -5,12 +5,12 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- */ 
+ */
 
 #define TE_LGR_USER     "TAPI ARP"
 
@@ -19,7 +19,7 @@
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_STRING_H 
+#ifdef HAVE_STRING_H
 #include <string.h>
 #endif
 #ifdef HAVE_STRINGS_H
@@ -72,7 +72,7 @@ tapi_arp_eth_csap_create(const char     *ta_name,
                          const char     *device,
                          unsigned int    receive_mode,
                          const uint8_t  *remote_addr,
-                         const uint8_t  *local_addr, 
+                         const uint8_t  *local_addr,
                          const uint16_t *hw_type,
                          const uint16_t *proto_type,
                          const uint8_t  *hw_size,
@@ -106,7 +106,7 @@ eth_frame_callback(const asn_value *packet, int layer,
                    const uint8_t *payload, uint16_t plen,
                    void *user_data)
 {
-    struct tapi_arp_pkt_handler_data *i_data = 
+    struct tapi_arp_pkt_handler_data *i_data =
         (struct tapi_arp_pkt_handler_data *)user_data;
 
     te_errno            rc;
@@ -169,11 +169,11 @@ tapi_arp_trrecv_cb_data(tapi_arp_frame_callback  callback,
     }
     cb_data->callback = callback;
     cb_data->user_data = user_data;
-    
+
     res = tapi_eth_trrecv_cb_data(eth_frame_callback, cb_data);
     if (res == NULL)
         free(cb_data);
-    
+
     return res;
 }
 
@@ -201,7 +201,7 @@ arp_frame_callback(const tapi_arp_frame_t *arp_frame, void *userdata)
      * from the function.
      */
     info->num++;
-    info->frames = 
+    info->frames =
         (tapi_arp_frame_t *)realloc(info->frames,
                                     sizeof(tapi_arp_frame_t) * info->num);
     if (info->frames == NULL)
@@ -215,7 +215,7 @@ arp_frame_callback(const tapi_arp_frame_t *arp_frame, void *userdata)
     if (arp_frame->data != NULL)
     {
         /* Allocate memory under ARP payload - which is not usual */
-        info->frames[info->num - 1].data = 
+        info->frames[info->num - 1].data =
             (uint8_t *)malloc(arp_frame->data_len);
         if (info->frames[info->num - 1].data == NULL)
         {
@@ -236,15 +236,15 @@ tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
     int                 rc;
     arp_frame_cb_info_t info;
     unsigned int        num_tmp;
-    
+
     if (frames == NULL || num == NULL)
         return TE_EINVAL;
 
     memset(&info, 0, sizeof(info));
-    
+
     rc = tapi_tad_trrecv_start(ta_name, sid, arp_csap, pattern,
                                timeout, *num, RCF_TRRECV_PACKETS);
-    
+
     if (rc != 0)
     {
         ERROR("tapi_arp_recv_start() returns %r", rc);
@@ -259,7 +259,7 @@ tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
     if (rc != 0 || info.rc != 0)
     {
         unsigned int i;
-        
+
         ERROR("rcf_ta_trrecv_wait() returns %X, info.rc %r", rc, info.rc);
         for (i = 0; i < info.num; i++)
         {
@@ -270,7 +270,7 @@ tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
         return (rc != 0) ? rc : info.rc;
     }
     WARN("info.num = %d, num_tmp = %u", info.num, num_tmp);
-    
+
     assert(info.num == num_tmp);
 
     *num = info.num;
@@ -290,7 +290,7 @@ tapi_arp_prepare_template(const tapi_arp_frame_t *frame, asn_value **templ)
 
     if (frame == NULL || templ == NULL)
         return TE_EINVAL;
-    
+
     if ((frame->data == NULL) != (frame->data_len == 0))
     {
         ERROR("'data' and 'data_len' fields should be 'NULL' and zero, "
@@ -355,7 +355,7 @@ tapi_arp_prepare_pattern_eth_only(const uint8_t *src_mac,
 
 
 /* See the description in tapi_arp.h */
-te_errno 
+te_errno
 tapi_arp_add_csap_layer(asn_value      **csap_spec,
                         const uint16_t  *hw_type,
                         const uint16_t  *proto_type,

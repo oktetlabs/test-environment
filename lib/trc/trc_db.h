@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -61,9 +61,9 @@ struct trc_test;
 
 /** Head of the list with tests */
 typedef struct trc_tests {
-    
+
     xmlNodePtr  node;   /**< XML node with this element */
-    
+
     TAILQ_HEAD(, trc_test)  head;   /**< Head of the list */
 
 } trc_tests;
@@ -81,9 +81,9 @@ typedef struct trc_globals {
 typedef struct trc_test_iter {
 
     xmlNodePtr  node;   /**< XML node with this element */
-    
+
     TAILQ_ENTRY(trc_test_iter)  links;  /**< List links */
-    
+
     struct trc_test    *parent;     /**< Back reference */
 
     trc_test_iter_args  args;       /**< Iteration arguments */
@@ -416,7 +416,7 @@ extern te_errno get_expected_result(xmlNodePtr node,
 /**
  * Get expected results from XML.
  *
- * @param node      Location of the first non-arg node of the test 
+ * @param node      Location of the first non-arg node of the test
  *                  iteration (IN), of the first non-result node of the
  *                  test iteration (OUT)
  * @param results   Location for the expected results data

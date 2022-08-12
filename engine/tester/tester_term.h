@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -50,7 +50,7 @@ extern void tester_term_out_start(tester_flags flags,
  * @param tin       Test identification number
  * @param parent    Parent ID
  * @param self      Self ID of the test
- * @param status    Test status 
+ * @param status    Test status
  * @param trcv      TRC result
  */
 extern void tester_term_out_done(tester_flags flags,

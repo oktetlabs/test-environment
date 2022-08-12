@@ -9,17 +9,17 @@
 #
 #
 
-BEGIN { 
-    FS=":"; 
-    runs = 1; 
-    fun = "*"; 
+BEGIN {
+    FS=":";
+    runs = 1;
+    fun = "*";
     lines = 0;
     executed = 0;
     nbranches = 0;
     exbranches = 0;
 }
 
-$2 == 0 { 
+$2 == 0 {
     if ($3 == "Source")
     {
         if ((getline tmp < $4) > 0)
@@ -95,16 +95,16 @@ function print_branches() {
     {
         header++;
     }
-    
+
     split("", branches);
     split("", calls);
-    fun = "*"    
+    fun = "*"
 }
 
 $1 ~ /#$/ { lines++; printf 0; next }
 {
     gsub(/[[:space:]]/, "");
-    if ($1 != "-") 
+    if ($1 != "-")
     {
         lines++;
         executed++;
@@ -112,10 +112,10 @@ $1 ~ /#$/ { lines++; printf 0; next }
     printf $1;
 }
 
-END { 
-    print_branches(); 
+END {
+    print_branches();
     print "SUMMARY", lines, executed, nbranches, exbranches
 }
 
-    
+
 

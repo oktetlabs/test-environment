@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -96,7 +96,7 @@ rpc_find_func(rcf_rpc_server *rpcs, const char * func_name)
 int
 rpc_vlan_get_parent(rcf_rpc_server *rpcs, const char *vlan_ifname,
                     char *parent_ifname)
-{   
+{
     int rc;
 
     struct tarpc_vlan_get_parent_in  in;
@@ -263,8 +263,8 @@ rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
 }
 
 /* See description in tapi_rpc_misc.h */
-te_bool 
-rpc_protocol_info_cmp(rcf_rpc_server *rpcs, 
+te_bool
+rpc_protocol_info_cmp(rcf_rpc_server *rpcs,
                       const uint8_t *buf1,
                       const uint8_t *buf2,
                       tarpc_bool is_wide1,
@@ -301,7 +301,7 @@ rpc_protocol_info_cmp(rcf_rpc_server *rpcs,
         in.buf2.buf2_len = rpc_get_sizeof(rpcs, "WSAPROTOCOL_INFOA");
     in.is_wide1 = is_wide1;
     in.is_wide2 = is_wide2;
-    
+
 
     rcf_rpc_call(rpcs, "protocol_info_cmp", &in, &out);
 
@@ -1735,7 +1735,7 @@ rpc_create_child_process_socket(const char *method,
     static int  counter = 1;
 
     sprintf(process_name, "pco_child%d", counter++);
-    
+
     if (strcmp(method, "inherit") == 0)
     {
         rcf_rpc_server_fork(pco_father, process_name, pco_child);
@@ -1753,27 +1753,27 @@ rpc_create_child_process_socket(const char *method,
              father_s, rpc_getpid(pco_father), rpc_getpid(*pco_child));
         return;
     }
-    
-    if (strcmp(method, "inherit_no_net_init") == 0)    
+
+    if (strcmp(method, "inherit_no_net_init") == 0)
     {
         rcf_rpc_server_create_process(pco_father, process_name, 0,
                                       pco_child);
         *child_s = father_s;
         RING("Inherit socket %d from process %d to process %d",
              father_s, rpc_getpid(pco_father), rpc_getpid(*pco_child));
-        return;        
+        return;
     }
-    
+
     if (strcmp(method, "DuplicateSocket") == 0)
     {
         pid_t pid;
-        
+
         rcf_rpc_server_create(pco_father->ta, process_name, pco_child);
         pid = rpc_getpid(*pco_child);
         rpc_wsa_duplicate_socket(pco_father, father_s, pid,
                                  info, &info_len);
         *child_s = rpc_wsa_socket(*pco_child, domain, sock_type,
-                                  RPC_PROTO_DEF, info, info_len, 
+                                  RPC_PROTO_DEF, info, info_len,
                                   RPC_WSA_FLAG_OVERLAPPED);
         RING("Duplicate socket: %d (process %d) -> %d (process %d)",
              father_s, rpc_getpid(pco_father), *child_s, pid);
@@ -1781,7 +1781,7 @@ rpc_create_child_process_socket(const char *method,
     else if (strcmp(method, "DuplicateHandle") == 0)
     {
         pid_t pid1, pid2;
-        
+
         rcf_rpc_server_create(pco_father->ta, process_name, pco_child);
         pid1 = rpc_getpid(pco_father);
         pid2 = rpc_getpid(*pco_child);
@@ -1791,17 +1791,17 @@ rpc_create_child_process_socket(const char *method,
     }
     else if (strcmp(method, "DuplicateSocket_self") == 0)
     {
-        rpc_wsa_duplicate_socket(pco_father, father_s, 
+        rpc_wsa_duplicate_socket(pco_father, father_s,
                                  rpc_getpid(pco_father), info, &info_len);
         *pco_child = pco_father;
         *child_s = rpc_wsa_socket(pco_father, domain, sock_type,
-                                  RPC_PROTO_DEF, info, info_len, 
+                                  RPC_PROTO_DEF, info, info_len,
                                   RPC_WSA_FLAG_OVERLAPPED);
     }
     else if (strcmp(method, "DuplicateHandle_self") == 0)
     {
         pid_t pid = rpc_getpid(pco_father);
-        
+
         rpc_duplicate_handle(pco_father, pid, father_s, pid, child_s);
         *pco_child = pco_father;
     }
@@ -1958,7 +1958,7 @@ rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
         RETVAL_INT(mcast_join_leave, -1);
     }
 
-    in.how = how;    
+    in.how = how;
 
     rcf_rpc_call(rpcs, "mcast_join_leave", &in, &out);
 
@@ -1973,7 +1973,7 @@ rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
     RETVAL_INT(mcast_join_leave, out.retval);
 }
 
-int 
+int
 rpc_mcast_join(rcf_rpc_server *rpcs, int s,
                const struct sockaddr *mcast_addr, int if_index,
                tarpc_joining_method how)
@@ -1981,7 +1981,7 @@ rpc_mcast_join(rcf_rpc_server *rpcs, int s,
     return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, FALSE, how);
 }
 
-int 
+int
 rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
                 const struct sockaddr *mcast_addr, int if_index,
                 tarpc_joining_method how)
@@ -1989,7 +1989,7 @@ rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
     return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, TRUE, how);
 }
 
-/* 
+/*
  * Join or leave multicast group with source.
  * For description see tapi_rpc_misc.h
  */
@@ -2123,7 +2123,7 @@ rpc_common_mcast_leave(rcf_rpc_server *rpcs, int s,
 
 #if HAVE_LINUX_ETHTOOL_H
 int
-rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd, 
+rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
                   const char *ifname, void *edata)
 {
     struct ifreq    ifreq;

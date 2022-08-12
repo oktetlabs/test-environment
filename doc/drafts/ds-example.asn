@@ -9,12 +9,12 @@ example-pkt-udp UDPDatagram ::=
 
 example-pkt-ip IPDatagram ::=
 {
-    header { src-addr plain: {192 168 254 1} }, 
+    header { src-addr plain: {192 168 254 1} },
     payload udp-data:example-pkt-udp
 }
 
 example-pkt-eth EthernetFrame ::=
-{ 
+{
     header {src-addr plain:'000102030405'H},
     payload ip-data:example-pkt-ip
 }
@@ -59,7 +59,7 @@ udp-csap-1 CSAP-spec ::=
          dst-addr plain:{192 168 253 11},
          router   plain:{192 168 254 1}
         },
-    udp:{src-port script:"random", 
+    udp:{src-port script:"random",
          dst-port plain:1650
         }
 }
@@ -69,7 +69,7 @@ udp-csap-2 CSAP-spec ::=
     ip4:{src-addr env:"usertest.udp1.srcIp",
          dst-addr env:"usertest.udp1.dstIp"
         },
-    udp:{src-port script:"random", 
+    udp:{src-port script:"random",
          dst-port env:"usertest.udp1.dstPort"
         }
 }
@@ -115,10 +115,10 @@ ip4-tmpl-0 Traffic-Template::=
 ip4-tmpl-0 Traffic-Template::=
 {
     dimension 1,
-    arg-sets {simple-for:{ begin 1, end 10}}, 
+    arg-sets {simple-for:{ begin 1, end 10}},
     headers {
-        ip4:{ 
-            type-of-service plain:2, 
+        ip4:{
+            type-of-service plain:2,
             ip-len          plain:100,
             ip-ident        script:"$1"
         }
@@ -134,7 +134,7 @@ tcp-pattern-0 Traffic-Pattern ::=
 	protocol plain:"6",
         src-addr script:"192.168.254.0/24"
     }
-    tcp:{ 
+    tcp:{
         src-port enum:{1200, 1220, 1221, 5640},
         seqn     intervals:{{b 0, e 20}, {b 100, e 105}},
         flags    mask:{v '05'H, m '07'H}

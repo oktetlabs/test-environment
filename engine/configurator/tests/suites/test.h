@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author  Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
@@ -53,7 +53,7 @@
     pthread_t               rcf_emul_thread;                \
     int                     rc = -1;                        \
     int                     result = -1;                    \
-    
+
 /**
  * Starting RCF emulator thread. No configurations are created.
  *
@@ -147,7 +147,7 @@
         }                                                                    \
     } while (0)
 
-/* 
+/*
  * Exports environment variables which are necessary
  * for correct work of the testing network.
  *

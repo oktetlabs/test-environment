@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package version="1.0">
-    
+
     <description>CLI CSAP tests</description>
-    
+
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
 
     <session>

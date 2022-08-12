@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * iSCSI CSAP and TAPI test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "iscsi/establish"
@@ -51,8 +51,8 @@ uint8_t rx_buffer[10000];
 
 
 int
-main(int argc, char *argv[]) 
-{ 
+main(int argc, char *argv[])
+{
     csap_handle_t iscsi_csap = CSAP_INVALID_HANDLE;
     csap_handle_t listen_csap = CSAP_INVALID_HANDLE;
     csap_handle_t acc_csap = CSAP_INVALID_HANDLE;
@@ -75,15 +75,15 @@ main(int argc, char *argv[])
 
     in_addr_t csap_ip_addr = inet_addr("192.168.37.18");
 
-    TEST_START; 
-    
+    TEST_START;
+
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
     agt_a = ta;
-    if (strlen(ta) + 1 >= len) 
+    if (strlen(ta) + 1 >= len)
         TEST_FAIL("There is no second Test Agent");
 
     agt_b = ta + strlen(ta) + 1;
@@ -94,8 +94,8 @@ main(int argc, char *argv[])
         TEST_FAIL("Cannot create server %x", rc);
 
     rpc_srv->def_timeout = 5000;
-    
-    rcf_rpc_setlibname(rpc_srv, NULL); 
+
+    rcf_rpc_setlibname(rpc_srv, NULL);
 
     csap_addr.sin_family = AF_INET;
     csap_addr.sin_addr.s_addr = csap_ip_addr;
@@ -105,7 +105,7 @@ main(int argc, char *argv[])
 
     rc = tapi_tcp_server_csap_create(agt_a, 0, &csap_addr, &listen_csap);
     if (rc != 0)
-        TEST_FAIL("server csap create failed: %r", rc); 
+        TEST_FAIL("server csap create failed: %r", rc);
 
     pid = rpc_ta_shell_cmd_ex(rpc_srv, "/tmp/ini-conn-up", -1, NULL, NULL);
 
@@ -114,7 +114,7 @@ main(int argc, char *argv[])
 
     rc = tapi_tcp_server_recv(agt_a, 0, listen_csap, 1000, &acc_sock);
     if (rc != 0)
-        TEST_FAIL("recv accepted socket failed: %r", rc); 
+        TEST_FAIL("recv accepted socket failed: %r", rc);
 
     RING("acc socket: %d", acc_sock);
 
@@ -124,7 +124,7 @@ main(int argc, char *argv[])
 
     rc = tapi_iscsi_csap_create(agt_a, 0, &iscsi_csap);
     if (rc != 0)
-        TEST_FAIL("iSCSI csap create failed: %r", rc); 
+        TEST_FAIL("iSCSI csap create failed: %r", rc);
 
 
     /*
@@ -135,33 +135,33 @@ main(int argc, char *argv[])
         /* I->T */
         len = sizeof(rx_buffer);
         memset(rx_buffer, 0, len);
-        rc = tapi_tcp_buffer_recv(agt_a, 0, acc_csap, 2000, 
-                                  CSAP_INVALID_HANDLE, FALSE, 
+        rc = tapi_tcp_buffer_recv(agt_a, 0, acc_csap, 2000,
+                                  CSAP_INVALID_HANDLE, FALSE,
                                   rx_buffer, &len);
         if (rc != 0)
-            TEST_FAIL("recv from NET failed: %r", rc); 
+            TEST_FAIL("recv from NET failed: %r", rc);
         RING("received %d bytes from NET", len);
 
         rc = tapi_iscsi_send_pkt(agt_a, 0, iscsi_csap, NULL,
                                  rx_buffer, len);
         if (rc != 0)
-            TEST_FAIL("send to TARGET failed: %r", rc); 
+            TEST_FAIL("send to TARGET failed: %r", rc);
 
         /* T->I */
         len = sizeof(tx_buffer);
         memset(tx_buffer, 0, len);
-        rc = tapi_iscsi_recv_pkt(agt_a, 0, iscsi_csap, 2000, 
-                                  CSAP_INVALID_HANDLE, NULL, 
+        rc = tapi_iscsi_recv_pkt(agt_a, 0, iscsi_csap, 2000,
+                                  CSAP_INVALID_HANDLE, NULL,
                                   tx_buffer, &len);
         if (rc != 0)
-            TEST_FAIL("recv on CSAP failed: %r", rc); 
+            TEST_FAIL("recv on CSAP failed: %r", rc);
 
         INFO("+++++++++++ data from TARGET to NET: %Tm", tx_buffer, len);
 
-        rc = tapi_tcp_buffer_send(agt_a, 0, acc_csap, 
+        rc = tapi_tcp_buffer_send(agt_a, 0, acc_csap,
                                   tx_buffer, len);
         if (rc != 0)
-            TEST_FAIL("recv on CSAP failed: %r", rc); 
+            TEST_FAIL("recv on CSAP failed: %r", rc);
     } while (1);
 
 #if 0

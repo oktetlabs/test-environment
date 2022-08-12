@@ -6,13 +6,13 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_TA_UNIX_INTERNAL_H__
 #define __TE_TA_UNIX_INTERNAL_H__
 
@@ -95,11 +95,11 @@ ifname_without_vlan(const char *ifname)
 {
     static char tmp[IFNAMSIZ];
     char       *s;
-    
+
     strcpy(tmp, ifname);
     if ((s = strchr(tmp, '.')) != NULL)
         *s = '\0';
-        
+
     return tmp;
 }
 #elif defined(__sun__)
@@ -136,7 +136,7 @@ ifname_without_vlan(const char *ifname)
 
     if (tok_found == 0) /* no 00 token, just a regular ifname: we copy */
     {
-        for (; k < len; k++)       
+        for (; k < len; k++)
             tmp[k] = ifname[k];
     }
     else
@@ -194,7 +194,7 @@ extern te_errno ta_interface_oper_status_get(const char *ifname,
  *
  * @return              Status code
  */
-extern te_errno ta_interface_status_get(const char *ifname, 
+extern te_errno ta_interface_status_get(const char *ifname,
                                         te_bool *status);
 
 /**

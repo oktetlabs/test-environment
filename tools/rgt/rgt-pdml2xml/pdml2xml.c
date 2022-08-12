@@ -1,11 +1,11 @@
-/** @file 
+/** @file
  * @brief Test Environment: pdml->te_xml conversion utility.
  *
  * Implementation of capture log converter.
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrey Dmitrov  <Andrey.Dmitrov@oktetlabs.ru>
  *
@@ -85,10 +85,10 @@ static const char *atts_list[RGT_ATTS_LIST_LEN] = {
 
 /**
  * Get the attribute value.
- * 
+ *
  * @param name      The attribute name
  * @param atts      Attributes array
- * 
+ *
  * @return Attribute value or NULL in case of failure
  */
 static const char *
@@ -110,7 +110,7 @@ rgt_get_attr_val(const char *name, const char **atts)
 
 /**
  * Find the ts_val attribute and get timestamp value of the message.
- * 
+ *
  * @param atts  Array with element attributes
  * @param ctx   Stream context
  */
@@ -159,10 +159,10 @@ rgt_get_msg_ts(const char **atts, rgt_user_ctx *ctx)
 /* Size of remainder of the buffer. */
 #define SIZE (pbuff.size - pbuff.offset)
 
-/** 
+/**
  * Macro to save fmt string into the packet buffer. Buffer can be increased,
  * if it is necessary.
- * 
+ *
  * @param fmt   fmt string.
  */
 #define RGT_SAVE_STR(_fmt...) \
@@ -187,7 +187,7 @@ rgt_get_msg_ts(const char **atts, rgt_user_ctx *ctx)
 
 /**
  * Save the last tag to context to print later.
- * 
+ *
  * @param tag   The tag name
  * @param atts  Array with element attributes
  * @param ctx   Stream context
@@ -232,9 +232,9 @@ rgt_save_tag(const char *tag, const char **atts)
 
 /**
  * Decode hex symbols separated by ':' to ASCII chars.
- * 
+ *
  * @param hex_data      Source string
- * 
+ *
  * @return Decoded string or NULL in case of failure
  */
 static char *
@@ -263,7 +263,7 @@ rgt_data_decoding(const char *hex_data)
 /**
  * Parse info string to get agent, interface and sniffer names of the
  * capture file.
- * 
+ *
  * @param info  String with info
  * @param ctx   User context
  */
@@ -413,7 +413,7 @@ rgt_log_characters(void *in_ctx, const xmlChar *ch, int len)
 
 /**
  * Print the saved packet to the output file.
- * 
+ *
  * @param ctx   The user context
  */
 static void
@@ -426,7 +426,7 @@ rgt_print_saved_packet(rgt_user_ctx *ctx)
 }
 
 /**
- * Callback function that is called when XML parser meets the end of 
+ * Callback function that is called when XML parser meets the end of
  * an element.
  *
  * @param  in_ctx     Pointer to user-specific data (user context)
@@ -472,7 +472,7 @@ rgt_log_end_element(void *in_ctx, const xmlChar *xml_tag)
                 ctx->state = RGT_LOG_STATE_BASE;
                 rgt_print_saved_packet(ctx);
                 pbuff.offset = 0;
-             }            
+             }
             break;
 
         default:
@@ -509,9 +509,9 @@ rgt_log_end_document(void *in_ctx)
  * The callback is called for resolving entities (& NAME ;)
  * In case of SAX parser it converts standard entities into their values
  * (&gt; -> ">", &lt; -> "<", &amp; -> "&"),
- * but in case of HTML we must not convert them, but leave them as they 
+ * but in case of HTML we must not convert them, but leave them as they
  * are, so that this function makes a HACK for that.
- * If you want how to force libxml2 SAX parser leave standard entries 
+ * If you want how to force libxml2 SAX parser leave standard entries
  * without expanding - update this code!
  */
 static xmlEntityPtr
@@ -637,7 +637,7 @@ rgt_parse_input_stream(void)
 
 /**
  * Parse pdml file to convert into TE XML log file.
- * 
+ *
  * @param fname     Input file name.
  */
 static void
@@ -697,7 +697,7 @@ main(int argc, char **argv)
 
     if (strcmp(argv[1], "-") == 0)
         rgt_parse_input_stream();
-    else 
+    else
         rgt_parse_pdml_file(argv[1]);
 
     fclose(res_fd);

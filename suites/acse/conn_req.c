@@ -2,10 +2,10 @@
  * @brief Test Environment
  *
  * Check ACSE functionality: ConnectionRequest to CPE
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  */
 
@@ -15,11 +15,11 @@
  *            ConnectionRequest from ACSE.
  *
  * @param cpe_ip                IP address of CPE
- * @param acse_port             TCP port to listen HTTP connection 
+ * @param acse_port             TCP port to listen HTTP connection
  *                              from CPE on ACSE
  * @param cpe_cr_url            URL for ConnectionRequest to CPE
- * @param cpe_cr_username       username for ConnectionRequest to CPE 
- * @param cpe_cr_password       password for ConnectionRequest to CPE 
+ * @param cpe_cr_username       username for ConnectionRequest to CPE
+ * @param cpe_cr_password       password for ConnectionRequest to CPE
  *
  * @par Scenario:
  *
@@ -27,12 +27,12 @@
  * -# Configure ACS object and CPE on ACSE, pass @p cpe_ip, @p acse_port,
  *    @p cpe_cr_url, @p cpe_cr_username, @p cpe_cr_password to ACSE.
  * -# Initiate ConnectionRequest to CPE from ACSE.
- * -# Wait ConnectionRequest results, check success, that is 
+ * -# Wait ConnectionRequest results, check success, that is
  *    established CWMP session.
- * -# Get from ACSE last received Inform from CPE, check it is 
+ * -# Get from ACSE last received Inform from CPE, check it is
  *    '6 CONNECTION REQUEST'.
  * -# Close CWMP session: wait for empty HTTP Post from CPE,
- *    response to it with empty HTTP OK. 
- * 
+ *    response to it with empty HTTP OK.
+ *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  */

@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
@@ -74,7 +74,7 @@ tapi_radius_code2str(tapi_radius_code_t code)
         default:
         {
             static char unknown_code[32];
-        
+
             snprintf(unknown_code, sizeof(unknown_code),
                      "Unknown(%u)", code);
             return unknown_code;
@@ -95,7 +95,7 @@ typedef enum {
     TAPI_RADIUS_TYPE_INTEGER,   /**< 32 bit unsigned value */
     TAPI_RADIUS_TYPE_TIME,      /**< 32 bit unsigned value,
                                      seconds since 19700101T000000Z */
-    TAPI_RADIUS_TYPE_UNKNOWN    /**< Attribute is not from 
+    TAPI_RADIUS_TYPE_UNKNOWN    /**< Attribute is not from
                                      TAPI RADIUS dictionary */
 } tapi_radius_type_t;
 
@@ -124,7 +124,7 @@ tapi_radius_attr_type2str(tapi_radius_type_t type)
         default:
         {
             static char unknown_type[32];
-        
+
             snprintf(unknown_type, sizeof(unknown_type),
                      "Unknown(%u)", type);
             return unknown_type;
@@ -171,7 +171,7 @@ tapi_radius_acct_status2str(tapi_radius_acct_status_t status)
         default:
         {
             static char unknown_status[32];
-        
+
             snprintf(unknown_status, sizeof(unknown_status),
                      "Unknown(%u)", status);
             return unknown_status;
@@ -209,7 +209,7 @@ typedef enum {
 } tapi_radius_term_cause_t;
 
 /**
- * Convert the value of Acct-Terminate-Cause RADIUS attribute 
+ * Convert the value of Acct-Terminate-Cause RADIUS attribute
  * from integer to readable string.
  *
  * @param cause  the value of Acct-Terminate-Cause attribute
@@ -245,11 +245,11 @@ tapi_radius_term_cause2str(tapi_radius_term_cause_t cause)
         CAUSE2STR(HOST_REQUEST);
         CAUSE2STR(SUPP_RESTART);
         CAUSE2STR(REAUTH_FAILURE);
-        
+
         default:
         {
             static char unknown_cause[32];
-        
+
             snprintf(unknown_cause, sizeof(unknown_cause),
                      "Unknown(%u)", cause);
             return unknown_cause;
@@ -342,7 +342,7 @@ typedef struct tapi_radius_pkt_handler_data {
 } tapi_radius_pkt_handler_data;
 
 
-/** 
+/**
  * Initialize RADIUS attribute dictionary
  * (this function should be called before any other TAPI RADIUS calls)
  */
@@ -499,14 +499,14 @@ extern te_errno tapi_radius_csap_create(const char *ta, int sid,
 /*
  * Interface to configure RADIUS Server:
  * This API simplify managing of RADIUS Server configuration, which is
- * done via Configurator DB. The configuration model can be found at 
+ * done via Configurator DB. The configuration model can be found at
  * doc/cm/cm_radius.xml
  */
 
-/** 
+/**
  * Structure that keeps configuration of RADIUS Server.
  * This structure was created to make tapi_radius_serv_set()
- * function backward compatible when someone adds a new configuration 
+ * function backward compatible when someone adds a new configuration
  * value for RADIUS Server.
  */
 typedef struct tapi_radius_serv_s {
@@ -518,18 +518,18 @@ typedef struct tapi_radius_serv_s {
                                    default value. */
     struct in_addr net_addr; /**< Network address on which RADIUS Server
                                   listens incoming Requests,
-                                  INADDR_ANY means that we want RADIUS 
+                                  INADDR_ANY means that we want RADIUS
                                   Server listen on all interfaces. */
 } tapi_radius_serv_t;
 
-/** 
+/**
  * Structure that keeps configuration of RADIUS Client.
  * This structure was created to make tapi_radius_serv_add_client()
- * function backward compatible when someone adds a new configuration 
+ * function backward compatible when someone adds a new configuration
  * value for RADIUS Client.
  */
 typedef struct tapi_radius_clnt_s {
-    const char     *secret; /**< Secret string that should be shared 
+    const char     *secret; /**< Secret string that should be shared
                                  between RADIUS Server and Client */
     struct in_addr  net_addr; /**< Network address of RADIUS Client */
 } tapi_radius_clnt_t;
@@ -743,7 +743,7 @@ tapi_radius_disable_auth(const char *ta_name,
  * @param ta_name   Name of TA where supplicant resides
  * @param if_name   Name of interface which is controlled by supplicant
  * @param value     Required supplicant state (0 to disable, 1 to enable)
- * 
+ *
  * @return Status of the operation.
  */
 static inline te_errno

@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
@@ -42,7 +42,7 @@ int tapi_check_pipe(rcf_rpc_server *rpcs, int *pipefds)
         ERROR("Incorrect amount of data was received on the pipe.");
         return -1;
     }
-        
+
     if (memcmp(tx_buf, rx_buf, CHECK_BUF_SIZE) != 0)
     {
         ERROR("Incorrect data were received on the pipe.");

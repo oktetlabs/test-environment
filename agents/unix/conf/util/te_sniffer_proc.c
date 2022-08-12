@@ -63,12 +63,12 @@ typedef struct dump_info {
     pcap_dumper_t  *dumper;                 /**< Structure for capture file
                                                  descriptor */
     int             fd;                     /**< File descriptor */
-    overfill_type   overfilltype;           /**< Overfill handle method: 
+    overfill_type   overfilltype;           /**< Overfill handle method:
                                                  0 - rotation (default),
                                                  1 - tail drop. */
 } dump_info;
 
-static unsigned long long  absolute_offset;   /**< Absolute offset of the 
+static unsigned long long  absolute_offset;   /**< Absolute offset of the
                                                    first byte in the first
                                                    packet */
 static size_t              total_filled_mem;   /**< Total filled memory */
@@ -90,12 +90,12 @@ static int
 file_list_put(char *name)
 {
     struct file_list_s *file;
-    
+
     file = malloc(sizeof(struct file_list_s));
     if (file == NULL)
         return -1;
     file->name = name;
-    
+
     if (SIMPLEQ_EMPTY(&head_file_list))
         SIMPLEQ_INSERT_HEAD(&head_file_list, file, pointers);
     else
@@ -112,14 +112,14 @@ file_list_put(char *name)
 static int
 file_list_rm_first(void)
 {
-    if ((SIMPLEQ_FIRST(&head_file_list) == NULL) || 
+    if ((SIMPLEQ_FIRST(&head_file_list) == NULL) ||
         (SIMPLEQ_FIRST(&head_file_list)->name == NULL))
         return -1;
 
     remove(SIMPLEQ_FIRST(&head_file_list)->name);
     free(SIMPLEQ_FIRST(&head_file_list)->name);
     SIMPLEQ_REMOVE_HEAD(&head_file_list, pointers);
-    
+
     return 0;
 }
 
@@ -134,13 +134,13 @@ used_space(void)
     size_t              total = 0;
     struct stat         st;
     struct file_list_s *f;
-    
+
     SIMPLEQ_FOREACH(f, &head_file_list, pointers)
     {
         if (stat(f->name, &st) == 0)
             total += st.st_size;
     }
-    
+
     return total;
 }
 
@@ -154,12 +154,12 @@ count_fnum(void)
 {
     size_t              fnum = 0;
     struct file_list_s *f;
-    
+
     SIMPLEQ_FOREACH(f, &head_file_list, pointers)
     {
         fnum++;
     }
-    
+
     return fnum;
 }
 
@@ -192,20 +192,20 @@ make_file_name(void)
         fprintf(stderr, "make_file_name: malloc\n");
         return NULL;
     }
-    
+
     if (dumpinfo.template_file_name != NULL)
     {
-        res = snprintf(file_name, SNIF_MAX_NAME + 1, "%s%s_%zd.pcap", 
-                       dumpinfo.file_path, dumpinfo.template_file_name, 
+        res = snprintf(file_name, SNIF_MAX_NAME + 1, "%s%s_%zd.pcap",
+                       dumpinfo.file_path, dumpinfo.template_file_name,
                        dumpinfo.log_num);
     }
     else
     {
-        res = snprintf(file_name, SNIF_MAX_NAME, "%s%.12llu_%zd.pcap", 
+        res = snprintf(file_name, SNIF_MAX_NAME, "%s%.12llu_%zd.pcap",
                        dumpinfo.file_path, absolute_offset,
                        dumpinfo.log_num);
     }
-    
+
     if (res > SNIF_MAX_NAME)
     {
         fprintf(stderr, "make_file_name: Too long file name\n");
@@ -220,9 +220,9 @@ make_file_name(void)
 
 /**
  * Read filter configuration file.
- * 
+ *
  * @param conf_file_name        Configuration file name.
- * 
+ *
  * @return Expression for the filter or NULL.
  */
 static char *
@@ -245,14 +245,14 @@ read_conf_file(char *conf_file_name)
         fprintf(stderr, "read_conf_file: fseek\n");
         goto cleanup_rf;
     }
-    
+
     expression = malloc(size + 1);
     if (expression == NULL)
     {
         fprintf(stderr, "read_conf_file: malloc\n");
         goto cleanup_rf;
     }
-    
+
     res = fread(expression, size, 1, f);
     if (res != 1)
     {
@@ -261,17 +261,17 @@ read_conf_file(char *conf_file_name)
     }
 
     fclose(f);
-    
-    for (i = 0; i < size; i++) 
+
+    for (i = 0; i < size; i++)
     {
         if (expression[i] == '#')
             while ((i < size) && (expression[i] != '\n'))
                 expression[i++] = ' ';
     }
     expression[size] = '\0';
-    
+
     return expression;
-    
+
 cleanup_rf:
     if (f != NULL)
         fclose(f);
@@ -282,7 +282,7 @@ cleanup_rf:
 
 /**
  * Inser the marker packet into the capture file.
- * 
+ *
  * @param fd_o      A descriptor of the opened file.
  * @param msg   String for a message of packet.
  */
@@ -299,7 +299,7 @@ insert_marker(FILE *f, const char *msg, struct timeval *ts)
         gettimeofday(&n_ts, 0);
         SNIFFER_TS_CPY(h.ts, n_ts);
     }
-    else 
+    else
         SNIFFER_TS_CPY(h.ts, *ts);
 
     h.caplen = strlen(msg) + SNIF_MARK_PSIZE;
@@ -319,14 +319,14 @@ insert_marker(FILE *f, const char *msg, struct timeval *ts)
 
 /**
  * Dumping packet to file.
- * 
+ *
  * @param user      User params.
  * @param h         Pcap packet header.
- * @param sp        Points to the first byte of a chunk of data containing 
+ * @param sp        Points to the first byte of a chunk of data containing
  *                  the entire packet, as sniffed by pcap_loop().
  */
 static void
-dump_packet(unsigned char *user, const struct pcap_pkthdr *h, 
+dump_packet(unsigned char *user, const struct pcap_pkthdr *h,
             const unsigned char *sp)
 {
     long            offset;
@@ -343,7 +343,7 @@ dump_packet(unsigned char *user, const struct pcap_pkthdr *h,
 
     offset = pcap_dump_ftell(dumpinfo.dumper);
 
-    if ((dumpinfo.file_size != 0) && 
+    if ((dumpinfo.file_size != 0) &&
         (offset + h->caplen + sizeof(struct pcap_pkthdr) >
         dumpinfo.file_size))
     {
@@ -383,7 +383,7 @@ dump_packet(unsigned char *user, const struct pcap_pkthdr *h,
         }
     }
 
-    if ((dumpinfo.total_size != 0) && 
+    if ((dumpinfo.total_size != 0) &&
         ((total_filled_mem + offset + h->caplen) >= dumpinfo.total_size))
     {
         total_filled_mem = used_space();
@@ -408,8 +408,8 @@ dump_packet(unsigned char *user, const struct pcap_pkthdr *h,
 }
 
 
-/** 
- * Make a clean exit on interrupts 
+/**
+ * Make a clean exit on interrupts
  */
 static void
 sign_cleanup(int signo)
@@ -533,7 +533,7 @@ global_init(void)
 }
 
 /* See description in te_sniffer_proc.h */
-int 
+int
 te_sniffer_process(int argc, char *argv[])
 {
     char  ebuf[PCAP_ERRBUF_SIZE];
@@ -556,7 +556,7 @@ te_sniffer_process(int argc, char *argv[])
 
     while ((op = getopt(argc, argv, ":a:c:C:f:F:hi:opP:q:r:s:w:")) != -1)
     {
-        switch(op) 
+        switch(op)
         {
             case 'a':
                 sniffer_name = optarg;
@@ -628,7 +628,7 @@ te_sniffer_process(int argc, char *argv[])
         }
     }
 
-    if ((interface != NULL) && (dumpinfo.file_path != NULL) && 
+    if ((interface != NULL) && (dumpinfo.file_path != NULL) &&
         (sniffer_name != NULL))
     {
         if (mkdir(dumpinfo.file_path, S_IRWXU | S_IRWXG | S_IRWXO) != 0 &&
@@ -669,15 +669,15 @@ te_sniffer_process(int argc, char *argv[])
 
     if (filter_exp != NULL)
     {
-        if (pcap_compile(handle, &fp, filter_exp, 0, 0) == -1) 
+        if (pcap_compile(handle, &fp, filter_exp, 0, 0) == -1)
         {
             fprintf(stderr, "Couldn't parse filter %s: %s\n",
                     filter_exp, pcap_geterr(handle));
             goto cleanup;
         }
-        if (pcap_setfilter(handle, &fp) == -1) 
+        if (pcap_setfilter(handle, &fp) == -1)
         {
-            fprintf(stderr, "Couldn't install filter %s: %s\n", 
+            fprintf(stderr, "Couldn't install filter %s: %s\n",
                     filter_exp, pcap_geterr(handle));
             goto cleanup;
         }

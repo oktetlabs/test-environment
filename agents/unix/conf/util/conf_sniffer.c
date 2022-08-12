@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
@@ -121,7 +121,7 @@ typedef struct snif_sets_t {
     size_t              file_size;
     int                 rotation;
     overfill_meth_t     overfill_meth;
-    int                 ssn;                /**< Sniffer session sequence 
+    int                 ssn;                /**< Sniffer session sequence
                                                  number. */
     te_bool             lock;
 } snif_sets_t;
@@ -170,9 +170,9 @@ clean_pcap(const char *fpath, const struct stat *sb, int typeflag,
 
 /**
  * Get ssn from the agent ssn file.
- * 
+ *
  * @param fname     The agent ssn file name.
- * 
+ *
  * @return Status code.
  */
 static te_errno
@@ -187,7 +187,7 @@ sniffer_get_ssn_ff(const char *fname)
     if ((f == NULL) && (errno == ENOENT))
     {
         errno = 0;
-        if (mkdir(snif_sets.ta_path, S_IRWXU | S_IRWXG | S_IRWXO) != 0 && 
+        if (mkdir(snif_sets.ta_path, S_IRWXU | S_IRWXG | S_IRWXO) != 0 &&
             errno != EEXIST)
         {
             ERROR("Couldn't create directory, %d\n", errno);
@@ -234,7 +234,7 @@ sniffer_get_ssn_ff(const char *fname)
 
 /**
  * Agent identifier, specific folder and ssn initialization.
- * 
+ *
  * @return Status code.
  */
 static te_errno
@@ -258,7 +258,7 @@ sniffer_agent_id_init(void)
     }
     strcpy(snif_sets.path, snif_sets.ta_path);
 
-    res = snprintf(snif_sets.ssn_fname, RCF_MAX_PATH, "%s/%s_%s", 
+    res = snprintf(snif_sets.ssn_fname, RCF_MAX_PATH, "%s/%s_%s",
                    snif_sets.ta_path, ta_name, SNIFFER_SSN_F);
     if (res > RCF_MAX_PATH)
     {
@@ -271,7 +271,7 @@ sniffer_agent_id_init(void)
 
 /**
  * Default initialization of the sniffers settings.
- * 
+ *
  * @return Status code.
  */
 static te_errno
@@ -303,7 +303,7 @@ sniffer_settings_init(void)
 
 /**
  * Free memory and remove sniffer from the list.
- * 
+ *
  * @param sniff     The sniffer location.
  */
 static void
@@ -331,10 +331,10 @@ sniffer_cleanup(sniffer_t *sniff)
 
 /**
  * Searching for the sniffer by snifname and ifname.
- * 
+ *
  * @param ifname        Interface name.
  * @param snifname      The sniffer name.
- * 
+ *
  * @return The sniffer unit or NULL.
  */
 static sniffer_t *
@@ -389,10 +389,10 @@ sniffer_get_params(unsigned int gid, const char *oid, char *value)
         sprintf(value, "%d", snif_sets.overfill_meth);
     else if (strstr(oid, "/path:") != NULL)
         sprintf(value, "%s", snif_sets.path);
-    else if ((strstr(oid, "/filter_exp_str:") != NULL) && 
+    else if ((strstr(oid, "/filter_exp_str:") != NULL) &&
              (snif_sets.filter_exp_str != NULL))
         sprintf(value, "%s", snif_sets.filter_exp_str);
-    else if ((strstr(oid, "/filter_exp_file:") != NULL) && 
+    else if ((strstr(oid, "/filter_exp_file:") != NULL) &&
              (snif_sets.filter_exp_str != NULL))
         sprintf(value, "%s", snif_sets.filter_exp_file);
 
@@ -510,10 +510,10 @@ sniffer_common_get(unsigned int gid, const char *oid, char *value,
         sprintf(value, "%zd", sniff->rotation);
     else if (strstr(oid, "/overfill_meth:") != NULL)
         sprintf(value, "%d", sniff->overfill_meth);
-    else if ((strstr(oid, "/filter_exp_str:") != NULL) && 
+    else if ((strstr(oid, "/filter_exp_str:") != NULL) &&
              (sniff->filter_exp_str != NULL))
         sprintf(value, "%s", sniff->filter_exp_str);
-    else if ((strstr(oid, "/filter_exp_file:") != NULL) && 
+    else if ((strstr(oid, "/filter_exp_file:") != NULL) &&
              (sniff->filter_exp_str != NULL))
         sprintf(value, "%s", sniff->filter_exp_file);
 
@@ -593,10 +593,10 @@ sniffer_common_set(unsigned int gid, const char *oid, const char *value,
 
 /**
  * Parse the buffer with sniffer ID.
- * 
+ *
  * @param buf   The buffer with sniffer ID.
  * @param id    The sniffer ID (OUT).
- * 
+ *
  * return Status code.
  */
 static te_errno
@@ -652,9 +652,9 @@ sniffer_parse_sniff_id(const char* buf, sniffer_id *id)
 
 /**
  * Searching for the sniffer by sniffer ID.
- * 
+ *
  * @param id        The sniffer ID.
- * 
+ *
  * @return The sniffer unit.
  */
 static sniffer_t *
@@ -677,13 +677,13 @@ sniffer_find_by_id(sniffer_id *id)
 
 /**
  * Get the name of the oldest/newest capture log file of the sniffer.
- * 
+ *
  * @param sniff     The sniffer pointer.
  * @param fnum      The number of capture log files (OUT).
  * @param wp_fname  Name of the oldest capture log file without path (OUT).
  * @param newest    If the newest flag is true search for newest capture file,
  *                  else - oldest.
- * 
+ *
  * @return Name of the result capture log file or NULL in case of failure.
  */
 static char *
@@ -756,12 +756,12 @@ sniffer_get_capture_fname(sniffer_t *snif, int *fnum, char **wp_fname,
 /**
  * Get absolute offset of the last capture packet. Update the state field of
  * the sniffer.
- * 
+ *
  * @param sniff_id_str  A string with the sniffer id.
  * @param snif_arg      Location of the sniffer, if not NULL excludes the
  *                      sniff_id_str param.
  * @param offset        Absolute offset of the last capture packet (OUT).
- * 
+ *
  * @return Status code. Zero is correct.
  */
 static te_errno
@@ -841,7 +841,7 @@ sniffer_get_curr_offset(const char *sniff_id_str, void *snif_arg,
 
     if (*offset > snif->id.abs_offset)
         snif->state |= SNIF_ST_HAS_L;
-    else 
+    else
         snif->state &= ~SNIF_ST_HAS_L;
     return 0;
 }
@@ -851,9 +851,9 @@ sniffer_get_curr_offset(const char *sniff_id_str, void *snif_arg,
  * Get agent sniffers list located in a buffer.
  * Buffer format for each sniffer:
  *     <Sniffer name> <Interface name> <SSN> <offset>\0
- * 
+ *
  * @param buf       Pointer to the buffer with the list of sniffers.
- * 
+ *
  * @return The buffer length or zero if the buffer is empty.
  */
 static size_t
@@ -914,18 +914,18 @@ sniffer_get_list_buf(char **buf, te_bool sync)
 
 /**
  * Get sniffer capture log file.
- * 
+ *
  * @param handle        connection handle
  * @param cbuf          command buffer
  * @param buflen        length of the command buffer
  * @param answer_plen   number of bytes in the command buffer to be
  *                      copied to the answer
  * @param buf           Buffer with the sniffer ID.
- * 
+ *
  * return Status code.
  */
 static te_errno
-sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf, 
+sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
                     size_t buflen, size_t answer_plen, const char *buf)
 {
     int              rc;
@@ -1117,10 +1117,10 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
 
 /**
  * Make argv string to start the sniffer process.
- * 
+ *
  * @param sniff     Sniffer configuration structure.
  * @param s_argc    Number of arguments (OUT).
- * 
+ *
  * @return The argv arguments set or NULL.
  */
 static char **
@@ -1132,7 +1132,7 @@ make_argv_str(sniffer_t *sniff, int *s_argc)
 
 /**
  * Push string argument to s_argv massive.
- * 
+ *
  * @param str       The string argument.
  */
 #define PUSH_ARG(str)                               \
@@ -1142,7 +1142,7 @@ make_argv_str(sniffer_t *sniff, int *s_argc)
 
 /**
  * Push int argument to s_argv massive.
- * 
+ *
  * @param val       The int argument.
  */
 #define PUSH_INT_ARG(val)                                       \
@@ -1206,9 +1206,9 @@ cleanup_m_argv:
 
 /**
  * Make a directory for capture logs of the sniffer.
- * 
+ *
  * @param sniff      The sniffer location.
- * 
+ *
  * @return Status code. Zero is corrected.
  */
 static te_errno
@@ -1218,7 +1218,7 @@ sniffer_make_dir(sniffer_t *sniff)
     char    sniffers_dir[RCF_MAX_PATH];
 
     errno = 0;
-    if (mkdir(snif_sets.path, S_IRWXU | S_IRWXG | S_IRWXO) != 0 && 
+    if (mkdir(snif_sets.path, S_IRWXU | S_IRWXG | S_IRWXO) != 0 &&
         errno != EEXIST)
     {
         ERROR("Couldn't create directory, %d\n", errno);
@@ -1233,7 +1233,7 @@ sniffer_make_dir(sniffer_t *sniff)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     errno = 0;
-    if (mkdir(sniffers_dir, S_IRWXU | S_IRWXG | S_IRWXO) != 0 && 
+    if (mkdir(sniffers_dir, S_IRWXU | S_IRWXG | S_IRWXO) != 0 &&
         errno != EEXIST)
     {
         ERROR("Couldn't create directory, %d\n", errno);
@@ -1241,7 +1241,7 @@ sniffer_make_dir(sniffer_t *sniff)
     }
 
     /* Make the directory name and create it. */
-    res = snprintf(sniff->path, RCF_MAX_PATH, "%s/%s_%s_%s_%u/", 
+    res = snprintf(sniff->path, RCF_MAX_PATH, "%s/%s_%s_%s_%u/",
                    sniffers_dir, ta_name, sniff->id.ifname,
                    sniff->id.snifname, sniff->id.ssn);
     if (res > RCF_MAX_PATH)
@@ -1250,7 +1250,7 @@ sniffer_make_dir(sniffer_t *sniff)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     errno = 0;
-    if (mkdir(sniff->path, S_IRWXU | S_IRWXG | S_IRWXO) != 0 && 
+    if (mkdir(sniff->path, S_IRWXU | S_IRWXG | S_IRWXO) != 0 &&
         errno != EEXIST)
     {
         ERROR("Couldn't create directory, %d\n", errno);
@@ -1263,7 +1263,7 @@ sniffer_make_dir(sniffer_t *sniff)
  * Start the sniffer process.
  *
  * @param sniff     Sniffer configuration structure.
- * 
+ *
  * @return Status code.
  */
 static te_errno
@@ -1285,7 +1285,7 @@ sniffer_start_process(sniffer_t *sniff)
     if ((s_argv == NULL) || (s_argc == 0))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    if ((rc = rcf_ch_start_process(&sniff->pid, -1, te_snif_path, TRUE, 
+    if ((rc = rcf_ch_start_process(&sniff->pid, -1, te_snif_path, TRUE,
                                    s_argc, (void **)s_argv)) != 0)
     {
         ERROR("Start the sniffer process failed.");
@@ -1298,7 +1298,7 @@ sniffer_start_process(sniffer_t *sniff)
 
 /**
  * Add clone of the sniffer in the list to delete him after unloading.
- * 
+ *
  * @param   sniff   The sniffer location.
  */
 static void
@@ -1516,9 +1516,9 @@ sniffers_list(unsigned int gid, const char *oid, const char *sub_id,
 
 /**
  * Check the sniffer folder exists to process the sniffer as after backup.
- * 
+ *
  * @param sniff     The nsiffer location.
- * 
+ *
  * @return TRUE if the folder exists.
  */
 static te_bool
@@ -1530,7 +1530,7 @@ sniffer_check_exst_backup(sniffer_t *sniff)
     char *wp_fname;
 
     /* Make the directory name and create it. */
-    res = snprintf(sniff->path, RCF_MAX_PATH, "%s/sniffers/%s_%s_%s_%u/", 
+    res = snprintf(sniff->path, RCF_MAX_PATH, "%s/sniffers/%s_%s_%s_%u/",
                    snif_sets.path, ta_name, sniff->id.ifname,
                    sniff->id.snifname, sniff->id.ssn);
     if (res > RCF_MAX_PATH)
@@ -1707,19 +1707,19 @@ RCF_PCH_CFG_NODE_RW(node_file_size_s, "file_size", NULL, &node_path_s,
 RCF_PCH_CFG_NODE_RO(node_tmp_logs_s, "tmp_logs", &node_file_size_s, NULL,
                     sniffer_get_params);
 
-RCF_PCH_CFG_NODE_RW(node_filter_file_s, "filter_exp_file", NULL, 
+RCF_PCH_CFG_NODE_RW(node_filter_file_s, "filter_exp_file", NULL,
                     &node_tmp_logs_s, sniffer_get_params, sniffer_set_params);
 
 RCF_PCH_CFG_NODE_RW(node_snaplen_s, "snaplen", NULL, &node_filter_file_s,
                     sniffer_get_params, sniffer_set_params);
 
-RCF_PCH_CFG_NODE_RW(node_filter_exp_str_s, "filter_exp_str", NULL, 
+RCF_PCH_CFG_NODE_RW(node_filter_exp_str_s, "filter_exp_str", NULL,
                     &node_snaplen_s, sniffer_get_params, sniffer_set_params);
-                    
+
 RCF_PCH_CFG_NODE_RW(node_enable_s, "enable", NULL, &node_filter_exp_str_s,
                     sniffer_get_params, sniffer_set_params);
 
-RCF_PCH_CFG_NODE_RO(node_sniffer_settings, "sniffer_settings", 
+RCF_PCH_CFG_NODE_RO(node_sniffer_settings, "sniffer_settings",
                     &node_enable_s, NULL, sniffer_get);
 
 /*
@@ -1740,13 +1740,13 @@ RCF_PCH_CFG_NODE_RW(node_file_size, "file_size", NULL, &sniffer_space,
 RCF_PCH_CFG_NODE_RO(node_tmp_logs, "tmp_logs", &node_file_size, NULL,
                     sniffer_common_get);
 
-RCF_PCH_CFG_NODE_RW(node_filter_file, "filter_exp_file", NULL, 
+RCF_PCH_CFG_NODE_RW(node_filter_file, "filter_exp_file", NULL,
                     &node_tmp_logs, sniffer_common_get, sniffer_common_set);
 
 RCF_PCH_CFG_NODE_RW(node_snaplen, "snaplen", NULL, &node_filter_file,
                     sniffer_common_get, sniffer_common_set);
 
-RCF_PCH_CFG_NODE_RW(node_filter_exp_str, "filter_exp_str", NULL, 
+RCF_PCH_CFG_NODE_RW(node_filter_exp_str, "filter_exp_str", NULL,
                     &node_snaplen, sniffer_common_get, sniffer_common_set);
 
 RCF_PCH_CFG_NODE_RW(node_enable, "enable", NULL, &node_filter_exp_str,
@@ -1758,22 +1758,22 @@ static rcf_pch_cfg_object node_sniffer_inst =
       (rcf_ch_cfg_add)sniffer_add, (rcf_ch_cfg_del)sniffer_del,
       (rcf_ch_cfg_list)sniffers_list, NULL, NULL, NULL };
 
-/** 
+/**
  * Get capture logs of the sniffer and send it as the answer with a binary
  * attach to TEN.
- * 
+ *
  * @param handle        connection handle
  * @param cbuf          command buffer
  * @param buflen        length of the command buffer
  * @param answer_plen   number of bytes in the command buffer to be
  *                      copied to the answer
  * @param sniff_id_str  a string with a sniffer ID
- * 
+ *
  * @return Status code.
  */
 te_errno
-rcf_ch_get_snif_dump(struct rcf_comm_connection *handle, char *cbuf, 
-                    size_t buflen, size_t answer_plen, 
+rcf_ch_get_snif_dump(struct rcf_comm_connection *handle, char *cbuf,
+                    size_t buflen, size_t answer_plen,
                     const char *sniff_id_str)
 {
     te_errno    rc;
@@ -1792,9 +1792,9 @@ rcf_ch_get_snif_dump(struct rcf_comm_connection *handle, char *cbuf,
     return rc;
 }
 
-/** 
+/**
  * Get sniffer list and send it as the answer with a binary attach to TEN.
- * 
+ *
  * @param handle        connection handle
  * @param cbuf          command buffer
  * @param buflen        length of the command buffer
@@ -1805,8 +1805,8 @@ rcf_ch_get_snif_dump(struct rcf_comm_connection *handle, char *cbuf,
  * @return Status code.
  */
 te_errno
-rcf_ch_get_sniffers(struct rcf_comm_connection *handle, char *cbuf, 
-                    size_t buflen, size_t answer_plen, 
+rcf_ch_get_sniffers(struct rcf_comm_connection *handle, char *cbuf,
+                    size_t buflen, size_t answer_plen,
                     const char *sniff_id_str)
 {
     te_errno            rc;
@@ -1855,7 +1855,7 @@ rcf_ch_get_sniffers(struct rcf_comm_connection *handle, char *cbuf,
 
 /**
  * Initialization of the sniffers configuration subtrees and default settings.
- * 
+ *
  * @return Status code.
  */
 te_errno
@@ -1873,7 +1873,7 @@ ta_unix_conf_sniffer_init(void)
 
 /**
  * Cleanup sniffers function.
- * 
+ *
  * @return Status code.
  */
 te_errno
@@ -1899,7 +1899,7 @@ ta_unix_conf_sniffer_cleanup(void)
     free(snif_sets.filter_exp_file);
     remove(snif_sets.ssn_fname);
     remove(sniffers_dir);
-    remove(snif_sets.path);    
+    remove(snif_sets.path);
     if ((strcmp(snif_sets.path, snif_sets.ta_path) != 0) &&
         remove(snif_sets.ta_path) != 0)
         ERROR("Couldn't remove the agent-specific folder: %s",

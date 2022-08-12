@@ -1,14 +1,14 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side - Library
- * Operations with Messages 
+ * Operations with Messages
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 
 #include <stdio.h>
@@ -22,7 +22,7 @@
 #include "debug.h"
 
 /**
- * Compares binary contents of two buffers. 
+ * Compares binary contents of two buffers.
  *
  * @param buffer1   first buffer
  * @param len1      length of the first buffer
@@ -35,13 +35,13 @@
 int
 compare_buffers(char *buffer1, int len1, char *buffer2, int len2)
 {
-    return ((len1 != len2) ? 1 : 
+    return ((len1 != len2) ? 1 :
             (memcmp(buffer1, buffer2, len1) != 0 ? 1 : 0));
 }
 
 /**
  * Generates a command/answer of size 'cmd_size' plus 'attachment_size'.
- * Note that if attachment_size is not zero, cmd_size cannot be less 
+ * Note that if attachment_size is not zero, cmd_size cannot be less
  * than 20.
  *
  * @param buffer          Buffer to be filled with the command
@@ -87,12 +87,12 @@ generate_command(char *buffer, int cmd_size, int attachment_size)
 
     /* now put the 'attach' string */
     if (attachment_size != 0)
-       strcpy(end_ptr, buf);   
+       strcpy(end_ptr, buf);
     end_ptr += att_str_len;
 
     /* XXXX: here the actual separator must be set */
     *end_ptr++ = '\0';
-    
+
     /* now generate the binary attachment */
     if (attachment_size != 0)
     {

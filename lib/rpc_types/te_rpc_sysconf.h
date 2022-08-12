@@ -2,17 +2,17 @@
  * @brief RPC types definitions
  *
  * RPC analogues of constant names for sysconf().
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_SYSCONF_H__
 #define __TE_RPC_SYSCONF_H__
 
@@ -36,7 +36,7 @@ typedef enum rpc_sysconf_name {
     RPC_SC_UNKNOWN,
 } rpc_sysconf_name;
 
-/** 
+/**
  * Convert RPC sysconf() name
  * to string representation.
  */

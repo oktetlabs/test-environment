@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
@@ -314,7 +314,7 @@ int
 main(int argc, char **argv)
 {
     int rc, retval = 0;
-    
+
     char buf[16];
 
     if (argc != 5)
@@ -361,7 +361,7 @@ main(int argc, char **argv)
         if (retval == 0)
             retval = rc;
     }
-    
+
     return retval;
 }
 

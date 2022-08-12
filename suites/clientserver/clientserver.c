@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * A test client-server application
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
- * 
+ *
  */
 
 /** @page example client-server application

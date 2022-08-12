@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  */
@@ -45,7 +45,7 @@ extern te_errno tapi_ppp_add_csap_layer(asn_value **csap_spec,
                                         uint16_t    protocol);
 
 /**
- * Add PPP PDU as the last PDU to the last unit of the traffic 
+ * Add PPP PDU as the last PDU to the last unit of the traffic
  * template or pattern.
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or

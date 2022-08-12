@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * TCP CSAP and TAPI test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "ipstack/tcp_conn"
@@ -27,7 +27,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "ipstack-ts.h" 
+#include "ipstack-ts.h"
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -49,8 +49,8 @@
 
 
 int
-main(int argc, char *argv[]) 
-{ 
+main(int argc, char *argv[])
+{
     tapi_env_host *host_csap;
     const struct if_nameindex *sock_if;
     const struct if_nameindex *csap_if;
@@ -78,7 +78,7 @@ main(int argc, char *argv[])
     uint8_t sock_mac[6];
     size_t  sock_mac_len = sizeof(sock_mac);
 
-    TEST_START; 
+    TEST_START;
 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(sock_pco);
@@ -89,7 +89,7 @@ main(int argc, char *argv[])
     TEST_GET_ADDR(pco_a, csap_addr);
     TEST_GET_INT_PARAM(pld_len);
 
-    CHECK_RC(tapi_cfg_get_hwaddr(sock_pco->ta, sock_if->if_name, 
+    CHECK_RC(tapi_cfg_get_hwaddr(sock_pco->ta, sock_if->if_name,
                                  sock_mac, &sock_mac_len));
 
     rc = asn_parse_value_text(
@@ -99,12 +99,12 @@ main(int argc, char *argv[])
               "}",
               ndn_traffic_template, &tcp_template, &syms);
     if (rc != 0)
-        TEST_FAIL("parse complex template failed %r syms %d", rc, syms); 
+        TEST_FAIL("parse complex template failed %r syms %d", rc, syms);
 
-    
+
     agt_a = host_csap->ta;
 
-    if ((socket = rpc_socket(sock_pco, RPC_AF_INET, RPC_SOCK_STREAM, 
+    if ((socket = rpc_socket(sock_pco, RPC_AF_INET, RPC_SOCK_STREAM,
                                   RPC_IPPROTO_TCP)) < 0 ||
         sock_pco->_errno != 0)
         TEST_FAIL("Calling of RPC socket() failed %r", sock_pco->_errno);
@@ -123,17 +123,17 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("listen failed");
 
-    rc = tapi_tcp_init_connection(agt_a, TAPI_TCP_CLIENT, 
-                                  csap_addr, sock_addr, 
+    rc = tapi_tcp_init_connection(agt_a, TAPI_TCP_CLIENT,
+                                  csap_addr, sock_addr,
                                   csap_if->if_name, csap_mac, sock_mac,
                                   1000, &conn_hand);
     if (rc != 0)
-        TEST_FAIL("init connection failed: %r", rc); 
+        TEST_FAIL("init connection failed: %r", rc);
 
 
     rc = tapi_tcp_wait_open(conn_hand, 2000);
     if (rc != 0)
-        TEST_FAIL("open connection failed: %r", rc); 
+        TEST_FAIL("open connection failed: %r", rc);
 
     RING("connection inited, handle %d", conn_hand);
 
@@ -158,7 +158,7 @@ main(int argc, char *argv[])
 
         rc = asn_write_int32(tcp_template, seqn,
                              "pdus.0.#tcp.seqn.#plain");
-        rc = asn_write_int32(tcp_template, pld_len, "payload.#length"); 
+        rc = asn_write_int32(tcp_template, pld_len, "payload.#length");
         if (rc != 0)
             TEST_FAIL("write arg len failed %X", rc);
 
@@ -180,7 +180,7 @@ main(int argc, char *argv[])
 #if GOOD_CLOSE
     rc = tapi_tcp_send_fin(conn_hand, 1000);
     if (rc != 0)
-        TEST_FAIL("wait for ACK to our FIN failed: %r", rc); 
+        TEST_FAIL("wait for ACK to our FIN failed: %r", rc);
 #endif
 
 
@@ -192,7 +192,7 @@ main(int argc, char *argv[])
         rc = tapi_tcp_recv_msg(conn_hand, 2000, TAPI_TCP_AUTO,
                                NULL, 0, NULL, NULL, &flags);
         if (rc != 0)
-            TEST_FAIL("close connection failed: %r", rc); 
+            TEST_FAIL("close connection failed: %r", rc);
 
         if (flags & TCP_FIN_FLAG)
         {

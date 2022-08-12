@@ -22,7 +22,7 @@ asn_type my_sequence = {
 
 char buffer[1000];
 
-int 
+int
 main (void)
 {
     asn_value *my_val = asn_init_value(&asn_base_integer);
@@ -39,22 +39,22 @@ main (void)
         asn_value *copy;
         char new_str[] = "My beautiful string for testing ... ";
 
-        asn_value test_int_value = 
+        asn_value test_int_value =
         {
-            &asn_base_integer, 
+            &asn_base_integer,
             {UNIVERSAL, 2},
             INTEGER,
             NULL,
-            1, 
+            1,
             {10 /* value itself */}
-        }; 
-        asn_value test_str = 
+        };
+        asn_value test_str =
         {
-            &asn_base_charstring, 
+            &asn_base_charstring,
             {UNIVERSAL, 28},
             CHAR_STRING,
             NULL,
-            4, 
+            4,
             {"test"/* value itself */}
         };
         asn_value *val_arr[] = {&test_int_value, &test_str};
@@ -63,7 +63,7 @@ main (void)
         "seq-value", 2, {&val_arr} };
 
         seq_val.data.array[0]->name = my_sequence.sp.named_entries[0].name;
-        seq_val.data.array[1]->name = my_sequence.sp.named_entries[1].name; 
+        seq_val.data.array[1]->name = my_sequence.sp.named_entries[1].name;
         seq_val.txt_len = -1;
 
         copy = asn_copy_value (&seq_val);
@@ -76,8 +76,8 @@ main (void)
             printf ("count len: %d\n", r);
 
         }
-        else 
-            return 1; 
+        else
+            return 1;
 
         a = 15;
         r = asn_write_value_field(copy, &a, sizeof(a), "number");
@@ -87,8 +87,8 @@ main (void)
         if (r) { printf ("error code returned: %d\n", r); return r; }
 
         r = asn_sprint_value(copy, buffer, 1000, 0);
-        printf ("copy after write value to %d: \n\"%s\"\nlen: %d\n", 
-                    a, buffer, r); 
+        printf ("copy after write value to %d: \n\"%s\"\nlen: %d\n",
+                    a, buffer, r);
         r = asn_count_txt_len(copy, 0);
         printf ("count len: %d\n", r);
     }

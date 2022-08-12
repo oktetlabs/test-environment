@@ -6,9 +6,9 @@
 
 
 
-int 
+int
 main (int argc, char *argv[])
-{ 
+{
     int level;
     int rc, s_parsed;
     int n;
@@ -26,37 +26,37 @@ main (int argc, char *argv[])
         return 1;
     }
     rc = asn_parse_dvalue_in_file(argv[1], a_type, &packet, &s_parsed);
-    
+
     if (rc)
     {
         printf ("rc from parse: %x, syms: %d\n", rc, s_parsed);
         return 1;
     }
 
-    rc = asn_get_descendent(packet, &pdus, "pdus"); 
+    rc = asn_get_descendent(packet, &pdus, "pdus");
     if (rc)
     {
         printf ("rc from parse: %x, syms: %d\n", rc, s_parsed);
         return 1;
-    } 
+    }
 
     n = asn_get_length(packet, "pdus");
 
     for (level = 0; (rc == 0) && (level < n); level ++)
-    { 
+    {
         char label_pdu_choice[20] = "#eth";
         asn_value * level_pdu;
         uint16_t eth_type;
 
 
-        /* TODO: rewrite with more fast ASN method, that methods should 
+        /* TODO: rewrite with more fast ASN method, that methods should
          * be prepared and tested first */
-        level_pdu = asn_read_indexed(pdus, level, ""); 
+        level_pdu = asn_read_indexed(pdus, level, "");
 
-        if (level_pdu == NULL) 
-            return 2; 
+        if (level_pdu == NULL)
+            return 2;
 
-        rc = asn_write_value_field(level_pdu, &eth_type, sizeof(eth_type), 
+        rc = asn_write_value_field(level_pdu, &eth_type, sizeof(eth_type),
                                     "ether-type.#plain");
 
         if (rc == 0)
@@ -65,9 +65,9 @@ main (int argc, char *argv[])
             printf("TAD_SEND " "asn_write_val_field rc: %r", rc);
         }
         asn_free_value(level_pdu);
-        if (rc) 
+        if (rc)
         {
-            /* "PDU does not confirm" */ 
+            /* "PDU does not confirm" */
             printf("TAD_SEND template does not confirm to CSAP; "
                        "rc: %r,  level: %d\n", rc, level);
             break;

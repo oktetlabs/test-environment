@@ -253,7 +253,7 @@ lseek_mode_rpc2h(rpc_lseek_mode mode)
         RPC2H_CHECK(SEEK_END);
 #endif
         default: return -1;
-    }    
+    }
 }
 
 rpc_lseek_mode
@@ -271,7 +271,7 @@ lseek_mode_h2rpc(int mode)
         H2RPC_CHECK(SEEK_END);
 #endif
         default: return RPC_SEEK_INVALID;
-    }    
+    }
 }
 
 unsigned int

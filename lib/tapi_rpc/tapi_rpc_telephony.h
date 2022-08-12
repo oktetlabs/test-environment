@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Evgeny Omelchenko <Evgeny.Omelchenko@oktetlabs.ru>
@@ -59,9 +59,9 @@ enum te_numbering_plan {
   * Open channel and bind telephony card port with it
   *
   * @param rpcs     RPC server handle
-  * @param port     number of telephony card port 
+  * @param port     number of telephony card port
   *
-  * @return Channel file descriptor, otherwise -1 
+  * @return Channel file descriptor, otherwise -1
   */
 extern int rpc_telephony_open_channel(rcf_rpc_server *rpcs, int port);
 
@@ -105,7 +105,7 @@ extern int rpc_telephony_hangup(rcf_rpc_server *rpcs, int chan);
  *
  * @return 0 on success or -1 on failure
  */
-extern int rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs, 
+extern int rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs,
                                          int chan, enum te_numbering_plan plan,
                                          te_bool *state);
 
@@ -118,7 +118,7 @@ extern int rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs,
   *
   * @return 0 on success or -1 on failure
   */
-extern int rpc_telephony_dial_number(rcf_rpc_server *rpcs, 
+extern int rpc_telephony_dial_number(rcf_rpc_server *rpcs,
                                      int chan, const char *number);
 
 /**

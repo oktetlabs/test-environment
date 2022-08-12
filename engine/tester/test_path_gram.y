@@ -188,7 +188,7 @@ test_path_new_arg_value(char *value)
 
 %%
 
-path_flexible: 
+path_flexible:
     SLASH
     |
     path
@@ -204,7 +204,7 @@ path_flexible:
     }
     ;
 
-path: 
+path:
     item_iter
     |
     path SLASH item_iter
@@ -297,12 +297,12 @@ item_simple:
     ;
 
 args:
-    arg 
+    arg
     {
         VERB("args -> arg");
     }
     |
-    args COMMA arg 
+    args COMMA arg
     {
         VERB("args -> args COMMA arg");
     }

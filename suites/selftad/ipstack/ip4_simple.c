@@ -2,20 +2,20 @@
  * @brief Test Environment
  *
  * Simple IPv4 CSAP test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "ipstack/ip4_simple"
 
 #define TE_LOG_LEVEL 0xff
 
-#include "ipstack-ts.h" 
+#include "ipstack-ts.h"
 
 
 #include "ndn_eth.h"
@@ -26,7 +26,7 @@
 
 
 
-static void 
+static void
 user_pkt_handler(const tapi_ip4_packet_t *pkt, void *userdata)
 {
     struct in_addr src;
@@ -59,16 +59,16 @@ main(int argc, char *argv[])
 
 
 
-    TEST_START; 
+    TEST_START;
     TEST_GET_PCO(pco);
-    
+
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
     agt_a = ta;
-    if (strlen(ta) + 1 >= len) 
+    if (strlen(ta) + 1 >= len)
         TEST_FAIL("There is no second Test Agent");
 
     agt_b = ta + strlen(ta) + 1;
@@ -81,10 +81,10 @@ main(int argc, char *argv[])
             TEST_FAIL("rcf_ta_create_session failed");
             return 1;
         }
-        INFO("Test: Created session: %d", sid); 
+        INFO("Test: Created session: %d", sid);
     }
 
- 
+
     do {
         in_addr_t my_addr = inet_addr("192.168.37.18");
 
@@ -93,13 +93,13 @@ main(int argc, char *argv[])
         int rc_mod;
 
 #if USE_RPC_CHECK
-        if ((sock_src = rpc_socket(srv_src, RPC_AF_INET, RPC_SOCK_STREAM, 
+        if ((sock_src = rpc_socket(srv_src, RPC_AF_INET, RPC_SOCK_STREAM,
                             RPC_IPPROTO_TCP)) < 0 || srv_src->_errno != 0)
         {
             TEST_FAIL("Calling of RPC socket() failed %r", srv_src->_errno);
         }
 
-        if ((sock_dst = rpc_socket(srv_dst, RPC_AF_INET, RPC_SOCK_STREAM, 
+        if ((sock_dst = rpc_socket(srv_dst, RPC_AF_INET, RPC_SOCK_STREAM,
                             RPC_IPPROTO_TCP)) < 0 || srv_dst->_errno != 0)
         {
             TEST_FAIL("Calling of RPC socket() failed %r", srv_dst->_errno);
@@ -113,10 +113,10 @@ main(int argc, char *argv[])
                                       &csap);
         if ((rc_mod = TE_RC_GET_MODULE(rc)) != 0)
         {
-            TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 
+            TEST_FAIL("CSAP create failed, rc from module %d is %r\n",
                         rc_mod, TE_RC_GET_ERROR(rc));
 
-        } 
+        }
 
         rc = tapi_tad_trrecv_start(ta, sid, csap, NULL,
                                    5000, 4, RCF_TRRECV_PACKETS);
@@ -138,7 +138,7 @@ main(int argc, char *argv[])
         sleep (num);
 
         INFO ("try to wait\n");
-        rc = tapi_tad_trrecv_wait(ta, sid, csap, 
+        rc = tapi_tad_trrecv_wait(ta, sid, csap,
                                   tapi_ip4_eth_trrecv_cb_data(
                                       user_pkt_handler, NULL), &num);
         INFO("trrecv_wait: %r num: %d\n", rc, num);
@@ -149,12 +149,12 @@ main(int argc, char *argv[])
                 RING("wait for packets timedout");
                 rc = 0;
             }
-            else 
+            else
                 TEST_FAIL("Unexpected error for trrecv_wait: %r", rc);
         }
 
         rc = rcf_ta_csap_destroy(ta, sid, csap);
-        INFO("csap %d destroy: %r ", csap, rc); 
+        INFO("csap %d destroy: %r ", csap, rc);
 
     } while(0);
 

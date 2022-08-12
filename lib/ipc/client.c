@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Ivanov <andron@oktet.ru>
@@ -393,7 +393,7 @@ get_datagram(struct ipc_client *ipcc,
         }
     }
 
-    /* 
+    /*
      * No datagram in the pool or datargarm with specified address not
      * found
      */
@@ -793,7 +793,7 @@ ipc_dgram_send_message(struct ipc_client *ipcc, const char *server_name,
             else
                 retry = 0;
         } while (r < 0);
-                
+
         if (r != (ssize_t)(ipc_msg_size))
         {
             fprintf(stderr, "IPC client '%s' failed to send message "
@@ -893,7 +893,7 @@ ipc_dgram_receive_answer(struct ipc_client *ipcc, const char *server_name,
         }
         else
         {
-            /* 
+            /*
              * Message can not fit into the user buffer, return part of it.
              */
             memcpy(buf,
@@ -949,7 +949,7 @@ ipc_dgram_receive_answer(struct ipc_client *ipcc, const char *server_name,
             }
             else
             {
-                /* 
+                /*
                  * Only a part of the segment can be written to the buffer.
                  */
                 memcpy(buf,
@@ -1120,7 +1120,7 @@ ipc_dgram_receive_rest_answer(struct ipc_client *ipcc,
     {
         size_t n;
 
-        n = MIN(*p_buf_len, server->dgram.fragment_size - 
+        n = MIN(*p_buf_len, server->dgram.fragment_size -
                                 sizeof(struct ipc_dgram_header) -
                                 server->dgram.octets_returned);
 

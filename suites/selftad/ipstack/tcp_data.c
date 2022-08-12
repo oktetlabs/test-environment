@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * TCP CSAP and TAPI test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "ipstack/tcp_data"
@@ -27,7 +27,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "ipstack-ts.h" 
+#include "ipstack-ts.h"
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -53,8 +53,8 @@ uint8_t rx_buffer[0x10000];
 
 
 int
-main(int argc, char *argv[]) 
-{ 
+main(int argc, char *argv[])
+{
     tapi_env_host *host_csap = NULL;
     csap_handle_t csap = CSAP_INVALID_HANDLE;
     csap_handle_t acc_csap = CSAP_INVALID_HANDLE;
@@ -70,7 +70,7 @@ main(int argc, char *argv[])
     const struct sockaddr *sock_addr;
 
 
-    TEST_START; 
+    TEST_START;
 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(sock_pco);
@@ -79,7 +79,7 @@ main(int argc, char *argv[])
     TEST_GET_ADDR(pco_a, csap_addr);
 
 
-    if ((socket = rpc_socket(sock_pco, RPC_AF_INET, RPC_SOCK_STREAM, 
+    if ((socket = rpc_socket(sock_pco, RPC_AF_INET, RPC_SOCK_STREAM,
                                   RPC_IPPROTO_TCP)) < 0 ||
         sock_pco->_errno != 0)
         TEST_FAIL("Calling of RPC socket() failed %r", sock_pco->_errno);
@@ -92,14 +92,14 @@ main(int argc, char *argv[])
 
     rc = tapi_tcp_server_csap_create(host_csap->ta, 0, csap_addr, &csap);
     if (rc != 0)
-        TEST_FAIL("server csap create failed: %r", rc); 
+        TEST_FAIL("server csap create failed: %r", rc);
     rc = rpc_connect(sock_pco, socket, csap_addr);
     if (rc != 0)
-        TEST_FAIL("connect() 'call' failed: %r", rc); 
+        TEST_FAIL("connect() 'call' failed: %r", rc);
 
     rc = tapi_tcp_server_recv(host_csap->ta, 0, csap, 1000, &acc_sock);
     if (rc != 0)
-        TEST_FAIL("recv accepted socket failed: %r", rc); 
+        TEST_FAIL("recv accepted socket failed: %r", rc);
 
 
     RING("acc socket: %d", acc_sock);
@@ -117,15 +117,15 @@ main(int argc, char *argv[])
 
     te_fill_buf(tx_buffer, len);
     INFO("+++++++++++ Prepared data: %Tm", tx_buffer, len);
-    rc = rpc_send(sock_pco, socket, tx_buffer, len, 0); 
+    rc = rpc_send(sock_pco, socket, tx_buffer, len, 0);
     RING("%d bytes sent from RPC socket", rc);
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
-    rc = tapi_socket_recv(host_csap->ta, 0, acc_csap, 2000, 
-                              CSAP_INVALID_HANDLE, TRUE, 
+    rc = tapi_socket_recv(host_csap->ta, 0, acc_csap, 2000,
+                              CSAP_INVALID_HANDLE, TRUE,
                               rx_buffer, &len);
     if (rc != 0)
-        TEST_FAIL("recv on CSAP failed: %r", rc); 
+        TEST_FAIL("recv on CSAP failed: %r", rc);
 
     INFO("+++++++++++ Received data: %Tm", rx_buffer, len);
 
@@ -137,10 +137,10 @@ main(int argc, char *argv[])
 
     te_fill_buf(tx_buffer, len);
     INFO("+++++++++++ Prepared data: %Tm", tx_buffer, len);
-    rc = tapi_socket_send(host_csap->ta, 0, acc_csap, 
+    rc = tapi_socket_send(host_csap->ta, 0, acc_csap,
                               tx_buffer, len);
     if (rc != 0)
-        TEST_FAIL("recv on CSAP failed: %r", rc); 
+        TEST_FAIL("recv on CSAP failed: %r", rc);
 
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
@@ -156,18 +156,18 @@ main(int argc, char *argv[])
     socket = -1;
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
-    rc = tapi_socket_recv(host_csap->ta, 0, acc_csap, 2000, 
-                              CSAP_INVALID_HANDLE, TRUE, 
+    rc = tapi_socket_recv(host_csap->ta, 0, acc_csap, 2000,
+                              CSAP_INVALID_HANDLE, TRUE,
                               rx_buffer, &len);
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_ETADENDOFDATA)
             RING("CSAP detected that connection was closed");
-        else 
-            TEST_FAIL("recv on CSAP failed: %r", rc); 
+        else
+            TEST_FAIL("recv on CSAP failed: %r", rc);
     }
     else
-        TEST_FAIL("recv on TCP CSAP have detect that connection closed"); 
+        TEST_FAIL("recv on TCP CSAP have detect that connection closed");
 
     TEST_SUCCESS;
 

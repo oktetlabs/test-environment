@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
@@ -46,14 +46,14 @@ extern te_errno tapi_udp_add_csap_layer(asn_value **csap_spec,
                                         int         remote_port);
 
 /**
- * Add UDP PDU as the last PDU to the last unit of the traffic 
+ * Add UDP PDU as the last PDU to the last unit of the traffic
  * template or pattern.
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
  *                      pattern
  * @param pdu           Location for ASN.1 value pointer with added PDU
  * @param is_pattern    Is the first argument template or pattern
- * @param src_port      Source port in network byte order or -1. 
+ * @param src_port      Source port in network byte order or -1.
  *                      If -1, default value is specified during CSAP
  *                      creation (as local port for sending, as remote
  *                      port for receiving).
@@ -135,12 +135,12 @@ typedef struct udp4_datagram {
     uint8_t        *payload;     /**< UDP payload */
 } udp4_datagram;
 
-/** 
+/**
  * Callback function for the receiving UDP datagrams.
  *
  * @param pkt           Received UDP datagram. After return from this
  *                      callback memory block under this datagram will
- *                      be freed. 
+ *                      be freed.
  * @param userdata      Parameter, provided by the caller of
  *                      tapi_snmp_walk().
  */
@@ -159,7 +159,7 @@ typedef void (*udp4_callback)(const udp4_datagram *pkt, void *userdata);
  * @note Function allocates memory under dhcp_message data structure, which
  * should be freed with dhcpv4_message_destroy
  */
-extern int ndn_udp4_dgram_to_plain(asn_value *pkt, 
+extern int ndn_udp4_dgram_to_plain(asn_value *pkt,
                                    struct udp4_datagram **udp_dgram);
 
 
@@ -180,7 +180,7 @@ extern tapi_tad_trrecv_cb_data *tapi_udp_ip4_eth_trrecv_cb_data(
 /**
  * Start receiving of UDP datagrams via 'udp.ip4.eth' CSAP, non-block
  * method.
- * 
+ *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param csap          Identifier of CSAP

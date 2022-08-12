@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -113,7 +113,7 @@ tester_global_free(tester_global *global)
     test_suites_info_free(&global->suites);
     test_paths_free(&global->paths);
     logic_expr_free(global->targets);
-#if WITH_TRC 
+#if WITH_TRC
     trc_db_close(global->trc_db);
     tq_strings_free(&global->trc_tags, free);
 #endif
@@ -360,7 +360,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
           "TRC database to be used.", NULL },
         { "trc-tag", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_TRC_TAG,
           "Tags to customize TRC expectations.", NULL },
-        { "trc-comparison", '\0', POPT_ARG_STRING, NULL, 
+        { "trc-comparison", '\0', POPT_ARG_STRING, NULL,
           TESTER_OPT_TRC_COMPARISON,
           "Parameter comparison method (default is 'exact').",
           "exact|casefold|normalised|tokens" },
@@ -394,7 +394,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         { "version", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_VERSION,
           "Display version information.", NULL },
 
-        { "cmd-monitor", '\0', POPT_ARG_STRING, NULL, 
+        { "cmd-monitor", '\0', POPT_ARG_STRING, NULL,
           TESTER_OPT_CMD_MONITOR,
           "Command monitor in form [ta,]time_to_wait:command",
           NULL },
@@ -649,7 +649,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     else if (rc == TESTER_OPT_TRC_COMPARISON)
                     {
                         const char *method = poptGetOptArg(optCon);
-                        
+
                         if (strcmp(method, "exact") == 0)
                         {
                             trc_db_compare_values = strcmp;
@@ -678,7 +678,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
                         rc = trc_add_tag(&global->trc_tags,
                                          (char *)poptGetOptArg(optCon));
-                        if (rc != 0) 
+                        if (rc != 0)
                         {
                             poptFreeContext(optCon);
                             return TE_RC(TE_TESTER, TE_EINVAL);
@@ -1049,7 +1049,7 @@ main(int argc, char *argv[])
     }
 #endif
 
-    /* 
+    /*
      *  Start the Tester thread to handle events of the serial consoles
      */
     if ((~tester_global_context.flags & TESTER_NO_RUN))

@@ -10,7 +10,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
@@ -325,7 +325,7 @@ tapi_cli_send_recv_with_prompt(const char *ta_name, int sid,
  * @param  ta_name    Test agent name
  * @param  sid        RCF session id
  * @param  device     local device name
- * @param  user       Login name to be sent if login prompt is detected 
+ * @param  user       Login name to be sent if login prompt is detected
  * @param  pwd        Password to be sent if password prompt is detected
  * @param  cprompt    Expected command prompt (when commands may be sent)
  * @param  cli_csap   Identifier of created CSAP
@@ -347,13 +347,13 @@ tapi_cli_send_recv_with_prompt(const char *ta_name, int sid,
 
 
 /**
- * Macro around tapi_cli_csap_remote_create() when connection type is 
+ * Macro around tapi_cli_csap_remote_create() when connection type is
  * @c TAPI_CLI_CSAP_TYPE_TELNET
  *
  * @param  ta_name    Test agent name
  * @param  sid        RCF session id
  * @param  host       Remote host name
- * @param  user       Login name to be sent if login prompt is detected 
+ * @param  user       Login name to be sent if login prompt is detected
  * @param  pwd        Password to be sent if password prompt is detected
  * @param  cprompt    Expected command prompt (when commands may be sent)
  * @param  cli_csap   Identifier of created @c CSAP
@@ -376,13 +376,13 @@ tapi_cli_send_recv_with_prompt(const char *ta_name, int sid,
     } while (0)
 
 /**
- * Macro around tapi_cli_csap_remote_create() when connection type is 
+ * Macro around tapi_cli_csap_remote_create() when connection type is
  * @c TAPI_CLI_CSAP_TYPE_SSH
  *
  * @param  ta_name    Test agent name
  * @param  sid        RCF session id
  * @param  host       Remote host name
- * @param  user       Login name to be sent if login prompt is detected 
+ * @param  user       Login name to be sent if login prompt is detected
  * @param  pwd        Password to be sent if password prompt is detected
  * @param  cprompt    Expected command prompt (when commands may be sent)
  * @param  cli_csap   Identifier of created @c CSAP
@@ -403,13 +403,13 @@ tapi_cli_send_recv_with_prompt(const char *ta_name, int sid,
     } while (0)
 
 /**
- * Macro around tapi_cli_csap_shell_create() when connection type is 
+ * Macro around tapi_cli_csap_shell_create() when connection type is
  * @c TAPI_CLI_CSAP_TYPE_SHELL
  *
  * @param  ta_name    Test agent name
  * @param  sid        RCF session id
  * @param  shell_args Shell arguments
- * @param  user       Login name to be sent if login prompt is detected 
+ * @param  user       Login name to be sent if login prompt is detected
  * @param  pwd        Password to be sent if password prompt is detected
  * @param  cprompt    Expected command prompt (when commands may be sent)
  * @param  cli_csap   Identifier of created @c CSAP

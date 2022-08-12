@@ -11,7 +11,7 @@
 
 #define TE_LOG_LEVEL    0xff
 #define TE_LGR_USER     "ISC DHCP Server Cfg Parser"
-    
+
 #include "te_errno.h"
 #include "te_stdint.h"
 #include "logger_api.h"
@@ -199,12 +199,12 @@ range:
 host:
     ISC_DHCP_HOST name OBRACE host_content EBRACE
     ;
-    
+
 host_content:
     /* empty */
     | host_content host_content_statement
     ;
-    
+
 host_content_statement:
     ISC_DHCP_FIXED_ADDRESS ISC_DHCP_IP4_ADDRESS SEMICOLON
     | ISC_DHCP_HARDWARE ISC_DHCP_ETHERNET ISC_DHCP_ETH_ADDRESS SEMICOLON

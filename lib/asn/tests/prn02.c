@@ -13,7 +13,7 @@
 char print_buffer[1000];
 
 
-extern int asn_impl_parse_text(const char*text, asn_type_p, 
+extern int asn_impl_parse_text(const char*text, asn_type_p,
                                asn_value **parsed, int *parsed_syms);
 
 
@@ -27,10 +27,10 @@ main (void)
         asn_value *asn_pdu;
         asn_value *asn_bpdu;
         asn_value *asn_eth_hdr;
-        char eth_device[] = "eth0"; 
+        char eth_device[] = "eth0";
 
         uint8_t own_addr[6] = {0x01,0x02,0x03,0x04,0x05,0x06};
-        uint8_t out_addr[6] = {0xff,0xff,0xff,0xff,0xff,0xff}; 
+        uint8_t out_addr[6] = {0xff,0xff,0xff,0xff,0xff,0xff};
 
         ndn_stp_bpdu_t plain_bpdu;
 
@@ -42,15 +42,15 @@ main (void)
 
         template = asn_init_value(ndn_traffic_template);
         asn_pdus = asn_init_value(ndn_generic_pdu_sequence);
-        asn_pdu = asn_init_value(ndn_generic_pdu); 
-        asn_eth_hdr = asn_init_value(ndn_eth_header); 
-        
+        asn_pdu = asn_init_value(ndn_generic_pdu);
+        asn_eth_hdr = asn_init_value(ndn_eth_header);
+
         rc = asn_write_component_value(asn_pdu, asn_bpdu, "#bridge");
         if (rc == 0)
             rc = asn_insert_indexed(asn_pdus, asn_pdu, 0, "");
- 
+
         asn_free_value(asn_pdu);
-        asn_pdu = asn_init_value(ndn_generic_pdu); 
+        asn_pdu = asn_init_value(ndn_generic_pdu);
         if (rc == 0)
             rc = asn_write_component_value(asn_pdu, asn_eth_hdr, "#eth");
         if (rc == 0)

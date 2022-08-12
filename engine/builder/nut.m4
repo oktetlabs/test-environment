@@ -6,7 +6,7 @@ dnl Copyright (C) 2003-2018 OKTET Labs.
 dnl
 dnl Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 dnl
- 
+
 changequote([,])
 
 dnl Specifies parameters for NUT bootable image building.
@@ -19,7 +19,7 @@ dnl       build script pathname (absolute or related to the source
 dnl                              directory pathname, if specified)
 dnl       source directory pathname (optional)
 dnl       additional parameters to the building script (optional)
-dnl       
+dnl
 define([TE_NUT],
 [
 [
@@ -35,9 +35,9 @@ if test -z "$SCRIPT" ; then
     exit 1 ;
 fi
 NUT_$1_SOURCES="$3"
-if test "${SCRIPT:0:1}" != "/" -a -n "$3" ; then 
+if test "${SCRIPT:0:1}" != "/" -a -n "$3" ; then
     NUT_$1_SCRIPT="$3/$SCRIPT"
-else    
+else
     NUT_$1_SCRIPT="$SCRIPT"
 fi
 NUT_$1_PARMS="$4"

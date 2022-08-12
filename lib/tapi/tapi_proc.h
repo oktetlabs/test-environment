@@ -10,13 +10,13 @@
  *
  * @ref tapi_cfg_sys must be used in modern tests.
  * ###########################################################################
- * 
+ *
  * API declaration for access to some system options via /proc/sys
  *
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>

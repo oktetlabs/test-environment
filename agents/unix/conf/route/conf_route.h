@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -41,7 +41,7 @@ extern te_errno ta_unix_conf_route_init(void);
  */
 extern te_errno ta_unix_conf_route_find(ta_rt_info_t *rt_info);
 
-/** 
+/**
  * Change route.
  *
  * @param action    What to do with this route
@@ -66,7 +66,7 @@ extern te_errno ta_unix_conf_route_list(char **list);
  * Get list of 'blackhole' routes.
  *
  * @param list      Location for pointer to allocated string
- * 
+ *
  * @return Status code.
  */
 extern te_errno ta_unix_conf_route_blackhole_list(char **list);

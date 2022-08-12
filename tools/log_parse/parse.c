@@ -2,7 +2,7 @@
  * Test Environment.
  *
  * Parsers parses text log file and in all lines like
- * 
+ *
  * WARN  Tester  Parser  16:34:33 958 ms
  *
  * adds the time from the beginning of the log in the end of the line.
@@ -27,7 +27,7 @@ gettime(char *s, int *time)
 
     if (tmp == NULL)
         return -1;
-    
+
     *time = 0;
     c = strchr(tmp, ':');
     *c = 0;
@@ -43,7 +43,7 @@ gettime(char *s, int *time)
     *time += atoi(c + 9);
 
     free(tmp);
-    return 0;   
+    return 0;
 }
 
 int
@@ -57,15 +57,15 @@ main(int argc, char *argv[])
     int   first_ts;
     int   curr_ts;
     int   rc;
-    
+
     memset(line, 0, sizeof(line));
-    
+
     if (argc < 3)
     {
         printf("To few arguments\n");
         return -1;
     }
-    
+
     parse_file = fopen(argv[1], "r");
     if (parse_file == NULL)
     {
@@ -85,20 +85,20 @@ main(int argc, char *argv[])
     if (c == NULL)
         return -1;
     fprintf(output_file, "%s", line);
-    
+
     c = fgets(line, LINE_LENGTH, parse_file);
     if (c == NULL)
         return -1;
-    
+
     if (gettime(line, &first_ts) != 0)
-        return -1;    
+        return -1;
     fprintf(output_file, "%s", line);
 
     c = fgets(line, LINE_LENGTH, parse_file);
     if (c == NULL)
         return -1;
     fprintf(output_file, "%s", line);
-    
+
     do
     {
         c = fgets(line, LINE_LENGTH, parse_file);
@@ -117,12 +117,12 @@ main(int argc, char *argv[])
             *c = 0;
             snprintf(c, 60 - strlen(line), "%s",
                      "                                                     ");
-            fprintf(output_file, "%s%s%i%s%i%s", line, "     ", 
+            fprintf(output_file, "%s%s%i%s%i%s", line, "     ",
                     (curr_ts - first_ts) / 1000, ".",
                     (curr_ts - first_ts) % 1000, "\n");
         }
     } while(1);
-        
+
     fclose(parse_file);
     fclose(output_file);
 }

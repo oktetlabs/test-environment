@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author  Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
@@ -35,10 +35,10 @@ main(void)
     COMMON_TEST_PARAMS;
     int                     conf;
     cfg_obj_descr           descr = {CVT_STRING, CFG_READ_WRITE};
-    
+
     te_log_init("test", te_log_message_file);
 
-    /* 
+    /*
      * Exporting environment variables which are necessary
      * for correct work of the testing network.
      */

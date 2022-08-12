@@ -5,14 +5,14 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Artem V. Andreev   <Artem.Andreev@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_AGENTLIB_H__
 #define __TE_AGENTLIB_H__
 

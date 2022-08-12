@@ -1,18 +1,18 @@
 /** @file
- * @brief Test Environment: 
+ * @brief Test Environment:
  *
  * Traffic Application Domain Command Handler
  * SNMP protocol implementaion internal declarations.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
  *
  */
 #ifndef __TE_TAPI_SNMP_MACRO_H__
-#define __TE_TAPI_SNMP_MACRO_H__ 
+#define __TE_TAPI_SNMP_MACRO_H__
 
 #include "tapi_snmp.h"
 #include "tapi_test.h"
@@ -24,14 +24,14 @@ extern "C" {
 
 /**
  * Macro around tapi_snmp_csap_create().
- * 
+ *
  * @param ta_            Test Agent name.
  * @param sid_           RCF Session ID.
  * @param snmp_agent_    Address of SNMP agent.
  * @param community_     SNMP community.
  * @param snmp_version_  SNMP version.
  * @param csap_id_       identifier of an SNMP CSAP. (OUT)
- * 
+ *
  */
 #define SNMP_CSAP_CREATE(ta_, sid_, snmp_agent_, community_, \
                          snmp_version_, csap_id_) \
@@ -48,11 +48,11 @@ extern "C" {
 
 /**
  * Macro around tapi_snmp_make_oid().
- * 
+ *
  * @param label_    SNMP label - OID string representation
  * @param oid_      Location for parsed OID (OUT)
- * 
- */ 
+ *
+ */
 #define SNMP_MAKE_OID(label_, oid_) \
     do {                                                                \
         int rc_;                                                        \
@@ -63,15 +63,15 @@ extern "C" {
             TEST_FAIL("snmp make integer failed for OID, result\n",     \
                       label_, rc_);                                     \
         }                                                               \
-    } while (0)           
+    } while (0)
 
 /**
  * Macro around tapi_snmp_make_oid().
- * 
+ *
  * @param label_    SNMP label - OID string representation
  * @param oid_      Location for parsed OID (OUT)
- * 
- */ 
+ *
+ */
 #define TAPI_SNMP_MAKE_OID(label_, oid_) \
     CHECK_RC(tapi_snmp_make_oid(label_, oid_))
 
@@ -108,12 +108,12 @@ extern "C" {
 
 /**
  * Macro around tapi_snmp_make_table_field_instance().
- * 
+ *
  * @param label_    SNMP label - OID string representation
  * @param oid_      Location for parsed OID (OUT)
  * @param indeces_  Indeces of table field instance
- * 
- */ 
+ *
+ */
 #define SNMP_MAKE_INSTANCE(label_, oid_, indeces_...) \
     do {                                                                  \
         int rc_;                                                          \
@@ -124,7 +124,7 @@ extern "C" {
             TEST_FAIL("Cannot make instance of %s OID: %r", label_, rc_); \
         }                                                                 \
     } while (0)
-    
+
 /**
  * Macro around tapi_snmp_make_vb()
  *
@@ -140,11 +140,11 @@ extern "C" {
 
 /**
  * Macro around tapi_snmp_get_syntax().
- * 
+ *
  * @param label_    SNMP label - OID string representation
- * @param syntax_   Location for syntax 
- * 
- */ 
+ * @param syntax_   Location for syntax
+ *
+ */
 #define TAPI_SNMP_GET_SYNTAX(label_, syntax_) \
     do {                                                        \
         int             rc_;                                    \
@@ -158,11 +158,11 @@ extern "C" {
             TEST_FAIL("snmp get syntax failed  OID, result\n",  \
                       label_, rc_);                             \
         }                                                       \
-    } while (0)           
+    } while (0)
 
 /**
  * Macro around tapi_snmp_get_table().
- * 
+ *
  * @param ta_           Test Agent name
  * @param sid_          RCF Session id
  * @param csap_id_      SNMP CSAP handle
@@ -170,7 +170,7 @@ extern "C" {
  *                      this entry
  * @param num_          Number of raws in table = height of matrix below
  *                      (OUT)
- * @param result_       Allocated matrix with results, if only 
+ * @param result_       Allocated matrix with results, if only
  *                      one column should be get, matrix width is 1,
  *                      otherwise matrix width is greatest subid of Table
  *                      entry (OUT)
@@ -197,7 +197,7 @@ extern "C" {
  *
  * @param tbl_           Pointer to the SNMP table data structure
  * @param tbl_size_      Number of rows in the table
- * @param index_prefix_  Index prefix that should present in all rows of 
+ * @param index_prefix_  Index prefix that should present in all rows of
  *                       the resulting subtable (tapi_snmp_oid_t *)
  * @param sub_tbl_       Placeholder for the pointer to the subtable (OUT)
  * @param sub_tbl_size_  Number of rows in the subtable (OUT)
@@ -238,7 +238,7 @@ extern "C" {
               }                                                     \
           }                                                         \
       } while (0)
-   
+
 /**
  * Macro around tapi_snmp_get_table_rows().
  *
@@ -250,7 +250,7 @@ extern "C" {
  * @param suffixes_     Array with index suffixes of desired table rows
  * @param result_       Allocated matrix with results, matrix width is
  *                      greatest subid of Table entry (OUT)
- * 
+ *
  */
 #define SNMP_GET_TABLE_ROWS(ta_, sid_, csap_id_, label_, num_, \
                             suffixes_, result_)                    \
@@ -266,7 +266,7 @@ extern "C" {
             TEST_FAIL("snmp get table rows failed for %s failed, " \
                       "result %r\n", label_, rc_);                 \
         }                                                          \
-    } while (0)                   
+    } while (0)
 
 
 /**
@@ -275,7 +275,7 @@ extern "C" {
  * @param label_      OID of SNMP table Entry object, or one leaf in this
  *                    entry
  * @param dimension_  Pointer to the location of the table dimension (OUT)
- */ 
+ */
 #define TAPI_SNMP_GET_TABLE_DIMENSION(label_, dimension_) \
     do {                                                                 \
         int             rc_;                                             \
@@ -297,7 +297,7 @@ extern "C" {
  *                   entry
  * @param columns_   Columns of the table.
  *
- */ 
+ */
 #define TAPI_SNMP_GET_TABLE_COLUMNS(label_, columns_) \
     do {                                                        \
         int             rc_;                                    \
@@ -311,8 +311,8 @@ extern "C" {
                       "failed, result %r\n", label_, rc_);      \
         }                                                       \
     } while (0)
-  
-   
+
+
 /**
  * Macro around tapi_snmp_load_mib_with_path().
  *
@@ -337,7 +337,7 @@ extern "C" {
  * Macro around tapi_snmp_load_mib().
  *
  * @param mib_file_  File name of the MIB file.
- * 
+ *
  */
 #define SNMP_LOAD_MIB(mib_file_) \
     do {                                                        \
@@ -367,13 +367,13 @@ extern "C" {
         rc_ = tapi_snmp_make_table_index(&label_, &index_);     \
         if (rc_)                                                \
             TEST_FAIL("Make table index failed\n");             \
-    } while (0)       
-       
-   
+    } while (0)
+
+
 
 /**
  * Macro around tapi_snmp_set_integer()
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF session ID
  * @param csap_id       Identifier of an SNMP CSAP
@@ -381,7 +381,7 @@ extern "C" {
  * @param value         Integer value
  * @param err_stat      SNMP error status
  * @param sub_id        Index of table field instance or 0 for scalar field
- * 
+ *
  */
 #define TAPI_SNMP_SET_INTEGER(ta, sid, csap_id, name, value,            \
                               err_stat, sub_id...)                      \
@@ -398,7 +398,7 @@ extern "C" {
 
 /**
  * Macro around tapi_snmp_set_unsigned()
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF session ID
  * @param csap_id       Identifier of an SNMP CSAP
@@ -406,7 +406,7 @@ extern "C" {
  * @param value         Unsigned integer value
  * @param err_stat      SNMP error status
  * @param sub_id        Index of table field instance or 0 for scalar field
- * 
+ *
  */
 #define TAPI_SNMP_SET_UNSIGNED(ta, sid, csap_id, name, value,           \
                                err_stat, sub_id...)                     \
@@ -423,7 +423,7 @@ extern "C" {
 
 /**
  * Macro around tapi_snmp_set_octetstring()
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF session ID
  * @param csap_id       Identifier of an SNMP CSAP
@@ -432,7 +432,7 @@ extern "C" {
  * @param length        Octet string length
  * @param err_stat      SNMP error status
  * @param sub_id        Index of table field instance or 0 for scalar field
- * 
+ *
  */
 #define TAPI_SNMP_SET_OCTETSTRING(ta, sid, csap_id, name,               \
                                   value, length, err_stat, sub_id...)   \
@@ -448,8 +448,8 @@ extern "C" {
     } while (0)
 
 /**
- * Macro for snmp set string type variable. 
- * 
+ * Macro for snmp set string type variable.
+ *
  * @param ta            Test Agent name
  * @param sid           RCF session ID
  * @param csap_id       Identifier of an SNMP CSAP
@@ -457,7 +457,7 @@ extern "C" {
  * @param value         Display string value
  * @param err_stat      SNMP error status
  * @param sub_id        Index of table field instance or 0 for scalar field
- * 
+ *
  */
 #define TAPI_SNMP_SET_STRING(ta, sid, csap_id, name, value,     \
                              err_stat, sub_id...)               \
@@ -466,7 +466,7 @@ extern "C" {
 
 /**
  * Macro around tapi_snmp_set_row()
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF session ID
  * @param csap_id       Identifier of an SNMP CSAP
@@ -474,10 +474,10 @@ extern "C" {
  * @param err_index     Index of varbind where an error ocured
  * @param index         Index of table field instance or 0 for scalar field
  * @param values        sequence of "varbind groups":
- *                      label of MIB leaf and value, which is either 
- *                      integer or pair <char *, int>, for OCTET_STRING 
+ *                      label of MIB leaf and value, which is either
+ *                      integer or pair <char *, int>, for OCTET_STRING
  *                      types; ended by NULL.
- * 
+ *
  */
 #define TAPI_SNMP_SET_ROW(ta, sid, csap_id, err_stat, err_index, index, \
                           values...)                                    \
@@ -490,15 +490,15 @@ extern "C" {
 
 /**
  * Macro around tapi_snmp_set()
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF session ID
  * @param csap_id       Identifier of an SNMP CSAP.
  * @param err_stat      SNMP error status
  * @param err_index     Index of varbind where an error ocured
  * @param values        sequence of "varbind groups":
- *                      label of MIB leaf and value, which is either 
- *                      integer or pair <char *, int>, for OCTET_STRING 
+ *                      label of MIB leaf and value, which is either
+ *                      integer or pair <char *, int>, for OCTET_STRING
  *                      types; ended by NULL.
  */
 #define TAPI_SNMP_SET(ta, sid, csap_id, err_stat, err_index, values...) \
@@ -531,12 +531,12 @@ extern "C" {
                  next, vb, err_stat));                          \
         VERB("SNMP get for %s, oid = %s,  error status %d",     \
               name, print_oid(&oid), *err_stat);                \
-    } while (0)           
+    } while (0)
 
-    
+
 /**
  * Macro around tapi_snmp_get_integer()
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF session ID
  * @param csap_id       Identifier of an SNMP CSAP
@@ -544,7 +544,7 @@ extern "C" {
  * @param value         Pointer to returned integer value
  * @param err_stat      Error status
  * @param sub_id        Index of table field instance (0 for scalar field)
- * 
+ *
  */
 #define TAPI_SNMP_GET_INTEGER(ta, sid, csap_id, name, value, err_stat, \
                               sub_id...)                                \
@@ -563,7 +563,7 @@ extern "C" {
 
 /**
  * Macro around tapi_snmp_get_unsigned()
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF session ID
  * @param csap_id       Identifier of an SNMP CSAP
@@ -571,7 +571,7 @@ extern "C" {
  * @param value         Pointer to returned unsigned integer value
  * @param err_stat      Error status
  * @param sub_id        Index of table field instance (0 for scalar field)
- * 
+ *
  */
 #define TAPI_SNMP_GET_UNSIGNED(ta, sid, csap_id, name, value, err_stat, \
                                sub_id...)                               \
@@ -599,7 +599,7 @@ extern "C" {
  * @param err_stat      Error status
  * @param sub_id        Index of table field instance (0 for scalar field)
  *
- */ 
+ */
 #define TAPI_SNMP_GET_OCTETSTRING(ta, sid, csap_id, name, value,    \
                                   size, err_stat, sub_id...)        \
     do {                                                            \
@@ -612,9 +612,9 @@ extern "C" {
              "returns %s = %s, error status %d",                    \
              name, print_oid(&oid), #value,                         \
              print_octet_string(value, *size), *err_stat);          \
-    } while (0)            
+    } while (0)
 
-              
+
 /**
  * Macro around tapi_snmp_walk.
  *
@@ -624,7 +624,7 @@ extern "C" {
  * @param name          Name of SNMP object
  * @param userdata      Userdata for walk cb
  * @param callback      Walk callback
- */ 
+ */
 #define TAPI_SNMP_WALK(ta, sid, csap_id, name, userdata, callback) \
     do {                                                            \
         tapi_snmp_oid_t oid;                                        \
@@ -637,7 +637,7 @@ extern "C" {
 
 /**
  * Macro to check SNMP type integer variable.
- * 
+ *
  * @param ta            Test Agent name
  * @param sid           RCF session ID
  * @param csap_id       Identifier of an SNMP CSAP
@@ -645,7 +645,7 @@ extern "C" {
  * @param value         Integer value to compare
  * @param err_stat      Error status
  * @param sub_id        Index of table field instance (0 for scalar field)
- * 
+ *
  */
 #define TAPI_SNMP_CHECK_INTEGER(ta, sid, csap_id, name, value, \
                                 err_stat, sub_id...)                \

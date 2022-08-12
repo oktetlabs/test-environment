@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
  *
@@ -29,27 +29,27 @@ extern "C" {
 #include <stdio.h>
 #endif
 #ifdef HAVE_RPC_XDR_H
-#include <rpc/xdr.h>    
+#include <rpc/xdr.h>
 #endif
 #ifdef HAVE_EXPAT_H
-#include <expat.h> 
+#include <expat.h>
 #endif
 
-    
+
 #define MAXBUFSIZE      256
-#define INDENT          2 
+#define INDENT          2
 
 /**
  * From xml data representation point of view
  * 'enum' type is the 'int' one
- */ 
-#define xmlxdr_enum xmlxdr_int    
+ */
+#define xmlxdr_enum xmlxdr_int
 
 /**
  * Tags distinguished for rpc call and
  * rpc result
- */ 
-typedef enum rpc_xml_op {    
+ */
+typedef enum rpc_xml_op {
     rpc_xml_call,
     rpc_xml_result
 } rpc_xml_op;
@@ -57,7 +57,7 @@ typedef enum rpc_xml_op {
 /**
  * Additional data is to be passed to
  * conversion procedures
- */ 
+ */
 typedef struct xml_app_data {
     rpc_xml_op  op;      /**< rpc_xml_call or rpc_xml_result */
     bool_t      rc;      /**< return code */
@@ -87,9 +87,9 @@ extern bool_t xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
 extern bool_t xmlxdr_string(XDR *xdrs, caddr_t *addrp, u_int maxsize);
 
 /**
- * Parser handlers for structure data types 
+ * Parser handlers for structure data types
  */
-extern void start_compound_data(void *data, const XML_Char *elem, 
+extern void start_compound_data(void *data, const XML_Char *elem,
                                 const XML_Char **atts);
 extern void end_compound_data(void *data, const XML_Char *elem);
 
@@ -107,8 +107,8 @@ extern void end_compound_data(void *data, const XML_Char *elem);
  * @param x_op      XDR_ENCODE, XDR_DECODE of XDR_FREE
  *
  * @return TRUE of FALSE (in case of memory allocation failure)
- */ 
-extern bool_t xdrxml_create(XDR *xdrs, caddr_t buf, u_int buflen, 
+ */
+extern bool_t xdrxml_create(XDR *xdrs, caddr_t buf, u_int buflen,
                             rpc_xml_op op, bool_t rc,
                             const char *name, enum xdr_op x_op);
 /**
@@ -116,7 +116,7 @@ extern bool_t xdrxml_create(XDR *xdrs, caddr_t buf, u_int buflen,
  * xdrxml_create()
  *
  * @param xdrs  XDR structure
- */ 
+ */
 extern bool_t xdrxml_return_code(XDR *xdrs);
 
 /**
@@ -124,7 +124,7 @@ extern bool_t xdrxml_return_code(XDR *xdrs);
  * attached to XDR structure
  *
  * @param xdrs  XDR structure
- */ 
+ */
 extern bool_t xdrxml_free(XDR *xdrs);
 
 #ifdef __cplusplus

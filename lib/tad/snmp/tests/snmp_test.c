@@ -14,7 +14,7 @@
 #define UCD_COMPATIBLE
 #include<net-snmp/net-snmp-config.h>
 #include<net-snmp/session_api.h>
-#include<net-snmp/pdu_api.h> 
+#include<net-snmp/pdu_api.h>
 
 #ifndef RECEIVED_MESSAGE
 #define RECEIVED_MESSAGE NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE
@@ -28,7 +28,7 @@
 
 
 
-void 
+void
 print_oid(unsigned long * subids, int len)
 {
     int i;
@@ -70,7 +70,7 @@ snmp_input(
                 case ASN_OCTET_STR:
                     printf("%s\n", vars->val.string);
                     break;
-                default: 
+                default:
                     printf("not impl.\n");
             }
         }
@@ -78,9 +78,9 @@ snmp_input(
 
     if ( op == TIMED_OUT )
     {
-        printf ("==========timeout is received in 'snmp_server_fifo_input'!\n" ) ; 
+        printf ("==========timeout is received in 'snmp_server_fifo_input'!\n" ) ;
     }
-    return 1; 
+    return 1;
 }
 
 int main(void)
@@ -102,12 +102,12 @@ int main(void)
 
     session.version = 1;
     session.retries = 1;
-    session.timeout = 10000000; 
+    session.timeout = 10000000;
 
     session.peername = strdup("localhost");
     session.remote_port = 161;
     session.community = strdup(community);
-    session.community_len = strlen(community); 
+    session.community_len = strlen(community);
     session.callback = snmp_input;
     session.callback_magic = NULL;
 
@@ -119,9 +119,9 @@ int main(void)
         printf ("open session error\n");
         snmp_perror("");
         return 1;
-    }    
-    pdu = snmp_pdu_create(SNMP_MSG_GETNEXT); 
-    snmp_add_null_var ( pdu, syst_oid, 6 ); 
+    }
+    pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
+    snmp_add_null_var ( pdu, syst_oid, 6 );
 
     if (!snmp_send(ss, pdu)){
         snmp_perror("Couldn't send pdu");
@@ -140,10 +140,10 @@ int main(void)
             printf("callback allready was called\n");
         else
             printf("callback was NOT called\n");
-    } 
+    }
     else
        printf("snmp_read was NOT called\n");
-    
+
     if (rc < 0)
     {
         perror("select error:");
@@ -167,7 +167,7 @@ int main(void)
                 case STRING:
                     printf("%s\n", vars->val.string);
                     break;
-                default: 
+                default:
                     printf("not impl.\n");
             }
         }

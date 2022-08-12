@@ -393,7 +393,7 @@
       access: read_only
       type: integer
       d: |
-         A specific uncorrectable error happened. This is a list of values 
+         A specific uncorrectable error happened. This is a list of values
          indexed by an error name.
          The following error names are defined as per PCIe spec:
          - unsupported_request

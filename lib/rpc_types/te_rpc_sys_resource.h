@@ -2,17 +2,17 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from sys/resource.h.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_SYS_RESOURCE_H__
 #define __TE_RPC_SYS_RESOURCE_H__
 
@@ -44,8 +44,8 @@ typedef enum rpc_rlimit_resource {
     RPC_RLIMIT_NLIMITS,
 } rpc_rlimit_resource;
 
-/** 
- * Convert RPC resource type (setrlimit/getrllimit) 
+/**
+ * Convert RPC resource type (setrlimit/getrllimit)
  * to string representation.
  */
 extern const char * rlimit_resource_rpc2str(rpc_rlimit_resource resource);

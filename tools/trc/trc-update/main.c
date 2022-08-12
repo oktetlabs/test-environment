@@ -2,11 +2,11 @@
  * @brief Testing Results Comparator
  *
  * TRC update tool
- *  
+ *
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
@@ -411,7 +411,7 @@ get_opts_from_file(char *fname)
 
 /**
  * Process command line options and parameters specified in argv.
- * The procedure contains "Option table" that should be updated 
+ * The procedure contains "Option table" that should be updated
  * if some new options are going to be added.
  *
  * @param argc          Number of elements in array "argv".
@@ -677,7 +677,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
           TRC_UPDATE_OPT_LOGS_DUMP,
           "Specify a file with logs dump", NULL },
 
-        { "version", '\0', POPT_ARG_NONE, NULL, TRC_UPDATE_OPT_VERSION, 
+        { "version", '\0', POPT_ARG_NONE, NULL, TRC_UPDATE_OPT_VERSION,
           "Display version information.", NULL },
 
         POPT_AUTOHELP
@@ -852,7 +852,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                          strcmp(s, "conflicts,old") == 0)
                 {
                     ctx.flags |= TRC_UPDATE_COPY_OLD |
-                                 TRC_UPDATE_COPY_CONFLS; 
+                                 TRC_UPDATE_COPY_CONFLS;
                     if (strchr(s, ',') != 0)
                         ctx.flags |= TRC_UPDATE_COPY_BOTH;
                 }
@@ -1288,7 +1288,7 @@ perl_prepare()
                              "}\n"
                              "sub get_filter"
                              "{"
-                             "    $filter = 1;" 
+                             "    $filter = 1;"
                              "    get_rc();"
                              "    return $filter;\n"
                              "}\n",
@@ -1595,7 +1595,7 @@ main(int argc, char **argv, char **envp)
 
         memset(&te_str, 0, sizeof(te_str));
         te_str.ptr = NULL;
-    
+
         te_string_append(&te_str, "%s", argv[0]);
 
         for (i = 1; i < argc; i++)
@@ -1621,7 +1621,7 @@ main(int argc, char **argv, char **envp)
 
     if (perl_expr != NULL || perl_script != NULL || oth_prog != NULL)
         ctx.func_args_match = func_args_match;
-    
+
 #ifdef HAVE_LIBPERL
     /* Allocate and initialize perl interpreter */
     perl_interp = perl_alloc();

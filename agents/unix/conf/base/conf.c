@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -1403,7 +1403,7 @@ rcf_ch_conf_init(void)
             goto fail;
 
         rcf_pch_rsrc_init();
-        
+
 #ifdef WITH_AGGREGATION
         if (ta_unix_conf_aggr_init() != 0)
         {
@@ -2496,8 +2496,8 @@ sun_iterate_vlans(const char *ifname,
         vlan_str = s;
         s = strchr(vlan_str, ':');
         if (s == NULL)
-        {   
-            ERROR("%s() Unexpected format 'dladm' output: '%s'", 
+        {
+            ERROR("%s() Unexpected format 'dladm' output: '%s'",
                   __FUNCTION__, f_buf);
             rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
             break;
@@ -2937,7 +2937,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
 #elif defined __sun__
     {
         char vlan_if_name[IFNAMSIZ];
-        
+
         rc = vlan_ifname_get_internal(ifname, vid, vlan_if_name);
         if (rc != 0)
             return rc;
@@ -2970,7 +2970,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
         {
             ERROR("Failed to create a network interface associated with "
                   "VLAN interface '%s'", vlan_if_name);
-            
+
             snprintf(buf, sizeof(buf),
                      "LANG=POSIX /usr/sbin/dladm delete-vlan %s",
                      vlan_if_name);
@@ -3031,7 +3031,7 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
 
         if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
             rc = te_rc_os2te(errno);
-    
+
         return TE_RC(TE_TA_UNIX, rc);
     }
 #elif defined __sun__
@@ -5674,10 +5674,10 @@ mtu_get(unsigned int gid, const char *oid, char *value,
 
 /**
  * Change MTU for the specified interface.
- * 
+ *
  * @param ifname  Interface name
  * @param mtu     MTU value
- * 
+ *
  * @return Error code.
  */
 static te_errno

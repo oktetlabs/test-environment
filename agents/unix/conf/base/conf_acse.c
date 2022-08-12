@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
@@ -117,7 +117,7 @@ cfg_acs_call_get(unsigned int gid, const char *oid, char *value,
  *
  * @param gid           Group identifier (unused)
  * @param oid           Object identifier
- * @param value         The value of the instance to set 
+ * @param value         The value of the instance to set
  * @param acse          Name of the acse instance (unused)
  * @param acs           Name of the acs instance
  * @param cpe           Name of the acs cpe instance
@@ -211,7 +211,7 @@ acs_cpe_add(unsigned int gid, char const *oid,
             char const *value, char const *acse, char const *acs,
             char const *cpe)
 {
-    te_errno                 rc; 
+    te_errno                 rc;
     acse_epc_config_data_t  *cfg_result = NULL;
 
     UNUSED(gid);
@@ -239,7 +239,7 @@ static te_errno
 acs_cpe_del(unsigned int gid, char const *oid,
             char const *acse, char const *acs, char const *cpe)
 {
-    te_errno rc; 
+    te_errno rc;
     acse_epc_config_data_t *cfg_result = NULL;
 
     UNUSED(gid);
@@ -291,7 +291,7 @@ static te_errno
 acse_acs_add(unsigned int gid, char const *oid,
              char const *value, char const *acse, char const *acs)
 {
-    te_errno                 rc; 
+    te_errno                 rc;
     acse_epc_config_data_t  *cfg_result = NULL;
 
     UNUSED(gid);
@@ -317,7 +317,7 @@ static te_errno
 acse_acs_del(unsigned int gid, char const *oid,
              char const *acse, char const *acs)
 {
-    te_errno                 rc; 
+    te_errno                 rc;
     acse_epc_config_data_t  *cfg_result = NULL;
 
     UNUSED(gid);
@@ -403,7 +403,7 @@ acse_get(unsigned int gid, char const *oid,
          acse_epc_cfg_pipe, rc);
     if (rc != 0)
     {
-        acse_epc_close(); 
+        acse_epc_close();
         acse_epc_cfg_pipe[0] = '\0';
         if (TE_RC_GET_ERROR(rc) != TE_ENOTCONN)
         {
@@ -520,30 +520,30 @@ RCF_PCH_CFG_NODE_RO(node_device_id_manufacturer, "manufacturer",
                     NULL, &node_device_id_oui,
                     &cfg_call_get);
 
-RCF_PCH_CFG_NODE_NA(node_cpe_device_id, "device_id", 
+RCF_PCH_CFG_NODE_NA(node_cpe_device_id, "device_id",
                     &node_device_id_manufacturer, &node_sync_mode);
 
-RCF_PCH_CFG_NODE_RW(node_cpe_passwd, "passwd", 
+RCF_PCH_CFG_NODE_RW(node_cpe_passwd, "passwd",
                     NULL, &node_cpe_device_id,
                     &cfg_call_get, &cfg_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_cpe_login, "login", 
+RCF_PCH_CFG_NODE_RW(node_cpe_login, "login",
                     NULL, &node_cpe_passwd,
                     &cfg_call_get, &cfg_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_cpe_cr_passwd, "cr_passwd", 
+RCF_PCH_CFG_NODE_RW(node_cpe_cr_passwd, "cr_passwd",
                     NULL, &node_cpe_login,
                     &cfg_call_get, &cfg_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_cpe_cr_login, "cr_login", 
+RCF_PCH_CFG_NODE_RW(node_cpe_cr_login, "cr_login",
                     NULL, &node_cpe_cr_passwd,
                     &cfg_call_get, &cfg_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_cpe_cert, "cert", 
+RCF_PCH_CFG_NODE_RW(node_cpe_cert, "cert",
                     NULL, &node_cpe_cr_login,
                     &cfg_call_get, &cfg_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_cpe_url, "cr_url", 
+RCF_PCH_CFG_NODE_RW(node_cpe_url, "cr_url",
                     NULL, &node_cpe_cert,
                     &cfg_call_get, &cfg_call_set);
 
@@ -555,43 +555,43 @@ RCF_PCH_CFG_NODE_COLLECTION(node_acs_cpe, "cpe",
 
 
 
-RCF_PCH_CFG_NODE_RW(node_acs_cert, "ssl_cert", 
+RCF_PCH_CFG_NODE_RW(node_acs_cert, "ssl_cert",
                     NULL, &node_acs_cpe,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_ssl, "ssl", 
+RCF_PCH_CFG_NODE_RW(node_acs_ssl, "ssl",
                     NULL, &node_acs_cert,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_port, "port", 
+RCF_PCH_CFG_NODE_RW(node_acs_port, "port",
                     NULL, &node_acs_ssl,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_udp_port, "udp_port", 
+RCF_PCH_CFG_NODE_RW(node_acs_udp_port, "udp_port",
                     NULL, &node_acs_port,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_traffic_log, "traffic_log", 
+RCF_PCH_CFG_NODE_RW(node_acs_traffic_log, "traffic_log",
                     NULL, &node_acs_udp_port,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_auth_mode, "auth_mode", 
+RCF_PCH_CFG_NODE_RW(node_acs_auth_mode, "auth_mode",
                     NULL, &node_acs_traffic_log,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_http_root, "http_root", 
+RCF_PCH_CFG_NODE_RW(node_acs_http_root, "http_root",
                     NULL, &node_acs_auth_mode,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_http_response, "http_response", 
+RCF_PCH_CFG_NODE_RW(node_acs_http_response, "http_response",
                     NULL, &node_acs_http_root,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_url, "url", 
+RCF_PCH_CFG_NODE_RW(node_acs_url, "url",
                     NULL, &node_acs_http_response,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
-RCF_PCH_CFG_NODE_RW(node_acs_enabled, "enabled", 
+RCF_PCH_CFG_NODE_RW(node_acs_enabled, "enabled",
                     NULL, &node_acs_url,
                     &cfg_acs_call_get, &cfg_acs_call_set);
 
@@ -600,11 +600,11 @@ RCF_PCH_CFG_NODE_COLLECTION(node_acse_acs, "acs",
                             &acse_acs_add, &acse_acs_del,
                             &acse_acs_list, NULL);
 
-RCF_PCH_CFG_NODE_RO(node_acse_unique_id, "unique_id", 
+RCF_PCH_CFG_NODE_RO(node_acse_unique_id, "unique_id",
                     NULL, &node_acse_acs,
                     &acse_unique_id_get);
 
-RCF_PCH_CFG_NODE_RW(node_acse, "acse", 
+RCF_PCH_CFG_NODE_RW(node_acse, "acse",
                     &node_acse_unique_id, NULL,
                     &acse_get, &acse_set);
 

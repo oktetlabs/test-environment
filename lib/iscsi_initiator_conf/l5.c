@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  *
@@ -45,7 +45,7 @@
  * @param auth_data     iSCSI security parameters
  */
 static void
-iscsi_l5_write_param(FILE *destination, 
+iscsi_l5_write_param(FILE *destination,
                      iscsi_target_param_descr_t *param,
                      iscsi_target_data_t *tgt_data,
                      iscsi_connection_data_t *conn_data,
@@ -62,7 +62,7 @@ iscsi_l5_write_param(FILE *destination,
             fputc(*n, destination);
     }
     fputs(": ", destination);
-    iscsi_write_param(iscsi_write_to_file, destination, param, 
+    iscsi_write_param(iscsi_write_to_file, destination, param,
                       tgt_data, conn_data, auth_data);
     fputc('\n', destination);
 }
@@ -83,7 +83,7 @@ iscsi_constant_l5_tgt_auth(void *null)
  * @param target      Target data
  */
 static int
-iscsi_l5_write_target_params(FILE *destination, 
+iscsi_l5_write_target_params(FILE *destination,
                              iscsi_target_data_t *target)
 {
     iscsi_target_param_descr_t *p;
@@ -124,7 +124,7 @@ iscsi_l5_write_target_params(FILE *destination,
             AUTH_PARAM(local_secret, "TargetCHAPSecret", TRUE, iscsi_when_tgt_auth),
             ISCSI_END_PARAM_TABLE
         };
-    
+
     /** Connection-wide parameter descriptions */
     static iscsi_target_param_descr_t connection_params[] =
         {
@@ -132,7 +132,7 @@ iscsi_l5_write_target_params(FILE *destination,
             GPARAMETER("Port", target_port, FALSE),
             PARAMETER(header_digest, HEADER_DIGEST,  TRUE),
             PARAMETER(data_digest, DATA_DIGEST,  TRUE),
-            PARAMETER(max_recv_data_segment_length, MAX_RECV_DATA_SEGMENT_LENGTH,  
+            PARAMETER(max_recv_data_segment_length, MAX_RECV_DATA_SEGMENT_LENGTH,
                       FALSE),
             AUTH_PARAM(chap, "AuthMethod", TRUE, iscsi_when_not_tgt_auth),
             CONSTANT("AuthMethod", l5_tgt_auth, iscsi_when_tgt_auth),
@@ -147,14 +147,14 @@ iscsi_l5_write_target_params(FILE *destination,
         if ((connection->conf_params & p->offer) == p->offer)
         {
 #endif
-            iscsi_l5_write_param(destination, p, 
+            iscsi_l5_write_param(destination, p,
                                  target, connection, &connection->chap);
 #if 0
         }
 #endif
     }
     /** Other authentication parameters are not supported by
-     *  L5 initiator, both on the level of script and on 
+     *  L5 initiator, both on the level of script and on
      *  the level of ioctls
      */
 
@@ -173,7 +173,7 @@ iscsi_l5_write_target_params(FILE *destination,
                 if ((connection->conf_params & p->offer) == p->offer)
                 {
 #endif
-                    iscsi_l5_write_param(destination, p, 
+                    iscsi_l5_write_param(destination, p,
                                          target, connection, &connection->chap);
 #if 0
                 }
@@ -208,10 +208,10 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
     iscsi_target_data_t *target;
     int                  conn_no;
     te_bool              is_first;
-    
+
     snprintf(filename, sizeof(filename),
              "%s/configs",
-             *iscsi_data->script_path != '\0' ? 
+             *iscsi_data->script_path != '\0' ?
              iscsi_data->script_path : ".");
     mkdir(filename, S_IRUSR | S_IWUSR | S_IXUSR);
     strcat(filename, "/te");
@@ -222,19 +222,19 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
               filename, strerror(errno));
         return TE_OS_RC(ISCSI_AGENT_TYPE, errno);
     }
-             
+
     target = iscsi_data->targets;
     if (target->target_id < 0)
     {
         ERROR("First target is not configured");
         return TE_RC(ISCSI_AGENT_TYPE, TE_ENOENT);
     }
-    /** NOTE: L5 Initator seems to be unable 
+    /** NOTE: L5 Initator seems to be unable
      *  to have different Initator names for
      *  different Targets/Connections.
      *  So we just using the first one
      */
-    
+
     fprintf(destination, "[INITIATOR]\n"
                          "Name: %s\n"
                          "Targets:",
@@ -254,7 +254,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
             {
                 if (target->conns[conn_no].status != ISCSI_CONNECTION_REMOVED)
                 {
-                    if (strcmp(target->conns[conn_no].initiator_name, 
+                    if (strcmp(target->conns[conn_no].initiator_name,
                                iscsi_data->targets[0].conns[0].initiator_name) != 0)
                     {
                         WARN("Several Initiator names configured, "
@@ -267,7 +267,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
             }
             if (target->is_active)
             {
-                fprintf(destination, "%s target%d", 
+                fprintf(destination, "%s target%d",
                         is_first ? "" : ",",
                         target->target_id);
                 is_first = FALSE;
@@ -277,12 +277,12 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
 
     /** Output parameters for each configured target */
     for (target = iscsi_data->targets;
-         target < iscsi_data->targets + ISCSI_MAX_TARGETS_NUMBER; 
+         target < iscsi_data->targets + ISCSI_MAX_TARGETS_NUMBER;
          target++)
     {
         if (target->target_id >= 0 && target->is_active)
         {
-            fprintf(destination, 
+            fprintf(destination,
                     "\n\n[target%d]\n"
                     "TargetName: %s\n"
                     "Connections: ",
@@ -309,7 +309,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
     /** Dump the generated config file so that it appeared in TE logs */
     iscsi_unix_cli("cat %s", filename);
 
-    return iscsi_unix_cli("cd %s; ./iscsi_setconfig -e configs/te", 
+    return iscsi_unix_cli("cd %s; ./iscsi_setconfig -e configs/te",
                            iscsi_configuration()->script_path);
 }
 
@@ -321,25 +321,25 @@ int
 iscsi_initiator_l5_set(iscsi_connection_req *req)
 {
     int                      rc      = -1;
-    iscsi_target_data_t     *target  = 
+    iscsi_target_data_t     *target  =
         &iscsi_configuration()->targets[req->target_id];
     iscsi_connection_data_t *conn    = target->conns + req->cid;
-    
+
     switch (req->status)
     {
         case ISCSI_CONNECTION_DOWN:
         case ISCSI_CONNECTION_REMOVED:
-            
+
             if (strcmp(conn->session_type, "Discovery") != 0)
             {
-                rc = iscsi_unix_cli("cd %s; ./iscsi_stopconns %s target%d_conn%d", 
+                rc = iscsi_unix_cli("cd %s; ./iscsi_stopconns %s target%d_conn%d",
                                   iscsi_configuration()->script_path,
                                   iscsi_configuration()->verbosity != 0 ? "-v" : "",
                                   req->target_id, req->cid);
                 if (rc != 0)
                 {
                     ERROR("Unable to stop initiator connection %d, %d, "
-                          "status = %d", 
+                          "status = %d",
                           req->target_id, req->cid, rc);
                     return TE_RC(ISCSI_AGENT_TYPE, TE_ESHCMD);
                 }
@@ -355,14 +355,14 @@ iscsi_initiator_l5_set(iscsi_connection_req *req)
 
             if (conn->status != ISCSI_CONNECTION_DISCOVERING)
             {
-                rc = iscsi_unix_cli("cd %s; ./iscsi_startconns %s target%d_conn%d", 
+                rc = iscsi_unix_cli("cd %s; ./iscsi_startconns %s target%d_conn%d",
                                   iscsi_configuration()->script_path,
                                   iscsi_configuration()->verbosity != 0 ? "-v" : "",
                                   req->target_id, req->cid);
             }
             else
             {
-                rc = iscsi_unix_cli("cd %s; ./iscsi_discover te", 
+                rc = iscsi_unix_cli("cd %s; ./iscsi_discover te",
                                   iscsi_configuration()->script_path);
             }
 

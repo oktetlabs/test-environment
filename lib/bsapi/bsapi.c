@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * Builder C API library
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * 
+ *
  */
 
 #include "te_config.h"
@@ -37,7 +37,7 @@ static char cmd[MAX_SH_CMD];
 
 /**
  * This function is called by Tester subsystem to build dynamically
- * a Test Suite. Test Suite is installed to 
+ * a Test Suite. Test Suite is installed to
  * ${TE_INSTALL_SUITE}/bin/<suite>.
  *
  * Test Suite may be linked with TE libraries. If ${TE_INSTALL} or
@@ -73,7 +73,7 @@ builder_build_test_suite(const char *suite, const char *sources)
     if (sigaction(SIGINT, &act, &oldact) != 0)
         return te_rc_os2te(errno);
 #endif
-    
+
     sprintf(cmd, "te_build_suite %s \"%s\" "
                  ">builder.log.%s.1 2>builder.log.%s.2",
             suite, sources, suite, suite);

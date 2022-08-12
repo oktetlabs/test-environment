@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -163,7 +163,7 @@ static te_errno mtu_set(unsigned int, const char *, const char *,
 
 static te_errno neigh_state_get(unsigned int, const char *, char *,
                                 const char *, const char *);
-                           
+
 static te_errno neigh_get(unsigned int, const char *, char *,
                           const char *, const char *);
 static te_errno neigh_set(unsigned int, const char *, const char *,
@@ -240,7 +240,7 @@ static rcf_pch_cfg_object node_phy;
 
 //Multicast
 
-/* 
+/*
  * This is a bit of hack - there are same handlers for static and dynamic
  * branches, handler discovers dynamic subtree by presence of
  * "dynamic" in OID. But list method does not contain the last subid.
@@ -249,14 +249,14 @@ static rcf_pch_cfg_object node_phy;
  */
 static te_errno
 neigh_dynamic_list(unsigned int gid, const char *oid,
-                   const char *sub_id, char **list, 
+                   const char *sub_id, char **list,
                    const char *ifname)
 {
     UNUSED(oid);
     UNUSED(sub_id);
-    
+
     return neigh_list(gid, "dynamic", sub_id, list, ifname);
-}                   
+}
 
 static te_errno route_dev_get(unsigned int, const char *, char *,
                               const char *);
@@ -316,23 +316,23 @@ static te_errno uname_get(unsigned int, const char *, char *);
 #endif
 
 typedef struct ndis_stats_s {
-  uint64_t gen_broadcast_bytes_rcv;    
-  uint64_t gen_broadcast_bytes_xmit;   
-  uint64_t gen_broadcast_frames_rcv;  
-  uint64_t gen_broadcast_frames_xmit;  
+  uint64_t gen_broadcast_bytes_rcv;
+  uint64_t gen_broadcast_bytes_xmit;
+  uint64_t gen_broadcast_frames_rcv;
+  uint64_t gen_broadcast_frames_xmit;
   uint64_t gen_directed_bytes_rcv;
   uint64_t gen_directed_bytes_xmit;
-  uint64_t gen_directed_frames_rcv;   
-  uint64_t gen_directed_frames_xmit; 
+  uint64_t gen_directed_frames_rcv;
+  uint64_t gen_directed_frames_xmit;
   uint64_t gen_multicast_bytes_rcv;
   uint64_t gen_multicast_bytes_xmit;
-  uint64_t gen_multicast_frames_rcv;  
-  uint64_t gen_multicast_frames_xmit; 
+  uint64_t gen_multicast_frames_rcv;
+  uint64_t gen_multicast_frames_xmit;
   uint64_t gen_rcv_crc_error;
-  uint64_t gen_rcv_error;            
-  uint64_t gen_rcv_no_buffer;        
+  uint64_t gen_rcv_error;
+  uint64_t gen_rcv_no_buffer;
   uint64_t gen_rcv_ok;
-  uint64_t gen_xmit_error;       
+  uint64_t gen_xmit_error;
   uint64_t gen_xmit_ok;
   uint64_t eth_rcv_error_alignment;
   uint64_t eth_rcv_overrun;
@@ -369,7 +369,7 @@ typedef struct if_stats {
 static int vlans_2_1_buffer[5];
 static size_t n_2_1_vlans = 0;
 
-static te_errno if_stats_get(const char *ifname, if_stats *stats, 
+static te_errno if_stats_get(const char *ifname, if_stats *stats,
                              ndis_stats *raw_stats);
 
 #ifdef ENABLE_IFCONFIG_STATS
@@ -544,7 +544,7 @@ const char *te_lockdir = "/tmp";
 static DWORD ef_index[2] = { 0, 0 };
 static char ef_regpath[2][1024];
 
-/*  
+/*
    Structure to save manualy added arp list entries
 */
 
@@ -564,11 +564,11 @@ static void add_static_neigh(MIB_IPNETROW *to_add)
 
   new_entry = (pneigh_st_entry) malloc(sizeof(neigh_st_entry));
   p = &gl_st_list_head;
-  
+
   while(*p != NULL){
     if (((*p)->val.dwAddr == to_add->dwAddr)&&
         ((*p)->val.dwType == to_add->dwType)&&
-        ((*p)->val.dwIndex == to_add->dwIndex)) 
+        ((*p)->val.dwIndex == to_add->dwIndex))
     {
         memcpy(&((*p)->val.bPhysAddr), &(to_add->bPhysAddr),
                MAXLEN_PHYSADDR);
@@ -576,14 +576,14 @@ static void add_static_neigh(MIB_IPNETROW *to_add)
     }
     p = &((*p)->next);
   }
-  
+
   *p = new_entry;
   (*p)->next = NULL;
   memcpy(&((*p)->val), to_add, sizeof(MIB_IPNETROW));
 }
 
 /* Remove an entry from the static ARP entries list */
-static te_errno 
+static te_errno
 delete_neigh_st_entry(MIB_IPNETROW* ip_entry){
   pneigh_st_entry *p;
   pneigh_st_entry t;
@@ -592,7 +592,7 @@ delete_neigh_st_entry(MIB_IPNETROW* ip_entry){
   while(*p != NULL){
     if (((*p)->val.dwAddr == ip_entry->dwAddr)&&
         ((*p)->val.dwType == ip_entry->dwType)&&
-        ((*p)->val.dwIndex == ip_entry->dwIndex) ) 
+        ((*p)->val.dwIndex == ip_entry->dwIndex) )
     {
       t = *p;
       *p = (*p)->next;
@@ -604,8 +604,8 @@ delete_neigh_st_entry(MIB_IPNETROW* ip_entry){
   return TE_RC(TE_TA_WIN32, TE_ENOENT);
 }
 
-/* 
- 
+/*
+
   Return a list of the static entries in ARP cache,
   i.e. only the entries we've entered manually
 
@@ -628,36 +628,36 @@ neigh_st_list(char** list, const char* ifname)
                        inet_ntoa(*(struct in_addr *) &(p->val.dwAddr)),
                        mac) != 0)
         {
-            
+
             continue;
-            
+
         }
         t += snprintf(t, sizeof(buf) - (t - buf), "%s ",
                       inet_ntoa(*(struct in_addr *)
                                     &(p->val.dwAddr)));
     }
 
-    
+
     if ((*list = strdup(buf)) == NULL)
       return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
     return 0;
 }
 
-/* 
-   Flushes static ARP entries list. 
+/*
+   Flushes static ARP entries list.
 */
 void flush_neigh_st_list()
 {
     pneigh_st_entry p1, p2 = NULL;
-    
-    
+
+
     for (p1 = gl_st_list_head; p1 != NULL; p1 = p1->next) {
         if (p2 != NULL)
             free(p2);
         p2 = p1;
     }
-    
+
 }
 
 /* Convert wide string to usual one */
@@ -666,10 +666,10 @@ w2a(WCHAR *str)
 {
     static char buf[256];
     BOOL        b;
-    
+
     WideCharToMultiByte(CP_ACP, 0, str, -1, buf, sizeof(buf), "-", &b);
-        
-    return buf;        
+
+    return buf;
 }
 
 static int
@@ -684,7 +684,7 @@ intfdata2file(const char *prefix, int efindex, int ifindex,
   {
     if (efvlan > 0)
       sprintf(filename, "/tmp/efdata_%d.%d", efindex + 1, efvlan);
-    else 
+    else
       sprintf(filename, "/tmp/efdata_%d", efindex + 1);
   }
   else
@@ -723,11 +723,11 @@ efport2ifindex(void)
 #define AMOUNT_OF_GUIDS         5
 
     HKEY key, subkey;
-    
+
     static char subkey_name[BUFSIZE];
     static char subkey_path[BUFSIZE];
     static char value[BUFSIZE];
-    
+
     static char guid1[AMOUNT_OF_GUIDS][BUFSIZE];
     static char guid2[AMOUNT_OF_GUIDS][BUFSIZE];
     static char guid_2_2[AMOUNT_OF_GUIDS][BUFSIZE];
@@ -738,14 +738,14 @@ efport2ifindex(void)
 
     static int guid1_amount = 0, guid2_amount = 0, guid_2_2_amount = 0;
     static int guids_found = 0;
-    
+
     DWORD subkey_size;
     DWORD value_size = BUFSIZE;
-    
+
     FILETIME tmp;
     ULONG    size = 0;
     DWORD    rc;
-    
+
     PIP_INTERFACE_INFO iftable;
     PIP_ADAPTER_INFO  adapters, info;
 
@@ -754,25 +754,25 @@ efport2ifindex(void)
 
     char *ifname = NULL;
     int efvlan = 0;
-    
+
     char driver_type[BUFSIZE];
-    
+
     int i, j;
     unsigned int old_ef_index[2];
     int guid1_found_index, guid2_found_index;
-    
+
     driver_type[0] = 0;
 
     /* Querying environment variable TE_USE_EFAB_DRIVER value */
 
-    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, ENV_PATH, 0, 
-                     KEY_READ, &key) != ERROR_SUCCESS) 
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, ENV_PATH, 0,
+                     KEY_READ, &key) != ERROR_SUCCESS)
     {
         ERROR("RegOpenKeyEx() failed with errno %lu", GetLastError());
         return TE_RC(TE_TA_WIN32, TE_EFAULT);
     }
-    RegQueryValueEx(key, "TE_USE_EFAB_DRIVER", 
-                            NULL, NULL, driver_type, 
+    RegQueryValueEx(key, "TE_USE_EFAB_DRIVER",
+                            NULL, NULL, driver_type,
                             &value_size);
     RegCloseKey(key);
 
@@ -812,28 +812,28 @@ efport2ifindex(void)
     if (!guids_found)
     {
         /* Obtaining interface indexes */
-        if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, NET_PATH, 0, 
-                         KEY_READ, &key) != ERROR_SUCCESS) 
+        if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, NET_PATH, 0,
+                         KEY_READ, &key) != ERROR_SUCCESS)
         {
             ERROR("RegOpenKeyEx() failed with errno %lu", GetLastError());
             return TE_RC(TE_TA_WIN32, TE_EFAULT);
         }
 
-        for (i = 0, subkey_size = value_size = BUFSIZE; 
-             RegEnumKeyEx(key, i, subkey_name, &subkey_size, 
+        for (i = 0, subkey_size = value_size = BUFSIZE;
+             RegEnumKeyEx(key, i, subkey_name, &subkey_size,
                           NULL, NULL, NULL, &tmp) != ERROR_NO_MORE_ITEMS;
              i++, subkey_size = value_size = BUFSIZE)
-        { 
+        {
             sprintf(subkey_path, "%s\\%s", NET_PATH, subkey_name);
-            if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, subkey_path, 
+            if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, subkey_path,
                              0, KEY_READ, &subkey) != ERROR_SUCCESS)
             {
                continue;
             }
-        
-            if (RegQueryValueEx(subkey, "MatchingDeviceId", 
-                                NULL, NULL, (unsigned char *)value, 
-                                &value_size) != ERROR_SUCCESS) 
+
+            if (RegQueryValueEx(subkey, "MatchingDeviceId",
+                                NULL, NULL, (unsigned char *)value,
+                                &value_size) != ERROR_SUCCESS)
             {
                 /* Field with device ID is absent, may its virtual device */
                 RegCloseKey(subkey);
@@ -844,10 +844,10 @@ efport2ifindex(void)
             {
                 char driver[BUFSIZE];
                 unsigned char *guid, *guid_regpath;
-                
+
                 strcpy(driver, driver_type);
                 strcat(driver, "0");
-           
+
                 if (strstr(value, driver) != NULL)
                 {
                   guid = guid1[guid1_amount];
@@ -860,14 +860,14 @@ efport2ifindex(void)
                   guid_regpath = guid2_regpath[guid2_amount];
                   guid2_amount++;
                 }
-                    
+
                 value_size = BUFSIZE;
                 strcpy(guid_regpath, subkey_path);
 
-                if (RegQueryValueEx(subkey, "NetCfgInstanceId", 
+                if (RegQueryValueEx(subkey, "NetCfgInstanceId",
                                     NULL, NULL, guid, &value_size) != 0)
                 {
-                    ERROR("RegQueryValueEx(%s) failed with errno %u", 
+                    ERROR("RegQueryValueEx(%s) failed with errno %u",
                           subkey_path, GetLastError());
                     RegCloseKey(subkey);
                     RegCloseKey(key);
@@ -885,10 +885,10 @@ efport2ifindex(void)
                 guid_2_2_amount++;
 
                 strcpy(guid_regpath, subkey_path);
-                if (RegQueryValueEx(subkey, "NetCfgInstanceId", 
+                if (RegQueryValueEx(subkey, "NetCfgInstanceId",
                                     NULL, NULL, guid, &value_size) != 0)
                 {
-                    ERROR("RegQueryValueEx(%s) failed with errno %u", 
+                    ERROR("RegQueryValueEx(%s) failed with errno %u",
                           subkey_path, GetLastError());
                     RegCloseKey(subkey);
                     RegCloseKey(key);
@@ -896,25 +896,25 @@ efport2ifindex(void)
                 }
             }
             RegCloseKey(subkey);
-        } 
+        }
         RegCloseKey(key);
-        
+
         if (guid1_amount == 0 || guid2_amount == 0)
             if (guid_2_2_amount == 0)
             {
                 return 0;
             }
-             
+
         guids_found = 1;
     }
     //RING("SFCResolve: guid1='%s', guid2='%s'", guid1[0], guid2[0]);
 
-    if ((iftable = (PIP_INTERFACE_INFO)malloc(sizeof(*iftable))) == NULL) 
+    if ((iftable = (PIP_INTERFACE_INFO)malloc(sizeof(*iftable))) == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
-                                                                        
+
     if (GetInterfaceInfo(iftable, &size) == ERROR_INSUFFICIENT_BUFFER)
-    {     
-        PIP_INTERFACE_INFO new_table = 
+    {
+        PIP_INTERFACE_INFO new_table =
             (PIP_INTERFACE_INFO)realloc(iftable, size);
 
         if (new_table == NULL)
@@ -922,21 +922,21 @@ efport2ifindex(void)
             free(iftable);
             return TE_RC(TE_TA_WIN32, TE_ENOMEM);
         }
-        
-        iftable = new_table;            
-    }                                                               
-    else 
-    {                                                               
-        free(iftable); 
+
+        iftable = new_table;
+    }
+    else
+    {
+        free(iftable);
         ERROR("GetInterfaceInfo() failed");
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
-    }                                                               
-                                                                    
-    if (GetInterfaceInfo(iftable, &size) != NO_ERROR)                  
-    {                                                               
+    }
+
+    if (GetInterfaceInfo(iftable, &size) != NO_ERROR)
+    {
         ERROR("GetInterfaceInfo() failed");
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
-    }                                                               
+    }
 
     old_ef_index[0] = ef_index[0];
     old_ef_index[1] = ef_index[1];
@@ -973,7 +973,7 @@ efport2ifindex(void)
           }
         }
     }
-    free(iftable); 
+    free(iftable);
 
     GetAdaptersInfo(NULL, &size);
     adapters = (PIP_ADAPTER_INFO)malloc(size);
@@ -984,7 +984,7 @@ efport2ifindex(void)
         free(adapters);
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
     }
-    
+
     for (info = adapters; info != NULL; info = info->Next)
     {
       ifname = ifindex2ifname(info->Index);
@@ -1001,7 +1001,7 @@ efport2ifindex(void)
           intfdata2file("ef", 0, info->Index, info->AdapterName,
                         info->Address, "", efvlan);
         }
-      } 
+      }
       else
         intfdata2file("intf", -1, info->Index, info->AdapterName,
                       info->Address, "", 0);
@@ -1028,9 +1028,9 @@ efport2ifindex(void)
         {
             strcpy(ef_regpath[0], guid_2_2_regpath[guid_2_2_found_index]);
             intfdata2file("ef", 0, ef_index_2_2,
-                          guid_2_2[guid_2_2_found_index], 
+                          guid_2_2[guid_2_2_found_index],
                           mac1, ef_regpath[0], 0);
-            sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
+            sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x",
                     mac1[0], mac1[1], mac1[2],
                     mac1[3], mac1[4], mac1[5]);
             RING("Interface index for EF port 1: %d, "
@@ -1045,7 +1045,7 @@ efport2ifindex(void)
             RING("Can't find index for EF port 1");
         }
     }
-#endif   
+#endif
     if (ef_index[0] > 0)
     {
         if (old_ef_index[0] != ef_index[0])
@@ -1053,7 +1053,7 @@ efport2ifindex(void)
             strcpy(ef_regpath[0], guid1_regpath[guid1_found_index]);
             intfdata2file("ef", 0, ef_index[0],
                           guid1[guid1_found_index], mac1, ef_regpath[0], 0);
-            sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
+            sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x",
                     mac1[0], mac1[1], mac1[2],
                     mac1[3], mac1[4], mac1[5]);
             RING("Interface index for EF port 1: %d, "
@@ -1076,7 +1076,7 @@ efport2ifindex(void)
             strcpy(ef_regpath[1], guid2_regpath[guid2_found_index]);
             intfdata2file("ef", 1, ef_index[1],
                           guid2[guid2_found_index], mac2, ef_regpath[1], 0);
-            sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x", 
+            sprintf(mac_str, "%02x:%02x:%02x:%02x:%02x:%02x",
                     mac2[0], mac2[1], mac2[2],
                     mac2[3], mac2[4], mac2[5]);
             RING("Interface index for EF port 2: %d, "
@@ -1091,11 +1091,11 @@ efport2ifindex(void)
             RING("Can't find index for EF port 2");
         }
     }
-    
+
     return 0;
 
 #undef AMOUNT_OF_GUIDS
-#undef BUFSIZE    
+#undef BUFSIZE
 #undef NET_PATH
 #undef NDIS_SF_2_1
 #undef NDIS_SF_2_2
@@ -1120,7 +1120,7 @@ ifname2ifindex(const char *ifname)
     if (strcmp_start("intf", ifname) == 0)
         s = (char *)ifname + strlen("intf");
     else if (strcmp_start("ef", ifname) == 0)
-    {       
+    {
         if (strcmp_start("ef1.", ifname) == 0)
         {
             /* Interface is VLAN */
@@ -1272,25 +1272,25 @@ static int
 find_ifindex(DWORD addr, DWORD *ifindex)
 {
     MIB_IPFORWARDTABLE *table;
-    
+
     DWORD index = 0;
     DWORD mask_max = 0;
     int   i;
 
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
-    
+
     if (table == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
-        if ((table->table[i].dwForwardDest & 
+        if ((table->table[i].dwForwardDest &
              table->table[i].dwForwardMask) !=
             (addr &  table->table[i].dwForwardMask))
         {
             continue;
         }
-        
+
         if (ntohl(table->table[i].dwForwardMask) > mask_max || index == 0)
         {
             mask_max = table->table[i].dwForwardMask;
@@ -1303,9 +1303,9 @@ find_ifindex(DWORD addr, DWORD *ifindex)
 
     if (index == 0)
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
-        
+
     *ifindex = index;
-    
+
     return 0;
 }
 
@@ -1367,8 +1367,8 @@ rcf_ch_conf_init()
 
         /* Initialize configurator PHY support */
         if (ta_unix_conf_phy_init() != 0)
-            return -1;    
-        
+            return -1;
+
         init = TRUE;
     }
 
@@ -1473,7 +1473,7 @@ interface_list(unsigned int gid, const char *oid,
 }
 
 
-char * 
+char *
 ifindex2frname(DWORD ifindex)
 {
     static char friendly_name[100] = "";
@@ -1483,7 +1483,7 @@ ifindex2frname(DWORD ifindex)
     int          i;
     MIB_IFTABLE *iftable;
 
-#if 0 
+#if 0
     MIB_IFROW table;
     table.dwIndex = ifindex;
 
@@ -1500,19 +1500,19 @@ ifindex2frname(DWORD ifindex)
 
     retval = GetIfTable(iftable, &size, 0);
     iftable = (MIB_IFTABLE *)realloc(iftable, size);
-    retval = GetIfTable(iftable, &size, 0);   
-   
+    retval = GetIfTable(iftable, &size, 0);
+
 
     for (i = 0; i < iftable->dwNumEntries; i++)
     {
         info = iftable->table + i;
         if (info->dwIndex == ifindex)
         {
-            snprintf(friendly_name, TE_ARRAY_LEN(friendly_name), 
+            snprintf(friendly_name, TE_ARRAY_LEN(friendly_name),
                      "%s", info->bDescr);
             goto success;
         }
-       
+
     }
 
     ERROR("Friendly name not found for interface %d", ifindex);
@@ -1537,7 +1537,7 @@ frname2ifindex(const char *ifname)
 
     retval = GetIfTable(iftable, &size, 0);
     iftable = (MIB_IFTABLE *)realloc(iftable, size);
-    retval = GetIfTable(iftable, &size, 0);      
+    retval = GetIfTable(iftable, &size, 0);
 
     for (i = 0; i < iftable->dwNumEntries; i++)
     {
@@ -1547,7 +1547,7 @@ frname2ifindex(const char *ifname)
             ifindex = info->dwIndex;
             goto success;
         }
-       
+
     }
 
 success:
@@ -1561,9 +1561,9 @@ static int
 name2index(const char *ifname, DWORD *ifindex)
 {
     GET_IF_ENTRY;
-    
+
     *ifindex = if_entry.dwIndex;
-    
+
     return 0;
 }
 
@@ -1633,11 +1633,11 @@ get_addr_mask(const char *addr, const char *value, DWORD *p_a, DWORD *p_m)
     DWORD a;
     int   prefix;
     char *end;
-    
+
     if ((a = inet_addr(addr)) == INADDR_NONE ||
         (a & 0xe0000000) == 0xe0000000)
         return TE_RC(TE_TA_WIN32, TE_EINVAL);
-        
+
     prefix = strtol(value, &end, 10);
     if (value == end || *end != 0)
     {
@@ -1650,15 +1650,15 @@ get_addr_mask(const char *addr, const char *value, DWORD *p_a, DWORD *p_m)
         ERROR("Invalid prefix '%s' to be set", value);
         return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
-    
+
     if (prefix != 0)
         *p_m = PREFIX2MASK(prefix);
     else
         *p_m = (a & htonl(0x80000000)) == 0 ? htonl(0xFF000000) :
                (a & htonl(0xC0000000)) == htonl(0x80000000) ?
                htonl(0xFFFF0000) : htonl(0xFFFFFF00);
-     *p_a = a;         
-     
+     *p_a = a;
+
      return 0;
 }
 
@@ -1793,13 +1793,13 @@ net_addr_del_dhcp(unsigned int dwIndex)
   int   rc;
 
   GetInterfaceInfo(NULL, &size);
-  table = (PIP_INTERFACE_INFO)malloc(size);                      
+  table = (PIP_INTERFACE_INFO)malloc(size);
 
-  if ((rc = GetInterfaceInfo(table, &size)) != NO_ERROR)                  
-  {                                                               
+  if ((rc = GetInterfaceInfo(table, &size)) != NO_ERROR)
+  {
       ERROR("GetInterfaceInfo failed, error %d", rc);
-      free(table);                                                
-      return TE_RC(TE_TA_WIN32, TE_EWIN);                          
+      free(table);
+      return TE_RC(TE_TA_WIN32, TE_EWIN);
   }
 
   for (i = 0; i < table->NumAdapters; i++)
@@ -1837,8 +1837,8 @@ static te_errno
 net_addr_del(unsigned int gid, const char *oid,
              const char *ifname, const char *addr)
 {
-    PIP_ADAPTER_INFO table, info; 
-    DWORD            size = 0; 
+    PIP_ADAPTER_INFO table, info;
+    DWORD            size = 0;
 
     DWORD a;
     int   rc;
@@ -1852,23 +1852,23 @@ net_addr_del(unsigned int gid, const char *oid,
     GET_IF_ENTRY;
 
     GetAdaptersInfo(NULL, &size);
-    table = (PIP_ADAPTER_INFO)malloc(size);                      
-                                                                    
-    if ((rc = GetAdaptersInfo(table, &size)) != NO_ERROR)                  
-    {                                                               
+    table = (PIP_ADAPTER_INFO)malloc(size);
+
+    if ((rc = GetAdaptersInfo(table, &size)) != NO_ERROR)
+    {
         ERROR("GetAdaptersInfo failed, error %d", rc);
-        free(table);                                                
-        return TE_RC(TE_TA_WIN32, TE_EWIN);                          
-    }                                                               
+        free(table);
+        return TE_RC(TE_TA_WIN32, TE_EWIN);
+    }
 
     for (info = table; info != NULL; info = info->Next)
     {
        IP_ADDR_STRING *addrlist;
-       
+
        if (info->Index != if_entry.dwIndex)
            continue;
-       
-       for (addrlist = &(info->IpAddressList); 
+
+       for (addrlist = &(info->IpAddressList);
             addrlist != NULL;
             addrlist = addrlist->Next)
         {
@@ -1926,7 +1926,7 @@ net_addr_list(unsigned int gid, const char *oid,
 
     GET_IF_ENTRY;
     GET_TABLE(MIB_IPADDRTABLE, GetIpAddrTable);
-    
+
     if (table == NULL)
     {
         if ((*list = strdup(" ")) == NULL)
@@ -1942,7 +1942,7 @@ net_addr_list(unsigned int gid, const char *oid,
         if (table->table[i].dwIndex != if_entry.dwIndex)
             continue;
         if (table->table[i].dwAddr == 0)
-        {   
+        {
             RING("skip 0.0.0.0 address");
             continue;
         }
@@ -2028,7 +2028,7 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
 
     if ((rc = get_addr_mask(addr, value, &a, &m)) != 0)
         return rc;
-    
+
     if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, TE_EINVAL);
 
@@ -2036,7 +2036,7 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
         return rc;
 
     if ((rc = AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m,
-                           if_entry.dwIndex, &nte_context, 
+                           if_entry.dwIndex, &nte_context,
                            &nte_instance)) != NO_ERROR)
     {
         ERROR("AddIpAddr() failed, error %d", rc);
@@ -2243,7 +2243,7 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     sprintf(value, "%lu", mtus[if_index].mtu);
 */
 
-    sprintf(value, "%lu", if_entry.dwMtu);    
+    sprintf(value, "%lu", if_entry.dwMtu);
     return 0;
 }
 
@@ -2266,47 +2266,47 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
 //    long      mtu;
 //    int i, if_index = -1, free_index = -1;
     unsigned char szCommand[256];
-    
+
 #define ETHERNET_HEADER_LEN 14
 #define VLAN_HEADER_LEN 4
 
     UNUSED(gid);
     UNUSED(oid);
     GET_IF_ENTRY;
-    
+
     if (NULL == strstr(ifname, "ef"))
     {
         ERROR("Tried to set MTU on non-testable adapter.");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
+
     if (get_driver_version() >= DRIVER_VERSION_2_2)
-    {    
+    {
       int     mtu;
       char*   frname;
-      
+
       mtu = atoi(value);
       if (!wmi_imported)
       {
         ERROR("WMI functions were not imported.");
         return TE_RC(TE_TA_UNIX, TE_EFAULT);
       }
-      
+
       frname = ifindex2frname(if_entry.dwIndex);
       if (frname == NULL)
       {
         ERROR("Failed to retrieve adapter friendly name.");
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
       }
-      
-      // We pass to the driver the maximum total size, 
+
+      // We pass to the driver the maximum total size,
       // which is frame length + ethernet and vlan header.
       // VLAN tagging is enabled by default on V2.3 so we
       // have to add 18 to the MU input value.
-      
+
       if (pwmi_mtu_set(frname, mtu + ETHERNET_HEADER_LEN + VLAN_HEADER_LEN))
         return TE_RC(TE_TA_UNIX, TE_EFAULT);
-        
+
       return 0;
     }
     else
@@ -2318,7 +2318,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
           "--args=\"set mtu %s\"", value);
       //    sprintf(szCommand, "./windows_layer2_mtu.exe %s", value);
       printf("szCommand = %s\n", szCommand);
-      system(szCommand);    
+      system(szCommand);
     }
 /*    mtu = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
@@ -2362,11 +2362,11 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     if (ioctl(cfg_socket, MY_SIOCSIFMTU, (int)&req) != 0)
     {
         rc = TE_OS_RC(TE_TA_UNIX, errno);
-        
+
         if (errno == EBUSY)
         {
             char status[2];
-            
+
             /* Try to down interface */
             if (status_get(0, NULL, status, ifname) == 0 &&
                 *status == '1' && status_set(0, NULL, "0", ifname) == 0)
@@ -2380,7 +2380,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
                 {
                     rc = 0;
                 }
-                
+
                 if ((rc1 = status_set(0, NULL, "1", ifname)) != 0)
                 {
                     ERROR("Failed to up interface after changing of mtu "
@@ -2524,16 +2524,16 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
     MIB_IPNETTABLE *table;
     DWORD           a;
     int             i;
-    DWORD           type = strstr(oid, "dynamic") == NULL ? 
+    DWORD           type = strstr(oid, "dynamic") == NULL ?
                            ARP_STATIC : ARP_DYNAMIC;
     DWORD           ifindex = ifname2ifindex(ifname);
-    
+
     if (ifindex == 0)
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
     if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, TE_EINVAL);
-        
+
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
     if (table == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
@@ -2543,7 +2543,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
         if (a == table->table[i].dwAddr && table->table[i].dwType == type)
         {
             uint8_t *ptr = table->table[i].bPhysAddr;
-            
+
             if (table->table[i].dwIndex != ifindex)
                 continue;
 
@@ -2563,7 +2563,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
     free(table);
 
     return TE_RC(TE_TA_WIN32, TE_ENOENT);
-}           
+}
 
 /**
  * Get neighbour entry state.
@@ -2582,17 +2582,17 @@ neigh_state_get(unsigned int gid, const char *oid, char *value,
                 const char *ifname, const char *addr)
 {
     int  rc;
-    
+
     UNUSED(gid);
-    
+
     if (strstr(oid, "dynamic") == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    
+
     if ((rc = neigh_find(oid, ifname, addr, NULL)) != 0)
         return rc;
-        
+
     sprintf(value, "%u", CS_NEIGH_REACHABLE);
-        
+
     return 0;
 }
 
@@ -2613,7 +2613,7 @@ neigh_get(unsigned int gid, const char *oid, char *value,
           const char *ifname, const char *addr)
 {
     UNUSED(gid);
-    
+
     return neigh_find(oid, ifname, addr, value);
 }
 
@@ -2634,7 +2634,7 @@ neigh_set(unsigned int gid, const char *oid, const char *value,
           const char *ifname, const char *addr)
 {
     UNUSED(gid);
-    
+
     if (neigh_find(oid, ifname, addr, NULL) != 0)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -2663,16 +2663,16 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
 
     UNUSED(gid);
     UNUSED(oid);
- 
+
     /* Don't check the existence of the entry */
 //    if (neigh_find(oid, ifname, addr, NULL) == 0)
 //        return TE_RC(TE_TA_WIN32, TE_EEXIST);
 
     memset(&entry, 0, sizeof(entry));
-    
-    entry.dwType = strstr(oid, "dynamic") != NULL ? ARP_DYNAMIC 
+
+    entry.dwType = strstr(oid, "dynamic") != NULL ? ARP_DYNAMIC
                                                   : ARP_STATIC;
-                                                  
+
     if ((entry.dwIndex =  ifname2ifindex(ifname)) == 0)
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
@@ -2708,7 +2708,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
  * @return Status code
  */
 static te_errno
-neigh_del(unsigned int gid, const char *oid, const char *ifname, 
+neigh_del(unsigned int gid, const char *oid, const char *ifname,
           const char *addr)
 {
     MIB_IPNETTABLE *table;
@@ -2719,7 +2719,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
                                                           : ARP_DYNAMIC;
     te_bool         found = FALSE;
     DWORD           ifindex = ifname2ifindex(ifname);
-    
+
     UNUSED(gid);
     UNUSED(oid);
 
@@ -2753,7 +2753,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
         }
     }
     free(table);
-    return (!found && type == ARP_STATIC) ? 
+    return (!found && type == ARP_STATIC) ?
            TE_RC(TE_TA_WIN32, TE_ENOENT) : 0;
 }
 
@@ -2767,14 +2767,14 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
  * @param ifname        interface name
  *
  * @return Status code
- * 
+ *
  * Note: For "static" requests only the entries added by neigh_add
- *       will be returned. It is done in order to avoid tests failures 
+ *       will be returned. It is done in order to avoid tests failures
  *       due to unwanted arbitrary changes in ARP cache on Vista.
  */
 static te_errno
 neigh_list(unsigned int gid, const char *oid,
-           const char *sub_id, char **list, 
+           const char *sub_id, char **list,
            const char *ifname)
 {
     MIB_IPNETTABLE *table;
@@ -2783,7 +2783,7 @@ neigh_list(unsigned int gid, const char *oid,
     DWORD           type = strstr(oid, "dynamic") == NULL ? ARP_STATIC
                                                           : ARP_DYNAMIC;
     DWORD           ifindex = ifname2ifindex(ifname);
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
@@ -2807,7 +2807,7 @@ neigh_list(unsigned int gid, const char *oid,
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
         if (table->table[i].dwPhysAddrLen != 6 ||
-            table->table[i].dwType != type || 
+            table->table[i].dwType != type ||
             table->table[i].dwIndex != ifindex ||
             table->table[i].dwAddr == 0xFFFFFFFF /* FIXME */)
         {
@@ -2830,7 +2830,7 @@ neigh_list(unsigned int gid, const char *oid,
 /* Implementation of /agent/route subtree                         */
 /******************************************************************/
 
-/** 
+/**
  * Convert system-independent route info data structure to
  * Win32-specific MIB_IPFORWARDROW data structure.
  *
@@ -2866,7 +2866,7 @@ rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
         rt->dwForwardNextHop = rt->dwForwardDest;
 
     rt->dwForwardProto = 3;
-    
+
     if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
     {
         rc = name2index(rt_info->ifname, &(rt->dwForwardIfIndex));
@@ -2876,8 +2876,8 @@ rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
     {
         /* Use Next Hop address to define outgoing interface */
         rc = find_ifindex(rt->dwForwardNextHop, &rt->dwForwardIfIndex);
-    } 
-        
+    }
+
     return rc;
 }
 
@@ -2906,7 +2906,7 @@ route_find(const char *route, ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
     if (table == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
     route_addr = SIN(&(rt_info->dst))->sin_addr.s_addr;
-    
+
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
         uint32_t p;
@@ -2924,25 +2924,25 @@ route_find(const char *route, ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
              (table->table[i].dwForwardMetric1 != rt_info->metric)))
         {
             continue;
-        }        
-        
+        }
+
         if (table->table[i].dwForwardIfIndex != 0)
         {
             rt_info->flags |= TA_RT_INFO_FLG_IF;
-            sprintf(rt_info->ifname, 
+            sprintf(rt_info->ifname,
                     ifindex2ifname(table->table[i].dwForwardIfIndex));
         }
         if (table->table[i].dwForwardNextHop != 0)
         {
             rt_info->flags |= TA_RT_INFO_FLG_GW;
             SIN(&rt_info->gw)->sin_family = AF_INET;
-            SIN(&rt_info->gw)->sin_addr.s_addr = 
+            SIN(&rt_info->gw)->sin_addr.s_addr =
                 table->table[i].dwForwardNextHop;
-        }        
+        }
 
-        if (rt != NULL)   
+        if (rt != NULL)
             *rt = table->table[i];
-        
+
         /*
          * win32 agent supports only a limited set of route attributes.
          */
@@ -3004,7 +3004,7 @@ route_dev_set(unsigned int gid, const char *oid,
               const char *value, const char *route)
 {
     UNUSED(oid);
-    
+
     return ta_obj_set(TA_OBJ_TYPE_ROUTE, route, "dev",
                       value, gid, route_load_attrs);
 }
@@ -3064,7 +3064,7 @@ route_get(unsigned int gid, const char *oid, char *value,
 {
     ta_rt_info_t  attr;
     int           rc;
-    char         *addr; 
+    char         *addr;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -3074,7 +3074,7 @@ route_get(unsigned int gid, const char *oid, char *value,
         ERROR("Route %s cannot be found", route_name);
         return rc;
     }
-                        
+
     if (attr.dst.ss_family == AF_INET)
     {
         addr = inet_ntoa(SIN(&attr.gw)->sin_addr);
@@ -3086,9 +3086,9 @@ route_get(unsigned int gid, const char *oid, char *value,
                attr.dst.ss_family);
         return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
-    
+
     return 0;
-}            
+}
 
 /** Set new value for the route.
  *
@@ -3107,7 +3107,7 @@ route_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
     return ta_obj_value_set(TA_OBJ_TYPE_ROUTE, route_name, value, gid);
-}            
+}
 
 /**
  * Get instance list for object "agent/route".
@@ -3200,7 +3200,7 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
     ta_rt_info_t      rt_info;
     int               rc;
     MIB_IPFORWARDROW  rt;
-    
+
     ta_cfg_obj_action_e obj_action;
 
     UNUSED(gid);
@@ -3254,7 +3254,7 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
                       "MIB_IPFORWARDROW data structure");
                 return TE_RC(TE_TA_WIN32, TE_EWIN);
             }
-                      
+
             /* Add or set operation */
             if ((rc = CreateIpForwardEntry(&rt)) != NO_ERROR)
             {
@@ -3268,7 +3268,7 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
             ERROR("Unknown object action specified %d", obj_action);
             return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
-    
+
     return 0;
 }
 
@@ -3311,11 +3311,11 @@ env_get(unsigned int gid, const char *oid, char *value,
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (tmp == NULL)
     {
         static char buf[RCF_MAX_VAL];
-        
+
         *buf = 0;
         GetEnvironmentVariable(name, buf, sizeof(buf));
         if (*buf != 0)
@@ -3357,7 +3357,7 @@ env_set(unsigned int gid, const char *oid, const char *value,
 
     setenv(name, value, 1);
     SetEnvironmentVariable(name, value);
-    
+
     return 0;
 }
 
@@ -3400,13 +3400,13 @@ static te_errno
 env_del(unsigned int gid, const char *oid, const char *name)
 {
     te_errno rc;
-    
+
     UNUSED(gid);
     UNUSED(oid);
 
     if ((rc = env_get(0, NULL, buf, name)) != 0)
         return rc;
-    
+
     SetEnvironmentVariable(name, NULL);
     unsetenv(name);
 
@@ -3513,7 +3513,7 @@ uname_get(unsigned int gid, const char *oid, char *value)
 /*
  * win32 Test Agent network statistics configuration tree.
  */
- 
+
 #define STATS_IFTABLE_COUNTER_GET(_counter_, _field_) \
 static te_errno net_if_stats_##_counter_##_get(unsigned int gid_,       \
                                                const char  *oid_,       \
@@ -3650,7 +3650,7 @@ net_snmp_icmp_stats_ ## _counter_ ## _get(unsigned int gid_,    \
 
 STATS_NET_SNMP_ICMP_COUNTER_GET(in_msgs, icmpInStats.dwMsgs);
 STATS_NET_SNMP_ICMP_COUNTER_GET(in_errs, icmpInStats.dwErrors);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_dest_unreachs, 
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_dest_unreachs,
                                 icmpInStats.dwDestUnreachs);
 STATS_NET_SNMP_ICMP_COUNTER_GET(in_time_excds, icmpInStats.dwTimeExcds);
 STATS_NET_SNMP_ICMP_COUNTER_GET(in_parm_probs, icmpInStats.dwParmProbs);
@@ -3659,15 +3659,15 @@ STATS_NET_SNMP_ICMP_COUNTER_GET(in_redirects, icmpInStats.dwRedirects);
 STATS_NET_SNMP_ICMP_COUNTER_GET(in_echos, icmpInStats.dwEchos);
 STATS_NET_SNMP_ICMP_COUNTER_GET(in_echo_reps, icmpInStats.dwEchoReps);
 STATS_NET_SNMP_ICMP_COUNTER_GET(in_timestamps, icmpInStats.dwTimestamps);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_timestamp_reps, 
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_timestamp_reps,
                                 icmpInStats.dwTimestampReps);
 STATS_NET_SNMP_ICMP_COUNTER_GET(in_addr_masks, icmpInStats.dwAddrMasks);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_addr_mask_reps, 
+STATS_NET_SNMP_ICMP_COUNTER_GET(in_addr_mask_reps,
                                 icmpInStats.dwAddrMaskReps);
 
 STATS_NET_SNMP_ICMP_COUNTER_GET(out_msgs, icmpOutStats.dwMsgs);
 STATS_NET_SNMP_ICMP_COUNTER_GET(out_errs, icmpOutStats.dwErrors);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_dest_unreachs, 
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_dest_unreachs,
                                 icmpOutStats.dwDestUnreachs);
 STATS_NET_SNMP_ICMP_COUNTER_GET(out_time_excds, icmpOutStats.dwTimeExcds);
 STATS_NET_SNMP_ICMP_COUNTER_GET(out_parm_probs, icmpOutStats.dwParmProbs);
@@ -3676,7 +3676,7 @@ STATS_NET_SNMP_ICMP_COUNTER_GET(out_redirects, icmpOutStats.dwRedirects);
 STATS_NET_SNMP_ICMP_COUNTER_GET(out_echos, icmpOutStats.dwEchos);
 STATS_NET_SNMP_ICMP_COUNTER_GET(out_echo_reps, icmpOutStats.dwEchoReps);
 STATS_NET_SNMP_ICMP_COUNTER_GET(out_timestamps, icmpOutStats.dwTimestamps);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_timestamp_reps, 
+STATS_NET_SNMP_ICMP_COUNTER_GET(out_timestamp_reps,
                                 icmpOutStats.dwTimestampReps);
 STATS_NET_SNMP_ICMP_COUNTER_GET(out_addr_masks, icmpOutStats.dwAddrMasks);
 STATS_NET_SNMP_ICMP_COUNTER_GET(out_addr_mask_reps,
@@ -3705,7 +3705,7 @@ STATS_NET_IF_ATTR(out_nucast_pkts, out_ucast_pkts);
 STATS_NET_IF_ATTR(out_discards, out_nucast_pkts);
 STATS_NET_IF_ATTR(out_errors, out_discards);
 
-#undef STATS_NET_IF_ATTR 
+#undef STATS_NET_IF_ATTR
 /* counters from MIB_IPSTATS structure */
 
 RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_ipv4_in_recvs, "ipv4_in_recvs",
@@ -3793,7 +3793,7 @@ ta_win32_conf_net_snmp_stats_init(void)
 te_errno
 ta_win32_conf_net_if_stats_init(void)
 {
-    
+
     return rcf_pch_add_node("/agent/interface", &node_net_if_stats);
 }
 
@@ -3814,7 +3814,7 @@ ta_win32_conf_net_if_stats_init(void)
     CTL_CODE( DRV_TYPE, NDIS_IOCTL_BASE + code, \
               METHOD_BUFFERED, FILE_ANY_ACCESS  )
 
-#define KRX_ADD_MULTICAST_ADDR     NDIS_IOCTL(7) 
+#define KRX_ADD_MULTICAST_ADDR     NDIS_IOCTL(7)
 #define KRX_DEL_MULTICAST_ADDR     NDIS_IOCTL(8)
 #define KRX_GET_MULTICAST_LIST     NDIS_IOCTL(9)
 
@@ -3828,7 +3828,7 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
                     const char *value, const char *ifname, const char *addr)
 {
 
-    HANDLE dev = CreateFile(WRAPPER_DEVFILE_NAME, GENERIC_READ | 
+    HANDLE dev = CreateFile(WRAPPER_DEVFILE_NAME, GENERIC_READ |
                             GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     int rc;
     DWORD bytes_returned = 0;
@@ -3862,13 +3862,13 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
     CloseHandle(dev);
     return 0;
 }
-    
+
 static te_errno
 mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
                     const char *addr)
 {
 
-    HANDLE dev = CreateFile(WRAPPER_DEVFILE_NAME, GENERIC_READ | 
+    HANDLE dev = CreateFile(WRAPPER_DEVFILE_NAME, GENERIC_READ |
                             GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     int rc;
     DWORD bytes_returned = 0;
@@ -3887,7 +3887,7 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     {
       return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
     }
-    
+
     sscanf(addr, "%x:%x:%x:%x:%x:%x", &addr6[0], &addr6[1], &addr6[2],
                                       &addr6[3], &addr6[4], &addr6[5]);
     if (!DeviceIoControl(dev, KRX_DEL_MULTICAST_ADDR, addr6, 6, NULL, 0,
@@ -3908,7 +3908,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid,
                      const char *ifname)
 {
 
-    HANDLE dev = CreateFile(WRAPPER_DEVFILE_NAME, GENERIC_READ | 
+    HANDLE dev = CreateFile(WRAPPER_DEVFILE_NAME, GENERIC_READ |
                             GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     int rc;
     DWORD bytes_returned = 0;
@@ -3938,7 +3938,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid,
     }
 
     memset(ret, 0, 1024 * sizeof(char));
-    if (!DeviceIoControl(dev, KRX_GET_MULTICAST_LIST, 
+    if (!DeviceIoControl(dev, KRX_GET_MULTICAST_LIST,
                         (void *)buf, 1024, (void *)buf, 1024,
                          &bytes_returned, NULL))
     {
@@ -3952,7 +3952,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid,
     CloseHandle(dev);
     for (i = 0; i < bytes_returned / 6; i++)
     {
-      sprintf(&ret[i*18],"%02x:%02x:%02x:%02x:%02x:%02x ", buf[i*6], 
+      sprintf(&ret[i*18],"%02x:%02x:%02x:%02x:%02x:%02x ", buf[i*6],
               buf[i*6+1], buf[i*6+2], buf[i*6+3], buf[i*6+4], buf[i*6+5]);
     }
 
@@ -3973,8 +3973,8 @@ if_stats_get(const char *ifname, if_stats *stats, ndis_stats *raw_stats)
 
     ndis_stats ndstats;
     DWORD bytes_returned = 0;
-    
-    HANDLE dev = CreateFile(WRAPPER_DEVFILE_NAME, GENERIC_READ | 
+
+    HANDLE dev = CreateFile(WRAPPER_DEVFILE_NAME, GENERIC_READ |
                             GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
 
     if (INVALID_HANDLE_VALUE == dev)
@@ -3993,7 +3993,7 @@ if_stats_get(const char *ifname, if_stats *stats, ndis_stats *raw_stats)
 
     memset(&ndstats, 0, sizeof(ndstats));
 
-    if (!DeviceIoControl(dev, KSTAT_GET, NULL, 0, 
+    if (!DeviceIoControl(dev, KSTAT_GET, NULL, 0,
                          (void *)&ndstats, sizeof(ndstats),
                          &bytes_returned, NULL))
     {
@@ -4003,19 +4003,19 @@ if_stats_get(const char *ifname, if_stats *stats, ndis_stats *raw_stats)
         return -2;
     }
     CloseHandle(dev);
-    
+
     if (raw_stats != NULL)
     {
         memcpy(raw_stats, &ndstats, sizeof(ndstats));
     }
-        
+
     if (stats != NULL)
     {
         stats->in_octets = ndstats.gen_broadcast_bytes_rcv;
         stats->in_ucast_pkts = ndstats.gen_directed_frames_rcv;
-        stats->in_nucast_pkts = ndstats.gen_broadcast_frames_rcv + 
+        stats->in_nucast_pkts = ndstats.gen_broadcast_frames_rcv +
                                 ndstats.gen_multicast_frames_rcv;
-        stats->in_discards = ndstats.gen_rcv_error + 
+        stats->in_discards = ndstats.gen_rcv_error +
                              ndstats.gen_rcv_no_buffer;
         stats->in_errors = ndstats.gen_rcv_error;
 #if 0
@@ -4023,7 +4023,7 @@ if_stats_get(const char *ifname, if_stats *stats, ndis_stats *raw_stats)
 #endif
         stats->out_octets = ndstats.gen_broadcast_bytes_xmit;
         stats->out_ucast_pkts = ndstats.gen_directed_frames_xmit;
-        stats->out_nucast_pkts = ndstats.gen_broadcast_frames_xmit + 
+        stats->out_nucast_pkts = ndstats.gen_broadcast_frames_xmit +
                                  ndstats.gen_multicast_frames_xmit;
 #if 0
         stats->out_discards = 0;
@@ -4080,9 +4080,9 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(ifname);
     int state = -1;
-    
+
     snprintf(value, RCF_MAX_VAL, "%d", state);
-    
+
     return 0;
 }
 
@@ -4102,7 +4102,7 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
 {
     UNUSED(gid);
     UNUSED(oid);
-    
+
 
     int speed = -1;
     ndis_stats stats;
@@ -4110,9 +4110,9 @@ phy_speed_get(unsigned int gid, const char *oid, char *value,
     {
         speed = (int)(stats.gen_link_speed / 10000);
     }
-    
+
     snprintf(value, RCF_MAX_VAL, "%d", speed);
-    
+
     return 0;
 }
 
@@ -4135,7 +4135,7 @@ phy_speed_set(unsigned int gid, const char *oid, const char *value,
 {
     UNUSED(oid);
     UNUSED(gid);
-    
+
     int speed;
     int rc;
     /* Get value provided by caller */
@@ -4192,7 +4192,7 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     int rc;
     int state = -1;
-    
+
     if (strcmp(ifname, "ef1") == 0)
     {
         if ((rc = phy_parameters_get(ifname)) == 0)
@@ -4202,14 +4202,14 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
             else
                 state = TE_PHY_AUTONEG_OFF;
         }
-        else 
+        else
         {
             ERROR("failed to get autoneg state");
             return TE_RC(TE_TA_WIN32, rc);
-        } 
+        }
     }
     snprintf(value, RCF_MAX_VAL, "%d", state);
-    
+
     return 0;
 }
 
@@ -4234,12 +4234,12 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
 {
     UNUSED(oid);
     UNUSED(gid);
-    
+
     int rc;
     ndis_stats stats;
     int autoneg = -1;
     int speed = -1;
-    
+
     sscanf(value, "%d", &autoneg);
     if (autoneg != TE_PHY_AUTONEG_ON && autoneg != TE_PHY_AUTONEG_OFF)
     {
@@ -4253,12 +4253,12 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
         {
             speed_duplex_to_set = 0;
         }
-        else 
+        else
         if (autoneg == TE_PHY_AUTONEG_OFF)
         {
             if (speed_duplex_to_set == 0)
             {
-                /** 
+                /**
                   * setting to current speed and full duplex because
                   * we cannot get duplex state from interface
                   */
@@ -4283,11 +4283,11 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
                         speed_duplex_to_set = 8;
                         break;
                     default:
-                        WARN("Unknown speed value %d, setting to 1000", 
+                        WARN("Unknown speed value %d, setting to 1000",
                              speed);
                         speed_duplex_to_set = 6;
                         break;
-                } 
+                }
             }
         }
     }
@@ -4296,7 +4296,7 @@ phy_autoneg_set(unsigned int gid, const char *oid, const char *value,
         ERROR("changing autonegotiation state is only supported on ef1");
         return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
     }
-    
+
     return 0;
 }
 
@@ -4317,7 +4317,7 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
     int rc;
-    
+
     if (strcmp(ifname, "ef1") == 0)
     {
         if ((rc = phy_parameters_get(ifname)) == 0)
@@ -4338,7 +4338,7 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
         }
     }
     sprintf(value, "not supported");
-    
+
     return 0;
 }
 
@@ -4355,16 +4355,16 @@ phy_get_duplex_by_name(const char *name)
 {
     if (name == NULL)
         return -1;
-    
+
     if (strcasecmp(name, TE_PHY_DUPLEX_STRING_HALF) == 0)
         return TE_PHY_DUPLEX_HALF;
-    
+
     if (strcasecmp(name, TE_PHY_DUPLEX_STRING_FULL) == 0)
         return TE_PHY_DUPLEX_FULL;
-    
+
     if (strcasecmp(name, TE_PHY_DUPLEX_STRING_UNKNOWN) == 0)
         return TE_PHY_DUPLEX_UNKNOWN;
-    
+
     return -1;
 }
 
@@ -4389,14 +4389,14 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
 {
     UNUSED(oid);
     UNUSED(gid);
-    
+
     int rc;
     int duplex = -1;
 
     /* Get value provided by caller */
     duplex = phy_get_duplex_by_name(value);
-    if (duplex != TE_PHY_DUPLEX_HALF && 
-        duplex != TE_PHY_DUPLEX_FULL && 
+    if (duplex != TE_PHY_DUPLEX_HALF &&
+        duplex != TE_PHY_DUPLEX_FULL &&
         duplex != TE_PHY_DUPLEX_UNKNOWN)
     {
         ERROR("cannot set unknown duplex state: %s", value);
@@ -4413,7 +4413,7 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
         {
             speed_duplex_to_set = (duplex == TE_PHY_DUPLEX_FULL)?
                                   6 : 5;
-        } else 
+        } else
         {
             /* Last bit of speed_duplex_to_set set to 1 means half-duplex */
             if (((speed_duplex_to_set & 1) == 0) && /* full duplex */
@@ -4423,9 +4423,9 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
             }
             else if (((speed_duplex_to_set & 1) == 1) && /* half duplex */
                      duplex == TE_PHY_DUPLEX_FULL)
-            {         
+            {
                 speed_duplex_to_set += 1;
-            }    
+            }
         }
     }
     else
@@ -4433,7 +4433,7 @@ phy_duplex_set(unsigned int gid, const char *oid, const char *value,
         ERROR("change duplex state is only supported on ef1");
         return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
     }
-    
+
     return 0;
 }
 
@@ -4451,12 +4451,12 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
     UNUSED(gid);
     char *ifname;
     int rc;
-    
+
     /* Extract interface name */
     ifname = CFG_OID_GET_INST_NAME(p_oid, 2);
 
     if (strcmp(ifname, "ef1") == 0)
-    {    
+    {
         if ((rc = phy_parameters_set(ifname)) != 0)
         {
             ERROR("failed to set phy parameters");
@@ -4501,34 +4501,34 @@ static int get_settings_path(char *path)
     static char value[BUFSIZE_REG];
     DWORD subkey_size;
     DWORD value_size = BUFSIZE_REG;
-    
+
     DWORD  ret = -1;
     int i;
     FILETIME tmp;
-    
-    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, NET_PATH, 0, 
-                     KEY_READ, &key) != ERROR_SUCCESS) 
+
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, NET_PATH, 0,
+                     KEY_READ, &key) != ERROR_SUCCESS)
     {
         VERB("%s: RegOpenKeyEx() failed with errno %lu\n",
              __FUNCTION__, GetLastError());
         return -1;
     }
-    
-    for (i = 0, subkey_size = value_size = BUFSIZE_REG; 
-         RegEnumKeyEx(key, i, subkey_name, &subkey_size, 
+
+    for (i = 0, subkey_size = value_size = BUFSIZE_REG;
+         RegEnumKeyEx(key, i, subkey_name, &subkey_size,
                       NULL, NULL, NULL, &tmp) != ERROR_NO_MORE_ITEMS;
          i++, subkey_size = value_size = BUFSIZE_REG)
-    { 
+    {
         sprintf(subkey_path, "%s\\%s", NET_PATH, subkey_name);
-        if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, subkey_path, 
+        if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, subkey_path,
                          0, KEY_READ, &subkey) != ERROR_SUCCESS)
         {
             continue;
         }
-    
-        if (RegQueryValueEx(subkey, "MatchingDeviceId", 
-                            NULL, NULL, (unsigned char *)value, 
-                            &value_size) != ERROR_SUCCESS) 
+
+        if (RegQueryValueEx(subkey, "MatchingDeviceId",
+                            NULL, NULL, (unsigned char *)value,
+                            &value_size) != ERROR_SUCCESS)
         {
             /* Field with device ID is absent, may its virtual device */
             RegCloseKey(subkey);
@@ -4549,7 +4549,7 @@ static int get_settings_path(char *path)
             break;
         }
         RegCloseKey(subkey);
-    } 
+    }
     RegCloseKey(key);
     return ret;
 #else
@@ -4573,7 +4573,7 @@ static int get_driver_version()
       return TE_RC(TE_TA_WIN32, err);
     }
 
-    if(RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0, 
+    if(RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0,
                     KEY_READ, &hkKey) == ERROR_SUCCESS)
     {
         dwTemp = sizeof(driver_version_value);
@@ -4599,11 +4599,11 @@ static int get_driver_version()
     {
         return DRIVER_VERSION_2_1;
     }
-    else 
+    else
     if (strncmp(driver_version_value, "2.2", 3) == 0)
     {
         return DRIVER_VERSION_2_2;
-    } else 
+    } else
     if (strncmp(driver_version_value, "2.3", 3) == 0)
     {
         return DRIVER_VERSION_2_3;
@@ -4635,7 +4635,7 @@ static int phy_parameters_get(const char *ifname)
         return TE_RC(TE_TA_WIN32, err);
     }
 
-    if(RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0, 
+    if(RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0,
                     KEY_READ | KEY_WRITE, &hkKey) == ERROR_SUCCESS)
     {
         dwTemp = sizeof(speed_duplex_value);
@@ -4645,7 +4645,7 @@ static int phy_parameters_get(const char *ifname)
         {
             sscanf(speed_duplex_value, "%d", &speed_duplex_state);
         }
-        else 
+        else
         {
             err = GetLastError();
             ERROR("Failed to get *SpeedDuplex, err = %d", err);
@@ -4689,11 +4689,11 @@ static int phy_parameters_set(const char *ifname)
         return TE_RC(TE_TA_WIN32, err);
     }
 
-    if(RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0, 
+    if(RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0,
                     KEY_READ | KEY_WRITE, &hkKey) == ERROR_SUCCESS)
     {
         sprintf(speed_duplex_value, "%d", speed_duplex_to_set);
-        if (RegSetValueEx(hkKey, SPEED_DUPLEX_NAME, 0, REG_SZ, 
+        if (RegSetValueEx(hkKey, SPEED_DUPLEX_NAME, 0, REG_SZ,
                           (CONST BYTE *)speed_duplex_value,
                           strlen(speed_duplex_value)) != ERROR_SUCCESS)
         {
@@ -4706,7 +4706,7 @@ static int phy_parameters_set(const char *ifname)
     else
     {
         err = GetLastError();
-        ERROR("Failed to get open NDIS registry key, err = %d, path = %s", 
+        ERROR("Failed to get open NDIS registry key, err = %d, path = %s",
             err, path);
         return TE_RC(TE_TA_WIN32, err);
     }
@@ -4814,12 +4814,12 @@ vlans_list(unsigned int gid, const char *oid,
         {
             ERROR("Getting vlan list by WMI failed, rc=%d", rc);
             *list = NULL;
-            return 0; 
+            return 0;
         }
         if (vid_list == NULL || count == 0)
         {
             *list = NULL;
-            return 0; 
+            return 0;
         }
                            /* max digits in VLAN id + space */
         b = *list = malloc(count * 6  + 1);
@@ -4833,7 +4833,7 @@ vlans_list(unsigned int gid, const char *oid,
                 count_skipped++;
                 continue;
             }
-            b += sprintf(b, "%d ", vid_list[i]); 
+            b += sprintf(b, "%d ", vid_list[i]);
         }
         if (count_skipped == count)
         {
@@ -4848,7 +4848,7 @@ vlans_list(unsigned int gid, const char *oid,
         VERB("%s: gid=%u oid='%s', ifname %s, num vlans %d",
              __FUNCTION__, gid, oid, ifname, n_2_1_vlans);
 
-        if (n_2_1_vlans == 0) 
+        if (n_2_1_vlans == 0)
         {
             *list = NULL;
             return 0;
@@ -4856,10 +4856,10 @@ vlans_list(unsigned int gid, const char *oid,
                            /* max digits in VLAN id + space */
         b = *list = malloc(n_2_1_vlans * 6 + 1);
         if (*list == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM); 
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
         for (i = 0; i < n_2_1_vlans; i++)
-            b += sprintf(b, "%d ", vlans_2_1_buffer[i]); 
+            b += sprintf(b, "%d ", vlans_2_1_buffer[i]);
 
         return 0;
     }
@@ -4869,9 +4869,9 @@ vlans_list(unsigned int gid, const char *oid,
  * Add link to VLAN Ethernet device.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier 
- * @param value         value string 
- * @param ifname        device name, over it VLAN should be added 
+ * @param oid           full object instence identifier
+ * @param value         value string
+ * @param ifname        device name, over it VLAN should be added
  * @param vid_str       VLAN id string, decimal notation
  *
  * @return              Status code
@@ -4912,13 +4912,13 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
         rc = pwmi_add_vlan(vid & MAX_VLANS, priority);
         if (rc != 0)
         {
-            ERROR("Failed to set VLAN via WMI"); 
+            ERROR("Failed to set VLAN via WMI");
             return TE_RC(TE_TA_WIN32, TE_EFAULT);
         }
     }
-    else 
+    else
     {
-        if (n_2_1_vlans == 1) 
+        if (n_2_1_vlans == 1)
         {
             ERROR("VLAN interface is already set on %s", ifname);
             return TE_RC(TE_TA_WIN32, EINVAL);
@@ -4926,7 +4926,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
         rc = set_vlan_reg("ef1", vid);
         if (rc != 0)
         {
-            ERROR("Failed to physically set VLAN"); 
+            ERROR("Failed to physically set VLAN");
             return TE_RC(TE_TA_WIN32, TE_EFAULT);
         }
         vlans_2_1_buffer[n_2_1_vlans] = vid;
@@ -4959,21 +4959,21 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
         ERROR("Only ef* windows interfaces support VLANS");
         return TE_RC(TE_TA_WIN32, EINVAL);
     }
-    
+
     if (get_driver_version() >= DRIVER_VERSION_2_2)
-    {        
+    {
         if (!wmi_imported)
             return TE_RC(TE_TA_WIN32, EINVAL);
         rc = pwmi_del_vlan(vid & MAX_VLANS);
         if (rc != 0)
         {
-            ERROR("Failed to remove VLAN via WMI"); 
+            ERROR("Failed to remove VLAN via WMI");
             return TE_RC(TE_TA_WIN32, TE_EFAULT);
         }
     }
     else
     {
-        if (n_2_1_vlans == 0) 
+        if (n_2_1_vlans == 0)
         {
             ERROR("VLAN interface are not set "
                   "on %s, cannot delete" , ifname);
@@ -4987,7 +4987,7 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
         rc = remove_vlan_reg("ef1", vid);
         if (rc != 0)
         {
-            ERROR("Failed to physically remove VLAN"); 
+            ERROR("Failed to physically remove VLAN");
             return TE_RC(TE_TA_WIN32, TE_EFAULT);
         }
         n_2_1_vlans -= 1;
@@ -4995,7 +4995,7 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
     return 0;
 }
 
-static int 
+static int
 set_vlan_reg(const char *ifname, int vlan_id)
 {
     int vlan_mode = 3;
@@ -5015,12 +5015,12 @@ set_vlan_reg(const char *ifname, int vlan_id)
     }
     else if (vlan_id & TAG_VLAN_ONLY)
         vlan_mode = 2;
-    
+
     snprintf(buffer, sizeof(buffer),
              "./sish_client.exe "
              "--server=127.0.0.1 "
              "--command=\`cygpath -w \$PWD\`\\\\windows_layer2_manage.exe "
-             "--args=\"set vlanid %d vlantagging %d\"", 
+             "--args=\"set vlanid %d vlantagging %d\"",
              (vlan_id & MAX_VLANS), vlan_mode);
     if (system(buffer) == 0)
         return 0;
@@ -5031,7 +5031,7 @@ set_vlan_reg(const char *ifname, int vlan_id)
     }
 }
 
-static int 
+static int
 remove_vlan_reg(const char *ifname, int vlan_id)
 {
     char buffer[RCF_MAX_PATH + 1];

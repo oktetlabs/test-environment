@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Ivanov <andron@oktet.ru>
@@ -210,8 +210,8 @@ rcf_comm_agent_init(const char *config_str,
     }
 
 #if HAVE_FCNTL_H
-    /* 
-     * Try to set close-on-exec flag, but ignore failures, 
+    /*
+     * Try to set close-on-exec flag, but ignore failures,
      * since it's not critical.
      */
     (void)fcntl(s1, F_SETFD, FD_CLOEXEC);

@@ -1,13 +1,13 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 
 #include <stdio.h>
@@ -111,9 +111,9 @@ local_station_proc(void *arg)
 /** @page test_rcf_net_agent_close01 rcf_comm_agent_close() connection switch off check
  *
  * @descr The remote station requests a new connection, which is accepted
- * by the local station and then closed with the function 
+ * by the local station and then closed with the function
  * @b rcf_comm_agent_close(). The functions @b rcf_comm_agent_reply() and
- * @b rcf_comm_agent_wait() must fail when invoked with the closed connection 
+ * @b rcf_comm_agent_wait() must fail when invoked with the closed connection
  * handler.
  *
  * @author Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
@@ -123,7 +123,7 @@ local_station_proc(void *arg)
  * @retval positive     Test failed
  *
  */
-int 
+int
 main(int argc, char *argv[])
 {
     int rc;
@@ -135,10 +135,10 @@ main(int argc, char *argv[])
     TEST_BUFFER_SANITY();
 
     /* launch the remote station thread */
-    rc = pthread_create(&remote_thread, /* attr */ NULL, 
+    rc = pthread_create(&remote_thread, /* attr */ NULL,
                         remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {            
+    {
         char err_buf[BUFSIZ];
 
         strerror_r(errno, err_buf, sizeof(err_buf));

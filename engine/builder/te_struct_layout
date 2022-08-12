@@ -7,7 +7,7 @@
     do_parse = 0;
     next;
 }
-    
+
 do_parse && $1 == "struct"  && ($2 !~ /;$/) {
     if (ignore_next) ignore_next = "";
     else
@@ -66,21 +66,21 @@ function print_bits()
         if (array_access)
         {
             printf "\nstatic inline %s %s*\n%s(%s void *x)\n",
-                (array_access == "raw" ? "" : "const"), 
-                result_type, 
+                (array_access == "raw" ? "" : "const"),
+                result_type,
                 accessor_prefix "get_" accessname,
                 (array_access == "raw" ? "" : "const");
-            printf "{\n    return ((%s *)((uint8_t *)x + %s));\n", 
+            printf "{\n    return ((%s *)((uint8_t *)x + %s));\n",
                 field_type, field_type, varname "_OFFSET";
         }
         else
         {
-            printf "\nstatic inline %s\n%s(const void *x%s)\n", 
-                result_type, 
+            printf "\nstatic inline %s\n%s(const void *x%s)\n",
+                result_type,
                 accessor_prefix "get_" accessname,
                 (array_boundary ? ", unsigned idx" : "");
-            printf "{\n   %s val = ((%s *)((uint8_t *)x + %s))[%s];\n", 
-                field_type, field_type, varname "_OFFSET", 
+            printf "{\n   %s val = ((%s *)((uint8_t *)x + %s))[%s];\n",
+                field_type, field_type, varname "_OFFSET",
                 (array_boundary ? "idx" : "0");
             if (field_bit_shift == "")
             {
@@ -100,31 +100,31 @@ function print_bits()
         {
             printf "\nstatic inline void\n%s(void *x, %s *data)\n",
                 accessor_prefix "set_" accessname, result_type;
-            printf "{\n    memcpy((uint8_t *)x + %s_OFFSET, data, %s_SIZE);\n", 
+            printf "{\n    memcpy((uint8_t *)x + %s_OFFSET, data, %s_SIZE);\n",
                 varname, varname;
         }
         else if (result_type == "te_bool")
         {
             printf "\nstatic inline void\n%s(void *x)\n",
                 accessor_prefix "set_" accessname;
-            printf "{\n   %s *dest = ((%s *)((uint8_t *)x + %s));\n", 
+            printf "{\n   %s *dest = ((%s *)((uint8_t *)x + %s));\n",
                 field_type, field_type, varname "_OFFSET";
             printf "   *dest |= %s_MASK;\n", varname;
             print "}"
             printf "\nstatic inline void\n%s(void *x)\n",
                 accessor_prefix "unset_" accessname;
-            printf "{\n   %s *dest = ((%s *)((uint8_t *)x + %s));\n", 
+            printf "{\n   %s *dest = ((%s *)((uint8_t *)x + %s));\n",
                 field_type, field_type, varname "_OFFSET";
             printf "   *dest &= ~%s_MASK;\n", varname;
         }
         else
         {
             printf "\nstatic inline void\n%s(void *x%s, %s val)\n",
-                accessor_prefix "set_" accessname, 
+                accessor_prefix "set_" accessname,
                 (array_boundary ? ", unsigned idx" : ""),
                 result_type;
-            printf "{\n   %s *dest = ((%s *)((uint8_t *)x + %s)) + %s;\n", 
-                field_type, field_type, varname "_OFFSET", 
+            printf "{\n   %s *dest = ((%s *)((uint8_t *)x + %s)) + %s;\n",
+                field_type, field_type, varname "_OFFSET",
                 (array_boundary ? "idx" : "0");
             if (field_bit_shift != "")
             {
@@ -162,7 +162,7 @@ in_struct && ($1 ~ /^[[:alpha:]_][[:alnum:]_]*/) && ($2 ~ /^\**[[:alpha:]][[:aln
         next_offset = varname "_OFFSET";
     }
     pointers = $2;
-    gsub(/\[[^\]]+\]/, "", pointers); # to eliminate possible multiply signs in array boundary 
+    gsub(/\[[^\]]+\]/, "", pointers); # to eliminate possible multiply signs in array boundary
     gsub(/[^*]/, "", pointers);
     size = "sizeof(" $1 pointers ")";
     array_boundary = $2;
@@ -267,5 +267,5 @@ do_parse && ($0 ~ /^ *\/\*+( *[[:alpha:]_]+: *[^;]*;)+ *\**\/ *$/) {
         }
     }
 }
-    
+
 

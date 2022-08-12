@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
@@ -187,7 +187,7 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
     remote_ipv4_addr.sin_port = htons(remote_port);
 
     rc = bind(s, (struct sockaddr *)&local_ipv4_addr,
-              sizeof(local_ipv4_addr)); 
+              sizeof(local_ipv4_addr));
     if (rc < 0)
     {
         tmp_err = errno;
@@ -375,8 +375,8 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
  *
  * @return              Status code
  */
-static te_errno 
-netconsole_add(unsigned int gid, const char *oid, char *value, 
+static te_errno
+netconsole_add(unsigned int gid, const char *oid, char *value,
                const char *name)
 {
     netconsole_target   *new_target;
@@ -470,7 +470,7 @@ netconsole_add(unsigned int gid, const char *oid, char *value,
  *
  * @return              Status code
  */
-static te_errno 
+static te_errno
 netconsole_del(unsigned int gid, const char *oid, const char *name)
 {
     netconsole_target  *target;
@@ -554,7 +554,7 @@ netconsole_del(unsigned int gid, const char *oid, const char *name)
  *
  * @return              Status code
  */
-static te_errno 
+static te_errno
 netconsole_get(unsigned int gid, const char *oid, char *value,
                const char *name)
 {
@@ -588,7 +588,7 @@ netconsole_get(unsigned int gid, const char *oid, char *value,
  *
  * @return              Status code
  */
-static te_errno 
+static te_errno
 netconsole_list(unsigned int gid, const char *oid,
                 const char *sub_id, char **list)
 {
@@ -623,7 +623,7 @@ netconsole_list(unsigned int gid, const char *oid,
         }
         else
         {
-        
+
             ERROR("%s(): not enough space in buffer", __FUNCTION__);
             return TE_RC(TE_TA_UNIX, TE_ENOMEM);
         }

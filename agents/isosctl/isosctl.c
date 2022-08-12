@@ -4,14 +4,14 @@
  * Test Agent running on the Linux and used to control the ISOS NUT
  * via serial port.
  *
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * 
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -66,7 +66,7 @@ static char *devname;
  *
  * @return error code
  */
-int 
+int
 rcf_ch_init()
 {
     return 0;
@@ -75,7 +75,7 @@ rcf_ch_init()
 /**
  * Mutual exclusion lock access to data connection.
  */
-void 
+void
 rcf_ch_lock()
 {
     pthread_mutex_lock(&ta_lock);
@@ -85,7 +85,7 @@ rcf_ch_lock()
 /**
  * Unlock access to data connection.
  */
-void 
+void
 rcf_ch_unlock()
 {
     if (pthread_mutex_trylock(&ta_lock) == 0)
@@ -98,7 +98,7 @@ rcf_ch_unlock()
 
 
 /* See description in rcf_ch_api.h */
-int 
+int
 rcf_ch_shutdown(char *cbuf, int buflen,
                 struct rcf_comm_connection *handle, int answer_plen)
 {
@@ -126,38 +126,38 @@ static struct prompt {
                 { "Debug>", "system restart\r\n" } };
 
 /**
- * Read data from the device. 
+ * Read data from the device.
  *
  * @param s     file descriptor corresponding to box's tty
  *
  * @return 0 (success) or -1 (timeout)
  *
- * @alg 
+ * @alg
  * Data are read from the device until it sends them or space in the
- * buffer exist. Thus we obtain the whole bulk of data, not 
+ * buffer exist. Thus we obtain the whole bulk of data, not
  * unpredictable pieces only.
  */
 static int
 read_device(int s)
 {
     int n = 0;
-    
+
     memset(buf, 0, sizeof(buf));
-    
+
     while (1)
     {
         struct timeval tv = { DEVICE_DELAY, 0 };
         fd_set         set;
         int            l;
-        
+
         FD_ZERO(&set);
         FD_SET(s, &set);
-    
+
         select(s + 1, &set, NULL, NULL, &tv);
-    
+
         if (!FD_ISSET(s, &set))
             break;
-        
+
         l = read(s, buf + n, sizeof(buf) - n - 1);
         if (l <= 0)
             return n > 0 ? n : -1;
@@ -165,10 +165,10 @@ read_device(int s)
         if (n == sizeof(buf))
             break;
     }
-        
+
     if (n == 0)
         return -1;
-        
+
     return n;
 }
 
@@ -181,12 +181,12 @@ static int
 reboot_box()
 {
     int s = -1;
-    
+
     unsigned int i;
     unsigned int start;
-    
+
     struct termios tios;
-    
+
 #define CHECKERR(x) \
     do {                                \
        if ((x) >= 0)                    \
@@ -195,18 +195,18 @@ reboot_box()
            close(s);                    \
        return TE_EIO;                      \
     } while (0)
-    
+
     CHECKERR(s = open(devname, O_RDWR | O_NDELAY, 0));
-    
+
     tcgetattr(s, &tios);
     cfmakeraw(&tios);
     tios.c_iflag |= BRKINT;
     tcsetattr(s, TCSANOW, &tios);
-    
+
     /* Read the prompt */
     CHECKERR(write(s, "\r\n", 1));
     CHECKERR(read_device(s));
-    
+
     /* Execute appropriate command */
     for (i = 0; i < sizeof(prompts) / sizeof(struct prompt); i++)
     {
@@ -217,9 +217,9 @@ reboot_box()
             break;
         }
     }
-    
+
     read_device(s); /* Skipping "Login: admin, etc." */
-    
+
     /* Wait while the box is rebooted */
     start = time(NULL);
     while (time(NULL) - start < REBOOT_TIMEOUT)
@@ -231,22 +231,22 @@ reboot_box()
             return 0;
         }
     }
-    
+
     close(s);
     return TE_EIO;
-    
-#undef CHECKERR    
+
+#undef CHECKERR
 }
 
 
 /* See description in rcf_ch_api.h */
-int 
+int
 rcf_ch_reboot(char *cbuf, int buflen, char *parms,
-              char *ba, int cmdlen, 
+              char *ba, int cmdlen,
               struct rcf_comm_connection *handle, int answer_plen)
 {
     int rc = reboot_box();
-    
+
     UNUSED(cbuf);
     UNUSED(buflen);
     UNUSED(parms);
@@ -254,18 +254,18 @@ rcf_ch_reboot(char *cbuf, int buflen, char *parms,
     UNUSED(cmdlen);
     UNUSED(handle);
     UNUSED(answer_plen);
-    
-    // SEND_ANSWER("%d", rc); 
+
+    // SEND_ANSWER("%d", rc);
     SEND_ANSWER("0");
-    
+
     return 0;
 }
 
 
 /* See description in rcf_ch_api.h */
-int 
-rcf_ch_configure(char *cbuf, int buflen, char *ba, int cmdlen, 
-                 struct rcf_comm_connection *handle, 
+int
+rcf_ch_configure(char *cbuf, int buflen, char *ba, int cmdlen,
+                 struct rcf_comm_connection *handle,
                  int answer_plen, int op, char *oid, char *val)
 {
     UNUSED(cbuf);
@@ -278,7 +278,7 @@ rcf_ch_configure(char *cbuf, int buflen, char *ba, int cmdlen,
     UNUSED(op);
     UNUSED(oid);
     UNUSED(val);
-    
+
     /* Standard handler is OK */
     return -1;
 }
@@ -287,7 +287,7 @@ rcf_ch_configure(char *cbuf, int buflen, char *ba, int cmdlen,
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_vread(char *cbuf, int buflen,
-             struct rcf_comm_connection *handle, 
+             struct rcf_comm_connection *handle,
              int answer_plen, int type, char *var)
 {
     UNUSED(cbuf);
@@ -301,10 +301,10 @@ rcf_ch_vread(char *cbuf, int buflen,
 
 
 /* See description in rcf_ch_api.h */
-int 
+int
 rcf_ch_vwrite(char *cbuf, int buflen,
-              struct rcf_comm_connection *handle, 
-              int answer_plen, int type, char *var, 
+              struct rcf_comm_connection *handle,
+              int answer_plen, int type, char *var,
               uint64_t val_int, char *val_string)
 {
     UNUSED(cbuf);
@@ -331,9 +331,9 @@ rcf_ch_symbol_addr(const char *name, int is_func)
 
 
 /* See description in rcf_ch_api.h */
-int 
-rcf_ch_file(char *cbuf, int buflen, char *ba, int cmdlen, 
-            struct rcf_comm_connection *handle, 
+int
+rcf_ch_file(char *cbuf, int buflen, char *ba, int cmdlen,
+            struct rcf_comm_connection *handle,
             int answer_plen, rcf_op_t op, char *filename)
 {
     UNUSED(cbuf);
@@ -350,9 +350,9 @@ rcf_ch_file(char *cbuf, int buflen, char *ba, int cmdlen,
 
 
 /* See description in rcf_ch_api.h */
-int 
-rcf_ch_call(char *cbuf, int buflen, 
-            struct rcf_comm_connection *handle, 
+int
+rcf_ch_call(char *cbuf, int buflen,
+            struct rcf_comm_connection *handle,
             int answer_plen, char *rtn, int argc, int argv,
             uint32_t *params)
 {
@@ -370,9 +370,9 @@ rcf_ch_call(char *cbuf, int buflen,
 
 
 /* See description in rcf_ch_api.h */
-int 
-rcf_ch_start_process(char *cbuf, int buflen, 
-                     struct rcf_comm_connection *handle, int answer_plen, 
+int
+rcf_ch_start_process(char *cbuf, int buflen,
+                     struct rcf_comm_connection *handle, int answer_plen,
                      int priority, char *rtn, int argc, int argv,
                      uint32_t *params)
 {
@@ -456,7 +456,7 @@ rcf_ch_conf_agent()
 /**
  * Release resources allocated for configuration support.
  */
-void 
+void
 rcf_ch_conf_fini()
 {
 }
@@ -471,8 +471,8 @@ rcf_ch_conf_fini()
 int
 main(int argc, char **argv)
 {
-    int rc; 
-    
+    int rc;
+
     if (argc != 4)
         return -1;
 
@@ -480,7 +480,7 @@ main(int argc, char **argv)
 
     if ((rc = ta_log_init(ta_name)) != 0)
         return rc;
-        
+
     devname = argv[3];
     VERB("started\n");
     return rcf_pch_start_pch(argv[2]);

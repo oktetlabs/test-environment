@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
  */

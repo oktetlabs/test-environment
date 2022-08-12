@@ -2,14 +2,14 @@
  * @brief Test Environment
  *
  * Simple RCF test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "cli/simple"
@@ -31,7 +31,7 @@
 
 void
 cli_msg_handler(char *fn, void *p)
-{ 
+{
     UNUSED(p);
     VERB("CLI message handler, file with NDS: %s\n", fn);
 }
@@ -41,10 +41,10 @@ main(int argc, char *argv[])
 {
     char *ta;
     int   sid;
-   
+
     TEST_START;
     TEST_GET_STRING_PARAM(ta);
-    
+
     /* Session */
     {
         if (rcf_ta_create_session(ta, &sid) != 0)
@@ -52,7 +52,7 @@ main(int argc, char *argv[])
             ERROR("rcf_ta_create_session failed\n");
             return 1;
         }
-        INFO("Test: Created session: %d", sid); 
+        INFO("Test: Created session: %d", sid);
     }
 
     do {
@@ -69,7 +69,7 @@ main(int argc, char *argv[])
 
         if (te_suites)
             INFO("te_suites: %s\n", te_suites);
-        else 
+        else
             break;
 
         strcpy(path, te_suites);
@@ -78,24 +78,24 @@ main(int argc, char *argv[])
         strcpy(path + path_prefix, "cli-csap.asn");
         VERB("csap full path: %s\n", path);
 
-        VERB("let's create csap for listen\n"); 
+        VERB("let's create csap for listen\n");
         rc =   rcf_ta_csap_create(ta, sid, "cli", path, &handle);
-        VERB("csap_create rc: %r, csap id %d\n", rc, handle); 
-        if (rc) 
+        VERB("csap_create rc: %r, csap id %d\n", rc, handle);
+        if (rc)
             TEST_FAIL("CLI CSAP create failed %X", rc);
 
         strcpy(path + path_prefix, "cli-filter.asn");
         VERB("send template full path: %s\n", path);
         rc = rcf_ta_trsend_recv(ta, sid, handle, path, cli_msg_handler,
                                 NULL, &timeout, num);
-        VERB("trsend_recv: %r, timeout: %d, num: %d\n", 
+        VERB("trsend_recv: %r, timeout: %d, num: %d\n",
                     rc, timeout, num);
-        if (rc) 
+        if (rc)
             TEST_FAIL("CLI CSAP send_recv failed %X", rc);
 
 
-        rc = rcf_ta_csap_destroy(ta, sid, handle); 
-        if (rc) 
+        rc = rcf_ta_csap_destroy(ta, sid, handle);
+        if (rc)
             TEST_FAIL("CLI CSAP destroy failed %X", rc);
 
     } while(0);

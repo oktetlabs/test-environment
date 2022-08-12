@@ -5,10 +5,10 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
- * 
+ *
  */
 
 #include "te_config.h"

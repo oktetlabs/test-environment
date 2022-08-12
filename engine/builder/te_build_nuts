@@ -27,7 +27,7 @@ for i in $NUTS ; do
         test -n "$CXX" && export TCE_CXX="$CXX"
         export CC="`which tce_gcc`"
         export CXX="`which tce_gxx`"
-    
+
         tce_src="`eval echo '$NUT_'$i'_TCE_SRC'`"
         if test -z "${NUT_SOURCES}" ; then
             # Can do nothing with TCE_SRC

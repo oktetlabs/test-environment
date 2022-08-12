@@ -14,11 +14,11 @@ cat >&2 <<EUSAGE
 USAGE: $0 <option> ...
 where options may be:
     -c <config file>    file with TE run options, containing --conf-rcf
-    -r <rcf config>     RCF config file 
+    -r <rcf config>     RCF config file
     -e <environment>    Environment settings for the configuration
     -l <log file>       name of file where all messages will be stored
-    -h <TE engine host> name of host where TE engine should be stopped, 
-                        if found. 
+    -h <TE engine host> name of host where TE engine should be stopped,
+                        if found.
 Exactly one of '-c' and '-r' option must present in command line.
 EUSAGE
 }
@@ -35,12 +35,12 @@ find_pid()
 {
     local awk_cmd="awk '{if (\$5 ~ /$1/) {print \$1;}}'"
     local SH
-    if test -n "$2"; then 
+    if test -n "$2"; then
         SH="${SSH} $2 "
     else
         SH="$TE_SH"
     fi
-    $SH ps ax | eval $awk_cmd 
+    $SH ps ax | eval $awk_cmd
 }
 
 
@@ -58,14 +58,14 @@ kill_accurate()
     if test -z "$ps_line"; then return; fi
 
     clean_need=yes;
-    log_msg "ERROR: need to kill $1: $ps_line" 
+    log_msg "ERROR: need to kill $1: $ps_line"
 
-    $LOC_SH sudo /bin/kill $2 || 
+    $LOC_SH sudo /bin/kill $2 ||
         log_msg "ERROR: kill of $2 failed"
     sleep 1
     if $LOC_SH ps --pid $2 >/dev/null; then
-        log_msg "ERROR: need kill -9 $1: `eval $LOC_SH ps h --pid $2`" 
-        $LOC_SH sudo /bin/kill -9 $2 || 
+        log_msg "ERROR: need kill -9 $1: `eval $LOC_SH ps h --pid $2`"
+        $LOC_SH sudo /bin/kill -9 $2 ||
             log_msg "ERROR: kill -9 of $2 failed"
     fi
 }
@@ -80,13 +80,13 @@ TE_HOST=localhost
 
 while test -n "$1"; do
     case $1 in
-        -c ) 
+        -c )
             CFG_FILE=$2;;
-        -r ) 
+        -r )
             RCF_CFG_FILE=$2;;
-        -e ) 
+        -e )
             ENV_CFG_FILE=$2;;
-        -l ) 
+        -l )
             LOG_FILE=$2;;
         -h )
             TE_HOST=$2;;
@@ -97,9 +97,9 @@ while test -n "$1"; do
     else
         shift 2;
     fi
-done 
+done
 
-if test -n "$CFG_FILE"; then 
+if test -n "$CFG_FILE"; then
     if test -n "$RCF_CFG_FILE"; then
         usage
         exit 1
@@ -112,7 +112,7 @@ if test -z "$RCF_CFG_FILE" -a -z "$ENV_CFG_FILE" ; then
     usage
     exit 1
 fi
-if test -n "$LOG_FILE"; then 
+if test -n "$LOG_FILE"; then
     echo "">$LOG_FILE
 fi
 
@@ -149,33 +149,33 @@ done
 log_msg "TA hosts to be processed: ${TA_HOSTS}"
 
 clean_need=
-# 
-# Store all interesting status information before cleaning. 
 #
-if test -n "$LOG_FILE"; then 
+# Store all interesting status information before cleaning.
+#
+if test -n "$LOG_FILE"; then
     TEMP_FILE=`tempfile`
     echo "">$TEMP_FILE
     for h in $TE_HOST $TA_HOSTS; do
-        if test $h = "localhost"; then 
+        if test $h = "localhost"; then
             SH=
         else
             SH="${SSH} $h "
         fi
-        echo "---- processes on $h: ---- "  >>$TEMP_FILE 
-        $SH ps aux >>$TEMP_FILE 2>&1 || 
+        echo "---- processes on $h: ---- "  >>$TEMP_FILE
+        $SH ps aux >>$TEMP_FILE 2>&1 ||
             log_msg "ps aux on $h failed"
         echo "---- content of /tmp/ $h: ---- " >>$TEMP_FILE
-        $SH ls -l /tmp/ >>$TEMP_FILE 2>&1 || 
+        $SH ls -l /tmp/ >>$TEMP_FILE 2>&1 ||
             log_msg "ls -l /tmp/ on $h failed"
         echo "---- interfaces on $h: ---- " >>$TEMP_FILE
-        $SH /sbin/ifconfig >>$TEMP_FILE 2>&1 || 
+        $SH /sbin/ifconfig >>$TEMP_FILE 2>&1 ||
             log_msg "ifconfig on $h failed"
         echo "---- ip addresses on $h: ---- " >>$TEMP_FILE
-        $SH /sbin/ip addr list >>$TEMP_FILE 2>&1 || 
+        $SH /sbin/ip addr list >>$TEMP_FILE 2>&1 ||
             log_msg "ip addr list on $h failed"
         echo "---- route table on $h: ---- " >>$TEMP_FILE
         $SH /sbin/route -n >>$TEMP_FILE 2>&1 ||
-            log_msg "route on $h failed" 
+            log_msg "route on $h failed"
         log_msg "status on host $h stored into tmp file"
     done
 fi
@@ -186,8 +186,8 @@ else
     TE_SH="${SSH} $TE_HOST "
 fi
 
-# Clean TA hosts. 
-for ta_host in ${TA_HOSTS}; do 
+# Clean TA hosts.
+for ta_host in ${TA_HOSTS}; do
     log_msg "---- Try clear TA host $ta_host"
 
     user_str=`${SSH} $ta_host grep te10000 /etc/passwd`
@@ -195,7 +195,7 @@ for ta_host in ${TA_HOSTS}; do
     if test -n "$user_str"; then
         log_msg "ERROR: user: $user_str on $ta_host, del it, rm home"
         ${SSH_TERM} $ta_host sudo /usr/sbin/userdel ${user_str/%:*/}
-#        ${SSH_TERM} $ta_host sudo rm -rf /home/${user_str/%:*/} 
+#        ${SSH_TERM} $ta_host sudo rm -rf /home/${user_str/%:*/}
     fi
 
     group_str=`${SSH} $ta_host grep te10000 /etc/group`
@@ -211,7 +211,7 @@ for ta_host in ${TA_HOSTS}; do
         fi
     done
 
-done 
+done
 
 if test -n "$LOG_FILE" && test -n "$clean_need"; then
     log_msg "++++ Some cleaning was made, priliminary status was: +++"

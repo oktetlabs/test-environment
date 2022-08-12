@@ -14,7 +14,7 @@ main(void)
     int rc, syms;
 
     printf("TE_EASNGENERAL: %x\n", (int)TE_EASNGENERAL);
-    rc = asn_parse_value_text("{{pdus {}}}", ndn_traffic_pattern, 
+    rc = asn_parse_value_text("{{pdus {}}}", ndn_traffic_pattern,
                               &nds, &syms);
     if (rc)
     {
@@ -22,7 +22,7 @@ main(void)
         return 2;
     }
 
-    rc = asn_parse_value_text("eth:{}", ndn_generic_pdu, 
+    rc = asn_parse_value_text("eth:{}", ndn_generic_pdu,
                               &gen_pdu, &syms);
     if (rc)
     {
@@ -35,7 +35,7 @@ main(void)
     {
         printf("write pdu to pattern failed: %x\n", rc);
         return 3;
-    } 
+    }
 
     asn_sprint_value(nds, buffer, sizeof(buffer), 0);
     printf("new value: <%s>\n", buffer);

@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -183,7 +183,7 @@ typedef struct test_var_arg {
     test_entity_values       values;    /**< Values */
 
     char                    *list;      /**< Name of the iteration list */
-    const test_entity_value *preferred; /**< Preferred value for list 
+    const test_entity_value *preferred; /**< Preferred value for list
                                            iteration */
 
     te_bool                  handdown;  /**< Handdown session variable
@@ -578,7 +578,7 @@ extern te_errno test_var_arg_get_value(
                     const run_item                     *ri,
                     const test_var_arg                 *va,
                     const unsigned int                  index,
-                    test_entity_value_enum_error_cb     enum_error_cb,  
+                    test_entity_value_enum_error_cb     enum_error_cb,
                     void                               *ee_opaque,
                     const test_entity_value           **value);
 
@@ -631,7 +631,7 @@ typedef enum tester_cfg_walk_ctl {
     TESTER_CFG_WALK_BACK,   /**< Continue in backward direction */
     TESTER_CFG_WALK_BREAK,  /**< Break repeation or iteration loop and
                                  continue */
-    TESTER_CFG_WALK_SKIP,   /**< Skip this item and continue with 
+    TESTER_CFG_WALK_SKIP,   /**< Skip this item and continue with
                                  the rest */
     TESTER_CFG_WALK_EXC,    /**< Call session exception handler */
     TESTER_CFG_WALK_FIN,    /**< No necessity to walk new items, but
@@ -650,7 +650,7 @@ typedef enum tester_cfg_walk_ctl {
 
 #define TESTER_CFG_WALK_OUTPUT_PARAMS     4
 
-/** 
+/**
  * Run only repeat_start(), repeat_end() for what should be skipped
  * due to incorrect arguments in iter_start().
  */

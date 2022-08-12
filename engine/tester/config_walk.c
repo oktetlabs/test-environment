@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -287,7 +287,7 @@ walk_test_session(const tester_cfg_walk *walk, const void *opaque,
 
 /**
  * Walk test package.
- * 
+ *
  * @param walk          Walk callbacks
  * @param opaque        Opaque data to be passed in callbacks
  * @param id_off        Configuration ID of the next test

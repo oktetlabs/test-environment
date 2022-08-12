@@ -14,7 +14,7 @@ CLEANFILES = tests-info.xml
 
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
-AM_CFLAGS = @TE_CFLAGS@ 
+AM_CFLAGS = @TE_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 MY_LDADD=-ltapi -ltapi_rpc -lrpc_types -ltapi_env -ltapi -lasn -lndn -lrcfrpc \
@@ -22,7 +22,7 @@ MY_LDADD=-ltapi -ltapi_rpc -lrpc_types -ltapi_env -ltapi -lasn -lndn -lrcfrpc \
          -ltools -llogger_core -lexpat -lpthread -lm
 
 tetest_PROGRAMS = clientserver
-       
+
 clientserver_SOURCES = clientserver.c
 clientserver_LDADD = $(MY_LDADD)
 clientserver_DEPENDENCIES = \
@@ -32,6 +32,6 @@ clientserver_DEPENDENCIES = \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libipc.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtapi.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconfapi.a \
-    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_types.a 
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_types.a
 
 

@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
@@ -73,8 +73,8 @@ static char configfs_name[RCF_MAX_NAME];
  *
  * @return              Status code
  */
-static te_errno 
-configfs_add(unsigned int gid, const char *oid, char *value, 
+static te_errno
+configfs_add(unsigned int gid, const char *oid, char *value,
              const char *name)
 {
 #ifdef HAVE_MKDTEMP
@@ -110,7 +110,7 @@ configfs_add(unsigned int gid, const char *oid, char *value,
         ERROR("%s(): failed to mount configfs", __FUNCTION__);
         return TE_EUNKNOWN;
     }
-    
+
     te_strlcpy(configfs_mount_point, tmp, sizeof(configfs_mount_point));
     te_strlcpy(configfs_name, name, sizeof(configfs_name));
 
@@ -136,7 +136,7 @@ configfs_add(unsigned int gid, const char *oid, char *value,
  *
  * @return              Status code
  */
-static te_errno 
+static te_errno
 configfs_del(unsigned int gid, const char *oid, const char *name)
 {
     char    cmd[RCF_MAX_PATH];
@@ -182,7 +182,7 @@ configfs_del(unsigned int gid, const char *oid, const char *name)
  *
  * @return              Status code
  */
-static te_errno 
+static te_errno
 configfs_get(unsigned int gid, const char *oid, char *value,
              const char *name)
 {
@@ -205,7 +205,7 @@ configfs_get(unsigned int gid, const char *oid, char *value,
  *
  * @return              Status code
  */
-static te_errno 
+static te_errno
 configfs_list(unsigned int gid, const char *oid,
               const char *sub_id, char **list)
 {

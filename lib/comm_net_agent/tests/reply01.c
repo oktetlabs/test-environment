@@ -4,10 +4,10 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 
 #include <stdio.h>
@@ -82,24 +82,24 @@ remote_station_proc(void *arg)
 
        /* read in the next message */
        do {
-           rc = read(remote_socket, buf_ptr, 
+           rc = read(remote_socket, buf_ptr,
                     TOTAL_BUFFER_LENGTH - (buf_ptr - input_buffer));
            if (rc < 0)
            {
               char err_buf[BUFSIZ];
 
               strerror_r(errno, err_buf, sizeof(err_buf));
-              fprintf(stderr, 
+              fprintf(stderr,
                      "\t\t\remote_station_proc: read() failed: "
                      " %s\n", err_buf);
               exit(1);
            }
            buf_ptr += rc;
 
-           /* 
-            * at this point it is safe to access 
+           /*
+            * at this point it is safe to access
             * 'declared_output_buffer_length' because the local station
-            * is hanging on the semaphore 
+            * is hanging on the semaphore
             */
            if (buf_ptr - input_buffer >= declared_output_buffer_length)
            {
@@ -110,17 +110,17 @@ remote_station_proc(void *arg)
 
        /* check the buffers */
        VERIFY_BUFFERS();
-       DEBUG("\t\t\tremote_station_proc: reply number %d(%d) ok\n", 
+       DEBUG("\t\t\tremote_station_proc: reply number %d(%d) ok\n",
              i + 1, num_replies);
 
-       /* 
+       /*
         * Post the semaphore to let the local station proceed with the
-        * next message 
+        * next message
         */
        if (sem_post(&random_messages_semaphore) < 0)
        {
            char err_buf[BUFSIZ];
-           
+
            strerror_r(errno, err_buf, sizeof(err_buf));
            fprintf(stderr, "\t\t\tremote_presend_random: "
                   "can't sem_post(): %s\n", err_buf);
@@ -154,12 +154,12 @@ local_station_proc(void *arg)
     local_connection_init();
 
     /* generate the number of replies */
-    num_replies = MIN_NUMBER_OF_REPLIES + 
+    num_replies = MIN_NUMBER_OF_REPLIES +
        (int)(random() % (MAX_NUMBER_OF_REPLIES - MIN_NUMBER_OF_REPLIES + 1));
 
-    /* 
-     * Synchronize at this point -- the remote station will now read 
-     * the number of replies 
+    /*
+     * Synchronize at this point -- the remote station will now read
+     * the number of replies
      */
     local_synch(10);
 
@@ -171,22 +171,22 @@ local_station_proc(void *arg)
        char *buf_ptr;
        int   reply_size, attach_size;
 
-       /* 
+       /*
         * Now we generate the size of the reply and the size
-        * of the attachment 
+        * of the attachment
         */
-       reply_size = MIN_RANDOM_REPLY_SIZE + 
-           (int)(random() % (MAX_RANDOM_REPLY_SIZE - 
+       reply_size = MIN_RANDOM_REPLY_SIZE +
+           (int)(random() % (MAX_RANDOM_REPLY_SIZE -
                            MIN_RANDOM_REPLY_SIZE + 1));
-       
+
        /* Now throw the dice if we should omit the attachment */
-       do_generate_attachment = 
+       do_generate_attachment =
            (random() % REPLY_OMIT_ATTACHMENT_FREQUENCY != 0);
-       
+
        if (do_generate_attachment)
        {
            /* Generate the size of the attachment */
-           attach_size = 
+           attach_size =
               (int)(random() % REPLY_MAX_RANDOM_ATTACHMENT_SIZE) + 1;
        }
        else
@@ -207,17 +207,17 @@ local_station_proc(void *arg)
        declared_output_buffer_length = reply_size + attach_size;
 
        /* now send the message */
-       DEBUG("local_station_proc: sending a reply %d bytes long\n", 
+       DEBUG("local_station_proc: sending a reply %d bytes long\n",
              declared_output_buffer_length);
-       rc = rcf_comm_agent_reply(handle, output_buffer, 
-                              (unsigned int) 
+       rc = rcf_comm_agent_reply(handle, output_buffer,
+                              (unsigned int)
                               declared_output_buffer_length);
        if (rc != 0)
        {
            char err_buf[BUFSIZ];
 
            strerror_r(rc, err_buf, sizeof(err_buf));
-           fprintf(stderr, 
+           fprintf(stderr,
                   "local_station_proc: rcf_comm_agent_reply() failed:"
                   " %s\n", err_buf);
            exit(1);
@@ -229,7 +229,7 @@ local_station_proc(void *arg)
            char err_buf[BUFSIZ];
 
            strerror_r(errno, err_buf, sizeof(err_buf));
-           fprintf(stderr, 
+           fprintf(stderr,
                   "\t\t\tremote_presend_random: can't sem_wait(): %s\n",
                   err_buf);
            exit(1);
@@ -250,7 +250,7 @@ local_station_proc(void *arg)
 
 /** @page test_rcf_net_agent_reply01 rcf_comm_agent_reply() buffer transfer check
  *
- * @descr The function @b rcf_comm_agent_reply() must be invoked with 
+ * @descr The function @b rcf_comm_agent_reply() must be invoked with
  * several buffers of different sizes. The remote station must convince
  * the messages arrived consistently and uncorrupted.
  *
@@ -261,7 +261,7 @@ local_station_proc(void *arg)
  * @retval positive     Test failed
  *
  */
-int 
+int
 main(int argc, char *argv[])
 {
     int rc;
@@ -273,10 +273,10 @@ main(int argc, char *argv[])
     TEST_BUFFER_SANITY();
 
     /* launch the remote station thread */
-    rc = pthread_create(&remote_thread, /* attr */ NULL, 
+    rc = pthread_create(&remote_thread, /* attr */ NULL,
                      remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {           
+    {
        char err_buf[BUFSIZ];
 
        strerror_r(errno, err_buf, sizeof(err_buf));

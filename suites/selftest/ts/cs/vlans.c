@@ -13,7 +13,7 @@
  *
  * @par Scenario:
  *
- * -# Create udp.ip4.eth CSAP on @p pco_csap. 
+ * -# Create udp.ip4.eth CSAP on @p pco_csap.
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  */
@@ -53,10 +53,10 @@ main(int argc, char *argv[])
     cfg_handle     *handles;
     unsigned int    n_handles;
 
-    TEST_START; 
+    TEST_START;
 
-    rc = cfg_find_pattern("/agent:Agt_A/interface:*/vlans:*", 
-                          &n_handles, &handles); 
+    rc = cfg_find_pattern("/agent:Agt_A/interface:*/vlans:*",
+                          &n_handles, &handles);
     RING("find vlans on Agt_A rc %r, n: %d", rc, n_handles);
     {
         unsigned int i;
@@ -69,8 +69,8 @@ main(int argc, char *argv[])
         }
     }
 
-    rc = cfg_find_pattern("/agent:Agt_A/interface:*", 
-                          &n_handles, &handles); 
+    rc = cfg_find_pattern("/agent:Agt_A/interface:*",
+                          &n_handles, &handles);
     RING("find interfaces on Agt_A rc %r, n: %d", rc, n_handles);
     {
         unsigned int i;
@@ -95,8 +95,8 @@ main(int argc, char *argv[])
         TEST_FAIL("Add VLAN failed");
 
 
-    rc = cfg_find_pattern("/agent:Agt_A/interface:*/vlans:*", 
-                          &n_handles, &handles); 
+    rc = cfg_find_pattern("/agent:Agt_A/interface:*/vlans:*",
+                          &n_handles, &handles);
     RING("After add vlan: find vlans on eth1 on Agt_A rc %r, n: %d",
          rc, n_handles);
     {
@@ -110,8 +110,8 @@ main(int argc, char *argv[])
         }
     }
 
-    rc = cfg_find_pattern("/agent:Agt_A/interface:*", 
-                          &n_handles, &handles); 
+    rc = cfg_find_pattern("/agent:Agt_A/interface:*",
+                          &n_handles, &handles);
     RING("After add vlan: find interfaces on Agt_A rc %r, n: %d", rc, n_handles);
     {
         unsigned int i;
@@ -124,8 +124,8 @@ main(int argc, char *argv[])
         }
     }
 
-    rc = cfg_find_pattern("/agent:Agt_A/rsrc:*", 
-                          &n_handles, &handles); 
+    rc = cfg_find_pattern("/agent:Agt_A/rsrc:*",
+                          &n_handles, &handles);
     RING("find resources on Agt_A rc %r, n: %d", rc, n_handles);
     {
         char *name = NULL;

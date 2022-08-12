@@ -1,5 +1,5 @@
 /** @file
- * @brief Logger subsystem API - TEN side 
+ * @brief Logger subsystem API - TEN side
  *
  * Common function used to format raw log message from Logger TEN
  * library and Logger process internals.
@@ -7,12 +7,12 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
  *
- * 
+ *
+ *
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
- */ 
+ */
 
 #ifndef TE_LOGGER_TEN_INTERNALS
 #error This file may be included from Logger TEN internals only
@@ -40,7 +40,7 @@
 #include "te_defs.h"
 #include "logger_defs.h"
 #include "te_log_fmt.h"
-    
+
 
 #ifdef _cplusplus
 extern "C" {
@@ -100,7 +100,7 @@ log_message_int(te_log_msg_raw_data *out,
  * The rest of parameters complies with te_log_message_f prototype.
  */
 static void
-log_message_va(te_log_msg_raw_data *out, 
+log_message_va(te_log_msg_raw_data *out,
                const char *file, unsigned int line,
                te_log_ts_sec sec, te_log_ts_usec usec,
                unsigned int level,

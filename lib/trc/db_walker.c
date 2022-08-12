@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -333,7 +333,7 @@ static unsigned
 next_token(const char *pos, const char **start, te_bool *is_numeric)
 {
     unsigned len = 0;
-    
+
     *is_numeric = FALSE;
     while(isspace(*pos))
         pos++;
@@ -366,7 +366,7 @@ trc_db_strcmp_tokens(const char *s1, const char *s2)
     unsigned wlen2 = 0;
     te_bool numeric2 = FALSE;
     int rc;
-    
+
     do
     {
         wlen1 = next_token(s1, &s1, &numeric1);
@@ -404,7 +404,7 @@ trc_db_strcmp_normspace(const char *s1, const char *s2)
         s1++;
     while (isspace(*s2))
         s2++;
-    
+
     while (*s1 != '\0' && *s2 != '\0')
     {
         if (isspace(*s1))
@@ -496,7 +496,7 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
         {
             if (trc_db_compare_values(args[i].value, arg->value) != 0)
             {
-                VERB("Value mismatch for %s: %s vs %s", arg->name, 
+                VERB("Value mismatch for %s: %s vs %s", arg->name,
                       args[i].value, arg->value);
                 return ITER_NO_MATCH;
             }

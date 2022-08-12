@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author  Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
@@ -146,7 +146,7 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
     return 0;
 }
 
-/** 
+/**
  * Function determines if the oid matches the given pattern.
  * It works only with object IDs.
  *
@@ -170,7 +170,7 @@ match_obj(const char *pattern, const char *oid)
     char *next_patt;
 
     if ((tmp_patt = strdup(pattern)) == NULL)
-        return -TE_ENOMEM;    
+        return -TE_ENOMEM;
     if ((tmp_oid = strdup(oid)) == NULL)
     {
         free(tmp_patt);
@@ -179,8 +179,8 @@ match_obj(const char *pattern, const char *oid)
 
     curr_patt = tmp_patt;
     curr_level = tmp_oid;
-    
-    while (curr_patt != NULL && strcmp(curr_patt, "") != 0 && 
+
+    while (curr_patt != NULL && strcmp(curr_patt, "") != 0 &&
            curr_level != NULL && strcmp(curr_level, "") != 0)
     {
         if (parse_one_level(curr_patt, &next_patt, &patt_sub_id, NULL) != 0)
@@ -201,8 +201,8 @@ match_obj(const char *pattern, const char *oid)
             free(tmp_oid);
             return -TE_EINVAL;
         }
-        
-        if (*patt_sub_id != '*' && 
+
+        if (*patt_sub_id != '*' &&
             strcmp(oid_sub_id, patt_sub_id) != 0)
         {
             free(tmp_patt);
@@ -216,7 +216,7 @@ match_obj(const char *pattern, const char *oid)
         curr_patt = next_patt;
         curr_level = next_level;
         free(oid_sub_id);
-        free(patt_sub_id);       
+        free(patt_sub_id);
         oid_sub_id = NULL;
         patt_sub_id = NULL;
     }
@@ -229,7 +229,7 @@ match_obj(const char *pattern, const char *oid)
     return 0;
 }
 
-/** 
+/**
  * Function determines if the oid matches the given pattern.
  * It works only with instance IDs.
  *
@@ -265,10 +265,10 @@ match_inst(const char *pattern, const char *oid)
     curr_patt = tmp_patt;
     curr_level = tmp_oid;
 
-    while (curr_patt != NULL && strcmp(curr_patt, "") != 0 && 
+    while (curr_patt != NULL && strcmp(curr_patt, "") != 0 &&
            curr_level != NULL && strcmp(curr_level, "") != 0)
     {
-        if (parse_one_level(curr_patt, &next_patt, 
+        if (parse_one_level(curr_patt, &next_patt,
                             &patt_sub_id, &patt_inst) != 0)
         {
             if (patt_sub_id != NULL)
@@ -279,7 +279,7 @@ match_inst(const char *pattern, const char *oid)
             free(tmp_oid);
             return -TE_EINVAL;
         }
-        if (parse_one_level(curr_level, &next_level, 
+        if (parse_one_level(curr_level, &next_level,
                             &oid_sub_id, &oid_inst) != 0)
         {
             if (patt_sub_id != NULL)
@@ -294,8 +294,8 @@ match_inst(const char *pattern, const char *oid)
             free(tmp_oid);
             return -TE_EINVAL;
         }
-        
-        if (*patt_sub_id != '*' && 
+
+        if (*patt_sub_id != '*' &&
             strcmp(oid_sub_id, patt_sub_id) != 0 &&
             *oid_inst != '*' &&
             strcmp(oid_inst, patt_inst) != 0)
@@ -332,13 +332,13 @@ match_inst(const char *pattern, const char *oid)
         free(tmp_patt);
         return 1;
     }
-    
+
     free(tmp_oid);
     free(tmp_patt);
     return 0;
 }
 
-/** 
+/**
  * Adds an object to the database.
  */
 int
@@ -346,7 +346,7 @@ db_add_object(char *oid)
 {
     int i = 0;
     obj_p obj;
-    
+
     while (i < MAX_OBJECT_NUMBER && object_list[i] != NULL)
         i++;
 
@@ -362,22 +362,22 @@ db_add_object(char *oid)
 
     obj->sn = i;
     strcpy(obj->id, oid);
-    
+
     object_list[i] = obj;
     current_object_number++;
-    
+
     return i;
 }
 
 /**
  * Adds an instance to the database.
  */
-int 
+int
 db_add_instance(char *oid, char *value)
 {
     int i = 0;
     instance *inst;
-    
+
     while (i < MAX_INSTANCE_NUMBER && instance_list[i] != NULL)
     {
         i++;
@@ -395,7 +395,7 @@ db_add_instance(char *oid, char *value)
     inst->sn = i;
     strcpy(inst->id, oid);
     strcpy(inst->val, value);
-    
+
     instance_list[i] = inst;
     current_inst_number++;
 
@@ -456,7 +456,7 @@ db_del_inst(const char *oid)
 {
     int    i;
     inst_p inst;
-    
+
     for (i = 0; i < MAX_INSTANCE_NUMBER; i++)
     {
         if (instance_list[i] != NULL &&
@@ -488,7 +488,7 @@ db_del(const char *oid)
     }
     else
     {
-        rc = db_del_obj(oid);       
+        rc = db_del_obj(oid);
     }
 
     return rc;
@@ -506,7 +506,7 @@ db_get_obj(const char *oid, char **answer)
 {
     int   i;
     char *tmp = NULL;
-    
+
     char *ans = calloc(BASE_ANSWER_SIZE, 1);
     int   ans_len = 0;
     int   ans_buffer_len = BASE_ANSWER_SIZE;
@@ -536,7 +536,7 @@ db_get_obj(const char *oid, char **answer)
         }
     }
     *answer = ans;
-    return 0;   
+    return 0;
 }
 
 /**
@@ -547,7 +547,7 @@ db_get_inst(const char *oid, char **answer)
 {
     int   i;
     char *tmp = NULL;
-    
+
     char *ans = calloc(BASE_ANSWER_SIZE, 1);
     int   ans_len = 0;
     int   ans_buffer_len = BASE_ANSWER_SIZE;
@@ -560,7 +560,7 @@ db_get_inst(const char *oid, char **answer)
         if (instance_list[i] != NULL &&
             match_inst(oid, instance_list[i]->id) == 0)
         {
-            ans_len += strlen(instance_list[i]->id) + 
+            ans_len += strlen(instance_list[i]->id) +
                        strlen(instance_list[i]->val) + 1;
             if (ans_len > ans_buffer_len)
             {
@@ -577,10 +577,10 @@ db_get_inst(const char *oid, char **answer)
                 strcat(ans, " ");
             strcat(ans, instance_list[i]->id);
         }
-            
+
     }
     *answer = ans;
-    return 0;   
+    return 0;
 }
 
 /**
@@ -591,7 +591,7 @@ db_get(const char *oid, char **answer, int *length)
 {
     int rc = 0;
     int i;
-    
+
     if (strstr(oid, "...") != NULL)
     {
         if (strchr(oid, ':') != NULL)
@@ -601,7 +601,7 @@ db_get(const char *oid, char **answer, int *length)
             char *ans;
             int   ans_len = 0;
             int   ans_buffer_len = BASE_ANSWER_SIZE;
-            
+
             if (tmp == NULL)
                 return TE_ENOMEM;
 
@@ -611,7 +611,7 @@ db_get(const char *oid, char **answer, int *length)
                 free(tmp);
                 return TE_ENOMEM;
             }
-            
+
             c = strrchr(tmp, '/');
             if (c == NULL)
             {
@@ -619,19 +619,19 @@ db_get(const char *oid, char **answer, int *length)
                 free(ans);
                 return TE_EINVAL;
             }
-            
+
             *c = 0;
-            
+
             for (i = 0; i < MAX_INSTANCE_NUMBER; i++)
             {
                 if (instance_list[i] != NULL &&
-                    strncmp(instance_list[i]->id, tmp, 
+                    strncmp(instance_list[i]->id, tmp,
                             strlen(tmp)) == 0)
                 {
                     ans_len += strlen(instance_list[i]->id) + 1;
                     if (ans_len > ans_buffer_len)
                     {
-                        tmp = realloc(ans, ans_buffer_len + 
+                        tmp = realloc(ans, ans_buffer_len +
                                       BASE_ANSWER_SIZE);
                         if (tmp == NULL)
                         {
@@ -713,7 +713,7 @@ int
 db_init(char *db_file_name)
 {
     int   result;
-    
+
     memset(object_list, 0, sizeof(object_list));
     memset(instance_list, 0, sizeof(instance_list));
     current_object_number = 0;
@@ -758,7 +758,7 @@ db_init(char *db_file_name)
 
             if (strcmp(buf, INST_END) == 0 || strcmp(val, INST_END) == 0)
                 break;
-            
+
             fscanf(file_db, "%s", val);
 
             if (*val == '/' || *val == '*')
@@ -771,20 +771,20 @@ db_init(char *db_file_name)
                 ERROR("Configuration file is to big");
                 break;
             }
-            
+
         } while(1);
         free(buf);
         free(val);
         fclose(file_db);
     }
-    
+
     return 0;
 }
 
 /**
  * Frees the database.
  */
-int 
+int
 db_free(void)
 {
     int i;
@@ -821,7 +821,7 @@ db_print_objects(char *buffer, unsigned int *length)
     int ans_len = 0;
 
     memset(buffer, 0, *length);
-    
+
     for (i = 0; i < MAX_OBJECT_NUMBER; i++)
     {
         if (object_list[i] != NULL)
@@ -846,7 +846,7 @@ db_print_instances(char *buffer, unsigned int *length)
     int ans_len = 0;
 
     memset(buffer, 0, *length);
-    
+
     for (i = 0; i < MAX_INSTANCE_NUMBER; i++)
     {
         if (instance_list[i] != NULL)
@@ -892,6 +892,6 @@ db_clear_agents_data(char *agents_name)
             instance_list[i] = NULL;
         }
     }
-    
+
     return 0;
 }

@@ -1,13 +1,13 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 
 #include <stdio.h>
@@ -22,8 +22,8 @@
 #include "te_errno.h"
 #include "comm_agent.h"
 
-/* 
- * The delay (in SECONDS) that the remote station will hold in order to 
+/*
+ * The delay (in SECONDS) that the remote station will hold in order to
  * assure that the rcf_comm_agent_init() does not return before a connection
  * request has been sent
  */
@@ -70,7 +70,7 @@ remote_station_proc(void *arg)
 #if (HAVE_NANOSLEEP == 1)
     {
        struct timespec t;
-       
+
        t.tv_nsec = 0;
        t.tv_sec = REMOTE_CONNECT_DELAY;
        if (nanosleep(&t, NULL) < 0)
@@ -78,14 +78,14 @@ remote_station_proc(void *arg)
            char err_buf[BUFSIZ];
 
            strerror_r(errno, err_buf, sizeof(err_buf));
-           fprintf(stderr, "remote_station_proc: nanosleep() failed: %s\n", 
+           fprintf(stderr, "remote_station_proc: nanosleep() failed: %s\n",
                   err_buf);
            exit(1);
        }
     }
 #else
     sleep(REMOTE_CONNECT_DELAY);
-#endif /* HAVE_NANOSLEEP == 1 */    
+#endif /* HAVE_NANOSLEEP == 1 */
 
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
@@ -146,10 +146,10 @@ local_station_proc(void *arg)
 
 /** @page test_rcf_net_agent_init02 rcf_comm_agent_init() connection expectation
  *
- * @descr The local station calls @b rcf_comm_agent_init() and waits for some 
- * period of time. Then the remote station issues an incoming connection 
+ * @descr The local station calls @b rcf_comm_agent_init() and waits for some
+ * period of time. Then the remote station issues an incoming connection
  * request. The function must not return before the request was issued.
- * 
+ *
  * @author Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  * @return Test result
@@ -157,7 +157,7 @@ local_station_proc(void *arg)
  * @retval positive     Test failed
  *
  */
-int 
+int
 main(int argc, char *argv[])
 {
     int rc;
@@ -169,10 +169,10 @@ main(int argc, char *argv[])
     TEST_BUFFER_SANITY();
 
     /* launch the remote station thread */
-    rc = pthread_create(&remote_thread, /* attr */ NULL, 
+    rc = pthread_create(&remote_thread, /* attr */ NULL,
                      remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {           
+    {
        char err_buf[BUFSIZ];
 
        strerror_r(errno, err_buf, sizeof(err_buf));

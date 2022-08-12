@@ -77,7 +77,7 @@ TE_TA_TYPE([linux64_lite], [${LINUX64_PLATFORM}], [unix],
 #
 # Solaris2 platform
 #
-TE_PLATFORM([solaris], [--host=i386-pc-solaris2.11], 
+TE_PLATFORM([solaris], [--host=i386-pc-solaris2.11],
             [-I${SOLARIS2_HOME}/sys-include -D_XOPEN_SOURCE=600 -D_XOPEN_SOURCE_EXTENDED=1 -D__EXTENSIONS__],
             [-pthreads],
             [-L${SOLARIS2_HOME}/lib],
@@ -127,7 +127,7 @@ TE_TA_TYPE([freebsd6], [freebsd], [unix],
 #
 # NetBSD platform
 #
-TE_PLATFORM([netbsd], [--host=i386-pc-netbsdelf], 
+TE_PLATFORM([netbsd], [--host=i386-pc-netbsdelf],
             [-I${NETBSD_HOME}/sys-include], [], [-L${NETBSD_HOME}/lib],
             [tools conf_oid rpcxdr rpc_types asn ndn \
              loggerta comm_net_agent rcfpch tad])
@@ -145,7 +145,7 @@ TE_TA_TYPE([netbsd], [netbsd], [unix],
 TE_PLATFORM([cygwin], [--host=i686-pc-cygwin],
             [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api -D__CYGWIN__],
             [],
-            [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
+            [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api],
             [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
 TE_TA_TYPE([win32], [cygwin], [],

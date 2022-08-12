@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -40,7 +40,7 @@ extern "C" {
  * on RPC server.
  *
  * @param rpcs      RPC server handle
- * @param signum    Signal whose behavior is controlled 
+ * @param signum    Signal whose behavior is controlled
  * @param handler   Signal handler
  *
  * return Pointer to the signal handler function.
@@ -53,7 +53,7 @@ extern char *rpc_signal(rcf_rpc_server *rpcs,
  * on RPC server.
  *
  * @param rpcs      RPC server handle
- * @param signum    Signal whose behavior is controlled 
+ * @param signum    Signal whose behavior is controlled
  * @param handler   Signal handler
  *
  * return Pointer to the signal handler function.
@@ -66,7 +66,7 @@ extern char *rpc_bsd_signal(rcf_rpc_server *rpcs,
  * on RPC server.
  *
  * @param rpcs      RPC server handle
- * @param signum    Signal whose behavior is controlled 
+ * @param signum    Signal whose behavior is controlled
  * @param handler   Signal handler
  *
  * return Pointer to the signal handler function.
@@ -89,7 +89,7 @@ extern char *rpc___sysv_signal(rcf_rpc_server *rpcs,
                                rpc_signum signum, const char *handler);
 
 /**
- * Send signal with number @b signum to process or process group 
+ * Send signal with number @b signum to process or process group
  * whose pid's @b pid.
  *
  * @param rpcs      RPC server handle
@@ -136,17 +136,17 @@ extern int rpc_tgkill(rcf_rpc_server *rpcs, tarpc_int tgid, tarpc_int tid,
  * @param status    Status of the process
  * @param options   Options how to wait for process
  *
- * @return PID of the process exited, or zero if none is exited, 
+ * @return PID of the process exited, or zero if none is exited,
  *         or -1 on error.
  */
 extern tarpc_pid_t rpc_waitpid(rcf_rpc_server *rpcs,
-                               tarpc_pid_t pid, rpc_wait_status *status, 
+                               tarpc_pid_t pid, rpc_wait_status *status,
                                rpc_waitpid_opts options);
 
 /** Maximum length of function name */
 #define RCF_RPC_MAX_FUNC_NAME    64
 
-/** 
+/**
  * Store information of the action taken by the process
  * when a specific signal is receipt
  */
@@ -214,7 +214,7 @@ rpc_sigaction_reinit(rcf_rpc_server *rpcs, struct rpc_struct_sigaction *sa)
 }
 
 /**
- * Allow the calling process to examin or specify the action to be 
+ * Allow the calling process to examin or specify the action to be
  * associated with a given signal.
  *
  * @param rpcs      RPC server handle
@@ -304,11 +304,11 @@ extern int rpc_sigset_cmp(rcf_rpc_server *rpcs,
  * Examin or change list of currently blocked signal on RPC server side.
  *
  * @param rpcs    RPC server handle
- * @param how     indicates the type of change and can take following 
+ * @param how     indicates the type of change and can take following
  *                valye:
  *                 - RPC_SIG_BLOCK   add @b set to currently blocked signal
  *                 - RPC_SIG_UNBLOCK unblock signal specified on set
- *                 - RPC_SIG_SETMASK replace the currently blocked set of 
+ *                 - RPC_SIG_SETMASK replace the currently blocked set of
  *                   signal by the one specified by @b set
  *
  * @param set    pointer to a new set of signals
@@ -321,7 +321,7 @@ extern int rpc_sigprocmask(rcf_rpc_server *rpcs,
                            rpc_sigset_p oldset);
 
 /**
- * Initialize the signal set pointed by @b set, so that all signals are 
+ * Initialize the signal set pointed by @b set, so that all signals are
  * excluded.
  *
  * @param rpcs   RPC server handle
@@ -333,7 +333,7 @@ extern int rpc_sigemptyset(rcf_rpc_server *rpcs,
                            rpc_sigset_p set);
 
 /**
- * Initialize the signal set pointed by @b set, so that all signals are 
+ * Initialize the signal set pointed by @b set, so that all signals are
  * included.
  *
  * @param rpcs   RPC server handle.
@@ -343,7 +343,7 @@ extern int rpc_sigemptyset(rcf_rpc_server *rpcs,
  */
 extern int rpc_sigfillset(rcf_rpc_server *rpcs,
                           rpc_sigset_p set);
-                          
+
 /**
  * Add a given @b signum signal to a signal set on RPC server side.
  *
@@ -369,8 +369,8 @@ extern int rpc_sigdelset(rcf_rpc_server *rpcs,
                          rpc_sigset_p set, rpc_signum signum);
 
 /**
- * Check membership of signal with number @b signum, in the 
- * signal set on RPC server side. 
+ * Check membership of signal with number @b signum, in the
+ * signal set on RPC server side.
  *
  * @param rpcs   RPC server handle
  * @param set    signal set
@@ -384,7 +384,7 @@ extern int rpc_sigismember(rcf_rpc_server *rpcs,
                            const rpc_sigset_p set, rpc_signum signum);
 
 /**
- * Return the set of signal blocked by the signal mask on RPC server side 
+ * Return the set of signal blocked by the signal mask on RPC server side
  * and waiting to be delivered.
  *
  * @param rpcs  RPC server handle
@@ -395,7 +395,7 @@ extern int rpc_sigismember(rcf_rpc_server *rpcs,
 extern int rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_p set);
 
 /**
- * Replace the current signal mask on RPC server side by the set pointed  
+ * Replace the current signal mask on RPC server side by the set pointed
  * by @b set and then suspend the process on server side until signal is
  * received.
  *

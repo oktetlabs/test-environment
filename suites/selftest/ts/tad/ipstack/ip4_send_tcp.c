@@ -2,10 +2,10 @@
  * @brief Test Environment
  *
  * Check TCP/IP4/ETH CSAP data-sending behaviour
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  */
 
@@ -15,7 +15,7 @@
  * @objective Check that tcp.ip4.eth CSAP can send TCP packets with
  *            user-specified payload length and checksum.
  *
- * @param pco_iut       TA wich will be TCP server  
+ * @param pco_iut       TA wich will be TCP server
  * @param pco_tst       TA wich will be TCP client
  * @param iut_addr      IUT local IPv4 address
  * @param tst_addr      TST local IPv4 address
@@ -24,7 +24,7 @@
  *
  * @par Scenario:
  *
- * -# Create TCP socket on @p pco_iut. 
+ * -# Create TCP socket on @p pco_iut.
  * -# Send TCP init connection packet from @p pco_tst
  * -# Accept TCP connection on @p pco_iut.
  * -# Send TCP packet with random generated payload data from @p pco_tst
@@ -79,25 +79,25 @@ main(int argc, char *argv[])
     const struct sockaddr     *iut_mac = NULL;
     const struct sockaddr     *tst_mac = NULL;
     uint8_t                   *fake_tst_mac = NULL;
-    
+
     const struct if_nameindex *iut_if = NULL;
     const struct if_nameindex *tst_if = NULL;
-    
+
     int                        payload_len;
-    
+
     const char                *check_sum = NULL;
 
     int                        iut_tcp_sock = -1;
     int                        tmp_sock = -1;
     tapi_tcp_handler_t         tcp_conn;
-    
+
     void                      *send_buf = NULL;
     void                      *recv_buf = NULL;
 
     asn_value                 *template = NULL;
     asn_value                 *pdu = NULL;
     asn_value                 *pdu_ip = NULL;
-    
+
     te_bool                    checksum_correct = TRUE;
 
     TEST_START;
@@ -111,7 +111,7 @@ main(int argc, char *argv[])
     TEST_GET_IF(tst_if);
     TEST_GET_INT_PARAM(payload_len);
     TEST_GET_STRING_PARAM(check_sum);
-    
+
     if (payload_len < 1)
         TEST_FAIL("Invalid payload_len parameter %d", payload_len);
 
@@ -120,7 +120,7 @@ main(int argc, char *argv[])
     memcpy(fake_tst_addr, tst_addr, sizeof(struct sockaddr));
     *((uint8_t *)&(((struct sockaddr_in *)(fake_tst_addr))->sin_addr.s_addr) +
         3) = rand_range(50, 100);
-    
+
     /* Prepare fake mac address. */
     fake_tst_mac = malloc(sizeof(uint8_t) * 6);
     memcpy(fake_tst_mac, te_sockaddr_get_netaddr(tst_mac), sizeof(uint8_t) * 6);
@@ -150,7 +150,7 @@ main(int argc, char *argv[])
     tmp_sock = rpc_accept(iut_pco, iut_tcp_sock, NULL, NULL);
     rpc_close(iut_pco, iut_tcp_sock);
     iut_tcp_sock = tmp_sock;
-    
+
     /* Prepare send and receive buffers. */
     send_buf = te_make_buf_by_len(payload_len);
     recv_buf = malloc(payload_len);
@@ -166,7 +166,7 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_tad_tmpl_ptrn_set_payload_plain(&template, FALSE,
                                                   send_buf, payload_len));
     if (strcmp(check_sum, "correct"))
-    {   
+    {
         checksum_correct = FALSE;
         CHECK_RC(tapi_ip4_add_pdu(&template, &pdu_ip, FALSE, 0, 0, -1, -1, -1));
         CHECK_RC(asn_write_int32(pdu_ip, rand_range(1, 255),
@@ -188,7 +188,7 @@ main(int argc, char *argv[])
     {
         if (sock_ready_for_read)
         {
-            if (payload_len != rpc_recv(iut_pco, iut_tcp_sock, 
+            if (payload_len != rpc_recv(iut_pco, iut_tcp_sock,
                                     recv_buf, payload_len, 0))
             TEST_FAIL("Number of sended bytes diffes "
                       "with number of received bytes.");
@@ -209,14 +209,14 @@ cleanup:
     CLEANUP_CHECK_RC(tapi_tcp_send_rst(tcp_conn));
     CLEANUP_CHECK_RC(tapi_tcp_destroy_connection(tcp_conn));
     CLEANUP_RPC_CLOSE(iut_pco, iut_tcp_sock);
-    
+
     if (template != NULL)
     {
         asn_free_value(template);
         template = NULL;
         pdu = NULL;
     }
-    
+
     free(send_buf);
     free(recv_buf);
 

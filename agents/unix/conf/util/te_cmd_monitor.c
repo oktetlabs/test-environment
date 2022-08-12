@@ -53,7 +53,7 @@ cleanup_handler(void *arg)
 }
 
 /* See description in te_cmd_monitor.h */
-void * 
+void *
 te_command_monitor(void *arg)
 {
 #define STR_LEN 2048
@@ -134,7 +134,7 @@ te_command_monitor(void *arg)
             char buf[STR_LEN + 1];
             int buf_pos = 0;
 
-            buf[0] = '\0';            
+            buf[0] = '\0';
             do {
                 poll_fd.fd = pipefds[0];
                 poll_fd.events = POLLIN;
@@ -178,7 +178,7 @@ te_command_monitor(void *arg)
                       errno_rpc2str(errno_h2rpc(errno)));
             else
             {
-                if (WIFEXITED(status)) 
+                if (WIFEXITED(status))
                     RING("Command '%s' exited with status %d",
                          command, WEXITSTATUS(status));
                 else if (WIFSIGNALED(status))

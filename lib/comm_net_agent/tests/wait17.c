@@ -1,13 +1,13 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 
 #include <stdio.h>
@@ -200,13 +200,13 @@ local_station_proc(void *arg)
  *
  * @descr The remote station issues a message consisting of a command which is
  * exactly two times as long as the input buffer, and an attachment which is
- * longer than one input buffer but shorter than two.The first call of the 
- * function @b rcf_comm_agent_wait() must return TE_ESMALLBUF, the second 
- * call and the third call must return TE_EPENDING, while the fourth call 
- * must succeed. The four calls must make up the original message sent by 
- * the remote station. 
+ * longer than one input buffer but shorter than two.The first call of the
+ * function @b rcf_comm_agent_wait() must return TE_ESMALLBUF, the second
+ * call and the third call must return TE_EPENDING, while the fourth call
+ * must succeed. The four calls must make up the original message sent by
+ * the remote station.
  *
- * @post Once successful, the test is repeated sending several messages 
+ * @post Once successful, the test is repeated sending several messages
  * with different combinations of sizes of the commands and their attachments
  * prior to doing the main check.
  *
@@ -217,7 +217,7 @@ local_station_proc(void *arg)
  * @retval positive     Test failed
  *
  */
-int 
+int
 main(int argc, char *argv[])
 {
     int rc;
@@ -229,10 +229,10 @@ main(int argc, char *argv[])
     TEST_BUFFER_SANITY();
 
     /* launch the remote station thread */
-    rc = pthread_create(&remote_thread, /* attr */ NULL, 
+    rc = pthread_create(&remote_thread, /* attr */ NULL,
                      remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {           
+    {
        char err_buf[BUFSIZ];
 
        strerror_r(errno, err_buf, sizeof(err_buf));

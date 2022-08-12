@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief Test Environment: RGT - log index sorting verification utility
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
  *
@@ -89,9 +89,9 @@ cleanup:
 static int
 usage(FILE *stream, const char *progname)
 {
-    return 
+    return
         fprintf(
-            stream, 
+            stream,
             "Usage: %s [OPTION]... [INPUT]\n"
             "Verify a TE log index sorting order.\n"
             "\n"

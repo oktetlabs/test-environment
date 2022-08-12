@@ -20,7 +20,7 @@
         <run>
             <script name="acse"/>
             <arg name="ta_acse"/>
-        </run> 
+        </run>
 
         <run>
             <script name="download"/>
@@ -35,32 +35,32 @@
                 <value>http://10.20.1.1:8080/stuff.txt</value>
                 <value>http://10.20.1.1:8080/firmware_std.bin</value>
             </arg>
-        </run> 
+        </run>
 
         <run>
             <script name="get_param"/>
             <arg name="ta_acse"/>
-        </run> 
+        </run>
 
         <run>
             <script name="set_param"/>
             <arg name="ta_acse"/>
-        </run> 
+        </run>
 
         <run>
             <script name="change_wan"/>
             <arg name="ta_acse"/>
-        </run> 
+        </run>
 
         <run>
             <script name="hold_req"/>
             <arg name="ta_acse"/>
-        </run> 
+        </run>
 
         <run>
             <script name="add_object"/>
             <arg name="ta_acse"/>
-        </run> 
+        </run>
 
 
     </session>

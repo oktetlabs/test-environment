@@ -2,11 +2,11 @@
  * @brief Test Environment
  *
  * Tests on generic TAD functionality.
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
- * 
+ *
+ *
  */
 
 /** @page common-poll_zero_csaps Call traffic poll operation with zero CSAPs
@@ -17,7 +17,7 @@
  * @param csaps_null    Should @a csaps pointer be @c NULL
  *
  * @par Scenario:
- * 
+ *
  * -# Call @b rcf_trpoll( @c NULL or @c not-NULL, @c 0, @c 0 ).
  *    Check that @c TE_EINVAL is returned.
  *

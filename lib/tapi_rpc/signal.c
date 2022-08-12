@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -54,7 +54,7 @@ rpc_signal(rcf_rpc_server *rpcs,
 {
     tarpc_signal_in  in;
     tarpc_signal_out out;
-    
+
     char *copy = NULL;
 
     char *res = NULL;
@@ -67,7 +67,7 @@ rpc_signal(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_PTR(signal, NULL);
     }
-    
+
     if ((copy = strdup(handler != NULL ? handler : "")) == NULL)
     {
         ERROR("Out of memory");
@@ -79,7 +79,7 @@ rpc_signal(rcf_rpc_server *rpcs,
     in.handler = copy;
 
     rcf_rpc_call(rpcs, "signal", &in, &out);
-                 
+
     /* Yes, I know that it's memory leak, but what do you propose?! */
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -104,7 +104,7 @@ rpc_bsd_signal(rcf_rpc_server *rpcs,
 {
     tarpc_bsd_signal_in  in;
     tarpc_bsd_signal_out out;
-    
+
     char *copy = NULL;
 
     char *res = NULL;
@@ -117,7 +117,7 @@ rpc_bsd_signal(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_PTR(bsd_signal, NULL);
     }
-    
+
     if ((copy = strdup(handler != NULL ? handler : "")) == NULL)
     {
         ERROR("Out of memory");
@@ -129,7 +129,7 @@ rpc_bsd_signal(rcf_rpc_server *rpcs,
     in.handler = copy;
 
     rcf_rpc_call(rpcs, "bsd_signal", &in, &out);
-                 
+
     /* Yes, I know that it's memory leak, but what do you propose?! */
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -153,7 +153,7 @@ rpc_siginterrupt(rcf_rpc_server *rpcs, rpc_signum signum, int flag)
 {
     tarpc_siginterrupt_in  in;
     tarpc_siginterrupt_out out;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
@@ -178,7 +178,7 @@ rpc_sysv_signal(rcf_rpc_server *rpcs,
 {
     tarpc_sysv_signal_in  in;
     tarpc_sysv_signal_out out;
-    
+
     char *copy = NULL;
 
     char *res = NULL;
@@ -191,7 +191,7 @@ rpc_sysv_signal(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_PTR(sysv_signal, NULL);
     }
-    
+
     if ((copy = strdup(handler != NULL ? handler : "")) == NULL)
     {
         ERROR("Out of memory");
@@ -203,7 +203,7 @@ rpc_sysv_signal(rcf_rpc_server *rpcs,
     in.handler = copy;
 
     rcf_rpc_call(rpcs, "sysv_signal", &in, &out);
-                 
+
     /* Yes, I know that it's memory leak, but what do you propose?! */
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -363,7 +363,7 @@ rpc_tgkill(rcf_rpc_server *rpcs, tarpc_int tgid,
 }
 
 tarpc_pid_t
-rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status, 
+rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status,
             rpc_waitpid_opts options)
 {
     tarpc_waitpid_in    in;
@@ -396,7 +396,7 @@ rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status,
     TAPI_RPC_LOG(rpcs, waitpid, "%d, %p, 0x%x", "%d status %s 0x%x",
                  pid, status, options, out.pid,
                  wait_status_flag_rpc2str(stat.flag), stat.value);
-    if (out.pid > 0 && (stat.flag != RPC_WAIT_STATUS_EXITED || 
+    if (out.pid > 0 && (stat.flag != RPC_WAIT_STATUS_EXITED ||
                         stat.value != 0))
         INFO("waitpid() returned non-zero status");
 
@@ -916,7 +916,7 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
 
     struct tarpc_sigaction in_act;
     struct tarpc_sigaction in_oldact;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     memset(&in_act, 0, sizeof(in_act));
@@ -927,7 +927,7 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(sigaction, -1);
     }
-    
+
     if (act != NULL && act->mm_mask == RPC_NULL)
     {
         ERROR("%s(): Invalid 'act->mm_mask' argument",
@@ -935,7 +935,7 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
         rpcs->_errno = TE_EINVAL;
         RETVAL_INT(sigaction, -1);
     }
-    
+
     in.signum = signum;
     if (act != NULL)
     {
@@ -978,7 +978,7 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
     }
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigaction, out.retval);
-    TAPI_RPC_LOG(rpcs, sigaction, "%s, " 
+    TAPI_RPC_LOG(rpcs, sigaction, "%s, "
                  "%p{'%s', '%"TE_PRINTF_64"u', 0x%x, %s}, "
                  "%p{'%s', '%"TE_PRINTF_64"u', 0x%x, %s}", "%d",
                  signum_rpc2str(signum),

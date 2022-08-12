@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * UDP socket CSAP and respective TAPI test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "ipstack/udp_socket"
@@ -27,7 +27,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "ipstack-ts.h" 
+#include "ipstack-ts.h"
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -49,8 +49,8 @@ uint8_t rx_buffer[0x10000];
 
 
 int
-main(int argc, char *argv[]) 
-{ 
+main(int argc, char *argv[])
+{
     tapi_env_host *host_csap = NULL;
     csap_handle_t csap = CSAP_INVALID_HANDLE;
 
@@ -64,7 +64,7 @@ main(int argc, char *argv[])
     const struct sockaddr *sock_addr;
 
 
-    TEST_START; 
+    TEST_START;
 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(sock_pco);
@@ -72,7 +72,7 @@ main(int argc, char *argv[])
     TEST_GET_ADDR(sock_pco, sock_addr);
     TEST_GET_ADDR(pco_a, csap_addr);
 
-    if ((socket = rpc_socket(sock_pco, RPC_AF_INET, RPC_SOCK_DGRAM, 
+    if ((socket = rpc_socket(sock_pco, RPC_AF_INET, RPC_SOCK_DGRAM,
                                   RPC_IPPROTO_UDP)) < 0 ||
         sock_pco->_errno != 0)
         TEST_FAIL("Calling of RPC socket() failed %r", sock_pco->_errno);
@@ -84,7 +84,7 @@ main(int argc, char *argv[])
     rc = tapi_udp_csap_create(host_csap->ta, 0, csap_addr, sock_addr,
                               &csap);
     if (rc != 0)
-        TEST_FAIL("'socket' csap create failed: %r", rc); 
+        TEST_FAIL("'socket' csap create failed: %r", rc);
 
     /*
      * Send data
@@ -95,15 +95,15 @@ main(int argc, char *argv[])
 
     te_fill_buf(tx_buffer, len);
     INFO("+++++++++++ Prepared data: %Tm", tx_buffer, len);
-    rc = rpc_sendto(sock_pco, socket, tx_buffer, len, 0, csap_addr); 
+    rc = rpc_sendto(sock_pco, socket, tx_buffer, len, 0, csap_addr);
     RING("%d bytes sent from RPC socket", rc);
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
-    rc = tapi_socket_recv(host_csap->ta, 0, csap, 2000, 
-                          CSAP_INVALID_HANDLE, FALSE, 
+    rc = tapi_socket_recv(host_csap->ta, 0, csap, 2000,
+                          CSAP_INVALID_HANDLE, FALSE,
                           rx_buffer, &len);
     if (rc != 0)
-        TEST_FAIL("recv on CSAP failed: %r", rc); 
+        TEST_FAIL("recv on CSAP failed: %r", rc);
 
     INFO("+++++++++++ Received data: %Tm", rx_buffer, len);
 
@@ -115,10 +115,10 @@ main(int argc, char *argv[])
 
     te_fill_buf(tx_buffer, len);
     INFO("+++++++++++ Prepared data: %Tm", tx_buffer, len);
-    rc = tapi_socket_send(host_csap->ta, 0, csap, 
+    rc = tapi_socket_send(host_csap->ta, 0, csap,
                               tx_buffer, len);
     if (rc != 0)
-        TEST_FAIL("recv on CSAP failed: %r", rc); 
+        TEST_FAIL("recv on CSAP failed: %r", rc);
 
 
     memset(rx_buffer, 0, sizeof(rx_buffer));

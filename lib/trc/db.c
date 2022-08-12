@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -195,7 +195,7 @@ trc_exp_result_dup(trc_exp_result *result)
         dup->key = strdup(result->key);
     if (result->notes != NULL)
         dup->notes = strdup(result->notes);
-        
+
     if (result->tags_str != NULL)
         dup->tags_str = strdup(result->tags_str);
     dup->tags_expr = logic_expr_dup(result->tags_expr);
@@ -466,7 +466,7 @@ trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
     {
         trc_test_iter_arg  *arg;
         trc_test_iter_arg  *insert_after = NULL;
-        
+
         arg = TE_ALLOC(sizeof(*arg));
         if (arg == NULL)
         {
@@ -494,8 +494,8 @@ trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
             return TE_RC(TE_TRC, TE_ENOMEM);
         }
 
-        TAILQ_FOREACH_REVERSE(insert_after, &args->head, 
-                              trc_test_iter_args_head, 
+        TAILQ_FOREACH_REVERSE(insert_after, &args->head,
+                              trc_test_iter_args_head,
                               links)
         {
             if (strcmp(insert_after->name, arg->name) < 0)
@@ -524,7 +524,7 @@ trc_db_test_delete_wilds(trc_test *test)
         TAILQ_FOREACH(arg, &p->args.head, links)
             if (strlen(arg->value) == 0)
                 break;
-        
+
         if (arg != NULL)
         {
             TAILQ_REMOVE(&test->iters.head, p, links);
@@ -597,7 +597,7 @@ trc_db_test_iter_res_cpy(trc_test_iter *dest, trc_test_iter *src)
     if (src->notes != NULL)
         dest->notes = strdup(src->notes);
 
-    /* No need to copy, do not free! */ 
+    /* No need to copy, do not free! */
     dest->exp_default = src->exp_default;
 
     trc_exp_results_cpy(&dest->exp_results, &src->exp_results);
@@ -694,7 +694,7 @@ trc_db_find_user_data(const trc_users_data *users_data,
          p != NULL && p->user_id != user_id;
          p = LIST_NEXT(p, links));
 
-    /* 
+    /*
      * Discard 'const' qualifier inherited from the list, since it
      * means that the function does not modify the list.
      */
@@ -781,7 +781,7 @@ trc_db_set_user_data(void *db_item, te_bool is_iter, unsigned int user_id,
 {
     trc_users_data  *users = is_iter ? &((trc_test_iter *)db_item)->users :
                                        &((trc_test *)db_item)->users;
- 
+
     trc_user_data *ud = trc_db_find_user_data(users, user_id);
 
     if (ud == NULL)
@@ -903,7 +903,7 @@ trc_db_free_user_data(te_trc_db *db, unsigned int user_id,
 {
     te_trc_db_walker       *walker;
     trc_db_walker_motion    mv;
-    
+
     walker = trc_db_new_walker(db);
     if (walker == NULL)
         return TE_ENOMEM;
@@ -984,7 +984,7 @@ trc_db_get_test_by_path(te_trc_db *db, char *path)
         if (j == PATH_ITEM_LEN)
             return NULL;
     }
-    
+
     return test;
 
 #undef PATH_ITEM_LEN

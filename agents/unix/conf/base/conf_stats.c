@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -202,7 +202,7 @@ dev_stats_get(const char *devname, if_stats *stats)
     {
         if (fgets(buf, STATS_NET_DEV_PROC_LINE_LEN, devf) == NULL)
             break;
-        
+
         VERB("/proc/net/dev: line %d: >%s", line, buf);
 
         if ((ptr = strstr(buf, devname)) != NULL)
@@ -214,7 +214,7 @@ dev_stats_get(const char *devname, if_stats *stats)
         }
     }
 
-    
+
     if (ptr != NULL)
     {
 #define STATS_NET_DEV_PARAM_COUNT   15
@@ -379,7 +379,7 @@ net_stats_get(net_stats *stats)
         STATS_SNMP_IPV4_PARAM_COUNT)
     {
         WARN("Invalid /proc/net/snmp file format, "
-             "failed on IPv4 statistics, rc=%d, expected %d", 
+             "failed on IPv4 statistics, rc=%d, expected %d",
              rc, STATS_SNMP_IPV4_PARAM_COUNT);
         WARN("%s", ptr);
         return TE_OS_RC(TE_TA_UNIX, EINVAL);
@@ -417,11 +417,11 @@ net_stats_get(net_stats *stats)
                      &stats->icmp.out_timestamps,
                      &stats->icmp.out_timestamp_reps,
                      &stats->icmp.out_addr_masks,
-                     &stats->icmp.out_addr_mask_reps)) != 
+                     &stats->icmp.out_addr_mask_reps)) !=
         STATS_SNMP_ICMP_PARAM_COUNT)
     {
         WARN("Invalid /proc/net/snmp file format, "
-             "failed on ICMP statistics, rc=%d, expected %d", 
+             "failed on ICMP statistics, rc=%d, expected %d",
              rc, STATS_SNMP_ICMP_PARAM_COUNT);
         return TE_OS_RC(TE_TA_UNIX, EINVAL);
     }
@@ -430,7 +430,7 @@ cleanup:
 
     free(buf);
 
-#endif    
+#endif
 
     return 0;
 }

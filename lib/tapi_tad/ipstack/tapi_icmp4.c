@@ -2,10 +2,10 @@
  * @brief Test API for TAD. IP stack CSAP
  *
  * Implementation of Test API
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *

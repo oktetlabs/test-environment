@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
@@ -71,8 +71,8 @@ vcm_swversion_get(unsigned int gid, const char *oid,
 
     pid_t java_cmd_pid;
 
-    snprintf(java_command, sizeof(java_command), 
-             "%s --getBoxDetails %s %s", 
+    snprintf(java_command, sizeof(java_command),
+             "%s --getBoxDetails %s %s",
              java_command_base, vcm_address, box_name);
 
     java_cmd_pid = te_shell_cmd(java_command, -1, NULL, &out_fd, &err_fd);
@@ -120,8 +120,8 @@ vcm_swversion_set(unsigned int gid, const char *oid,
     RING("%s: called for oid <%s> , box_name <%s>, value <%s>",
         __FUNCTION__, oid, box_name, value);
 
-    snprintf(java_command, sizeof(java_command), 
-             "%s --setSoftwareRevision %s %s %s", 
+    snprintf(java_command, sizeof(java_command),
+             "%s --setSoftwareRevision %s %s %s",
              java_command_base, vcm_address, box_name, value);
 
     RING("%s: prepared java comand: <%s>",  __FUNCTION__, java_command);
@@ -189,8 +189,8 @@ vcm_parameter_set(unsigned int gid, const char *oid,
     RING("%s: called for oid <%s> , box_name <%s>, value <%s>",
         __FUNCTION__, oid, box_name, value);
 
-    snprintf(java_command, sizeof(java_command), 
-             "%s --setSoftwareRevision %s %s %s", 
+    snprintf(java_command, sizeof(java_command),
+             "%s --setSoftwareRevision %s %s %s",
              java_command_base, vcm_address, box_name, value);
 
     RING("%s: prepared java comand: <%s>",  __FUNCTION__, java_command);
@@ -333,7 +333,7 @@ RCF_PCH_CFG_NODE_COLLECTION(node_vcm_box, "box",
                             NULL, NULL,
                             vcm_box_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_vcm, "vcm", 
+RCF_PCH_CFG_NODE_RW(node_vcm, "vcm",
                     &node_vcm_box, NULL,
                     vcm_get, vcm_set);
 

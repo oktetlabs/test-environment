@@ -11,7 +11,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -133,7 +133,7 @@ rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
             return -1;
     }
 
-    sockd = rpc_socket(rpc, rpc_socket_domain_by_addr(addr), 
+    sockd = rpc_socket(rpc, rpc_socket_domain_by_addr(addr),
                        sock_type, proto);
     if (set_reuse_addr)
     {
@@ -141,7 +141,7 @@ rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
 
         rpc_setsockopt(rpc, sockd, RPC_SO_REUSEADDR, &on);
     }
-    
+
     rpc_bind(rpc, sockd, SA(&bind_addr));
 
     if (port_usr != NULL)
@@ -158,18 +158,18 @@ rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
         CLEANUP_RPC_CLOSE(rpc, sockd);
         sockd = -1;
     }
-    
+
     return sockd;
 }
 
 /* See the description in tapi_rpc_client_server.h */
-int 
+int
 rpc_stream_server(rcf_rpc_server *srvr,
-                  rpc_socket_proto proto, te_bool srvr_wild, 
+                  rpc_socket_proto proto, te_bool srvr_wild,
                   const struct sockaddr *srvr_addr)
 {
     int sockd = -1;
-    
+
     sockd = rpc_create_and_bind_socket(srvr,
                                        RPC_SOCK_STREAM, proto, srvr_wild,
                                        FALSE /* Do not set SO_REUSEADDR */,
@@ -193,7 +193,7 @@ rpc_stream_client(rcf_rpc_server *clnt,
                   const struct sockaddr *clnt_addr)
 {
     int sockd = -1;
-    
+
     sockd = rpc_socket(clnt, domain, RPC_SOCK_STREAM, proto);
 
     if (clnt_addr != NULL)
@@ -216,8 +216,8 @@ rpc_stream_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
     int srvr_sock     = -1;
     int clnt_sock     = -1;
     int accepted_sock = -1;
-    
-    if ((srvr_sock = rpc_stream_server(srvr, 
+
+    if ((srvr_sock = rpc_stream_server(srvr,
                                        proto, FALSE,
                                        srvr_addr)) < 0)
     {
@@ -361,7 +361,7 @@ rpc_gen_connection_wild(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
     {
         case RPC_SOCK_STREAM:
             return rpc_stream_connection(srvr, clnt, proto,
-                                         srvr_addr, clnt_addr, 
+                                         srvr_addr, clnt_addr,
                                          srvr_s, clnt_s);
             break;
 

@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -144,7 +144,7 @@ typedef trc_diff_stats_counter
 /**
  * TRC differencies statistics are two dimension array of statistics per
  * set X vs set Y statistics.
- * 
+ *
  * A half of this array is used in fact (the first index is always
  * greater than the second one).
  */

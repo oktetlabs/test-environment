@@ -12,7 +12,7 @@
  * @objective Prepare testing networks.
  *
  * @par Scenario:
- * 
+ *
  * -# Up all interfaces mentioned in /net/node configuration.
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>

@@ -47,7 +47,7 @@ arp_fl_rpc2h(unsigned flags)
 {
     if ((flags & ~RPC_ARP_FLAGS_ALL) != 0)
         return ARP_UNKNOWN;
-    
+
     return (!!(flags & RPC_ATF_COM) * ATF_COM)
            | (!!(flags & RPC_ATF_PERM) * ATF_PERM)
            | (!!(flags & RPC_ATF_PUBL) * ATF_PUBL)

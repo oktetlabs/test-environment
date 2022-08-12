@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -40,17 +40,17 @@ extern "C" {
  * @param handle    RPC server handle
  * @param ifname    interface name
  *
- * @return Interface index otherwise zero. 
+ * @return Interface index otherwise zero.
  */
 extern unsigned int rpc_if_nametoindex(rcf_rpc_server *handle,
                                        const char *ifname);
-                                       
+
 /**
  * Map network interface index to its corresponding name.
  *
  * @param handle    RPC server handle
  * @param ifindex   index of the interface
- * @param ifname    pointer to the network interface name with 
+ * @param ifname    pointer to the network interface name with
                     at least @c IF_NAMESIZE bytes size.
  *
  * @return Pointer to the interface name otherwise NULL
@@ -61,8 +61,8 @@ extern char *rpc_if_indextoname(rcf_rpc_server *handle,
 
 #if HAVE_NET_IF_H
 /**
- * Get an array of all existing network interface structures. The end of 
- * the array is indicated by an structure with an if_index field equal to 
+ * Get an array of all existing network interface structures. The end of
+ * the array is indicated by an structure with an if_index field equal to
  * zero and an if_name field of NULL.
  * Applications should call @b rpc_freenameindex() to free memory used
  * by the returned array.

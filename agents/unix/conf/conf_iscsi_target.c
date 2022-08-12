@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
@@ -60,7 +60,7 @@ map_oid_to_seccmd(const char *oid)
          {NULL, NULL}
         };
     int i;
-    
+
     oid = strrchr(oid, '/');
     if (oid == NULL)
     {
@@ -94,8 +94,8 @@ iscsi_target_security_get(unsigned int gid, const char *oid,
         return 0;
     }
 
-    return iscsi_target_send_msg(copy_value, value, 
-                                 "getsecurity", 
+    return iscsi_target_send_msg(copy_value, value,
+                                 "getsecurity",
                                  map_oid_to_seccmd(oid));
 }
 
@@ -112,8 +112,8 @@ iscsi_target_security_set(unsigned int gid, const char *oid,
         return (*value == '\0' ? 0 : TE_RC(TE_TA_UNIX, TE_ECONNREFUSED));
     }
 
-    return iscsi_target_send_msg(NULL, NULL, 
-                                 "security", 
+    return iscsi_target_send_msg(NULL, NULL,
+                                 "security",
                                  "%s %s",
                                  map_oid_to_seccmd(oid), value);
 }
@@ -131,8 +131,8 @@ iscsi_target_security_flag_get(unsigned int gid, const char *oid,
         return 0;
     }
 
-    return iscsi_target_send_msg(boolean_value, value, 
-                                 "getsecurity", 
+    return iscsi_target_send_msg(boolean_value, value,
+                                 "getsecurity",
                                  map_oid_to_seccmd(oid));
 }
 
@@ -146,14 +146,14 @@ iscsi_target_security_flag_set(unsigned int gid, const char *oid,
 
     if (!iscsi_server_check())
     {
-        return (*value == '\0' || *value == '0' ? 
+        return (*value == '\0' || *value == '0' ?
                 0 : TE_RC(TE_TA_UNIX, TE_ECONNREFUSED));
     }
 
-    return iscsi_target_send_msg(NULL, NULL, 
-                                 "security", 
+    return iscsi_target_send_msg(NULL, NULL,
+                                 "security",
                                  "%s %s",
-                                 map_oid_to_seccmd(oid), 
+                                 map_oid_to_seccmd(oid),
                                  (*value == '\0' || *value == '0') ? "false" : "true");
 }
 
@@ -171,12 +171,12 @@ iscsi_target_chap_set(unsigned int gid, const char *oid,
         return (*value == '\0' ? 0 : TE_RC(TE_TA_UNIX, TE_ECONNREFUSED));
     }
 
-    return iscsi_target_send_msg(NULL, NULL, 
-                                 "set", 
+    return iscsi_target_send_msg(NULL, NULL,
+                                 "set",
                                  "AuthMethod=%s",
                                  (*value == '\0' ? "None" : value));
     return 0;
-}   
+}
 
 /** Set auth method */
 static te_errno
@@ -194,8 +194,8 @@ iscsi_target_chap_get(unsigned int gid, const char *oid,
         return 0;
     }
 
-    return iscsi_target_send_msg(copy_value, value, 
-                                 "get", 
+    return iscsi_target_send_msg(copy_value, value,
+                                 "get",
                                  "AuthMethod");
 
     return 0;
@@ -207,9 +207,9 @@ iscsi_target_chap_get(unsigned int gid, const char *oid,
  *  -# A list of special cases is looked up and the corresponding
  *  name is used, if an OID is found in the list.
  *  -# Otherwise, all underscores are removed and the following
- *  letter is capitalized. Also capitalized are the first letter 
+ *  letter is capitalized. Also capitalized are the first letter
  *  and any letter following a digit.
- */   
+ */
 static const char *
 map_oid_to_param(const char *oid)
 {
@@ -225,7 +225,7 @@ map_oid_to_param(const char *oid)
          {NULL, NULL}
         };
     int i;
-    
+
     oid = strrchr(oid, '/');
     if (oid == NULL)
     {
@@ -275,8 +275,8 @@ iscsi_target_oper_get(unsigned int gid, const char *oid,
         return 0;
     }
 
-    return iscsi_target_send_msg(copy_value, value, 
-                                 "get", 
+    return iscsi_target_send_msg(copy_value, value,
+                                 "get",
                                  param);
 }
 
@@ -301,9 +301,9 @@ iscsi_target_oper_set(unsigned int gid, const char *oid,
         if (!iscsi_server_check())
             return TE_RC(TE_TA_UNIX, TE_ECONNREFUSED);
 
-        return iscsi_target_send_msg(NULL, NULL, 
+        return iscsi_target_send_msg(NULL, NULL,
                                      "set",
-                                     "%s=%s", 
+                                     "%s=%s",
                                      map_oid_to_param(oid), value);
     }
 }
@@ -328,7 +328,7 @@ iscsi_target_backstore_mount(void)
                                    "sync", "0 0");
     if (status != 0)
         return status;
-    
+
     if (mkdir(backstore_mountpoint, S_IREAD | S_IWRITE | S_IEXEC) != 0 && errno != EEXIST)
     {
         status = errno;
@@ -337,7 +337,7 @@ iscsi_target_backstore_mount(void)
         return TE_OS_RC(TE_TA_UNIX, status);
     }
     snprintf(cmd,  sizeof(cmd), "/bin/mount -o loop,sync /tmp/te_backing_store.%lu %s",
-             (unsigned long)getpid(), 
+             (unsigned long)getpid(),
              backstore_mountpoint);
     status = ta_system(cmd);
     if (status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
@@ -375,7 +375,7 @@ iscsi_target_backstore_unmount(void)
 
 typedef struct device_param {
     te_bool  is_mmap;
-    unsigned long size;    
+    unsigned long size;
 } device_param;
 
 /** Get the size of a target backing store */
@@ -469,7 +469,7 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
         char         *end;
         unsigned long size = strtoul(value, &end, 10);
         const char   zero[1] = {0};
-        
+
         switch(*end)
         {
             case 'k':
@@ -591,7 +591,7 @@ iscsi_tgt_verbose_get(unsigned int gid, const char *oid,
 
 
     return iscsi_target_send_msg(copy_value, value,
-                                 "getverbosity", 
+                                 "getverbosity",
                                  NULL, 0);
 
 }
@@ -613,9 +613,9 @@ iscsi_tgt_verbose_set(unsigned int gid, const char *oid,
          */
         return 0;
     }
-    
+
     return iscsi_target_send_msg(NULL, NULL,
-                                 "verbosity", 
+                                 "verbosity",
                                  value);
 
 }
@@ -662,7 +662,7 @@ iscsi_tgt_max_cmd_sn_delta_set(unsigned int gid, const char *oid,
     {
         return (max_cmd_sn_delta == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_ECONNREFUSED));
     }
-    
+
     return iscsi_target_send_msg(NULL, NULL,
                                  "tweak",
                                  "-1 max_cmd_sn_delta %d",
@@ -685,7 +685,7 @@ iscsi_tgt_phase_collapse_get(unsigned int gid, const char *oid,
 
 
     return iscsi_target_send_msg(boolean_value, value,
-                                 "collapse", 
+                                 "collapse",
                                  "keep");
 }
 
@@ -699,12 +699,12 @@ iscsi_tgt_phase_collapse_set(unsigned int gid, const char *oid,
 
     if (!iscsi_server_check())
     {
-        return (*value == '\0' || *value == '0' ? 
+        return (*value == '\0' || *value == '0' ?
                 0 : TE_RC(TE_TA_UNIX, TE_ECONNREFUSED));
     }
 
     return iscsi_target_send_msg(NULL, NULL,
-                                 "collapse", 
+                                 "collapse",
                                  (*value == '\0' || *value == '0') ? "false" : "true");
 
 }
@@ -712,13 +712,13 @@ iscsi_tgt_phase_collapse_set(unsigned int gid, const char *oid,
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_phase_collapse, "phase_collapse",
                     NULL, NULL,
-                    iscsi_tgt_phase_collapse_get, 
+                    iscsi_tgt_phase_collapse_get,
                     iscsi_tgt_phase_collapse_set);
 
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_cmd_sn_delta, "max_cmd_sn_delta",
                     NULL, &node_iscsi_target_oper_phase_collapse,
-                    iscsi_tgt_max_cmd_sn_delta_get, 
+                    iscsi_tgt_max_cmd_sn_delta_get,
                     iscsi_tgt_max_cmd_sn_delta_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_if_mark_int, "if_mark_int",
@@ -769,88 +769,88 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_first_burst_length, "first_burst_leng
                     NULL, &node_iscsi_target_oper_default_time2wait,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_burst_length, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_burst_length,
                     "max_burst_length",
                     NULL, &node_iscsi_target_oper_first_burst_length,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_recv_data_segment_length, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_recv_data_segment_length,
                     "max_recv_data_segment_length",
                     NULL, &node_iscsi_target_oper_max_burst_length,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_immediate_data, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_immediate_data,
                     "immediate_data",
                     NULL, &node_iscsi_target_oper_max_recv_data_segment_length,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_initial_r2t, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_initial_r2t,
                     "initial_r2t",
                     NULL, &node_iscsi_target_oper_immediate_data,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_target_address, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_target_address,
                     "target_address",
                     NULL, &node_iscsi_target_oper_initial_r2t,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_initiator_alias, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_initiator_alias,
                     "initiator_alias",
                     NULL, &node_iscsi_target_oper_target_address,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_target_alias, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_target_alias,
                     "target_alias",
                     NULL, &node_iscsi_target_oper_initiator_alias,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_initiator_name, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_initiator_name,
                     "initiator_name",
                     NULL, &node_iscsi_target_oper_target_alias,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_target_name, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_target_name,
                     "target_name",
                     NULL, &node_iscsi_target_oper_initiator_name,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_send_targets, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_send_targets,
                     "send_targets",
                     NULL, &node_iscsi_target_oper_target_name,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_connections, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_connections,
                     "max_connections",
                     NULL, &node_iscsi_target_oper_send_targets,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_data_digest, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_data_digest,
                     "data_digest",
                     NULL, &node_iscsi_target_oper_max_connections,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_header_digest, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_header_digest,
                     "header_digest",
                     NULL, &node_iscsi_target_oper_data_digest,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_tgt_verbose, "verbose", 
-                    NULL, NULL, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_tgt_verbose, "verbose",
+                    NULL, NULL,
                     iscsi_tgt_verbose_get,
                     iscsi_tgt_verbose_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_tgt_backstore_mp, "backing_store_mp", 
-                    NULL, &node_iscsi_tgt_verbose, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_tgt_backstore_mp, "backing_store_mp",
+                    NULL, &node_iscsi_tgt_verbose,
                     iscsi_tgt_backstore_mp_get,
                     iscsi_tgt_backstore_mp_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_backing_store, "backing_store", 
-                    NULL, &node_iscsi_tgt_backstore_mp, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_backing_store, "backing_store",
+                    NULL, &node_iscsi_tgt_backstore_mp,
                     iscsi_target_backstore_get,
                     iscsi_target_backstore_set);
 
-RCF_PCH_CFG_NODE_RO(node_iscsi_target_oper, "oper", 
-                    &node_iscsi_target_oper_header_digest, 
+RCF_PCH_CFG_NODE_RO(node_iscsi_target_oper, "oper",
+                    &node_iscsi_target_oper_header_digest,
                     &node_iscsi_target_backing_store, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_pn, "pn",
@@ -888,12 +888,12 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_target_lx, "lx",
                     iscsi_target_security_get,
                     iscsi_target_security_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_chap, "chap", 
-                    &node_iscsi_target_lx, &node_iscsi_target_oper, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_chap, "chap",
+                    &node_iscsi_target_lx, &node_iscsi_target_oper,
                     iscsi_target_chap_get,
                     iscsi_target_chap_set);
 
-RCF_PCH_CFG_NODE_RO(node_ds_iscsi_target, "iscsi_target", 
+RCF_PCH_CFG_NODE_RO(node_ds_iscsi_target, "iscsi_target",
                     &node_iscsi_target_chap,
                     NULL, iscsi_target_get);
 

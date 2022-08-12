@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
@@ -123,7 +123,7 @@ extern tapi_tad_trrecv_cb_data *tapi_pcap_trrecv_cb_data(
  *
  * @param filter      Tcpdump-like filtering rule
  * @param filter_id   Value that should be responsed when packet
- *                    match filtering rule 
+ *                    match filtering rule
  * @param pattern     Placeholder for the pattern (OUT)
  *
  * @returns Status of the operation

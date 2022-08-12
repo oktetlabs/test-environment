@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -104,11 +104,11 @@ test_path_proc_new_ctx(test_path_proc_data  *gctx,
     }
 
     new_ctx->item = path_item;
-    
+
     TAILQ_INIT(&new_ctx->ts_local);
     /* By default, testing scenario points to the local storage */
     new_ctx->scenario = &new_ctx->ts_local;
-    
+
     SLIST_INSERT_HEAD(&gctx->ctxs, new_ctx, links);
 
     VERB("%s(): New context %p path_item=%s", __FUNCTION__, new_ctx,
@@ -414,7 +414,7 @@ test_path_arg_value_cb(const test_entity_value *value, void *opaque)
                             strlen(TEST_ARG_VAR_PREFIX)) == 0)
                 {
                     char env_name[128];
-                    
+
                     /* match glob value with plain */
                     /* fixme kostik: to read the environment is
                      * very very bad*/
@@ -620,7 +620,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
             {
                 INFO("There is no iteration with number %u",
                       ctx->item->select);
-                /* 
+                /*
                  * May other time when the same test is called such
                  * iteration will be found.
                  */
@@ -858,7 +858,7 @@ process_test_path(const tester_cfgs *cfgs, test_path *path)
     {
         ERROR("Walk of Tester configurations failed: %r", gctx.rc);
     }
-    else 
+    else
     {
         assert(gctx.rc == 0);
         if (TAILQ_EMPTY(&path->scen))
@@ -869,7 +869,7 @@ process_test_path(const tester_cfgs *cfgs, test_path *path)
 
     /* Destroy the first test path processing context */
     test_path_proc_destroy_ctx(&gctx);
-    
+
     EXIT("%r", gctx.rc);
     return gctx.rc;
 }
@@ -1056,7 +1056,7 @@ tester_process_test_paths(const tester_cfgs *cfgs,
     assert(cfgs != NULL);
     assert(paths != NULL);
     assert(scenario != NULL);
-    
+
     ENTRY();
 
     for (path = TAILQ_FIRST(paths), rc = 0;

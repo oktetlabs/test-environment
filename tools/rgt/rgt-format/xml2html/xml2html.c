@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief Test Environment: xml2html utility callbacks.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -38,7 +38,7 @@ typedef enum rgt_row_colour {
 
 /** Structure to keep basic user data in general parsing context */
 typedef struct gen_ctx_user {
-    FILE             *fd; /**< File descriptor of the document to output 
+    FILE             *fd; /**< File descriptor of the document to output
                                the result */
     rgt_row_colour_t  col; /**< The colour of the current log message */
 } gen_ctx_user_t;
@@ -65,7 +65,7 @@ RGT_DEF_FUNC(proc_document_start)
 
     /* In text output all XML entities should be expanded */
     ctx->expand_entities = TRUE;
-    
+
     if (ctx->out_fname == NULL)
         gen_user->fd = stdout;
     else
@@ -126,7 +126,7 @@ RGT_DEF_FUNC(proc_log_msg_end)
         (gen_user->col == RGT_ROW_COL_LIGHT) ? "tdlight" : "tddark");
     rgt_tmpls_output(gen_user->fd, &xml2fmt_tmpls[LOG_MSG_END], attrs);
     rgt_tmpls_attrs_free(attrs);
-    
+
     gen_user->col = (gen_user->col == RGT_ROW_COL_LIGHT) ?
         RGT_ROW_COL_DARK : RGT_ROW_COL_LIGHT;
 }

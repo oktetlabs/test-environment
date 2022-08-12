@@ -198,7 +198,7 @@ foreach (@ARGV)
         #  "      --tester-run=STRING     Test path for Tester fake run\n".
         #  "                              (if specified, --test-name \n".
         #  "                               has no effect on Tester)\n\n";
-       
+
         $rc = system("te-trc-update --help");
         exit ($rc >> 8);
     }
@@ -292,7 +292,7 @@ foreach (@ARGV)
     }
     elsif ($_ =~ m/^(.*?)=(.*)$/)
     {
-        $opts = $opts." ".$1."=\"".escape_str($2)."\"";    
+        $opts = $opts." ".$1."=\"".escape_str($2)."\"";
     }
     else
     {

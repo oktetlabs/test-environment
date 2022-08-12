@@ -15,7 +15,7 @@
     /agent/ip4_fw
 ***DB_OBJECTS_END***
 /agent:Agt_T
-/agent:Agt_T/interface:eth0 
+/agent:Agt_T/interface:eth0
 /agent:Agt_T/interface:eth0/link_addr: 00:11:2f:6b:22:ca
 /agent:Agt_T/interface:eth0/mtu: 1500
 ***DB_INSTANCES_END***

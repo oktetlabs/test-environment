@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -41,7 +41,7 @@ enum interactive_mode_opts {
 
 /**
  * Open the interactive tester user prompt and return the user choice.
- * 
+ *
  * @param cfgs          Configurations
  * @param paths         Location for test paths
  * @param scenario      Location for testing scenario

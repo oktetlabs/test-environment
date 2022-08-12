@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -273,7 +273,7 @@ rpc_socket(rcf_rpc_server *rpcs,
  * @param len       length to be passed to bind()
  * @param fwd_len   forward the specified length in parameter @a len
  *
- * @return 0 on success or -1 on failure 
+ * @return 0 on success or -1 on failure
  * @note See @b bind manual page for more infrormation.
  */
 static int
@@ -1056,7 +1056,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     memset(&rpc_msg, 0, sizeof(rpc_msg));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1110,7 +1110,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
     RETVAL_INT(recvmsg, out.retval);
 }
 
-int 
+int
 rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
                                uint8_t *data, uint32_t data_len,
                                struct in_addr *ipi_spec_dst,
@@ -1254,19 +1254,19 @@ mreq_source_cpy(tarpc_mreq_source *opt, struct option_value *val,
               sockopt_rpc2str(optname));
         return FALSE;
     }
-    
-    val->opttype = opt->type; 
-    
+
+    val->opttype = opt->type;
+
     memcpy(&val->option_value_u.opt_mreq_source.imr_multiaddr,
            &opt->multiaddr, sizeof(opt->multiaddr));
     val->option_value_u.opt_mreq_source.imr_multiaddr =
       ntohl(val->option_value_u.opt_mreq_source.imr_multiaddr);
-    
+
     memcpy(&val->option_value_u.opt_mreq_source.imr_interface,
            &opt->interface, sizeof(opt->interface));
     val->option_value_u.opt_mreq_source.imr_interface =
       ntohl(val->option_value_u.opt_mreq_source.imr_interface);
-    
+
     memcpy(&val->option_value_u.opt_mreq_source.imr_sourceaddr,
            &opt->sourceaddr, sizeof(opt->sourceaddr));
     val->option_value_u.opt_mreq_source.imr_sourceaddr =
@@ -1282,11 +1282,11 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                    socklen_t *raw_optlen, socklen_t raw_roptlen)
 {
     tarpc_getsockopt_in   in;
-    tarpc_getsockopt_out  out;    
+    tarpc_getsockopt_out  out;
     struct option_value   val;
     te_log_buf           *opt_val_str = NULL;
     char                  opt_len_str[32] = "(nil)";
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
@@ -1346,14 +1346,14 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 ERROR("IPV6_PKTOPTIONS is not supported yet");
                 RETVAL_INT(getsockopt, -1);
                 break;
-    
+
             case RPC_IPV6_ADD_MEMBERSHIP:
             case RPC_IPV6_DROP_MEMBERSHIP:
             case RPC_IPV6_JOIN_ANYCAST:
             case RPC_IPV6_LEAVE_ANYCAST:
             {
                 struct ipv6_mreq *opt = (struct ipv6_mreq *)optval;
-                
+
                 val.opttype = OPT_MREQ6;
 
                 memcpy(&val.option_value_u.opt_mreq6.ipv6mr_multiaddr.
@@ -1370,7 +1370,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
             {
                 tarpc_mreqn *opt = (tarpc_mreqn *)optval;
 
-                val.opttype = opt->type; 
+                val.opttype = opt->type;
                 switch (opt->type)
                 {
                     case OPT_IPADDR:
@@ -1527,7 +1527,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     tarpc_mreqn *opt = (tarpc_mreqn *)optval;
                     char         addr_buf[INET_ADDRSTRLEN];
                     char         addr_buf2[INET_ADDRSTRLEN];
- 
+
                     memset(opt, 0, sizeof(*opt));
                     opt->type = out.optval.optval_val[0].opttype;
                     switch (opt->type)
@@ -1600,7 +1600,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
             {
                 tarpc_mreq_source *opt = (tarpc_mreq_source *)optval;
                 char addr_buf[3][INET_ADDRSTRLEN] = {{0,}, {0,}, {0,}};
- 
+
                 memset(opt, 0, sizeof(*opt));
                 opt->type = out.optval.optval_val[0].opttype;
 
@@ -1701,7 +1701,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     te_log_buf_append(opt_val_str, " }");
 #undef COPY_TCP_INFO_FIELD
                     break;
-                
+
                 case RPC_IPV6_NEXTHOP:
                 {
                     char addr_buf[INET6_ADDRSTRLEN];
@@ -1878,7 +1878,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 val.opttype = OPT_LINGER;
                 val.option_value_u.opt_linger =
                     *((tarpc_linger *)optval);
-                te_log_buf_append(opt_val_str, 
+                te_log_buf_append(opt_val_str,
                     "{ l_onoff: %d, l_linger: %d }",
                     ((tarpc_linger *)optval)->l_onoff,
                     ((tarpc_linger *)optval)->l_linger);
@@ -1889,7 +1889,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 val.opttype = OPT_TIMEVAL;
                 val.option_value_u.opt_timeval =
                     *((tarpc_timeval *)optval);
-                te_log_buf_append(opt_val_str, 
+                te_log_buf_append(opt_val_str,
                     "{ tv_sec: %" TE_PRINTF_64 "d, "
                     "tv_usec: %" TE_PRINTF_64 "d }",
                     ((tarpc_timeval *)optval)->tv_sec,
@@ -1924,7 +1924,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                 val.option_value_u.opt_mreq6.ipv6mr_ifindex =
                     ((struct ipv6_mreq *)optval)->ipv6mr_interface;
 
-                te_log_buf_append(opt_val_str, 
+                te_log_buf_append(opt_val_str,
                     "{ multiaddr: %s, ifindex: %d }",
                     buf, val.option_value_u.opt_mreq6.ipv6mr_ifindex);
                 break;
@@ -1979,7 +1979,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
                         val.option_value_u.opt_mreq.imr_address =
                           ntohl(val.option_value_u.opt_mreq.imr_address);
 
-                        te_log_buf_append(opt_val_str, 
+                        te_log_buf_append(opt_val_str,
                             "{ imr_multiaddr: %s, imr_interface: %s }",
                             inet_ntop(AF_INET,
                                       (char *)&(opt->multiaddr),

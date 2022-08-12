@@ -25,7 +25,7 @@
 #if HAVE_NET_IF_H
 #include <net/if.h>
 #endif
- 
+
 #include "te_rpc_defs.h"
 #include "te_rpc_net_if.h"
 
@@ -51,13 +51,13 @@
 #ifndef IFF_POINTOPOINT
 #define IFF_POINTOPOINT     0
 #endif
-#ifndef IFF_RUNNING     
+#ifndef IFF_RUNNING
 #define IFF_RUNNING         0
 #endif
 #ifndef IFF_PROMISC
 #define IFF_PROMISC         0
 #endif
-#ifndef IFF_ALLMULTI      
+#ifndef IFF_ALLMULTI
 #define IFF_ALLMULTI        0
 #endif
 
@@ -75,7 +75,7 @@ if_fl_rpc2h(unsigned int flags)
 {
     if ((flags & ~RPC_IF_FLAGS_ALL) != 0)
         return IFF_UNKNOWN;
-    
+
     return (!!(flags & RPC_IFF_UP) * IFF_UP) |
            (!!(flags & RPC_IFF_BROADCAST) * IFF_BROADCAST) |
            (!!(flags & RPC_IFF_DEBUG) * IFF_DEBUG) |

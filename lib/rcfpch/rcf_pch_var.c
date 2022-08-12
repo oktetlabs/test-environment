@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -221,7 +221,7 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
             va_end(ap);
             SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EFMT));
         }
-       
+
         tv.tv_sec  = sec;
         tv.tv_usec = usec;
 #ifndef VGDEBUG /* Valgrind debugging */

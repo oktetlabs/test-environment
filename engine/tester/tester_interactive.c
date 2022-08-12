@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -36,7 +36,7 @@
 #include "tester_interactive.h"
 
 
-#if HAVE_READLINE    
+#if HAVE_READLINE
 static void
 tester_interactive_print_usage(void)
 {
@@ -56,7 +56,7 @@ tester_interactive_open_prompt(const tester_cfgs *cfgs,
                                test_paths        *paths,
                                testing_scenario  *scenario)
 {
-#if HAVE_READLINE    
+#if HAVE_READLINE
     char           *user_choice;
     int             rc;
     int             argc;
@@ -72,7 +72,7 @@ tester_interactive_open_prompt(const tester_cfgs *cfgs,
     while (1)
     {
         user_choice = readline("> ");
-        
+
         if (poptParseArgvString(user_choice, &argc, &argv) < 0)
         {
             tester_interactive_print_usage();
@@ -137,17 +137,17 @@ tester_interactive_open_prompt(const tester_cfgs *cfgs,
             continue;
         }
     }
-    
+
 #undef INVALID_SYNTAX_ERROR
 
     return TESTER_INTERACTIVE_ERROR;
 
 #else
-    
+
     UNUSED(cfgs);
     UNUSED(paths);
     UNUSED(scenario);
-    
+
     printf("Can't run in interactive mode: "
            "readline library is not availiable.\n");
 

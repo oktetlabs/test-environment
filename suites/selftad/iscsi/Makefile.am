@@ -1,7 +1,7 @@
 
 tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 
-dist_tetest_DATA = package.xml 
+dist_tetest_DATA = package.xml
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ @NET_SNMP_CFLAGS@

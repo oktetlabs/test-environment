@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -76,7 +76,7 @@ extern rpc_file_p rpc_fopen(rcf_rpc_server *rpcs,
  */
 extern rpc_file_p rpc_fdopen(rcf_rpc_server *rpcs, int fd,
                              const char *mode);
- 
+
 /**
  * Close the stream associated with the file.
  *
@@ -112,13 +112,13 @@ extern rpc_wait_status rpc_system(rcf_rpc_server *rpcs, const char *cmd);
  *
  * @return status of the process
  */
-extern rpc_wait_status rpc_system_ex(rcf_rpc_server *rpcs, 
+extern rpc_wait_status rpc_system_ex(rcf_rpc_server *rpcs,
                                      const char *cmd, ...);
 
 /**
  * Open a process by creating a pipe, forking, and invoking the shell.
  *
- * @note Do not use this function unless you test it - use 
+ * @note Do not use this function unless you test it - use
  *       rpc_te_shell_cmd instead.
  *
  * @param rpcs     RPC server handle
@@ -130,7 +130,7 @@ extern rpc_wait_status rpc_system_ex(rcf_rpc_server *rpcs,
  */
 extern rpc_file_p rpc_popen(rcf_rpc_server *rpcs,
                             const char *cmd, const char *mode);
- 
+
 /**
  * Close the stream returned by @b popen().
  *
@@ -148,7 +148,7 @@ extern int rpc_pclose(rcf_rpc_server *rpcs, rpc_file_p file);
  * @b pbuf pointer is initialized by NULL if no buffer is allocated.
  *
  * @param rpcs          RPC server handle
- * @param pbuf          location for the command output buffer 
+ * @param pbuf          location for the command output buffer
  * @param cmd           format of the command to be executed
  * @param uid           user id to execute as
  * @param ...           parameters for command
@@ -156,7 +156,7 @@ extern int rpc_pclose(rcf_rpc_server *rpcs, rpc_file_p file);
  * @return status of the process
  */
 extern rpc_wait_status rpc_shell_get_all(rcf_rpc_server *rpcs,
-                                         char **pbuf, const char *cmd, 
+                                         char **pbuf, const char *cmd,
                                          tarpc_uid_t uid, ...);
 
 /**
@@ -175,7 +175,7 @@ extern rpc_wait_status rpc_shell_get_all(rcf_rpc_server *rpcs,
  * @return status of the process
  */
 extern rpc_wait_status rpc_shell_get_all2(rcf_rpc_server *rpcs,
-                                          char **pbuf, 
+                                          char **pbuf,
                                           const char *cmd, ...);
 
 /**
@@ -203,7 +203,7 @@ extern rpc_wait_status rpc_shell_get_all3(rcf_rpc_server *rpcs,
  * stdin/stdout to pipe(s) if necessary.
  * You MUST use uid parameter instead of "su - user -c", because su makes
  * one more fork, and you do not know how to kill this grandchild process.
- * You SHOULD destroy this process by calling rpc_ta_kill_death() instead 
+ * You SHOULD destroy this process by calling rpc_ta_kill_death() instead
  * of rpc_kill(RPC_SIGKILL).
  *
  * @param rpcs      RPC server handle
@@ -216,8 +216,8 @@ extern rpc_wait_status rpc_shell_get_all3(rcf_rpc_server *rpcs,
  *
  * @return pid of spawned process or -1 on failure
  */
-extern tarpc_pid_t rpc_te_shell_cmd(rcf_rpc_server *rpcs, 
-                                    const char *cmd, tarpc_uid_t uid, 
+extern tarpc_pid_t rpc_te_shell_cmd(rcf_rpc_server *rpcs,
+                                    const char *cmd, tarpc_uid_t uid,
                                     int *in_fd, int *out_fd, int *err_fd,
                                     ...);
 
@@ -264,7 +264,7 @@ rpc_getenv_int(rcf_rpc_server *rpcs, const char *name, int *val)
  *
  * @return variable value (memory is allocated by the function) or NULL
  */
-extern int rpc_setenv(rcf_rpc_server *rpcs, 
+extern int rpc_setenv(rcf_rpc_server *rpcs,
                       const char *name, const char *value, int overwrite);
 
 /**

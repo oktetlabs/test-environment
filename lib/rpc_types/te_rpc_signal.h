@@ -2,11 +2,11 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from signal.h.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -14,7 +14,7 @@
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_SIGNAL_H__
 #define __TE_RPC_SIGNAL_H__
 
@@ -36,23 +36,23 @@ extern "C" {
 /** TA-independent signal constants */
 typedef enum rpc_signum {
     RPC_SIGHUP = 1,
-    RPC_SIGINT, 
-    RPC_SIGQUIT, 
-    RPC_SIGILL,  
-    RPC_SIGABRT, 
-    RPC_SIGFPE,  
-    RPC_SIGKILL, 
-    RPC_SIGSEGV, 
-    RPC_SIGPIPE, 
+    RPC_SIGINT,
+    RPC_SIGQUIT,
+    RPC_SIGILL,
+    RPC_SIGABRT,
+    RPC_SIGFPE,
+    RPC_SIGKILL,
+    RPC_SIGSEGV,
+    RPC_SIGPIPE,
     RPC_SIGALRM,
-    RPC_SIGTERM, 
-    RPC_SIGUSR1, 
-    RPC_SIGUSR2, 
-    RPC_SIGCHLD, 
-    RPC_SIGCONT, 
-    RPC_SIGSTOP, 
-    RPC_SIGTSTP, 
-    RPC_SIGTTIN, 
+    RPC_SIGTERM,
+    RPC_SIGUSR1,
+    RPC_SIGUSR2,
+    RPC_SIGCHLD,
+    RPC_SIGCONT,
+    RPC_SIGSTOP,
+    RPC_SIGTSTP,
+    RPC_SIGTTIN,
     RPC_SIGTTOU,
     RPC_SIGIO,
     RPC_SIGBUS,
@@ -64,7 +64,7 @@ typedef enum rpc_signum {
 
 /** Convert RPC signal number to string */
 extern const char *signum_rpc2str(rpc_signum s);
-    
+
 /** Convert RPC signal number to the native one */
 extern int signum_rpc2h(rpc_signum s);
 
@@ -122,7 +122,7 @@ typedef enum rpc_si_code {
 
 /** Convert RPC signal code to string */
 extern const char *si_code_rpc2str(rpc_si_code si);
-    
+
 /** Convert RPC signal code to the native one */
 extern int si_code_rpc2h(rpc_si_code si);
 
@@ -142,7 +142,7 @@ typedef enum rpc_sigev_notify {
     RPC_SIGEV_NONE,
     RPC_SIGEV_THREAD,
     RPC_SIGEV_UNKNOWN
-} rpc_sigev_notify; 
+} rpc_sigev_notify;
 
 /** Convert RPC sigevent notification type to string */
 extern const char * sigev_notify_rpc2str(rpc_sigev_notify notify);
@@ -161,7 +161,7 @@ typedef enum rpc_sighow {
 } rpc_sighow;
 
 /**
- * In our RPC model rpc_signal() function always returns string, that 
+ * In our RPC model rpc_signal() function always returns string, that
  * equals to a function name that currently used as the signal handler,
  * and in case there is no signal handler registered rpc_signal()
  * returns "0x00000000", so in case of error function returns NULL.

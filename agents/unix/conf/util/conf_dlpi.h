@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
@@ -28,7 +28,7 @@
  * @return Status code.
  */
 extern te_errno ta_unix_conf_dlpi_phys_addr_get(const char *name,
-                                                void       *addr, 
+                                                void       *addr,
                                                 size_t     *addrlen);
 
 /**
@@ -41,7 +41,7 @@ extern te_errno ta_unix_conf_dlpi_phys_addr_get(const char *name,
  * @return Status code.
  */
 extern te_errno ta_unix_conf_dlpi_phys_addr_set(const char *name,
-                                                void       *addr, 
+                                                void       *addr,
                                                 size_t      addrlen);
 
 /**
@@ -54,7 +54,7 @@ extern te_errno ta_unix_conf_dlpi_phys_addr_set(const char *name,
  * @return Status code.
  */
 extern te_errno ta_unix_conf_dlpi_phys_bcast_addr_get(const char *name,
-                                                      void       *addr, 
+                                                      void       *addr,
                                                       size_t     *addrlen);
 
 #endif /* !__TE_TA_UNIX_CONF_DLPI_H__ */

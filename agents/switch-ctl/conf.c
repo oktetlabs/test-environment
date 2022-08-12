@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -183,7 +183,7 @@ boolean_to_number(const char *str, te_bool *p_val)
     }
 
     *p_val = (te_bool)val;
-    
+
     return 0;
 }
 
@@ -213,7 +213,7 @@ ulong_to_number(const char *str, unsigned long int *p_val)
     assert(val >= 0);
 
     *p_val = (unsigned long int)val;
-    
+
     return 0;
 }
 
@@ -296,7 +296,7 @@ link_status_to_number(const char *str, poe_link_status *p_val)
     }
 
     *p_val = (poe_link_status)val;
-    
+
     return 0;
 }
 
@@ -390,7 +390,7 @@ port_speed_to_number(const char *str, poe_port_speed *p_val)
     }
 
     *p_val = (poe_port_speed)val;
-    
+
     return 0;
 }
 
@@ -473,7 +473,7 @@ duplexity_type_to_number(const char *str, poe_port_clocks *p_val)
     }
 
     *p_val = (poe_port_clocks)val;
-    
+
     return 0;
 }
 
@@ -566,7 +566,7 @@ port_clocks_to_number(const char *str, poe_port_clocks *p_val)
     }
 
     *p_val = (poe_port_clocks)val;
-    
+
     return 0;
 }
 
@@ -629,7 +629,7 @@ update_poe_ports(unsigned int gid)
             if (poe_ports == NULL)
                 return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
         }
-        
+
         rc = poe_port_read_table(poe_ports, error_string);
         if (rc != 0)
         {
@@ -646,7 +646,7 @@ update_poe_ports(unsigned int gid)
 
 /**
  * Find up-to-date switch port.
- * 
+ *
  * @param gid       - request group identifer
  * @param pid_str   - port gidas string
  * @param p_port    - location for port pointer (OUT)
@@ -826,7 +826,7 @@ list_ports(unsigned int gid, const char *oid,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_commit(unsigned int gid, const cfg_oid *p_oid)
 {
     te_errno    rc;
@@ -884,7 +884,7 @@ port_get_type(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_get_admin_status(unsigned int gid, const char *oid, char *value,
                       const char *pid_str)
 {
@@ -962,7 +962,7 @@ port_get_autonegotiation(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_set_autonegotiation(unsigned int gid, const char *oid,
                          const char *value, const char *pid_str)
 {
@@ -991,7 +991,7 @@ port_set_autonegotiation(unsigned int gid, const char *oid,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_get_admin_speed(unsigned int gid, const char *oid, char *value,
                      const char *pid_str)
 {
@@ -1015,7 +1015,7 @@ port_get_admin_speed(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_set_admin_speed(unsigned int gid, const char *oid,
                      const char *value, const char *pid_str)
 {
@@ -1044,7 +1044,7 @@ port_set_admin_speed(unsigned int gid, const char *oid,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_get_admin_duplexity(unsigned int gid, const char *oid, char *value,
                          const char *pid_str)
 {
@@ -1068,7 +1068,7 @@ port_get_admin_duplexity(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_set_admin_duplexity(unsigned int gid, const char *oid,
                          const char *value, const char *pid_str)
 {
@@ -1097,7 +1097,7 @@ port_set_admin_duplexity(unsigned int gid, const char *oid,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_get_admin_clocks(unsigned int gid, const char *oid, char *value,
                       const char *pid_str)
 {
@@ -1121,7 +1121,7 @@ port_get_admin_clocks(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_set_admin_clocks(unsigned int gid, const char *oid,
                       const char *value, const char *pid_str)
 {
@@ -1150,7 +1150,7 @@ port_set_admin_clocks(unsigned int gid, const char *oid,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_get_mtu(unsigned int gid, const char *oid, char *value,
              const char *pid_str)
 {
@@ -1173,7 +1173,7 @@ port_get_mtu(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_set_mtu(unsigned int gid, const char *oid, const char *value,
              const char *pid_str)
 {
@@ -1213,7 +1213,7 @@ port_set_mtu(unsigned int gid, const char *oid, const char *value,
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 port_get_default_vlan(unsigned int gid, const char *oid, char *value,
                       const char *pid_str)
 {
@@ -1222,10 +1222,10 @@ port_get_default_vlan(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
     CHECK_RC(find_port(gid, pid_str, &port));
-    
+
     if (strcmp(port->vlan.default_vlan, "default") == 0)
     {
-        
+
         sprintf(value, "%d", VLAN_DEFAULT);
         return 0;
     }
@@ -1244,14 +1244,14 @@ port_get_default_vlan(unsigned int gid, const char *oid, char *value,
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 port_set_default_vlan(unsigned int gid, const char *oid, const char *value,
                       const char *pid_str)
 {
     poe_port *port;
 
     UNUSED(oid);
-    
+
     CHECK_RC(find_port(gid, pid_str, &port));
 
     if (*value - '0' == VLAN_DEFAULT)
@@ -1273,7 +1273,7 @@ port_set_default_vlan(unsigned int gid, const char *oid, const char *value,
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 port_get_untagged_priority(unsigned int gid, const char *oid, char *value,
                            const char *pid_str)
 {
@@ -1282,7 +1282,7 @@ port_get_untagged_priority(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
     CHECK_RC(find_port(gid, pid_str, &port));
-    
+
     return snprintf_rc(value, RCF_MAX_VAL, "%u", port->cos.untagged_prio);
 }
 
@@ -1296,22 +1296,22 @@ port_get_untagged_priority(unsigned int gid, const char *oid, char *value,
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 port_set_untagged_priority(unsigned int gid, const char *oid,
                            const char *value, const char *pid_str)
 {
     poe_port *port;
 
     UNUSED(oid);
-    
+
     CHECK_RC(find_port(gid, pid_str, &port));
 
-    if (*value > '7' || *value < '0' || 
+    if (*value > '7' || *value < '0' ||
         (*(value + 1) != ' ' && *(value + 1) != 0))
     {
         return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
-        
+
     port->cos.untagged_prio = *value - '0';
 
     return 0;
@@ -1327,7 +1327,7 @@ port_set_untagged_priority(unsigned int gid, const char *oid,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_get_oper_status(unsigned int gid, const char *oid, char *value,
                      const char *pid_str)
 {
@@ -1351,7 +1351,7 @@ port_get_oper_status(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_get_oper_speed(unsigned int gid, const char *oid, char *value,
                     const char *pid_str)
 {
@@ -1376,7 +1376,7 @@ port_get_oper_speed(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_get_oper_duplexity(unsigned int gid, const char *oid, char *value,
                         const char *pid_str)
 {
@@ -1425,7 +1425,7 @@ port_get_oper_clocks(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_get_hol_blocking(unsigned int gid, const char *oid, char *value,
                       const char *pid_str)
 {
@@ -1450,7 +1450,7 @@ port_get_hol_blocking(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 port_get_bps(unsigned int gid, const char *oid, char *value,
              const char *pid_str)
 {
@@ -1472,7 +1472,7 @@ port_get_bps(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 get_a_time(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(oid);
@@ -1492,14 +1492,14 @@ get_a_time(unsigned int gid, const char *oid, char *value)
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 set_a_time(unsigned int gid, const char *oid, const char *value)
 {
     long int  a_time;
     char     *end_ptr;
- 
+
     UNUSED(oid);
- 
+
     if (value == NULL || *value == '\0' ||
         (a_time = strtol(value, &end_ptr, 10), *end_ptr != '\0'))
     {
@@ -1532,12 +1532,12 @@ set_a_time(unsigned int gid, const char *oid, const char *value)
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 cos_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (update_poe_global(gid) != 0)
     {
         ERROR("ERROR[%s, %d]", __FILE__, __LINE__);
@@ -1545,7 +1545,7 @@ cos_get(unsigned int gid, const char *oid, char *value)
     }
 
     sprintf(value, "%lu", poe_global_data.cos_number_of_queues);
-    
+
     return 0;
 }
 
@@ -1558,15 +1558,15 @@ cos_get(unsigned int gid, const char *oid, char *value)
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 cos_set(unsigned int gid, const char *oid, char *value)
 {
     unsigned int i;
     unsigned int step; /* Number of priorities mapped to the one queue */
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (*value != '1' && *value != '2' && *value != '4')
         return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
 
@@ -1577,11 +1577,11 @@ cos_set(unsigned int gid, const char *oid, char *value)
     }
 
     poe_global_data.cos_number_of_queues = *value - '0';
-    
+
     step = 8 / poe_global_data.cos_number_of_queues;
     for (i = 0; i < poe_global_data.cos_number_of_queues; i++)
         memset(poe_global_data.cos_mapping + i * step, i, step);
-        
+
     if (poe_global_write(&poe_global_data, error_string) != 0)
     {
         VERB("Cannot update CoS mapping: %s", error_string);
@@ -1592,8 +1592,8 @@ cos_set(unsigned int gid, const char *oid, char *value)
         }
         return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
-     
-    return 0;   
+
+    return 0;
 }
 
 
@@ -1669,7 +1669,7 @@ arl_parse_inst_name(const char *inst_name, poe_arl *arl_entry)
     inst_name = end + 1;
 
     arl_entry->port = (poe_pid)strtol(inst_name, &end, 10);
-    if (inst_name == end || *end != '.') 
+    if (inst_name == end || *end != '.')
         return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
 
     inst_name = end + 1;
@@ -1704,7 +1704,7 @@ arl_parse_inst_name(const char *inst_name, poe_arl *arl_entry)
 }
 
 /**
- * Finds ARL entry by instance name (ARL entry are searched in 
+ * Finds ARL entry by instance name (ARL entry are searched in
  * the list of local ARL entries and global one)
  *
  * @param gid         - request group identifier
@@ -1755,7 +1755,7 @@ arl_entry_find(unsigned int gid, const char *inst_name, poe_arl **arl_entry)
  * @param table_name  - ARL table instance name - empty string
  * @param entry_name  - ARL entry name
  */
-static te_errno 
+static te_errno
 arl_get_type(unsigned int gid, const char *oid, char *value,
              const char *table_name, const char *entry_name)
 {
@@ -1770,7 +1770,7 @@ arl_get_type(unsigned int gid, const char *oid, char *value,
     CHECK_RC(arl_entry_find(gid, entry_name, &arl_entry));
 
     /* @todo Fix 1 and 0 hard code */
-    return snprintf_rc(value, RCF_MAX_VAL, "%d", 
+    return snprintf_rc(value, RCF_MAX_VAL, "%d",
                        arl_entry->is_static == TRUE ? 1 : 0);
 }
 
@@ -1783,7 +1783,7 @@ arl_get_type(unsigned int gid, const char *oid, char *value,
  * @param table_name  - ARL table instance name - empty string
  * @param entry_name  - ARL entry entity name
  */
-static te_errno 
+static te_errno
 arl_get_vlan(unsigned int gid, const char *oid, char *value,
              const char *table_name, const char *entry_name)
 {
@@ -1810,7 +1810,7 @@ arl_get_vlan(unsigned int gid, const char *oid, char *value,
  * @param table_name  - ARL table instance name - empty string
  * @param entry_name  - ARL entry name
  */
-static te_errno 
+static te_errno
 arl_get_port(unsigned int gid, const char *oid, char *value,
              const char *table_name, const char *entry_name)
 {
@@ -1864,7 +1864,7 @@ arl_get_mac(unsigned int gid, const char *oid, char *value,
  * @param oid        - full instance identifier
  * @param value      - value to set
  * @param table_name - Name of ARL table - MUST be an empty string
- * @param entry_name - Name of ARL entry to be added, it has 
+ * @param entry_name - Name of ARL entry to be added, it has
  *                     the following format:
  *                         <entry_type>.<port_num>.<mac_addr>:<vlan_name>
  *                     Where <entry_type> can be one of the following:
@@ -1913,7 +1913,7 @@ arl_add_entry(unsigned int gid, const char *oid, const char *value,
  * @param gid        - request group identifier
  * @param oid        - full instance identifier
  * @param table_name - Name of ARL table - MUST be an empty string
- * @param entry_name - Name of ARL entry to be added, it has 
+ * @param entry_name - Name of ARL entry to be added, it has
  *                     the following format:
  *                         <entry_type>.<port_num>.<mac_addr>:<vlan_name>
  *
@@ -1973,7 +1973,7 @@ arl_list(unsigned int gid, const char *oid, const char *sub_id,
 
     arl_cache_update(gid);
 
-    /* 
+    /*
      * Each entry name has the following format:
      * <entry_type>.<port_num>.<mac_addr>:<vlan_name>
      */
@@ -2018,7 +2018,7 @@ arl_list(unsigned int gid, const char *oid, const char *sub_id,
  * entry simultaniously, you may extend such variable to the list
  * of local entries.
  *
- * @sa 
+ * @sa
  */
 static poe_stp_port local_stp_port_entry;
 
@@ -2123,7 +2123,7 @@ local_stp_port_entry_new()
 /**
  * Marks local entry as unused, so that it returns to the pool of free
  * local STP port entries
- * 
+ *
  * @param stp_port_entry  - local STP port entry to free
  */
 static void
@@ -2160,7 +2160,7 @@ stp_cache_update(unsigned int gid)
         stp_port_table_num = 0;
         stp_port_table = NULL;
 
-        if ((rc = poe_stp_read_table(&stp_port_table, 
+        if ((rc = poe_stp_read_table(&stp_port_table,
                                      &stp_port_table_num,
                                      error_string)) != 0)
         {
@@ -2239,7 +2239,7 @@ stp_port_entry_find(unsigned int gid, const char *port_id,
                 return 0;
             }
         }
-        
+
         return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);
     }
 
@@ -2261,7 +2261,7 @@ stp_port_entry_find(unsigned int gid, const char *port_id,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 stp_commit(unsigned int gid, const cfg_oid *p_oid)
 {
     int         rc;
@@ -2358,7 +2358,7 @@ stp_get_prio(unsigned int gid, const char *oid, char *value)
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 stp_set_prio(unsigned int gid, const char *oid, const char *value)
 {
     unsigned long int   val;
@@ -2408,7 +2408,7 @@ stp_get_bridge_max_age(unsigned int gid, const char *oid, char *value)
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 stp_set_bridge_max_age(unsigned int gid, const char *oid, const char *value)
 {
     unsigned long int   val;
@@ -2458,7 +2458,7 @@ stp_get_bridge_hello_time(unsigned int gid, const char *oid, char *value)
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 stp_set_bridge_hello_time(unsigned int gid, const char *oid,
                           const char *value)
 {
@@ -2505,7 +2505,7 @@ stp_get_bridge_forward_delay(unsigned int gid, const char *oid,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 stp_set_bridge_forward_delay(unsigned int gid, const char *oid,
                              const char *value)
 {
@@ -2785,7 +2785,7 @@ stp_get_port_forward_transitions(unsigned int gid, const char *oid,
  * @param stp_name    - Name of the "/agent/stp" object - an empty string
  * @param port_num    - Port number whose "Designated Port" value returned
  */
-static te_errno 
+static te_errno
 stp_get_port_designated_port(unsigned int gid, const char *oid, char *value,
                              const char *stp_name, const char *port_num)
 {
@@ -2807,10 +2807,10 @@ stp_get_port_designated_port(unsigned int gid, const char *oid, char *value,
  * @param oid         - full instance identifier
  * @param value       - Location for the value (OUT)
  * @param stp_name    - Name of the "/agent/stp" object - an empty string
- * @param port_num    - Port number whose "Designated Bridge" value 
+ * @param port_num    - Port number whose "Designated Bridge" value
  *                      will be returned
  */
-static te_errno 
+static te_errno
 stp_get_port_designated_bridge(unsigned int gid, const char *oid,
                                char *value, const char *stp_name,
                                const char *port_num)
@@ -2841,7 +2841,7 @@ stp_get_port_designated_bridge(unsigned int gid, const char *oid,
  * @param oid         - full instance identifier
  * @param value       - Location for the value (OUT)
  * @param stp_name    - Name of the "/agent/stp" object - an empty string
- * @param port_num    - Port number whose "Designated Cost" value 
+ * @param port_num    - Port number whose "Designated Cost" value
  *                      will be returned
  */
 static te_errno
@@ -2867,10 +2867,10 @@ stp_get_port_designated_cost(unsigned int gid, const char *oid, char *value,
  * @param value       - Location for the value: (OUT)
  *                        eight octets' value in hexdecimal format
  * @param stp_name    - Name of the "/agent/stp" object - an empty string
- * @param port_num    - Port number whose "Designated Root" value 
+ * @param port_num    - Port number whose "Designated Root" value
  *                      will be returned
  */
-static te_errno 
+static te_errno
 stp_get_port_designated_root(unsigned int gid, const char *oid, char *value,
                              const char *stp_name, const char *port_num)
 {
@@ -2905,11 +2905,11 @@ stp_get_port_designated_root(unsigned int gid, const char *oid, char *value,
  *                        Learning   - 3
  *                        Forwarding - 4
  * @param stp_name    - Name of the "/agent/stp" object - an empty string
- * @param port_num    - Port number whose "Port State" value 
+ * @param port_num    - Port number whose "Port State" value
  *                      will be returned
  * @param field_name  - Instance name - an empty string
  */
-static te_errno 
+static te_errno
 stp_get_port_state(unsigned int gid, const char *oid, char *value,
                    const char *stp_name, const char *port_num)
 {
@@ -2931,10 +2931,10 @@ stp_get_port_state(unsigned int gid, const char *oid, char *value,
  * @param oid         - full instance identifier
  * @param value       - Location for the value (OUT)
  * @param stp_name    - Name of the "/agent/stp" object - an empty string
- * @param port_num    - Port number whose "Path Cost" value 
+ * @param port_num    - Port number whose "Path Cost" value
  *                      will be returned
  */
-static te_errno 
+static te_errno
 stp_get_port_path_cost(unsigned int gid, const char *oid, char *value,
                        const char *stp_name, const char *port_num)
 {
@@ -2945,8 +2945,8 @@ stp_get_port_path_cost(unsigned int gid, const char *oid, char *value,
 
     CHECK_RC(stp_port_entry_find(gid, port_num, &stp_port_entry));
 
-    if (!stp_port_entry_committed(stp_port_entry) && 
-        !((local_stp_port_entry_get_flags(stp_port_entry) & 
+    if (!stp_port_entry_committed(stp_port_entry) &&
+        !((local_stp_port_entry_get_flags(stp_port_entry) &
           STP_PORT_ENTRY_PATH_COST_SET)))
     {
         ERROR("Path cost of the port is not defined yet");
@@ -2964,10 +2964,10 @@ stp_get_port_path_cost(unsigned int gid, const char *oid, char *value,
  * @param oid         - full instance identifier
  * @param value       - A new "Path Cost" value
  * @param stp_name    - Name of the "/agent/stp" object - an empty string
- * @param port_num    - Port number whose "Path Cost" value 
+ * @param port_num    - Port number whose "Path Cost" value
  *                      will be updated
  */
-static te_errno 
+static te_errno
 stp_set_port_path_cost(unsigned int gid, const char *oid, const char *value,
                        const char *stp_name, const char *port_num)
 {
@@ -3002,7 +3002,7 @@ stp_set_port_path_cost(unsigned int gid, const char *oid, const char *value,
  * @param oid         - full instance identifier
  * @param value       - Location for the value (OUT)
  * @param stp_name    - Name of the "/agent/stp" object - an empty string
- * @param port_num    - Port number whose "Port Priority" value 
+ * @param port_num    - Port number whose "Port Priority" value
  *                      will be returned
  */
 static te_errno
@@ -3016,8 +3016,8 @@ stp_get_port_prio(unsigned int gid, const char *oid, char *value,
 
     CHECK_RC(stp_port_entry_find(gid, port_num, &stp_port_entry));
 
-    if (!stp_port_entry_committed(stp_port_entry) && 
-        !((local_stp_port_entry_get_flags(stp_port_entry) & 
+    if (!stp_port_entry_committed(stp_port_entry) &&
+        !((local_stp_port_entry_get_flags(stp_port_entry) &
           STP_PORT_ENTRY_PRIO_SET)))
     {
         ERROR("Port priority is not defined yet");
@@ -3034,10 +3034,10 @@ stp_get_port_prio(unsigned int gid, const char *oid, char *value,
  * @param oid         - full instance identifier
  * @param value       - A new "Path Cost" value
  * @param stp_name    - Name of the "/agent/stp" object - an empty string
- * @param port_num    - Port number whose "Port Priority" value 
+ * @param port_num    - Port number whose "Port Priority" value
  *                      will be updated
  */
-static te_errno 
+static te_errno
 stp_set_port_prio(unsigned int gid, const char *oid, const char *value,
                   const char *stp_name, const char *port_num)
 {
@@ -3056,7 +3056,7 @@ stp_set_port_prio(unsigned int gid, const char *oid, const char *value,
         ERROR("Invalid format for Port Priority value: %s", value);
         return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
-    
+
     stp_port_entry->prio = (unsigned long)new_prio;
     if (!stp_port_entry_committed(stp_port_entry))
         local_stp_port_entry_add_flags(stp_port_entry,
@@ -3109,7 +3109,7 @@ stp_add_port(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
- * Deletes specified STP port entry from STP port table - 
+ * Deletes specified STP port entry from STP port table -
  * disables STP on a particular port.
  *
  * @param gid        - Request group identifier
@@ -3181,7 +3181,7 @@ stp_port_list(unsigned int gid, const char *oid,
     stp_cache_update(gid);
 
     mem_len = (stp_port_table_num + num_local_entries) * strlen("50 ") + 1;
-    
+
     if ((*list = (char *)malloc(mem_len)) == NULL)
     {
         return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
@@ -3215,7 +3215,7 @@ stp_port_list(unsigned int gid, const char *oid,
  *
  * @return Status code.
  */
-static te_errno 
+static te_errno
 stp_port_commit(unsigned int gid, const cfg_oid *p_oid)
 {
     cfg_inst_subid *inst;
@@ -3269,10 +3269,10 @@ static void
 free_vlan_table(poe_vlan *table, int num)
 {
     int i;
-    
+
     for (i = 0; i < num; i++)
         free(table[i].ports);
-        
+
     free(table);
 }
 
@@ -3282,11 +3282,11 @@ find_vlan(char *vid, poe_vlan *vlan)
 {
     char    *tmp;
     uint32_t tag;
-    
+
     poe_vlan *table;
     int       num;
     int       i;
-    
+
     if (strcmp(vid, "default") == 0)
     {
         tag = VLAN_DEFAULT;
@@ -3297,13 +3297,13 @@ find_vlan(char *vid, poe_vlan *vlan)
         if (tmp == vid || *tmp != 0 || tag > 0xFFFF)
             return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);
     }
-        
+
     if (poe_vlan_read_table(&table, &num, error_string) < 0)
     {
         ERROR("Cannot read VLAN table: %s", error_string);
         return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
-    
+
     for (i = 0; i < num; i++)
     {
         if (table[i].id == tag)
@@ -3333,15 +3333,15 @@ vlan_get(int gid, char *oid, char *value, char *vid)
 {
     poe_vlan vlan;
     te_errno   rc;
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if ((rc = find_vlan(vid, &vlan)) != 0)
         return TE_RC(TE_TA_SWITCH_CTL, rc);
-    
+
     sprintf(value, "%s", vlan.up ? "1" : "0");
-    
+
     free(vlan.ports);
 
     return 0;
@@ -3357,15 +3357,15 @@ vlan_get(int gid, char *oid, char *value, char *vid)
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 vlan_set(int gid, char *oid, char *value, char *vid)
 {
     poe_vlan vlan;
     te_errno rc;
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if ((rc = find_vlan(vid, &vlan)) != 0)
         return TE_RC(TE_TA_SWITCH_CTL, rc);
 
@@ -3374,17 +3374,17 @@ vlan_set(int gid, char *oid, char *value, char *vid)
         case '0':
             vlan.up = FALSE;
             break;
-            
+
         case '1':
             vlan.up = TRUE;
             break;
-         
+
         default:
             return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
     rc = poe_vlan_update(&vlan, error_string);
-    
+
     free(vlan.ports);
 
     if (rc < 0)
@@ -3406,45 +3406,45 @@ vlan_set(int gid, char *oid, char *value, char *vid)
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 vlan_add(int gid, char *oid, char *value, char *vid)
 {
     char    *tmp;
     uint32_t tag;
-    
+
     poe_vlan vlan;
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     tag = strtol(vid, &tmp, 10);
     if (tmp == value || *tmp != 0 || tag > 0xFFFF)
         return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
-        
+
     sprintf(vlan.name, "%d", tag);
     vlan.id = tag;
     vlan.num_ports = 0;
     vlan.ports = NULL;
-    
+
     switch (*value)
     {
         case '0':
             vlan.up = FALSE;
             break;
-            
+
         case '1':
             vlan.up = TRUE;
             break;
-         
+
         default:
             return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
     if (*value != '0' && *value != '1')
         return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
-        
+
     if (poe_vlan_create(&vlan, error_string) < 0)
     {
-        ERROR("Cannot create VLAN: %s", 
+        ERROR("Cannot create VLAN: %s",
                    error_string);
         return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
@@ -3460,25 +3460,25 @@ vlan_add(int gid, char *oid, char *value, char *vid)
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 vlan_del(int gid, char *oid, char *vid)
 {
     char     name[POE_LIB_MAX_STRING];
     char    *tmp;
     uint32_t tag;
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     tag = strtol(vid, &tmp, 10);
     if (tmp == vid || *tmp != 0 || tag > 0xFFFF)
         return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
-        
+
     sprintf(name, "%d", tag);
-        
+
     if (poe_vlan_delete(name, error_string) < 0)
     {
-        ERROR("Cannot delete VLAN: %s", 
+        ERROR("Cannot delete VLAN: %s",
                    error_string);
         return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
@@ -3497,7 +3497,7 @@ vlan_del(int gid, char *oid, char *vid)
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 vlan_list(int gid, char *oid, const char *sub_id, char **list)
 {
     poe_vlan       *table;
@@ -3505,11 +3505,11 @@ vlan_list(int gid, char *oid, const char *sub_id, char **list)
     int             num;
     int             i;
     unsigned int    len;
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
-    
+
     if (poe_vlan_read_table(&table, &num, error_string) < 0)
     {
         ERROR("Cannot read VLAN table: %s", error_string);
@@ -3523,7 +3523,7 @@ vlan_list(int gid, char *oid, const char *sub_id, char **list)
         free_vlan_table(table, num);
         return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
     }
-    
+
     tmp = *list;
     for (i = 0; i < num && tmp <= (*list + len); i++)
         tmp += snprintf(tmp, (*list + len) - tmp, "%s ", table[i].name);
@@ -3554,7 +3554,7 @@ vlan_list(int gid, char *oid, const char *sub_id, char **list)
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 vlan_port_add(int gid, char *oid, char *value, char *vid, char *p)
 {
     char    *tmp;
@@ -3563,25 +3563,25 @@ vlan_port_add(int gid, char *oid, char *value, char *vid, char *p)
     te_errno rc;
     uint8_t  i;
     poe_pid *ports;
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
-    
+
     port = strtol(p, &tmp, 10);
     if (tmp == p || *tmp != 0 || port > 0xFF)
         return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);
-        
+
     if ((rc = find_vlan(vid, &vlan)) != 0)
         return TE_RC(TE_TA_SWITCH_CTL, rc);
 
-    if ((ports = (poe_pid *)malloc((vlan.num_ports + 1) * 
+    if ((ports = (poe_pid *)malloc((vlan.num_ports + 1) *
                                    sizeof(poe_pid))) == NULL)
     {
         free(vlan.ports);
         return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
     }
-    
+
     for (i = 0; i < vlan.num_ports; i++)
     {
         if ((ports[i] = vlan.ports[i]) == port)
@@ -3597,7 +3597,7 @@ vlan_port_add(int gid, char *oid, char *value, char *vid, char *p)
     vlan.num_ports++;
 
     rc = poe_vlan_update(&vlan, error_string);
-    
+
     free(vlan.ports);
 
     if (rc < 0)
@@ -3619,7 +3619,7 @@ vlan_port_add(int gid, char *oid, char *value, char *vid, char *p)
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 vlan_port_del(int gid, char *oid, char *vid, char *p)
 {
     char    *tmp;
@@ -3628,14 +3628,14 @@ vlan_port_del(int gid, char *oid, char *vid, char *p)
     te_errno rc;
     uint8_t  i;
     uint8_t  k;
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     port = strtol(p, &tmp, 10);
     if (tmp == p || *tmp != 0 || port > 0xFF)
         return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);
-        
+
     if ((rc = find_vlan(vid, &vlan)) != 0)
         return TE_RC(TE_TA_SWITCH_CTL, rc);
 
@@ -3644,7 +3644,7 @@ vlan_port_del(int gid, char *oid, char *vid, char *p)
         if (vlan.ports[i] != port)
             vlan.ports[k++] = vlan.ports[i];
     }
-    
+
     if (i == k)
     {
         free(vlan.ports);
@@ -3653,7 +3653,7 @@ vlan_port_del(int gid, char *oid, char *vid, char *p)
     vlan.num_ports--;
 
     rc = poe_vlan_update(&vlan, error_string);
-    
+
     free(vlan.ports);
 
     if (rc < 0)
@@ -3686,14 +3686,14 @@ vlan_port_list(int gid, char *oid, const char *sub_id,
     te_errno rc;
     uint8_t  i;
     char    *tmp;
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
-    
+
     if ((rc = find_vlan(vid, &vlan)) != 0)
         return TE_RC(TE_TA_SWITCH_CTL, rc);
-        
+
     *list = (char *)calloc(1, vlan.num_ports * VLAN_PORT_STR_MAX + 1);
     if (*list == NULL)
     {
@@ -3704,7 +3704,7 @@ vlan_port_list(int gid, char *oid, const char *sub_id,
     tmp = *list;
     for (i = 0; i < vlan.num_ports; i++)
         tmp += sprintf(tmp, "%d ", vlan.ports[i]);
-    
+
     free(vlan.ports);
 
     return 0;
@@ -3727,29 +3727,29 @@ vlan_ip_get(int gid, char *oid, char *value, char *vid)
     int  num;
     int  i;
     te_errno rc;
-    
+
     poe_vlan     vlan;
     poe_vlan_ip *table;
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if ((rc = find_vlan(vid, &vlan)) != 0)
         return TE_RC(TE_TA_SWITCH_CTL, rc);
-        
+
     free(vlan.ports);
-        
+
     sprintf(name, "%d", vlan.id);
 
     if (poe_vlan_ip_read_table(&table, &num, error_string) < 0)
     {
-        ERROR("Cannot read IP over VLAN interfaces: %s", 
+        ERROR("Cannot read IP over VLAN interfaces: %s",
                    error_string);
         return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
-    
+
     for (i = 0; i < num && strcmp(table[i].vlan, name) != 0; i++);
-    
+
     sprintf(value, "%s", i == num ? "0.0.0.0" : inet_ntoa(table[i].addr));
 
     free(table);
@@ -3762,38 +3762,38 @@ vlan_ip_get(int gid, char *oid, char *value, char *vid)
  *
  * @param gid   groupd identifier (unused)
  * @param oid   full instance identifier (unused)
- * @param value new 
+ * @param value new
  * @param vid   VLAN tag as a string
  *
  * @return status code
  */
-static te_errno 
+static te_errno
 vlan_ip_set(int gid, char *oid, char *value, char *vid)
 {
     poe_vlan_ip ipif;
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
     memset(&ipif, 0, sizeof(ipif));
     strcpy(ipif.vlan, vid);
-    
+
     if (inet_aton(value, &(ipif.addr)) == 0)
         return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
-     
+
     if (ipif.addr.s_addr == 0)
     {
         poe_vlan_ip_delete(vid, NULL);
         return 0;
     }
-    
+
     if (poe_vlan_ip_create(&ipif, NULL) < 0 &&
         poe_vlan_ip_update(&ipif, NULL) < 0)
     {
         ERROR("Failed to configure IP over VLAN interface");
         return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
-    
+
     return 0;
 }
 
@@ -3876,7 +3876,7 @@ RCF_PCH_CFG_NODE_RWC(node_port_admin_status, "status",
 RCF_PCH_CFG_NODE_NA(node_port_admin, "admin",
                     &node_port_admin_status, &node_port_state);
 
-RCF_PCH_CFG_NODE_RO(node_port_type, "type", 
+RCF_PCH_CFG_NODE_RO(node_port_type, "type",
                     NULL, &node_port_admin,
                     port_get_type);
 
@@ -4024,23 +4024,23 @@ RCF_PCH_CFG_NODE_RWC(node_stp_prio, "prio",
 
 static rcf_pch_cfg_object node_stp =
         { "stp", 0, &node_stp_prio, &node_arl,
-          (rcf_ch_cfg_get)stp_get, (rcf_ch_cfg_set)stp_set, 
+          (rcf_ch_cfg_get)stp_get, (rcf_ch_cfg_set)stp_set,
           NULL, NULL, NULL, stp_commit, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(node_vlan_ip, "ip",
                     NULL, NULL,
                     vlan_ip_get, vlan_ip_set);
 
-RCF_PCH_CFG_NODE_COLLECTION(node_vlan_port, "port", 
-                            NULL, &node_vlan_ip, 
-                            vlan_port_add, vlan_port_del, vlan_port_list, 
+RCF_PCH_CFG_NODE_COLLECTION(node_vlan_port, "port",
+                            NULL, &node_vlan_ip,
+                            vlan_port_add, vlan_port_del, vlan_port_list,
                             NULL);
 
-static rcf_pch_cfg_object node_vlan = 
-        { "vlan", 0, 
+static rcf_pch_cfg_object node_vlan =
+        { "vlan", 0,
           &node_vlan_port, &node_stp,
-          (rcf_ch_cfg_get)vlan_get, (rcf_ch_cfg_set)vlan_set, 
-          (rcf_ch_cfg_add)vlan_add, (rcf_ch_cfg_del)vlan_del, 
+          (rcf_ch_cfg_get)vlan_get, (rcf_ch_cfg_set)vlan_set,
+          (rcf_ch_cfg_add)vlan_add, (rcf_ch_cfg_del)vlan_del,
           (rcf_ch_cfg_list)vlan_list, NULL, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(node_cos, "cos",
@@ -4070,7 +4070,7 @@ void
 rcf_ch_conf_fini()
 {
     free(poe_ports);
-    free(arl_table);    
+    free(arl_table);
     free(stp_port_table);
     poe_ports = NULL;
 }

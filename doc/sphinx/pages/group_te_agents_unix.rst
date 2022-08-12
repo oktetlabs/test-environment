@@ -50,20 +50,20 @@ Source organization
 The sources of UNIX Test Agent located under agents/unix directory of TE tree:
 
 * agents/unix/rpc - implementation of RPC Server calls.
-  
+
   Please refer to :ref:`RPC Development Framework <doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_framework>` for the details on how to add new RPC calls into :ref:`Test Agents <doxid-group__te__agents>`;
 
 * agents/unix/main.c - implementation of entry point of Test Agent as well as functions of RCF PCH interface;
 
 * agents/unix/conf implementation of configuration nodes for UNIX Test Agent:
-  
+
   * agents/unix/conf/base - support of base configuration nodes (network interface configuration);
-  
+
   * agents/unix/conf/daemons - support of network daemons configuration;
-  
+
   * agents/unix/conf/route - support of network routing table configuration;
-  
+
   * agents/unix/conf/util - support of configuration models of external utilities integrated in TE (sniffer);
-  
+
   Please refer to :ref:`Test Agents: Creating new configuration nodes in Test Agent <doxid-group__te__agents__conf>` for the details on how to add new configuration nodes into :ref:`Test Agents <doxid-group__te__agents>`.
 

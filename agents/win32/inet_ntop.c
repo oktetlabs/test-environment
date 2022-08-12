@@ -25,7 +25,7 @@ inet_ntop(af, src, dst, size)
     int size;
 {
     return "Not supported";
-}    
+}
 
 #else
 
@@ -47,7 +47,7 @@ static const char rcsid[] = "$BINDId: inet_ntop.c,v 1.8 1999/10/13 16:39:28 vixi
 
 /*
  * This file is copied from glibc to use inet_pton in win32 Test Agent
- * 
+ *
  * Below are some definitions necessary for successful compilation.
  */
 

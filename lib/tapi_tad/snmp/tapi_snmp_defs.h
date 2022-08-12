@@ -1,18 +1,18 @@
 /** @file
- * @brief Test Environment: 
+ * @brief Test Environment:
  *
  * Traffic Application Domain Command Handler
  * SNMP protocol MIB tables declarations.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  *
  */
 #ifndef __TE__TAPI_SNMP_DEFS_H__
-#define __TE__TAPI_SNMP_DEFS_H__ 
+#define __TE__TAPI_SNMP_DEFS_H__
 
 #include "tapi_snmp.h"
 

@@ -9,10 +9,10 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
- */ 
+ */
 
 #ifndef __TE_TAPI_DHCP_H__
 #define __TE_TAPI_DHCP_H__
@@ -126,19 +126,19 @@ struct dhcp_option {
 /** Structure of DHCP message */
 typedef struct dhcp_message {
     uint8_t  op;        /**< Message op code */
-    uint8_t  htype;     /**< Hardware address type */ 
+    uint8_t  htype;     /**< Hardware address type */
     uint8_t  hlen;      /**< Hardware address length */
     uint8_t  hops;      /**< Client sets to zero, optionally used by
                              relay agents when booting via a relay agent */
     uint32_t xid;       /**< Transaction ID */
-    uint16_t secs;      /**< Seconds elapsed since client began address 
+    uint16_t secs;      /**< Seconds elapsed since client began address
                              acquisition or renewal process */
     uint16_t flags;     /**< Flags */
     uint32_t ciaddr;    /**< Client IP address */
     uint32_t yiaddr;    /**< 'your' (client) IP address */
     uint32_t siaddr;    /**< IP address of next server to use in
                              bootstrap */
-    uint32_t giaddr;    /**< Relay agent IP address, used in booting via 
+    uint32_t giaddr;    /**< Relay agent IP address, used in booting via
                              a relay agent */
 
     uint8_t chaddr[DHCPV4_HDR_CHADDR_SIZE]; /**< Client hardware address */
@@ -246,20 +246,20 @@ typedef struct dhcp_message {
 /*@}*/
 
 /**
- * Note that 'value_' MUST be a pointer to a buffer with at 
+ * Note that 'value_' MUST be a pointer to a buffer with at
  * least DHCPV4_HDR_CHADDR_SIZE valid bytes
  */
 #define dhcpv4_message_set_chaddr(msg_, value_) \
             dhcpv4_message_set_array_field(msg_, chaddr, value_)
 
 /**
- * Note that 'value_' MUST be a pointer to a buffer with at 
+ * Note that 'value_' MUST be a pointer to a buffer with at
  * least DHCPV4_HDR_SNAME_SIZE valid bytes
  */
 #define dhcpv4_message_set_sname(msg_, value_) \
             dhcpv4_message_set_array_field(msg_, sname, value_)
 /**
- * Note that 'value_' MUST be a pointer to a buffer with at 
+ * Note that 'value_' MUST be a pointer to a buffer with at
  * least DHCPV4_HDR_FILE_SIZE valid bytes
  */
 #define dhcpv4_message_set_file(msg_, value_) \
@@ -292,7 +292,7 @@ extern int ndn_dhcpv4_plain_to_packet(const dhcp_message *dhcp_msg,
  *
  * @se It adds Option 53 in DHCP message with value 'msg_type'
  */
-extern struct dhcp_message *dhcpv4_message_create(dhcp_message_type 
+extern struct dhcp_message *dhcpv4_message_create(dhcp_message_type
                                                   msg_type);
 
 /**
@@ -347,7 +347,7 @@ extern int dhcpv4_prepare_traffic_pattern(const dhcp_message *dhcp_msg,
  *
  * @param ta_name       Name of Test Agent
  * @param dhcp_csap     ID of DHCP CSAP, which should receive message
- * @param timeout       Time while CSAP will receive, measured in 
+ * @param timeout       Time while CSAP will receive, measured in
  *                      milliseconds, counted wince start receive,
  *                      may be TAD_TIMEOUT_INF for infinitive wait
  * @param msg_type      Desired type of message

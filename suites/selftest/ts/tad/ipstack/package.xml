@@ -5,10 +5,10 @@
 
   <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
 
-  <req id="TAD_IPSTACK" sticky="true"/> 
+  <req id="TAD_IPSTACK" sticky="true"/>
 
   <session>
-  
+
     <run>
       <script name="ip4_raw_send">
         <req id="TAD_IP4"/>
@@ -28,7 +28,7 @@
         <value>=1</value>
         <value>+1</value>
       </arg>
-    </run> 
+    </run>
 
     <run>
       <session>
@@ -38,7 +38,7 @@
           </script>
           <arg name="env">
             <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
-          </arg>  
+          </arg>
           <arg name="type">
             <value>3</value>
           </arg>
@@ -66,8 +66,8 @@
           </arg>
         </run>
       </session>
-    </run> 
-   
+    </run>
+
     <run>
       <session>
         <run>
@@ -76,7 +76,7 @@
           </script>
           <arg name="env">
             <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
-          </arg>  
+          </arg>
           <arg name="type">
             <value>5</value>
           </arg>
@@ -92,8 +92,8 @@
           </arg>
         </run>
       </session>
-    </run> 
-   
+    </run>
+
     <run>
       <session>
         <run>
@@ -102,7 +102,7 @@
           </script>
           <arg name="env">
             <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
-          </arg>  
+          </arg>
           <arg name="type">
             <value>11</value>
             <value>12</value>
@@ -117,8 +117,8 @@
           </arg>
         </run>
       </session>
-    </run> 
-   
+    </run>
+
     <run>
       <session>
         <run>
@@ -127,7 +127,7 @@
           </script>
           <arg name="env">
             <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
-          </arg>  
+          </arg>
           <arg name="type">
             <value>0</value>
             <value>4</value>
@@ -150,15 +150,15 @@
           </arg>
         </run>
       </session>
-    </run> 
-   
+    </run>
+
     <run>
       <script name="ip4_send_udp">
         <req id="TAD_IP4"/>
       </script>
       <arg name="env">
         <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
-      </arg>  
+      </arg>
       <arg name="pld_len">
         <value>50</value>
       </arg>
@@ -166,8 +166,8 @@
         <value>correct</value>
         <value>+1</value>
       </arg>
-    </run> 
-    
+    </run>
+
     <run>
       <session>
         <run>
@@ -177,7 +177,7 @@
           </script>
           <arg name="env">
               <value>{'host_csap'{{'pco_a':tester}, addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
-          </arg>  
+          </arg>
           <arg name="type" list="">
             <value>3</value>
             <value>3</value>
@@ -237,7 +237,7 @@
           </arg>
         </run>
       </session>
-    </run> 
+    </run>
 
     <run>
       <session>

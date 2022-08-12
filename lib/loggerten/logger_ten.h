@@ -1,20 +1,20 @@
 /** @file
- * @brief Logger subsystem API - TEN side 
+ * @brief Logger subsystem API - TEN side
  *
  * API provided by Logger subsystem to users on TEN side.
  * Set of macros provides compete functionality for debugging
  * and tracing and highly recommended for using in the source
- * code. 
+ * code.
  *
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
  *
- * 
+ *
+ *
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
- */ 
+ */
 
 #ifndef __TE_LOGGER_TEN_H__
 #define __TE_LOGGER_TEN_H__
@@ -39,13 +39,13 @@ static inline const char *
 logger_server_name(void)
 {
     static const char *logger_name = NULL;
-    
-    if ((logger_name == NULL) && 
+
+    if ((logger_name == NULL) &&
         (logger_name = getenv("TE_LOGGER")) == NULL)
     {
         logger_name = "TE_LOGGER";
     }
-        
+
     return logger_name;
 }
 
@@ -63,13 +63,13 @@ logger_ta_prefix(void)
 {
     static char    prefix[64];
     static te_bool init = FALSE;
-    
+
     if (!init)
     {
         snprintf(prefix, sizeof(prefix), "%s-ta-", LGR_SRV_NAME);
         init = TRUE;
     }
-    
+
     return prefix;
 }
 
@@ -82,20 +82,20 @@ logger_flush_name(void)
 {
     static char    name[64];
     static te_bool init = FALSE;
-    
+
     if (!init)
     {
         snprintf(name, sizeof(name), "%s-flush", LGR_SRV_NAME);
         init = TRUE;
     }
-    
+
     return name;
 }
 
 /** Logger flush command */
 #define LGR_FLUSH       logger_flush_name()
 
-/** 
+/**
  * Close IPC with Logger server and release resources.
  *
  * Usually user should not worry about calling of the function, since
@@ -108,7 +108,7 @@ extern void log_client_close(void);
  * this procedure calling) accumulated into the Test Agent local log
  * buffer/file and register it into the raw log file.
  *
- * @param ta_name   - the name of separate TA whose local log should 
+ * @param ta_name   - the name of separate TA whose local log should
  *                    be flushed
  *
  * @return Status code

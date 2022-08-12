@@ -7,7 +7,7 @@ IMPORTS DATA-UNIT FROM TE-NDN-General;
 
 EXPORTS Ip4Address, IP-Header, IP-CSAP, UDP-Header, UDP-CSAP, TCP-Header, TCP-CSAP;
 
-Ip4Address ::= IMPLICIT SEQUENCE (SIZE 4) OF INTEGER (0..255)  
+Ip4Address ::= IMPLICIT SEQUENCE (SIZE 4) OF INTEGER (0..255)
 
 
 IPv4-Header ::= SEQUENCE {
@@ -23,7 +23,7 @@ IPv4-Header ::= SEQUENCE {
     h-checksum       [9] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     src-addr        [10] DATA-UNIT{Ip4Address} OPTIONAL,
     dst-addr        [11] DATA-UNIT{Ip4Address} OPTIONAL
-} 
+}
 
 IPv4-CSAP ::= SEQUENCE {
     version          [0] DATA-UNIT{INTEGER (0..31)} OPTIONAL,
@@ -33,9 +33,9 @@ IPv4-CSAP ::= SEQUENCE {
     time-to-live     [7] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
     protocol         [8] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
     local-addr      [10] DATA-UNIT{Ip4Address} OPTIONAL,
-    remote-addr     [11] DATA-UNIT{Ip4Address} OPTIONAL, 
+    remote-addr     [11] DATA-UNIT{Ip4Address} OPTIONAL,
     max-packet-size [12] DATA-UNIT{INTEGER} OPTIONAL,
-    router          [13] DATA-UNIT{Ip4Address} OPTIONAL, 
+    router          [13] DATA-UNIT{Ip4Address} OPTIONAL,
     fragmentation   [14] DATA-UNIT{AllowFragments} OPTIONAL,
     ...
 }
@@ -52,7 +52,7 @@ ICMP-Message-Type ::= INTEGER {
     timestamp(13),
     timestamp-reply(14),
     info-request(15),
-    info-reply(16) 
+    info-reply(16)
 }
 
 ICMP-Message ::= SEQUENCE {
@@ -95,15 +95,15 @@ TCP-Header ::= SEQUENCE {
     win-size  [6] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     checksum  [7] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     urg-p     [8] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
-    socket        INTEGER OPTIONAL, 
-    length        INTEGER OPTIONAL, 
+    socket        INTEGER OPTIONAL,
+    length        INTEGER OPTIONAL,
     ...
 }
 
 TCP-CSAP ::=  SEQUENCE {
     local-port   [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     remote-port  [1] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
-    data         [2] CHOICE { 
+    data         [2] CHOICE {
         server  NULL,
         client  NULL,
         socket  INTEGER

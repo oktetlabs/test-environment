@@ -1,9 +1,9 @@
 /** @file
- * @brief Functions, used in CWMP-related tests for make 
- * some management of CPE behind CWMP. 
- * 
+ * @brief Functions, used in CWMP-related tests for make
+ * some management of CPE behind CWMP.
+ *
  * @author Marina Maslova <Marina.Maslova@oktetlabs.ru>
- * 
+ *
  */
 
 #include "cpe_backdoor.h"

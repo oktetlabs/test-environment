@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package version="1.0">
-    
+
     <description>Tests on TAD SNMP functionality.</description>
 
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>

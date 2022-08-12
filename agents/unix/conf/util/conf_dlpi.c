@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
@@ -265,7 +265,7 @@ ta_unix_conf_dlpi_phys_addr_get(const char *name, void *addr,
                         rc = TE_EBADMSG;
                         break;
                     }
-                    
+
                     pa_ack = &prim->physaddr_ack;
                     if (pa_ack->dl_addr_offset != 0)
                     {
@@ -326,7 +326,7 @@ exit:
 
 /* See the description in conf_dlpi.h */
 te_errno
-ta_unix_conf_dlpi_phys_addr_set(const char *name, const void *addr, 
+ta_unix_conf_dlpi_phys_addr_set(const char *name, const void *addr,
                                 size_t addrlen)
 {
     te_errno                rc;

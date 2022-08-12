@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -62,7 +62,7 @@
  *                   (OUT)
  */
 #define TEST_GET_ADDR_FAMILY(var_name_) \
-    TEST_GET_ENUM_PARAM(var_name_, ADDR_FAMILY_MAPPING_LIST) 
+    TEST_GET_ENUM_PARAM(var_name_, ADDR_FAMILY_MAPPING_LIST)
 
 
 /**

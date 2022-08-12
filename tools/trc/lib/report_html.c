@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -1709,7 +1709,7 @@ escape_test_path(const char *path)
               __FUNCTION__);
         return NULL;
     }
-    
+
     l = 0;
     for (i = 0; i < strlen(path); i++)
     {
@@ -2307,7 +2307,7 @@ trc_report_test_iter_entry_output(
               */
              (~flags & TRC_REPORT_NO_EXP_PASSED) ||
              (status != TE_TEST_PASSED) || (!is_exp)) &&
-            (/* 
+            (/*
               * NO_EXPECTED is clear or obtained result is equal
               * to expected
               */
@@ -2690,7 +2690,7 @@ trc_report_exp_got_to_html(FILE             *f,
                     {
                         te_bool         escape_comma = FALSE;
                         unsigned int    j;
-                        
+
                         if (iter_entry->args[i].variable)
                             continue;
 
@@ -2730,7 +2730,7 @@ trc_report_exp_got_to_html(FILE             *f,
                     iter_history_url = te_sprintf(
                                             trc_test_iter_history_href,
                                             iter_entry->hash,
-                                            test_path, params.ptr); 
+                                            test_path, params.ptr);
 
                 te_string_free(&params);
             }
@@ -2957,7 +2957,7 @@ trc_report_test_output(const trc_report_stats *stats, unsigned int flags)
          ((~flags & TRC_REPORT_NO_SKIPPED) ||
           (TRC_STATS_RUN(stats) != 0) ||
           ((~flags & TRC_REPORT_NO_STATS_NOT_RUN) &&
-           (TRC_STATS_NOT_RUN(stats) != 
+           (TRC_STATS_NOT_RUN(stats) !=
             (stats->skip_exp + stats->skip_une)))) &&
          /* NO_EXP_PASSED or not all tests are passed as expected */
          ((~flags & TRC_REPORT_NO_EXP_PASSED) ||
@@ -3038,7 +3038,7 @@ trc_report_test_stats_to_html(FILE             *f,
      (strcmp(field_, "passed_exp") == 0 ||                  \
       strcmp(field_, "failed_exp") == 0 ||                  \
       strcmp(field_, "passed_unexp") == 0 ||                \
-      strcmp(field_, "failed_unexp") == 0))) 
+      strcmp(field_, "failed_unexp") == 0)))
 
 #define TRC_STATS_FIELD_POPUP(field_, value_, expr_) \
     ((value_) > 0) ? field_ : "zero",                   \
@@ -3072,7 +3072,7 @@ trc_report_test_stats_to_html(FILE             *f,
      (ZERO_PASS_EXP ? 0 : stats->pass_exp) + \
      (ZERO_FAIL_EXP ? 0 : stats->fail_exp) + \
      stats->pass_une + stats->fail_une
-    
+
 
         fprintf(f, trc_tests_stats_row,
                 PRINT_STR(level_str),
@@ -3103,7 +3103,7 @@ trc_report_test_stats_to_html(FILE             *f,
                                         stats->pass_exp ==
                                             FAIL_PASS_COUNT) &&
                                       !ZERO_PASS_EXP),
-                TRC_STATS_FIELD_POPUP("failed_exp", stats->fail_exp, 
+                TRC_STATS_FIELD_POPUP("failed_exp", stats->fail_exp,
                                       !(test->type == TRC_TEST_SCRIPT &&
                                         stats->fail_exp ==
                                             FAIL_PASS_COUNT) &&
@@ -3206,7 +3206,7 @@ trc_report_javascript_package_subtests(FILE       *f,
  * @return      Status code.
  */
 static te_errno
-trc_report_javascript_table(FILE         *f, trc_report_ctx *ctx, 
+trc_report_javascript_table(FILE         *f, trc_report_ctx *ctx,
                             unsigned int  flags)
 {
     te_errno              rc = 0;
@@ -3293,7 +3293,7 @@ trc_report_javascript_table(FILE         *f, trc_report_ctx *ctx,
 
                     rc = trc_report_javascript_package_subtests(f,
                                      test_path.ptr, subtests[level].ptr);
-    
+
                     te_string_free(&subtests[level]);
                 }
                 break;
@@ -3324,7 +3324,7 @@ cleanup:
  * @return      Status code.
  */
 static te_errno
-trc_report_html_table(FILE    *f, trc_report_ctx *ctx, 
+trc_report_html_table(FILE    *f, trc_report_ctx *ctx,
                       te_bool  is_stats, unsigned int flags)
 {
     te_errno              rc = 0;

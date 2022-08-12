@@ -5,19 +5,19 @@
 
 #if HAVE_NET_SNMP_DEFINITIONS_H
 #include <net-snmp/net-snmp-config.h>
-#include <net-snmp/definitions.h> 
-#include <net-snmp/mib_api.h> 
+#include <net-snmp/definitions.h>
+#include <net-snmp/mib_api.h>
 #endif
 
 #include "asn_impl.h"
-#include "ndn_general.h" 
+#include "ndn_general.h"
 #include "tapi_snmp.h"
 
-int 
+int
 main(int argc, char *argv[])
 {
     int rc;
-    struct tree *entry_node; 
+    struct tree *entry_node;
     tapi_snmp_oid_t table_oid = {9, {1, 3, 6, 1, 2, 1, 1, 9, 1}};
 
     if (argc < 3)
@@ -26,11 +26,11 @@ main(int argc, char *argv[])
         return 1;
     }
     rc = tapi_snmp_load_mib_with_path(argv[1], argv[2]);
-    if (rc) 
+    if (rc)
     {
         fprintf(stderr, "load mibs failed: %d \n", rc);
         return 2;
-    } 
+    }
 
     entry_node = get_tree(table_oid.id, table_oid.length, get_tree_head());
 
@@ -40,7 +40,7 @@ main(int argc, char *argv[])
     }
     else
     {
-        printf ("NODE: subid %d, type %d; label <%s>; status %d\n", 
+        printf ("NODE: subid %d, type %d; label <%s>; status %d\n",
                     entry_node->subid, entry_node->type, entry_node->label,
                     entry_node->status);
         if (entry_node->indexes)

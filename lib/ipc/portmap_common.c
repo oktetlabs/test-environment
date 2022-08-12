@@ -5,14 +5,14 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Ivanov <andron@oktet.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  */
- 
+
 #include "te_config.h"
 
 #include "ipc_internal.h"

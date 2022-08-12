@@ -2,16 +2,16 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from SunOS' sys/systeminfo.h.
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_SYS_SYSTEMINFO_H__
 #define __TE_RPC_SYS_SYSTEMINFO_H__
 
@@ -46,8 +46,8 @@ typedef enum rpc_sysinfo_command {
     RPC_SI_ARCHITECTURE_NATIVE,
 } rpc_sysinfo_command;
 
-/** 
- * Convert RPC resource type (setrlimit/getrllimit) 
+/**
+ * Convert RPC resource type (setrlimit/getrllimit)
  * to string representation.
  */
 extern const char * sysinfo_command_rpc2str(rpc_sysinfo_command resource);

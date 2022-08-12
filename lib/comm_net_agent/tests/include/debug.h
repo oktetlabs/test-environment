@@ -1,14 +1,14 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side - Library
  * Connections API
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 #ifndef __TE_COMM_NET_AGENT_TESTS_LIB_DEBUG_H__
 #define __TE_COMM_NET_AGENT_TESTS_LIB_DEBUG_H__

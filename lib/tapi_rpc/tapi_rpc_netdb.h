@@ -8,7 +8,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -41,7 +41,7 @@ extern "C" {
  *
  * @param handle     RPC Server
  * @param name       given name   may be
- *                   - string hostname 
+ *                   - string hostname
  *                   - ipv4 address in standart dot notation
  *                   - ipv6 address
  *

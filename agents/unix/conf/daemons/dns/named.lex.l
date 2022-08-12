@@ -19,10 +19,10 @@ void lex_switch_buffer(const char *name)
 {
     FILE *infile = fopen(name, "r");
     YY_BUFFER_STATE state;
-    
+
     if(!infile)
         ERROR("Cannot open '%s'");
-    else 
+    else
     {
         if(state_stack_top == state_stack + sizeof(state_stack) / sizeof(*state_stack))
         {
@@ -80,6 +80,6 @@ return DNS_QUOTED_STRING; }
     yy_switch_to_buffer(*--state_stack_top);
     BEGIN(INITIAL);
 }
-   
 
-    
+
+

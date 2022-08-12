@@ -10,7 +10,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -52,7 +52,7 @@
  *                      See description in IEEE 802.3.
  * @param tagged        Whether frames should be VLAN tagged, any or
  *                      untagged.
- * @param llc           Whether frames should be 802.2 LLC, any or 
+ * @param llc           Whether frames should be 802.2 LLC, any or
  *                      Ethernet2.
  *
  * @retval Status code.
@@ -69,7 +69,7 @@ extern te_errno tapi_eth_add_csap_layer(asn_value      **csap_spec,
                                         te_bool3         llc);
 
 /**
- * Add Ethernet PDU as the last PDU to the last unit of the traffic 
+ * Add Ethernet PDU as the last PDU to the last unit of the traffic
  * template or pattern.
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or

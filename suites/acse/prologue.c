@@ -28,7 +28,7 @@ main(int argc, char *argv[])
 {
     const char *ta_acse;
     char *cr_url = NULL;
-    int   cr_url_wait_count; 
+    int   cr_url_wait_count;
 
     tapi_acse_context_t *ctx;
 
@@ -39,7 +39,7 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_acse_start(ta_acse));
 
     TAPI_ACSE_CTX_INIT(ctx);
-    
+
     CHECK_RC(tapi_acse_manage_acs(ctx, ACSE_OP_MODIFY,
                                   "enabled", 1, VA_END_LIST));
 

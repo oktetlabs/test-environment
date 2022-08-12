@@ -32,7 +32,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>

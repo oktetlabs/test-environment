@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package version="1.0">
-    
+
     <description>Tests on TAD IP stack functionality.</description>
 
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
@@ -19,7 +19,7 @@
                 <value>{{{'pco':tester},addr:'pco_addr':inet:unicast,if:'pco_if'}}</value>
             </arg>
 
-        </run> 
+        </run>
         <run>
             <script name="ip4_recv_send">
                 <req id="TAD_IP4"/>
@@ -31,7 +31,7 @@
             <arg name="pld_len">
                 <value>50</value>
             </arg>
-        </run> 
+        </run>
 
         <run>
             <script name="ip4_udp_dgm">
@@ -42,7 +42,7 @@
                 {{'pco':tester},addr:'pco_addr':inet:unicast,if:'pco_if'}}
                 </value>
             </arg>
-        </run> 
+        </run>
 
         <run>
             <script name="ip4_fragments">
@@ -53,7 +53,7 @@
                 'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}
                 </value>
             </arg>
-        </run> 
+        </run>
 
         <run>
             <script name="tcp_flood_iter">
@@ -71,7 +71,7 @@
                 <value>500</value>
                 <value>1400</value>
             </arg>
-        </run> 
+        </run>
         <run>
             <script name="tcp_flood_func">
                 <req id="TAD_TCP"/>
@@ -90,7 +90,7 @@
                 <value>500</value>
                 <value>1400</value>
             </arg>
-        </run> 
+        </run>
         <run>
             <script name="tcp_conn">
                 <req id="TAD_TCP"/>
@@ -102,7 +102,7 @@
                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}
                 </value>
             </arg>
-        </run> 
+        </run>
 
         <run>
             <script name="tcp_conn_reset">
@@ -113,7 +113,7 @@
                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}
                 </value>
             </arg>
-        </run> 
+        </run>
 
         <run>
             <script name="tcp_data">

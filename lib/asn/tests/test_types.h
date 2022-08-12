@@ -5,11 +5,11 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- */ 
+ */
 #ifndef __TE_ASN_TESTS_TYPES_H__
 #define __TE_ASN_TESTS_TYPES_H__
 
@@ -25,7 +25,7 @@ enum {
 };
 
 
-/* 
+/*
 PlainSeq1 ::= [APPLICATION 1] SEQUENCE {
     number [0] INTEGER,
     string [1] UniversalString
@@ -49,12 +49,12 @@ asn_type at_plain_seq1 = {
 };
 
 
-/* 
+/*
 PlainChoice1 ::= [APPLICATION 2] CHOICE {
     number INTEGER,
     string UniversalString
 }
-*/ 
+*/
 asn_type at_plain_choice1 = {
     "PlainChoice1",
     {APPLICATION, 2},
@@ -107,7 +107,7 @@ OurNames ::= INTEGER  {
 }
 */
 
-asn_enum_entry_t _at_our_names_enum_entries[] = 
+asn_enum_entry_t _at_our_names_enum_entries[] =
 {
     {"galba", 9},
     {"thor", 16}
@@ -117,7 +117,7 @@ asn_type at_our_names = {
     "OurNames",
     {UNIVERSAL, 10},
     ENUMERATED,
-    sizeof(_at_our_names_enum_entries)/sizeof(asn_enum_entry_t), 
+    sizeof(_at_our_names_enum_entries)/sizeof(asn_enum_entry_t),
     {enum_entries:_at_our_names_enum_entries}
 };
 

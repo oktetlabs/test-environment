@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
@@ -238,7 +238,7 @@ ndn_dhcpv4_option_to_plain(const asn_value *dhcp_opt,
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
-        /* 
+        /*
          * Option doesn't have length and value fields
          * (END and PAD options)
          */
@@ -412,10 +412,10 @@ ndn_dhcpv4_add_opts(asn_value *container, struct dhcp_option *opt)
             }
 
             CHECK_RC(ndn_dhcpv4_add_opts(dhcp_opt, opt->subopts));
-            CHECK_RC(asn_insert_indexed(container, 
+            CHECK_RC(asn_insert_indexed(container,
                                         asn_copy_value(dhcp_opt), -1,
                                         "options"));
-        
+
             if (opt->subopts)
                 CHECK_RC(asn_free_subvalue(dhcp_opt, "options"));
 
@@ -1012,7 +1012,7 @@ dhcp_pkt_handler(const char *pkt_fname, void *user_param)
  *
  * @param ta_name       Name of Test Agent
  * @param dhcp_csap     ID of DHCP CSAP, which should receive message
- * @param timeout       Time while CSAP will receive, measured in 
+ * @param timeout       Time while CSAP will receive, measured in
  *                      milliseconds, counted wince start receive,
  *                      may be TAD_TIMEOUT_INF for infinitive wait
  * @param msg_type      Desired type of message
@@ -1046,7 +1046,7 @@ dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
 #endif
     rcv_pkt.dhcp_msg = NULL;
 
-    /* 
+    /*
      * Fill in asn_dhcp_msg data structure: specify 'op' field and
      * Option 53
      */

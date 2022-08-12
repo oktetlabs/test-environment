@@ -1,7 +1,7 @@
 /**
  * Test for ASN library.
  *
- * Parse plain syntax values. 
+ * Parse plain syntax values.
  *
  */
 #include "te_config.h"
@@ -20,7 +20,7 @@ char buffer[1000];
 int result = 0;
 
 
-char tmpl_asn_string[] = 
+char tmpl_asn_string[] =
 "{\
   pdus {\
     atm:{\
@@ -37,7 +37,7 @@ char tmpl_asn_string[] =
 }";
 
 
-char packet_asn_string[] = 
+char packet_asn_string[] =
 #if 0
 "{\
   received {\
@@ -84,7 +84,7 @@ char packet_asn_string[] =
 
 char buf[10000];
 
-int 
+int
 main(void)
 {
     asn_value *val;
@@ -99,19 +99,19 @@ main(void)
     {
         printf("parse failed rc %x, syms: %d\n", rc, s_parsed);
         return 1;
-    } 
+    }
     sub_val = asn_find_descendant(val, &rc, "pdus.%d", 1);
 
     if (rc != 0)
     {
-        fprintf(stderr, "status %x\n", rc); 
+        fprintf(stderr, "status %x\n", rc);
         return rc;
     }
     if (sub_val == NULL)
     {
-        fprintf(stderr, "returned value NULL!\n"); 
+        fprintf(stderr, "returned value NULL!\n");
         return 1;
-    } 
+    }
 
     rc = asn_parse_value_text(tmpl_asn_string, ndn_traffic_template,
                               &tmpl, &s_parsed);
@@ -119,7 +119,7 @@ main(void)
     {
         printf("parse tmpl failed rc %x, syms: %d\n", rc, s_parsed);
         return 1;
-    } 
+    }
 
     if (1)
     {
@@ -145,7 +145,7 @@ main(void)
     rc = asn_free_subvalue(val, "pdus.1");
     if (rc != 0)
     {
-        fprintf(stderr, "free subvalue status %x\n", rc); 
+        fprintf(stderr, "free subvalue status %x\n", rc);
         return rc;
     }
     sub_val = asn_find_descendant(val, &rc, "pdus.1");
@@ -154,7 +154,7 @@ main(void)
     {
         fprintf(stderr,
                 "unexpected result of find after free: ptr %p, status %x\n",
-                sub_val, rc); 
+                sub_val, rc);
         if (!rc)
             rc = 1;
 

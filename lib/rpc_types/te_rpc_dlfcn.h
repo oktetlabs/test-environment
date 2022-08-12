@@ -2,17 +2,17 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from dlfcn.h.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Nikita Rastegaev <Nikita.Rastegaev@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_DLFCN_H__
 #define __TE_RPC_DLFCN_H__
 

@@ -4,25 +4,25 @@ BEGIN
 
 -- most part of this module is based on RFC-1905
 
-IMPORTS DATA-UNIT 
+IMPORTS DATA-UNIT
             FROM TE-NDN-General
 	ObjectName, ObjectSyntax, Integer32
 	    FROM SNMPv2-SMI;
 
 EXPORTS SNMP-Message, SNMP-CSAP;
 
-SNMP-Message ::= SEQUENCE { 
+SNMP-Message ::= SEQUENCE {
     version DATA-UNIT{INTEGER(1..3)} OPTIONAL,
     community DATA-UNIT{PrintableString} OPTIONAL,
-    pdu CHOICE { get GetRequest-PDU, 
-	     get-next GetNextRequest-PDU, 
-	     get-bulk GetBulkRequest-PDU, 
-	     response Response-PDU, 
-	     set SetRequest-PDU, 
-	     inform InformRequest-PDU, 
-	     snmpV2-trap SNMPv2-Trap-PDU, 
+    pdu CHOICE { get GetRequest-PDU,
+	     get-next GetNextRequest-PDU,
+	     get-bulk GetBulkRequest-PDU,
+	     response Response-PDU,
+	     set SetRequest-PDU,
+	     inform InformRequest-PDU,
+	     snmpV2-trap SNMPv2-Trap-PDU,
 	     report Report-PDU
-	 } 
+	 }
 }
 GetRequest-PDU ::= [0] IMPLICIT PDU
 
@@ -57,7 +57,7 @@ PDU ::= SEQUENCE {
              tooBig(1),
              noSuchName(2),   -- for proxy compatibility
              badValue(3),     -- for proxy compatibility
-             readOnly(4),     -- for proxy compatibility genErr(5), 
+             readOnly(4),     -- for proxy compatibility genErr(5),
              noAccess(6),
              wrongType(7),
              wrongLength(8),
@@ -71,7 +71,7 @@ PDU ::= SEQUENCE {
              authorizationError(16),
              notWritable(17),
              inconsistentName(18)
-         }} OPTIONAL, 
+         }} OPTIONAL,
          error-index	    -- sometimes ignored
              DATA-UNIT{ INTEGER (0..max-bindings)} OPTIONAL,
 
@@ -82,7 +82,7 @@ PDU ::= SEQUENCE {
 
 BulkPDU ::=		     -- MUST be identical in
     SEQUENCE {		     -- structure to PDU
-        request-id DATA-UNIT{Integer32}, 
+        request-id DATA-UNIT{Integer32},
         non-repeaters DATA-UNIT{INTEGER (0..max-bindings)},
 
         max-repetitions DATA-UNIT{INTEGER (0..max-bindings)},

@@ -2,13 +2,13 @@
  * @brief ACSE Test Suite
  *
  * ACSE Test Suite
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
- * 
+ *
  */
 
 
@@ -47,7 +47,7 @@ main(int argc, char *argv[])
     cwmp_values_array_t          *get_values_resp = NULL;
     string_array_t               *get_values;
 
-    char *param_path = 
+    char *param_path =
             "InternetGatewayDevice.LANDevice.1.LANHostConfigManagement."
             "IPInterface.";
     char *lan_ip_conn_path;
@@ -82,7 +82,7 @@ main(int argc, char *argv[])
     get_values = cwmp_str_array_alloc(lan_ip_conn_path,
                         "Enable",
                         "IPInterfaceIPAddress",
-                        "IPInterfaceSubnetMask", 
+                        "IPInterfaceSubnetMask",
                         "IPInterfaceAddressingType",
                         VA_END_LIST);
 
@@ -92,7 +92,7 @@ main(int argc, char *argv[])
     for (i = 0; i < get_values_resp->size; i++)
     {
         char buf[1024];
-        snprint_ParamValueStruct(buf, sizeof(buf), 
+        snprint_ParamValueStruct(buf, sizeof(buf),
                                  get_values_resp->items[i]);
         RING("GetParValues result [%d]: %s", i, buf);
     }

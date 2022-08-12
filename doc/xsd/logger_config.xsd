@@ -8,7 +8,7 @@
       XML schema for Logger configuration file.
 
       Copyright (C) 2003-2018 OKTET Labs.
- 
+
       Author: Igor B. Vasiliev &lt;Igor.Vasiliev@oktetlabs.ru&gt;
     </xsd:documentation>
   </xsd:annotation>
@@ -29,7 +29,7 @@
                 <xsd:complexType>
                   <xsd:annotation>
                     <xsd:documentation xml:lang="en">
-                      This element is not mandatory and provides 
+                      This element is not mandatory and provides
                       the polling parameter value to the Test Agents of
                       the separate type. In the case if polling parameter
                       is not assigned to the separate Test Agent yet and
@@ -47,8 +47,8 @@
                 <xsd:complexType>
                   <xsd:annotation>
                     <xsd:documentation xml:lang="en">
-                      This element is not mandatory and can be used to 
-                      assign polling parameter value to the separate 
+                      This element is not mandatory and can be used to
+                      assign polling parameter value to the separate
                       Test Agent.
                     </xsd:documentation>
                   </xsd:annotation>
@@ -64,8 +64,8 @@
               <xsd:annotation>
                 <xsd:documentation xml:lang="en">
                   This attribute is mandatory and provides the polling
-                  agent parameter default value. 
-                  In the case if polling parameter is not assigned 
+                  agent parameter default value.
+                  In the case if polling parameter is not assigned
                   to the separate Test Agent the default value is used.
                 </xsd:documentation>
               </xsd:annotation>

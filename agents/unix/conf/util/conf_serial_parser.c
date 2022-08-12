@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
@@ -37,7 +37,7 @@ SLIST_HEAD(, serial_parser_t) parsers_h;
 /**
  * Check return code of the pthread_mutex_lock and
  * pthread_mutex_unlock calls
- * 
+ *
  * @param _rc   Returned value of the calls
  */
 #define TE_SERIAL_CHECK_LOCK(_rc) \
@@ -51,9 +51,9 @@ SLIST_HEAD(, serial_parser_t) parsers_h;
 
 /**
  * Searching for the parser by name.
- * 
+ *
  * @param name        Parser name.
- * 
+ *
  * @return The parser unit or @c NULL.
  */
 static serial_parser_t *
@@ -74,10 +74,10 @@ parser_get_by_name(const char *name)
 
 /**
  * Searching for the event by name
- * 
+ *
  * @param parser    Pointer to the parser
  * @param name      Event name
- * 
+ *
  * @return The event unit or @c NULL
  */
 static serial_event_t *
@@ -98,10 +98,10 @@ parser_get_event_by_name(serial_parser_t *parser, const char *name)
 
 /**
  * Searching for the pattern by name
- * 
+ *
  * @param event     Pointer to the event
  * @param name      Pattern name
- * 
+ *
  * @return The pattern unit or @c NULL
  */
 static serial_pattern_t *
@@ -122,7 +122,7 @@ parser_get_pattern_by_name(serial_event_t *event, const char *name)
 
 /**
  * Release patterns in the event
- * 
+ *
  * @param event     The event location
  */
 static void
@@ -141,7 +141,7 @@ parser_clean_event_patterns(serial_event_t *event)
 
 /**
  * Release events in the parser
- * 
+ *
  * @param event     The parser location
  */
 static void
@@ -161,9 +161,9 @@ parser_clean_parser_events(serial_parser_t *parser)
 
 /**
  * Stop the parser thread if it is enabled
- * 
+ *
  * @param parser    The parser location
- * 
+ *
  * @return Status code
  * @retval 0        Success
  */
@@ -627,13 +627,13 @@ parser_event_list(unsigned int gid, const char *oid, const char *sub_id,
 
 /**
  * Add event to the parser
- * 
+ *
  * @param gid       Group identifier (unused).
  * @param oid       Full object instance identifier (unused).
  * @param t_name    The Tester event name
  * @param pname     The parser name
  * @param ename     Parser event name
- * 
+ *
  * @return Status code
  * @retval 0        Success
  */
@@ -670,12 +670,12 @@ parser_event_add(unsigned int gid, const char *oid, char *t_name,
 
 /**
  * Delete event from the parser
- * 
+ *
  * @param gid       Group identifier (unused).
  * @param oid       Full object instance identifier (unused).
  * @param ename     Parser event name
  * @param pname     The parser name
- * 
+ *
  * @return Status code
  * @retval 0        Success
  */
@@ -706,13 +706,13 @@ parser_event_del(unsigned int gid, const char *oid, const char *pname,
 
 /**
  * Get value (tester event name) of the parser event
- * 
+ *
  * @param gid       Group identifier (unused).
  * @param oid       Full object instance identifier (unused).
  * @param value     Value of the parser event (OUT)
  * @param pname     The parser name
  * @param ename     Parser event name
- * 
+ *
  * @return Status code
  * @retval 0        Success
  */
@@ -738,13 +738,13 @@ parser_event_get(unsigned int gid, const char *oid, char *value,
 
 /**
  * Set value (tester event name) of the parser event
- * 
+ *
  * @param gid       Group identifier (unused).
  * @param oid       Full object instance identifier (unused).
- * @param value     Value of the parser event 
+ * @param value     Value of the parser event
  * @param pname     The parser name
  * @param ename     Parser event name
- * 
+ *
  * @return Status code
  * @retval 0        Success
  */
@@ -825,14 +825,14 @@ parser_pattern_list(unsigned int gid, const char *oid,
 
 /**
  * Add pattern to the event
- * 
+ *
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
  * @param pattern   A pattern expression string
  * @param pname     The parser name
  * @param ename     Parser event name
  * @param name      Pattern name
- * 
+ *
  * @return Status code
  * @retval 0        Success
  */
@@ -869,13 +869,13 @@ parser_pattern_add(unsigned int gid, const char *oid, const char *pattern,
 
 /**
  * Delete a pattern from an event
- * 
+ *
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
  * @param pname     The parser name
  * @param ename     The parser event name
  * @param name      The pattern name
- * 
+ *
  * @return Status code
  * @retval 0        Success
  */
@@ -906,14 +906,14 @@ parser_pattern_del(unsigned int gid, const char *oid, const char *pname,
 
 /**
  * Get value (pattern) of the pattern instance
- * 
+ *
  * @param gid       Group identifier (unused).
  * @param oid       Full object instance identifier (unused).
  * @param value     Value of the pattern (OUT)
  * @param pname     The parser name
  * @param ename     The parser event name
  * @param name      The pattern name
- * 
+ *
  * @return Status code
  * @retval 0        Success
  */
@@ -941,14 +941,14 @@ parser_pattern_get(unsigned int gid, const char *oid, char *value,
 
 /**
  * Set value (pattern) of the pattern instance
- * 
+ *
  * @param gid       Group identifier (unused).
  * @param oid       Full object instance identifier (unused).
  * @param value     Value of the pattern (OUT)
  * @param pname     The parser name
  * @param ename     The parser event name
  * @param name      The pattern name
- * 
+ *
  * @return Status code
  * @retval 0        Success
  */
@@ -978,14 +978,14 @@ parser_pattern_set(unsigned int gid, const char *oid, char *value,
 
 /**
  * Get value of the event instance variable
- * 
+ *
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
  * @param value     Value of the pattern (OUT)
  * @param pname     The parser name
  * @param ename     The parser event name
  * @param name      The instance name
- * 
+ *
  * @return Status code
  * @retval 0        Success
  */
@@ -1023,14 +1023,14 @@ parser_event_common_get(unsigned int gid, const char *oid, char *value,
 
 /**
  * Set value of the event instance variable
- * 
+ *
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
  * @param value     Value of the pattern
  * @param pname     The parser name
  * @param ename     The parser event name
  * @param name      The instance name
- * 
+ *
  * @return Status code
  * @retval 0        Success
  */
@@ -1091,7 +1091,7 @@ RCF_PCH_CFG_NODE_RW(serial_log_user, "user", NULL, NULL,
 RCF_PCH_CFG_NODE_RW(serial_log_level, "level", NULL, &serial_log_user,
                     parser_common_get, parser_common_set);
 
-RCF_PCH_CFG_NODE_RW(serial_logging, "logging", &serial_log_level, 
+RCF_PCH_CFG_NODE_RW(serial_logging, "logging", &serial_log_level,
                     &serial_event, parser_common_get, parser_common_set);
 
 RCF_PCH_CFG_NODE_RW(serial_reset, "reset", NULL, &serial_logging,

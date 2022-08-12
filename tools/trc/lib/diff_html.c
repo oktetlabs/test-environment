@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -58,7 +58,7 @@
 static const char * const trc_diff_html_title_def =
     "Testing Results Expectations Differences Report";
 
-static const char * const trc_diff_html_doc_start = 
+static const char * const trc_diff_html_doc_start =
 "<!DOCTYPE HTML PUBLIC \"-      //W3C//DTD HTML 4.0 Transitional//EN\">\n"
 "<html>\n"
 "<head>\n"
@@ -2493,7 +2493,7 @@ trc_diff_result_to_html(const trc_diff_result *result,
 
 cut:
         /* If level of the next entry is less */
-        if (next != NULL && 
+        if (next != NULL &&
             ((next->level < curr->level) ||
              (next->level == curr->level && (curr->level & 1) == 0)))
         {

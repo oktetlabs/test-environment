@@ -2,13 +2,13 @@
  * @brief ACSE Test Suite
  *
  * ACSE Test Suite
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
- * 
+ *
  */
 
 
@@ -29,12 +29,12 @@ main(int argc, char *argv[])
     cwmp_values_array_t          *set_values;
     int set_status;
 
-    char *param_path = 
+    char *param_path =
             "InternetGatewayDevice.WANDevice.1.WANConnectionDevice."
             "1.WANIPConnection.";
     char *wan_ip_conn_path;
 
-    tapi_acse_context_t *ctx; 
+    tapi_acse_context_t *ctx;
 
     const char *old_wan_ip;
     const char *new_wan_ip = "10.20.1.4";
@@ -50,7 +50,7 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_MODIFY,
                                   "sync_mode", 1, VA_END_LIST));
 
-    CHECK_RC(tapi_acse_cpe_connect(ctx)); 
+    CHECK_RC(tapi_acse_cpe_connect(ctx));
     CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));
 
     CHECK_RC(tapi_acse_wait_cwmp_state(ctx, CWMP_PENDING));
@@ -82,7 +82,7 @@ main(int argc, char *argv[])
 
     sleep(10);
 
-    CHECK_RC(tapi_acse_cpe_connect(ctx)); 
+    CHECK_RC(tapi_acse_cpe_connect(ctx));
 
     get_values = cwmp_str_array_alloc(wan_ip_conn_path,
                                        "ExternalIPAddress",

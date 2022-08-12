@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
@@ -68,7 +68,7 @@ extern void rpc_struct_dirent_props(rcf_rpc_server *rpcs, size_t *props);
  *
  * @param rpcs      RPC server handle
  * @param path      Path to a directory
- * 
+ *
  * @return A pointer to the directory stream or NULL on failure
  */
 extern rpc_dir_p rpc_opendir(rcf_rpc_server *rpcs,

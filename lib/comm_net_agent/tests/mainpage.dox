@@ -20,7 +20,7 @@ Copyright (C) 2003-2018 OKTET Labs.
   - if exist. Specify assumed skills of the reader as well.
   -->
 This document is intended for developers and customers who wish to know the
-basic ideas of how testing of Agent and Engine parts of the RCF Network 
+basic ideas of how testing of Agent and Engine parts of the RCF Network
 Communcation Library is performed.
 
 
@@ -52,7 +52,7 @@ http://www.oktet.ru
 @rev_date     Feb, 10 2003
 @rev_revision A
 @rev_author   Pavel A. Bolokhov
-@rev_changes  Initial Revision 
+@rev_changes  Initial Revision
 
 @revs_end
 
@@ -78,10 +78,10 @@ http://www.oktet.ru
 @tdt_start
 
 @tdt_term RCF
-@tdt_def Remote Control Facility 
+@tdt_def Remote Control Facility
 
 @tdt_end
- 
+
 
 @section terminology Terminology
 
@@ -98,9 +98,9 @@ http://www.oktet.ru
          for the Agent and for the Engine.
 @tdt_term Local Station
 @tdt_def The executable binary running on a station on which the communication
-         library is being tested. 
+         library is being tested.
 @tdt_term Remote Station
-@tdt_def The executable binary running on a (possibly a different from the 
+@tdt_def The executable binary running on a (possibly a different from the
          local) station which behaves like a dummy Test Engine which sends
          probe commands to the Local Station and receives replies from it.
 
@@ -139,7 +139,7 @@ http://www.oktet.ru
   -->
 This document lists the features of Network Communication Library/Agent that
 are tested and the way they are tested. It gives some advices how to
-configure the test setup. 
+configure the test setup.
 
 
 @subsection constrains What is tested and will not be tested
@@ -158,7 +158,7 @@ In fact, only the interoperability of the network transport which ships the prot
 messages and commands is tested. No features of the protocol itself are tested.
 Nor is the time synchronization tested.
 
- 
+
 @subsection quality_goals Quality goals
 
 <!--
@@ -201,7 +201,7 @@ buffers. API sanity checks testing is also done.
   -->
   For testing the Agent's Network Communication Library, a remote station
 which would pretend to be the Engine, is needed. This station sends TP commands
-and receives Agent's replies. 
+and receives Agent's replies.
 
   Due to the necessity of having a remote station, the number of tests in fact
 double -- local tests encourage the library to perform some actions while remote
@@ -210,19 +210,19 @@ synchronization between the two test parts: the remote part needs to know when
 to start sending or listening, and it needs to know the correct data that has been
 sent via the library, in order to check the correctness of the data it receives.
 This requires creating a separate data channel which would carry the correct data from
-the library side tests to the remote station. And these necessities complexify the 
-test functionality. 
+the library side tests to the remote station. And these necessities complexify the
+test functionality.
 
-But as a matter of fact, given that the communication between the Agent and the 
-Engine uses TCP sockets, the test setup can be simplified: each test can perform 
+But as a matter of fact, given that the communication between the Agent and the
+Engine uses TCP sockets, the test setup can be simplified: each test can perform
 the very same actions which in the described above approach the remote station would.
 A test can connect to the library (being aware of the port and address where to connect, or
-at which to listen) and perform the necessary library API manipulations simultaneously. 
-Comparison of buffers would be much more trivial: no parallel network connection is required. 
+at which to listen) and perform the necessary library API manipulations simultaneously.
+Comparison of buffers would be much more trivial: no parallel network connection is required.
 And time synchronization is trivial.
 
-Finally note, that the library can be compiled standalone and no initial pre-setup for 
-the tests needs to be performed. The only requirement is that the library exist and 
+Finally note, that the library can be compiled standalone and no initial pre-setup for
+the tests needs to be performed. The only requirement is that the library exist and
 be compiled.
 
 

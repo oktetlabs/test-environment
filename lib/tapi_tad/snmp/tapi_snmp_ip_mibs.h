@@ -1,18 +1,18 @@
 /** @file
- * @brief Test Environment: 
+ * @brief Test Environment:
  *
  * Traffic Application Domain Command Handler
  * SNMP protocol implementaion internal declarations.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 #ifndef __TE__TAPI_SNMP_IP_MIBS_H__
-#define __TE__TAPI_SNMP_IP_MIBS_H__ 
+#define __TE__TAPI_SNMP_IP_MIBS_H__
 
 /** Rows in an instance of an IP-MIB::ipAddressTable */
 typedef struct tapi_snmp_ip_address_table_row_s {
@@ -28,7 +28,7 @@ typedef struct tapi_snmp_ip_address_table_row_s {
     uint32_t               *ipAddressCreated;      /* TimeStamp */
     uint32_t               *ipAddressLastChanged;  /* TimeStamp */
     int                    *ipAddressRowStatus;    /* RowStatus */
-    int                    *ipAddressStorageType;  /* StorageType */ 
+    int                    *ipAddressStorageType;  /* StorageType */
 } tapi_snmp_ip_address_table_row_t;
 
 /** Rows in an instance of an IP-MIB::ipNetToMediaTable */

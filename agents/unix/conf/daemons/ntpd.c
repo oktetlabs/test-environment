@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
@@ -84,10 +84,10 @@ service_app(void)
 
 /**
  * Apply an action on the daemon.
- * 
+ *
  * @param act       Action
  * @param status    Status location or @c NULL
- * 
+ *
  * @return Status code
  */
 static te_errno
@@ -209,11 +209,11 @@ do {                                                                    \
 
 /**
  * Retrieve daemon status
- * 
+ *
  * @param gid    Group identifier (unused).
  * @param oid    Full object instance identifier (unused).
  * @param value  Location for the value
- * 
+ *
  * @return Status code
  */
 static te_errno
@@ -229,11 +229,11 @@ ntpd_enable_get(unsigned int gid, const char *oid, char *value)
 
 /**
  * Enable/Disable NTP daemon
- * 
+ *
  * @param gid    Group identifier (unused).
  * @param oid    Full object instance identifier (unused).
  * @param value  @c 0 to disable, else - enable
- * 
+ *
  * @return Status code
  */
 static te_errno
@@ -248,7 +248,7 @@ ntpd_enable_set(unsigned int gid, const char *oid, char *value)
 RCF_PCH_CFG_NODE_RW(node_ntpd_enable, "enable", NULL, NULL,
                     ntpd_enable_get, ntpd_enable_set);
 
-RCF_PCH_CFG_NODE_RO(node_ntpd, "ntpd", 
+RCF_PCH_CFG_NODE_RO(node_ntpd, "ntpd",
                     &node_ntpd_enable, NULL, NULL);
 
 /* See description in conf_daemons.h */

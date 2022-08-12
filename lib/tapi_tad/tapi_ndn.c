@@ -5,11 +5,11 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- */ 
+ */
 
 #define TE_LGR_USER     "TAPI NDN"
 
@@ -18,7 +18,7 @@
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#if HAVE_STRING_H 
+#if HAVE_STRING_H
 #include <string.h>
 #endif
 #if HAVE_STRINGS_H
@@ -248,7 +248,7 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
         asn_free_value(gen_pdu);
         return TE_RC(TE_TAPI, rc);
     }
-    
+
     pdu = asn_init_value(pdu_type);
     if (pdu == NULL)
     {

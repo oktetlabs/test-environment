@@ -2,7 +2,7 @@
 /**
  * Test for ASN library.
  *
- * Parse plain syntax values. 
+ * Parse plain syntax values.
  *
  */
 #include "te_config.h"
@@ -20,7 +20,7 @@ char buffer[1000];
 
 int result = 0;
 
-char packet_asn_string[] = 
+char packet_asn_string[] =
 "{\
   received {\
     seconds 1140892564,\
@@ -64,7 +64,7 @@ char packet_asn_string[] =
 
 char buf[10000];
 
-int 
+int
 main(void)
 {
     asn_value *val;
@@ -79,12 +79,12 @@ main(void)
         printf("parse failed rc %x, syms: %d\n",
                rc, s_parsed);
         return 1;
-    } 
+    }
 
     sub_val = asn_find_descendant(val, &rc, "pdus.%d.src-addr", 1);
 
     if (rc != 0)
-        printf("status %x\n", rc); 
+        printf("status %x\n", rc);
 
     if (sub_val == NULL)
     {

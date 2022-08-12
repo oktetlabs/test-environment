@@ -1,11 +1,11 @@
 /** @file
  * @brief Windows Test Agent
  *
- * Functions used by both TA and standalone RPC server 
+ * Functions used by both TA and standalone RPC server
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -42,8 +42,8 @@ rcf_ch_symbol_name(const void *addr)
     return rcf_ch_symbol_name_auto(addr);
 }
 
-/** 
- * Get identifier of the current thread. 
+/**
+ * Get identifier of the current thread.
  *
  * @return windows thread identifier
  */
@@ -53,7 +53,7 @@ thread_self()
     return GetCurrentThreadId();
 }
 
-/** 
+/**
  * Create a mutex.
  *
  * @return Mutex handle
@@ -64,37 +64,37 @@ thread_mutex_create(void)
     return (void *)CreateMutex(NULL, FALSE, NULL);
 }
 
-/** 
+/**
  * Destroy a mutex.
  *
  * @param mutex     mutex handle
  */
-void 
+void
 thread_mutex_destroy(void *mutex)
 {
     if (mutex != NULL)
         CloseHandle(mutex);
 }
 
-/** 
+/**
  * Lock the mutex.
  *
  * @param mutex     mutex handle
  *
  */
-void 
+void
 thread_mutex_lock(void *mutex)
 {
     if (mutex != NULL)
         WaitForSingleObject(mutex, INFINITE);
 }
 
-/** 
+/**
  * Unlock the mutex.
  *
  * @param mutex     mutex handle
  */
-void 
+void
 thread_mutex_unlock(void *mutex)
 {
     if (mutex != NULL)
@@ -133,7 +133,7 @@ setenv(const char *name, const char *value, int overwrite)
 
 /** Replaces cygwin function */
 #ifndef WINDOWS
-UNSETENV_RETURN_TYPE 
+UNSETENV_RETURN_TYPE
 #endif
 __cdecl
 unsetenv(const char *name)
@@ -144,7 +144,7 @@ unsetenv(const char *name)
 #endif
 }
 
-/** 
+/**
  * Check if exec is requested and call appropriate function.
  *
  * @param argc  argc passed to main()
@@ -159,13 +159,13 @@ int
 win32_process_exec(int argc, char **argv)
 {
     void (* func)(int, char **);
-    
+
     if (strcmp(argv[1], "exec") != 0)
         return 0;
-        
+
     argc -= 2;
     argv += 2;
-    
+
     if (strcmp(argv[0], "net_init") == 0)
     {
         WSADATA data;
@@ -174,7 +174,7 @@ win32_process_exec(int argc, char **argv)
         argc--;
         argv++;
     }
-    
+
     func = rcf_ch_symbol_addr(argv[0], 1);
 
     if (func == NULL)
@@ -198,7 +198,7 @@ get_addr_by_ifindex(int if_index, struct in_addr *addr)
     int              i;
 
     DWORD size = 0, rc;
-       
+
     if ((table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IPADDRTABLE)))
             == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
@@ -212,13 +212,13 @@ get_addr_by_ifindex(int if_index, struct in_addr *addr)
             return TE_RC(TE_TA_WIN32, TE_EWIN);
         }
     }
-     
+
     if (table->dwNumEntries == 0)
     {
         free(table);
         table = NULL;
     }
-   
+
     if (table == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
 

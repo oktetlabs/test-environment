@@ -6,5 +6,5 @@
  	int phy_addr;		/* PHY addresses. */
 +        u8 ignore_crc_err;     /* CRC check ignoring */
  };
- 
+
  /* The station address location in the EEPROM. */

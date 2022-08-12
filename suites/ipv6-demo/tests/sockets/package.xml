@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package version="1.0">
-    
+
     <description>IPv6 Socket support</description>
-    
+
     <author mailto="Oleg.Kravtsov@oktetlabs.ru"/>
 
     <session>

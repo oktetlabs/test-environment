@@ -23,7 +23,7 @@ if (@ARGV != 0)
 }
 
 my $te_log_path = $ENV{TE_LOG_DIR};
-if (length($te_log_path) == 0) 
+if (length($te_log_path) == 0)
 {
     die("TE_LOG_DIR environment variable must be set\n");
 }
@@ -37,12 +37,12 @@ if ($@)
 my $te_log_raw  = $ENV{TE_LOG_RAW};
 
 unlink($te_log_raw);
-open(OUTFILE, ">" . $te_log_raw) or 
+open(OUTFILE, ">" . $te_log_raw) or
     die("Can't create raw log file: " . $te_log_raw . ": $!");
 
 binmode OUTFILE;
 
-# Write log file version 
+# Write log file version
 print OUTFILE pack("C", 1);
 
 close OUTFILE;

@@ -359,9 +359,9 @@ addr_family_h2rpc(int addr_family)
 #endif
         H2RPC_CHECK(AF_UNSPEC);
         /* AF_UNIX is equal to AF_LOCAL */
-#ifdef AF_LOCAL        
+#ifdef AF_LOCAL
         case AF_LOCAL: return RPC_AF_LOCAL;
-#endif        
+#endif
         case TE_AF_ETHER: return RPC_AF_ETHER;
         default: return RPC_AF_UNKNOWN;
     }
@@ -382,7 +382,7 @@ socktype_rpc2str_aux(rpc_socket_type type)
         RPC2STR(SOCK_RDM);
         RPC2STR(SOCK_UNSPEC);
         RPC2STR(SOCK_UNKNOWN);
-        
+
         /*
          * We should never reach the code below, because all value of the
          * enum have already checked.
@@ -401,13 +401,13 @@ socktype_rpc2str(rpc_socket_type type)
     /*
      * We cannot use predefined constants because it is unreasonable to
      * define all possible socket type and flags combinations.
-     * We should not use dynamically allocated string where predefined 
+     * We should not use dynamically allocated string where predefined
      * constant is usually used to avoid memory leaks.
      * So we should use static strings defined inside the function and
      * return pointers to them. We create a string array of reasonable
      * size so that this function can be used several times for different
      * input values within one test. See bitmask2str() function where this
-     * was used initially. 
+     * was used initially.
      */
 
     static char buf[N_BUFS][BUF_SIZE];
@@ -447,8 +447,8 @@ socktype_rpc2str(rpc_socket_type type)
 #undef BUF_SIZE
 }
 
-/** Value corresponding to RPC_SOCK_UNKNOWN */ 
-#define SOCK_MAX    0xFFFFFFFF  
+/** Value corresponding to RPC_SOCK_UNKNOWN */
+#define SOCK_MAX    0xFFFFFFFF
 /** Value corresponding to RPC_SOCK_UNSPEC */
 #define SOCK_UNSPEC 0
 
@@ -548,7 +548,7 @@ socket_flags_rpc2h(rpc_socket_flags flags)
 /* See description in te_rpc_sys_socket.h */
 rpc_socket_flags
 socket_flags_h2rpc(int flags)
-{   
+{
     int r = 0;
 
 #ifdef SOCK_NONBLOCK
@@ -623,7 +623,7 @@ proto_h2rpc(int proto)
         H2RPC_CHECK(IPPROTO_TCP);
         H2RPC_CHECK(IPPROTO_RAW);
         default: return RPC_PROTO_UNKNOWN;
-    } 
+    }
 }
 
 
@@ -750,7 +750,7 @@ send_recv_flags_rpc2h(unsigned int flags)
     WARN_IF_UNSUPP(flags, MSG_BCAST);
 #endif
 
-    return 
+    return
            (!!(flags & RPC_MSG_OOB) * MSG_OOB) |
            (!!(flags & RPC_MSG_PEEK) * MSG_PEEK) |
            (!!(flags & RPC_MSG_DONTROUTE) * MSG_DONTROUTE) |
@@ -872,7 +872,7 @@ mtu_discover_arg_h2rpc(int arg)
         H2RPC_CHECK(IP_PMTUDISC_DO);
         H2RPC_CHECK(IP_PMTUDISC_PROBE);
 
-        default: 
+        default:
             return RPC_IP_PMTUDISC_UNKNOWN;
     }
 }
@@ -1755,7 +1755,7 @@ rpc_tcp_state tcp_state_h2rpc(int st)
         H2RPC_CHECK(TCP_LAST_ACK);
         H2RPC_CHECK(TCP_LISTEN);
         H2RPC_CHECK(TCP_CLOSING);
-        default: 
+        default:
             return RPC_TCP_UNKNOWN;
     }
 }
@@ -1839,7 +1839,7 @@ rpc_tcp_ca_state tcp_ca_state_h2rpc(int st)
         H2RPC_CHECK(TCP_CA_CWR);
         H2RPC_CHECK(TCP_CA_RECOVERY);
         H2RPC_CHECK(TCP_CA_LOSS);
-        default: 
+        default:
             return RPC_TCP_CA_UNKNOWN;
     }
 }
@@ -1883,7 +1883,7 @@ ioctl_rpc2str(rpc_ioctl_code code)
         RPC2STR(SIOCSARP);
         RPC2STR(SIOCDARP);
         RPC2STR(SIOCGARP);
-        
+
         RPC2STR(SG_IO);
         RPC2STR(SIOCETHTOOL);
 
@@ -1921,7 +1921,7 @@ ioctl_rpc2str(rpc_ioctl_code code)
         RPC2STR(SIO_UDP_CONNRESET);
         RPC2STR(SIO_INDEX_BIND);
         RPC2STR(SIO_UCAST_IF);
-        
+
         default: return "<IOCTL_FATAL_ERROR>";
     }
 }
@@ -2182,7 +2182,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
 
     if (sa == NULL)
     {
-        /* 
+        /*
          * Assume that NULL on output may be only in the case of NULL
          * on input
          */
@@ -3276,9 +3276,9 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
     {
         case TARPC_ETHTOOL_CMD:
             {
-                struct ethtool_cmd *ecmd = 
+                struct ethtool_cmd *ecmd =
                         *(struct ethtool_cmd **)edata_p;
-                tarpc_ethtool_cmd  *rpc_ecmd = 
+                tarpc_ethtool_cmd  *rpc_ecmd =
                         &rpc_edata->data.tarpc_ethtool_data_u.cmd;
 
                 if (ecmd == NULL)
@@ -3325,9 +3325,9 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
 
         case TARPC_ETHTOOL_PADDR:
             {
-                struct ethtool_perm_addr *eaddr = 
+                struct ethtool_perm_addr *eaddr =
                         *(struct ethtool_perm_addr **)edata_p;
-                tarpc_ethtool_perm_addr  *rpc_eaddr = 
+                tarpc_ethtool_perm_addr  *rpc_eaddr =
                         &rpc_edata->data.tarpc_ethtool_data_u.paddr;
 
                 if (eaddr == NULL)
@@ -3348,9 +3348,9 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
 
         case TARPC_ETHTOOL_VALUE:
             {
-                struct ethtool_value *evalue = 
+                struct ethtool_value *evalue =
                         *(struct ethtool_value **)edata_p;
-                tarpc_ethtool_value  *rpc_evalue = 
+                tarpc_ethtool_value  *rpc_evalue =
                         &rpc_edata->data.tarpc_ethtool_data_u.value;
 
                 if (evalue == NULL)
@@ -3411,9 +3411,9 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
     {
         case TARPC_ETHTOOL_CMD:
             {
-                struct ethtool_cmd *ecmd = 
+                struct ethtool_cmd *ecmd =
                         (struct ethtool_cmd *)edata;
-                tarpc_ethtool_cmd  *rpc_ecmd = 
+                tarpc_ethtool_cmd  *rpc_ecmd =
                         &rpc_edata->data.tarpc_ethtool_data_u.cmd;
 
                 /* cmd field is not used here */
@@ -3452,9 +3452,9 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
 
         case TARPC_ETHTOOL_PADDR:
             {
-                struct ethtool_perm_addr *eaddr = 
+                struct ethtool_perm_addr *eaddr =
                         (struct ethtool_perm_addr *)edata;
-                tarpc_ethtool_perm_addr  *rpc_eaddr = 
+                tarpc_ethtool_perm_addr  *rpc_eaddr =
                         &rpc_edata->data.tarpc_ethtool_data_u.paddr;
 
                 if (eaddr->size > sizeof(rpc_eaddr->data))
@@ -3473,9 +3473,9 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
 
         case TARPC_ETHTOOL_VALUE:
             {
-                struct ethtool_value *evalue = 
+                struct ethtool_value *evalue =
                         (struct ethtool_value *)edata;
-                tarpc_ethtool_value  *rpc_evalue = 
+                tarpc_ethtool_value  *rpc_evalue =
                         &rpc_edata->data.tarpc_ethtool_data_u.value;
 
                 /* cmd field is not used here */
@@ -3527,7 +3527,7 @@ void
 hwtstamp_config_data_rpc2h(tarpc_hwtstamp_config *rpc_hwdata,
                            caddr_t *hwdata_p)
 {
-    struct hwtstamp_config *hw_cfg = 
+    struct hwtstamp_config *hw_cfg =
                         *(struct hwtstamp_config **)hwdata_p;
     if (hw_cfg == NULL)
     {
@@ -3547,7 +3547,7 @@ void
 hwtstamp_config_data_h2rpc(tarpc_hwtstamp_config *rpc_hwdata,
                            caddr_t hwdata)
 {
-    struct hwtstamp_config *hw_cfg = 
+    struct hwtstamp_config *hw_cfg =
                         (struct hwtstamp_config *)hwdata;
     COPY_FIELD(rpc_hwdata, hw_cfg, flags);
 
@@ -3560,7 +3560,7 @@ hwtstamp_config_data_h2rpc(tarpc_hwtstamp_config *rpc_hwdata,
 
 /**
  * Copy values from usual timespec to tarpc_timespec structure
- * 
+ *
  * @param dst  RPC timespec structure
  * @param src  System timespec structure
  */
@@ -3573,7 +3573,7 @@ timespec_h2rpc(tarpc_timespec *dst, struct timespec *src)
 
 /**
  * Copy values from tarpc_timespec to usual timespec structure
- * 
+ *
  * @param dst  System timespec structure
  * @param src  RPC timespec structure
  */
@@ -3604,8 +3604,8 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
 
     rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_RAW;
 
-    rpc_cmsg->data.data_len = 0;   
-    rpc_cmsg->data.data_val = NULL;   
+    rpc_cmsg->data.data_len = 0;
+    rpc_cmsg->data.data_val = NULL;
     if (len == 0)
     {
         INFO("%s(): trying to convert value of zero length", __FUNCTION__);

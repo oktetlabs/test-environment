@@ -8,7 +8,7 @@
 
 extern int asn_sprint_integer(asn_value *value, char *buffer, int buf_len);
 
-asn_type base_integer = 
+asn_type base_integer =
 {
     "INTEGER",
     {UNIVERSAL, 2},
@@ -17,7 +17,7 @@ asn_type base_integer =
     {NULL}  /* sp  */
 };
 
-asn_type base_char_string = 
+asn_type base_char_string =
 {
     "UniversalString",
     {UNIVERSAL, 28},
@@ -51,36 +51,36 @@ asn_type my_choice = {
 
 char buffer [1000];
 
-int 
+int
 main (void)
 {
     int r;
     int a;
     char str[] = "ooooooooo my";
 #if FIRST_TEST
-    asn_value test_int_value = 
+    asn_value test_int_value =
     {
-        &base_integer, 
+        &base_integer,
         {UNIVERSAL, 2},
         INTEGER,
         NULL,
-        1, 
+        1,
         {10 /* value itself */}
-    }; 
-    asn_value test_str = 
+    };
+    asn_value test_str =
     {
-        &base_char_string, 
+        &base_char_string,
         {UNIVERSAL, 28},
         CHAR_STRING,
         NULL,
-        4, 
+        4,
         {"test"/* value itself */}
     };
     asn_value *val_arr[] = {&test_int_value, &test_str};
 
-    asn_value seq_val = 
+    asn_value seq_val =
     {
-        &my_sequence, 
+        &my_sequence,
         {APPLICATION, 1},
         SEQUENCE,
         "seq-value",
@@ -109,18 +109,18 @@ main (void)
     r = asn_write_value_field(ch_val, &a, sizeof(a), "number");
 
     asn_sprint_value(ch_val, buffer, 1000, 0);
-    printf ("printed choice value: \"%s\", ret val of write_value = %8x\n", 
+    printf ("printed choice value: \"%s\", ret val of write_value = %8x\n",
              buffer, r);
 
     r = asn_write_value_field(ch_val, &str, sizeof(str), "string");
     asn_sprint_value(ch_val, buffer, 1000, 0);
-    printf ("printed choice value: \"%s\", ret val of write_value = %8x\n", 
+    printf ("printed choice value: \"%s\", ret val of write_value = %8x\n",
              buffer, r);
 
     a = 33;
     r = asn_write_value_field(ch_val, &a, sizeof(a), "number");
     asn_sprint_value(ch_val, buffer, 1000, 0);
-    printf ("printed choice value: \"%s\", ret val of write_value = %8x\n", 
+    printf ("printed choice value: \"%s\", ret val of write_value = %8x\n",
              buffer, r);
 
     return 0;

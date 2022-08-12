@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * Simple STP BPDU test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #include "te_config.h"
@@ -48,7 +48,7 @@ main()
     char ta[32];
     int  len = sizeof(ta);
     int  sid;
-    
+
     VERB("Starting test\n");
     if (rcf_get_ta_list(ta, &len) != 0)
     {
@@ -56,28 +56,28 @@ main()
         return 1;
     }
     VERB(" Using agent: %s\n", ta);
-    
+
     /* Type test */
     {
         char type[16];
         if (rcf_ta_name2type(ta, type) != 0)
         {
             fprintf(stderr, "rcf_ta_name2type failed\n");
-            VERB("rcf_ta_name2type failed\n"); 
+            VERB("rcf_ta_name2type failed\n");
             return 1;
         }
-        VERB("TA type: %s\n", type); 
+        VERB("TA type: %s\n", type);
     }
-    
+
     /* Session */
     {
         if (rcf_ta_create_session(ta, &sid) != 0)
         {
             fprintf(stderr, "rcf_ta_create_session failed\n");
-            VERB("rcf_ta_create_session failed\n"); 
+            VERB("rcf_ta_create_session failed\n");
             return 1;
         }
-        VERB("Test: Created session: %d\n", sid); 
+        VERB("Test: Created session: %d\n", sid);
     }
 
     /* CSAP tests */
@@ -92,12 +92,12 @@ main()
         asn_value *asn_pdu;
         asn_value *asn_bpdu;
         asn_value *asn_eth_hdr;
-        char eth_device[] = "eth1"; 
+        char eth_device[] = "eth1";
 
         uint8_t own_addr[6] = {0x01,0x02,0x03,0x04,0x05,0x06};
         uint8_t rem_addr[6] = {0x01,0x02,0x03,0x04,0x05,0x06};
 
-        uint8_t root_id[] = {0x12, 0x13, 0x14, 0x15, 0, 0, 0, 0}; 
+        uint8_t root_id[] = {0x12, 0x13, 0x14, 0x15, 0, 0, 0, 0};
         ndn_stp_bpdu_t plain_bpdu;
 
         memset (&plain_bpdu, 0, sizeof (plain_bpdu));
@@ -112,41 +112,41 @@ main()
 
         template = asn_init_value(ndn_traffic_template);
         asn_pdus = asn_init_value(ndn_generic_pdu_sequence);
-        asn_pdu = asn_init_value(ndn_generic_pdu); 
-        asn_eth_hdr = asn_init_value(ndn_eth_header); 
-        
+        asn_pdu = asn_init_value(ndn_generic_pdu);
+        asn_eth_hdr = asn_init_value(ndn_eth_header);
+
         rc = asn_write_component_value(asn_pdu, asn_bpdu, "#bridge");
         if (rc == 0)
             rc = asn_insert_indexed(asn_pdus, asn_pdu, 0, "");
- 
-        asn_pdu = asn_init_value(ndn_generic_pdu); 
+
+        asn_pdu = asn_init_value(ndn_generic_pdu);
         if (rc == 0)
             rc = asn_write_component_value(asn_pdu, asn_eth_hdr, "#eth");
         if (rc == 0)
             rc = asn_insert_indexed(asn_pdus, asn_pdu, 1, "");
 
         if (rc == 0)
-            rc = asn_write_component_value(template, asn_pdus, "pdus"); 
+            rc = asn_write_component_value(template, asn_pdus, "pdus");
 
         CHECK_STATUS(rc, "Template create failed with rc %x\n", rc);
 
-        rc = tapi_stp_plain_csap_create(ta, sid, eth_device, own_addr, 
-                                        NULL, &bpdu_csap); 
+        rc = tapi_stp_plain_csap_create(ta, sid, eth_device, own_addr,
+                                        NULL, &bpdu_csap);
         CHECK_STATUS(rc, "csap create failed with rc %x\n", rc);
 
 
-        rc = tapi_stp_plain_csap_create(ta, sid, eth_device, NULL, 
-                                        own_addr, &bpdu_listen_csap); 
+        rc = tapi_stp_plain_csap_create(ta, sid, eth_device, NULL,
+                                        own_addr, &bpdu_listen_csap);
         CHECK_STATUS(rc, "csap listen create failed with rc %x\n", rc);
-                    
+
         rc = asn_parse_value_text(
                 "{{ pdus {  bridge:{ version-id plain:0,"
                                 "    content cfg:{port-id "
                                 "             mask:{v '0023'H, m '00ff'H}}"
                                 "  },"
-                          " eth:{ }}}}", 
-                            ndn_traffic_pattern, &pattern, &syms); 
-        CHECK_STATUS(rc, "parse pattern fails:  %x on sym %d\n", rc, syms); 
+                          " eth:{ }}}}",
+                            ndn_traffic_pattern, &pattern, &syms);
+        CHECK_STATUS(rc, "parse pattern fails:  %x on sym %d\n", rc, syms);
 
         {
             uint8_t p_mask[2]; /* number of bytes in port-id STP field */
@@ -163,20 +163,20 @@ main()
                          "0.pdus.0.content.#cfg.port-id.#mask.v");
 
             p_mask[0] = 0;
-            p_mask[1] = 0xff; 
+            p_mask[1] = 0xff;
             if (rc == 0)
                 rc = asn_write_value_field(pattern, p_mask, sizeof(p_mask),
-                         "0.pdus.0.content.#cfg.port-id.#mask.m"); 
-            CHECK_STATUS(rc, "bpdu set port-id mask rc: %x\n", rc); 
+                         "0.pdus.0.content.#cfg.port-id.#mask.m");
+            CHECK_STATUS(rc, "bpdu set port-id mask rc: %x\n", rc);
         }
 
-        rc = tapi_tad_trrecv_start(ta, sid, bpdu_listen_csap, pattern, 
+        rc = tapi_tad_trrecv_start(ta, sid, bpdu_listen_csap, pattern,
                                    20000, 1, RCF_TRRECV_COUNT);
-        CHECK_STATUS(rc, "bpdu recv start rc: %x\n", rc); 
+        CHECK_STATUS(rc, "bpdu recv start rc: %x\n", rc);
 
 
         rc = tapi_stp_bpdu_send(ta, sid, bpdu_csap, template);
-        CHECK_STATUS(rc, "BDPU send failed with rc %x\n", rc); 
+        CHECK_STATUS(rc, "BDPU send failed with rc %x\n", rc);
 
         sleep(1);
 
@@ -186,8 +186,8 @@ main()
         printf ("trrecv stop rc: %x, num: %d\n", rc, syms);
         CHECK_STATUS(rc, "trrecv stop rc: %x, num of pkts: %d\n", rc, syms);
 
-        rc = rcf_ta_csap_destroy(ta, sid, bpdu_csap); 
-        CHECK_STATUS(rc, "csap destroy failed with rc %x\n", rc); 
+        rc = rcf_ta_csap_destroy(ta, sid, bpdu_csap);
+        CHECK_STATUS(rc, "csap destroy failed with rc %x\n", rc);
 
         rcf_ta_csap_destroy(ta, sid, bpdu_listen_csap);
 

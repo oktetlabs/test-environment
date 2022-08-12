@@ -2,14 +2,14 @@
  * @brief Test Environment
  *
  * Simple RCF test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "cli/shell"
@@ -68,7 +68,7 @@ main(int argc, char *argv[])
 
     int   i;
     int   try_count = 3;
-   
+
     TEST_START;
     TEST_GET_STRING_PARAM(ta);
 
@@ -87,9 +87,9 @@ main(int argc, char *argv[])
                                         TAPI_CLI_PROMPT_TYPE_PLAIN,
                                         pprompt, password, &cli_csap));
 #else
-    CHECK_RC(tapi_cli_csap_shell_create(ta, 0, "ftp aros", 
-                 TAPI_CLI_PROMPT_TYPE_PLAIN, "ftp> ", 
-                 TAPI_CLI_PROMPT_TYPE_PLAIN, "): ", "anonymous", 
+    CHECK_RC(tapi_cli_csap_shell_create(ta, 0, "ftp aros",
+                 TAPI_CLI_PROMPT_TYPE_PLAIN, "ftp> ",
+                 TAPI_CLI_PROMPT_TYPE_PLAIN, "): ", "anonymous",
                  TAPI_CLI_PROMPT_TYPE_PLAIN, "Password:", "anonymous",
                  &cli_csap));
 #endif

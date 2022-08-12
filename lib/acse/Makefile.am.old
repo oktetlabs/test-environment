@@ -4,7 +4,7 @@ SUBDIRS = .
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) @SOAP_CPPFLAGS@
-AM_CFLAGS = @TE_CFLAGS@ 
+AM_CFLAGS = @TE_CFLAGS@
 
 # WSDL/XSD to C declarations generation/transformation tool and its flags
 WSDL2H = @WSDL2H@
@@ -26,11 +26,11 @@ libacse_la_SOURCES = acse.c \
                     acse_sreq.c \
                     acse_cwmp.c
 
-#                    soapClient.c # Why ?? 
+#                    soapClient.c # Why ??
 
 #                    stdsoap2.c \
 #                    soapC.c \
-#                    soapServer.c 
+#                    soapServer.c
 
 #libacse_a_LIBADD = /usr/lib/libssl.a /usr/lib/libcrypto.a /usr/lib/libz.a
 
@@ -39,7 +39,7 @@ bin_PROGRAMS = acse_dummy
 acse_dummy_SOURCES = acse_dummy.c \
                     soapC.c \
                     stdsoap2.c \
-                    soapServer.c 
+                    soapServer.c
 
 # acse_dummy_LDFLAGS = -lgsoap
 acse_dummy_LDFLAGS = -lz

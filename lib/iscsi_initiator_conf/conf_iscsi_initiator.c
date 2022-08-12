@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
@@ -47,15 +47,15 @@
 #include "te_tools.h"
 
 
-/**                                                                         
+/**
  * A template for connection-wide Initiator string parameter accessors.
  * Accessors are named `iscsi_parm_xxx_get' and `iscsi_parm_xxx_set',
  * where `xxx' is @p name and are of types rcf_ch_cfg_get and rcf_ch_cfg_set.
- *                                                                          
- * @param name  Parameter name                                              
+ *
+ * @param name  Parameter name
  * @param field Field name in iscsi_connection_data_t
- * 
- */                                                                         
+ *
+ */
 #define ISCSI_INITIATOR_STR_CONN_PARAM(name, field)                         \
 static te_errno                                                             \
 iscsi_parm_##name##_set(unsigned int gid, const char *oid,                  \
@@ -91,14 +91,14 @@ iscsi_parm_##name##_get(unsigned int gid, const char *oid,                  \
 }                                                                           \
 struct iscsi_##name##_eating_semicolon
 
-/**                                                                         
- * A template for connection-wide Initiator integral parameter accessors    
+/**
+ * A template for connection-wide Initiator integral parameter accessors
  * Accessors are named `iscsi_parm_xxx_get' and `iscsi_parm_xxx_set',
  * where `xxx' is @p name and are of types rcf_ch_cfg_get and rcf_ch_cfg_set.
- *                                                                          
- * @param name  Parameter name                                              
- * @param field Field name in iscsi_connection_data_t                       
- */                                                                         
+ *
+ * @param name  Parameter name
+ * @param field Field name in iscsi_connection_data_t
+ */
 #define ISCSI_INITIATOR_INT_CONN_PARAM(name, field)                         \
 static te_errno                                                             \
 iscsi_parm_##name##_set(unsigned int gid, const char *oid,                  \
@@ -133,13 +133,13 @@ iscsi_parm_##name##_get(unsigned int gid, const char *oid,                  \
 }                                                                           \
 struct iscsi_##name##_eating_semicolon
 
-/**                                                                     
+/**
  * A template for target-wide Initiator string parameter accessors.
  * Accessors are named `iscsi_parm_xxx_get' and `iscsi_parm_xxx_set',
  * where `xxx' is @p name and are of types rcf_ch_cfg_get and rcf_ch_cfg_set.
- *                                                                      
- * @param name  Parameter name and field name in iscsi_target_data_t    
- */                                                                     
+ *
+ * @param name  Parameter name and field name in iscsi_target_data_t
+ */
 #define ISCSI_INITIATOR_STR_TGT_PARAM(name)                             \
 static te_errno                                                         \
 iscsi_parm_##name##_set(unsigned int gid, const char *oid,              \
@@ -172,13 +172,13 @@ iscsi_parm_##name##_get(unsigned int gid, const char *oid,              \
 }                                                                       \
 struct iscsi_##name##_eating_semicolon
 
-/**                                                                     
+/**
  * A template for target-wide Initiator integral parameter accessors
  * Accessors are named `iscsi_parm_xxx_get' and `iscsi_parm_xxx_set',
  * where `xxx' is @p name and are of types rcf_ch_cfg_get and rcf_ch_cfg_set.
- *                                                                      
- * @param name  Parameter name and field name in iscsi_target_data_t    
- */                                                                     
+ *
+ * @param name  Parameter name and field name in iscsi_target_data_t
+ */
 #define ISCSI_INITIATOR_INT_TGT_PARAM(name)                             \
 static te_errno                                                         \
 iscsi_parm_##name##_set(unsigned int gid, const char *oid,              \
@@ -225,7 +225,7 @@ ISCSI_INITIATOR_STR_CONN_PARAM(initial_r2t, initial_r2t);
 ISCSI_INITIATOR_STR_CONN_PARAM(immediate_data, immediate_data);
 ISCSI_INITIATOR_STR_CONN_PARAM(header_digest, header_digest);
 ISCSI_INITIATOR_STR_CONN_PARAM(data_digest, data_digest);
-ISCSI_INITIATOR_INT_CONN_PARAM(max_recv_data_segment_length, 
+ISCSI_INITIATOR_INT_CONN_PARAM(max_recv_data_segment_length,
                                max_recv_data_segment_length);
 ISCSI_INITIATOR_INT_CONN_PARAM(max_burst_length, max_burst_length);
 ISCSI_INITIATOR_INT_CONN_PARAM(first_burst_length, first_burst_length);
@@ -256,12 +256,12 @@ iscsi_conn_add(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(value);
 
-    VERB("Adding connection with id=%d to target with id %d", 
+    VERB("Adding connection with id=%d to target with id %d",
           conn - target->conns, target->target_id);
 
     pthread_mutex_lock(&conn->status_mutex);
-    conn->status = (conn->status == ISCSI_CONNECTION_REMOVED || 
-                    conn->status == ISCSI_CONNECTION_DOWN) ? 
+    conn->status = (conn->status == ISCSI_CONNECTION_REMOVED ||
+                    conn->status == ISCSI_CONNECTION_DOWN) ?
         ISCSI_CONNECTION_DOWN :
         ISCSI_CONNECTION_ABNORMAL;
     pthread_mutex_unlock(&conn->status_mutex);
@@ -277,7 +277,7 @@ iscsi_conn_del(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     return iscsi_post_connection_request(iscsi_get_target_id(oid),
-                                         iscsi_get_cid(oid), 
+                                         iscsi_get_cid(oid),
                                          ISCSI_CONNECTION_REMOVED, FALSE);
 }
 
@@ -289,16 +289,16 @@ iscsi_conn_list(unsigned int gid, const char *oid,
     int   tgt_id = iscsi_get_target_id(oid);
     char  conns_list[ISCSI_MAX_CONNECTIONS_NUMBER * 15];
     char  conn[15];
-    
+
     UNUSED(gid);
     UNUSED(sub_id);
     UNUSED(instance);
-    
+
     conns_list[0] = '\0';
-    
+
     for (cid = 0; cid < ISCSI_MAX_CONNECTIONS_NUMBER; cid++)
     {
-        if (iscsi_configuration()->targets[tgt_id].conns[cid].status != 
+        if (iscsi_configuration()->targets[tgt_id].conns[cid].status !=
             ISCSI_CONNECTION_REMOVED)
         {
             sprintf(conn,
@@ -323,7 +323,7 @@ iscsi_target_data_add(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
     int tgt_id = iscsi_get_target_id(oid);
-    
+
     te_errno rc;
 
     UNUSED(gid);
@@ -336,7 +336,7 @@ iscsi_target_data_add(unsigned int gid, const char *oid,
     {
         return rc;
     }
-    
+
     iscsi_configuration()->n_targets++;
     iscsi_init_default_tgt_parameters(&iscsi_configuration()->targets[tgt_id]);
     iscsi_configuration()->targets[tgt_id].target_id = tgt_id;
@@ -351,10 +351,10 @@ iscsi_target_data_del(unsigned int gid, const char *oid,
                       const char *instance, ...)
 {
     int tgt_id = atoi(instance + strlen("target_"));
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     VERB("Deleting %s\n", oid);
     if (iscsi_configuration()->targets[tgt_id].target_id >= 0)
     {
@@ -362,7 +362,7 @@ iscsi_target_data_del(unsigned int gid, const char *oid,
         if (--iscsi_configuration()->n_targets == 0)
         {
             /* to stop the thread and possibly a service daemon */
-            iscsi_post_connection_request(ISCSI_ALL_CONNECTIONS, ISCSI_ALL_CONNECTIONS, 
+            iscsi_post_connection_request(ISCSI_ALL_CONNECTIONS, ISCSI_ALL_CONNECTIONS,
                                           ISCSI_CONNECTION_REMOVED, FALSE);
         }
     }
@@ -378,14 +378,14 @@ iscsi_target_data_list(unsigned int gid, const char *oid,
     int   id;
     char  targets_list[ISCSI_MAX_TARGETS_NUMBER * 15];
     char  tgt[15];
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
     UNUSED(instance);
-    
+
     targets_list[0] = '\0';
-    
+
     for (id = 0; id < ISCSI_MAX_TARGETS_NUMBER; id++)
     {
         if (iscsi_configuration()->targets[id].target_id != -1)
@@ -415,7 +415,7 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
     int status;
-    iscsi_target_data_t    *target = 
+    iscsi_target_data_t    *target =
         &iscsi_configuration()->targets[iscsi_get_target_id(oid)];
 
     UNUSED(gid);
@@ -448,13 +448,13 @@ iscsi_generic_device_get(unsigned int gid, const char *oid,
                          char *value, const char *instance, ...)
 {
     int status;
-    iscsi_target_data_t    *target = 
+    iscsi_target_data_t    *target =
         &iscsi_configuration()->targets[iscsi_get_target_id(oid)];
 
     UNUSED(gid);
     UNUSED(instance);
 
-    
+
     pthread_mutex_lock(&target->conns[0].status_mutex);
     status = target->conns[0].status;
     if (status != ISCSI_CONNECTION_UP)
@@ -468,7 +468,7 @@ iscsi_generic_device_get(unsigned int gid, const char *oid,
         {
             int rc;
             pthread_mutex_unlock(&target->conns[0].status_mutex);
-            rc = iscsi_get_device_name(&target->conns[0], 
+            rc = iscsi_get_device_name(&target->conns[0],
                                        target->target_id,
                                        TRUE,
                                        target->conns[0]. \
@@ -494,7 +494,7 @@ iscsi_script_path_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
 
-    strncpy(iscsi_configuration()->script_path, value, 
+    strncpy(iscsi_configuration()->script_path, value,
             sizeof(iscsi_configuration()->script_path) - 1);
     return 0;
 }
@@ -520,7 +520,7 @@ iscsi_type_set(unsigned int gid, const char *oid,
 #if 0
     int previous_type = iscsi_configuration()->init_type;
 #endif
-    static iscsi_initiator_control_t handlers[] = 
+    static iscsi_initiator_control_t handlers[] =
         {
             iscsi_initiator_dummy_set,
             iscsi_initiator_unh_set,
@@ -566,10 +566,10 @@ static te_errno
 iscsi_type_get(unsigned int gid, const char *oid,
                char *value, const char *instance, ...)
 {
-    static char *types[] = {"", "unh", "l5", 
+    static char *types[] = {"", "unh", "l5",
                             "open-iscsi", "microsoft",
                             "l5_win32"};
-            
+
     UNUSED(gid);
     UNUSED(instance);
     UNUSED(oid);
@@ -733,16 +733,16 @@ iscsi_parameters2advertize_get(unsigned int gid, const char *oid,
 {
     int tgt_id;
     int cid;
-    
+
     UNUSED(gid);
     UNUSED(instance);
 
     tgt_id = iscsi_get_target_id(oid);
     cid    = iscsi_get_cid(oid);
     RING("iscsi_parameters2advertize_get: %d, %d", tgt_id, cid);
-    sprintf(value, "%d", 
+    sprintf(value, "%d",
             iscsi_configuration()->targets[tgt_id].conns[cid].conf_params);
-    
+
     return 0;
 }
 
@@ -756,7 +756,7 @@ iscsi_status_set(unsigned int gid, const char *oid,
 
     if (*value == '\0')
         return 0;
-        
+
     UNUSED(gid);
     UNUSED(instance);
 
@@ -768,7 +768,7 @@ iscsi_status_get(unsigned int gid, const char *oid,
                  char *value, const char *instance, ...)
 {
     int status;
-    iscsi_target_data_t    *target = 
+    iscsi_target_data_t    *target =
         &iscsi_configuration()->targets[iscsi_get_target_id(oid)];
     iscsi_connection_data_t *conn  = &target->conns[iscsi_get_cid(oid)];
 
@@ -777,8 +777,8 @@ iscsi_status_get(unsigned int gid, const char *oid,
 
     pthread_mutex_lock(&conn->status_mutex);
     status = conn->status;
-    pthread_mutex_unlock(&conn->status_mutex);    
-    
+    pthread_mutex_unlock(&conn->status_mutex);
+
     sprintf(value, "%d", status);
 
     return 0;
@@ -786,37 +786,37 @@ iscsi_status_get(unsigned int gid, const char *oid,
 
 /* Configuration tree */
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_retry_attempts, "retry_attempts", NULL, 
-                    NULL, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_retry_attempts, "retry_attempts", NULL,
+                    NULL,
                     iscsi_initiator_retry_attempts_get,
                     iscsi_initiator_retry_attempts_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_retry_timeout, "retry_timeout", NULL, 
-                    &node_iscsi_retry_attempts, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_retry_timeout, "retry_timeout", NULL,
+                    &node_iscsi_retry_attempts,
                     iscsi_initiator_retry_timeout_get,
                     iscsi_initiator_retry_timeout_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_verbose, "verbose", NULL, 
-                    &node_iscsi_retry_timeout, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_verbose, "verbose", NULL,
+                    &node_iscsi_retry_timeout,
                     iscsi_initiator_verbose_get,
                     iscsi_initiator_verbose_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_win32_service_restart,
-                    "win32_service_restart", NULL, 
-                    &node_iscsi_verbose, 
+                    "win32_service_restart", NULL,
+                    &node_iscsi_verbose,
                     iscsi_initiator_win32_service_restart_get,
                     iscsi_initiator_win32_service_restart_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_script_path, "script_path", NULL, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_script_path, "script_path", NULL,
                     &node_iscsi_win32_service_restart,
                     iscsi_script_path_get,
                     iscsi_script_path_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_type, "type", NULL, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_type, "type", NULL,
                     &node_iscsi_script_path, iscsi_type_get,
                     iscsi_type_set);
 
-RCF_PCH_CFG_NODE_RO(node_iscsi_host_bus_adapter, "host_bus_adapter", NULL, 
+RCF_PCH_CFG_NODE_RO(node_iscsi_host_bus_adapter, "host_bus_adapter", NULL,
                     &node_iscsi_type, iscsi_host_bus_adapter_get);
 
 RCF_PCH_CFG_NODE_RO(node_iscsi_initiator_generic_device, "generic_device",
@@ -827,50 +827,50 @@ RCF_PCH_CFG_NODE_RO(node_iscsi_initiator_host_device, "host_device",
                     NULL, &node_iscsi_initiator_generic_device,
                     iscsi_host_device_get);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_port, "target_port", NULL, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_port, "target_port", NULL,
                     &node_iscsi_initiator_host_device,
-                    iscsi_parm_target_port_get, 
+                    iscsi_parm_target_port_get,
                     iscsi_parm_target_port_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_addr, "target_addr", NULL, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_addr, "target_addr", NULL,
                     &node_iscsi_target_port,
-                    iscsi_parm_target_addr_get, 
+                    iscsi_parm_target_addr_get,
                     iscsi_parm_target_addr_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_name, "target_name", NULL,
-                    &node_iscsi_target_addr, 
+                    &node_iscsi_target_addr,
                     iscsi_parm_target_name_get,
                     iscsi_parm_target_name_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_cid, "status", NULL, NULL,
                     iscsi_status_get, iscsi_status_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_alias, "initiator_alias", NULL, 
-                    &node_iscsi_cid, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_alias, "initiator_alias", NULL,
+                    &node_iscsi_cid,
                     iscsi_parm_initiator_alias_get,
                     iscsi_parm_initiator_alias_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_name, "initiator_name", NULL, 
-                    &node_iscsi_initiator_alias, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_name, "initiator_name", NULL,
+                    &node_iscsi_initiator_alias,
                     iscsi_parm_initiator_name_get,
                     iscsi_parm_initiator_name_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_parameters2advertize, "parameters2advertize",
                     NULL, &node_iscsi_initiator_name,
-                    iscsi_parameters2advertize_get, 
+                    iscsi_parameters2advertize_get,
                     iscsi_parameters2advertize_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_session_type, "session_type", NULL,
-                    &node_iscsi_parameters2advertize, 
+                    &node_iscsi_parameters2advertize,
                     iscsi_parm_session_type_get,
                     iscsi_parm_session_type_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_error_recovery_level, "error_recovery_level", 
-                    NULL, &node_iscsi_session_type, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_error_recovery_level, "error_recovery_level",
+                    NULL, &node_iscsi_session_type,
                     iscsi_parm_error_recovery_level_get,
                     iscsi_parm_error_recovery_level_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_data_sequence_in_order, 
+RCF_PCH_CFG_NODE_RW(node_iscsi_data_sequence_in_order,
                     "data_sequence_in_order",
                     NULL, &node_iscsi_error_recovery_level,
                     iscsi_parm_data_sequence_in_order_get,
@@ -950,9 +950,9 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_peer_secret, "peer_secret",
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_auth, "target_auth",
                     NULL,
-                    &node_iscsi_initiator_peer_secret, 
+                    &node_iscsi_initiator_peer_secret,
                     iscsi_parm_target_auth_get,
-                    iscsi_parm_target_auth_set);                   
+                    iscsi_parm_target_auth_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_enc_fmt, "enc_fmt",
                     NULL, &node_iscsi_target_auth,
@@ -974,24 +974,24 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_local_secret, "local_secret",
                     iscsi_parm_local_secret_get,
                     iscsi_parm_local_secret_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_chap, "chap", 
+RCF_PCH_CFG_NODE_RW(node_iscsi_chap, "chap",
                     &node_iscsi_initiator_local_secret,
-                    &node_iscsi_max_connections, 
+                    &node_iscsi_max_connections,
                     iscsi_parm_chap_get,
                     iscsi_parm_chap_set);
 
-RCF_PCH_CFG_NODE_COLLECTION(node_iscsi_conn, "conn", 
+RCF_PCH_CFG_NODE_COLLECTION(node_iscsi_conn, "conn",
                             &node_iscsi_chap, &node_iscsi_target_name,
                             iscsi_conn_add, iscsi_conn_del, iscsi_conn_list,
                             NULL);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_iscsi_target_data, "target_data",
-                            &node_iscsi_conn, &node_iscsi_host_bus_adapter, 
+                            &node_iscsi_conn, &node_iscsi_host_bus_adapter,
                             iscsi_target_data_add, iscsi_target_data_del,
                             iscsi_target_data_list, NULL);
 
 /* Main object */
-RCF_PCH_CFG_NODE_NA(node_ds_iscsi_initiator, "iscsi_initiator", 
+RCF_PCH_CFG_NODE_NA(node_ds_iscsi_initiator, "iscsi_initiator",
                     &node_iscsi_target_data, NULL);
 
 /**

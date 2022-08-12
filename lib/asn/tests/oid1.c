@@ -7,9 +7,9 @@
 #include "tapi_snmp.h"
 
 
-int 
+int
 main (int argc, char *argv[])
-{ 
+{
     int rc, s_parsed;
     asn_value *packet, *eth_header, *snmp_message;
     tapi_snmp_message_t msg;
@@ -17,7 +17,7 @@ main (int argc, char *argv[])
 
     rc = asn_parse_dvalue_in_file(argv[1], ndn_raw_packet, &packet, &s_parsed);
 
-    printf ("parse file , rc = %x, symbol %d\n", rc, s_parsed); 
+    printf ("parse file , rc = %x, symbol %d\n", rc, s_parsed);
 
 
     printf ("parse file OK!\n");
@@ -27,7 +27,7 @@ main (int argc, char *argv[])
     printf ("read_comp, for snmp pdu; rc %d\n", rc);
     {
         int rc;
-        int len; 
+        int len;
 
         len = sizeof (msg.type);
         rc = asn_read_value_field(snmp_message, &msg.type, &len, "type");
@@ -47,7 +47,7 @@ main (int argc, char *argv[])
         if (var_bind == NULL)
         {
             fprintf(stderr, "SNMP msg to C struct: var_bind = NULL\n");
-            return TE_EASNGENERAL; 
+            return TE_EASNGENERAL;
         }
 
         len = vb.name.length = asn_get_length(var_bind, "name.#plain");
@@ -56,7 +56,7 @@ main (int argc, char *argv[])
             return TE_ESMALLBUF;
         }
         rc = asn_read_value_field (var_bind, &vb.name.id,
-                                    &len, "name.#plain"); 
+                                    &len, "name.#plain");
         printf ("rc from read_value from OID: %x\n", rc);
     }
 

@@ -2,10 +2,10 @@
  * @brief Test API for TAD. ipstack CSAP
  *
  * Implementation of Test API
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author: Konstantin Abramenko <konst@oktetlabs.ru>
  *
@@ -65,7 +65,7 @@
 
 /* See description in tapi_tcp.h */
 te_errno
-tapi_tcp_server_csap_create(const char *ta_name, int sid, 
+tapi_tcp_server_csap_create(const char *ta_name, int sid,
                             const struct sockaddr *sa,
                             csap_handle_t *tcp_csap)
 {
@@ -123,7 +123,7 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
     if (rc != 0)
         goto cleanup;
 
-    rc = tapi_tad_csap_create(ta_name, sid, "socket", 
+    rc = tapi_tad_csap_create(ta_name, sid, "socket",
                               csap_spec, tcp_csap);
 
 cleanup:
@@ -151,8 +151,8 @@ tapi_socket_csap_create(const char *ta_name, int sid, int type,
     csap_layer_spec = asn_init_value(ndn_generic_csap_layer);
     csap_socket     = asn_init_value(ndn_socket_csap);
 
-    rc = asn_write_value_field(csap_socket, NULL, 0, 
-                               type == NDN_TAG_SOCKET_TYPE_UDP ? 
+    rc = asn_write_value_field(csap_socket, NULL, 0,
+                               type == NDN_TAG_SOCKET_TYPE_UDP ?
                                "type.#udp" : "type.#tcp-client");
     if (rc != 0)
         goto cleanup;
@@ -185,12 +185,12 @@ tapi_socket_csap_create(const char *ta_name, int sid, int type,
                              "remote-port.#plain");
 
     rc = asn_write_component_value(csap_layer_spec, csap_socket, "#socket");
-    if (rc != 0) goto cleanup; 
+    if (rc != 0) goto cleanup;
 
     rc = asn_insert_indexed(csap_layers, csap_layer_spec, 0, "");
-    if (rc != 0) goto cleanup; 
+    if (rc != 0) goto cleanup;
 
-    rc = tapi_tad_csap_create(ta_name, sid, "socket", 
+    rc = tapi_tad_csap_create(ta_name, sid, "socket",
                               csap_spec, csap);
 
 cleanup:
@@ -205,12 +205,12 @@ cleanup:
 
 /* See description in tapi_socket.h */
 te_errno
-tapi_tcp_client_csap_create(const char *ta_name, int sid, 
+tapi_tcp_client_csap_create(const char *ta_name, int sid,
                             const struct sockaddr *loc,
                             const struct sockaddr *rem,
                             csap_handle_t *tcp_csap)
 {
-    return tapi_socket_csap_create(ta_name, sid, 
+    return tapi_socket_csap_create(ta_name, sid,
                                    NDN_TAG_SOCKET_TYPE_TCP_CLIENT,
                                    loc, rem, tcp_csap);
 }
@@ -222,7 +222,7 @@ tapi_udp_csap_create(const char *ta_name, int sid,
                      const struct sockaddr *rem,
                      csap_handle_t *udp_csap)
 {
-    return tapi_socket_csap_create(ta_name, sid, 
+    return tapi_socket_csap_create(ta_name, sid,
                                    NDN_TAG_SOCKET_TYPE_UDP,
                                    loc, rem, udp_csap);
 }
@@ -230,7 +230,7 @@ tapi_udp_csap_create(const char *ta_name, int sid,
 
 /* See description in tapi_socket.h */
 te_errno
-tapi_tcp_socket_csap_create(const char *ta_name, int sid, 
+tapi_tcp_socket_csap_create(const char *ta_name, int sid,
                             int socket, csap_handle_t *tcp_csap)
 {
     te_errno        rc;
@@ -252,7 +252,7 @@ tapi_tcp_socket_csap_create(const char *ta_name, int sid,
 
     asn_insert_indexed(csap_layers, csap_layer_spec, 0, "");
 
-    rc = tapi_tad_csap_create(ta_name, sid, "socket", 
+    rc = tapi_tad_csap_create(ta_name, sid, "socket",
                               csap_spec, tcp_csap);
 
     asn_free_value(csap_spec);
@@ -261,8 +261,8 @@ tapi_tcp_socket_csap_create(const char *ta_name, int sid,
 }
 
 
-/* 
- * Pkt handler for TCP packets 
+/*
+ * Pkt handler for TCP packets
  */
 static void
 tcp_server_handler(const char *pkt_fname, void *user_param)
@@ -273,17 +273,17 @@ tcp_server_handler(const char *pkt_fname, void *user_param)
     int s_parsed = 0;
     int rc = 0;
 
-    if (user_param == NULL) 
+    if (user_param == NULL)
     {
         ERROR("%s called with NULL user param", __FUNCTION__);
         return;
-    } 
+    }
 
     if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
                                        &pkt, &s_parsed)) != 0)
-    {                                      
+    {
         ERROR("%s(): parse packet fails, rc = %r, sym %d",
-              __FUNCTION__, rc, s_parsed); 
+              __FUNCTION__, rc, s_parsed);
 
         return;
     }
@@ -298,8 +298,8 @@ tcp_server_handler(const char *pkt_fname, void *user_param)
 
 /* See description in tapi_tcp.h */
 te_errno
-tapi_tcp_server_recv(const char *ta_name, int sid, 
-                     csap_handle_t tcp_csap, 
+tapi_tcp_server_recv(const char *ta_name, int sid,
+                     csap_handle_t tcp_csap,
                      unsigned int timeout, int *socket)
 {
     te_errno        rc;
@@ -308,7 +308,7 @@ tapi_tcp_server_recv(const char *ta_name, int sid,
     if (ta_name == NULL || socket == NULL)
         return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
-    rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, NULL, 
+    rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, NULL,
                                timeout, 1, RCF_TRRECV_PACKETS);
     if (rc != 0)
     {
@@ -322,7 +322,7 @@ tapi_tcp_server_recv(const char *ta_name, int sid,
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
 
     return rc;
-} 
+}
 
 
 
@@ -337,9 +337,9 @@ tapi_tcp_server_recv(const char *ta_name, int sid,
 struct data_message {
     uint8_t *data;
     size_t   length;
-}; 
+};
 
-/* 
+/*
  * Pkt handler for 'socket' CSAP incoming data
  */
 static void
@@ -352,16 +352,16 @@ socket_csap_handler(const char *pkt_fname, void *user_param)
     int rc = 0;
     size_t len;
 
-    if (user_param == NULL) 
+    if (user_param == NULL)
     {
         ERROR("%s called with NULL user param", __FUNCTION__);
         return;
-    } 
+    }
     msg = user_param;
 
     if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
                                        &pkt, &s_parsed)) != 0)
-    {                                      
+    {
         ERROR("%s(): parse packet fails, rc = %r, sym %d",
               __FUNCTION__, rc, s_parsed);
         return;
@@ -390,7 +390,7 @@ socket_csap_handler(const char *pkt_fname, void *user_param)
 
 /* See description in tapi_socket.h */
 te_errno
-tapi_socket_recv(const char *ta_name, int sid, csap_handle_t csap, 
+tapi_socket_recv(const char *ta_name, int sid, csap_handle_t csap,
                  unsigned int timeout, csap_handle_t forward,
                  te_bool len_exact, uint8_t *buf, size_t *length)
 {
@@ -408,7 +408,7 @@ tapi_socket_recv(const char *ta_name, int sid, csap_handle_t csap,
                               ndn_traffic_pattern, &pattern, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d",
               __FUNCTION__, rc, syms);
         return rc;
     }
@@ -462,7 +462,7 @@ cleanup:
 
 /* See description in tapi_socket.h */
 te_errno
-tapi_socket_send(const char *ta_name, int sid, csap_handle_t csap, 
+tapi_socket_send(const char *ta_name, int sid, csap_handle_t csap,
                  uint8_t *buf, size_t length)
 {
     asn_value *template = NULL;
@@ -476,7 +476,7 @@ tapi_socket_send(const char *ta_name, int sid, csap_handle_t csap,
                               ndn_traffic_template, &template, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d",
               __FUNCTION__, rc, syms);
         return rc;
     }
@@ -486,7 +486,7 @@ tapi_socket_send(const char *ta_name, int sid, csap_handle_t csap,
     {
         ERROR("%s(): write payload failed %r", __FUNCTION__, rc);
         goto cleanup;
-    } 
+    }
 
     rc = tapi_tad_trsend_start(ta_name, sid, csap, template,
                                RCF_MODE_BLOCKING);
@@ -494,7 +494,7 @@ tapi_socket_send(const char *ta_name, int sid, csap_handle_t csap,
     {
         ERROR("%s(): trsend_start failed %r", __FUNCTION__, rc);
         goto cleanup;
-    } 
+    }
 
 cleanup:
     asn_free_value(template);

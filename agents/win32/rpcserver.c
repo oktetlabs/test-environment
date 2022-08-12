@@ -1,11 +1,11 @@
 /** @file
  * @brief Windows Test Agent
  *
- * Standalone RPC server implementation 
+ * Standalone RPC server implementation
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -19,7 +19,7 @@
 
 /**
  * Convert 'struct timeval' to 'struct tarpc_timeval'.
- * 
+ *
  * @param tv_h      Pointer to 'struct timeval'
  * @param tv_rpc    Pointer to 'struct tarpc_timeval'
  */
@@ -34,7 +34,7 @@ timeval_h2rpc(const struct timeval *tv_h, struct tarpc_timeval *tv_rpc)
 
 /**
  * Convert 'struct tarpc_timeval' to 'struct timeval'.
- * 
+ *
  * @param tv_rpc    Pointer to 'struct tarpc_timeval'
  * @param tv_h      Pointer to 'struct timeval'
  */
@@ -47,17 +47,17 @@ timeval_rpc2h(const struct tarpc_timeval *tv_rpc, struct timeval *tv_h)
     return 0;
 }
 
-int 
+int
 gettimeofday(struct timeval *tv, struct timezone *tz)
 {
     SYSTEMTIME t;
 
     UNUSED(tz);
-    
+
     GetSystemTime(&t);
     tv->tv_sec = time(NULL);
     tv->tv_usec = t.wMilliseconds * 1000;
-    
+
     return 0;
 }
 
@@ -67,27 +67,27 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 
 extern int win32_process_exec(int argc, char **argv);
 
-int 
+int
 main(int argc, char **argv)
 {
     WSADATA data;
-    
+
     te_log_init("(win32_rpcserver)", logfork_log_message);
 
     if (win32_process_exec(argc, argv) != 0)
         return 1;
-    
+
     if (argc > 2 && strcmp(argv[2], "net_init") == 0)
     {
         WSAStartup(MAKEWORD(2,2), &data);
-        wsa_func_handles_discover();        
-    }    
-    
+        wsa_func_handles_discover();
+    }
+
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
-    
+
     rcf_pch_rpc_server(argv[1] == NULL ? "Unnamed" : argv[1]);
-    
+
     _exit(0);
 }
 

@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
@@ -47,7 +47,7 @@ extern "C" {
 extern te_errno tapi_icmp4_add_csap_layer(asn_value **csap_spec);
 
 /**
- * Add ICMPv4 PDU as the last PDU to the last unit of the traffic 
+ * Add ICMPv4 PDU as the last PDU to the last unit of the traffic
  * template or pattern.
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or

@@ -13,7 +13,7 @@ Forwarder-Delay-Cont ::= SEQUENCE {
 }
 
 Discret-Pair ::= SEQUENCE {
-    prob        [1] INTEGER(1..100), 
+    prob        [1] INTEGER(1..100),
     delay       [2] INTEGER -- in microseconds
 }
 

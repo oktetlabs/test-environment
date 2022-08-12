@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -96,7 +96,7 @@ config_prepare_new_ctx(config_prepare_data *gctx)
         gctx->rc = TE_RC(TE_TESTER, TE_ENOMEM);
         return NULL;
     }
-    
+
     if (cur_ctx != NULL)
     {
         new_ctx->inherit_flags = cur_ctx->inherit_flags;
@@ -108,10 +108,10 @@ config_prepare_new_ctx(config_prepare_data *gctx)
     {
         /* new_ctx->inherit_flags = 0; */
         /* new_ctx->exception = NULL; */
-        /* new_ctx->keepalive = NULL; */ 
+        /* new_ctx->keepalive = NULL; */
         new_ctx->track_conf = TESTER_TRACK_CONF_UNSPEC;
     }
-    
+
     SLIST_INSERT_HEAD(&gctx->ctxs, new_ctx, links);
 
     return new_ctx;
@@ -233,7 +233,7 @@ prepare_arg_value_cb(const test_entity_value *value, void *opaque)
     UNUSED(value);
 
     *num += 1;
-    
+
     return 0;
 }
 
@@ -552,7 +552,7 @@ prepare_iter_start(run_item *ri, unsigned int cfg_id_off,
     UNUSED(flags);
     UNUSED(opaque);
 
-    /* 
+    /*
      * All iterations are equal from prepare point of view.
      * Moreover, it is assumed that each run item processed only once.
      */
@@ -636,7 +636,7 @@ tester_prepare_configs(tester_cfgs *cfgs)
 
         while (!SLIST_EMPTY(&gctx.ctxs))
             config_prepare_destroy_ctx(&gctx);
-        
+
         return rc;
     }
 }

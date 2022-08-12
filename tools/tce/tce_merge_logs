@@ -45,4 +45,4 @@ fi
 
 ar x "$newlog"
 ar t "$newlog" | awk -vFS=. '{ print $0, $2 }' | xargs -n2 tce_merge $mergefile "" ""
-ar t "$newlog" | xargs -n1 rm -f 
+ar t "$newlog" | xargs -n1 rm -f

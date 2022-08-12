@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief Test Environment: RGT - log index in-memory sorting utility
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
  *
@@ -246,9 +246,9 @@ cleanup:
 static int
 usage(FILE *stream, const char *progname)
 {
-    return 
+    return
         fprintf(
-            stream, 
+            stream,
             "Usage: %s [OPTION]... [INPUT [OUTPUT]]\n"
             "Sort a TE log index in memory.\n"
             "\n"

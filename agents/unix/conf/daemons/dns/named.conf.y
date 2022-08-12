@@ -47,9 +47,9 @@ options: /* empty */ {}
 
 option: DNS_DIRECTORY_STATEMENT DNS_QUOTED_STRING ';'
          { dns_parse_set_directory($2); free($2); }
-         | DNS_RECURSION_STATEMENT DNS_NUMBER ';' 
+         | DNS_RECURSION_STATEMENT DNS_NUMBER ';'
          { dns_parse_set_recursion($2); }
-         | DNS_FORWARDERS_STATEMENT '{' forwarders '}' ';' 
+         | DNS_FORWARDERS_STATEMENT '{' forwarders '}' ';'
          | DNS_UNKNOWN_TOKEN anything2 ';' {}
         ;
 
@@ -60,7 +60,7 @@ forwarders: /* empty */
 forwarder: ip_address ';'
           { dns_parse_set_forwarder($1); free($1); }
           | ip_address anything2 ';'
-          { dns_parse_set_forwarder($1); free($1); }  
+          { dns_parse_set_forwarder($1); free($1); }
 
 ip_address: DNS_DOTTED_STRING
             | DNS_COLON_STRING
@@ -78,7 +78,7 @@ single_anything: DNS_UNKNOWN_TOKEN {}
 | DNS_NUMBER {}
 | DNS_QUOTED_STRING { free($1); }
 | DNS_DOTTED_STRING { free($1); }
-| DNS_COLON_STRING  { free($1); } 
+| DNS_COLON_STRING  { free($1); }
         ;
 
 %%

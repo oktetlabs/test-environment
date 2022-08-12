@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
@@ -603,7 +603,7 @@ te_serial_parser(serial_parser_t *parser)
     volatile int    current_timeout = LOG_SERIAL_ALIVE_TIMEOUT;
     volatile int    incomp_str_count = 0;
     volatile int     rc = TE_RC(TE_TA_UNIX, TE_EAGAIN);
-    
+
     char           *newline;
     int             interval;
     int             len;

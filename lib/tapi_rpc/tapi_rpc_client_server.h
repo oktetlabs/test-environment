@@ -11,7 +11,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -46,10 +46,10 @@ extern "C" {
  * @param sock_type       Type of socket
  * @param proto           Protocol used for the socket
  * @param wild            Whether to bind socket to wildcard address
- * @param set_reuse_addr  Whether to set SO_REUSEADDR socket option on 
+ * @param set_reuse_addr  Whether to set SO_REUSEADDR socket option on
  *                        the socket
- * @param addr            Address the socket should be bound to 
- *                        (note that it is not allowed to have network 
+ * @param addr            Address the socket should be bound to
+ *                        (note that it is not allowed to have network
  *                        address part of address set to wildcard, but
  *                        if you want to bind the socket to wildcard
  *                        address you should set @p wild parameter to
@@ -75,13 +75,13 @@ extern int rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
  * -# Call @b socket() on @p srvr PCO with the following parameters:
  *    @p domain, @c SOCK_STREAM, @p proto.
  *    Created socket is referred as @p srvr_s below;
- * -# If @p srvr_wild is true, fill in network address part of 
+ * -# If @p srvr_wild is true, fill in network address part of
  *    @p srvr_bind_addr with wildcard network address;
  * -# Copy port part of @p srvr_addr to port part of @p srvr_bind_addr
  *    address;
  * -# Bind @p srvr_s socket to @p srvr_bind_addr address.
  * -# If port part of @p srvr_addr is zero (not specified), then call
- *    @b getsockname() on @p srvr_s socket to obtain the assigned port 
+ *    @b getsockname() on @p srvr_s socket to obtain the assigned port
  *    and set it to the port part of @p srvr_addr.
  * -# Call @b listen() for @p srvr_s socket with default @a backlog.
  */
@@ -93,7 +93,7 @@ extern int rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
  * @param domain        Domain for the socket
  * @param proto         Protocol for the socket
  * @param srvr_wild     Whether to bind server to wildcard address or not
- * @param srvr_addr     Server address to be used as a template 
+ * @param srvr_addr     Server address to be used as a template
  *                      for @b bind() on server side (IN/OUT)
  *
  * @return Created socket or -1.
@@ -122,7 +122,7 @@ extern int rpc_stream_server(rcf_rpc_server *srvr,
  * @param domain        Domain for the socket
  * @param proto         Protocol for the socket
  * @param clnt_addr     Address to bind client to or @c NULL
- * 
+ *
  * @return Created socket or -1.
  *
  * @copydoc lib-stream_client-alg
@@ -138,8 +138,8 @@ extern int rpc_stream_client(rcf_rpc_server *clnt,
  * @param clnt          PCO for client
  * @param domain        Domain used in the connection
  * @param proto         Protocol used in the connection
- * @param srvr_addr     server address (cannot be @c NULL) to be used as 
- *                      a template for @b bind() on server side and for 
+ * @param srvr_addr     server address (cannot be @c NULL) to be used as
+ *                      a template for @b bind() on server side and for
  *                      @b connect() on client side. Network address part of
  *                      the @p srvr_addr must be specified, but it is
  *                      allowed to left port part of @p srvr_addr
@@ -179,7 +179,7 @@ extern int rpc_stream_client(rcf_rpc_server *clnt,
  * @param srvr          PCO where server socket is created
  * @param clnt          PCO where client socket is created
  * @param proto         Protocol for the connection
- * @param srvr_addr     Server address to be used as a template 
+ * @param srvr_addr     Server address to be used as a template
  *                      for @b bind() on server side (IN/OUT)
  * @param clnt_addr     Address to bind client to or @c NULL
  * @param srvr_s        Descriptor of the socket reside on @p srvr (OUT)
@@ -200,20 +200,20 @@ extern int rpc_stream_connection(rcf_rpc_server *srvr,
                                  const struct sockaddr *clnt_addr,
                                  int *srvr_s, int *clnt_s);
 
-/** @page lib-dgram_client_server Create a connectionless pair of sockets that can communicate with each other without specifying any addresses in their I/O operations 
+/** @page lib-dgram_client_server Create a connectionless pair of sockets that can communicate with each other without specifying any addresses in their I/O operations
  *
  * @param srvr          PCO for server part of connection
  * @param clnt          PCO for client part of connection
  * @param domain        Domain used in the connection
  * @param proto         Protocol used in the connection
- * @param srvr_addr     server address (cannot be @c NULL) to be used as 
- *                      a template for @b bind() on server side and for 
+ * @param srvr_addr     server address (cannot be @c NULL) to be used as
+ *                      a template for @b bind() on server side and for
  *                      @b connect() on client side.
  * @param clnt_addr     address to bind client to (cannot be @c NULL)
  *
- * -# Open @c SOCK_DGRAM socket @p srvr_s on @p srvr and bind it 
+ * -# Open @c SOCK_DGRAM socket @p srvr_s on @p srvr and bind it
  *    to @p srvr_addr address;
- * -# Open @c SOCK_DGRAM socket @p clnt_s on @p clnt and bind it 
+ * -# Open @c SOCK_DGRAM socket @p clnt_s on @p clnt and bind it
  *    to to @p clnt_addr address;
  * -# @b connect() @p clnt_s socket to @p srvr_s socket;
  * -# @b connect() @p srvr_s socket to @p clnt_s socket.
@@ -230,7 +230,7 @@ extern int rpc_stream_connection(rcf_rpc_server *srvr,
  * @param srvr          PCO where server socket is created
  * @param clnt          PCO where client socket is created
  * @param proto         Protocol for the connection
- * @param srvr_addr     Server address to be used as a template 
+ * @param srvr_addr     Server address to be used as a template
  *                      for @b bind() on server side
  * @param clnt_addr     Address to bind client to
  * @param srvr_s        Descriptor of the socket reside on @p srvr (OUT)
@@ -276,7 +276,7 @@ rpc_dgram_connection_gen(rcf_rpc_server *srvr,
                                          clnt_connect, FALSE);
 }
 
-/** 
+/**
  * The macro is a wrapper over rpc_dgram_connection_gen_wild function.
  * In case of failure it calls TEST_FAIL() macro, so that it should be
  * called in test context only.
@@ -296,7 +296,7 @@ rpc_dgram_connection_gen(rcf_rpc_server *srvr,
         }                                                                 \
     } while (0)
 
-/** 
+/**
  * The macro is a wrapper over rpc_dgram_connection_gen function.
  * In case of failure it calls TEST_FAIL() macro, so that it should be
  * called in test context only.
@@ -321,7 +321,7 @@ rpc_dgram_connection_gen(rcf_rpc_server *srvr,
  * @param srvr          PCO where server socket is created
  * @param clnt          PCO where client socket is created
  * @param proto         Protocol for the connection
- * @param srvr_addr     Server address to be used as a template 
+ * @param srvr_addr     Server address to be used as a template
  *                      for @b bind() on server side
  * @param clnt_addr     Address to bind client to
  * @param srvr_s        Descriptor of the socket reside on @p srvr (OUT)
@@ -360,7 +360,7 @@ extern int rpc_dgram_connection(rcf_rpc_server *srvr,
  * @param clnt_s        Descriptor of the socket reside on @p clnt (OUT)
  *
  * @note Division of two peers on server and client is purely abstract,
- *       because actually just after creating a connection of type 
+ *       because actually just after creating a connection of type
  *       @c SOCK_STREAM we close real server socket and associate its
  *       child socket, with @p srvr_s parameter of the function.
  *
@@ -407,7 +407,7 @@ rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
                                    srvr_s, clnt_s, TRUE, FALSE);
 }
 
-/** 
+/**
  * The macro is a wrapper over gen_connection function.
  * In case of failure it calls TEST_FAIL() macro, so that it should be
  * called in test context only.
@@ -425,7 +425,7 @@ rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
         }                                                               \
     } while (0)
 
-/** 
+/**
  * The macro is a wrapper over gen_connection function.
  * In case of failure it calls TEST_FAIL() macro, so that it should be
  * called in test context only.

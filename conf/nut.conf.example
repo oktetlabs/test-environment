@@ -9,10 +9,10 @@ dnl Parameters:
 dnl       NUT image name
 dnl       source directory (absolute or relative from ${TE_BASE})
 dnl       building script (absolute or relative from ${TE_BASE})
-dnl       additional parameters to the building script 
+dnl       additional parameters to the building script
 dnl       list of Test Agents for TCE gathering
 dnl       list of TCE sources
-dnl       
+dnl
 dnl TE_NUT([mynut],[/home/me/work/mynut],[/home/me/work/mynut/build.sh],
 dnl        [hello world],[Agt_A Agt_B],[a.c b/c.c])
 

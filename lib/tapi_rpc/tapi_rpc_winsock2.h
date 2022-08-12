@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -74,7 +74,7 @@ extern int rpc_wsa_startup(rcf_rpc_server *rpcs);
 */
 extern int rpc_wsa_cleanup(rcf_rpc_server *rpcs);
 
-/** 
+/**
  * @b WSASocket() remote call.
  *
  * @param rpcs      RPC server handle
@@ -92,12 +92,12 @@ extern int rpc_wsa_cleanup(rcf_rpc_server *rpcs);
 extern int rpc_wsa_socket(rcf_rpc_server *rpcs,
                           rpc_socket_domain domain, rpc_socket_type type,
                           rpc_socket_proto protocol,
-                          uint8_t *info, int info_len, 
+                          uint8_t *info, int info_len,
                           rpc_open_sock_flags flags);
 
 /**
- * @b WSADuplicateSocket() remote call. Protocol info is copied to the 
- * Test Engine and then back  to the TA (in rpc_wsa_socket() function) 
+ * @b WSADuplicateSocket() remote call. Protocol info is copied to the
+ * Test Engine and then back  to the TA (in rpc_wsa_socket() function)
  * as is.
  *
  * @param rpcs          RPC server
@@ -114,7 +114,7 @@ extern int rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
                                     uint8_t *info, int *info_len);
 
 /**
- * @b DuplicateHandle() remote call. 
+ * @b DuplicateHandle() remote call.
  *
  * @param rpcs          RPC server
  * @param src           source process PID
@@ -136,11 +136,11 @@ extern te_bool rpc_duplicate_handle(rcf_rpc_server *rpcs,
  *
  * @param rpcs         RPC server handle
  * @param s            socket descriptor
- * @param addr         pointer to a @b sockaddr structure containing the 
+ * @param addr         pointer to a @b sockaddr structure containing the
  *                     address to connect to.
  * @param buf          RPC pointer to buffer containing connect data
  * @param len_buf      length of the buffer @b buf
- * @param bytes_sent   pointer a the number of bytes sent 
+ * @param bytes_sent   pointer a the number of bytes sent
  * @param overlapped   @b overlapped object or RPC_NULL
  *
  * @return Value returned by @b ConnectEx()
@@ -197,7 +197,7 @@ typedef struct accept_cond {
  *
  * @return New connected socket upon successful completion, otherwise
  *         -1 is returned
- *                
+ *
  */
 extern int rpc_wsa_accept(rcf_rpc_server *rpcs,
                           int s, struct sockaddr *addr,
@@ -209,7 +209,7 @@ extern int rpc_wsa_accept(rcf_rpc_server *rpcs,
  * @param rpcs              RPC server
  * @param s                 descriptor of socket that has already been
  *                          called with the listen function
- * @param s_a               descriptor idenfifying a socket on which to 
+ * @param s_a               descriptor idenfifying a socket on which to
  *                          accept an incomming connection
  * @param buf               RPC pointer to the buffer to receive data
  * @param len               length of the buffer to receive data (should not
@@ -222,11 +222,11 @@ extern int rpc_wsa_accept(rcf_rpc_server *rpcs,
  * @return Value returned by AcceptEx() function.
  */
 extern te_bool rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
-                             rpc_ptr buf, size_t len, size_t laddr_len, 
-                             size_t raddr_len, size_t *bytes_received, 
+                             rpc_ptr buf, size_t len, size_t laddr_len,
+                             size_t raddr_len, size_t *bytes_received,
                              rpc_overlapped overlapped);
 
-/** 
+/**
  * Calculate length of buffer to be allocated for @b rpc_accept_ex().
  *
  * @param rpcs    RPC server
@@ -258,13 +258,13 @@ rpc_accept_ex_buflen(rcf_rpc_server *rpcs, size_t datalen)
  * @param r_sa_len      RemoteSockaddrLen (passed transparently)
  */
 extern void rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
-                                    int s, rpc_ptr buf, 
+                                    int s, rpc_ptr buf,
                                     size_t len,
                                     size_t laddr_len,
                                     size_t raddr_len,
-                                    struct sockaddr *laddr, 
+                                    struct sockaddr *laddr,
                                     size_t *l_sa_len,
-                                    struct sockaddr *raddr, 
+                                    struct sockaddr *raddr,
                                     size_t *r_sa_len);
 
 
@@ -280,22 +280,22 @@ extern void rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
  * @param laddr         local address returned by GetAcceptExSockAddr()
  * @param raddr         remote address returned by GetAcceptExSockAddr()
  */
-static inline void 
+static inline void
 rpc_get_accept_addr(rcf_rpc_server *rpcs,
                     int s, rpc_ptr buf, size_t len,
-                    struct sockaddr *laddr, 
+                    struct sockaddr *laddr,
                     struct sockaddr *raddr)
 {
     size_t ss_len;
-    
+
     ss_len = rpc_get_sizeof(rpcs, "struct sockaddr_storage");
     assert(ss_len >= sizeof(struct sockaddr_storage));
-    
-    return rpc_get_accept_addr_gen(rpcs, s, buf, len, 
-                                   ss_len + 16, ss_len + 16, 
+
+    return rpc_get_accept_addr_gen(rpcs, s, buf, len,
+                                   ss_len + 16, ss_len + 16,
                                    laddr, &ss_len, raddr, &ss_len);
 }
- 
+
 /**
  * Transmit data over a connected socket. Data can be transferred
  * from memory or from file(s).
@@ -319,8 +319,8 @@ rpc_transmit_packets(rcf_rpc_server *rpcs, int s,
                      rpc_overlapped overlapped, ssize_t flags);
 
 /**
- * Transmit file data over a connected socket. This function uses the 
- * operating system cache manager to retrive the file data, and perform 
+ * Transmit file data over a connected socket. This function uses the
+ * operating system cache manager to retrive the file data, and perform
  * high-performance file data transfert over sockets.
  *
  * @param rpcs         RPC server handle
@@ -330,10 +330,10 @@ rpc_transmit_packets(rcf_rpc_server *rpcs, int s,
  * @param len          length of data to transmit
  * @param len_per_send size of each block of data in each send operation.
  * @param overlapped   @b overlapped object or RPC_NULL
- * @param head         pointer to a buffer to be transmitted before file 
+ * @param head         pointer to a buffer to be transmitted before file
  *                     data is transmitted
  * @param head_len     size of buffer @b head
- * @param tail         pointer to a buffer to be transmitted after  
+ * @param tail         pointer to a buffer to be transmitted after
  *                     transmission of file data.
  * @param tail_len     size of buffer @b tail
  * @param flags      call flags (See @b Transmit file for more information)
@@ -347,8 +347,8 @@ extern te_bool rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
                                  ssize_t tail_len, ssize_t flags);
 
 /**
- * Transmit file data over a connected socket. This function uses the 
- * operating system cache manager to retrive the file data, and perform 
+ * Transmit file data over a connected socket. This function uses the
+ * operating system cache manager to retrive the file data, and perform
  * high-performance file data transfert over sockets.
  *
  * @param rpcs           RPC server handle.
@@ -376,7 +376,7 @@ extern te_bool rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
 extern te_bool rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s,
                                        int file, ssize_t len,
                                        ssize_t bytes_per_send,
-                                       rpc_overlapped overlapped, 
+                                       rpc_overlapped overlapped,
                                        rpc_ptr head,
                                        ssize_t head_len, rpc_ptr tail,
                                        ssize_t tail_len, ssize_t flags);
@@ -458,7 +458,7 @@ extern int rpc_create_io_completion_port(rcf_rpc_server *rpcs,
                                          int file_handle,
                                          int existing_completion_port,
                                          uint64_t completion_key,
-                                         unsigned int 
+                                         unsigned int
                                              number_of_concurrent_threads);
 
 /**
@@ -518,7 +518,7 @@ extern int rpc_get_current_process_id(rcf_rpc_server *rpcs);
  */
 extern void rpc_get_sys_info(rcf_rpc_server *rpcs, rpc_sys_info *sys_info);
 
-/** 
+/**
  * @b @b WSARecvEx() remote call.
  *
  * @param rpcs    RPC server handle
@@ -528,7 +528,7 @@ extern void rpc_get_sys_info(rcf_rpc_server *rpcs, rpc_sys_info *sys_info);
  * @param flags   specify whether data is fully or partially received
  * @param rbuflen real size of buffer @b buf
  *
- * @return Number of bytes received upon successful completion. If the 
+ * @return Number of bytes received upon successful completion. If the
  *         connection has been close it returned zero.
  *         Otherwise -1 is returned.
  */
@@ -567,13 +567,13 @@ extern rpc_wsaevent rpc_create_event_with_bit(rcf_rpc_server *rpcs);
  */
 extern te_bool rpc_close_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
 
-/** 
+/**
  * Reset the state of the specified event object to non-signaled.
  *
  * @param rpcs   RPC server handle
  * @param hevent event object handle
  *
- * @return Value returned by @b WSAResetEvent() 
+ * @return Value returned by @b WSAResetEvent()
  */
 extern te_bool rpc_reset_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
 
@@ -608,17 +608,17 @@ extern int rpc_wsa_address_to_string(rcf_rpc_server *rpcs,
                                      socklen_t addrlen, uint8_t *info,
                                      int info_len, char *addrstr,
                                      ssize_t *addrstr_len);
-     
+
 /**
  * Convert a numeric string to a @b sockaddr structure.
  *
  * @param rpcs       RPC server handle
  * @param addrstr    numeric address string
  * @param address_family address family to which the string belongs
- * @param info       pointer to an object which is associated with 
+ * @param info       pointer to an object which is associated with
  *                   the provider to be used or NULL
  * @param info_len   length of object @b info (if not null)
- * @param addr       pointer to a @b sockaddr structure that receive the 
+ * @param addr       pointer to a @b sockaddr structure that receive the
  *                   converted address.
  * @param addrlen    points to the length of @b addr
  *
@@ -670,7 +670,7 @@ extern void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf);
  *
  * @param rpcs           RPC server handle
  * @param s              Descriptor identifying an unconnected socket
- * @param addr           pointer to a @b sockaddr structure containing the 
+ * @param addr           pointer to a @b sockaddr structure containing the
  *                       address to connect to
  * @param caller_wsabuf  TA virtual address space valid pointer to a WSABUF
  *                       structure describing the user data that is to be
@@ -689,18 +689,18 @@ extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
                            const struct sockaddr *addr,
                            rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
                            rpc_qos *sqos);
-                           
-/** Maximum length of expected result */                           
+
+/** Maximum length of expected result */
 #define RPC_WSA_IOCTL_OUTBUF_MAX        4096
 
 /**
  * @b WSAIoctl() remote call.
  *
- * If input/output argument is list of addresses, buffer should contain 
+ * If input/output argument is list of addresses, buffer should contain
  * array of sockaddr_storage structures.
  * If input/output argument is QOS, rpc_qos structure should be in the
  * buffer.
- * If input/output argument is keepalive or GUID, corresponding tarpc_* 
+ * If input/output argument is keepalive or GUID, corresponding tarpc_*
  * structures should be in the buffer.
  *
  * @param rpcs            RPC server handle
@@ -728,7 +728,7 @@ extern int rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s,
                          char *inbuf, unsigned int inbuf_len,
                          char *outbuf, unsigned int outbuf_len,
                          size_t *bytes_returned,
-                         rpc_overlapped overlapped, 
+                         rpc_overlapped overlapped,
                          const char *callback);
 
 /**
@@ -754,14 +754,14 @@ extern te_bool rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
                                     int s, rpc_overlapped overlapped,
                                     int *bytes, te_bool wait,
                                     rpc_send_recv_flags *flags,
-                                    char *buf, 
+                                    char *buf,
                                     rpc_ioctl_code control_code);
 
 /**
  * Asynchronously retrieve host information by given address.
  * See @b WSAAsyncGetHostByAddr().
  *
- *  @param rpcs    RPC server handle 
+ *  @param rpcs    RPC server handle
  *  @param hwnd    handle to a window that receive a message when the
  *                 asynchronous request completes
  *  @param wmsg    message to be received when asynchronous request
@@ -769,139 +769,139 @@ extern te_bool rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
  *  @param addr    pointer to the network address of the host
  *  @param addrlen size of @a addr
  *  @param type    type of the address
- *  @param buf     valid buffer pointer in the TA address space. 
+ *  @param buf     valid buffer pointer in the TA address space.
  *                 Contain the host entry data
- *  @param buflen  size of the buffer @b buf, in bytes 
+ *  @param buflen  size of the buffer @b buf, in bytes
  *
  *  @return  Value returned by  @b WSAAsyncGetHostByAddr()
  */
-extern rpc_handle rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, 
+extern rpc_handle rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs,
                                                  rpc_hwnd hwnd,
                                                  unsigned int wmsg,
                                                  char *addr,
                                                  ssize_t addrlen,
                                                  rpc_socket_type type,
-                                                 rpc_ptr buf, 
+                                                 rpc_ptr buf,
                                                  ssize_t buflen);
 
 /**
  * Asynchronously retrieve host information by given name.
  * See @b WSAAsyncGetHostByName().
  *
- * @param rpcs    RPC server handle 
+ * @param rpcs    RPC server handle
  * @param hwnd    handle to a window that receive a message when the
  *                asynchronous request completes
  * @param wmsg    message to be received when asynchronous request
  *                completes
  * @param name    pointer to the host name
- * @param buf     valid buffer pointer in the TA address space. 
+ * @param buf     valid buffer pointer in the TA address space.
  *                Contain the host entry data
- * @param buflen  size of the buffer @b buf, in bytes 
+ * @param buflen  size of the buffer @b buf, in bytes
  *
  * @return Value returned by  @b WSAAsyncGetHostByName()
  */
-extern rpc_handle rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, 
+extern rpc_handle rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs,
                                                  rpc_hwnd hwnd,
-                                                 unsigned int wmsg, 
+                                                 unsigned int wmsg,
                                                  char *name,
-                                                 rpc_ptr buf, 
+                                                 rpc_ptr buf,
                                                  ssize_t buflen);
-/** 
+/**
  * Asynchronously retrieve protocol information by given name.
  * See @b WSAAsyncGetProtoByName().
  *
- * @param rpcs    RPC server handle 
+ * @param rpcs    RPC server handle
  * @param hwnd    handle to a window that receive a message when the
  *                 asynchronous request completes
  * @param wmsg    message to be received when asynchronous request
  *                 completes
  * @param name    pointer to a null-terminated protocol name
- * @param buf     valid buffer pointer in the TA address space. 
+ * @param buf     valid buffer pointer in the TA address space.
  *                 Contain the protocol entry data
- * @param buflen  size of the buffer @b buf, in bytes 
+ * @param buflen  size of the buffer @b buf, in bytes
  *
  * @return  Value returned by  @b WSAAsyncGetProtoByName()
  */
-extern rpc_handle rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, 
+extern rpc_handle rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs,
                                                   rpc_hwnd hwnd,
-                                                  unsigned int wmsg, 
+                                                  unsigned int wmsg,
                                                   char *name,
-                                                  rpc_ptr buf, 
+                                                  rpc_ptr buf,
                                                   ssize_t buflen);
 
-/** 
+/**
  * Asynchronously retrieve protocol information by given number.
  * See @b WSAAsyncGetProtoByNumber().
  *
- * @param rpcs    RPC server handle 
+ * @param rpcs    RPC server handle
  * @param hwnd    handle to a window that receive a message when the
  *                 asynchronous request completes
  * @param wmsg    message to be received when asynchronous request
  *                 completes
  * @param number  protocol number in host byte order
- * @param buf     valid buffer pointer in the TA address space. 
+ * @param buf     valid buffer pointer in the TA address space.
  *                 Contain the protocol entry data
- * @param buflen  size of the buffer @b buf, in bytes 
+ * @param buflen  size of the buffer @b buf, in bytes
  *
  * @return  Value returned by  @b WSAAsyncGetProtoByNumber()
  */
-extern rpc_handle rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, 
+extern rpc_handle rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs,
                                                     rpc_hwnd hwnd,
-                                                    unsigned int wmsg, 
+                                                    unsigned int wmsg,
                                                     int number,
-                                                    rpc_ptr buf, 
+                                                    rpc_ptr buf,
                                                     ssize_t buflen);
 
-/** 
- * Asynchronously retrieve service information that corresponds to a 
+/**
+ * Asynchronously retrieve service information that corresponds to a
  * service name.
- * 
- * @param rpcs    RPC server handle 
+ *
+ * @param rpcs    RPC server handle
  * @param hwnd    handle to a window that receive a message when the
  *                 asynchronous request completes
  * @param wmsg    message to be received when asynchronous request
  *                 completes
  * @param name    pointer to a null-terminated service name
  * @param proto   pointer to a protocol name
- * @param buf     valid buffer pointer in the TA address space. 
+ * @param buf     valid buffer pointer in the TA address space.
  *                 Contain the service entry data
- * @param buflen  size of the buffer @b buf, in bytes 
+ * @param buflen  size of the buffer @b buf, in bytes
  *
  * @return  Value returned by  @b WSAAsyncGetServByName()
  */
-extern rpc_handle rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, 
+extern rpc_handle rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs,
                                                  rpc_hwnd hwnd,
-                                                 unsigned int wmsg, 
-                                                 char *name, 
+                                                 unsigned int wmsg,
+                                                 char *name,
                                                  char *proto,
-                                                 rpc_ptr buf, 
+                                                 rpc_ptr buf,
                                                  ssize_t buflen);
 
-/** 
- * Asynchronously retrieve service information that corresponds to a 
+/**
+ * Asynchronously retrieve service information that corresponds to a
  * port and protocol.
- * 
- * @param rpcs    RPC server handle 
+ *
+ * @param rpcs    RPC server handle
  * @param hwnd    handle to a window that receive a message when the
  *                 asynchronous request completes
  * @param wmsg    message to be received when asynchronous request
  *                 completes
  * @param port    port for the service
  * @param proto   pointer to a protocol name
- * @param buf     valid buffer pointer in the TA address space. 
+ * @param buf     valid buffer pointer in the TA address space.
  *                 Contain the service entry data
- * @param buflen  size of the buffer @b buf, in bytes 
+ * @param buflen  size of the buffer @b buf, in bytes
  *
  * @return  value returned by  @b WSAAsyncGetServByName()
  */
-extern rpc_handle rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, 
+extern rpc_handle rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs,
                                                  rpc_hwnd hwnd,
-                                                 unsigned int wmsg, 
+                                                 unsigned int wmsg,
                                                  int port, char *proto,
-                                                 rpc_ptr buf, 
+                                                 rpc_ptr buf,
                                                  ssize_t buflen);
 
-/** 
+/**
  * Create WSAOVERLAPPED structure on TA side.
  *
  * @param rpcs        RPC server handle
@@ -910,7 +910,7 @@ extern rpc_handle rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs,
  * @param offset_high high-order word of the position at which to start
  *                    the transfert
  * @param ...         cookie1 and cookie2 may be passed
- * 
+ *
  * @return WSAOVERLAPPED structure upon successful completion or RPC_NULL
  */
 extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *rpcs,
@@ -918,7 +918,7 @@ extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *rpcs,
                                             unsigned int offset,
                                             unsigned int offset_high, ...);
 
-/** 
+/**
  * Delete specified WSAOVERLAPPED structure.
  *
  * @param rpcs        RPC server handle
@@ -927,21 +927,21 @@ extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *rpcs,
 extern void rpc_delete_overlapped(rcf_rpc_server *rpcs,
                                   rpc_overlapped overlapped);
 
-/** 
+/**
  * Send data on a connected socket.
  *
  * @param rpcs        RPC server handle
  * @param s           connected socket descriptor
- * @param iov         pointer to a vector of buffers containing the data 
+ * @param iov         pointer to a vector of buffers containing the data
  *                    to be sent
  * @param iovcnt      number of buffers in the vector
- * @param flags       modifies the behavior of the call.      
+ * @param flags       modifies the behavior of the call.
  * @param bytes_sent  pointer to the number of bytes sent
  * @param overlapped  @b overlapped object or RPC_NULL
  * @param callback    completion callback name
  *
  * @return 0 on success or -1 on failure
- */ 
+ */
 extern int rpc_wsa_send(rcf_rpc_server *rpcs,
                        int s, const struct rpc_iovec *iov,
                        size_t iovcnt, rpc_send_recv_flags flags,
@@ -977,8 +977,8 @@ extern int rpc_wsa_recv(rcf_rpc_server *rpcs,
  *
  * @param rpcs         RPC server handle
  * @param s            descriptor identifying a possibly connected socket
- * @param iov          pointer to a vector of buffers containing the data 
- *                     to be sent 
+ * @param iov          pointer to a vector of buffers containing the data
+ *                     to be sent
  * @param iovcnt       number of buffer in the vector @b iov
  * @param flags        modifies the behavior of the call.
  *                     (See @b rpc_send_recv_flags)
@@ -1002,13 +1002,13 @@ extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
  * @param rpcs           RPC server handle
  * @param s              descriptor identifying a socket
  * @param iov            pointer to a vector of buffers where received data
- *                       have to be stored 
+ *                       have to be stored
  * @param iovcnt         number of buffers in the vector @b iov
  * @param riovcnt        number of buffers to receive
  * @param flags          modifies the behavior of the call.
  *                       (See @b rpc_send_recv_flags)
  * @param bytes_received pointer to the number of bytes received
- * @param from           pointer to a buffer that hold the source address 
+ * @param from           pointer to a buffer that hold the source address
  *                       upon the completion of overlapped operation
  * @param fromlen        size of the address @b from
  * @param overlapped     @b overlapped object or RPC_NULL
@@ -1040,7 +1040,7 @@ extern int rpc_wsa_send_disconnect(rcf_rpc_server *rpcs,
 /**
  * Terminate reception on a socket, and retrieve disconnect data
  * in case of connection oriented socket.
- * 
+ *
  * @param rpcs    RPC server handle
  * @param s       descriptor identifying a socket
  * @param iov      vector of buffers containing the disconnect data
@@ -1067,7 +1067,7 @@ extern int rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
 extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
                             struct rpc_msghdr *msg,
                             ssize_t *bytes_received,
-                            rpc_overlapped overlapped, 
+                            rpc_overlapped overlapped,
                             const char *callback);
 
 /**
@@ -1076,7 +1076,7 @@ extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
  * @param rpcs           RPC server handle
  * @param s              desccriptor identifying a socket
  * @param overlapped     @b overlapped object or RPC_NULL
- * @param bytes          pointer to the number of bytes that were 
+ * @param bytes          pointer to the number of bytes that were
  *                       transfered by a send or receive operation
  * @param wait           specifies whether the function should wait for
  *                       the overlapped operation to complete
@@ -1089,7 +1089,7 @@ extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
  * @return TRUE on success, FALSE on failure
  */
 extern te_bool rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
-                                             int s, 
+                                             int s,
                                              rpc_overlapped overlapped,
                                              size_t *bytes, te_bool wait,
                                              rpc_send_recv_flags *flags,
@@ -1123,7 +1123,7 @@ rpc_cleanup_completion_callback(rcf_rpc_server *rpcs)
     rpc_overlapped ovl;
     int            tmp;
     ssize_t        stmp;
-    
+
     rpc_completion_callback(rpcs, &tmp, &tmp, &stmp, &ovl);
 }
 
@@ -1134,7 +1134,7 @@ rpc_cleanup_completion_callback(rcf_rpc_server *rpcs)
  * @param rpcs         RPC server handle
  * @param s            socket descriptor
  * @param event_object event object
- * @param event        bitmask the specifies the combination of network 
+ * @param event        bitmask the specifies the combination of network
  *                     events
  *
  * @return 0 on success or -1 on failure
@@ -1165,8 +1165,8 @@ enum {
     WSA_WAIT_EVENT_0
 };
 
-/** 
- * Convert @b WSAWaitForMultipleEvents() return code to a string 
+/**
+ * Convert @b WSAWaitForMultipleEvents() return code to a string
  *
  * @param code code to be converted
  *
@@ -1191,24 +1191,24 @@ wsa_wait_rpc2str(int code)
     }
 }
 
-/** 
+/**
  * @b WSAWaitForMultipleEvents() remote call.
- * 
+ *
  * @param rpcs     RPC server handle
  * @param count    number of events in @b events
  * @param events   pointer to an array of events
- * @param wait_all wait type, when @b TRUE the function return when the 
+ * @param wait_all wait type, when @b TRUE the function return when the
  *                 state of all events is signaled
  * @param timeout  time-out interval, milliseconds. If the interval expires,
- *                 the function return. If @b timeout is zero the function 
- *                 tests the state of specified event objects and returns 
+ *                 the function return. If @b timeout is zero the function
+ *                 tests the state of specified event objects and returns
  *                 immediately. If @b timeout is WSA_INFINITE, the time-out
  *                 interval never expires.
- * @param alertable specify whether the completion routine has to be 
+ * @param alertable specify whether the completion routine has to be
  *                  executed before the function returns.
- *                   
+ *
  * @return The event object that make the function to return.
- *         -1 is returned in the case of RPC error 
+ *         -1 is returned in the case of RPC error
  */
 extern int rpc_wait_for_multiple_events(rcf_rpc_server *rpcs,
                                         int count, rpc_wsaevent *events,
@@ -1216,7 +1216,7 @@ extern int rpc_wait_for_multiple_events(rcf_rpc_server *rpcs,
                                         te_bool alertable);
 
 
-/** 
+/**
  * Create a window for receiving event notifications.
  *
  * @param rpcs RPC server handle
@@ -1226,7 +1226,7 @@ extern int rpc_wait_for_multiple_events(rcf_rpc_server *rpcs,
  */
 extern rpc_hwnd rpc_create_window(rcf_rpc_server *rpcs);
 
-/** 
+/**
  * Destroy the specified window.
  *
  * @param rpcs RPC server handle
@@ -1234,7 +1234,7 @@ extern rpc_hwnd rpc_create_window(rcf_rpc_server *rpcs);
  */
 extern void rpc_destroy_window(rcf_rpc_server *rpcs, rpc_hwnd hwnd);
 
-/** 
+/**
  * Request window-based notification of network events for a socket.
  *
  * @param rpcs   RPC server handle
@@ -1282,7 +1282,7 @@ extern te_bool rpc_is_winsock2(rcf_rpc_server *rpcs);
  *
  * @param rpcs           RPC server handle
  * @param s              Descriptor identifying an unconnected socket
- * @param addr           pointer to a @b sockaddr structure containing the 
+ * @param addr           pointer to a @b sockaddr structure containing the
  *                       address to connect to
  * @param caller_wsabuf  TA virtual address space valid pointer to a WSABUF
  *                       structure describing the user data that is to be
@@ -1294,12 +1294,12 @@ extern te_bool rpc_is_winsock2(rcf_rpc_server *rpcs);
  *                       connection establishment.
  * @param sqos           TA virtual address space valid pointer to a QOS
  *                       structure for socket @b s.
- * @param flag           Flag to indicate that the socket is acting as a 
- *                       sender (JL_SENDER_ONLY), receiver 
+ * @param flag           Flag to indicate that the socket is acting as a
+ *                       sender (JL_SENDER_ONLY), receiver
  *                       (JL_RECEIVER_ONLY), or both (JL_BOTH).
  *
- * @return               The value of type SOCKET that is a descriptor for 
- *                       the newly created multipoint socket in case of 
+ * @return               The value of type SOCKET that is a descriptor for
+ *                       the newly created multipoint socket in case of
  *                       success, a value of INVALID_SOCKET otherwise.
  */
 extern int rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s,
@@ -1312,7 +1312,7 @@ extern int rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s,
  *
  * @param rpcs       RPC server handle
  * @param fd         file descriptor
- * @param buf        buffer for data 
+ * @param buf        buffer for data
  * @param count      number of bytes to be read
  * @param received   location for number of read bytes
  * @param overlapped @b overlapped object or RPC_NULL
@@ -1328,7 +1328,7 @@ extern te_bool rpc_read_file(rcf_rpc_server *rpcs,
  *
  * @param rpcs       RPC server handle
  * @param fd         file descriptor
- * @param buf        buffer for data 
+ * @param buf        buffer for data
  * @param count      number of bytes to be sent
  * @param sent       location for number of sent bytes
  * @param overlapped @b overlapped object or RPC_NULL
@@ -1344,7 +1344,7 @@ extern te_bool rpc_write_file(rcf_rpc_server *rpcs,
  *
  * @param rpcs       RPC server handle
  * @param fd         file descriptor
- * @param buf        buffer for data 
+ * @param buf        buffer for data
  * @param count      number of bytes to be read
  * @param overlapped @b overlapped object or RPC_NULL
  * @param callback   completion callback name
@@ -1361,7 +1361,7 @@ extern te_bool rpc_read_file_ex(rcf_rpc_server *rpcs,
  *
  * @param rpcs       RPC server handle
  * @param fd         file descriptor
- * @param buf        buffer for data 
+ * @param buf        buffer for data
  * @param count      number of bytes to be sent
  * @param overlapped @b overlapped object or RPC_NULL
  * @param callback   completion callback name

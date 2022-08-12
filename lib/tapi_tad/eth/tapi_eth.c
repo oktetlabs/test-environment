@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -387,7 +387,7 @@ tapi_eth_trrecv_cb_data(tapi_eth_frame_callback  callback,
     }
     cb_data->callback = callback;
     cb_data->user_data = user_data;
-    
+
     res = tapi_tad_trrecv_make_cb_data(tapi_eth_pkt_handler, cb_data);
     if (res == NULL)
         free(cb_data);

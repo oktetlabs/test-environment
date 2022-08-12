@@ -35,7 +35,7 @@ API sanity tests are also included which check that the library API returns
 errors when inappropriate arguments are passed to it.
 
 <!-- Describe parameters which may be passed to the package -->
-@param max_buffer_size - maximum size of the transmission buffer (the value is 
+@param max_buffer_size - maximum size of the transmission buffer (the value is
                          reached several times by the tests)
 
 

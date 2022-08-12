@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package version="1.0">
-    
+
     <description>Tests on TAD DHCP functionality.</description>
 
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
@@ -10,7 +10,7 @@
             <script name="wait_discover">
                 <req id="TAD_SNMP"/>
             </script>
-        </run> 
+        </run>
     </session>
 
 </package>

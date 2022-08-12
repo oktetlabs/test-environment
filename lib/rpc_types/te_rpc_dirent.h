@@ -2,17 +2,17 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from dirent.h.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_DIRENT_H__
 #define __TE_RPC_DIRENT_H__
 
@@ -53,7 +53,7 @@ extern const char *d_type_rpc2str(rpc_d_type type);
 #define RPC_DIRENT_HAVE_D_NAMLEN 0x04
 /**
  * Target system has 'd_ino' field in struct dirent
- * (this field always present - it is mandatory). 
+ * (this field always present - it is mandatory).
  */
 #define RPC_DIRENT_HAVE_D_INO    0x08
 

@@ -10,7 +10,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
@@ -86,7 +86,7 @@ gen_dlx(problem *p)
         prev_e = NULL;
         for (j = 0; j < p->sets[i].num; j++)
         {
-            e = calloc(1, sizeof(*e)); 
+            e = calloc(1, sizeof(*e));
             e->set_id = i;
             e->elm_id = p->sets[i].els[j];
 
@@ -117,7 +117,7 @@ gen_dlx(problem *p)
             assert(c != h);
 
             e->C = c;
-            
+
             for (prev_u = c; prev_u->D != c; prev_u = prev_u->D);
 
             e->U = prev_u;
@@ -165,7 +165,7 @@ free_dlx(dlx_cell *h)
 
     free(h);
 }
- 
+
 /**
  * Release memory in which set of numbers was stored.
  *
@@ -329,7 +329,7 @@ dlx(dlx_cell *h, int k)
     for (r = c->D; r != c; r = r->D)
     {
         O[k] = r->set_id;
-        
+
         /*
          * For each set, try to select it, then delete all
          * the sets having some element in common with it and
@@ -408,7 +408,7 @@ greedy(problem *prb)
                         if (prb->sets[max_i].els[k] == prb->sets[i].els[j])
                             break;
                     }
-                    
+
                     if (k < prb->sets[max_i].num)
                         break;
                 }
@@ -490,7 +490,7 @@ greedy_set_cov(problem *prb)
                     if (elms_cov[prb->sets[i].els[k]] == 0)
                         prb->sets[i].n_diff++;
                 }
-                    
+
                 if (prb->sets[i].n_diff == 0)
                 {
                     avail[i] = -1;

@@ -4,10 +4,10 @@ DEFINITIONS ::=
 BEGIN
 
 
-EXPORTS Interval, DATA-UNIT, Payload, CSAP-spec, Template-Parameter, 
+EXPORTS Interval, DATA-UNIT, Payload, CSAP-spec, Template-Parameter,
     Raw-Packet, Traffic-Template, Traffic-Pattern;
 
-IMPORTS Generic-CSAP-Level, Generic-PDU 
+IMPORTS Generic-CSAP-Level, Generic-PDU
             FROM TE-NDN-Context-General;
 
 Interval ::= SEQUENCE {
@@ -15,34 +15,34 @@ Interval ::= SEQUENCE {
     e INTEGER  -- end   of the interval
 }
 
--- 
+--
 -- Function-ref ::= SEQUENCE {
 --     name PrintableString; -- name of function, should be in sybmol table of TA.
---     args SEQUENCE OF CHOICE { -- array of arguments, may be empty. 
+--     args SEQUENCE OF CHOICE { -- array of arguments, may be empty.
 --         int INTEGER;          -- simple integer
---         str UniversalString; 
+--         str UniversalString;
 --     }
 -- }
 
 DATA-UNIT { BaseFieldType } ::=  CHOICE
-{ 
-    plain BaseFieldType,    -- "hardcoded constant" in NDS, simple value of 
-                            -- desired type. 
-                            
+{
+    plain BaseFieldType,    -- "hardcoded constant" in NDS, simple value of
+                            -- desired type.
+
     script UniversalString, -- script for calculating of field value by TA.
-    
+
     enum        SET OF INTEGER,    -- domain of values. For usage in patterns.
 
-    mask        SEQUENCE {  -- | bitmask for patterns. Let's "a" denote name 
-        v OCTET STRING,     -- | of variable to be checked. 
-        m OCTET STRING      -- | then result of matching is:  ((a&m) == (v&m)) 
-    },                      -- |   in C notation 
+    mask        SEQUENCE {  -- | bitmask for patterns. Let's "a" denote name
+        v OCTET STRING,     -- | of variable to be checked.
+        m OCTET STRING      -- | then result of matching is:  ((a&m) == (v&m))
+    },                      -- |   in C notation
 
     intervals   SEQUENCE OF Interval, -- domain of values. For usage in patterns.
 
     env         SEQUENCE { -- reference to Config DB entry.
-        name PrintableString,  
-        type INTEGER          
+        name PrintableString,
+        type INTEGER
                 {int(0), string(1), ip-addr(2)}
     },
 
@@ -52,25 +52,25 @@ DATA-UNIT { BaseFieldType } ::=  CHOICE
         mask BaseFieldType OPTIONAL    -- | bit-mask applied to both 'first'
     },                                 -- | and 'last'
 
-    function    PrintableString 
+    function    PrintableString
             -- name of function (which name should be present
-            -- in TA symbol table) for matching value (if used in  
+            -- in TA symbol table) for matching value (if used in
             -- filter pattern) or generating it (in templates)
 }
 
-CSAP-spec ::= SEQUENCE OF Generic-CSAP-Level 
+CSAP-spec ::= SEQUENCE OF Generic-CSAP-Level
 
-Template-Parameter ::= CHOICE -- type for defingn of template argument. 
+Template-Parameter ::= CHOICE -- type for defingn of template argument.
             -- see "Traffic Application Domain Framework" document
             -- for full description.
-{ 
-    ints SEQUENCE OF INTEGER,            -- | explicit list of values 
+{
+    ints SEQUENCE OF INTEGER,            -- | explicit list of values
     strings SEQUENCE OF UniversalString, -- |   to be iterated.
 
     ints-assoc SEQUENCE OF INTEGER, -- | explicit list of values,
-                                    -- | but not be iterated separately.  
+                                    -- | but not be iterated separately.
 
-    simple-for SEQUENCE 
+    simple-for SEQUENCE
         { begin INTEGER, end INTEGER, step INTEGER OPTIONAL},
     ...
 }
@@ -80,24 +80,24 @@ max-pdus ::= INTEGER 100 -- quite dummy value
 Payload ::= CHOICE
 {
     bytes       OCTET STRING,
-    mask        SEQUENCE {  -- | bitmask for patterns. Let's "a" denote name 
-        v OCTET STRING,     -- | of variable to be checked. 
-        m OCTET STRING      -- | then result of matching is:  ((a&m) == (v&m)) 
-    },                      -- |   in C notation 
+    mask        SEQUENCE {  -- | bitmask for patterns. Let's "a" denote name
+        v OCTET STRING,     -- | of variable to be checked.
+        m OCTET STRING      -- | then result of matching is:  ((a&m) == (v&m))
+    },                      -- |   in C notation
     function    PrintableString,
     length      INTEGER,
     stream      SEQUENCE {
-        function PrintableString, 
+        function PrintableString,
         offset   DATA-UNIT(INTEGER),
         length   DATA-UNIT(INTEGER)
     }
 }
 
 Raw-Packet ::= SEQUENCE -- values of this type are passed from CSAP to test
-{                       
+{
     pdus        SEQUENCE (SIZE (1..max-pdus)) OF Generic-PDU,
     payload     Payload OPTIONAL
-} 
+}
 
 Packet-Action ::= CHOICE
 {
@@ -107,7 +107,7 @@ Packet-Action ::= CHOICE
 }
 
 
-Traffic-Template ::= SEQUENCE 
+Traffic-Template ::= SEQUENCE
 {
     arg-sets    SEQUENCE OF Template-Parameter OPTIONAL,
     delays      DATA-UNIT(INTEGER) OPTIONAL,
@@ -131,26 +131,26 @@ END
 
 TE-NDN-Context-General
 DEFINITIONS ::=
-BEGIN 
+BEGIN
 
 EXPORTS Generic-CSAP-Level, Generic-PDU;
 
-IMPORTS 
-    EthernetAddress, Ethernet-Header, Ethernet-CSAP 
+IMPORTS
+    EthernetAddress, Ethernet-Header, Ethernet-CSAP
         FROM TE-NDN-Ethernet;
-    IP-Header, IP-CSAP, UDP-Header, UDP-CSAP, TCP-Header, TCP-CSAP 
+    IP-Header, IP-CSAP, UDP-Header, UDP-CSAP, TCP-Header, TCP-CSAP
         FROM TE-NDN-Tcp-Ip;
-    SNMP-Message, SNMP-CSAP 
-        FROM TE-NDN-SNMP; 
-    CLI-Message, CLI-CSAP 
-        FROM TE-NDN-CLI; 
-    ISCSI-Message, ISCSI-CSAP 
-        FROM TE-NDN-ISCSI; 
-    ATM-Header, ATM-CSAP 
-        FROM TE-NDN-ATM; 
+    SNMP-Message, SNMP-CSAP
+        FROM TE-NDN-SNMP;
+    CLI-Message, CLI-CSAP
+        FROM TE-NDN-CLI;
+    ISCSI-Message, ISCSI-CSAP
+        FROM TE-NDN-ISCSI;
+    ATM-Header, ATM-CSAP
+        FROM TE-NDN-ATM;
 
 
-Generic-CSAP-Level ::= CHOICE 
+Generic-CSAP-Level ::= CHOICE
 {
     eth Ethernet-CSAP,
     ip4 IP-CSAP,
@@ -163,10 +163,10 @@ Generic-CSAP-Level ::= CHOICE
     ...
 }
 
-Generic-PDU ::= CHOICE 
+Generic-PDU ::= CHOICE
 {
     void NULL,      -- | fake PDU to be ignored
-    eth Ethernet-Header, 
+    eth Ethernet-Header,
     ip4 IP-Header,
     tcp TCP-Header,
     udp UDP-Header,

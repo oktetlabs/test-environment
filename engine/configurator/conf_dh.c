@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -822,7 +822,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
         }   /* unregister */
         else if (xmlStrcmp(cmd->name , (const xmlChar *)"add") == 0)
         {
-            
+
             if (!postsync)
                 continue;
 

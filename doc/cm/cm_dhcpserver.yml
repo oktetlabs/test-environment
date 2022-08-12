@@ -61,7 +61,7 @@
       access: read_only
       d: |
          DHCP server lease.
-         Name:  IPv4 address in dotted notation 
+         Name:  IPv4 address in dotted notation
 
 
     - oid: "/agent/dhcpserver/lease/state"
@@ -155,7 +155,7 @@
       access: read_create
       d: |
          Host declaration for the DHCP server.
-          Name:  human readable name 
+          Name:  human readable name
 
 
     - oid: "/agent/dhcpserver/host/group"
@@ -266,7 +266,7 @@
       access: read_create
       d: |
          Group declaration for the DHCP server.
-          Name:  human readable name 
+          Name:  human readable name
 
 
     - oid: "/agent/dhcpserver/group/next"

@@ -90,7 +90,7 @@ main(void)
         ++scale;
         names_len = LGR_TANAMES_LEN * scale;
         ta_names = (char *)calloc(names_len * sizeof(char), 1);
-        res = rcf_get_ta_list(ta_names, &names_len); 
+        res = rcf_get_ta_list(ta_names, &names_len);
         if (res == 0)
             break;    /* on success list_len - used space real value */
         if (TE_RC_GET_ERROR(res) != TE_ESMALLBUF)
@@ -105,7 +105,7 @@ main(void)
     while (names_len != str_len)
     {
         char *aux_str = ta_names + str_len;
-        
+
         log_flush_ten(aux_str);
         str_len += strlen(aux_str) + 1;
     }

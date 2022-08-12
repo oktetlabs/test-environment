@@ -2,10 +2,10 @@
  * @brief Test Environment
  *
  * Check UDP/IP4/ETH CSAP data-sending behaviour
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  */
 
@@ -26,7 +26,7 @@
  *
  * @par Scenario:
  *
- * -# Create udp.ip4.eth CSAP on @p pco_csap. 
+ * -# Create udp.ip4.eth CSAP on @p pco_csap.
  * -# Create UDP socket on @p pco_sock.
  * -# Send UDP/IP4 datagrem with specified payload length and checksum.
  * -# If @p chksum is 'correct' receive datagram via socket.
@@ -82,13 +82,13 @@ main(int argc, char *argv[])
     int                         recv_socket = -1;
 
     asn_value                  *template = NULL;
-    
+
     void                       *send_buf = NULL;
     void                       *recv_buf = NULL;
 
     te_bool                     sum_ok;
 
-    TEST_START; 
+    TEST_START;
 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(pco);
@@ -110,7 +110,7 @@ main(int argc, char *argv[])
                              RPC_PF_INET, RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
     /* Bind socket */
     CHECK_RC(rpc_bind(pco, recv_socket, sock_addr));
-    
+
     /* Create CSAP */
     CHECK_RC(tapi_udp_ip4_eth_csap_create(host_csap->ta,
                                           0,
@@ -123,7 +123,7 @@ main(int argc, char *argv[])
                                           SIN(csap_addr)->sin_port,
                                           SIN(sock_addr)->sin_port,
                                           &udp_ip4_send_csap));
-    
+
     /* Prepare data-sending template */
     CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, FALSE,
                                           ndn_udp_header,
@@ -136,7 +136,7 @@ main(int argc, char *argv[])
                                           "#eth", NULL));
     CHECK_RC(tapi_tad_tmpl_ptrn_set_payload_plain(&template, FALSE,
                                                   send_buf, pld_len));
-    
+
     if (strcmp(chksum, "correct") == 0)
     {
         sum_ok = TRUE;
@@ -157,7 +157,7 @@ main(int argc, char *argv[])
     {
         TEST_FAIL("Invalid 'chksum' parameter value '%s'", chksum);
     }
-    
+
     /* Start sending data */
     CHECK_RC(tapi_tad_trsend_start(host_csap->ta, 0, udp_ip4_send_csap,
                                    template, RCF_MODE_BLOCKING));
@@ -167,7 +167,7 @@ main(int argc, char *argv[])
     /* Start receiving data */
     RPC_AWAIT_IUT_ERROR(pco);
     rc = rpc_recv(pco, recv_socket, recv_buf, pld_len, RPC_MSG_DONTWAIT);
-    
+
     if (!sum_ok && rc != -1)
         TEST_FAIL("Datadgram was received despite of incorrect checksum");
     else if (sum_ok && rc != pld_len)
@@ -180,9 +180,9 @@ main(int argc, char *argv[])
 cleanup:
 
     CLEANUP_RPC_CLOSE(pco, recv_socket);
-    
+
     asn_free_value(template);
-    
+
     if (host_csap != NULL)
         CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_csap->ta, 0,
                                              udp_ip4_send_csap));

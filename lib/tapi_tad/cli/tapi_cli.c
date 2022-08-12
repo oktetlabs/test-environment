@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
- 
+
 #include <stdio.h>
 #if HAVE_STDLIB_H
 #include <stdlib.h>
@@ -121,7 +121,7 @@ tapi_cli_csap_add_prompts(char *buf, int buf_size,
                           const char *passwd)
 {
     int len = 0;
-    
+
     if (cmd_prompt != NULL)
         len += snprintf(buf + len, buf_size - len,
                         ", command-prompt %s : \"%s\"",
@@ -219,9 +219,9 @@ tapi_cli_csap_local_create(const char *ta_name, int sid,
     len += snprintf(buf + len, buf_size - len, " } } }");
 
     rc = tapi_cli_csap_create (ta_name, sid, buf, cli_csap);
-    
+
     free(buf);
-    
+
     return rc;
 }
 
@@ -290,9 +290,9 @@ tapi_cli_csap_remote_create(const char *ta_name, int sid,
     len += snprintf(buf + len, buf_size - len, " } } }");
 
     rc = tapi_cli_csap_create (ta_name, sid, buf, cli_csap);
-    
+
     free(buf);
-    
+
     return rc;
 }
 
@@ -360,9 +360,9 @@ tapi_cli_csap_shell_create(const char *ta_name, int sid,
     len += snprintf(buf + len, buf_size - len, " } } }");
 
     rc = tapi_cli_csap_create (ta_name, sid, buf, cli_csap);
-    
+
     free(buf);
-    
+
     return rc;
 }
 
@@ -466,7 +466,7 @@ tapi_internal_write_cmd_to_file(char *tmp_name, const char *command,
     free(buf);
 
     fclose(f);
-    
+
     return 0;
 }
 
@@ -548,7 +548,7 @@ tapi_cli_msg_handler(const char *msg_fname, void *user_param)
 
 #if 1
     rc = asn_get_descendent(cli_response, (asn_value **)&cli_msg,
-                            "pdus.0.#cli"); 
+                            "pdus.0.#cli");
     if (rc != 0)
     {
         ERROR("Failed to get 'pdus' from CLI response: %r", rc);

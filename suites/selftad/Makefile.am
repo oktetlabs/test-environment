@@ -21,7 +21,7 @@ MYDEPS = @SELFTAD_TE_DEPS@
 tetest_PROGRAMS = prologue
 
 
-prologue_SOURCES = prologue.c 
+prologue_SOURCES = prologue.c
 prologue_LDADD = $(MY_LDADD)
 prologue_DEPENDENCIES = $(MY_DEPS)
 

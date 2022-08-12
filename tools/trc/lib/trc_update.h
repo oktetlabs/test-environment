@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author  Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
@@ -227,7 +227,7 @@ typedef struct trc_update_wilds_list_entry {
     SLIST_ENTRY(trc_update_wilds_list_entry)  links;  /**< List links */
 
     trc_test_iter_args      *args;   /**< Wildcard arguments */
-                                                            
+
     te_bool is_strict; /**< Can arguments be omitted in wildcard or not */
 } trc_update_wilds_list_entry;
 
@@ -258,7 +258,7 @@ typedef struct trc_update_rule {
     char                           *old_v;       /**< Content of a
                                                       <verdict> tag in
                                                       TRC */
-    
+
     trc_exp_results                *confl_res;   /**< Not-matching TRC
                                                       results from logs */
 
@@ -356,7 +356,7 @@ typedef struct trc_update_test_iter_data {
 typedef struct trc_update_test_data {
     te_bool     to_save; /**< Should this test be saved? */
 } trc_update_test_data;
- 
+
 /** Entry of queue containing information about tests to be updated */
 typedef struct trc_update_test_entry {
     TAILQ_ENTRY(trc_update_test_entry)   links; /**< List links */
@@ -438,7 +438,7 @@ typedef struct trc_update_ctx {
                                                    rules should be saved */
     char                    *cmd;             /**< Command used to run
                                                    TRC Update Tool */
-                                                
+
     func_args_match_ptr      func_args_match; /**< Function to match
                                                    iterations in TRC with
                                                    iterations from logs */
@@ -587,7 +587,7 @@ extern int trc_update_rentry_cmp(trc_exp_result_entry *p,
  * @param p         First expected result
  * @param q         Second expected result
  * @param tags_cmp  Whether to compare string representation of
- *                  tag expressions or not 
+ *                  tag expressions or not
  *
  * @return -1, 0 or 1 as a result of comparison
  */

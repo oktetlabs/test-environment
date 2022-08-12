@@ -5,11 +5,11 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_LGR_USER     "PPPoE Client"
@@ -191,7 +191,7 @@ pppoe_client_find(const char *if_name, const char *name,
     }
     if (grp == NULL)
         return TE_ENOENT;
-    
+
     clnt = grp->clients;
     while (clnt != NULL)
     {

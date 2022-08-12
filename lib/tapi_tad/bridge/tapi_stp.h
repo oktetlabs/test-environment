@@ -9,7 +9,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg Kravtsov <oleg@oktetlabs.ru>
@@ -28,7 +28,7 @@
 
 /**
  * Creates STP CSAP that can be used for sending/receiving
- * Configuration and Notification BPDUs specified in 
+ * Configuration and Notification BPDUs specified in
  * Media Access Control (MAC) Bridges ANSI/IEEE Std. 802.1D,
  * 1998 Edition section 9
  *
@@ -77,18 +77,18 @@ extern int tapi_stp_bpdu_send(const char *ta_name, int sid,
                               const asn_value *templ);
 
 
-/** 
+/**
  * Callback function for the tapi_eth_recv_start() routine, it is called
  * for each packet received for csap.
  *
- * @param header        Structure with Ethernet header of the frame. 
+ * @param header        Structure with Ethernet header of the frame.
  * @param payload       Payload of the frame.
  * @param plen          Length of the frame payload.
- * @param userdata      Pointer to user data, provided by  the caller of 
+ * @param userdata      Pointer to user data, provided by  the caller of
  *                      tapi_eth_recv_start.
  */
 typedef void (*tapi_stp_bpdu_callback)
-              (const ndn_stp_bpdu_t *bpdu, 
+              (const ndn_stp_bpdu_t *bpdu,
                const struct timeval *time_stamp,
                void *userdata);
 

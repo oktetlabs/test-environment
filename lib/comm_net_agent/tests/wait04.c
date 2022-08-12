@@ -1,13 +1,13 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 
 #include <stdio.h>
@@ -147,12 +147,12 @@ local_station_proc(void *arg)
 
 /** @page test_rcf_net_agent_wait04 test_rcf_net_agent_wait() normal buffer check, with attachment
  *
- * @descr The remote station issues a message consisting of a command and 
+ * @descr The remote station issues a message consisting of a command and
  * attachment which totally fit into one input buffer. The function
  * @b rcf_comm_agent_wait() must return the original message sent
  * by the remote station.
  *
- * @post Once successful, the test is repeated sending several messages 
+ * @post Once successful, the test is repeated sending several messages
  * with different combinations of sizes of the commands and their attachments
  * prior to doing the main check.
  *
@@ -163,7 +163,7 @@ local_station_proc(void *arg)
  * @retval positive     Test failed
  *
  */
-int 
+int
 main(int argc, char *argv[])
 {
     int rc;
@@ -175,10 +175,10 @@ main(int argc, char *argv[])
     TEST_BUFFER_SANITY();
 
     /* launch the remote station thread */
-    rc = pthread_create(&remote_thread, /* attr */ NULL, 
+    rc = pthread_create(&remote_thread, /* attr */ NULL,
                      remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {           
+    {
        char err_buf[BUFSIZ];
 
        strerror_r(errno, err_buf, sizeof(err_buf));

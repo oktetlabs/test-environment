@@ -1,13 +1,13 @@
-/* 
+/*
  * Test Package: CableHome Provisioning Test (PSP-01)
  *
  * Copyright (C) 2003-2018 OKTET Labs Ltd., St.-Petersburg, Russia
- * 
+ *
  */
 
-/** @page 
+/** @page
  *
- * @objective Tests TE TAD DHCP support 
+ * @objective Tests TE TAD DHCP support
  *
  * @type Dummy
  *
@@ -23,7 +23,7 @@
  * Specify @b type of the test (see list of types above). This item
  * may be omitted, if it's completely equal to the same item of the
  * parent test.
- * 
+ *
  * Put identifiers of the applicability constrains here. It's assumed
  * that set of subtest requirements is an improper superset of the parent
  * test requirements. Hence this item may be omitted if no additional
@@ -53,7 +53,7 @@
  *
  *
  * @post Reader can write test specification in sources of the test package
- * 
+ *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  */
 
@@ -64,7 +64,7 @@
 
 #ifdef HAVE_STDIO_H
 #include <stdio.h>
-#endif 
+#endif
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -106,12 +106,12 @@ int
 main(int argc, char *argv[])
 {
     char   ta[32];
-    size_t len = sizeof(ta); 
+    size_t len = sizeof(ta);
     char  *pattern_fname;
     int    num = 0;
 
     csap_handle_t        dhcp_csap = CSAP_INVALID_HANDLE;
-    struct dhcp_message *dhcp_msg; 
+    struct dhcp_message *dhcp_msg;
 
     TEST_START;
 
@@ -124,7 +124,7 @@ main(int argc, char *argv[])
 
     if ((rc = tapi_dhcpv4_plain_csap_create(ta, "eth0",
                                             DHCP4_CSAP_MODE_SERVER,
-                                            &dhcp_csap)) 
+                                            &dhcp_csap))
 
          != 0)
     {
@@ -134,7 +134,7 @@ main(int argc, char *argv[])
     dhcp_msg = dhcpv4_message_create(DHCPDISCOVER);
     rc = dhcpv4_prepare_traffic_pattern(dhcp_msg, &pattern_fname);
 
-    rc = rcf_ta_trrecv_start(ta, 0, dhcp_csap, pattern_fname, 
+    rc = rcf_ta_trrecv_start(ta, 0, dhcp_csap, pattern_fname,
                              5000, 1, RCF_TRRECV_COUNT);
     if (rc != 0)
     {
@@ -153,8 +153,8 @@ main(int argc, char *argv[])
         default:
             TEST_FAIL("Wait for DHCP message failed %X", rc);
             break;
-    } 
-    
+    }
+
     TEST_SUCCESS;
 
 cleanup:
@@ -162,7 +162,7 @@ cleanup:
     if (dhcp_csap != CSAP_INVALID_HANDLE)
         rcf_ta_csap_destroy(ta, 0, dhcp_csap);
 
-    TEST_END; 
+    TEST_END;
 }
 
 

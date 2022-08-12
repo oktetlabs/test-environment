@@ -7,11 +7,11 @@ IMPORTS DATA-UNIT FROM TE-NDN-General;
 EXPORTS File-Message, File-CSAP;
 
 
-File-Message ::= IMPLICIT SEQUENCE { 
+File-Message ::= IMPLICIT SEQUENCE {
     line        DATA-UNIT{UniversalString},
 }
 
-File-CSAP ::= IMPLICIT SEQUENCE { 
+File-CSAP ::= IMPLICIT SEQUENCE {
     filename    DATA-UNIT{UniversalString},
     mode        DATA-UNIT{UniversalString} OPTIONAL
 }

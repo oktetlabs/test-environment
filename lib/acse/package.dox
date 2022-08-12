@@ -13,9 +13,9 @@ Copyright (c) 2010 OKTET Labs, St.-Petersburg, Russia
 OKTL-HLD-0000358-TE_ACS "Test Environment: ACS Emulator"
 
 @par Overview
- 
+
 ACS Emulator operates accordingly with [ACSE HLD].
-It consists on 
+It consists on
 
 EPC low level API: acse_epc.h
 

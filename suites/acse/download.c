@@ -2,13 +2,13 @@
  * @brief ACSE Test Suite
  *
  * ACSE Test Suite
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
- * 
+ *
  */
 
 
@@ -81,11 +81,11 @@ main(int argc, char *argv[])
         cwmp_fault_t *f = (cwmp_fault_t *)download_resp;
         RING("Fault detected: %s(%s)", f->FaultCode, f->FaultString);
     }
-    else 
+    else
         TEST_FAIL("Download unexpected fail %r", te_rc);
 
     if (0 == te_rc && 1 == download_resp->Status)
-    { 
+    {
         /* Try wait for TransferComplete */
         cwmp_data_from_cpe_t from_cpe;
         ctx->timeout = 40;
@@ -94,12 +94,12 @@ main(int argc, char *argv[])
         if (0 == te_rc)
         {
             cwmp_transfer_complete_t *tc = from_cpe.transfer_complete;
-            RING("TransferComplete, key %s, fault: %s (%s)", 
-                 tc->CommandKey, tc->FaultStruct->FaultCode, 
+            RING("TransferComplete, key %s, fault: %s (%s)",
+                 tc->CommandKey, tc->FaultStruct->FaultCode,
                  tc->FaultStruct->FaultString);
         }
     }
-    /* TODO check test result according with test parameters: with 
+    /* TODO check test result according with test parameters: with
     different types of download and different sources normal expected
     results are differ. */
 

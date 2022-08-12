@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author  Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
@@ -70,7 +70,7 @@
 #define AGENT_NAME_MAX_LENGTH 64
 
 /** Default select timeout in seconds */
-#define RCF_SELECT_TIMEOUT      1   
+#define RCF_SELECT_TIMEOUT      1
 
 /**
  * Maximum number of configurations stored by the RCF
@@ -89,11 +89,11 @@
  */
 #define TA_LOG_FILE "/tmp/ta_log_file.tmp"
 
-/** 
- * Main function. It should be called from the test in the 
+/**
+ * Main function. It should be called from the test in the
  * separate thread.
  *
- * @param param           Currently the name for the configuration 
+ * @param param           Currently the name for the configuration
  *                        file which is used to init the database.
  *
  * @return                NULL if everything is correct
@@ -102,7 +102,7 @@
 /**TODO: return is not supported */
 extern void *rcf_emulate(void *param);
 
-/** 
+/**
  * TA List request handler.
  *
  * @param ta_list       Pointer to the current agent
@@ -112,7 +112,7 @@ extern void *rcf_emulate(void *param);
  */
 typedef int (* rcfrh_ta_list)(char **ta_list);
 
-/** 
+/**
  * TA Check request handler.
  *
  * @param ta_name       Name of the agent to check.
@@ -140,10 +140,10 @@ typedef int (* rcfrh_reboot)(char *ta_name, int *result);
  * @param oid           Description of the information to get.
  * @param answer        Pointer to the request answer buffer. (OUT)
  * @param ans_len       Length of the request answer. (OUT)
- * 
+ *
  * @return              0 - if the function ends correctly.
  */
-typedef int (* rcfrh_conf_get)(char *ta_name, char *oid, 
+typedef int (* rcfrh_conf_get)(char *ta_name, char *oid,
                                char **answer, int *ans_len);
 
 /**
@@ -227,7 +227,7 @@ typedef struct reqest_handlers
 /** Configuration of the RCF emulator request handlers */
 typedef request_handler *handler_configuration;
 
-/** 
+/**
  * Obtain request_handler structure by the configuration identifier.
  *
  * @param id        Configuration identifier
@@ -240,7 +240,7 @@ extern request_handler *rcf_get_cfg_by_id(int id);
 /**
  * TA List default request handler.
  *
- * @param ta_list   List of all test agents. By default there 
+ * @param ta_list   List of all test agents. By default there
  *                  is only one agent with name Agt_T.
  *
  * @return          0 - if the function ends correctly
@@ -274,7 +274,7 @@ extern int rcfrh_reboot_default(char *ta_name, int *result);
 
 /**
  * Conf get default request handler.
- * 
+ *
  * @param ta_name   Name of the agent on which the request
  *                  should be handled. By default there
  *                  is only one agent with name Agt_T.
@@ -288,23 +288,23 @@ extern int rcfrh_reboot_default(char *ta_name, int *result);
  *
  * @return          0 - if the function ends correctly
  * @retval          TE_EINVAL - ta_name is not Agt_T
- * @retval          TE_ENOMEM - failed to allocate some buffer 
+ * @retval          TE_ENOMEM - failed to allocate some buffer
  * @retval          TE_EINVAL - wrong oid format
  */
-extern int rcfrh_conf_get_default(char *ta_name, char *oid, 
+extern int rcfrh_conf_get_default(char *ta_name, char *oid,
                                   char **answer, int *ans_len);
 
 /**
  * Conf add default request handler.
- * 
+ *
  * @param ta_name   Name of the agent on which the request
  *                  should be handled. By default there
  *                  is only one agent with name Agt_T.
  * @param oid       ID of the entity to add (no wildcard is allowed)
- * @param value     Value of the object instance if the object 
+ * @param value     Value of the object instance if the object
  *                  instance is added or NULL.
  *
- * @return          ID of the newly added entity if the function 
+ * @return          ID of the newly added entity if the function
  *                  ends correctly
  * @retval          -TE_EINVAL - ta_name is not Agt_T
  * @retval          -TE_ENOMEM - failed to allocate some buffer or to
@@ -408,7 +408,7 @@ extern int rcfrh_configuration_delete(int conf_id);
 extern int rcfrh_configuration_set_current(int conf_id);
 
 /**
- * Sets the handler in the current configuration for 
+ * Sets the handler in the current configuration for
  * given type of request.
  *
  * @param conf_     Configuration to be updated
@@ -453,7 +453,7 @@ extern int rcfrh_configuration_set_current(int conf_id);
     } while (0)
 
 /**
- * Sets the handler in the current configuration for the 
+ * Sets the handler in the current configuration for the
  * given type of request.
  *
  * @param conf_id_  Identifier of the configuration to be updated
@@ -470,7 +470,7 @@ extern int rcfrh_configuration_set_current(int conf_id);
     } while (0)
 
 /**
- * Sets the handler in the current configuration for 
+ * Sets the handler in the current configuration for
  * given type of request.
  *
  * @param opcode_   Request type
@@ -571,7 +571,7 @@ void *get_handler(rcf_op_t opcode);
 /**
  * Maximum number of the agents.
  */
-#define MAX_AGENTS_NUMBER 10 
+#define MAX_AGENTS_NUMBER 10
 
 /**
  * Types of the agents.
@@ -587,7 +587,7 @@ typedef enum {
 typedef struct agent_s
 {
     char       name[AGENT_NAME_MAX_LENGTH];  /**< Name of the agent */
- 
+
     agent_type type;                         /**< Type of the agent */
 } agent_t;
 

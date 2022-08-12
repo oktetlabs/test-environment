@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 
+<!--
     See test_environment/engine/tester/tester_defs.xsd for definitions
     common for specifications of Test Package description file and
     Tester configuration file.
@@ -15,7 +15,7 @@
             XML schema for Test Subsystem (Tester) configuration file
 
             Copyright (C) 2003-2018 OKTET Labs.
-            
+
             Author: Andrew Rybchenko &lt;Andrew.Rybchenko@oktetlabs.ru&gt;
         </documentation>
     </annotation>

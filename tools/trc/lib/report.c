@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -111,7 +111,7 @@ trc_report_collect_stats(trc_report_ctx *ctx)
     {
         if (mv != TRC_DB_WALKER_SON)
         {
-            /* 
+            /*
              * Brother and father movements mean end-of-branch.
              * Therefore, add statistics of the branch to its parent
              * statistics.

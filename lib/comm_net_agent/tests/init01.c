@@ -1,13 +1,13 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 
 #include <stdio.h>
@@ -87,13 +87,13 @@ remote_station_proc(void *arg)
        if (extra_socket < 0)
        {
            char err_buf[BUFSIZ];
-           
+
            strerror_r(errno, err_buf, sizeof(err_buf));
            fprintf(stderr, "\t\t\tremote_station_proc: "
                   "can't create a socket: %s\n", err_buf);
            exit(1);
        }
-       
+
        /* now connect */
        memset(&addr, 0, sizeof(addr));
        addr.sin_family = AF_INET;
@@ -152,11 +152,11 @@ local_station_proc(void *arg)
 
 /** @page test_rcf_net_agent_init01 rcf_net_agent_init() connection accepting check
  *
- * @descr Check that @b rcf_comm_agent_init() correctly accepts a polling 
- *        connection and once having accepted, does not accept any 
+ * @descr Check that @b rcf_comm_agent_init() correctly accepts a polling
+ *        connection and once having accepted, does not accept any
  *        further connection requests. Correctness check should verify the
- *        remote address of the new connection. 
- * 
+ *        remote address of the new connection.
+ *
  * @author Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  * @return Test result
@@ -164,7 +164,7 @@ local_station_proc(void *arg)
  * @retval positive     Test failed
  *
  */
-int 
+int
 main(int argc, char *argv[])
 {
     int rc;
@@ -176,10 +176,10 @@ main(int argc, char *argv[])
     TEST_BUFFER_SANITY();
 
     /* launch the remote station thread */
-    rc = pthread_create(&remote_thread, /* attr */ NULL, 
+    rc = pthread_create(&remote_thread, /* attr */ NULL,
                      remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {           
+    {
        char err_buf[BUFSIZ];
 
        strerror_r(errno, err_buf, sizeof(err_buf));

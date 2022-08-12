@@ -60,7 +60,7 @@ poll_event_rpc2h(unsigned int events)
 {
     if ((events & ~RPC_POLL_ALL) != 0)
         return POLL_UNKNOWN;
-        
+
     return (!!(events & RPC_POLLIN) * POLLIN) |
            (!!(events & RPC_POLLPRI) * POLLPRI) |
            (!!(events & RPC_POLLOUT) * POLLOUT) |

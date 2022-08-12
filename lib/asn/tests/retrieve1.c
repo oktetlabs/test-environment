@@ -1,7 +1,7 @@
 /**
  * Test for ASN library.
  *
- * Parse plain syntax values. 
+ * Parse plain syntax values.
  *
  */
 #include "te_config.h"
@@ -19,7 +19,7 @@ char buffer[1000];
 
 int result = 0;
 
-char packet_asn_string[] = 
+char packet_asn_string[] =
 "{\
   received {\
     seconds 1140892564,\
@@ -45,30 +45,30 @@ char packet_asn_string[] =
 
 char buf[10000];
 
-static te_errno 
+static te_errno
 check_walk_p(asn_value *v, void *d)
 {
     static int m = 2000;
     UNUSED(d);
 
-    printf("%s for subval %s, syntax %d\n", 
+    printf("%s for subval %s, syntax %d\n",
            __FUNCTION__, asn_get_name(v), asn_get_syntax(v, ""));
     asn_put_mark(v, m);
     m++;
     return 0;
 }
-static te_errno 
+static te_errno
 check_walk_g(asn_value *v, void *d)
 {
     int m;
     UNUSED(d);
     asn_get_mark(v, &m);
-    printf("%s for subval %s, syntax %d,mark %d\n", 
+    printf("%s for subval %s, syntax %d,mark %d\n",
            __FUNCTION__, asn_get_name(v), asn_get_syntax(v, ""), m);
     return 0;
 }
 
-int 
+int
 main(void)
 {
     asn_value *val;
@@ -82,12 +82,12 @@ main(void)
     {
         printf("parse failed rc %x, syms: %d\n", rc, s_parsed);
         return 1;
-    } 
+    }
 #if 1
     sub_val = asn_retrieve_descendant(val, &rc, "pdus.%d.src-addr", 1);
 
     if (rc != 0)
-        printf("status %x\n", rc); 
+        printf("status %x\n", rc);
 
     if (rc != TE_EASNWRONGLABEL)
     {
@@ -97,16 +97,16 @@ main(void)
     }
 #endif
     rc = 0;
-    sub_val = asn_retrieve_descendant(val, &rc, "pdus.0.#tcp"); 
+    sub_val = asn_retrieve_descendant(val, &rc, "pdus.0.#tcp");
     printf("2: return %p, status %x\n", sub_val, rc);
 
     rc = 0;
-    sub_val = asn_retrieve_descendant(val, &rc, "pdus.0.#tcp.checksum.#plain"); 
+    sub_val = asn_retrieve_descendant(val, &rc, "pdus.0.#tcp.checksum.#plain");
     printf("3: return %p, status %x\n", sub_val, rc);
 
 #if 1
     rc = 0;
-    sub_val = asn_retrieve_descendant(val, &rc, "pdus.2.#eth.length-type.#plain"); 
+    sub_val = asn_retrieve_descendant(val, &rc, "pdus.2.#eth.length-type.#plain");
     printf("4: return %p, status %x\n", sub_val, rc);
 #endif
 

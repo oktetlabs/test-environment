@@ -9,7 +9,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
@@ -47,12 +47,12 @@ typedef struct tapi_arp_frame {
     ndn_arp_header_plain  arp_hdr;  /**< ARP header */
 
     uint32_t              data_len; /**< Data length */
-    uint8_t              *data;     /**< The data that goes after 
+    uint8_t              *data;     /**< The data that goes after
                                          ARP header */
 } tapi_arp_frame_t;
 
 /**
- * Fills in Ethernet header of ARP frame with 802.3 source and destination 
+ * Fills in Ethernet header of ARP frame with 802.3 source and destination
  * MAC addresses.
  *
  * @param arp_frame_  ARP frame to be updated
@@ -70,7 +70,7 @@ typedef struct tapi_arp_frame {
         (arp_frame_)->eth_hdr.len_type = ETHERTYPE_ARP;                   \
         (arp_frame_)->eth_hdr.is_tagged = FALSE;                          \
     } while (0)
-    
+
 /**
  * Fills in ARP frame header
  *
@@ -132,14 +132,14 @@ typedef struct tapi_arp_frame {
  * @param proto_size    Pointer to ARP header protocol address size or NULL
  * @param arp_csap      Identifier of created CSAP (OUT)
  *
- * @return zero on success, otherwise standard or common TE error code. 
+ * @return zero on success, otherwise standard or common TE error code.
  */
 extern te_errno tapi_arp_eth_csap_create(const char     *ta_name,
                                          int             sid,
                                          const char     *device,
                                          unsigned int    receive_mode,
-                                         const uint8_t  *remote_addr, 
-                                         const uint8_t  *local_addr, 
+                                         const uint8_t  *remote_addr,
+                                         const uint8_t  *local_addr,
                                          const uint16_t *hw_type,
                                          const uint16_t *proto_type,
                                          const uint8_t  *hw_size,
@@ -156,8 +156,8 @@ tapi_arp_eth_csap_create_ip4(const char     *ta_name,
                              int             sid,
                              const char     *device,
                              unsigned int    receive_mode,
-                             const uint8_t  *remote_addr, 
-                             const uint8_t  *local_addr, 
+                             const uint8_t  *remote_addr,
+                             const uint8_t  *local_addr,
                              csap_handle_t  *arp_csap)
 {
     uint16_t    hw_type = ARPHRD_ETHER;
@@ -244,7 +244,7 @@ extern te_errno tapi_arp_add_csap_layer_eth_ip4(asn_value **csap_spec);
 
 
 /**
- * Add ARP PDU as the last PDU to the last unit of the traffic 
+ * Add ARP PDU as the last PDU to the last unit of the traffic
  * template or pattern.
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
@@ -351,10 +351,10 @@ extern te_errno tapi_arp_prepare_template(const tapi_arp_frame_t *frame,
  * @param header        Structure with ARP and Ethernet header of the frame
  * @param payload       Payload of the frame
  * @param plen          Length of the frame payload
- * @param userdata      Pointer to user data, provided by  the caller of 
+ * @param userdata      Pointer to user data, provided by  the caller of
  *                      tapi_arp_recv_start
  */
-typedef void (*tapi_arp_frame_callback)(const tapi_arp_frame_t *header, 
+typedef void (*tapi_arp_frame_callback)(const tapi_arp_frame_t *header,
                                         void *userdata);
 
 /**
@@ -373,17 +373,17 @@ extern tapi_tad_trrecv_cb_data *tapi_arp_trrecv_cb_data(
 
 /**
  * Receives specified number of ARP frames matched with the pattern.
- * The function blocks the caller until all the frames are received or 
+ * The function blocks the caller until all the frames are received or
  * timeout occurred.
- * 
+ *
  * @param ta_name    Test Agent name
  * @param sid        RCF session
- * @param arp_csap   CSAP handle 
+ * @param arp_csap   CSAP handle
  * @param pattern    ASN value with receive pattern
- * @param timeout    Timeout for receiving of packets, measured in 
+ * @param timeout    Timeout for receiving of packets, measured in
  *                   milliseconds
  * @param frames     Pointer to the array of packets (OUT)
- *                   the function allocates memory under the packets that 
+ *                   the function allocates memory under the packets that
  *                   should be freed with free() function
  * @param num        Number of packets caller wants to receive (IN)
  *                   number of received packets (OUT)

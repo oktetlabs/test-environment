@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Evgeny Omelchenko <Evgeny.Omelchenko@oktetlabs.ru>
  *
@@ -57,7 +57,7 @@ telephony_goertzel(short *buf, int len, double freq)
  *
  * @param port     number of telephony card port
  *
- * @return Channel file descriptor, otherwise -1 
+ * @return Channel file descriptor, otherwise -1
  */
 int
 telephony_open_channel(int port)
@@ -308,7 +308,7 @@ telephony_call_wait(int chan, int timeout)
 
         if (param == 0)
             return TE_ERPCTIMEOUT;
-        else 
+        else
             return TE_RC(TE_TA_UNIX, errno);
         ioctl(chan, DAHDI_GETEVENT, &param);
     } while (param != DAHDI_EVENT_RINGBEGIN);

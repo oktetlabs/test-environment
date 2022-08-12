@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author  Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
@@ -51,13 +51,13 @@
  * value length
  */
 #define MAX_NAME_LENGTH 255
-/** 
+/**
  * Base answer size. If the answer does not fit
  * we make realloc(current size + BASE_ANSWER_SIZE)
  */
 #define BASE_ANSWER_SIZE 16384
 
-/** 
+/**
  * Maximum number of the objects supported by the
  * object storage.
  */
@@ -112,9 +112,9 @@ typedef instance *inst_p;
 extern int
 db_get_obj(const char *oid, char **answer);
 
-/** 
+/**
  * Find instances matching to specified wildcard identifier.
- * 
+ *
  * @param oid    object instance ID
  * @param answer pointer to the string which contains all the object
  *               instances from the database satisfying the oid (OUT)
@@ -133,7 +133,7 @@ db_get_inst(const char *oid, char **answer);
  * @param answer pointer ot hte string which contains all the retrieved
  *               information in the string representation (OUT)
  * @param length total answer length (OUT)
- * 
+ *
  * @return       0 - success
  *               errno otherwise
  */
@@ -205,7 +205,7 @@ db_add_object(char *oid);
  * @return       object instance descriptor if success
  *               -errno otherwise
  */
-extern int 
+extern int
 db_add_instance(char *oid, char *value);
 
 /**
@@ -221,8 +221,8 @@ db_add_instance(char *oid, char *value);
 extern int
 db_add(char *oid, char *value);
 
-/** 
- * Inits database related structures 
+/**
+ * Inits database related structures
  *
  * @param db_file_name  the file from which the database should
  *                      be loaded (or NULL)
@@ -241,7 +241,7 @@ extern int
 db_free(void);
 
 /**
- * Prints all ID's of all objects stored in the database 
+ * Prints all ID's of all objects stored in the database
  * to the user buffer.
  *
  * @param buffer the buffer where the answer is stored
@@ -253,7 +253,7 @@ db_free(void);
 extern int
 db_print_objects(char *buffer, unsigned int *length);
 
-/**                                             
+/**
  * Prints all ID's of all objects instances and their values
  * to the user buffer.
  *

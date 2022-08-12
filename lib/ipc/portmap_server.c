@@ -5,14 +5,14 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Ivanov <andron@oktet.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  */
- 
+
 #include "te_config.h"
 
 #include "ipc_internal.h"
@@ -171,7 +171,7 @@ ipc_pmap_cycle(int s)
         {
             struct ipc_pmap_command cmd;
             struct ipc_pmap_answer answer;
-            
+
             memset(&answer, 0, sizeof(answer));
 
             if (recv(new_s, &cmd, sizeof(cmd), 0) != sizeof(cmd))

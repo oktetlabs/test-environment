@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Evgeny Omelchenko <Evgeny.Omelchenko@oktetlabs.ru>
  * @author Konstantin Petrov <Konstantin.Petorv@oktetlabs.ru>
@@ -42,7 +42,7 @@
  *
  * @param port     number of telephony card port
  *
- * @return Channel file descriptor, otherwise -1 
+ * @return Channel file descriptor, otherwise -1
  */
 int telephony_open_channel(int port);
 

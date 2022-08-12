@@ -1,10 +1,10 @@
 /*****************************************************************
- * 
+ *
  * Test Environment.
  * TTY interaction implementation
- * 
+ *
  * Author: Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
- * 
+ *
  *
  ****************************************************************/
 
@@ -87,7 +87,7 @@ static speed_mapping_t speed_map[] = {
 
 /**
  * Signal handler to be registered for SIGINT signal.
- * 
+ *
  * @param sig   Signal number
  */
 static void
@@ -103,14 +103,14 @@ sigint_handler(int sig)
 
 /**
  * Debug printing of struct termio.
- * 
+ *
  * @param tty   struct termios
  */
 void
 print_attr(struct termios *tty)
 {
     int i;
-    
+
     fprintf(stderr,
             "TTY attributes\n"
             "  IFLAGS = %08X\n"
@@ -149,7 +149,7 @@ main(int argc, char *argv[])
 
     /* Handle SIGINT (CTL-C) correctly */
     (void)signal(SIGINT, sigint_handler);
-    
+
     /* Make stdin stream non-blocking and stdout stream non-buffered */
     flags = fcntl(fileno(stdin), F_GETFL);
     flags |= O_NONBLOCK;
@@ -161,12 +161,12 @@ main(int argc, char *argv[])
                 "  Use: millicom <dev-name> [-speed=<speed>]\n");
         goto err;
     }
-    
+
     if ((tty_fd = open(argv[1], O_RDWR | O_SYNC | O_NONBLOCK)) < 0) {
         fprintf(stderr, "Error opening device \"%s\"\n", argv[1]);
         goto err;
     }
-    
+
     /* Get TTY attributes */
     if (tcgetattr(tty_fd, &tty) != 0) {
         fprintf(stderr, "Error getting tty attributes\n");
@@ -205,7 +205,7 @@ main(int argc, char *argv[])
             fprintf(stderr, "Error: invalid speed parameter\n");
             goto err;
         }
-        
+
         for (i = 0; i < SPEED_MAP_SIZE; i++) {
             if (speed == speed_map[i].speed) {
                 b_speed = speed_map[i].b_speed;
@@ -270,7 +270,7 @@ main(int argc, char *argv[])
                     (int)len, errno);
             goto err;
         }
-        
+
         /* Read from TTY if available and write to stdout */
         DBG(fprintf(stderr, "\ntty->stdout\n"));
         while ((len = read(tty_fd, buf, BUF_SIZE)) > 0) {

@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -54,7 +54,7 @@ extern int ipc_init(void);
  *
  * @param name          Name of the server (must be less than UNIX_PATH_MAX)
  * @param conn          FALSE - connectionless server,
- *                      TRUE - connection-oriented server 
+ *                      TRUE - connection-oriented server
  * @param p_ipcs        Location for IPC server handle
  *
  * @return Status code.
@@ -171,7 +171,7 @@ extern int ipc_close_server(struct ipc_server *ipcs);
 
 
 /**
- * Close IPC library. No other IPC library functions except 
+ * Close IPC library. No other IPC library functions except
  * ipc_init() must be called after this function.
  *
  * @return Status code.

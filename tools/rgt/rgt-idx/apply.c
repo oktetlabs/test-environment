@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief Test Environment: RGT - log index application utility
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
  *
@@ -317,9 +317,9 @@ cleanup:
 static int
 usage(FILE *stream, const char *progname)
 {
-    return 
+    return
         fprintf(
-            stream, 
+            stream,
             "Usage: %s [OPTION]... INPUT_LOG [INPUT_INDEX [OUTPUT_LOG]]\n"
             "Apply a log index to a TE log, "
             "outputting it in the index order.\n"

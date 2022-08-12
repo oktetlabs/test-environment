@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -44,7 +44,7 @@ extern "C" {
  * Start Portable Command Handler.
  *
  * Caller is blocked until shutdown command is recieved or error occur.
- * Custom and default command handlers are called when commands via 
+ * Custom and default command handlers are called when commands via
  * Test Protocol are received.
  *
  * @param confstr   configuration string for communication library
@@ -57,7 +57,7 @@ extern int rcf_pch_run(const char *confstr, const char *info);
 
 /**
  * Get the rcf session identifier.
- * 
+ *
  * @param id    Location for the id.
  */
 void rcf_pch_get_id(char *id);
@@ -142,7 +142,7 @@ extern int rcf_pch_configure(struct rcf_comm_connection *conn,
 /**
  * Default implementation of agent list accessor.
  * This function complies with rcf_ch_cfg_list prototype.
- * 
+ *
  * @param gid       group identifier
  * @param oid       full parent object instance identifier
  * @param sub_id    ID of the object to be listed
@@ -216,7 +216,7 @@ extern int rcf_pch_call(struct rcf_comm_connection *conn,
  *
  * @return 0 or error returned by communication library
  */
-extern int rcf_pch_rpc(struct rcf_comm_connection *conn, int sid, 
+extern int rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
                        const char *data, size_t len,
                        const char *server, uint32_t timeout);
 /**@} */
@@ -225,7 +225,7 @@ extern int rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
  * @{
  */
 
-/** 
+/**
  * Initialize RCF RPC server structures and link RPC configuration
  * nodes to the root.
  *
@@ -236,7 +236,7 @@ extern void rcf_pch_rpc_init(const char *tmp_path);
 
 /**@} */
 
-/** 
+/**
  * Cleanup RCF RPC server structures. Close all sockets. Release all
  * allocated memory. Do NOT kill any RPC servers.
  *
@@ -246,7 +246,7 @@ extern void rcf_pch_rpc_init(const char *tmp_path);
  */
 extern void rcf_pch_rpc_atfork(void);
 
-/** 
+/**
  * Cleanup RCF RPC server structures.
  */
 extern void rcf_pch_rpc_shutdown(void);
@@ -306,7 +306,7 @@ extern te_errno rcf_pch_find_node(const char *oid_str,
  *
  * @return Status code
  */
-extern te_errno rcf_pch_add_node(const char *father, 
+extern te_errno rcf_pch_add_node(const char *father,
                                  rcf_pch_cfg_object *node);
 
 /**
@@ -334,13 +334,13 @@ extern te_errno rcf_pch_del_node(rcf_pch_cfg_object *node);
  *
  * When resource is grabbed/released by adding/deleting instance of
  * /agent/rsrc object via Configurator.
- * 
+ *
  * Three strings are associated with each resource:
  *     * resource instance name, used only for adding/deleting
  *       /agent/rsrc instances: e.g. r1 in /agent:A/rsrc:r1;
  *     * resource name, which unique identifies the resource:
- *       "/agent:A/interface:eth0", "/agent/dnsserver" 
- *       or "my_peripheral"; this name should be OID or string, 
+ *       "/agent:A/interface:eth0", "/agent/dnsserver"
+ *       or "my_peripheral"; this name should be OID or string,
  *       without '/' symbols;
  *     * resource generic name, which is used by rcfpch to discover
  *       callback for resource grabbing/releasing: e.g. /agent/interface.
@@ -348,15 +348,15 @@ extern te_errno rcf_pch_del_node(rcf_pch_cfg_object *node);
  * The name and generic name may be the same unless there are many resources
  * of the same class which grabbing/releasing is handled by the single
  * callback (e.g. network interfaces).
- * 
+ *
  * To use some dynamically grabbed resource one should:
  *
  * 1. Provide to rcfpch information about grabbing/releasing callbacks
- *    for the resource. This may be done via explicit call of 
+ *    for the resource. This may be done via explicit call of
  *    rcf_pch_rpcs_info during TA initialization or remote RCF or
- *    RCF RPC call. 
+ *    RCF RPC call.
  *
- * 2. Grab the resource from the test or during initialization 
+ * 2. Grab the resource from the test or during initialization
  *    adding /agent/rsrc instance via confapi or in cs.conf.
  *
  * RCFPCH automatically creates the lock for thre resource in TE_TMP
@@ -364,23 +364,23 @@ extern te_errno rcf_pch_del_node(rcf_pch_cfg_object *node);
  *     $(te_lockdir}/te_ta_lock_<converted name>
  *
  * "converted name" is resource name with '/' replaced by '%'.
- * te_lock_dir should be exported by the TA. 
+ * te_lock_dir should be exported by the TA.
  *
  * If lock of dead TA is found it is automatically removed.
  */
 
-/** 
- * Callback for resource grabbing. 
- * 
+/**
+ * Callback for resource grabbing.
+ *
  * @param name   resource name
  *
  * @return Status code
  */
 typedef te_errno (* rcf_pch_rsrc_grab_callback)(const char *name);
 
-/** 
- * Callback for resource releasing. 
- * 
+/**
+ * Callback for resource releasing.
+ *
  * @param name   resource name
  *
  * @return Status code
@@ -400,23 +400,23 @@ typedef te_errno (* rcf_pch_rsrc_release_callback)(const char *name);
  *
  * @return Status code
  */
-extern te_errno rcf_pch_rsrc_info(const char *name, 
+extern te_errno rcf_pch_rsrc_info(const char *name,
                                   rcf_pch_rsrc_grab_callback grab,
                                   rcf_pch_rsrc_release_callback release);
 
-/* 
+/*
  * Dummy callbacks for resources which need not additional
  * processing during grabbing/releasing.
  *
- * Note that RCFPCH provides locking automatically. 
+ * Note that RCFPCH provides locking automatically.
  * Moreover, rcf_pch_rsrc_accessible() function may be used for
  * checking of resource accessability (for example, during conf requests
  * processing).
- * Thus many resources need not additional processing and can use 
+ * Thus many resources need not additional processing and can use
  * callbacks below.
  *
  * Additional processing may be:
- *    - modification of TA configuration tree to make some subtrees 
+ *    - modification of TA configuration tree to make some subtrees
  *      completely invisible;
  *    - some initialization/shutdown, creation/restoring backups, etc.
  */
@@ -450,13 +450,13 @@ extern te_bool rcf_pch_rsrc_accessible_may_share(const char *fmt, ...);
  * agents.
  *
  * @param rsrc_ptrn     Glob-style pattern of resourse name
- * 
+ *
  * @return Status code.
  * @retval 0            No resources are locked.
  */
 extern te_errno rcf_pch_rsrc_check_locks(const char *rsrc_ptrn);
 
-/** 
+/**
  * Link resource configuration tree.
  */
 extern void rcf_pch_rsrc_init(void);

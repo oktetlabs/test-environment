@@ -42,7 +42,7 @@ max-lease-time          return ISC_DHCP_MAX_LEASE_TIME;
 ddns-update-style       return ISC_DHCP_DDNS_UPDATE_STYLE;
 none|ad-hoc|interim     {
                             yylval.ival =
-                                (strcmp(yytext, "none") == 0) ? 
+                                (strcmp(yytext, "none") == 0) ?
                                     TE_DHCPS_DDNS_UPDATE_NONE :
                                 (strcmp(yytext, "ad-hoc") == 0) ?
                                     TE_DHCPS_DDNS_UPDATE_AD_HOC :

@@ -1,7 +1,7 @@
-/** @file 
+/** @file
  * @brief Test Environment: Get capture files path.
  *
- * Parse Logger configuration file to get path to capture logs. Print the 
+ * Parse Logger configuration file to get path to capture logs. Print the
  * directory path to stdout.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.

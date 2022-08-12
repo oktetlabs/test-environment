@@ -53,8 +53,8 @@ cat <<EOF
                                 It should either not exist, or be a file, if
                                 you want a text log, or a directory for html.
   -p, --sniff-log               Include sniffer dumps.
-                                WARNING: if you changed sniffer log directory 
-                                 in the way it could not be guessed easily 
+                                WARNING: if you changed sniffer log directory
+                                 in the way it could not be guessed easily
                                  (e.g. via one of run.sh options --logger-conf,
                                  --conf-dir, --cfg, --opts or --sniff-log-dir),
                                  you'd better pass --sniff-log-dir to this
@@ -83,7 +83,7 @@ EOF
 process_opts()
 {
     while test -n "$1" ; do
-        case "$1" in 
+        case "$1" in
             -h) ;&
             --help) usage ; exit 0 ;;
 

@@ -6,9 +6,9 @@
 #include "logger_api.h"
 
 
-int 
+int
 main (int argc, char *argv[])
-{ 
+{
     int rc, s_parsed, n;
 #if 1
     asn_type *a_type = ndn_raw_packet;
@@ -31,13 +31,13 @@ main (int argc, char *argv[])
 
     rc = asn_parse_dvalue_in_file(argv[1], a_type, &packet, &s_parsed);
 
-    printf ("parse file , rc = %x, symbol %d\n", rc, s_parsed); 
+    printf ("parse file , rc = %x, symbol %d\n", rc, s_parsed);
 
     if (0)
     {
         char eth_src_script[] = "expr:(0x010203040506 + $0)";
         asn_free_subvalue(packet, "0.pdus.0.#eth.dst-addr");
-        rc = asn_write_value_field(packet, eth_src_script, 
+        rc = asn_write_value_field(packet, eth_src_script,
                 sizeof(eth_src_script), "0.pdus.0.#eth.dst-addr.#script");
         printf("tempalte write expr %x\n", rc);
     }
@@ -45,7 +45,7 @@ main (int argc, char *argv[])
     n = asn_count_txt_len(packet, 0);
     {
         char buffer[3000];
-        rc = asn_sprint_value(packet, buffer, n + 1, 0); 
+        rc = asn_sprint_value(packet, buffer, n + 1, 0);
 
         printf("count %d, real %d, print: %s\n", n, rc, buffer);
     }
@@ -63,7 +63,7 @@ main (int argc, char *argv[])
     printf ("read_comp, for snmp pdu; rc %d\n", rc);
     {
         int rc;
-        int len; 
+        int len;
         unsigned i;
 
         len = sizeof (msg.type);
@@ -89,7 +89,7 @@ main (int argc, char *argv[])
             printf ("eth_packet to plain fail: %x\n", rc);
         else
         {
-            int i; 
+            int i;
             printf ("dst - %2x", eh.dst_addr[0]);
             for (i = 1; i < 6; i++)
                 printf (":%2x", eh.dst_addr[i]);

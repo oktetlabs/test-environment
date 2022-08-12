@@ -4,7 +4,7 @@ tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 dist_tetest_DATA = package.xml
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) -g
-AM_CFLAGS = @TE_CFLAGS@ 
+AM_CFLAGS = @TE_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 MY_LDADD = -lrpc_types -ltapi_env -ltapi -lasn -lndn -lrcfrpc \

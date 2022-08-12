@@ -2,11 +2,11 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from WinSock2.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -14,7 +14,7 @@
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_WSA_H__
 #define __TE_RPC_WSA_H__
 
@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 /**
- * TA-independent network event flags. 
+ * TA-independent network event flags.
  */
 typedef enum rpc_network_event {
     RPC_FD_READ      = 1,     /**< Readiness for reading */
@@ -47,20 +47,20 @@ typedef enum rpc_network_event {
 } rpc_network_event;
 
 /**
- * network event flag bits. 
+ * network event flag bits.
  */
 typedef enum rpc_network_event_bit {
     RPC_FD_READ_BIT      = 0,
-    RPC_FD_WRITE_BIT     = 1,     
-    RPC_FD_OOB_BIT       = 2,    
-    RPC_FD_ACCEPT_BIT    = 3,   
-    RPC_FD_CONNECT_BIT   = 4, 
-    RPC_FD_CLOSE_BIT     = 5,  
-    RPC_FD_QOS_BIT       = 6, 
+    RPC_FD_WRITE_BIT     = 1,
+    RPC_FD_OOB_BIT       = 2,
+    RPC_FD_ACCEPT_BIT    = 3,
+    RPC_FD_CONNECT_BIT   = 4,
+    RPC_FD_CLOSE_BIT     = 5,
+    RPC_FD_QOS_BIT       = 6,
     RPC_FD_GROUP_QOS_BIT = 7,
     RPC_FD_ROUTING_INTERFACE_CHANGE_BIT = 8,
     RPC_FD_ADDRESS_LIST_CHANGE_BIT      = 9
-    
+
 } rpc_network_event_bit;
 
 #define RPC_FD_MAX_EVENTS 10
@@ -88,7 +88,7 @@ extern rpc_network_event network_event_h2rpc(unsigned int flags);
 
 
 /**
- * TA-independent TransmitFile() flags. 
+ * TA-independent TransmitFile() flags.
  */
 typedef enum rpc_transmit_file_flags {
     RPC_TF_DISCONNECT         = 1,     /**< Start a transport-level
@@ -121,7 +121,7 @@ extern unsigned int transmit_file_flags_rpc2h(
 
 
 /**
- * TA-independent Win32 SERVICETYPE flags. 
+ * TA-independent Win32 SERVICETYPE flags.
  */
 typedef enum rpc_servicetype_flags {
     RPC_SERVICETYPE_NOTRAFFIC             = 0x00000000,
@@ -239,21 +239,21 @@ typedef enum rpc_cf_flags_attributes {
 
 /**
  * TA-independent flags for WSASocket()
- */ 
+ */
 typedef enum rpc_open_sock_flags {
-    RPC_WSA_FLAG_OVERLAPPED = 1,         /**< Causes an overlapped socket 
+    RPC_WSA_FLAG_OVERLAPPED = 1,         /**< Causes an overlapped socket
                                               to be created */
-    RPC_WSA_FLAG_MULTIPOINT_C_ROOT = 2,  /**< Indicates that the socket 
-                                              created will be a c_root in a 
+    RPC_WSA_FLAG_MULTIPOINT_C_ROOT = 2,  /**< Indicates that the socket
+                                              created will be a c_root in a
                                               multipoint session */
-    RPC_WSA_FLAG_MULTIPOINT_C_LEAF = 4,  /**< Indicates that the socket 
+    RPC_WSA_FLAG_MULTIPOINT_C_LEAF = 4,  /**< Indicates that the socket
                                               created will be a c_leaf in a
                                               multipoint session */
-    RPC_WSA_FLAG_MULTIPOINT_D_ROOT = 8,  /**< Indicates that the socket 
+    RPC_WSA_FLAG_MULTIPOINT_D_ROOT = 8,  /**< Indicates that the socket
                                               created will be a d_root in a
                                               multipoint session */
-    RPC_WSA_FLAG_MULTIPOINT_D_LEAF = 16  /**< Indicates that the socket 
-                                              created will be a d_leaf in a 
+    RPC_WSA_FLAG_MULTIPOINT_D_LEAF = 16  /**< Indicates that the socket
+                                              created will be a d_leaf in a
                                               multipoint session */
 } rpc_open_sock_flags;
 
@@ -262,8 +262,8 @@ typedef enum rpc_open_sock_flags {
     RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_C_ROOT),        \
     RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_C_LEAF),        \
     RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_D_ROOT),        \
-    RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_D_LEAF)         
-          
+    RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_D_LEAF)
+
 /**
  * open_sock_flags_rpc2str()
  */
@@ -277,19 +277,19 @@ extern unsigned int open_sock_flags_rpc2h(unsigned int flags);
  * TA-independent flags for WSAJoinLeaf()
  */
 typedef enum rpc_join_leaf_flags {
-    RPC_JL_SENDER_ONLY = 1,   /**< Indicates that the socket is acting as a 
+    RPC_JL_SENDER_ONLY = 1,   /**< Indicates that the socket is acting as a
                                    sender */
-    RPC_JL_RECEIVER_ONLY = 2, /**< Indicates that the socket is acting as a 
+    RPC_JL_RECEIVER_ONLY = 2, /**< Indicates that the socket is acting as a
                                    receiver */
-    RPC_JL_BOTH = 4           /**< Indicates that the socket is acting both 
+    RPC_JL_BOTH = 4           /**< Indicates that the socket is acting both
                                    as a sender and as a receiver */
 } rpc_join_leaf_flags;
 
 #define JOIN_LEAF_FLAGS_MAPPING_LIST \
             RPC_BIT_MAP_ENTRY(JL_SENDER_ONLY),          \
             RPC_BIT_MAP_ENTRY(JL_RECEIVER_ONLY),        \
-            RPC_BIT_MAP_ENTRY(JL_BOTH)         
-          
+            RPC_BIT_MAP_ENTRY(JL_BOTH)
+
 /**
  * join_leaf_flags_rpc2str()
  */

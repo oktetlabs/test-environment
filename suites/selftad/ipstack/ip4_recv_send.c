@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * Simple IPv4 CSAP test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "ipstack/ip4_recv_send"
@@ -63,7 +63,7 @@ main(int argc, char *argv[])
     csap_handle_t eth_listen_csap_1 = CSAP_INVALID_HANDLE;
     csap_handle_t eth_listen_csap_2 = CSAP_INVALID_HANDLE;
 
-    asn_value *template;/*  iteration template for traffic generation */ 
+    asn_value *template;/*  iteration template for traffic generation */
     asn_value *eth_pattern;
 
     int num_pkts;
@@ -73,19 +73,19 @@ main(int argc, char *argv[])
     uint8_t tst_proto = 0;
 
 
-    TEST_START; 
+    TEST_START;
 
     TEST_GET_INT_PARAM(num_pkts);
     TEST_GET_INT_PARAM(pld_len);
     TEST_GET_BOOL_PARAM(enum_iterator);
-    
+
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
     agt_a = ta;
-    if (strlen(ta) + 1 >= len) 
+    if (strlen(ta) + 1 >= len)
         TEST_FAIL("There is no second Test Agent");
 
     agt_b = ta + strlen(ta) + 1;
@@ -96,13 +96,13 @@ main(int argc, char *argv[])
     {
         TEST_FAIL("rcf_ta_create_session failed");
     }
-    INFO("Test: Created session for A agt: %d", sid_a); 
+    INFO("Test: Created session for A agt: %d", sid_a);
 
     if (rcf_ta_create_session(agt_b, &sid_b) != 0)
     {
         TEST_FAIL("rcf_ta_create_session failed");
     }
-    INFO("Test: Created session for B: %d", sid_b); 
+    INFO("Test: Created session for B: %d", sid_b);
 
     rc = asn_parse_value_text("{{ pdus {  eth:{}} }}",
                               ndn_traffic_pattern,
@@ -136,12 +136,12 @@ main(int argc, char *argv[])
             asn_value *int_val = asn_init_value(asn_base_integer);
 
             asn_write_int32(int_val, j * 2 + 10, "");
-            rc = asn_insert_indexed(template, 
+            rc = asn_insert_indexed(template,
                                     asn_copy_value(int_val), -1,
                                     "arg-sets.0.#ints");
 
             asn_write_int32(int_val, j * 2 + 41, "");
-            rc = asn_insert_indexed(template, 
+            rc = asn_insert_indexed(template,
                                     asn_copy_value(int_val), -1,
                                     "arg-sets.1.#ints-assoc");
         }
@@ -160,14 +160,14 @@ main(int argc, char *argv[])
     rc = asn_write_value_field(template, &pld_len, sizeof(pld_len),
                                "payload.#length");
     if (rc != 0)
-        TEST_FAIL("write payload len failed %X", rc); 
+        TEST_FAIL("write payload len failed %X", rc);
 
     delay = 100;
     rc = asn_write_value_field(template, &delay, sizeof(delay),
                                "delays.#plain");
     if (rc != 0)
-        TEST_FAIL("write delay failed %X", rc); 
-  
+        TEST_FAIL("write delay failed %X", rc);
+
     do {
         uint8_t mac_a[6] = {
             0x01,0x02,0x03,0x04,0x05,0x06};
@@ -185,8 +185,8 @@ main(int argc, char *argv[])
                                       ip_a, ip_b, tst_proto,
                                       &ip4_send_csap);
         if (rc != 0)
-            TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 
-                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
+            TEST_FAIL("CSAP create failed, rc from module %d is %r\n",
+                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc));
 
         rc = tapi_ip4_eth_csap_create(agt_b, sid_b, "eth0",
                                       TAD_ETH_RECV_DEF,
@@ -194,8 +194,8 @@ main(int argc, char *argv[])
                                       ip_b, ip_a, tst_proto,
                                       &ip4_listen_csap);
         if (rc != 0)
-            TEST_FAIL("CSAP create failed, rc from mod %d is %r\n", 
-                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
+            TEST_FAIL("CSAP create failed, rc from mod %d is %r\n",
+                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc));
 
         rc = tapi_eth_csap_create(agt_b, sid_b, "eth0",
                                   TAD_ETH_RECV_DEF,
@@ -203,7 +203,7 @@ main(int argc, char *argv[])
                                   NULL, &eth_listen_csap_1);
         if (rc != 0)
             TEST_FAIL("ETH CSAP create failed, rc from mod %d is %r\n",
-                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
+                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc));
 
         rc = tapi_eth_csap_create(agt_b, sid_b, "eth0",
                                   TAD_ETH_RECV_DEF,
@@ -211,12 +211,12 @@ main(int argc, char *argv[])
                                   NULL, &eth_listen_csap_2);
         if (rc != 0)
             TEST_FAIL("ETH CSAP create failed, rc from mod %d is %r\n",
-                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
-        
+                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc));
+
         rc = tapi_tad_trrecv_start(agt_b, sid_b, ip4_listen_csap, NULL,
                                    5000, num_pkts, RCF_TRRECV_COUNT);
-        if (rc != 0) 
-            TEST_FAIL("recv start failed %X", rc); 
+        if (rc != 0)
+            TEST_FAIL("recv start failed %X", rc);
 
         rc = tapi_tad_trrecv_start(agt_b, sid_b, eth_listen_csap_2,
                                    eth_pattern, 5000, num_pkts,
@@ -225,13 +225,13 @@ main(int argc, char *argv[])
         rc = tapi_tad_trrecv_start(agt_b, sid_b, eth_listen_csap_1,
                                    eth_pattern, 5000, num_pkts,
                                    RCF_TRRECV_COUNT);
-        if (rc != 0) 
-            TEST_FAIL("Eth recv start failed %X", rc); 
+        if (rc != 0)
+            TEST_FAIL("Eth recv start failed %X", rc);
 
         rc = tapi_tad_trsend_start(agt_a, sid_a, ip4_send_csap,
                                    template, RCF_MODE_NONBLOCKING);
-        if (rc != 0) 
-            TEST_FAIL("send start failed %X", rc); 
+        if (rc != 0)
+            TEST_FAIL("send start failed %X", rc);
 
         INFO ("try to wait\n");
         rc = rcf_ta_trrecv_wait(agt_b, sid_b, ip4_listen_csap,
@@ -264,7 +264,7 @@ cleanup:
             TEST_FAIL("CSAP destroy %d on agt %s failure %X",           \
                       csap_tmp, ta_, rc);                               \
     } while (0)                                                         \
-                                                                    
+
     if (ip4_send_csap != CSAP_INVALID_HANDLE)
         rcf_ta_trsend_stop(agt_a, sid_a, ip4_send_csap, NULL);
 

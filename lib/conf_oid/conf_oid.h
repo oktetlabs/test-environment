@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -160,7 +160,7 @@ extern int cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2);
 
 
 /**
- * Determines a common part of two OIDs. 
+ * Determines a common part of two OIDs.
  * If both OIDs are object OIDs, an object OID is returned.
  * Otherwise, an instance OID is returned that starts with
  * a common part of the two, with instance names taken from
@@ -178,9 +178,9 @@ extern int cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2);
  *
  * @retval resulting OID
  */
-extern  cfg_oid *cfg_oid_common_root(const cfg_oid *oid1, 
+extern  cfg_oid *cfg_oid_common_root(const cfg_oid *oid1,
                                      const cfg_oid *oid2);
-    
+
 
 /**
  * Convert instance identifier to object identifier.
@@ -192,18 +192,18 @@ static inline void
 cfg_oid_inst2obj(const char *inst_oid, char *obj_oid)
 {
     cfg_oid *oid = cfg_convert_oid_str(inst_oid);
-    
+
     *obj_oid = 0;
-    
+
     if (oid != NULL && oid->inst && oid->len > 1)
     {
         int i;
-        
+
         for (i = 1; i < oid->len; i++)
-            obj_oid += sprintf(obj_oid, "/%s", 
+            obj_oid += sprintf(obj_oid, "/%s",
                                ((cfg_inst_subid *)(oid->ids))[i].subid);
     }
-    
+
     cfg_free_oid(oid);
 }
 

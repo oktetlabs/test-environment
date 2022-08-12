@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
@@ -42,11 +42,11 @@ static char *sfptpd_ifname = NULL;
 
 /**
  * Retrieve daemon status
- * 
+ *
  * @param gid    Group identifier (unused).
  * @param oid    Full object instance identifier (unused).
  * @param value  Location for the value
- * 
+ *
  * @return Status code
  */
 static te_errno
@@ -65,11 +65,11 @@ sfptpd_enable_get(unsigned int gid, const char *oid, char *value)
 
 /**
  * Enable/Disable sfptpd daemon
- * 
+ *
  * @param gid    Group identifier (unused).
  * @param oid    Full object instance identifier (unused).
  * @param value  @c 0 to disable, else - enable
- * 
+ *
  * @return Status code
  */
 static te_errno
@@ -105,7 +105,7 @@ sfptpd_enable_set(unsigned int gid, const char *oid, char *value)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    if ((rc = rcf_ch_start_process(&sfptpd_pid, -1, sfptpd_path, TRUE, 
+    if ((rc = rcf_ch_start_process(&sfptpd_pid, -1, sfptpd_path, TRUE,
                                    RCF_MAX_PARAMS, (void **)s_argv)) != 0)
         ERROR("sfptpd process starting failed.");
 
@@ -156,11 +156,11 @@ sfptpd_ifname_set(unsigned int gid, const char *oid, char *value)
 
 /**
  * Retrieve the daemon pathname
- * 
+ *
  * @param gid    Group identifier (unused).
  * @param oid    Full object instance identifier (unused).
  * @param value  Location for the value
- * 
+ *
  * @return Status code
  */
 static te_errno
@@ -176,11 +176,11 @@ sfptpd_path_get(unsigned int gid, const char *oid, char *value)
 
 /**
  * Set the daemon pathname
- * 
+ *
  * @param gid    Group identifier (unused).
  * @param oid    Full object instance identifier (unused).
  * @param value  String with a new pathname
- * 
+ *
  * @return Status code
  */
 static te_errno
@@ -197,11 +197,11 @@ sfptpd_path_set(unsigned int gid, const char *oid, char *value)
 
 /**
  * Retrieve the daemon config file pathname
- * 
+ *
  * @param gid    Group identifier (unused).
  * @param oid    Full object instance identifier (unused).
  * @param value  Location for the value
- * 
+ *
  * @return Status code
  */
 static te_errno
@@ -217,11 +217,11 @@ sfptpd_config_get(unsigned int gid, const char *oid, char *value)
 
 /**
  * Set the daemon config file pathname
- * 
+ *
  * @param gid    Group identifier (unused).
  * @param oid    Full object instance identifier (unused).
  * @param value  String with a new pathname
- * 
+ *
  * @return Status code
  */
 static te_errno
@@ -238,19 +238,19 @@ sfptpd_config_set(unsigned int gid, const char *oid, char *value)
 
 
 
-RCF_PCH_CFG_NODE_RW(node_sfptpd_config, "config", NULL, 
+RCF_PCH_CFG_NODE_RW(node_sfptpd_config, "config", NULL,
                     NULL, sfptpd_config_get, sfptpd_config_set);
 
 RCF_PCH_CFG_NODE_RW(node_sfptpd_ifname, "ifname", NULL,
                     &node_sfptpd_config, sfptpd_ifname_get, sfptpd_ifname_set);
 
-RCF_PCH_CFG_NODE_RW(node_sfptpd_path, "path", NULL, 
+RCF_PCH_CFG_NODE_RW(node_sfptpd_path, "path", NULL,
                     &node_sfptpd_ifname, sfptpd_path_get, sfptpd_path_set);
 
 RCF_PCH_CFG_NODE_RW(node_sfptpd_enable, "enable", NULL, &node_sfptpd_path,
                     sfptpd_enable_get, sfptpd_enable_set);
 
-RCF_PCH_CFG_NODE_RO(node_sfptpd, "sfptpd", 
+RCF_PCH_CFG_NODE_RO(node_sfptpd, "sfptpd",
                     &node_sfptpd_enable, NULL, NULL);
 
 /* See description in conf_daemons.h */

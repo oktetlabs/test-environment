@@ -8,14 +8,14 @@
 
 char buffer [10000];
 
-int 
+int
 main (int argc, char *argv[])
-{ 
+{
     int rc;
     int oid_vals[100];
     size_t oid_len = sizeof(oid_vals)/sizeof(oid_vals[0]);
     int s_parsed;
-    asn_value *new_val; 
+    asn_value *new_val;
 
     te_log_init("parse00", te_log_message_file);
 
@@ -26,7 +26,7 @@ main (int argc, char *argv[])
                             ndn_traffic_template, &new_val, &s_parsed);
     printf ("ret code from parse sequence: %6x, syms: %d\n", rc, s_parsed);
     asn_sprint_value(new_val, buffer, 1000, 0);
-    printf ("\nparsed value: \n--\n%s\n--\n", buffer); 
+    printf ("\nparsed value: \n--\n%s\n--\n", buffer);
 
 
     rc = asn_read_value_field(new_val, oid_vals, &oid_len,
@@ -43,7 +43,7 @@ main (int argc, char *argv[])
         printf ("\n");
     }
 
-    asn_free_value (new_val); 
+    asn_free_value (new_val);
 
     return 0;
 }

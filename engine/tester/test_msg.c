@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -87,7 +87,7 @@ register_message(tester_test_results *results,
         for (test = SLIST_FIRST(&results->list);
              test != NULL && test->id != id;
              test = SLIST_NEXT(test, links));
-    
+
         if (test == NULL)
         {
             ERROR("Message from the test %u which is not "
@@ -209,7 +209,7 @@ tester_test_msg_listener_thread(void *opaque)
     {
         FD_ZERO(&fds);
         max_fd = ipc_get_server_fds(ctx->ipcs, &fds);
-        
+
         timeout.tv_sec = 0;
         timeout.tv_usec = TE_MS2US(100);
 
@@ -309,10 +309,10 @@ tester_test_msg_listener_stop(tester_test_msg_listener **ctx)
     {
         rc = TE_OS_RC(TE_TESTER, ret);
         ERROR("%s(): pthread_join() failed: %r", __FUNCTION__, rc);
-        /* 
-         * Do not close IPC server and deallocate resources 
+        /*
+         * Do not close IPC server and deallocate resources
          * since it can cause crash
-         */ 
+         */
         return rc;
     }
 

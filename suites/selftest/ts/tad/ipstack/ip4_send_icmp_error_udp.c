@@ -3,10 +3,10 @@
  *
  * Check UDP/IP4/ICMP4/IP4/ETH CSAP behaviour
  * when sendind ICMP messages with udp error replies
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  */
 
@@ -27,9 +27,9 @@
  *
  * @par Scenario:
  *
- * -# Create udp.ip4.icmp4.ip4.eth CSAP on @p pco_csap. 
+ * -# Create udp.ip4.icmp4.ip4.eth CSAP on @p pco_csap.
  * -# Create datagram socket on @p pco_sock.
- * -# Send ICMP message having user-specified 
+ * -# Send ICMP message having user-specified
  *    udp error reply message.
  * -# Check that UDP socket has socket error appropriate to
  *    the sent error message.
@@ -108,7 +108,7 @@ main(int argc, char *argv[])
     csap_handle_t               send_csap = CSAP_INVALID_HANDLE;
     asn_value                  *csap_spec = NULL;
     asn_value                  *template = NULL;
-    
+
     int                         recv_socket = -1;
 
     int                         recverr = 1;
@@ -117,18 +117,18 @@ main(int argc, char *argv[])
     uint8_t                     rx_buf[100];
     size_t                      rx_buf_len = sizeof(rx_buf);
     struct rpc_iovec            rx_vector;
-    
+
     struct sockaddr_storage     msg_name;
     socklen_t                   msg_namelen =
                                     sizeof(struct sockaddr_storage);
     uint8_t                     cmsg_buf[TST_CMSG_LEN] = { 0, };
     struct cmsghdr             *cmsg;
-    
+
     int                         received;
     rpc_msghdr                  rx_msghdr;
     struct sock_extended_err   *optptr;
 
-    TEST_START; 
+    TEST_START;
 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(pco);
@@ -154,14 +154,14 @@ main(int argc, char *argv[])
     rx_msghdr.msg_name = &msg_name;
     rx_msghdr.msg_namelen = rx_msghdr.msg_rnamelen = msg_namelen;
     rx_msghdr.msg_flags = 0;
-    
+
     /* Create UDP socket */
-    recv_socket = rpc_socket(pco, RPC_PF_INET, 
+    recv_socket = rpc_socket(pco, RPC_PF_INET,
                              RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
     /* Bind socket to the local IP/port */
     rpc_bind(pco, recv_socket, sock_addr);
 
-    /* 
+    /*
      * Prepare socket to receive ICMP error
      * messages
      */
@@ -181,14 +181,14 @@ main(int argc, char *argv[])
                  SIN(sock_addr)->sin_port,
                  SIN(csap_addr)->sin_port,
                  &send_csap));
-    
+
     /* Prepare data-sending template */
-    /* 
+    /*
      * Prepare UDP error message's UDP header, src_port being
      * port to which UDP socket is bound
      */
     CHECK_RC(tapi_udp_add_pdu(&template, NULL,
-                              FALSE, 
+                              FALSE,
                               CONST_SIN(sock_addr)->sin_port,
                               CONST_SIN(csap_addr)->sin_port));
     /*
@@ -211,7 +211,7 @@ main(int argc, char *argv[])
                               SIN(csap_addr)->sin_addr.s_addr,
                               SIN(sock_addr)->sin_addr.s_addr,
                               IPPROTO_ICMP,
-                              -1, 
+                              -1,
                               -1));
     /* Prepare ICMP error message's ETH header */
     CHECK_RC(tapi_eth_add_pdu(&template, NULL,
@@ -221,7 +221,7 @@ main(int argc, char *argv[])
                               &ip_eth,
                               TE_BOOL3_ANY,
                               TE_BOOL3_ANY));
-    
+
     /* Start sending data via CSAP */
     CHECK_RC(tapi_tad_trsend_start(host_csap->ta, 0, send_csap,
                                    template, RCF_MODE_NONBLOCKING));
@@ -232,7 +232,7 @@ main(int argc, char *argv[])
     CHECK_RC(rpc_getsockopt(pco, recv_socket,
                             RPC_SO_ERROR,
                             &sock_error));
-    
+
     /* Check socket error */
     if (sock_error != (int)exp_errno)
         TEST_FAIL("SO_ERROR is set to %s "
@@ -256,7 +256,7 @@ main(int argc, char *argv[])
      */
     received = rpc_recvmsg(pco, recv_socket, &rx_msghdr, RPC_MSG_ERRQUEUE);
 
-    /* 
+    /*
      * Check that protocol name is equal to the
      * destination IP
      */
@@ -276,7 +276,7 @@ main(int argc, char *argv[])
 
     /* Get returned ancillary data */
     cmsg = CMSG_FIRSTHDR(&rx_msghdr);
-    if (cmsg == NULL) 
+    if (cmsg == NULL)
         TEST_FAIL("Ancillary data on pco_iut socket "
                   "is not recieved");
 
@@ -290,7 +290,7 @@ main(int argc, char *argv[])
         (optptr->ee_code != code) ||
         (optptr->ee_pad != 0))
         TEST_FAIL("Returned unexpected values of ancillary data");
-    
+
     /* Check that error queue is empty */
     RPC_AWAIT_IUT_ERROR(pco);
     received = rpc_recvmsg(pco, recv_socket, &rx_msghdr, RPC_MSG_ERRQUEUE);
@@ -309,9 +309,9 @@ cleanup:
 
     asn_free_value(template);
     asn_free_value(csap_spec);
-    
+
     if (host_csap != NULL)
-        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_csap->ta, 0, 
+        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_csap->ta, 0,
                                              send_csap));
 
     TEST_END;

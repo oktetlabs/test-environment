@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * Author: Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>

@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Igor Vasiliev <Igor.Vasiliev@oktetlabs.ru>
@@ -467,10 +467,10 @@ tcp_mem_set(const char *proc_file, int *par_array, int len)
 /**
  * Put a number value in a system file like
  * /proc/sys/net/ipv4/tcp_timestamps
- * 
+ *
  * @param path      Full path with file name
  * @param value     String with value
- * 
+ *
  * return Status code
  */
 static te_errno
@@ -498,10 +498,10 @@ proc_sys_set_value(const char *path, const char *value)
 /**
  * Get a number value from a system file like
  * /proc/sys/net/ipv4/tcp_timestamps
- * 
+ *
  * @param path      Full path with file name
  * @param value     Buffer for string with value
- * 
+ *
  * return Status code
  */
 static te_errno

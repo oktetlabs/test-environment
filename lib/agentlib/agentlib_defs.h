@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -15,7 +15,7 @@
  * it can be included into a automatically generated symbol table
  * definitions, without causing symbol definition mismatch
  */
- 
+
 #ifndef __TE_AGENTLIB_DEFS_H__
 #define __TE_AGENTLIB_DEFS_H__
 

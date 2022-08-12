@@ -2,11 +2,11 @@
  * @brief Testing Results Comparator
  *
  * Main module
- *  
+ *
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -111,7 +111,7 @@ static trc_report_ctx ctx;
 
 /**
  * Process command line options and parameters specified in argv.
- * The procedure contains "Option table" that should be updated 
+ * The procedure contains "Option table" that should be updated
  * if so me new options are going to be added.
  *
  * @param argc  Number of elements in array "argv".
@@ -259,7 +259,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
           "Verbose command line for report generation into report.",
           "STRING" },
 
-        { "version", '\0', POPT_ARG_NONE, NULL, TRC_OPT_VERSION, 
+        { "version", '\0', POPT_ARG_NONE, NULL, TRC_OPT_VERSION,
           "Display version information.", NULL },
 
         POPT_AUTOHELP

@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -30,7 +30,7 @@ extern "C" {
 
 /** Test iteration argument */
 typedef struct trc_test_iter_arg {
-    
+
     xmlNodePtr  node;   /**< XML node with this element */
 
     TAILQ_ENTRY(trc_test_iter_arg)   links;  /**< List links */
@@ -161,7 +161,7 @@ extern void trc_db_close(te_trc_db *trc_db);
 
 
 /*
- * Testing Results Comparator database walker 
+ * Testing Results Comparator database walker
  */
 
 /* Forward declaration of the position in TRC database tree */
@@ -201,7 +201,7 @@ extern void trc_db_free_walker(te_trc_db_walker *walker);
 
 /**
  * Is walker located on a test iteration (or test itself)?
- * 
+ *
  * @param walker        Current walker position
  */
 extern te_bool trc_db_walker_is_iter(const te_trc_db_walker *walker);
@@ -468,14 +468,14 @@ extern void trc_db_walker_free_user_data(te_trc_db_walker *walker,
  *
  * @param db            TRC database handle
  * @param user_id       User ID
- * @param test_free     Function to be used to free user data 
+ * @param test_free     Function to be used to free user data
  *                      associated with test entries or NULL
- * @param iter_free     Function to be used to free user data 
+ * @param iter_free     Function to be used to free user data
  *                      associated with test iterations or NULL
  *
  * @return Status code.
  */
-extern te_errno trc_db_free_user_data(te_trc_db *db, 
+extern te_errno trc_db_free_user_data(te_trc_db *db,
                                       unsigned int user_id,
                                       void (*test_free)(void *),
                                       void (*iter_free)(void *));

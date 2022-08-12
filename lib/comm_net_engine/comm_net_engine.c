@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrey G. Ivanov <andron@oktetlabs.ru>
  *
@@ -262,7 +262,7 @@ rcf_net_engine_transmit(struct rcf_net_connection *rnc,
         if ((len = send(rnc->socket, data, length, MSG_DONTWAIT)) < 0)
         {
             int err = errno;
-            
+
             if (err == EWOULDBLOCK || err == EAGAIN)
             {
                 usleep(10000);

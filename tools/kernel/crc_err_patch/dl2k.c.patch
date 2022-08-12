@@ -3,7 +3,7 @@
 @@ -93,6 +93,7 @@
  static int max_intrloop = 50;
  static int multicast_filter_limit = 0x40;
- 
+
 +void qdisc_run(struct net_device *dev);
  static int rio_open (struct net_device *dev);
  static void rio_timer (unsigned long data);
@@ -15,33 +15,33 @@
 +        np->ignore_crc_err = 0;
  	spin_lock_init (&np->tx_lock);
  	spin_lock_init (&np->rx_lock);
- 
+
 @@ -650,7 +652,8 @@
  	if (skb->ip_summed == CHECKSUM_HW) {
  		txdesc->status |=
  		    cpu_to_le64 (TCPChecksumEnable | UDPChecksumEnable |
 -				 IPChecksumEnable);
-+				 IPChecksumEnable | (FCSAppendDisable & 
++				 IPChecksumEnable | (FCSAppendDisable &
 +                                                     np->ignore_crc_err));
  	}
  #endif
  	if (np->vlan) {
 @@ -670,11 +673,15 @@
  		txdesc->status = cpu_to_le64 (entry | tfc_vlan_tag |
- 					      WordAlignDisable | 
+ 					      WordAlignDisable |
  					      TxDMAIndicate |
 -					      (1 << FragCountShift));
 +					      (1 << FragCountShift) |
-+                                              (FCSAppendDisable & 
++                                              (FCSAppendDisable &
 +                                                     np->ignore_crc_err));
  	else
  		txdesc->status = cpu_to_le64 (entry | tfc_vlan_tag |
- 					      WordAlignDisable | 
+ 					      WordAlignDisable |
 -					      (1 << FragCountShift));
 +					      (1 << FragCountShift) |
-+                                              (FCSAppendDisable & 
++                                              (FCSAppendDisable &
 +                                                     np->ignore_crc_err));
- 
+
  	/* TxDMAPollNow */
  	writel (readl (ioaddr + DMACtrl) | 0x00001000, ioaddr + DMACtrl);
 @@ -1323,20 +1330,19 @@
@@ -56,7 +56,7 @@
 -	struct netdev_desc *desc;
 -	int i;
 +        struct netdev_desc *desc;
- 
+
  	phy_addr = np->phy_addr;
  	switch (cmd) {
  	case SIOCETHTOOL:
@@ -87,7 +87,7 @@
 +            np->ignore_crc_err = 1;
 +            printk(KERN_INFO "The mode of ignoring CRC errors is on.\n");
 +            break;
-+            
++
  	default:
  		return -EOPNOTSUPP;
  	}

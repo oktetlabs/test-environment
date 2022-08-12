@@ -38,7 +38,7 @@ $1 == "FILE" {
             {
                 if ((getline) <= 0) exit 0;
                 if ($1 == "FILE") break;
-                if (MODE != "min") 
+                if (MODE != "min")
                 {
                     if (MODE == "diff" && $1 != "SUMMARY") $1 = "-0";
                     print

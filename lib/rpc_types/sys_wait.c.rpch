@@ -57,7 +57,7 @@ wait_status_h2rpc(int st)
     {
         ret.flag = RPC_WAIT_STATUS_EXITED;
         ret.value = WEXITSTATUS(st);
-    } 
+    }
     else if (WIFSIGNALED(st))
     {
         ret.value = signum_h2rpc(WTERMSIG(st));

@@ -1,12 +1,12 @@
 /** @file
- * @brief Test API for RADIUS Server Configuration and RADIUS CSAP 
+ * @brief Test API for RADIUS Server Configuration and RADIUS CSAP
  *
  * Implementation.
  *
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  *
@@ -401,7 +401,7 @@ tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
         len += attr_strlen;
     }
     *str = result;
-    
+
     return 0;
 }
 
@@ -671,12 +671,12 @@ tapi_radius_trrecv_cb_data(radius_callback  user_callback,
     }
     cb_data->callback = user_callback;
     cb_data->user_data = user_data;
-    
+
     res = tapi_udp_ip4_eth_trrecv_cb_data(tapi_radius_pkt_handler,
                                           cb_data);
     if (res == NULL)
         free(cb_data);
-    
+
     return res;
 }
 
@@ -864,13 +864,13 @@ tapi_radius_usr_list_type2str(tapi_radius_usr_list_t list_type)
     {
         case TAPI_RADIUS_USR_CHECK_LST:
             return "check";
-    
+
         case TAPI_RADIUS_USR_ACPT_LST:
             return "Access-Accept";
-        
+
         case TAPI_RADIUS_USR_CHLG_LST:
             return "Access-Challenge";
-        
+
         default:
             return "Unknown";
     }
@@ -905,15 +905,15 @@ tapi_radius_serv_set_user_attr(const char *ta_name,
         case TAPI_RADIUS_USR_CHECK_LST:
             cfg_name = "check";
             break;
-    
+
         case TAPI_RADIUS_USR_ACPT_LST:
             cfg_name = "accept-attrs";
             break;
-        
+
         case TAPI_RADIUS_USR_CHLG_LST:
             cfg_name = "challenge-attrs";
             break;
-        
+
         default:
             ERROR("%s:%d Unknown attribute list type specified",
                   __FILE__, __LINE__);

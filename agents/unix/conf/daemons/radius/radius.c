@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
@@ -41,10 +41,10 @@
  */
 
 /** Type of node of configuration file */
-enum radius_parameters { 
+enum radius_parameters {
     RP_FLAG,          /**< a parameter which has no value */
     RP_ATTRIBUTE,     /**< a parameter with the value */
-    RP_SECTION,       /**< a (sub)section */ 
+    RP_SECTION,       /**< a (sub)section */
     RP_FILE           /**< an included config file */
 };
 
@@ -82,7 +82,7 @@ static char *expand_rp (const char *value, radius_parameter *top);
  */
 static radius_parameter *
 make_rp(enum radius_parameters kind,
-        const char *name, 
+        const char *name,
         const char *value, radius_parameter *parent)
 {
     radius_parameter *parm = (radius_parameter *)malloc(sizeof(*parm));
@@ -149,14 +149,14 @@ destroy_rp(radius_parameter *parm)
 static void read_radius(FILE *conf, radius_parameter *top);
 
 /**
- * Reads a RADIUS config file named 'filename' and creates 
+ * Reads a RADIUS config file named 'filename' and creates
  * a RP_FILE record inside 'top'. All the parameters read
  * from the file will be inside that record.
  */
 static radius_parameter *
 read_radius_file (const char *filename, radius_parameter *top)
 {
-    FILE *newfile; 
+    FILE *newfile;
     radius_parameter *fp;
     int index;
     static char directory[PATH_MAX + 1];
@@ -180,7 +180,7 @@ read_radius_file (const char *filename, radius_parameter *top)
         ERROR("cannot open %s: %s", filename, strerror(errno));
         return NULL;
     }
-    
+
     fp = make_rp(RP_FILE, filename, NULL, top);
     if (fp != NULL)
     {
@@ -195,14 +195,14 @@ read_radius_file (const char *filename, radius_parameter *top)
  * Reads lines from 'conf' until EOF, skips comments and
  * creates RADIUS parameters inside 'top'
  */
-static void 
+static void
 read_radius(FILE *conf, radius_parameter *top)
 {
     static char buffer[256];
     radius_parameter *initial_top = top;
     int skip_spaces;
     int line_count = 0;
-    
+
     while (fgets(buffer, sizeof(buffer) - 1, conf) != NULL)
     {
         line_count++;
@@ -325,7 +325,7 @@ write_radius(radius_parameter *top)
     if (top->kind != RP_FILE || !top->modified)
     {
         for (top = top->children; top != NULL; top = top->next)
-        { 
+        {
             if (top->kind == RP_FILE || top->kind == RP_SECTION)
                 write_radius(top);
         }
@@ -343,7 +343,7 @@ write_radius(radius_parameter *top)
         }
 
         for (top = top->children; top != NULL; top = top->next)
-        { 
+        {
             write_radius_parameter(outfile, top, 0);
         }
         fclose(outfile);
@@ -374,9 +374,9 @@ resolve_rp_name (radius_parameter *origin, const char **name)
 
 
 /**
- * Finds a RADIUS parameter inside 'name' and creates it if there isn't one and 
+ * Finds a RADIUS parameter inside 'name' and creates it if there isn't one and
  * 'create' is TRUE.
- * 
+ *
  * @param create_now  This parameter is for recursive calls on RP_FILE records.
                       A user should normally set it equal to 'create'.
  * @param enumerator  If not NULL, the function that is called on every parameter
@@ -460,8 +460,8 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
                 if (strncmp(iter->name, name, name_length) == 0 &&
                     (wildcard || iter->name[name_length] == '\0'))
                 {
-                    if (value == NULL || 
-                        (iter->value != NULL && 
+                    if (value == NULL ||
+                        (iter->value != NULL &&
                          strncmp(iter->value, value, value_length) == 0 &&
                          iter->value[value_length] == '\0'))
                     {
@@ -478,7 +478,7 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
     }
     if (iter == NULL && create_now)
     {
-        iter = make_rp(*next == '\0' ? RP_ATTRIBUTE : RP_SECTION, 
+        iter = make_rp(*next == '\0' ? RP_ATTRIBUTE : RP_SECTION,
                        NULL, NULL, base);
         iter->name = malloc(name_length + 1);
         memcpy(iter->name, name, name_length);
@@ -491,7 +491,7 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
         }
         VERB("created RADIUS parameter %s %s", iter->name, iter->value ? iter->value : "EMPTY");
     }
-    
+
     if (*next != '\0' && iter != NULL && iter->kind != RP_SECTION)
     {
         ERROR("attempting to find %s under %s which is not a section",
@@ -561,7 +561,7 @@ expand_rp(const char *value, radius_parameter *top)
 
     for (new_ptr = new_val; *new_ptr != '\0'; new_ptr++)
     {
-        if (new_ptr[0] == '$' && new_ptr[1] == '{' && 
+        if (new_ptr[0] == '$' && new_ptr[1] == '{' &&
             (next = strchr(new_ptr, '}')) != NULL)
         {
             const char *rp_val;
@@ -649,7 +649,7 @@ wipe_rp_section(radius_parameter *rp)
  * value (which may be encoded in 'name').
  */
 static int
-update_rp(radius_parameter *top, enum radius_parameters kind, 
+update_rp(radius_parameter *top, enum radius_parameters kind,
           const char *name, const char *value)
 {
     radius_parameter *rp = find_rp(top, name, TRUE, TRUE, NULL, NULL);
@@ -705,7 +705,7 @@ update_rp(radius_parameter *top, enum radius_parameters kind,
  * There are many operators that can be used in check and reply list,
  * not '==' and ':=' only, but we use only a subset of syntax.
  *
- * For each user we create two rules - separately for outgoing 
+ * For each user we create two rules - separately for outgoing
  * Access-Challenge and Access-Accept packets. (This feature requires
  * patched version of FreeRADIUS server, because it needs to check
  * Response-Packet-Type pseudoattribute, that is not provided to user
@@ -751,7 +751,7 @@ static struct radius_user *radius_users;
 static struct radius_user *radius_last_user;
 
 /**
- * Creates a RADIUS user record named 'name' and adds it 
+ * Creates a RADIUS user record named 'name' and adds it
  * to the end of 'radius_users' list
  */
 static radius_user *
@@ -985,7 +985,7 @@ radius_set_attr_array(radius_attr_array *attr_array, const char *attr_string)
 }
 
 /**
- * A generic routine to convert an array of RADIUS attribute 
+ * A generic routine to convert an array of RADIUS attribute
  * name-value pairs to a textual form
  *
  * @param dest           The address of the buffer to put data
@@ -1143,7 +1143,7 @@ static void
 log_radius_tree (radius_parameter *parm)
 {
     RING("%p %d %s = %s %s %p %p\n", parm, parm->kind, parm->name,
-         parm->value ? parm->value : "EMPTY", 
+         parm->value ? parm->value : "EMPTY",
          parm->deleted ? "DELETED" : "", parm->children, parm->next);
     for (parm = parm->children; parm != NULL; parm = parm->next)
         log_radius_tree(parm);
@@ -1185,9 +1185,9 @@ radiusserver_find_name()
 
 /**
  * The functions to query/change the status of RADIUS server
- * 
+ *
  * Since the server may be named either 'freeradius' or 'radiusd',
- * both names are first tried and, if either is detected, 
+ * both names are first tried and, if either is detected,
  * 'radius_daemon' is set appropriately.
  */
 static te_errno
@@ -1243,7 +1243,7 @@ radiusserver_reload()
 
 static te_errno
 ds_radius_accept_get(unsigned int gid, const char *oid,
-                     char *value, const char *instance, 
+                     char *value, const char *instance,
                      const char *username, ...)
 {
     radius_user *user = find_radius_user(username);
@@ -1261,7 +1261,7 @@ ds_radius_accept_get(unsigned int gid, const char *oid,
 
 static te_errno
 ds_radius_accept_set(unsigned int gid, const char *oid,
-                     const char *value, const char *instance, 
+                     const char *value, const char *instance,
                      const char *username, ...)
 {
     te_errno     rc;
@@ -1287,7 +1287,7 @@ ds_radius_accept_set(unsigned int gid, const char *oid,
 
 static te_errno
 ds_radius_challenge_get(unsigned int gid, const char *oid,
-                        char *value, const char *instance, 
+                        char *value, const char *instance,
                         const char *username, ...)
 {
     radius_user *user = find_radius_user(username);
@@ -1305,7 +1305,7 @@ ds_radius_challenge_get(unsigned int gid, const char *oid,
 
 static te_errno
 ds_radius_challenge_set(unsigned int gid, const char *oid,
-                        const char *value, const char *instance, 
+                        const char *value, const char *instance,
                         const char *username, ...)
 {
     te_errno     rc;
@@ -1331,7 +1331,7 @@ ds_radius_challenge_set(unsigned int gid, const char *oid,
 
 static te_errno
 ds_radius_check_get(unsigned int gid, const char *oid,
-                    char *value, const char *instance, 
+                    char *value, const char *instance,
                     const char *username, ...)
 {
     radius_user *user = find_radius_user(username);
@@ -1349,7 +1349,7 @@ ds_radius_check_get(unsigned int gid, const char *oid,
 
 static te_errno
 ds_radius_check_set(unsigned int gid, const char *oid,
-                    const char *value, const char *instance, 
+                    const char *value, const char *instance,
                     const char *username, ...)
 {
     te_errno     rc;
@@ -1375,7 +1375,7 @@ ds_radius_check_set(unsigned int gid, const char *oid,
 
 static te_errno
 ds_radius_user_add(unsigned int gid, const char *oid,
-                   const char *value, const char *instance, 
+                   const char *value, const char *instance,
                    const char *username, ...)
 {
     UNUSED(gid);
@@ -1404,7 +1404,7 @@ ds_radius_user_add(unsigned int gid, const char *oid,
 
 static te_errno
 ds_radius_user_set(unsigned int gid, const char *oid,
-                   const char *value, const char *instance, 
+                   const char *value, const char *instance,
                    const char *username, ...)
 {
     radius_user *user = find_radius_user(username);
@@ -1492,7 +1492,7 @@ static char client_buffer[256];
 
 static te_errno
 ds_radius_client_add(unsigned int gid, const char *oid,
-                     const char *value, const char *unused, 
+                     const char *value, const char *unused,
                      const char *client_name)
 {
     int rc;
@@ -1529,7 +1529,7 @@ ds_radius_client_add(unsigned int gid, const char *oid,
 
 static te_errno
 ds_radius_client_del(unsigned int gid, const char *oid,
-                     const char *instance, 
+                     const char *instance,
                      const char *client_name, ...)
 {
     UNUSED(gid);
@@ -1787,7 +1787,7 @@ RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_eap, "eap",
 
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_net_addr, "net_addr",
                     NULL, &node_ds_radiusserver_eap,
-                    ds_radiusserver_netaddr_get, 
+                    ds_radiusserver_netaddr_get,
                     ds_radiusserver_netaddr_set);
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_acct_port, "acct_port",
                     NULL, &node_ds_radiusserver_net_addr,
@@ -1800,8 +1800,8 @@ RCF_PCH_CFG_NODE_RW(node_ds_radiusserver, "radiusserver",
                     ds_radiusserver_get, ds_radiusserver_set);
 
 /** The list of parameters that must be deleted on startup */
-const char *radius_ignored_params[] = {"bind_address", 
-                                       "port", 
+const char *radius_ignored_params[] = {"bind_address",
+                                       "port",
                                        "listen",
                                        "client",
                                        "modules",
@@ -1819,7 +1819,7 @@ const char *radius_ignored_params[] = {"bind_address",
 
 /** The list of pairs attribute, value that must be set on startup.
  *  Use RP_DEFAULT_EMPTY_SECTION to create an empty section
- */ 
+ */
 const char *radius_predefined_params[] = {
     "listen(#auth).type", "auth",
     "listen(#auth).ipaddr", "*",
@@ -1848,7 +1848,7 @@ const char *radius_predefined_params[] = {
     "preacct.acct_unique", NULL,
     "accounting.detail", NULL,
     "security.reject_delay", "0",
-        
+
     "authorize.chap", NULL,
     "authorize.mschap", NULL,
     "authorize.eap", NULL,
@@ -1868,7 +1868,7 @@ rp_delete_all(radius_parameter *rp, void *extra)
 {
     UNUSED(extra);
 
-    INFO("Wiping out RADIUS parameter %s %s", rp->name, 
+    INFO("Wiping out RADIUS parameter %s %s", rp->name,
          rp->value == NULL ? "" : rp->value);
     if (rp->kind != RP_SECTION && rp->value != NULL)
     {
@@ -1888,7 +1888,7 @@ rp_delete_all(radius_parameter *rp, void *extra)
  * - Ignored and defaulted parameters are processed
  * - RP_RADIUS_USERS_FILE is created and opened
  */
-te_errno 
+te_errno
 radiusserver_grab(const char *name)
 {
     const char **param;
@@ -1917,14 +1917,14 @@ radiusserver_grab(const char *name)
     for (param = radius_predefined_params; *param != NULL; param += 2)
     {
         update_rp(radius_conf, param[1] == NULL ? RP_FLAG :
-                  (param[1] == RP_DEFAULT_EMPTY_SECTION ? RP_SECTION : 
+                  (param[1] == RP_DEFAULT_EMPTY_SECTION ? RP_SECTION :
                    RP_ATTRIBUTE), *param,
                   param[1] == RP_DEFAULT_EMPTY_SECTION ? NULL : param[1]);
     }
     write_radius(radius_conf);
     {
         int fd = creat(RADIUS_USERS_FILE, S_IRUSR | S_IROTH | S_IWUSR);
-        
+
         RING("Open %s, fd=%d", RADIUS_USERS_FILE, fd);
         if (fd < 0)
         {

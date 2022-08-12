@@ -574,11 +574,11 @@ struct tarpc_rte_pktmbuf_get_fdir_id_out {
 };
 
 struct tarpc_rte_pktmbuf_tx_offload {
-    uint16_t l2_len; 
-    uint16_t l3_len; 
-    uint16_t l4_len; 
-    uint16_t tso_segsz; 
-    uint16_t outer_l3_len; 
+    uint16_t l2_len;
+    uint16_t l3_len;
+    uint16_t l4_len;
+    uint16_t tso_segsz;
+    uint16_t outer_l3_len;
     uint16_t outer_l2_len;
 };
 

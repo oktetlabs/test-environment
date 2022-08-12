@@ -10,7 +10,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>

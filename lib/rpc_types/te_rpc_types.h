@@ -2,18 +2,18 @@
  * @brief Socket API RPC definitions
  *
  * Definition data types used in Socket API RPC.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  */
- 
+
 #ifndef __TE_RPC_TYPES_H__
 #define __TE_RPC_TYPES_H__
 
@@ -76,7 +76,7 @@ typedef struct rpc_ptr_off {
 #include "te_rpc_sys_socket.h"
 #include "te_rpc_fcntl.h"
 
-/** 
+/**
  * Pattern passed to set_buf_pattern to indicate that the buffer should
  * be filled by random bytes.
  */

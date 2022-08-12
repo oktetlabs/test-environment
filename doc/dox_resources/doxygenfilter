@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Test Environment: Doxygen filter file 
+# Test Environment: Doxygen filter file
 #
 # Script to use by Doxygen while processing TE sources.
 # We can invoke external programs and dump their output to

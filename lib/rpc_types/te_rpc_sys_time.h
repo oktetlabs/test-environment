@@ -2,17 +2,17 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from sys/time.h.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_SYS_TIME_H__
 #define __TE_RPC_SYS_TIME_H__
 
@@ -28,7 +28,7 @@ extern "C" {
 
 /**
  * Convert 'struct timeval' to 'struct tarpc_timeval'.
- * 
+ *
  * @param tv_h      Pointer to 'struct timeval'
  * @param tv_rpc    Pointer to 'struct tarpc_timeval'
  */
@@ -45,7 +45,7 @@ timeval_h2rpc(const struct timeval *tv_h, struct tarpc_timeval *tv_rpc)
 
 /**
  * Convert 'struct tarpc_timeval' to 'struct timeval'.
- * 
+ *
  * @param tv_rpc    Pointer to 'struct tarpc_timeval'
  * @param tv_h      Pointer to 'struct timeval'
  */
@@ -62,7 +62,7 @@ timeval_rpc2h(const struct tarpc_timeval *tv_rpc, struct timeval *tv_h)
 
 /**
  * Convert 'struct timezone' to 'struct tarpc_timezone'.
- * 
+ *
  * @param tz_h      Pointer to 'struct timezone'
  * @param tz_rpc    Pointer to 'struct tarpc_timezone'
  */
@@ -79,7 +79,7 @@ timezone_h2rpc(const struct timezone *tz_h, struct tarpc_timezone *tz_rpc)
 
 /**
  * Convert 'struct tarpc_timezone' to 'struct timezone'.
- * 
+ *
  * @param tz_rpc    Pointer to 'struct tarpc_timezone'
  * @param tz_h      Pointer to 'struct timezone'
  */

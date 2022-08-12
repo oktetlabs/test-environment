@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
@@ -99,11 +99,11 @@ logic_expr_dup(logic_expr *expr)
     switch (expr->type)
     {
         case LOGIC_EXPR_VALUE:
-            dup->u.value = strdup(expr->u.value); 
+            dup->u.value = strdup(expr->u.value);
             break;
 
         case LOGIC_EXPR_NOT:
-            dup->u.unary = logic_expr_dup(expr->u.unary); 
+            dup->u.unary = logic_expr_dup(expr->u.unary);
             break;
 
         case LOGIC_EXPR_AND:
@@ -147,14 +147,14 @@ logic_expr_binary(logic_expr_type type, logic_expr *lhv, logic_expr *rhv)
     p = calloc(1, sizeof(*p));
     if (p == NULL)
     {
-        ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed", 
+        ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed",
               __FUNCTION__, sizeof(*p));
         return NULL;
     }
     p->type = type;
     p->u.binary.lhv = lhv;
     p->u.binary.rhv = rhv;
-    
+
     return p;
 }
 
@@ -397,7 +397,7 @@ logic_expr_not_prop(logic_expr **expr)
             logic_expr_not_prop(&rhv);
             (*expr)->u.binary.lhv = lhv;
             (*expr)->u.binary.rhv = rhv;
-            
+
             break;
 
         case LOGIC_EXPR_AND:
@@ -489,7 +489,7 @@ and_or_replace(logic_expr **and_expr, logic_expr *or_expr,
     lhv = (*aux)->u.binary.lhv;
     *aux = (*aux)->u.binary.rhv;
     dup_expr = logic_expr_dup(*and_expr);
-    
+
     logic_expr_free(*aux);
     logic_expr_free_nr(or_expr);
     *aux = lhv;
@@ -663,7 +663,7 @@ sort_and_chain(logic_expr *and_chain,
 }
 
 /**
- * Compare two conjunctions and determine whether one 
+ * Compare two conjunctions and determine whether one
  * of them can merge another in disjunctive normal form.
  * Conjunctions should be sorted with help of
  * sort_and_chain() in descending order.
@@ -672,12 +672,12 @@ sort_and_chain(logic_expr *and_chain,
  * @param chain2        Second conjunction
  * @param comp_func     Function performing comparison
  *                      of logical expressions
- * 
+ *
  * @return result of comparison
  *
  * @retval -2           There is not conjunction that can
  *                      merge another one.
- * @retval -1           The first conjunction can merge 
+ * @retval -1           The first conjunction can merge
  *                      the second one.
  * @retval 1            The second conjunction can merge
  *                      the first one.
@@ -802,8 +802,8 @@ and_chains_cmp(logic_expr *chain1,
         return -1;
 }
 
-/** 
- * Simplify disjunctive normal form deleting duplicating 
+/**
+ * Simplify disjunctive normal form deleting duplicating
  * conjunctions and also merging conjunctions of kind
  * x&y|x in x.
  *
@@ -843,7 +843,7 @@ logic_expr_dnf_rem_dups(logic_expr **dnf,
 
         if (p->type == LOGIC_EXPR_AND)
             sort_and_chain(p, comp_func);
-        
+
         p = *dnf;
 
         while (p->type == LOGIC_EXPR_OR)
@@ -859,7 +859,7 @@ logic_expr_dnf_rem_dups(logic_expr **dnf,
                     q_cur = q->u.binary.lhv;
                  else
                     q_cur = q;
-                
+
                 rc = and_chains_cmp(p_cur, q_cur, comp_func);
                 if (rc == 0 || rc == -1)
                 {
@@ -889,10 +889,10 @@ logic_expr_dnf_rem_dups(logic_expr **dnf,
 
                 p_m = q;
                 q = (p_m->type == LOGIC_EXPR_OR) ?
-                     p_m->u.binary.rhv : NULL; 
+                     p_m->u.binary.rhv : NULL;
             }
 
-            p = p->u.binary.rhv; 
+            p = p->u.binary.rhv;
         }
     }
     else
@@ -958,7 +958,7 @@ logic_expr_dnf_gen(logic_expr **expr,
      * !x&!y
      */
     logic_expr_not_prop(expr);
-    
+
     switch ((*expr)->type)
     {
         case LOGIC_EXPR_AND:
@@ -1109,7 +1109,7 @@ logic_expr_to_str_gen(logic_expr *expr, logic_expr *parent)
 
     memset(&result, 0, sizeof(result));
     result.ptr = NULL;
-    
+
     switch(expr->type)
     {
         case LOGIC_EXPR_VALUE:

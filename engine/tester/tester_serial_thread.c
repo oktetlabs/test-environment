@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
@@ -41,7 +41,7 @@
 /* Max path length to external handler */
 #define TESTER_SERIAL_MAX_PATH  256
 
-/* 
+/*
  * Default timeout of waiting between attempts to appeal to configurator in
  * case if it busy by a local sequence, in microseconds
  */
@@ -115,10 +115,10 @@ do { \
 
 /**
  * Get sequence of the Tester event handlers from Configurator
- * 
+ *
  * @param event_name    The event name
  * @param hh            Pointer to head of the handlers list (OUT)
- * 
+ *
  * @return Status code
  * @retval 0            Success
  */
@@ -140,7 +140,7 @@ tester_serial_get_handlers(const char *event_name, serial_hand_h_t *hh)
 
 /**
  * Macro to check received status codes and cleanup the handler
- * 
+ *
  * @param _rc   Status code
  * @param _fmt  Error message
  */
@@ -245,9 +245,9 @@ if (_rc != 0) \
 
 /**
  * Call the external handler of the event
- * 
+ *
  * @param path  Path to the handler execute
- * 
+ *
  * @return Status code
  * @retval 0    Continue handlers execution
  * @retval 1    Stop handlers execution
@@ -303,9 +303,9 @@ tester_serial_call_handler(const char *path)
 
 /**
  * Handling of a serial console event
- * 
+ *
  * @param event_name    Name of the Tester event
- * 
+ *
  * @return Status code
  * @retval 0            Success
  */

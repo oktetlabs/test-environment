@@ -6,12 +6,12 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- */ 
+ */
 
 #define TE_LGR_USER     "TAPI STP"
 
@@ -21,11 +21,11 @@
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#if HAVE_STRING_H 
-#include <string.h> 
-#endif 
-#if HAVE_STRINGS_H 
-#include <strings.h> 
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
 #endif
 #if HAVE_UNISTD_H
 #include <unistd.h>
@@ -60,7 +60,7 @@ static uint8_t bridge_group_addr[ETHER_ADDR_LEN] =
     {0x01, 0x80, 0xC2, 0x00, 0x00, 0x00};
 
 
-static te_errno 
+static te_errno
 tapi_bridge_add_csap_layer(asn_value          **csap_spec,
                            const unsigned int  *proto)
 {
@@ -77,25 +77,25 @@ tapi_bridge_add_csap_layer(asn_value          **csap_spec,
 
 /**
  * Creates STP CSAP that can be used for sending/receiving
- * Configuration and Notification BPDUs specified in 
+ * Configuration and Notification BPDUs specified in
  * Media Access Control (MAC) Bridges ANSI/IEEE Std. 802.1D,
  * 1998 Edition section 9
- * CSAP will be either "RX" or "TX", it will be specified by 
- * local/remote MAC addresses on Ethernet layer. 
+ * CSAP will be either "RX" or "TX", it will be specified by
+ * local/remote MAC addresses on Ethernet layer.
  *
  * @param ta_name        Test Agent name where CSAP will be created
  * @param sid            RCF session
  * @param ifname         Name of an interface the CSAP is attached to
  *                       (frames are sent/captured from/on this interface)
- * @param own_mac_addr   Default source MAC address  of outgoing BPDUs 
+ * @param own_mac_addr   Default source MAC address  of outgoing BPDUs
  *                       should be NULL for RX CSAP
  * @param peer_mac_addr  Source MAC address of incoming into the CSAP BPDU
- *                       should be NULL for TX CSAP 
+ *                       should be NULL for TX CSAP
  * @param stp_csap       Created STP CSAP (OUT)
  *
  * @return Status of the operation
  */
-int 
+int
 tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
                            const uint8_t *own_mac_addr,
                            const uint8_t *peer_mac_addr,
@@ -135,7 +135,7 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
  *
  * @param ta_name       Test Agent name;
  * @param sid           RCF session identifier;
- * @param eth_csap      CSAP handle; 
+ * @param eth_csap      CSAP handle;
  * @param templ         Traffic template;
  *
  * @return  Status of the operation
@@ -144,7 +144,7 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
  *                 parameter is NULL.
  * @retval 0       BPDU is sent
  */
-int 
+int
 tapi_stp_bpdu_send(const char *ta_name, int sid,
                    csap_handle_t stp_csap,
                    const asn_value *templ)
@@ -175,7 +175,7 @@ struct tapi_pkt_handler_data {
 
     tapi_stp_bpdu_callback user_callback; /**< User callback */
 
-    void   *user_data;      /**< Pointer to the user data passed in 
+    void   *user_data;      /**< Pointer to the user data passed in
                                  tapi_stp_bpdu_recv_start function */
     int     current_call;   /**< Number of already received packets */
     int     total_num;      /**< Total number of the packets user wants
@@ -186,14 +186,14 @@ struct tapi_pkt_handler_data {
 void
 tapi_bpdu_pkt_handler(const char *fn, void *user_param)
 {
-    struct tapi_pkt_handler_data *i_data = 
+    struct tapi_pkt_handler_data *i_data =
         (struct tapi_pkt_handler_data *)user_param;
 
     struct timeval   timestamp;
     ndn_stp_bpdu_t   stp_bpdu;
     asn_value const *stp_pkt_val;
-    asn_value       *frame_val; 
-    int              rc, syms = 0; 
+    asn_value       *frame_val;
+    int              rc, syms = 0;
 
     VERB("pkt handler called");
 
@@ -224,7 +224,7 @@ tapi_bpdu_pkt_handler(const char *fn, void *user_param)
     if (rc)
     {
         ERROR("get_timestamp rc: %x", rc);
-        return; 
+        return;
     }
 
     rc = asn_get_descendent(frame_val, (asn_value **)&stp_pkt_val,
@@ -232,18 +232,18 @@ tapi_bpdu_pkt_handler(const char *fn, void *user_param)
     if (rc)
     {
         ERROR("%s(): get_subvalue rc %r", __FUNCTION__, rc);
-        return; 
+        return;
     }
 
     rc = ndn_bpdu_asn_to_plain(stp_pkt_val, &stp_bpdu);
     if (rc)
     {
         ERROR("packet to plain error %x\n", rc);
-        i_data->user_callback(NULL, &timestamp, i_data->user_data); 
-        return; 
+        i_data->user_callback(NULL, &timestamp, i_data->user_data);
+        return;
     }
 
-    i_data->user_callback(&stp_bpdu, &timestamp, i_data->user_data); 
+    i_data->user_callback(&stp_bpdu, &timestamp, i_data->user_data);
 
     asn_free_value(frame_val);
 
@@ -259,7 +259,7 @@ tapi_bpdu_pkt_handler(const char *fn, void *user_param)
 /**
  * See description in tapi_stp.h
  */
-int 
+int
 tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
                          csap_handle_t stp_csap,
                          const asn_value *pattern,
@@ -297,9 +297,9 @@ tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
     }
 
     ERROR("time to wait: %d", timeout);
-    rc = rcf_ta_trrecv_start(ta_name, sid, stp_csap, tmp_name, 
+    rc = rcf_ta_trrecv_start(ta_name, sid, stp_csap, tmp_name,
                              (callback != NULL) ? tapi_bpdu_pkt_handler :
-                                                  NULL, 
+                                                  NULL,
                              (callback != NULL) ? (void *)i_data : NULL,
                              timeout, num);
 

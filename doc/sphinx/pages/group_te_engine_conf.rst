@@ -117,13 +117,13 @@ Backup verification is a simple comparison of the backup (snapshot) with the cur
 Restoring the configuration may be performed using two approaches:
 
 * Restoring by history (used only if a backup is associated with some point in the history):
-  
+
   * The command list in the history is scanned in reverse order until the backup point is met.
-  
+
   * The effect of each command is rolled back (for the add command the corresponding instance is deleted, for the delete command the corresponding instance is added etc.).
 
 * Restoring by a backup file (used when the backup is not associated with the history point or when the first approach fails):
-  
+
   * Current database is synchronized with the snapshot – excessive instances are removed, missed instances are added, incorrect values are changed.
 
 After a successful restoring of the backup from the history or after a successful backup verification the command history may be cut off.

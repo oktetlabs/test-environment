@@ -9,7 +9,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
@@ -79,7 +79,7 @@ extern te_errno tapi_atm_aal5_add_csap_layer(asn_value     **csap_spec,
 
 
 /**
- * Add ATM PDU as the last PDU to the last unit of the traffic 
+ * Add ATM PDU as the last PDU to the last unit of the traffic
  * template or pattern.
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
@@ -122,7 +122,7 @@ extern te_errno tapi_atm_add_payload(asn_value      *container,
                                      const uint8_t  *pld);
 
 /**
- * Add AAL5 PDU as the last PDU to the last unit of the traffic 
+ * Add AAL5 PDU as the last PDU to the last unit of the traffic
  * template or pattern.
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or

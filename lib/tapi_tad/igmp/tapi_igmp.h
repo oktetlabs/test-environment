@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  */
@@ -157,7 +157,7 @@ extern void tapi_ip4_to_mcast_mac(in_addr_t ip4_addr, uint8_t *eth_addr);
 extern te_errno tapi_igmp_add_csap_layer(asn_value **csap_spec);
 
 /**
- * Add IGMPv2 PDU as the last PDU to the last unit of the traffic 
+ * Add IGMPv2 PDU as the last PDU to the last unit of the traffic
  * template or pattern.
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
@@ -399,7 +399,7 @@ tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
                               uint8_t       *eth_src);
 
 /**
- * Add IGMPv3 Report PDU as the last PDU to the last unit of the traffic 
+ * Add IGMPv3 Report PDU as the last PDU to the last unit of the traffic
  * template or pattern.
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
@@ -439,7 +439,7 @@ tapi_igmp3_ip4_eth_send_report(const char      *ta_name,
                                uint8_t         *eth_src);
 
 /**
- * Add IGMPv3 Query PDU as the last PDU to the last unit of the traffic 
+ * Add IGMPv3 Query PDU as the last PDU to the last unit of the traffic
  * template or pattern.
  *
  * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or

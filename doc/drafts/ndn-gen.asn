@@ -4,10 +4,10 @@ DEFINITIONS ::=
 BEGIN
 
 
-EXPORTS Interval, DATA-UNIT, Payload, CSAP-spec, Template-Parameter, 
+EXPORTS Interval, DATA-UNIT, Payload, CSAP-spec, Template-Parameter,
     Raw-Packet, Traffic-Template, Traffic-Pattern;
 
-IMPORTS Generic-CSAP-Level, Generic-Header 
+IMPORTS Generic-CSAP-Level, Generic-Header
             FROM TE-NDN-Context-General;
 
 Interval ::= SEQUENCE {
@@ -16,29 +16,29 @@ Interval ::= SEQUENCE {
 }
 
 DATA-UNIT { BaseFieldType } ::=  CHOICE
-{ 
-    plain BaseFieldType, 
+{
+    plain BaseFieldType,
     script UniversalString, -- script for calculating of field value by TA.
-    
-    enum        SET OF INTEGER,    -- | it seems to be useful place these  
-    mask        SEQUENCE {         -- | type of patterns here, at top level 
+
+    enum        SET OF INTEGER,    -- | it seems to be useful place these
+    mask        SEQUENCE {         -- | type of patterns here, at top level
         v OCTET STRING,
         m OCTET STRING
     },
     intervals   SEQUENCE OF Interval,
     env         PrintableString,   -- identifier of Config DB entry.
-    function    PrintableString 
+    function    PrintableString
             -- name of function (which name shoulb be present
-            -- in TA symbol table) for matching value (if used in  
+            -- in TA symbol table) for matching value (if used in
             -- filter pattern) or generating it (in templates)
 }
 
-CSAP-spec ::= SEQUENCE OF Generic-CSAP-Level 
+CSAP-spec ::= SEQUENCE OF Generic-CSAP-Level
 
 Template-Parameter ::= CHOICE {
 	ints SEQUENCE OF INTEGER,
 	strings SEQUENCE OF UniversalString,
-	simple-for SEQUENCE 
+	simple-for SEQUENCE
             { begin INTEGER, end INTEGER, step INTEGER OPTIONAL},
 	...
 }
@@ -46,7 +46,7 @@ Template-Parameter ::= CHOICE {
 Raw-Packet ::= SEQUENCE {
         headers SEQUENCE OF Generic-Header,
         payload OCTET STRING
-} 
+}
 
 Traffic-Template ::= SEQUENCE {
 	dimension INTEGER,
@@ -76,17 +76,17 @@ END
 
 TE-NDN-Context-General
 DEFINITIONS ::=
-BEGIN 
+BEGIN
 
 EXPORTS Generic-CSAP-Level, Generic-Header;
 
-IMPORTS 
-    EthernetAddress, Ethernet-Header, Ethernet-CSAP 
+IMPORTS
+    EthernetAddress, Ethernet-Header, Ethernet-CSAP
         FROM TE-NDN-Ethernet
-    IpAddress, IP-Header, IP-CSAP, UDP-Header, UDP-CSAP, TCP-Header, TCP-CSAP 
+    IpAddress, IP-Header, IP-CSAP, UDP-Header, UDP-CSAP, TCP-Header, TCP-CSAP
         FROM TE-NDN-Tcp-Ip
-    ATM-Header, ATM-CSAP 
-        FROM TE-NDN-ATM; 
+    ATM-Header, ATM-CSAP
+        FROM TE-NDN-ATM;
 
 
 Generic-CSAP-Level ::= CHOICE {
@@ -99,7 +99,7 @@ Generic-CSAP-Level ::= CHOICE {
 }
 
 Generic-Header ::= CHOICE {
-	eth Ethernet-Header, 
+	eth Ethernet-Header,
 	ip4 IP-Header,
 	tcp TCP-Header,
 	udp UDP-Header,

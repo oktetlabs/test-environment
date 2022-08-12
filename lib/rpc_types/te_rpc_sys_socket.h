@@ -3,11 +3,11 @@
  *
  * RPC analogues of definitions from sys/socket.h.
  * Socket IOCTL requests are defined here as well.
- * 
- * 
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -15,7 +15,7 @@
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
- 
+
 #ifndef __TE_RPC_SYS_SOCKET_H__
 #define __TE_RPC_SYS_SOCKET_H__
 
@@ -336,7 +336,7 @@ typedef enum rpc_socket_flags {
 #define SOCKET_FLAGS_MAPPING_LIST \
             RPC_BIT_MAP_ENTRY(SOCK_NONBLOCK), \
             RPC_BIT_MAP_ENTRY(SOCK_CLOEXEC),  \
-            RPC_BIT_MAP_ENTRY(SOCK_FUNKNOWN)   
+            RPC_BIT_MAP_ENTRY(SOCK_FUNKNOWN)
 /**
  * socket_flags_rpc2str()
  */
@@ -381,7 +381,7 @@ typedef enum rpc_shut_how {
     RPC_SHUT_RD,        /**< Shut down for reading */
     RPC_SHUT_WR,        /**< Shut down for writing */
     RPC_SHUT_RDWR,      /**< Shut down for reading and writing */
-    RPC_SHUT_NONE,      /**< This macros is used to pass to shutdown() 
+    RPC_SHUT_NONE,      /**< This macros is used to pass to shutdown()
                              function flag zero */
 } rpc_shut_how;
 
@@ -398,7 +398,7 @@ extern const char * shut_how_rpc2str(rpc_shut_how how);
 
 
 /**
- * TA-independent send/receive flags. 
+ * TA-independent send/receive flags.
  */
 typedef enum rpc_send_recv_flags {
     RPC_MSG_OOB        = 1,      /**< Receive out-of-band data */
@@ -414,9 +414,9 @@ typedef enum rpc_send_recv_flags {
     RPC_MSG_CTRUNC     = 0x80,   /**< Control data lost before delivery */
     RPC_MSG_ERRQUEUE   = 0x100,  /**< Queued errors should be received from
                                       the socket error queue */
-    RPC_MSG_MCAST      = 0x200,  /**< Datagram was received as a link-layer 
+    RPC_MSG_MCAST      = 0x200,  /**< Datagram was received as a link-layer
                                       multicast */
-    RPC_MSG_BCAST      = 0x400,  /**< Datagram was received as a link-layer 
+    RPC_MSG_BCAST      = 0x400,  /**< Datagram was received as a link-layer
                                       broadcast */
     RPC_MSG_MORE       = 0x800,  /**< The caller has more data to send */
     RPC_MSG_CONFIRM    = 0x1000, /**< Tell the link layer that forward
@@ -514,7 +514,7 @@ typedef enum rpc_sockopt {
                                  state or not */
     RPC_SO_ACCEPTFILTER,    /**< Get/set accept filter of the listening
                                  socket */
-    RPC_SO_BINDTODEVICE,    /**< Bind the socket to a particular 
+    RPC_SO_BINDTODEVICE,    /**< Bind the socket to a particular
                                  device */
     RPC_SO_BROADCAST,       /**< Permit/forbid sending of broadcast
                                  messages */
@@ -531,7 +531,7 @@ typedef enum rpc_sockopt {
     RPC_SO_OOBINLINE,       /**< If set, out-of-band data received on
                                  the socket is placed in the normal
                                  input queue */
-    RPC_SO_PRIORITY,        /**< Set the protocol-defined priority 
+    RPC_SO_PRIORITY,        /**< Set the protocol-defined priority
                                  for all packets to be sent on the
                                  socket */
     RPC_SO_RCVBUF,          /**< Get/set receive buffer size */
@@ -540,7 +540,7 @@ typedef enum rpc_sockopt {
                                  will pass the data to the user on
                                  receiving */
     RPC_SO_UPDATE_ACCEPT_CONTEXT, /**< Update the accepting socket
-                                  with content of listening socket */    
+                                  with content of listening socket */
     RPC_SO_UPDATE_CONNECT_CONTEXT, /** Update connected socket's state */
     RPC_SO_RCVTIMEO,        /**< Specify the receiving timeouts until
                                  reporting an error */
@@ -557,18 +557,18 @@ typedef enum rpc_sockopt {
                                  layer on sending */
     RPC_SO_SNDTIMEO,        /**< Specify the sending timeouts until
                                  reporting an error */
-    RPC_SO_TYPE,            /**< Return the socket's communication 
-                                 type (the value of the second 
+    RPC_SO_TYPE,            /**< Return the socket's communication
+                                 type (the value of the second
                                  argument used in 'socket' call) */
- 
+
     RPC_SO_CONNECT_TIME,    /**< The number of seconds that the socket has
                                  been connected or 0xFFFFFFFF if it is not
                                  connected */
 
-    RPC_SO_OPENTYPE,        /**< Once set, subsequent sockets created 
+    RPC_SO_OPENTYPE,        /**< Once set, subsequent sockets created
                                  will be non-overlapped. */
 
-    RPC_SO_DONTLINGER,      /**< MS Windows specific: Indicates whether 
+    RPC_SO_DONTLINGER,      /**< MS Windows specific: Indicates whether
                                  a linger value was set on a socket. */
     RPC_SO_CONDITIONAL_ACCEPT,/**< MS Windows specific: Indicates incoming
                                  connections will be accepted or rejected
@@ -615,7 +615,7 @@ typedef enum rpc_sockopt {
                                         receiving data only from a specified
                                         source. */
     RPC_IP_DROP_SOURCE_MEMBERSHIP, /**< Leave a source-specific group */
-    RPC_IP_BLOCK_SOURCE,    /**< Stop receiving multicast data from a 
+    RPC_IP_BLOCK_SOURCE,    /**< Stop receiving multicast data from a
                                  specific source in a given group */
     RPC_IP_UNBLOCK_SOURCE,  /**< Unblock previously blocked multicast
                                  source */
@@ -633,7 +633,7 @@ typedef enum rpc_sockopt {
 
     RPC_IP_MULTICAST_TTL,   /**< Set/get TTL value used in outgoing
                                  multicast packets */
-    RPC_IP_OPTIONS,         /**< Set/get the IP options to be sent 
+    RPC_IP_OPTIONS,         /**< Set/get the IP options to be sent
                                  with every packet from the socket */
     RPC_IP_PKTINFO,         /**< Whether the IP_PKTINFO message
                                  should be passed or not */
@@ -645,7 +645,7 @@ typedef enum rpc_sockopt {
     RPC_IP_RECVERR,         /**< Enable extended reliable error
                                  message passing */
     RPC_IP_RECVIF,          /**< Whether to pass interface index with
-                                 UDP packet to the user in an 
+                                 UDP packet to the user in an
                                  IP_RECVIF control message */
     RPC_IP_RECVOPTS,        /**< Whether to pass all incoming IP
                                  header options to the user in an
@@ -673,9 +673,9 @@ typedef enum rpc_sockopt {
     RPC_IP_MTU_DISCOVER,    /**< Enable/disable Path MTU discover
                                  on the socket */
 
-    RPC_IP_RECEIVE_BROADCAST, /**< Winsock2 specific option. 
+    RPC_IP_RECEIVE_BROADCAST, /**< Winsock2 specific option.
                                   Allows or blocks broadcast reception. */
-    RPC_IP_DONTFRAGMENT,    /**< Winsock2 specific option. 
+    RPC_IP_DONTFRAGMENT,    /**< Winsock2 specific option.
                                  Indicates that data should not be
                                  fragmented regardless of the local MTU.
                                  Valid only for message oriented protocols.
@@ -696,7 +696,7 @@ typedef enum rpc_sockopt {
                             /**< Hop limit for multicast packets */
 
     RPC_IPV6_MULTICAST_IF,  /**< Interface for outgoing multicast packets */
-    
+
     RPC_IPV6_ADDRFORM,      /**< Turn AF_INET6 socket to AF_INET family */
 
     RPC_IPV6_RECVPKTINFO,   /**< Whether to receive IPV6_PKTINFO control
@@ -706,51 +706,51 @@ typedef enum rpc_sockopt {
                                  IPV6_RECVPKTINFO enables */
 
     RPC_IPV6_PKTOPTIONS,    /**< Specify packet options */
-    
+
     RPC_IPV6_CHECKSUM,      /**< Offset of checksum for raw sockets */
-    
+
     RPC_IPV6_NEXTHOP,       /**< Enable specifying next hop */
-    
+
     RPC_IPV6_ROUTER_ALERT,  /**< Pass packets containing router
                                  alert option */
-    
+
     RPC_IPV6_MULTICAST_LOOP,
                             /**< Whether to loopback outgoing
                                  multicast datagrams */
-    
+
     RPC_IPV6_ADD_MEMBERSHIP,
                             /**< Join a multicast group */
-    
+
     RPC_IPV6_DROP_MEMBERSHIP,
                             /**< Leave a multicast group */
-    
+
     RPC_IPV6_MTU,           /**< MTU of current connected socket */
-    
+
     RPC_IPV6_MTU_DISCOVER,  /**< Enable/disable Path MTU discover */
 
     RPC_IPV6_RECVERR,       /**< Whether to receive asyncronous
                                  error messages */
-    
+
     RPC_IPV6_V6ONLY,        /**< Use socket for IPv6 communication only */
-    
+
     RPC_IPV6_JOIN_ANYCAST,  /**< Join an anycast group */
-    
+
     RPC_IPV6_LEAVE_ANYCAST, /**< Leave an anycast group */
-    
+
     RPC_IPV6_IPSEC_POLICY,
-    
+
     RPC_IPV6_XFRM_POLICY,
-    
+
     RPC_IPV6_RTHDR,         /**< Deliver the routing header */
-    
+
     RPC_IPV6_AUTHHDR,       /**< Deliver the authentification header */
-    
+
     RPC_IPV6_DSTOPTS,       /**< Deliver the destination options */
-    
+
     RPC_IPV6_HOPOPTS,       /**< Deliver the hop options */
-    
+
     RPC_IPV6_FLOWINFO,      /**< Deliver the flow ID */
-    
+
     RPC_IPV6_RECVHOPLIMIT,  /**< Deliver the hop count of the packet */
     RPC_IPV6_HOPLIMIT,      /**< Set delivery of control messages */
     RPC_IPV6_TCLASS,        /**< Set IPv6 traffic class (similar to
@@ -764,11 +764,11 @@ typedef enum rpc_sockopt {
                                  outgoing TCP packets */
     RPC_TCP_NODELAY,        /**< Enable/disable the Nagle algorithm */
     RPC_TCP_CORK,           /**< Enable/disable delay pushing to the net */
-    RPC_TCP_KEEPIDLE,       /**< Start sending keepalive probes after 
+    RPC_TCP_KEEPIDLE,       /**< Start sending keepalive probes after
                                  this period */
     RPC_TCP_KEEPINTVL,      /**< Interval between keepalive probes */
     RPC_TCP_KEEPCNT,        /**< Number of keepalive probess before death */
-    
+
     RPC_TCP_KEEPALIVE_THRESHOLD,        /**< Start sending keepalive probes
                                              after this idle period in
                                              milliseconds */
@@ -789,16 +789,16 @@ typedef enum rpc_sockopt {
                                  before TCP will forcefully close the
                                  corresponding connection */
     RPC_UDP_CORK,           /**< Enable/disable UDP packets coalescing */
-    RPC_UDP_NOCHECKSUM,     /**< MS Windows specific. 
+    RPC_UDP_NOCHECKSUM,     /**< MS Windows specific.
                                  When TRUE, UDP datagrams are sent with
                                  the checksum of zero. Required for service
                                  providers. If a service provider does not
                                  have a mechanism to disable UDP checksum
                                  calculation, it may simply store this
                                  option without taking any action. */
-    RPC_SO_TIMESTAMP,       /**< Enabling/disabling the receiving of the 
+    RPC_SO_TIMESTAMP,       /**< Enabling/disabling the receiving of the
                                  SO_TIMESTAMP control message. */
-    RPC_SO_TIMESTAMPNS,     /**< Enabling/disabling the receiving of the 
+    RPC_SO_TIMESTAMPNS,     /**< Enabling/disabling the receiving of the
                                  SO_TIMESTAMPNS control message. */
 
     RPC_SO_TIMESTAMPING,    /**< Instructs the socket layer which kind of
@@ -1013,7 +1013,7 @@ typedef enum rpc_ioctl_code {
                                  passed to the user in timespec structure */
     RPC_FIOASYNC,           /**< Enable/disable asynchronous I/O mode
                                  of the socket */
-    RPC_FIONBIO,            /**< Enable/disable non-blocking 
+    RPC_FIONBIO,            /**< Enable/disable non-blocking
                                  for socket I/O */
     RPC_FIONREAD,           /**< Get number of immediately readable
                                  bytes */
@@ -1026,7 +1026,7 @@ typedef enum rpc_ioctl_code {
                                  unread data in the receive buffer.
                                  (UDP) Returns the size of the next
                                  pending datagram. */
-    RPC_SIOCOUTQ,           /**< Returns the amount of unsent data in the 
+    RPC_SIOCOUTQ,           /**< Returns the amount of unsent data in the
                                  socket send queue. */
     RPC_TIOCOUTQ,           /**< Synonym of the RPC_SIOCOUTQ option */
 
@@ -1064,7 +1064,7 @@ typedef enum rpc_ioctl_code {
     RPC_SIOCSIFMTU,         /**< Set the value of MTU on a network
                                  interface */
     RPC_SIOCSARP,           /**< Set ARP mapping */
-    RPC_SIOCDARP,           /**< Delete ARP mapping */ 
+    RPC_SIOCDARP,           /**< Delete ARP mapping */
     RPC_SIOCGARP,           /**< Get ARP mapping */
     RPC_SG_IO,
     RPC_SIOCETHTOOL,        /**< Linux-specific Ethtool */
@@ -1111,8 +1111,8 @@ typedef enum rpc_ioctl_code {
     RPC_SIO_UCAST_IF,
 
     RPC_SIOUNKNOWN          /**< Invalid ioctl code */
-    
-} rpc_ioctl_code; 
+
+} rpc_ioctl_code;
 
 
 /** Convert RPC ioctl requests to string */
@@ -1407,7 +1407,7 @@ extern tarpc_ethtool_type ethtool_cmd2type(rpc_ethtool_cmd cmd);
 
 #if HAVE_LINUX_ETHTOOL_H
 /**
- * Copy ethtool data from RPC data structure to host. 
+ * Copy ethtool data from RPC data structure to host.
  *
  * @param rpc_edata RPC ethtool data structure
  * @param edata_p   pointer to return host ethtool structure;
@@ -1424,7 +1424,7 @@ extern te_errno ethtool_data_rpc2h(tarpc_ethtool *rpc_edata,
                                    caddr_t *edata_p);
 
 /**
- * Copy ethtool data from the host data structure to RPC. 
+ * Copy ethtool data from the host data structure to RPC.
  *
  * @param rpc_edata RPC ethtool data structure
  * @param edata     ethtool command structure
@@ -1437,7 +1437,7 @@ extern te_errno ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata);
 
 #if HAVE_LINUX_NET_TSTAMP_H
 /**
- * Copy hwtstamp_config data from RPC data structure to host. 
+ * Copy hwtstamp_config data from RPC data structure to host.
  *
  * @param rpc_hwdata RPC hwtstamp_config data structure
  * @param hwdata_p   pointer to return host hwtstamp_config structure;
@@ -1448,7 +1448,7 @@ extern void hwtstamp_config_data_rpc2h(tarpc_hwtstamp_config *rpc_hwdata,
                                        caddr_t *hwdata_p);
 
 /**
- * Copy hwtstamp_config data from the host data structure to RPC. 
+ * Copy hwtstamp_config data from the host data structure to RPC.
  *
  * @param hwdata     hwtstamp_config structure
  * @param rpc_hwdata RPC hwtstamp_config data structure

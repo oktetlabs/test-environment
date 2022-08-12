@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  *
@@ -55,7 +55,7 @@ static const char *conf_iscsi_unh_set_int_fmt =
 static const char *conf_iscsi_unh_force_fmt =
 "iscsi_manage init force %s=%s target=%d host=%d";
 
-/** 
+/**
  * Format of the force string command for UNH Initiator.
  * The string value is written in notation : "...".
  */
@@ -225,7 +225,7 @@ static const char *conf_iscsi_unh_force_flag_fmt =
 
 /**
  * See iscsi_initiator.h and iscsi_initator_conn_request_thread()
- * for a complete description of the state machine involved. 
+ * for a complete description of the state machine involved.
  */
 te_errno
 iscsi_initiator_unh_set(iscsi_connection_req *req)
@@ -238,17 +238,17 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
 
     target = &iscsi_configuration()->targets[req->target_id];
     conn = &target->conns[req->cid];
-    
+
     offer = conn->conf_params;
 
-    VERB("Current number of open connections: %d", 
+    VERB("Current number of open connections: %d",
           target->number_of_open_connections);
-    
-    if (req->status == ISCSI_CONNECTION_DOWN || 
+
+    if (req->status == ISCSI_CONNECTION_DOWN ||
         req->status == ISCSI_CONNECTION_REMOVED)
     {
         rc = iscsi_unix_cli("iscsi_config down cid=%d target=%d host=%d",
-                          req->cid, req->target_id, 
+                          req->cid, req->target_id,
                           iscsi_configuration()->host_bus_adapter);
 
         if (rc != 0)
@@ -262,12 +262,12 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
     {
         /* We should open new connection */
         /* 1: configurating the Initiator */
-        
+
         CHECK_SHELL_CONFIG_RC(
             iscsi_unix_cli("iscsi_manage init restore target=%d host=%d",
                          req->target_id, iscsi_configuration()->host_bus_adapter),
             "Restoring");
-        
+
         if (strcmp(conn->session_type, "Normal") == 0)
             ISCSI_UNH_SET_UNNEGOTIATED("TargetName", target->target_name, req->target_id);
 
@@ -278,101 +278,101 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
         if (req->cid == 0)
         {
             /**
-             * Some parameters are only meaningful for Normal sessions, 
+             * Some parameters are only meaningful for Normal sessions,
              * but not Discovery sessions.
              */
             if (strcmp(conn->session_type, "Normal") == 0)
             {
                 ISCSI_UNH_SET_INT("MaxConnections", conn->max_connections,
                                   req->target_id, OFFER_MAX_CONNECTIONS, offer);
-                ISCSI_UNH_SET("InitialR2T", conn->initial_r2t, req->target_id, 
+                ISCSI_UNH_SET("InitialR2T", conn->initial_r2t, req->target_id,
                               OFFER_INITIAL_R2T, offer);
                 ISCSI_UNH_SET("ImmediateData", conn->immediate_data, req->target_id,
                               OFFER_IMMEDIATE_DATA, offer);
-                ISCSI_UNH_SET_INT("MaxBurstLength", 
+                ISCSI_UNH_SET_INT("MaxBurstLength",
                                   conn->max_burst_length, req->target_id,
                                   OFFER_MAX_BURST_LENGTH, offer);
-                ISCSI_UNH_SET_INT("FirstBurstLength", 
+                ISCSI_UNH_SET_INT("FirstBurstLength",
                                   conn->first_burst_length, req->target_id,
                                   OFFER_FIRST_BURST_LENGTH, offer);
-                ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
+                ISCSI_UNH_SET_INT("MaxOutstandingR2T",
                                   conn->max_outstanding_r2t, req->target_id,
                                   OFFER_MAX_OUTSTANDING_R2T, offer);
-                ISCSI_UNH_SET("DataPDUInOrder", 
+                ISCSI_UNH_SET("DataPDUInOrder",
                               conn->data_pdu_in_order, req->target_id,
                               OFFER_DATA_PDU_IN_ORDER, offer);
-                ISCSI_UNH_SET("DataSequenceInOrder", 
+                ISCSI_UNH_SET("DataSequenceInOrder",
                               conn->data_sequence_in_order, req->target_id,
                               OFFER_DATA_SEQUENCE_IN_ORDER, offer);
             }
-            
+
             ISCSI_UNH_SET("HeaderDigest", conn->header_digest, req->target_id,
                           OFFER_HEADER_DIGEST, offer);
-            
+
             ISCSI_UNH_SET("DataDigest", conn->data_digest, req->target_id,
                           OFFER_DATA_DIGEST, offer);
-            
-            ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
+
+            ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength",
                               conn->max_recv_data_segment_length,
                               req->target_id, OFFER_MAX_RECV_DATA_SEGMENT_LENGTH,
                               offer);
-            
-            ISCSI_UNH_SET_INT("DefaultTime2Wait", 
+
+            ISCSI_UNH_SET_INT("DefaultTime2Wait",
                               conn->default_time2wait, req->target_id,
                               OFFER_DEFAULT_TIME2WAIT, offer);
-            
-            ISCSI_UNH_SET_INT("DefaultTime2Retain", 
+
+            ISCSI_UNH_SET_INT("DefaultTime2Retain",
                               conn->default_time2retain, req->target_id,
                               OFFER_DEFAULT_TIME2RETAIN, offer);
-            
-            ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
+
+            ISCSI_UNH_SET_INT("ErrorRecoveryLevel",
                               conn->error_recovery_level, req->target_id,
                               OFFER_ERROR_RECOVERY_LEVEL, offer);
-            
-            ISCSI_UNH_SET_UNNEGOTIATED("SessionType", conn->session_type, 
+
+            ISCSI_UNH_SET_UNNEGOTIATED("SessionType", conn->session_type,
                                        req->target_id);
-            
-            
-            
+
+
+
         }
         ISCSI_UNH_SET_UNNEGOTIATED("AuthMethod", conn->chap.chap, req->target_id);
-        
+
         /* Target' CHAP */
         if (conn->chap.need_target_auth)
         {
             ISCSI_UNH_FORCE_FLAG("t", req->target_id,
                                  "Target Authentication");
         }
-        
+
         ISCSI_UNH_FORCE_STRING("px", conn->chap.peer_secret, req->target_id,
                                "Peer Secret");
-        
+
         ISCSI_UNH_FORCE("ln", conn->chap.local_name, req->target_id,
                         "Local Name");
-        
+
         if (conn->chap.enc_fmt == BASE_64)
             ISCSI_UNH_FORCE_FLAG("b", req->target_id,
                                  "Encoding Format");
-        
+
         ISCSI_UNH_FORCE_INT("cl", conn->chap.challenge_length, req->target_id,
                             "Challenge Length");
-        
+
         ISCSI_UNH_FORCE("pn", conn->chap.peer_name, req->target_id,
                         "Peer Name");
-        
+
         ISCSI_UNH_FORCE_STRING("lx", conn->chap.local_secret, req->target_id,
                                "Local Secret");
-        
+
         ISCSI_UNH_FORCE_INT("sch", 1, req->target_id,
                             "Load-balancing"); /* Turning on round-robin */
-        
+
         /* Initiator itself */
-        ISCSI_UNH_SET_UNNEGOTIATED("InitiatorName", 
+        ISCSI_UNH_SET_UNNEGOTIATED("InitiatorName",
                                    conn->initiator_name,
                                    req->target_id);
 #if 0
-        ISCSI_UNH_SET_UNNEGOTIATED("InitiatorAlias", 
-                                   conn->initiator_alias, 
+        ISCSI_UNH_SET_UNNEGOTIATED("InitiatorAlias",
+                                   conn->initiator_alias,
                                    target_id);
 #endif
         /* Now the connection should be opened */
@@ -380,7 +380,7 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
                           "cid=%d target=%d host=%d lun=%d",
                           target->target_addr,
                           target->target_port,
-                          req->cid, req->target_id, 
+                          req->cid, req->target_id,
                           iscsi_configuration()->host_bus_adapter,
                           ISCSI_DEFAULT_LUN_NUMBER);
         if (rc != 0)

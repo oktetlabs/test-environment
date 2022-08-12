@@ -12,14 +12,14 @@
  *
  * @type sockets
  *
- * @reference 
- * 
+ * @reference
+ *
  * @param pco_iut           PCO on IUT
  * @param pco_tst           PCO on TESTER
- * 
+ *
  * @par Test sequence:
- * -# 
- * -# 
+ * -#
+ * -#
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  */
@@ -58,9 +58,9 @@ int main(int argc, char *argv[])
     wr_buf = te_make_buf(20, 100, &buf_len);
     rd_buf = te_make_buf_by_len(buf_len);
 
-    iut_s = rpc_socket(pco_iut, rpc_socket_domain_by_addr(iut_addr), 
+    iut_s = rpc_socket(pco_iut, rpc_socket_domain_by_addr(iut_addr),
                        sock_type, RPC_PROTO_DEF);
-    tst_s = rpc_socket(pco_tst, rpc_socket_domain_by_addr(tst_addr), 
+    tst_s = rpc_socket(pco_tst, rpc_socket_domain_by_addr(tst_addr),
                        sock_type, RPC_PROTO_DEF);
 
     SLEEP(10);
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
         TEST_FAIL("RPC recv() on pco_tst failed RPC_errno=%X",
                   TE_RC_GET_ERROR(err));
     }
-    
+
     if (rc != (int)buf_len)
     {
         TEST_FAIL("pco_tst received %d bytes of data but expected to "

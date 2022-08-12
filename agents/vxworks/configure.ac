@@ -28,7 +28,7 @@ TE_APP_SET
 
 if test -z "$with_tad" ; then
     with_tad=tad
-fi 
+fi
 AC_SUBST([TAD], [$with_tad])
 
 AC_SUBST([TAD_LIBS])

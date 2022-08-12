@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
@@ -3541,7 +3541,7 @@ signal_registrar_siginfo(int signum, siginfo_t *siginfo, void *context)
     COPY_SI_FIELD(stime);
 #endif
 
-    /** 
+    /**
      * FIXME: si_value, si_ptr and si_addr fields are not
      * supported yet
      */

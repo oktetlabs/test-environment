@@ -7,11 +7,11 @@ IMPORTS DATA-UNIT FROM TE-NDN-General;
 EXPORTS  BPDU, Bridge-CSAP;
 
 
-BPDU ::= IMPLICIT SEQUENCE { 
+BPDU ::= IMPLICIT SEQUENCE {
     proto-id    DATA-UNIT{INTEGER(0..65535)} OPTIONAL,
     version-id  DATA-UNIT{INTEGER(0..255)} OPTIONAL,
     bpdu-type   DATA-UNIT{INTEGER(0..255)} OPTIONAL,
-    -- Rest parameters present only for Config BPDU (depending on bpdu-type 
+    -- Rest parameters present only for Config BPDU (depending on bpdu-type
     content     CHOICE {
         configuration  IMPLICIT  SEQUENCE {
             flags       DATA-UNIT{OCTET STRING (SIZE 1)} OPTIONAL,
@@ -28,7 +28,7 @@ BPDU ::= IMPLICIT SEQUENCE {
     }
 }
 
-Bridge-CSAP ::= IMPLICIT SEQUENCE { 
+Bridge-CSAP ::= IMPLICIT SEQUENCE {
     proto-id    [3] DATA-UNIT{INTEGER(0..65535)} OPTIONAL,
     version-id  [3] DATA-UNIT{INTEGER(0..255)} OPTIONAL,
     bpdu-type   [3] DATA-UNIT{INTEGER(0..255)} OPTIONAL,

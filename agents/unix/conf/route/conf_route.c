@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -87,7 +87,7 @@ route_find(unsigned int gid, const char *route, ta_rt_info_t **rt_info)
     static unsigned int  rt_cache_gid = (unsigned int)-1;
     static char         *rt_cache_name = NULL;
     static ta_rt_info_t  rt_cache_info;
-    
+
     te_errno    rc;
 
     ENTRY("GID=%u route=%s", gid, route);
@@ -155,7 +155,7 @@ rt_if_get(unsigned int gid, const char *route_name, char *ifname,
 
     return rc;
 }
- 
+
 /**
  * Obtain interface name from IPv4 default route record.
  *
@@ -169,10 +169,10 @@ static te_errno
 ip4_rt_default_if_get(unsigned int gid, const char *oid, char *ifname)
 {
     UNUSED(oid);
- 
+
     return rt_if_get(gid, "0.0.0.0|0", ifname, RCF_MAX_VAL);
 }
- 
+
 /**
  * Obtain interface name from IPv6 default route record.
  *
@@ -209,7 +209,7 @@ route_get(unsigned int gid, const char *oid,
     te_errno      rc;
 
     UNUSED(oid);
-    
+
     if ((rc = route_find(gid, route_name, &attr)) != 0)
     {
         ERROR("Route %s cannot be found", route_name);
@@ -288,7 +288,7 @@ route_load_attrs(ta_cfg_obj_t *obj)
         default:
             return TE_EAFNOSUPPORT;
     }
-    
+
     if (rt_info->flags & TA_RT_INFO_FLG_SRC &&
             (rc = ta_obj_attr_set(obj, "src", val) != 0))
     {
@@ -418,12 +418,12 @@ route_src_get(unsigned int gid, const char *oid,
 {
     te_errno        rc;
     ta_rt_info_t   *rt_info;
-    
+
     UNUSED(oid);
-    
+
     if ((rc = route_find(gid, route, &rt_info)) != 0)
         return rc;
-   
+
     /*
      * Switch by destination address family in order to process
      * zero (non-specified) source address correctly.
@@ -450,13 +450,13 @@ DEF_ROUTE_SET_FUNC(type);
 
 static te_errno
 route_dev_get(unsigned int gid, const char *oid,
-              char *value, const char *route) 
+              char *value, const char *route)
 {
     te_errno        rc;
     ta_rt_info_t   *rt_info;
 
     UNUSED(oid);
-    
+
     if ((rc = route_find(gid, route, &rt_info)) != 0)
         return rc;
 
@@ -466,13 +466,13 @@ route_dev_get(unsigned int gid, const char *oid,
 
 static te_errno
 route_type_get(unsigned int gid, const char *oid,
-              char *value, const char *route) 
+              char *value, const char *route)
 {
     te_errno        rc;
     ta_rt_info_t   *rt_info;
 
     UNUSED(oid);
-    
+
     if ((rc = route_find(gid, route, &rt_info)) != 0)
         return rc;
 
@@ -548,7 +548,7 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
     ta_rt_info_t            rt_info;
     te_errno                rc;
     ta_cfg_obj_action_e     obj_action;
-    
+
     UNUSED(gid);
 
     route = ((cfg_inst_subid *)(p_oid->ids))[p_oid->len - 1].name;
@@ -611,7 +611,7 @@ blackhole_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
-    
+
     rc = ta_rt_parse_inst_name(route, &rt_info);
     if (rc != 0)
         return rc;
@@ -619,7 +619,7 @@ blackhole_add(unsigned int gid, const char *oid, const char *value,
     return ta_unix_conf_route_blackhole_add(&rt_info);
 }
 
-static te_errno 
+static te_errno
 blackhole_del(unsigned int gid, const char *oid, const char *route)
 {
     te_errno        rc;
@@ -627,7 +627,7 @@ blackhole_del(unsigned int gid, const char *oid, const char *route)
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
     rc = ta_rt_parse_inst_name(route, &rt_info);
     if (rc != 0)
         return rc;
@@ -1261,10 +1261,10 @@ ta_unix_conf_outgoing_if(ta_rt_info_t *rt_info)
                   "gateway address", __FUNCTION__);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
-        
+
         assert(sizeof(rt_info->dst) == sizeof(rt_info->gw));
         memcpy(&rt_info->dst, &rt_info->gw, sizeof(rt_info->dst));
-        
+
         rc = ta_unix_conf_route_find(rt_info);
         if (rc != 0)
         {

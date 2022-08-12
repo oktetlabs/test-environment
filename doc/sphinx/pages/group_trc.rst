@@ -62,19 +62,19 @@ In both cases it will produce report like below:
 Result explanation
 ------------------
 
-====================  ==============================================================================================================================================================================  
-                      Description                                                                                                                                                                     
-====================  ==============================================================================================================================================================================  
+====================  ==============================================================================================================================================================================
+                      Description
+====================  ==============================================================================================================================================================================
 
-Run(total)            Total number of iterations executed.                                                                                                                                            
-Passed, as expected   Number of tests which were expected to pass and passed                                                                                                                          
-Failed, as expected   Number of tests which were expected to pass and passed                                                                                                                          
-Passed unexpectedly   Number of tests which were not expected to pass but passed. For instance because the bug got fixed and TRC was not udpated. Or because certain SW version has a known problem.  
-Failed unexpectedly   Number of tests which were not expected to fail but failed. The usual failures                                                                                                  
-Aborted               Will appear if test was kiled with Ctrl-C or by a signal; tests which died of SEGFAULT signal are also considered as aborted.                                                   
-Not Run (total)       Total number of iterations which were not executed. This one makes sence only if TRC DB contains                                                                                
-Skipped as expected   The tests were skipped as we expected. In the below example TRC is not filled properly so Not Run is not a sum of expected and unexpected counters.                             
-Skipped unexpectedly  The test was expected to execute in given conditions but it did not.                                                                                                            
+Run(total)            Total number of iterations executed.
+Passed, as expected   Number of tests which were expected to pass and passed
+Failed, as expected   Number of tests which were expected to pass and passed
+Passed unexpectedly   Number of tests which were not expected to pass but passed. For instance because the bug got fixed and TRC was not udpated. Or because certain SW version has a known problem.
+Failed unexpectedly   Number of tests which were not expected to fail but failed. The usual failures
+Aborted               Will appear if test was kiled with Ctrl-C or by a signal; tests which died of SEGFAULT signal are also considered as aborted.
+Not Run (total)       Total number of iterations which were not executed. This one makes sence only if TRC DB contains
+Skipped as expected   The tests were skipped as we expected. In the below example TRC is not filled properly so Not Run is not a sum of expected and unexpected counters.
+Skipped unexpectedly  The test was expected to execute in given conditions but it did not.
 ====================  ==============================================================================================================================================================================
 
 The skipped section

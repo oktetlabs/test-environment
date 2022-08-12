@@ -4,7 +4,7 @@ BEGIN
 
 -- most part of this module is based on RFC-1905
 
-IMPORTS DATA-UNIT 
+IMPORTS DATA-UNIT
             FROM TE-NDN-General
 	ObjectSyntax, Integer32
 	    FROM SNMPv2-SMI;
@@ -17,7 +17,7 @@ SnmpErrorStatus ::= INTEGER {
     noSuchName(2),   -- for proxy compatibility
     badValue(3),     -- for proxy compatibility
     readOnly(4),     -- for proxy compatibility
-    genErr(5), 
+    genErr(5),
     noAccess(6),
     wrongType(7),
     wrongLength(8),
@@ -80,12 +80,12 @@ SNMP-Security ::= CHOICE {
     usm     SNMP-Security-USM
 }
 
-SNMP-Message ::= SEQUENCE { 
-    type        DATA-UNIT{ SNMPMessageType }, 
+SNMP-Message ::= SEQUENCE {
+    type        DATA-UNIT{ SNMPMessageType },
     community   DATA-UNIT{ PrintableString } OPTIONAL,
     repeats     DATA-UNIT{ Integer32 } OPTIONAL,
     request-id  DATA-UNIT{ Integer32 } OPTIONAL,
-    err-status  DATA-UNIT{ SnmpErrorStatus } OPTIONAL, 
+    err-status  DATA-UNIT{ SnmpErrorStatus } OPTIONAL,
     err-index   DATA-UNIT{ INTEGER (0..max-bindings) } OPTIONAL,
     enterprise  DATA-UNIT{ objectID-value } OPTIONAL,
     gen-trap    DATA-UNIT{ Integer32 } OPTIONAL,
@@ -98,9 +98,9 @@ VarBind ::= SEQUENCE {
     name DATA_UNIT{OBJECT IDENTIFIER},
 
     CHOICE {
-        value DATA_UNIT{ObjectSyntax}, 
-        noSuchObject[0] IMPLICIT NULL, 
-        noSuchInstance[1] IMPLICIT NULL, 
+        value DATA_UNIT{ObjectSyntax},
+        noSuchObject[0] IMPLICIT NULL,
+        noSuchInstance[1] IMPLICIT NULL,
         endOfMibView[2] IMPLICIT NULL
     } OPTIONAL
 }
@@ -108,8 +108,8 @@ VarBind ::= SEQUENCE {
 
 SNMP-CSAP ::= SEQUENCE {
     version     DATA-UNIT{INTEGER(1..3)} OPTIONAL,
-    remote-port DATA-UNIT{INTEGER(1..65535)} OPTIONAL, 
-    local-port  DATA-UNIT{INTEGER(1..65535)} OPTIONAL, 
+    remote-port DATA-UNIT{INTEGER(1..65535)} OPTIONAL,
+    local-port  DATA-UNIT{INTEGER(1..65535)} OPTIONAL,
     security    SNMP-Security,
     timeout     DATA-UNIT{INTEGER}  OPTIONAL,
     snmp-agent  DATA-UNIT{PrintableString} OPTIONAL,

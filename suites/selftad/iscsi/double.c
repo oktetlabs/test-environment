@@ -1,14 +1,14 @@
 /** @file
  * @brief Test Environment
  *
- * iSCSI CSAP and TAPI test, twice CSAPs. 
- * 
+ * iSCSI CSAP and TAPI test, twice CSAPs.
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "iscsi/double"
@@ -74,8 +74,8 @@ uint8_t iscsi_login_request[] = {
 };
 
 int
-main(int argc, char *argv[]) 
-{ 
+main(int argc, char *argv[])
+{
     csap_handle_t iscsi_csap1 = CSAP_INVALID_HANDLE;
     csap_handle_t iscsi_csap2 = CSAP_INVALID_HANDLE;
 
@@ -87,15 +87,15 @@ main(int argc, char *argv[])
 
     size_t  len = sizeof(ta);
 
-    TEST_START; 
-    
+    TEST_START;
+
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
     agt_a = ta;
-    if (strlen(ta) + 1 >= len) 
+    if (strlen(ta) + 1 >= len)
         TEST_FAIL("There is no second Test Agent");
 
     agt_b = ta + strlen(ta) + 1;
@@ -111,14 +111,14 @@ main(int argc, char *argv[])
                                     ISCSI_DIGEST_NONE,
                                     &iscsi_csap1);
     if (rc != 0)
-        TEST_FAIL("iSCSI csap 1 create failed: %r", rc); 
+        TEST_FAIL("iSCSI csap 1 create failed: %r", rc);
 
     rc = tapi_iscsi_tgt_csap_create(agt_a,
                                     ISCSI_DIGEST_NONE,
                                     ISCSI_DIGEST_NONE,
                                     &iscsi_csap2);
     if (rc != 0)
-        TEST_FAIL("iSCSI csap2 create failed: %r", rc); 
+        TEST_FAIL("iSCSI csap2 create failed: %r", rc);
 
 #if 0
     len = 200;
@@ -126,32 +126,32 @@ main(int argc, char *argv[])
     INFO("+++++++++++ Prepared data: %tm", tx_buffer, len);
 #endif
     rc = tapi_iscsi_send_pkt(agt_a, sid1, iscsi_csap1, NULL,
-                             iscsi_login_request, 
+                             iscsi_login_request,
                              sizeof(iscsi_login_request));
     if (rc != 0)
-        TEST_FAIL("send on CSAP 1 failed: %r", rc); 
+        TEST_FAIL("send on CSAP 1 failed: %r", rc);
 
     rc = tapi_iscsi_send_pkt(agt_a, sid2, iscsi_csap2, NULL,
-                             iscsi_login_request, 
+                             iscsi_login_request,
                              sizeof(iscsi_login_request));
     if (rc != 0)
-        TEST_FAIL("send on CSAP 2 failed: %r", rc); 
+        TEST_FAIL("send on CSAP 2 failed: %r", rc);
 
     len = sizeof(rx_buffer);
     memset(rx_buffer, 0, len);
-    rc = tapi_iscsi_recv_pkt(agt_a, sid1, iscsi_csap1, 2000, 
-                             iscsi_csap2, NULL, 
+    rc = tapi_iscsi_recv_pkt(agt_a, sid1, iscsi_csap1, 2000,
+                             iscsi_csap2, NULL,
                              rx_buffer, &len);
     if (rc != 0)
-        TEST_FAIL("recv on CSAP 1 failed: %r", rc); 
+        TEST_FAIL("recv on CSAP 1 failed: %r", rc);
 
     len = sizeof(rx_buffer);
     memset(rx_buffer, 0, len);
-    rc = tapi_iscsi_recv_pkt(agt_a, sid2, iscsi_csap2, 2000, 
-                             iscsi_csap1, NULL, 
+    rc = tapi_iscsi_recv_pkt(agt_a, sid2, iscsi_csap2, 2000,
+                             iscsi_csap1, NULL,
                              rx_buffer, &len);
     if (rc != 0)
-        TEST_FAIL("recv on CSAP 2 failed: %r", rc); 
+        TEST_FAIL("recv on CSAP 2 failed: %r", rc);
 
     INFO("+++++++++++ Received data: %tm", rx_buffer, len);
 

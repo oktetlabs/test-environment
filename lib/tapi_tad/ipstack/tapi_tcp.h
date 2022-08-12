@@ -9,7 +9,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
@@ -40,12 +40,12 @@
 /**
  * Type for SEQ and ACK numbers (host byte order).
  */
-typedef uint32_t tapi_tcp_pos_t; 
+typedef uint32_t tapi_tcp_pos_t;
 
 
 
 /*
- * Raw TCP methods 
+ * Raw TCP methods
  */
 
 /**
@@ -77,16 +77,16 @@ extern te_errno tapi_tcp_add_csap_layer(asn_value **csap_spec,
  * @param rem_mac       Remote MAC address  (or NULL)
  * @param loc_addr      Local IP address in network order or
  *                      htonl(INADDR_ANY)
- * @param rem_addr      Remote IP address in network order or 
+ * @param rem_addr      Remote IP address in network order or
  *                      htonl(INADDR_ANY)
- * @param loc_port      Local TCP port in network byte order or -1 
+ * @param loc_port      Local TCP port in network byte order or -1
  * @param rem_port      Remote TCP port in network byte order or -1
  * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
  *
  * @return  Status of the operation
  */
 extern te_errno tapi_tcp_ip4_eth_csap_create(const char    *ta_name,
-                                             int            sid, 
+                                             int            sid,
                                              const char    *eth_dev,
                                              unsigned int   receive_mode,
                                              const uint8_t *loc_mac,
@@ -105,9 +105,9 @@ extern te_errno tapi_tcp_ip4_eth_csap_create(const char    *ta_name,
  * @param ifname        Interface name
  * @param loc_addr      Local IP address in network order or
  *                      htonl(INADDR_ANY)
- * @param rem_addr      Remote IP address in network order or 
+ * @param rem_addr      Remote IP address in network order or
  *                      htonl(INADDR_ANY)
- * @param loc_port      Local TCP port in network byte order or -1 
+ * @param loc_port      Local TCP port in network byte order or -1
  * @param rem_port      Remote TCP port in network byte order or -1
  * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
  *
@@ -127,9 +127,9 @@ extern te_errno tapi_tcp_ip4_csap_create(const char    *ta_name,
  * Start receiving of IPv4 packets 'tcp.ip4.eth' CSAP, non-block
  * method.
  *
- * Started receiving process may be controlled by rcf_ta_trrecv_get, 
+ * Started receiving process may be controlled by rcf_ta_trrecv_get,
  * rcf_ta_trrecv_wait, and rcf_ta_trrecv_stop methods.
- * 
+ *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param csap          Identifier of CSAP
@@ -139,16 +139,16 @@ extern te_errno tapi_tcp_ip4_csap_create(const char    *ta_name,
  *                      htonl(INADDR_ANY)
  * @param src_port      Source TCP port in network byte order or -1
  * @param dst_port      Destination TCP port in network byte order or -1
- * @param timeout       Timeout of operation (in milliseconds, 
+ * @param timeout       Timeout of operation (in milliseconds,
  *                      zero for infinitive)
  * @param num           nubmer of packets to be caugth
  * @param mode          Count received packets only or store packets
  *                      to get to the test side later
- * 
+ *
  * @return Zero on success or error code.
  */
 extern te_errno tapi_tcp_ip4_eth_recv_start(const char      *ta_name,
-                                            int              sid, 
+                                            int              sid,
                                             csap_handle_t    csap,
                                             in_addr_t        src_addr,
                                             in_addr_t        dst_addr,
@@ -156,12 +156,12 @@ extern te_errno tapi_tcp_ip4_eth_recv_start(const char      *ta_name,
                                             int              dst_port,
                                             unsigned int     timeout,
                                             unsigned int     num,
-                                            rcf_trrecv_mode  mode); 
+                                            rcf_trrecv_mode  mode);
 
 
 /**
  * Prepare ASN Pattern-Unit value for 'tcp.ip4.eth' CSAP.
- * 
+ *
  * @param src_addr      Source IP address in network order or
  *                      htonl(INADDR_ANY)
  * @param dst_addr      Destination IP address in network order or
@@ -169,7 +169,7 @@ extern te_errno tapi_tcp_ip4_eth_recv_start(const char      *ta_name,
  * @param src_port      Source TCP port in network byte order or -1
  * @param dst_port      Destination TCP port in network byte order or -1
  * @param result_value  Location for pointer to new ASN value
- * 
+ *
  * @return Zero on success or error code.
  */
 extern te_errno tapi_tcp_ip4_pattern_unit(in_addr_t   src_addr,
@@ -280,7 +280,7 @@ extern tapi_tad_trrecv_cb_data *tapi_tcp_ip_eth_trrecv_cb_data(
 extern te_errno tapi_tcp_make_msg(uint16_t        src_port,
                                   uint16_t        dst_port,
                                   tapi_tcp_pos_t  seqn,
-                                  tapi_tcp_pos_t  ackn, 
+                                  tapi_tcp_pos_t  ackn,
                                   te_bool         syn_flag,
                                   te_bool         ack_flag,
                                   uint8_t        *msg);
@@ -298,18 +298,18 @@ extern te_errno tapi_tcp_make_msg(uint16_t        src_port,
  *
  * @return Status code.
  */
-extern te_errno tapi_tcp_pdu(int src_port, int dst_port, 
-                             tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+extern te_errno tapi_tcp_pdu(int src_port, int dst_port,
+                             tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
                              te_bool syn_flag, te_bool ack_flag,
                              asn_value **pdu);
 
 /**
  * Prepare Traffic-Template ASN value for 'tcp.ip(4|6).eth' or 'tcp.ip(4|6)'
  * CSAP.
- * It is assumed that all connection parameters 
+ * It is assumed that all connection parameters
  * (src/dst MACs, IP, and ports) are already set in CSAP.
  * If it is not, fill there parameters in obtained traffic template
- * explicitely. 
+ * explicitely.
  *
  * @param is_eth_pdu    if TRUE include eth header PDU
  * @param force_ip6     TRUE for IPv6 PDU
@@ -325,13 +325,13 @@ extern te_errno tapi_tcp_pdu(int src_port, int dst_port,
  * @return Status code.
  */
 extern int tapi_tcp_template_gen(te_bool is_eth_pdu, te_bool force_ip6,
-                                 tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+                                 tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
                                  te_bool syn_flag, te_bool ack_flag,
                                  uint8_t *data, size_t pld_len,
                                  asn_value **tmpl);
 
 /**
- * The same function as tapi_tcp_template_gen() with is_eth_pdu 
+ * The same function as tapi_tcp_template_gen() with is_eth_pdu
  * parameter set to TRUE, so it prepares value for 'tcp.ip(4|6).eth' CSAP.
  */
 extern int tapi_tcp_template(te_bool force_ip6, tapi_tcp_pos_t seqn,
@@ -341,12 +341,12 @@ extern int tapi_tcp_template(te_bool force_ip6, tapi_tcp_pos_t seqn,
 
 /**
  * Prepare Traffic-Pattern ASN value for 'tcp.ip4.eth' or 'tcp.ip4' CSAP.
- * It is assumed that all connection parameters 
+ * It is assumed that all connection parameters
  * (src/dst MACs, IP, and ports) are already set in CSAP.
  * If it is not, fill there parameters in obtained traffic template
- * explicitely. 
+ * explicitely.
  *
- * @param is_eth_pdu    if TRUE include eth header PDU  
+ * @param is_eth_pdu    if TRUE include eth header PDU
  * @param seqn          sequence number in host byte order
  * @param ackn          acknowledge number in host byte order
  * @param syn_flag      syn flag
@@ -355,16 +355,16 @@ extern int tapi_tcp_template(te_bool force_ip6, tapi_tcp_pos_t seqn,
  *
  * @return Status code.
  */
-extern int tapi_tcp_pattern_gen(te_bool is_eth_pdu, 
-                                tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+extern int tapi_tcp_pattern_gen(te_bool is_eth_pdu,
+                                tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
                                 te_bool syn_flag, te_bool ack_flag,
                                 asn_value **pattern);
 
 /**
- * The same function as tapi_tcp_template_gen() with is_eth_pdu 
+ * The same function as tapi_tcp_template_gen() with is_eth_pdu
  * parameter set to TRUE, so it prepares value for 'tcp.ip4.eth' CSAP.
  */
-extern int tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+extern int tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
                             te_bool syn_flag, te_bool ack_flag,
                             asn_value **pattern);
 
@@ -575,12 +575,12 @@ typedef enum {
 } tapi_tcp_mode_t;
 
 /**
- * Modes for TCP messages/acks exchange methods 
+ * Modes for TCP messages/acks exchange methods
  */
 typedef enum {
     TAPI_TCP_AUTO,      /**< Fill seq or ack number automatically */
     TAPI_TCP_EXPLICIT,  /**< Fill seq or ack number with specified value */
-    TAPI_TCP_QUIET,     /**< Do NOT fill seq or ack number */ 
+    TAPI_TCP_QUIET,     /**< Do NOT fill seq or ack number */
 } tapi_tcp_protocol_mode_t;
 
 typedef int tapi_tcp_handler_t;
@@ -649,16 +649,16 @@ extern te_errno tapi_tcp_start_conn(tapi_tcp_handler_t handler,
 
 /**
  * Initialize process for open TCP connection.
- * This method does not blocks, only sends SYN (in client mode) 
- * or SYN-ACK (in server mode). Use 'tapi_tcp_wait_open' for wait 
+ * This method does not blocks, only sends SYN (in client mode)
+ * or SYN-ACK (in server mode). Use 'tapi_tcp_wait_open' for wait
  * complete open of TCP connection.
  * Local IP address should be fake, not retistered on host with TA,
  * because running OS will respond to TCP messages also, and it will
- * make side effects on IUT. 
- * Local MAC address may be fake, and it is desired to use fake, 
- * because running OS sometimes may respond with ICMP messages 
+ * make side effects on IUT.
+ * Local MAC address may be fake, and it is desired to use fake,
+ * because running OS sometimes may respond with ICMP messages
  * to IP packets which is got in its Ethernet device and have foreign
- * IP dst address. 
+ * IP dst address.
  *
  * If local MAC address is fake, Ethernet device will be turned to
  * promiscuous mode.
@@ -666,9 +666,9 @@ extern te_errno tapi_tcp_start_conn(tapi_tcp_handler_t handler,
  * @param agt           name of TA;
  * @param mode          TCP mode: server or client, really, this means
  *                      choice "wait for SYN" or "send SYN first";
- * @param local_addr    local socket address, unspecified values 
+ * @param local_addr    local socket address, unspecified values
  *                      are zeroes, (IN/OUT);
- * @param remote_addr   remote socket address, unspecified values 
+ * @param remote_addr   remote socket address, unspecified values
  *                      are zeroes, (IN/OUT);
  * @param local_iface   name of Ethernet interface on 'agt' host;
  * @param local_mac     local MAC address, may be fake;
@@ -683,8 +683,8 @@ extern te_errno tapi_tcp_start_conn(tapi_tcp_handler_t handler,
  */
 extern te_errno tapi_tcp_init_connection(
                                     const char *agt, tapi_tcp_mode_t mode,
-                                    const struct sockaddr *local_addr, 
-                                    const struct sockaddr *remote_addr, 
+                                    const struct sockaddr *local_addr,
+                                    const struct sockaddr *remote_addr,
                                     const char *local_iface,
                                     const uint8_t *local_mac,
                                     const uint8_t *remote_mac,
@@ -695,14 +695,14 @@ extern te_errno tapi_tcp_init_connection(
  * Layer2 encapsulation.
  *
  * Parameters are same as above plus:
- * 
+ *
  * @param enc_vlan      Use VLAN encapsulation
  * @param enc_llc       Use LLC/SNAP encapsulation
  */
 extern int tapi_tcp_init_connection_enc(const char *agt,
                                         tapi_tcp_mode_t mode,
-                                        const struct sockaddr *local_addr, 
-                                        const struct sockaddr *remote_addr, 
+                                        const struct sockaddr *local_addr,
+                                        const struct sockaddr *remote_addr,
                                         const char *local_iface,
                                         const uint8_t *local_mac,
                                         const uint8_t *remote_mac,
@@ -712,7 +712,7 @@ extern int tapi_tcp_init_connection_enc(const char *agt,
                                         tapi_tcp_handler_t *handler);
 
 /**
- * Destroy TAPI TCP connection handler: stop receive process on CSAPs, etc. 
+ * Destroy TAPI TCP connection handler: stop receive process on CSAPs, etc.
  *
  * This method DOES NOT close TCP connection!
  *
@@ -726,37 +726,37 @@ extern int tapi_tcp_destroy_connection(tapi_tcp_handler_t handler);
  * Wait for complete process of opening TCP connection: blocks until
  * SYN and ACKs from peer will be received.
  * If timed out, TAPI connection hanlder will be destroyed.
- * 
+ *
  * @param handler       TAPI handler of TCP connection;
- * @param timeout       time in milliseconds, while TA should wait for 
+ * @param timeout       time in milliseconds, while TA should wait for
  *                      SYN or ACK for his SYN;
  *
  * @return Status code
- */ 
+ */
 extern int tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout);
 
 /**
- * Wait for some incoming message in emulated TCP connection. 
+ * Wait for some incoming message in emulated TCP connection.
  * If message was got, all internal state fields will be updated
- * in accordance. If it was PUSH, it will be stored in internal buffer, 
- * and may be got with tapi_tcp_recv_msg(). 
+ * in accordance. If it was PUSH, it will be stored in internal buffer,
+ * and may be got with tapi_tcp_recv_msg().
  *
  * @param handler       TAPI handler of TCP connection;
- * @param timeout       time in milliseconds, while TA should wait for 
+ * @param timeout       time in milliseconds, while TA should wait for
  *                      SYN or ACK for his SYN;
  *
  * @return Status code
- */ 
+ */
 extern int tapi_tcp_wait_msg(tapi_tcp_handler_t handler, int timeout);
 
 
 /**
  * Send FIN in TCP connection, and wait ACK for it.
  * This is either part of close process, or shutdown for writing.
- * This method blocks until ACK will be received. 
+ * This method blocks until ACK will be received.
  *
  * @param handler       TAPI handler of TCP connection;
- * @param timeout       time in milliseconds, while TA should wait 
+ * @param timeout       time in milliseconds, while TA should wait
  *                      for answer for FIN;
  *
  * @return Status code
@@ -767,10 +767,10 @@ extern int tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout);
  * Send FIN in TCP connection with ACK (possibly to FIN sent by peer),
  * and wait ACK for it.
  * This is either part of close process, or shutdown for writing.
- * This method blocks until ACK will be received. 
+ * This method blocks until ACK will be received.
  *
  * @param handler       TAPI handler of TCP connection;
- * @param timeout       time in milliseconds, while TA should wait 
+ * @param timeout       time in milliseconds, while TA should wait
  *                      for answer for FIN;
  *
  * @return Status code
@@ -781,7 +781,7 @@ extern int tapi_tcp_send_fin_ack(tapi_tcp_handler_t handler, int timeout);
  * Send RST in TCP connection.
  *
  * @param handler       TAPI handler of TCP connection;
- * @param timeout       time in milliseconds, while TA should wait 
+ * @param timeout       time in milliseconds, while TA should wait
  *                      for answer for FIN;
  *
  * @return Status code
@@ -792,14 +792,14 @@ extern int tapi_tcp_send_rst(tapi_tcp_handler_t handler);
  * Send TCP message via established connection.
  * With seq_mode = TAPI_TCP_AUTO it should be used ONLY for sending
  * subsequent flow of data. If user need to send some strange
- * sequence numbers, he have to use TAPI_TCP_EXPLICIT. 
- * First seqn for 'explicit' data block should be get 
+ * sequence numbers, he have to use TAPI_TCP_EXPLICIT.
+ * First seqn for 'explicit' data block should be get
  * with method 'tapi_tcp_next_seqn'.
  * To send some more data in automatic mode after explicit mode
  * user have to store total length of all data,
  * sent in explicit mode, by method 'tapi_tcp_set_next_sent'
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  * @param payload       data for message payload;
  * @param len           length of payload;
  * @param seq_mode      mode of insertion SEQ number into message;
@@ -813,10 +813,10 @@ extern int tapi_tcp_send_rst(tapi_tcp_handler_t handler);
  */
 extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
                              uint8_t *payload, size_t len,
-                             tapi_tcp_protocol_mode_t seq_mode, 
+                             tapi_tcp_protocol_mode_t seq_mode,
                              tapi_tcp_pos_t seqn,
-                             tapi_tcp_protocol_mode_t ack_mode, 
-                             tapi_tcp_pos_t ackn, 
+                             tapi_tcp_protocol_mode_t ack_mode,
+                             tapi_tcp_pos_t ackn,
                              tapi_ip_frag_spec *frags,
                              size_t frag_num);
 
@@ -825,10 +825,10 @@ extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
  * Fields SEQN and ACKN are filled by default, if user want
  * to set them explicetly , one can do it via ASN lib API.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  * @param payload       data for message payload;
  * @param len           length of payload;
- * @param tmpl          location for new ASN value with 
+ * @param tmpl          location for new ASN value with
  *                      traffic template(OUT);
  *
  * @return Status code
@@ -838,12 +838,12 @@ extern int tapi_tcp_conn_template(tapi_tcp_handler_t handler,
                                   asn_value **tmpl);
 
 /**
- * Send explicitely formed traffic template. 
+ * Send explicitely formed traffic template.
  * Note, that template should be prepareed accurately,
  * if you want to send valid TCP message in connection.
  * IP addresses and TCP pors should NOT be mentioned in template.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  * @param template      ASN value of type Traffic-Template;
  * @param blk_mode      mode of the operation:
  *                      in blocking mode it suspends the caller
@@ -852,7 +852,7 @@ extern int tapi_tcp_conn_template(tapi_tcp_handler_t handler,
  *
  * @return Status code
  */
-extern int tapi_tcp_send_template(tapi_tcp_handler_t handler, 
+extern int tapi_tcp_send_template(tapi_tcp_handler_t handler,
                                   const asn_value *template,
                                   rcf_call_mode_t blk_mode);
 
@@ -929,12 +929,12 @@ extern int tapi_tcp_recv_data(tapi_tcp_handler_t handler, int time2wait,
 /**
  * Send ACK via established TCP connection.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  * @param ackn          ACK number
  *
  * @return Status code
  */
-extern int tapi_tcp_send_ack(tapi_tcp_handler_t handler, 
+extern int tapi_tcp_send_ack(tapi_tcp_handler_t handler,
                              tapi_tcp_pos_t ackn);
 
 /**
@@ -958,7 +958,7 @@ extern tapi_tcp_pos_t tapi_tcp_first_seqn_got(tapi_tcp_handler_t handler);
 /**
  * Return last received SEQ number in established TCP connection.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  *
  * @return SEQ number of zero if 'hanlder' not valid.
  */
@@ -967,7 +967,7 @@ extern tapi_tcp_pos_t tapi_tcp_last_seqn_got(tapi_tcp_handler_t handler);
 /**
  * Return last received ACK number in established TCP connection.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  *
  * @return ACK number of zero if 'hanlder' not valid.
  */
@@ -985,7 +985,7 @@ extern tapi_tcp_pos_t tapi_tcp_first_seqn_sent(tapi_tcp_handler_t handler);
 /**
  * Return last sent SEQ number in established TCP connection.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  *
  * @return SEQ number of zero if 'hanlder' not valid.
  */
@@ -994,7 +994,7 @@ extern tapi_tcp_pos_t tapi_tcp_last_seqn_sent(tapi_tcp_handler_t handler);
 /**
  * Return last sent ACK number in established TCP connection.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  *
  * @return ACK number of zero if 'hanlder' not valid.
  */
@@ -1003,7 +1003,7 @@ extern tapi_tcp_pos_t tapi_tcp_last_ackn_sent(tapi_tcp_handler_t handler);
 /**
  * Return last received window in established TCP connection.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  *
  * @return SEQ number of zero if 'hanlder' not valid.
  */
@@ -1012,7 +1012,7 @@ extern size_t tapi_tcp_last_win_got(tapi_tcp_handler_t handler);
 /**
  * Check that a message with FIN flag set was got.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  *
  * @return @c TRUE if a message with FIN flag set was got,
  *         @c FALSE otherwise.
@@ -1022,7 +1022,7 @@ extern te_bool tapi_tcp_fin_got(tapi_tcp_handler_t handler);
 /**
  * Check that a message with RST flag set was got.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  *
  * @return @c TRUE if a message with RST flag set was got,
  *         @c FALSE otherwise.
@@ -1032,7 +1032,7 @@ extern te_bool tapi_tcp_rst_got(tapi_tcp_handler_t handler);
 /**
  * Return next SEQ number to be sent in established TCP connection.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  *
  * @return SEQ number of zero if 'hanlder' not valid.
  */
@@ -1041,14 +1041,14 @@ extern tapi_tcp_pos_t tapi_tcp_next_seqn(tapi_tcp_handler_t handler);
 /**
  * Return next ACK number to be sent in established TCP connection.
  *
- * @param handler       TAPI handler of TCP connection;     
+ * @param handler       TAPI handler of TCP connection;
  *
  * @return ACK number of zero if 'hanlder' not valid.
  */
 extern tapi_tcp_pos_t tapi_tcp_next_ackn(tapi_tcp_handler_t handler);
 
 /**
- * Update internal TAPI TCP connection fields according with 
+ * Update internal TAPI TCP connection fields according with
  * next sent data in connection.
  * This is necessary ONLY after sending data in 'explicit' mode.
  *
@@ -1095,10 +1095,10 @@ typedef struct {
 } tapi_tcp_reset_hack_t;
 
 /**
- * Initialize RST sending hack framework: create CSAP, start listening of 
+ * Initialize RST sending hack framework: create CSAP, start listening of
  * SYN-ACK. Note, that it will catch FIRST SYN-ACK, matching passed
- * filtering parameters, which user fill in 'context' structure. 
- * All unset fields have to be zero. 
+ * filtering parameters, which user fill in 'context' structure.
+ * All unset fields have to be zero.
  *
  * @param ta_name       TA name
  * @param sid           RCF session id
@@ -1109,7 +1109,7 @@ typedef struct {
  *
  * @return status code
  */
-extern int tapi_tcp_reset_hack_init(const char *ta_name, int session, 
+extern int tapi_tcp_reset_hack_init(const char *ta_name, int session,
                                     const char *iface, te_bool dir_out,
                                     tapi_tcp_reset_hack_t *context);
 
@@ -1117,7 +1117,7 @@ extern int tapi_tcp_reset_hack_init(const char *ta_name, int session,
  * Catch SYN-ACK in RST sending hack framework.
  * Note, that it will catch FIRST SYN-ACK, matching passed
  * filtering parameters, which user fill in 'context' structure before
- * call 'init'. 
+ * call 'init'.
  *
  * @param ta_name       TA name
  * @param sid           RCF session id
@@ -1139,7 +1139,7 @@ extern int tapi_tcp_reset_hack_catch(const char *ta_name, int session,
  *
  * @return status code
  */
-extern int tapi_tcp_reset_hack_send(const char *ta_name, int session, 
+extern int tapi_tcp_reset_hack_send(const char *ta_name, int session,
                                     tapi_tcp_reset_hack_t *context,
                                     size_t received, size_t sent);
 
@@ -1152,7 +1152,7 @@ extern int tapi_tcp_reset_hack_send(const char *ta_name, int session,
  *
  * @return status code
  */
-extern int tapi_tcp_reset_hack_clear(const char *ta_name, int session, 
+extern int tapi_tcp_reset_hack_clear(const char *ta_name, int session,
                                      tapi_tcp_reset_hack_t *context);
 
 /**
@@ -1187,28 +1187,28 @@ extern te_errno tapi_tcp_ip6_eth_csap_create(const char *ta_name, int sid,
 
 /**
  * Get sender CSAP from TCP connection context.
- * 
+ *
  * @param handler TAPI handler of the TCP connection
- * 
+ *
  * @return CSAP id
  */
 extern csap_handle_t tapi_tcp_conn_snd_csap(tapi_tcp_handler_t handler);
 
 /**
  * Get receiver CSAP from TCP connection context.
- * 
+ *
  * @param handler TAPI handler of the TCP connection
- * 
+ *
  * @return CSAP id
  */
 extern csap_handle_t tapi_tcp_conn_rcv_csap(tapi_tcp_handler_t handler);
 
 /**
  * Set last sent ACK number of the sender CSAP in TCP connection context.
- * 
+ *
  * @param handler TAPI handler of the TCP connection
  * @param ack     ACK number to set
- * 
+ *
  * @return Status code
  */
 extern int tapi_tcp_update_sent_ack(tapi_tcp_handler_t handler, size_t ack);

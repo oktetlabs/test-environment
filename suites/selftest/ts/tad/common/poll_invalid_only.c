@@ -2,11 +2,11 @@
  * @brief Test Environment
  *
  * Tests on generic TAD functionality.
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
- * 
+ *
+ *
  */
 
 /** @page common-poll_invalid_only Call traffic poll operation for invalid only CSAPs
@@ -19,7 +19,7 @@
  * @param zero_status   Initialize status as zero or not
  *
  * @par Scenario:
- * 
+ *
  * -# Prepare @b rcf_trpoll_csap structure with @a n_csaps entries:
  *      - @a ta is @c NULL or @c not-NULL (unknown TA);
  *      - @a csap is @c CSAP_INVALID_HANDLE;
@@ -60,7 +60,7 @@ main(int argc, char *argv[])
         TEST_FAIL("Invalid number of CSAPs as parameter");
 
     CHECK_NOT_NULL(csaps = calloc(n_csaps, sizeof(*csaps)));
-    
+
     for (i = 0; i < n_csaps; ++i)
     {
         csaps[i].ta = ta_null ? NULL : "UnknownTA";

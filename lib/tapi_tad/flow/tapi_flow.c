@@ -78,7 +78,7 @@ tapi_flow_conf_get(int argc, char **argv,
         ERROR("Failed to process FLOW params, rc=%r", rc);
     }
 
-    return rc; 
+    return rc;
 }
 
 void
@@ -639,7 +639,7 @@ static inline char *tapi_cfg_link_dereference(char *link)
             return NULL;
         }
 
-        if ((strstr(link, "address") != NULL) || 
+        if ((strstr(link, "address") != NULL) ||
             (strstr(link, "net_addr") != NULL) ||
             (strstr(link, "fake_addr") != NULL))
         {
@@ -648,7 +648,7 @@ static inline char *tapi_cfg_link_dereference(char *link)
             value = te_sprintf("'%02hhx %02hhx %02hhx %02hhx'H",
                                ip[0], ip[1], ip[2], ip[3]);
         }
-        else if ((strstr(link, "mac") != NULL) || 
+        else if ((strstr(link, "mac") != NULL) ||
                  (strstr(link, "link_addr") != NULL))
         {
             uint8_t *mac = (uint8_t *)addr->sa_data;

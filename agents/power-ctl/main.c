@@ -6,10 +6,10 @@
  *
  * Copyright (C) 2003-2021 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_LGR_USER     "Main"
@@ -157,7 +157,7 @@ rcf_ch_vread(struct rcf_comm_connection *handle,
 
 
 /* See description in rcf_ch_api.h */
-int 
+int
 rcf_ch_vwrite(struct rcf_comm_connection *handle,
               char *cbuf, size_t buflen, size_t answer_plen,
               rcf_var_type_t type, const char *var, ...)

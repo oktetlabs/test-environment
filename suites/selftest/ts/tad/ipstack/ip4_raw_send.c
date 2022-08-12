@@ -2,10 +2,10 @@
  * @brief Test Environment
  *
  * Check IP4/ETH CSAP data-sending behaviour
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  */
 
@@ -104,7 +104,7 @@ main(int argc, char *argv[])
     int                         recv_socket = -1;
 
     asn_value                   *template = NULL;
-    
+
     void                       *send_buf = NULL;
     void                       *recv_buf = NULL;
     size_t                      send_buf_len;
@@ -114,7 +114,7 @@ main(int argc, char *argv[])
     ssize_t                     r;
 
 
-    TEST_START; 
+    TEST_START;
 
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(pco);
@@ -135,9 +135,9 @@ main(int argc, char *argv[])
     recv_buf = te_make_buf_by_len(recv_buf_len);
 
     /* Create RAW socket */
-    recv_socket = rpc_socket(pco, RPC_PF_INET, 
+    recv_socket = rpc_socket(pco, RPC_PF_INET,
                              RPC_SOCK_RAW, proto);
-    
+
     CHECK_RC(tapi_ip4_eth_csap_create(host_csap->ta, 0, csap_if->if_name,
                                   TAD_ETH_RECV_NO,
                                   (const uint8_t *)csap_hwaddr->sa_data,
@@ -146,7 +146,7 @@ main(int argc, char *argv[])
                                   SIN(sock_addr)->sin_addr.s_addr,
                                   proto_rpc2h(proto),
                                   &ip4_send_csap));
-    
+
     /* Prepare data-sending template */
     CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, FALSE,
                                           ndn_ip4_header,
@@ -216,7 +216,7 @@ main(int argc, char *argv[])
             TEST_FAIL("IPv4 packet is expected to be not received, "
                       "but it is");
     }
-    
+
     /* Check IP header */
     /* Check header length */
     ip_header_len = ((struct iphdr *)recv_buf)->ihl;
@@ -228,7 +228,7 @@ main(int argc, char *argv[])
     if (ntohs(((struct iphdr *)recv_buf)->tot_len) !=
             send_buf_len + ip_header_len * 4)
         TEST_FAIL("Total length field differs from expected");
-    
+
     /* Check protocol */
     if (((struct iphdr *)recv_buf)->protocol != proto_rpc2h(proto))
         TEST_FAIL("Protocol field was corrupted");
@@ -239,23 +239,23 @@ main(int argc, char *argv[])
         TEST_FAIL("IP header's checksum was corrupted");
 
     /* Check IP addresses */
-    if (SIN(csap_addr)->sin_addr.s_addr != 
+    if (SIN(csap_addr)->sin_addr.s_addr !=
             ((struct iphdr *)recv_buf)->saddr)
         TEST_FAIL("Source IP field was corrupted");
     if (SIN(sock_addr)->sin_addr.s_addr !=
             ((struct iphdr *)recv_buf)->daddr)
         TEST_FAIL("Destination IP field was corrupted");
-        
+
     TEST_SUCCESS;
 
 cleanup:
 
     CLEANUP_RPC_CLOSE(pco, recv_socket);
-    
+
     asn_free_value(template);
-    
+
     if (host_csap != NULL)
-        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_csap->ta, 
+        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(host_csap->ta,
                                              0, ip4_send_csap));
 
     free(send_buf);

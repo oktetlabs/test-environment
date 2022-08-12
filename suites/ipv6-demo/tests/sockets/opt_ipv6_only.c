@@ -8,7 +8,7 @@
 
 /** @page opt_ipv6_only IPV6_V6ONLY socket option with IPv4 nodes (SOCK_STREAM).
  *
- * @objective Verify that IPV6_V6ONLY socket option can be used to 
+ * @objective Verify that IPV6_V6ONLY socket option can be used to
  *            deny stream connections with IPv4 peers.
  *
  * @type conformance
@@ -19,15 +19,15 @@
  * @param pco_tst       PCO on Tester
  * @param iut_addr4     IPv4 address on IUT
  * @param iut_addr6     IPv6 address on IUT
- * 
+ *
  * @par Test sequence:
  * -# Create @p iut_s6 socket of type @p sock_type from @c PF_INET6 domain
  *    on @p pco_iut;
  * -# Create @p tst_s4 socket of type @p sock_type from @c PF_INET domain
- *    on @p pco_tst (it will be used as an IPv4 peer of IPv6 socket 
+ *    on @p pco_tst (it will be used as an IPv4 peer of IPv6 socket
  *    created on @p pco_iut);
  * -# Create @p tst_s6 socket of type @p sock_type from @c PF_INET6 domain
- *    on @p pco_tst (it will be used as an IPv6 peer of IPv6 socket 
+ *    on @p pco_tst (it will be used as an IPv6 peer of IPv6 socket
  *    created on @p pco_iut);
  * -# Enable @c IPV6_V6ONLY socket option on @p pco_iut socket;
  *    \n @htmlonly &nbsp; @endhtmlonly
@@ -49,7 +49,7 @@
  * -# Check that @p iut_s6 socket is readable and open a new connection;
  *    \n @htmlonly &nbsp; @endhtmlonly
  * -# Close all sockets.
- * 
+ *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  */
 
@@ -74,7 +74,7 @@ main(int argc, char *argv[])
     int       opt_val;
     in_port_t port1;
     in_port_t port2;
-    
+
 
     TEST_START;
 
@@ -94,7 +94,7 @@ main(int argc, char *argv[])
     /***** Enable IPV6_V6ONLY option *****/
     opt_val = TRUE;
     rpc_setsockopt(pco_iut, iut_s6, RPC_IPV6_V6ONLY, &opt_val);
- 
+
     /*
      * Prepare wildcard address and set up the same port value
      * in all addresses.
@@ -103,14 +103,14 @@ main(int argc, char *argv[])
     wild_addr.sin6_family = AF_INET6;
     te_sockaddr_set_wildcard(SA(&wild_addr));
 
-    SIN(iut_addr4)->sin_port = wild_addr.sin6_port = 
+    SIN(iut_addr4)->sin_port = wild_addr.sin6_port =
             SIN6(iut_addr6)->sin6_port = port1;
 
     rpc_bind(pco_iut, iut_s6, SA(&wild_addr));
     rpc_listen(pco_iut, iut_s6, 1);
 
-    /* 
-     * Check that it is denied to open 
+    /*
+     * Check that it is denied to open
      * IPv4 socket --> IPv6 socket connection.
      */
     RPC_AWAIT_IUT_ERROR(pco_tst);
@@ -125,8 +125,8 @@ main(int argc, char *argv[])
     SLEEP(3);
     RPC_CHECK_READABILITY(pco_iut, iut_s6, FALSE);
 
-    /* 
-     * Check that it is still possible to open 
+    /*
+     * Check that it is still possible to open
      * IPv6 socket --> IPv6 socket connection.
      */
     rpc_connect(pco_tst, tst_s6, iut_addr6);
@@ -145,7 +145,7 @@ main(int argc, char *argv[])
 
     /*
      * On some systems it is not allowed to change IPV6_V6ONLY option
-     * on active (server) socket, which is why we need to recreate 
+     * on active (server) socket, which is why we need to recreate
      * our server.
      */
     RPC_AWAIT_IUT_ERROR(pco_iut);
@@ -162,7 +162,7 @@ main(int argc, char *argv[])
          * should change port number on IPv6 server socket, and as a result
          * in all address structures used to connect to the server.
          */
-        SIN(iut_addr4)->sin_port = wild_addr.sin6_port = 
+        SIN(iut_addr4)->sin_port = wild_addr.sin6_port =
                 SIN6(iut_addr6)->sin6_port = port2;
 
         iut_s6 = rpc_socket(pco_iut, RPC_PF_INET6, RPC_SOCK_STREAM,
@@ -172,7 +172,7 @@ main(int argc, char *argv[])
     }
 
     /*
-     * Check that now it is possible to open 
+     * Check that now it is possible to open
      * IPv4 socket --> IPv6 socket connection.
      */
     rpc_connect(pco_tst, tst_s4, iut_addr4);
@@ -183,7 +183,7 @@ main(int argc, char *argv[])
     RPC_CLOSE(pco_iut, conn_s);
 
     /*
-     * Check that it is still possible to open 
+     * Check that it is still possible to open
      * IPv6 socket --> IPv6 socket connection.
      */
     rpc_connect(pco_tst, tst_s6, iut_addr6);

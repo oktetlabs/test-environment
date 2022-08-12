@@ -3,7 +3,7 @@
 # Windows Test Agent
 # Calculates some variables for the Windows platform
 # Script is inserted from te_build_win_app and te_build_win_lib
-#     
+#
 # Copyright (C) 2003-2018 OKTET Labs.
 #
 # Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -28,5 +28,5 @@ fi
 
 if test -n "$TE_WIN32_BUILD_HOST_KEY" ; then
     KEY="-i $TE_WIN32_BUILD_HOST_KEY "
-fi    
+fi
 

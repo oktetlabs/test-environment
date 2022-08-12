@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -77,7 +77,7 @@ tester_new_target_reqs(logic_expr **targets, const char *req)
             ERROR("%s(): calloc(1, %u) failed",
                   __FUNCTION__, sizeof(*parent));
             return rc;
-        } 
+        }
 
         parent->type = LOGIC_EXPR_AND;
         parent->u.binary.lhv = *targets;
@@ -100,7 +100,7 @@ static test_requirement *
 test_requirement_clone(const test_requirement *req)
 {
     test_requirement *p = calloc(1, sizeof(*p));
-    
+
     assert(req->ref == NULL);
     if (p != NULL)
     {
@@ -445,7 +445,7 @@ reqs_list_to_string_buf(const test_requirements  *reqs,
                         char                    **buf,
                         ssize_t                  *left)
 {
-    const test_requirement *p; 
+    const test_requirement *p;
     char                   *s = *buf;
     int                     out;
 
@@ -508,7 +508,7 @@ params_reqs_list_to_string(const unsigned int   n_args,
     const test_iter_arg   *p;
     unsigned int            i;
     char                   *s;
-    ssize_t                 left; 
+    ssize_t                 left;
     int                     out;
 
 

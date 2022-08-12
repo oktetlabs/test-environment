@@ -25,7 +25,7 @@ inet_pton(af, src, dst)
     void *dst;
 {
     return 1;
-}    
+}
 
 #else
 
@@ -45,7 +45,7 @@ static const char rcsid[] = "$BINDId: inet_pton.c,v 1.7 1999/10/13 16:39:28 vixi
 
 /*
  * This file is copied from glibc to use inet_pton in win32 Test Agent
- * 
+ *
  * Below are some definitions necessary for successful compilation.
  */
 

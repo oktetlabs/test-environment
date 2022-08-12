@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -88,7 +88,7 @@ typedef TAILQ_HEAD(vtund_server_sessions, vtund_server_session)
 
 
 typedef struct vtund_server {
-    
+
     SLIST_ENTRY(vtund_server)   links;
 
     vtund_server_sessions       sessions;
@@ -154,7 +154,7 @@ vtund_server_session_find(unsigned int gid, const char *oid,
     for (p = TAILQ_FIRST(&srv->sessions);
          p != NULL && strcmp(p->name, session) != 0;
          p = TAILQ_NEXT(p, links));
-        
+
     return p;
 }
 
@@ -356,9 +356,9 @@ vtund_server_session_add(unsigned int gid, const char *oid, const char *value,
     p->speed_to_client   = strdup(VTUND_SPEED_TO_CLIENT_DEF);
     p->speed_from_client = strdup(VTUND_SPEED_FROM_CLIENT_DEF);
     p->multi             = strdup(VTUND_MULTI_DEF);
-    if (p->name == NULL || p->type == NULL || p->device == NULL || 
+    if (p->name == NULL || p->type == NULL || p->device == NULL ||
         p->proto == NULL || p->compress_method == NULL ||
-        p->compress_level == NULL || p->encrypt == NULL || 
+        p->compress_level == NULL || p->encrypt == NULL ||
         p->keepalive == NULL || p->stat == NULL || p->multi == NULL ||
         p->speed_to_client == NULL || p->speed_from_client == NULL)
     {
@@ -437,7 +437,7 @@ vtund_server_find(unsigned int gid, const char *oid,
     for (p = SLIST_FIRST(&servers);
          p != NULL && strcmp(p->port, port) != 0;
          p = SLIST_NEXT(p, links));
-        
+
     return p;
 }
 
@@ -507,7 +507,7 @@ vtund_server_start(vtund_server *server)
                 strlen(p->device) != 0 ? ";\n" : "",
                 p->compress_method,
                 (strcmp(p->compress_method, "no") == 0) ? "" : ":",
-                (strcmp(p->compress_method, "no") == 0) ? "" : 
+                (strcmp(p->compress_method, "no") == 0) ? "" :
                     p->compress_level,
                 (strcmp(p->encrypt, "0") == 0) ? "no" : "yes",
                 (strcmp(p->keepalive, "0") == 0) ? "no" : "yes",
@@ -683,7 +683,7 @@ vtund_server_list(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
-    
+
     *buf = '\0';
     SLIST_FOREACH(p, &servers, links)
     {
@@ -712,7 +712,7 @@ vtund_client_find(unsigned int gid, const char *oid,
     for (p = SLIST_FIRST(&clients);
          p != NULL && strcmp(p->name, client) != 0;
          p = SLIST_NEXT(p, links));
-        
+
     return p;
 }
 
@@ -1081,7 +1081,7 @@ vtund_client_list(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
-    
+
     *buf = '\0';
     SLIST_FOREACH(p, &clients, links)
     {
@@ -1169,40 +1169,40 @@ static rcf_pch_cfg_object node_vtund_client =
       (rcf_ch_cfg_del)vtund_client_del,
       (rcf_ch_cfg_list)vtund_client_list, NULL, NULL, NULL };
 
-/* 
+/*
  * VTund root
  */
 RCF_PCH_CFG_NODE_NA(node_ds_vtund, "vtund",
                     &node_vtund_client, NULL);
 
 
-te_errno 
+te_errno
 vtund_grab(const char *name)
 {
     UNUSED(name);
-    
+
     SLIST_INIT(&clients);
     SLIST_INIT(&servers);
 
     return rcf_pch_add_node("/agent", &node_ds_vtund);
 }
 
-te_errno 
+te_errno
 vtund_release(const char *name)
 {
     vtund_server *server;
     vtund_client *client;
-    
+
     UNUSED(name);
 
     while ((server = SLIST_FIRST(&servers)) != NULL)
         vtund_server_free(server);
     while ((client = SLIST_FIRST(&clients)) != NULL)
         vtund_client_free(client);
-        
+
     rcf_pch_del_node(&node_ds_vtund);
-    
-    return 0;        
+
+    return 0;
 }
 
 #endif /* WITH_VTUND */

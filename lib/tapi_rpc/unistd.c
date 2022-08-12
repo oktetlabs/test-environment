@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -2396,7 +2396,7 @@ rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf)
  * @param rpcs    RPC server handle
  * @param id      Address ID
  *
- * @return  Value of address in the TA address space 
+ * @return  Value of address in the TA address space
  */
 uint64_t
 rpc_get_addr_by_id(rcf_rpc_server *rpcs, rpc_ptr id)
@@ -2613,7 +2613,7 @@ rpc_fstat64(rcf_rpc_server *rpcs,
         ERROR("%s(): stat buffer pointer", __FUNCTION__);
         RETVAL_INT(te_fstat64, -1);
     }
-    
+
     in.fd = fd;
 
     rcf_rpc_call(rpcs, "te_fstat64", &in, &out);
@@ -2949,7 +2949,7 @@ rpc_fstatvfs(rcf_rpc_server *rpcs, int fd, tarpc_statvfs *buf)
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(fstatvfs, out.retval);
     TAPI_RPC_LOG(rpcs, fstatvfs, "%d",
-                 "%d {BLK: %u, TOTAL: %llu, FREE: %llu}", 
+                 "%d {BLK: %u, TOTAL: %llu, FREE: %llu}",
                  fd, out.retval,
                  out.buf.f_bsize,
                  out.buf.f_blocks,
@@ -3135,11 +3135,11 @@ rpc_rm_ta_libs(rcf_rpc_server *rpcs, char *path)
 
 /**
  * Convert NULL terminated array to iovec array
- * 
+ *
  * @param arr   NULL terminated array
  * @param o_iov Location for iovec array
  *              Note! Memory of the array should be freed
- * 
+ *
  * @return Length of the array with NULL argument
  */
 static size_t

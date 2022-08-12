@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -332,7 +332,7 @@ tester_term_out_start(tester_flags flags, run_item_type type,
         ERROR("Output to 'stdout' failed");
     }
     fflush(stdout);
-    
+
 #if HAVE_PTHREAD_H
     CHECK_RC_ZERO(pthread_mutex_unlock(&win_lock));
 #endif
@@ -367,8 +367,8 @@ tester_term_out_done(tester_flags flags,
         int rc = 0;
 
         term = getenv("TERM");
-        if ((term == NULL) || (strlen(term) == 0) || 
-            !isatty(STDOUT_FILENO) || 
+        if ((term == NULL) || (strlen(term) == 0) ||
+            !isatty(STDOUT_FILENO) ||
             setupterm(term, STDOUT_FILENO, &rc) != OK)
         {
             char *c = getenv("COLUMNS");
@@ -378,7 +378,7 @@ tester_term_out_done(tester_flags flags,
                 cols = atoi(c);
             if (rc != 0) /* Warn only if setupterm failed. */
                 fprintf(stderr, "Failed to initialize terminal %s\n", term);
-        } 
+        }
         else
             cols = columns;
     }
@@ -479,7 +479,7 @@ tester_term_out_done(tester_flags flags,
     }
     colored_verdict(&colored_verdicts[status][cvt]);
     fflush(stdout);
-    
+
     prev_id = -1;
     prev_len = 0;
 

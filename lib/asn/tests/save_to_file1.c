@@ -77,10 +77,10 @@ main(void)
                       te_rc_err2str(rc));
             return 3;
         }
-        
+
         /* Now let's parse file */
-        rc = asn_parse_dvalue_in_file("save_to_file1.asn", 
-                                      ndn_data_unit_char_string, 
+        rc = asn_parse_dvalue_in_file("save_to_file1.asn",
+                                      ndn_data_unit_char_string,
                                       &ret_p, &syms_parsed);
         if (rc != 0)
         {
@@ -96,7 +96,7 @@ main(void)
                       te_rc_err2str(rc));
             return 5;
         }
-        
+
         if (strcmp(test_strings[i], new_str) != 0)
         {
             TEST_FAIL("Original ('%s') and new ('%s') strings "

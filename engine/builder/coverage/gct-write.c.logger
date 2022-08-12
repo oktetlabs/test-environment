@@ -49,7 +49,7 @@ extern char *Gct_timestamp;	/* Defined in gct-ps-defs.c */
  * executable).  If the executable is too short, the missing entries are
  * treated as if they were 0.  If it is too long, they are preserved (if
  * readlog was used) or erased (if it was not).
- */ 
+ */
 
 
 
@@ -60,7 +60,7 @@ extern char *Gct_timestamp;	/* Defined in gct-ps-defs.c */
  * This routine is given a file, presumed to be the name of a GCT log
  * file.  That file is opened for reading and the stream returned.  If
  * that fails because the file does not exist, NULL is returned.  If it
- * fails for some other reason, an error message is printed 
+ * fails for some other reason, an error message is printed
  * and NULL is returned.  This last may lead to printing of essentially
  * the same error message again, but it's not the business of this code
  * to make the program exit.
@@ -82,7 +82,7 @@ openlog(file)
   return stream;
 }
 
-  
+
 /*
  * This routine is given a stream, presumed to be open for reading to a
  * GCT logfile.
@@ -108,7 +108,7 @@ checklog(stream, file)
   static int error_printed = 0;	/* Show errors only once. */
 #define TIMESTAMP_LEN 500	/* Very sufficient */
   char timestamp[TIMESTAMP_LEN];
-  
+
 
   /* Suck up the identifying header and timestamp. */
   if (   fgets(timestamp, TIMESTAMP_LEN, stream) == NULL
@@ -137,13 +137,13 @@ checklog(stream, file)
 	}
       goto error;
     }
-  
+
   if (error_printed)
     {
       fprintf(stderr, "gct logging routines: Earlier reported error has been corrected.\n", file);
       fprintf(stderr, "gct logging routines: The logfile will be updated.\n");
     }
-  
+
   return stream;
 
 error:
@@ -254,7 +254,7 @@ gct_update_old_log(file, oldstream)
  * This implementation is believed to be POSIX-compliant, but you should
  * look it over to see if it does what you want.
  *
- * 1. We lock on a file in /usr/tmp.  There is a potential race if someone 
+ * 1. We lock on a file in /usr/tmp.  There is a potential race if someone
  *    deletes that file while processes are blocked on it.  A new process
  *    may recreate the file, be unaffected by old locks, and update GCTLOG.
  *    Pretty low probability.
@@ -300,7 +300,7 @@ gct_update_old_log(file, oldstream)
 
 #define GCT_READ_LOCK_OR_RETURN() \
    if (!gct_get_lock(F_RDLCK, "read")) return;
-     
+
 #define GCT_WRITE_LOCK_OR_RETURN() \
    if (! gct_get_lock(F_WRLCK, "write")) \
    { \
@@ -318,7 +318,7 @@ static int
 gct_get_lock(command, tag)
      int command;
      char *tag;
-     
+
 {
   struct flock arg;
 
@@ -371,7 +371,7 @@ gct_unlock()
       perror("gct logging routines");
     }
   Lock_fid = -1;
-  
+
   /* Note that deleting the file would delete the whole point of locking. */
 }
 
@@ -399,7 +399,7 @@ gct_writelog(file)
   FILE *oldstream;
 
   GCT_WRITE_LOCK_OR_RETURN();	/* Failure causes return. */
-  
+
   if (   0 == Do_merge
       || NULL == (oldstream = openlog(file)))
     {
@@ -430,7 +430,7 @@ gct_writelog(file)
 }
 
 /*
- * Note that Do_merge is set even if the openlog() fails.  Suppose 
+ * Note that Do_merge is set even if the openlog() fails.  Suppose
  * FOO is an executable that forks BAR.  Both are instrumented.  Both use
  * readlog and writelog.  When FOO is first executed, GCTLOG does not
  * exist.  But BAR creates it when it exits.  When FOO then exits, we
@@ -443,13 +443,13 @@ gct_writelog(file)
  */
 gct_readlog(file)
      char *file;
-{     
+{
   FILE *stream;
 
   Do_merge = 1;
-  
+
   GCT_READ_LOCK_OR_RETURN();	/* Failure causes return. */
-  
+
   stream = openlog(file);
   if (NULL == stream)
     {

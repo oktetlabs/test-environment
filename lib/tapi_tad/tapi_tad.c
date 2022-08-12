@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -227,7 +227,7 @@ tapi_csap_get_duration(const char *ta_name, int ta_sid,
 
 
 /* Description in tapi_tad.h */
-int 
+int
 tapi_csap_get_status(const char *ta_name, int ta_sid, csap_handle_t csap_id,
                                 tad_csap_status_t *status)
 {
@@ -248,7 +248,7 @@ tapi_csap_get_status(const char *ta_name, int ta_sid, csap_handle_t csap_id,
 
     *status = (int)tmp;
 
-    RETURN_RC(0); 
+    RETURN_RC(0);
 }
 
 /* Description in tapi_tad.h */
@@ -322,8 +322,8 @@ tapi_tad_csap_destroy(const char *ta_name, int session,
 }
 
 /* Description in tapi_tad.h */
-te_errno 
-tapi_tad_trsend_start(const char *ta_name, int session, 
+te_errno
+tapi_tad_trsend_start(const char *ta_name, int session,
                       csap_handle_t csap, const asn_value *templ,
                       rcf_call_mode_t blk_mode)
 {
@@ -385,7 +385,7 @@ tapi_tad_trrecv_start(const char *ta_name, int session,
 
     asn_free_value(my_ptrn);
 
-    rc = rcf_ta_trrecv_start(ta_name, session, handle, 
+    rc = rcf_ta_trrecv_start(ta_name, session, handle,
                              tmp_name, timeout, num, mode);
     unlink(tmp_name);
     if (rc != 0)
@@ -450,7 +450,7 @@ tapi_tad_trrecv_make_cb_data(tapi_tad_trrecv_cb  callback,
     }
     res->callback = callback;
     res->user_data = user_data;
-    
+
     return res;
 }
 
@@ -524,24 +524,24 @@ tapi_tad_add_iterator_for(asn_value *templ, int begin, int end, int step)
         ERROR("%s(): error of init iterators ASN value: %r",
               __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
-    } 
+    }
 
     snprintf(buf, sizeof(buf), "simple-for:{begin %d, end %d, step %d}",
              begin, end, step);
-    rc = asn_parse_value_text(buf, ndn_template_parameter, 
+    rc = asn_parse_value_text(buf, ndn_template_parameter,
                               &simple_for, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): parse simple-for failed %r on sym %d", 
+        ERROR("%s(): parse simple-for failed %r on sym %d",
               __FUNCTION__, rc, syms);
-        return TE_RC(TE_TAPI, rc); 
+        return TE_RC(TE_TAPI, rc);
     }
 
     rc = asn_insert_indexed(iterators, simple_for, -1, "");
     if (rc != 0)
     {
         ERROR("%s(): insert iterator failed %r", __FUNCTION__, rc);
-        return TE_RC(TE_TAPI, rc); 
+        return TE_RC(TE_TAPI, rc);
     }
 
     return 0;
@@ -553,7 +553,7 @@ tapi_tad_add_iterator_for(asn_value *templ, int begin, int end, int step)
 int
 tapi_tad_forward_all(const char *ta_name, int session,
                      csap_handle_t csap_rcv, csap_handle_t csap_fwd,
-                     asn_value *pattern, 
+                     asn_value *pattern,
                      unsigned int timeout, unsigned int *forwarded)
 {
     int rc;
@@ -563,7 +563,7 @@ tapi_tad_forward_all(const char *ta_name, int session,
     {
         ERROR("%s(): Invalid input", __FUNCTION__);
         return TE_RC(TE_TAPI, EINVAL);
-    } 
+    }
 
     if (csap_fwd != CSAP_INVALID_HANDLE)
     {
@@ -579,10 +579,10 @@ tapi_tad_forward_all(const char *ta_name, int session,
                                TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
     if (rc != 0)
     {
-        ERROR("%s(%s:%d): trrecv_start failed %r", 
+        ERROR("%s(%s:%d): trrecv_start failed %r",
               __FUNCTION__, ta_name, csap_rcv, rc);
         return TE_RC(TE_TAPI, rc);
-    } 
+    }
     usleep(timeout * 1000);
 
     rc = rcf_ta_trrecv_stop(ta_name, session, csap_rcv, NULL, NULL,
@@ -593,7 +593,7 @@ tapi_tad_forward_all(const char *ta_name, int session,
 
 
 /* See the description in tapi_tad.h */
-te_errno 
+te_errno
 tapi_tad_socket_add_csap_layer(asn_value **csap_spec, int fd)
 {
     te_errno    rc;

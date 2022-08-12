@@ -64,7 +64,7 @@ fi
 
 # Extract major, minor and patch numbers
 krel_part=""
-while test 1 ; do 
+while test 1 ; do
     krel_part="$(echo $krel | \
                  sed -e "s/\(${krel_part}${krel_part:+[.-]}[^.-]*\).*/\1/")"
     tags="${kname}-${krel_part} ${tags}"

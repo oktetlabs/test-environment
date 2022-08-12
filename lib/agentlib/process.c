@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -592,11 +592,11 @@ register_vfork_hook(void (*prepare)(void), void (*child)(void),
 
     if (new_hook == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
+
     new_hook->hook[VFORK_HOOK_PHASE_PREPARE] = prepare;
     new_hook->hook[VFORK_HOOK_PHASE_CHILD]   = child;
     new_hook->hook[VFORK_HOOK_PHASE_PARENT]  = parent;
-    
+
     SLIST_INSERT_HEAD(&vfork_hook_list, new_hook, next);
 
     return 0;

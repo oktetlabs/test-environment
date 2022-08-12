@@ -18,7 +18,7 @@ BEGIN {
     exbranches = 0;
 }
 
-NF != 8 { 
+NF != 8 {
     print "master and delta files are incompatible" >"/dev/stderr";
     exit 1
 }

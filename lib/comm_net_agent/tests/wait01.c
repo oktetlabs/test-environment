@@ -1,13 +1,13 @@
-/** @file 
+/** @file
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 
 #include <stdio.h>
@@ -37,8 +37,8 @@
 /* The default declared size of the input buffer */
 #define DECLARED_BUFFER_LENGTH  TOTAL_BUFFER_LENGTH
 
-/* 
- * The delay (in SECONDS) that the remote station will hold in order to 
+/*
+ * The delay (in SECONDS) that the remote station will hold in order to
  * assure that the rcf_comm_agent_wait() does not return until a message
  * is sent
  */
@@ -84,7 +84,7 @@ remote_station_proc(void *arg)
 #if (HAVE_NANOSLEEP == 1)
     {
        struct timespec t;
-       
+
        t.tv_nsec = 0;
        t.tv_sec = REMOTE_SEND_DELAY;
        if (nanosleep(&t, NULL) < 0)
@@ -92,14 +92,14 @@ remote_station_proc(void *arg)
            char err_buf[BUFSIZ];
 
            strerror_r(errno, err_buf, sizeof(err_buf));
-           fprintf(stderr, "remote_station_proc: nanosleep() failed: %s\n", 
+           fprintf(stderr, "remote_station_proc: nanosleep() failed: %s\n",
                   err_buf);
            exit(1);
        }
     }
 #else
     sleep(REMOTE_SEND_DELAY);
-#endif /* HAVE_NANOSLEEP == 1 */    
+#endif /* HAVE_NANOSLEEP == 1 */
 
     sleep_over = 1;    /* raise the flag to let the local station know
                        that we're thru with our *sleep() */
@@ -153,7 +153,7 @@ local_station_proc(void *arg)
     len = declared_input_buffer_length;
     ptr = input_buffer;
     rc = rcf_comm_agent_wait(handle, ptr, &len, NULL);
-    
+
     /* check that the remote station really has sent us something */
     if (!sleep_over)
     {
@@ -177,11 +177,11 @@ local_station_proc(void *arg)
 
 /** @page test_rcf_net_agent_wait01 rcf_comm_agent_wait() message expectation check
  *
- * @descr The local station calls @b rcf_comm_agent_wait() and waits for 
- * some period of time. Then the remote station issues a incoming message. 
- * The function must not return before that moment. No message integrity 
+ * @descr The local station calls @b rcf_comm_agent_wait() and waits for
+ * some period of time. Then the remote station issues a incoming message.
+ * The function must not return before that moment. No message integrity
  * check is supposed in this test.
- * 
+ *
  * @author Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  * @return Test result
@@ -189,7 +189,7 @@ local_station_proc(void *arg)
  * @retval positive     Test failed
  *
  */
-int 
+int
 main(int argc, char *argv[])
 {
     int rc;
@@ -201,10 +201,10 @@ main(int argc, char *argv[])
     TEST_BUFFER_SANITY();
 
     /* launch the remote station thread */
-    rc = pthread_create(&remote_thread, /* attr */ NULL, 
+    rc = pthread_create(&remote_thread, /* attr */ NULL,
                      remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {           
+    {
        char err_buf[BUFSIZ];
 
        strerror_r(errno, err_buf, sizeof(err_buf));

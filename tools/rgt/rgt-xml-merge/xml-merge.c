@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief Test Environment: xml-merge utility callbacks.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Dmitrov  <Andrey.Dmitrov@oktetlabs.ru>
@@ -95,7 +95,7 @@ static rgt_file_ctx *prev_stream;
 
 /**
  * Find the ts_val attribute and get timestamp value of the message.
- * 
+ *
  * @param atts  Array with element attributes
  * @param ctx   Stream context
  */
@@ -159,7 +159,7 @@ rgt_check_curr_stream(void)
 
 /**
  * Save the last tag to context to print later.
- * 
+ *
  * @param tag   The tag name
  * @param atts  Array with element attributes
  * @param ctx   Stream context
@@ -178,7 +178,7 @@ rgt_save_tag(const char *tag, const char **atts, rgt_file_ctx *ctx)
     size = RGT_MSG_SIZE;
 
     clen = snprintf(ctx->last_tag, size, "<%s", tag);
-    
+
     if (atts != NULL)
     {
         bool attr_name = true;
@@ -211,7 +211,7 @@ rgt_save_tag(const char *tag, const char **atts, rgt_file_ctx *ctx)
 
 /**
  * Print the tag with attributes.
- * 
+ *
  * @param tag   The tag name
  * @param atts  Array with element attributes
  */
@@ -318,7 +318,7 @@ rgt_log_characters(void *in_ctx, const xmlChar *ch, int len)
 }
 
 /**
- * Callback function that is called when XML parser meets the end of 
+ * Callback function that is called when XML parser meets the end of
  * an element.
  *
  * @param  in_ctx     Pointer to user-specific data (user context)
@@ -374,9 +374,9 @@ rgt_log_start_document(void *in_ctx)
  * The callback is called for resolving entities (& NAME ;)
  * In case of SAX parser it converts standard entities into their values
  * (&gt; -> ">", &lt; -> "<", &amp; -> "&"),
- * but in case of HTML we must not convert them, but leave them as they 
+ * but in case of HTML we must not convert them, but leave them as they
  * are, so that this function makes a HACK for that.
- * If you want how to force libxml2 SAX parser leave standard entries 
+ * If you want how to force libxml2 SAX parser leave standard entries
  * without expanding - update this code!
  */
 static xmlEntityPtr
@@ -472,9 +472,9 @@ usage(void)
 
 /**
  * Function initialize a file context and add It to the list.
- * 
+ *
  * @param fname     The file name
- * 
+ *
  * @return Status code.
  * @retval 0    Success
  * @retval -1   Errors: couldn't open the file; couldn't read a block chars
@@ -532,7 +532,7 @@ rgt_add_input_file_cleanup:
 
 /**
  * Release stream context.
- * 
+ *
  * @param ctx   Context of the stream
  */
 static void
@@ -546,7 +546,7 @@ rgt_release_ctx(rgt_file_ctx *ctx)
     free(ctx);
 }
 
-/** 
+/**
  * Parse and process the input files.
  */
 static void
@@ -583,10 +583,10 @@ rgt_parse_xml_files(void)
 
 /**
  * Copy data from input file/stream to output file/stream.
- * 
+ *
  * @param out_str   Output file name or "-" for stdout stream.
  * @param in_str    Input file name or "-" for stdin stream.
- * 
+ *
  * @return Status code
  * @retval 0        Success
  * @retval -1       Couldn't open file

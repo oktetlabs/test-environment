@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -157,12 +157,12 @@ typedef enum {
     RPC_ECANCELED = TE_RC(TE_RPC, TE_ECANCELED),
     RPC_ERPCNOTSUPP = TE_RC(TE_RPC, TE_ERPCNOTSUPP),
     RPC_WSANOTINITIALISED = TE_RC(TE_RPC, TE_WSANOTINITIALISED),
-    
+
     RPC_E_UNEXP_NET_ERR = TE_RC(TE_RPC, TE_E_UNEXP_NET_ERR),
     RPC_E_WAIT_TIMEOUT = TE_RC(TE_RPC, TE_E_WAIT_TIMEOUT),
 
     RPC_E_OPERATION_ABORTED = TE_RC(TE_RPC, TE_E_OPERATION_ABORTED),
-    
+
     RPC_E_IO_INCOMPLETE = TE_RC(TE_RPC, TE_E_IO_INCOMPLETE),
     RPC_E_IO_PENDING = TE_RC(TE_RPC, TE_E_IO_PENDING),
     RPC_E_NETNAME_DELETED = TE_RC(TE_RPC, TE_E_NETNAME_DELETED),
@@ -175,12 +175,12 @@ typedef enum {
     RPC_E_ROOT_FULL = TE_RC(TE_RPC, TE_E_ROOT_FULL),
 
     RPC_EUNSPEC = TE_RC(TE_RPC, TE_EUNSPEC),
-    
+
     RPC_EUNKNOWN = TE_RC(TE_RPC, TE_EUNKNOWN),
 } rpc_errno;
 
 /** Convert system native errno to RPC errno */
-static inline rpc_errno 
+static inline rpc_errno
 errno_h2rpc(int host_errno_val)
 {
     return TE_RC(TE_RPC, te_rc_os2te(host_errno_val));

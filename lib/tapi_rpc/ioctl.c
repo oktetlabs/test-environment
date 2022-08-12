@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -255,7 +255,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     rpc_ifr_name.rpc_ifr_name_len =
                     sizeof(((struct ifreq *)arg)->ifr_name);
                 in.req.req_val[0].ioctl_request_u.req_ifreq.
-                    rpc_ifr_ifindex = 
+                    rpc_ifr_ifindex =
                     ((struct ifreq *)arg)->ifr_ifindex;
             }
             break;
@@ -352,17 +352,17 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             if (arg != NULL)
             {
                 in.req.req_val[0].type = IOCTL_SGIO;
-                
+
                 in.req.req_val[0].ioctl_request_u.req_sgio.
                     interface_id = ((sg_io_hdr_t *) arg)->interface_id;
-                
+
                 in.req.req_val[0].ioctl_request_u.req_sgio.
                     dxfer_direction = ((sg_io_hdr_t *) arg)->
                     dxfer_direction;
-                
+
                 in.req.req_val[0].ioctl_request_u.req_sgio.
                     cmd_len = ((sg_io_hdr_t *) arg)->cmd_len;
-                
+
                 in.req.req_val[0].ioctl_request_u.req_sgio.
                     mx_sb_len = ((sg_io_hdr_t *) arg)->mx_sb_len;
 
@@ -417,7 +417,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
                 in.req.req_val[0].ioctl_request_u.req_sgio.
                     driver_status = ((sg_io_hdr_t *) arg)->driver_status;
-                
+
                 in.req.req_val[0].ioctl_request_u.req_sgio.
                     resid = ((sg_io_hdr_t *) arg)->resid;
                 in.req.req_val[0].ioctl_request_u.req_sgio.
@@ -510,14 +510,14 @@ rpc_ioctl(rcf_rpc_server *rpcs,
         {
             int           size = 0;
             struct ifreq *ifr = (struct ifreq *)arg;
-            tarpc_ifreq  *rpc_ifreq = 
+            tarpc_ifreq  *rpc_ifreq =
                     &in.req.req_val[0].ioctl_request_u.req_ifreq;
 
             in.req.req_val[0].type = IOCTL_IFREQ;
             if (ifr == NULL)
                 break;
             rpc_ifreq->rpc_ifr_name.rpc_ifr_name_val = ifr->ifr_name;
-            rpc_ifreq->rpc_ifr_name.rpc_ifr_name_len = 
+            rpc_ifreq->rpc_ifr_name.rpc_ifr_name_len =
                     sizeof(ifr->ifr_name);
 
             if (ifr->ifr_data == NULL)
@@ -629,7 +629,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             case IOCTL_IFREQ:
             {
                 struct ifreq        *ifreq = (struct ifreq *)arg;
-                struct tarpc_ifreq  *rpc_ifreq = 
+                struct tarpc_ifreq  *rpc_ifreq =
                         &out.req.req_val[0].ioctl_request_u.req_ifreq;
 
                 switch (request)
@@ -687,7 +687,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                                 tarpc_ethtool_data_u,
                                    size);
 
-                            *((tarpc_ethtool_command *)(ifreq->ifr_data)) = 
+                            *((tarpc_ethtool_command *)(ifreq->ifr_data)) =
                                     rpc_ifreq->rpc_ifr_ethtool.command;
                             break;
                         }
@@ -713,18 +713,18 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     rpc_ifc_req.rpc_ifc_req_val;
 
                 struct ifreq *req = ((struct ifconf *)arg)->ifc_req;
-                    
+
                 int n = out.req.req_val[0].ioctl_request_u.req_ifconf.nmemb;
-                
+
                 if (((struct ifconf *)arg)->ifc_len != 0 &&
-                    (int)(n * sizeof(struct ifreq)) > 
+                    (int)(n * sizeof(struct ifreq)) >
                     ((struct ifconf *)arg)->ifc_len)
                 {
                     ERROR("TA returned too many interfaces from "
                           "ioctl(SIOCGIFCONF) - it seems that it "
                           "ignores ifc_len");
                 }
-                
+
                 ((struct ifconf *)arg)->ifc_len = n * sizeof(struct ifreq) +
                     out.req.req_val[0].ioctl_request_u.req_ifconf.extra;
 
@@ -758,25 +758,25 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
                 RING("IOCTL SG: status=0x%x, host_status=0x%x, "
                      "driver_status=0x%x",
-                     out.req.req_val[0].ioctl_request_u.req_sgio.status, 
+                     out.req.req_val[0].ioctl_request_u.req_sgio.status,
                      out.req.req_val[0].ioctl_request_u.
-                     req_sgio.host_status, 
+                     req_sgio.host_status,
                      out.req.req_val[0].ioctl_request_u.
                      req_sgio.driver_status);
 
-                memcpy(((sg_io_hdr_t *) arg)->dxferp, 
-                       out.req.req_val[0].ioctl_request_u.req_sgio. 
-                       dxferp.dxferp_val, 
+                memcpy(((sg_io_hdr_t *) arg)->dxferp,
+                       out.req.req_val[0].ioctl_request_u.req_sgio.
+                       dxferp.dxferp_val,
                        out.req.req_val[0].ioctl_request_u.req_sgio.
                        dxferp.dxferp_len);
-                memcpy(((sg_io_hdr_t *) arg)->cmdp, 
-                       out.req.req_val[0].ioctl_request_u.req_sgio. 
-                       cmdp.cmdp_val, 
+                memcpy(((sg_io_hdr_t *) arg)->cmdp,
+                       out.req.req_val[0].ioctl_request_u.req_sgio.
+                       cmdp.cmdp_val,
                        out.req.req_val[0].ioctl_request_u.req_sgio.
                        cmdp.cmdp_len);
-                memcpy(((sg_io_hdr_t *) arg)->sbp, 
-                       out.req.req_val[0].ioctl_request_u.req_sgio. 
-                       sbp.sbp_val, 
+                memcpy(((sg_io_hdr_t *) arg)->sbp,
+                       out.req.req_val[0].ioctl_request_u.req_sgio.
+                       sbp.sbp_val,
                        out.req.req_val[0].ioctl_request_u.req_sgio.
                        sbp.sbp_len);
                 ((sg_io_hdr_t *) arg)->status =
@@ -843,7 +843,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 assert(FALSE);
         }
     }
-    
+
     switch (in.req.req_val != NULL ? in.req.req_val[0].type : IOCTL_UNKNOWN)
     {
         case IOCTL_SGIO:
@@ -952,7 +952,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 case RPC_SIOCETHTOOL:
                 {
                     struct ifreq            *ifr = (struct ifreq *)arg;
-                    tarpc_ethtool_command    cmd = 
+                    tarpc_ethtool_command    cmd =
                             *((tarpc_ethtool_command *)ifr->ifr_data);
                     tarpc_ethtool_type       type = ethtool_cmd2type(cmd);
 
@@ -984,7 +984,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
                         case TARPC_ETHTOOL_PADDR:
                         {
-                            struct tarpc_ethtool_perm_addr *eaddr = 
+                            struct tarpc_ethtool_perm_addr *eaddr =
                                 (struct tarpc_ethtool_perm_addr *)
                                                             ifr->ifr_data;
 

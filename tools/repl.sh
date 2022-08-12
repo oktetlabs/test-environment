@@ -17,7 +17,7 @@ for i in *.h *.c ; do
              sed -e "s/LOGS_DEBUG *\([^(]*(\)[^,]*, */ERROR\1/" |
              sed -e "s/LOGF_TRACE *\([^(]*(\)[^,]*, */F_VERB\1/" |
              sed -e "s/LOGF_DEBUG *\([^(]*(\)[^,]*, */F_ERROR\1/" > x
-    mv x $i ; 
+    mv x $i ;
 done
 
 #cd $TE_DIR

@@ -2,11 +2,11 @@
  * @brief Test Environment
  *
  * Tests on generic TAD functionality.
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
- * 
+ *
+ *
  */
 
 /** @page common-poll_one Call traffic poll operation for one CSAP
@@ -15,7 +15,7 @@
  *            different scenarious.
  *
  * @par Scenario:
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */

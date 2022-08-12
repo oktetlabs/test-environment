@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * Simple UDP CSAP test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "ipstack/tcp_simple"
@@ -55,15 +55,15 @@ main(int argc, char *argv[])
     char path[1000];
 
 
-    TEST_START; 
-    
+    TEST_START;
+
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
     agt_a = ta;
-    if (strlen(ta) + 1 >= len) 
+    if (strlen(ta) + 1 >= len)
         TEST_FAIL("There is no second Test Agent");
 
     agt_b = ta + strlen(ta) + 1;
@@ -77,7 +77,7 @@ main(int argc, char *argv[])
             TEST_FAIL("rcf_ta_create_session failed");
             return 1;
         }
-        INFO("Test: Created session: %d", sid); 
+        INFO("Test: Created session: %d", sid);
     }
 
     if ((rc = rcf_rpc_server_create(agt_b, "FIRST", &srv_src)) != 0)
@@ -85,7 +85,7 @@ main(int argc, char *argv[])
         TEST_FAIL("Cannot create server %x", rc);
     }
     srv_src->def_timeout = 5000;
-    
+
     rcf_rpc_setlibname(srv_src, NULL);
 
 
@@ -94,9 +94,9 @@ main(int argc, char *argv[])
         TEST_FAIL("Cannot create server %x", rc);
     }
     srv_dst->def_timeout = 5000;
-    
+
     rcf_rpc_setlibname(srv_dst, NULL);
- 
+
     do {
         asn_value *csap_spec, *pattern;
 
@@ -107,13 +107,13 @@ main(int argc, char *argv[])
         int num;
         int rc_mod;
 
-        if ((sock_src = rpc_socket(srv_src, RPC_AF_INET, RPC_SOCK_STREAM, 
+        if ((sock_src = rpc_socket(srv_src, RPC_AF_INET, RPC_SOCK_STREAM,
                             RPC_IPPROTO_TCP)) < 0 || srv_src->_errno != 0)
         {
             TEST_FAIL("Calling of RPC socket() failed %r", srv_src->_errno);
         }
 
-        if ((sock_dst = rpc_socket(srv_dst, RPC_AF_INET, RPC_SOCK_STREAM, 
+        if ((sock_dst = rpc_socket(srv_dst, RPC_AF_INET, RPC_SOCK_STREAM,
                             RPC_IPPROTO_TCP)) < 0 || srv_dst->_errno != 0)
         {
             TEST_FAIL("Calling of RPC socket() failed %r", srv_dst->_errno);
@@ -121,32 +121,32 @@ main(int argc, char *argv[])
 
         rc = asn_parse_value_text("{layers {tcp:{local-port plain:0}, "
                                   " ip4:{max-packet-size plain:100000},"
-                                  " eth:{device-id plain:\"eth0\"}}}", 
+                                  " eth:{device-id plain:\"eth0\"}}}",
                                   ndn_csap_spec, &csap_spec, &num);
         VERB("CSAP spec parse rc %X, syms %d", rc, num);
         if (rc)
-            TEST_FAIL("ASN error"); 
+            TEST_FAIL("ASN error");
 
-        strcpy(path, "/tmp/te_tcp_csap_create.XXXXXX"); 
-        mkstemp(path); 
+        strcpy(path, "/tmp/te_tcp_csap_create.XXXXXX");
+        mkstemp(path);
         VERB("file name for csap spec: '%s'", path);
 
         asn_save_to_file(csap_spec, path);
 
 
-        rc = rcf_ta_csap_create(ta, sid, "tcp.ip4.eth", path, &csap); 
-        INFO("csap_create rc: %d, csap id %d\n", rc, csap); 
+        rc = rcf_ta_csap_create(ta, sid, "tcp.ip4.eth", path, &csap);
+        INFO("csap_create rc: %d, csap id %d\n", rc, csap);
         if ((rc_mod = TE_RC_GET_MODULE(rc)) != 0)
         {
-            INFO ("rc from module %d is %r\n", 
+            INFO ("rc from module %d is %r\n",
                         rc_mod, TE_RC_GET_ERROR(rc));
-        } 
+        }
 
-        strcpy(path, "/tmp/te_tcp_pattern.XXXXXX"); 
-        mkstemp(path); 
+        strcpy(path, "/tmp/te_tcp_pattern.XXXXXX");
+        mkstemp(path);
         VERB("file name for tcp pattern: '%s'", path);
 
-        num = 0; 
+        num = 0;
         rc = asn_parse_value_text(
 "{{ action function:\"tadf_forw_packet:a\","
 " pdus {tcp:{dst-port plain:6100},"
@@ -154,7 +154,7 @@ main(int argc, char *argv[])
                                   ndn_traffic_pattern, &pattern, &num);
         VERB("Pattern parse rc %X, syms %d", rc, num);
         if (rc)
-            TEST_FAIL("ASN error"); 
+            TEST_FAIL("ASN error");
 
         asn_save_to_file(pattern, path);
 #if 1
@@ -181,7 +181,7 @@ main(int argc, char *argv[])
 
 #endif
         rc = rcf_ta_csap_destroy(ta, sid, csap);
-        INFO("csap %d destroy: %r ", csap, rc); 
+        INFO("csap %d destroy: %r ", csap, rc);
 
     } while(0);
 

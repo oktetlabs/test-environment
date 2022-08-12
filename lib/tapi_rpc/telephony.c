@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Evgeny I. Omelchenko <Evgeny.Omelchenko@oktetlabs.ru>
@@ -34,10 +34,10 @@ rpc_telephony_open_channel(rcf_rpc_server *rpcs, int port)
 {
     tarpc_telephony_open_channel_in     in;
     tarpc_telephony_open_channel_out    out;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -58,10 +58,10 @@ rpc_telephony_close_channel(rcf_rpc_server *rpcs, int chan)
 {
     tarpc_telephony_close_channel_in    in;
     tarpc_telephony_close_channel_out   out;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -82,10 +82,10 @@ rpc_telephony_pickup(rcf_rpc_server *rpcs, int chan)
 {
     tarpc_telephony_pickup_in   in;
     tarpc_telephony_pickup_out  out;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -106,10 +106,10 @@ rpc_telephony_hangup(rcf_rpc_server *rpcs, int chan)
 {
     tarpc_telephony_hangup_in   in;
     tarpc_telephony_hangup_out  out;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -131,10 +131,10 @@ rpc_telephony_check_dial_tone(rcf_rpc_server *rpcs, int chan,
 {
     tarpc_telephony_check_dial_tone_in  in;
     tarpc_telephony_check_dial_tone_out out;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -165,10 +165,10 @@ rpc_telephony_dial_number(rcf_rpc_server *rpcs,
 {
     tarpc_telephony_dial_number_in  in;
     tarpc_telephony_dial_number_out out;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);

@@ -11,7 +11,7 @@
 #
 #
 
-function update_summary() 
+function update_summary()
 {
     sumline = sprintf("%d %d %d %d %s %d", lines, executed, branches, exbranches, sourcefile, nfile);
     if (SORTMODE == "filename")
@@ -83,7 +83,7 @@ $1 == "SUMMARY" {
     source="/** unavailable **/"
     lineno++;
     getline source < sourcefile;
-    if (compactify && $1 == "-" && $2 == "*" && $3 == "*" && $4 == "*") 
+    if (compactify && $1 == "-" && $2 == "*" && $3 == "*" && $4 == "*")
     {
         skipped++;
         next;
@@ -111,10 +111,10 @@ $1 == "SUMMARY" {
         split($3, br, ":");
         for (i = 1; i in br; i++)
         {
-            brc = sprintf("%s%s[branch %d: %.2f%%]%s", 
-                          brc, 
-                          br[i] + 0 == 0 ? "<strong>" : "", 
-                          i, 
+            brc = sprintf("%s%s[branch %d: %.2f%%]%s",
+                          brc,
+                          br[i] + 0 == 0 ? "<strong>" : "",
+                          i,
                           ($1 + 0 == 0 ? 100 : br[i] * 100 / $1),
                           br[i] + 0 == 0 ? "</strong>" : "");
         }
@@ -125,16 +125,16 @@ $1 == "SUMMARY" {
         split($4, cl, ":");
         for (i = 1; i in cl; i++)
         {
-            cc = sprintf("%s%s[call %d returned: %.2f%%]%s", 
-                         cc, 
-                         cl[i] + 0 == 0 ? "<strong>" : "", 
-                         i, 
+            cc = sprintf("%s%s[call %d returned: %.2f%%]%s",
+                         cc,
+                         cl[i] + 0 == 0 ? "<strong>" : "",
+                         i,
                          ($1 + 0 == 0 ? 100 : cl[i] * 100 / $1),
                          cl[i] + 0 == 0 ? "</strong>" : "");
         }
     }
 
-    if ($1 == "0") 
+    if ($1 == "0")
     {
         empho = "<strong>";
         emphc = "</strong>";
@@ -151,9 +151,9 @@ $1 == "SUMMARY" {
         empho = "<font color=\"gray\">";
         emphc = "</font>"
     }
-    printf "<tr><td align=\"right\">%s%s%s</td><td>%s%s%s %s%s</td></tr>\n", 
-        empho, $1, emphc, empho, source, emphc, 
-        (brc ? "<small>" : "") brc (brc ? "</small>" : ""), 
+    printf "<tr><td align=\"right\">%s%s%s</td><td>%s%s%s %s%s</td></tr>\n",
+        empho, $1, emphc, empho, source, emphc,
+        (brc ? "<small>" : "") brc (brc ? "</small>" : ""),
         (cc ? "<small>" : "") cc (cc ? "</small>" : "") >> destfile;
 
     skipped = 0;
@@ -173,8 +173,8 @@ END {
     for (i = 1; i in sorted; i++)
     {
         split(summary[sorted[i]], sumfields);
-        printf "<tr><td><a href=\"%s/%d.html\">%s</a></td><td>%.2f%% of %d</td><td>%.2f%% of %d</td>", 
-            url, sumfields[6], sumfields[5], 
+        printf "<tr><td><a href=\"%s/%d.html\">%s</a></td><td>%.2f%% of %d</td><td>%.2f%% of %d</td>",
+            url, sumfields[6], sumfields[5],
             sumfields[1] == 0 ? "100" : (sumfields[2] * 100 / sumfields[1]), sumfields[1],
             sumfields[3] == 0 ? "100" : (sumfields[4] * 100 / sumfields[3]), sumfields[3];
     }

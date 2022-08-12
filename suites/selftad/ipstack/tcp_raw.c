@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * Simple UDP CSAP test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "ipstack/tcp_raw"
@@ -38,7 +38,7 @@
 
 void
 tcp_handler(char *fn, void *p)
-{ 
+{
     int rc, s_parsed;
     asn_value *packet, *eth_header;
 
@@ -57,7 +57,7 @@ tcp_handler(char *fn, void *p)
         rc = ndn_eth_packet_to_plain(eth_header, &eh);
     }
     else
-        ERROR("parse file failed, rc = %x, symbol %d\n", rc, s_parsed); 
+        ERROR("parse file failed, rc = %x, symbol %d\n", rc, s_parsed);
 
 }
 
@@ -76,16 +76,16 @@ main(int argc, char *argv[])
     char *pattern_file;
 
 
-    TEST_START; 
+    TEST_START;
     TEST_GET_STRING_PARAM(pattern_file);
-    
+
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
     agt_a = ta;
-    if (strlen(ta) + 1 >= len) 
+    if (strlen(ta) + 1 >= len)
         TEST_FAIL("There is no second Test Agent");
 
     agt_b = ta + strlen(ta) + 1;
@@ -99,7 +99,7 @@ main(int argc, char *argv[])
             ERROR("rcf_ta_create_session failed\n");
             return 1;
         }
-        INFO("Test: Created session: %d\n", sid); 
+        INFO("Test: Created session: %d\n", sid);
     }
 
     do {
@@ -115,15 +115,15 @@ main(int argc, char *argv[])
         if (te_suites)
             INFO("te_suites: %s\n", te_suites);
 
-        INFO("let's create UDP data csap \n"); 
-        rc = tapi_udp4_csap_create(ta, sid, NULL, "0.0.0.0", 
-                                    5678, 0, &csap); 
-        INFO("csap_create rc: %d, csap id %d\n", rc, csap); 
+        INFO("let's create UDP data csap \n");
+        rc = tapi_udp4_csap_create(ta, sid, NULL, "0.0.0.0",
+                                    5678, 0, &csap);
+        INFO("csap_create rc: %d, csap id %d\n", rc, csap);
         if ((rc_mod = TE_RC_GET_MODULE(rc)) != 0)
         {
-            INFO ("rc from module %d is %r\n", 
+            INFO ("rc from module %d is %r\n",
                         rc_mod, TE_RC_GET_ERROR(rc));
-        } 
+        }
         if (rc) break;
 
 #if 1
@@ -150,7 +150,7 @@ main(int argc, char *argv[])
 
 #endif
         rc = rcf_ta_csap_destroy(ta, sid, csap);
-        INFO("csap %d destroy: %r ", csap, rc); 
+        INFO("csap %d destroy: %r ", csap, rc);
 
     } while(0);
 

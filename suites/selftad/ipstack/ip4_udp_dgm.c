@@ -1,15 +1,15 @@
 /** @file
  * @brief Test Environment
  *
- * IPv4 CSAP test: send packet through ip4.eth CSAP with UDP payload, 
- * caught it with UDP socket. 
- * 
+ * IPv4 CSAP test: send packet through ip4.eth CSAP with UDP payload,
+ * caught it with UDP socket.
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "ipstack/ip4_udp_dgm"
@@ -27,7 +27,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "ipstack-ts.h" 
+#include "ipstack-ts.h"
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -69,7 +69,7 @@ main(int argc, char *argv[])
     rcf_rpc_server *pco = NULL;
     rcf_rpc_server *pco_a = NULL;
 
-    asn_value *template; /* template for traffic generation */ 
+    asn_value *template; /* template for traffic generation */
 
     /* checksum = 0 */
     uint8_t udp_dgm_image[] = {0x00, 0x00, 0x00, 0x00,
@@ -86,7 +86,7 @@ main(int argc, char *argv[])
 
     uint8_t rcv_buffer[2000];
 
-    TEST_START; 
+    TEST_START;
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(pco);
     TEST_GET_PCO(pco_a);
@@ -95,9 +95,9 @@ main(int argc, char *argv[])
     TEST_GET_ADDR(pco, pco_addr);
     TEST_GET_ADDR(pco_a, csap_addr);
 
-    CHECK_RC(tapi_cfg_get_hwaddr(pco->ta, pco_if->if_name, 
+    CHECK_RC(tapi_cfg_get_hwaddr(pco->ta, pco_if->if_name,
                                  pco_mac, &pco_mac_len));
-    
+
 
     /******** Find TA names *************/
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
@@ -106,7 +106,7 @@ main(int argc, char *argv[])
     INFO("Found first TA: %s; len %d", ta, len);
 
     agt_a = host_csap->ta;
-    if (strlen(ta) + 1 >= len) 
+    if (strlen(ta) + 1 >= len)
         TEST_FAIL("There is no second Test Agent");
 
     /******** Create RCF sessions *************/
@@ -114,7 +114,7 @@ main(int argc, char *argv[])
     {
         TEST_FAIL("rcf_ta_create_session failed");
     }
-    INFO("Test: Created session for A agt: %d", sid_a); 
+    INFO("Test: Created session for A agt: %d", sid_a);
 
 
     /******** Init RPC server and UDP socket *************/
@@ -138,7 +138,7 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("parse of template failed %r, syms %d", rc, syms);
 
-    if ((rc = asn_write_value_field(template, pco_mac, pco_mac_len, 
+    if ((rc = asn_write_value_field(template, pco_mac, pco_mac_len,
                                     "pdus.1.#eth.dst-addr.#plain")) != 0)
         TEST_FAIL("write pco MAC to template failed %r", rc);
 
@@ -147,7 +147,7 @@ main(int argc, char *argv[])
     *((uint16_t *)(udp_dgm_image + 2)) = SIN(csap_addr)->sin_port;
 
 
-#if 0 
+#if 0
     rc = asn_write_value_field(template, NULL, 0,
                                "pdus.0.#ip4.pld-checksum.#disable");
     if (rc != 0)
@@ -157,26 +157,26 @@ main(int argc, char *argv[])
                                sizeof(udp_dgm_image), "payload.#bytes");
     if (rc != 0)
         TEST_FAIL("set payload to template failed %X", rc);
-    rc = tapi_ip4_eth_csap_create(agt_a, sid_a, csap_if->if_name, 
+    rc = tapi_ip4_eth_csap_create(agt_a, sid_a, csap_if->if_name,
                                   TAD_ETH_RECV_DEF & ~TAD_ETH_RECV_OTHER,
                                   NULL, NULL,
-                                  SIN(csap_addr)->sin_addr.s_addr, 
+                                  SIN(csap_addr)->sin_addr.s_addr,
                                   SIN(pco_addr)->sin_addr.s_addr,
                                   -1 /* unspecified protocol */,
                                   &ip4_send_csap);
     if (rc != 0)
-        TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 
-                    TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
+        TEST_FAIL("CSAP create failed, rc from module %d is %r\n",
+                    TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc));
 
     pco->op = RCF_RPC_CALL;
     rpc_recvfrom(pco, udp_socket,
-                      rcv_buffer, sizeof(rcv_buffer), 0, 
+                      rcv_buffer, sizeof(rcv_buffer), 0,
                       SA(&from_sa), &from_len);
 
     rc = tapi_tad_trsend_start(agt_a, sid_a, ip4_send_csap,
                                template, RCF_MODE_BLOCKING);
-    if (rc != 0) 
-        TEST_FAIL("send start failed %X", rc); 
+    if (rc != 0)
+        TEST_FAIL("send start failed %X", rc);
 
     TEST_SUCCESS;
 #if 0
@@ -185,11 +185,11 @@ main(int argc, char *argv[])
     pco->op = RCF_RPC_WAIT;
 #endif
     rc = rpc_recvfrom(pco, udp_socket,
-                      rcv_buffer, sizeof(rcv_buffer), 0, 
+                      rcv_buffer, sizeof(rcv_buffer), 0,
                       SA(&from_sa), &from_len);
     if (rc <= 0)
         TEST_FAIL("wanted UDP datagram not received!");
-    RING("receive %d bytes on UDP socket", rc); 
+    RING("receive %d bytes on UDP socket", rc);
     TEST_SUCCESS;
 
 cleanup:
@@ -203,7 +203,7 @@ cleanup:
             TEST_FAIL("CSAP destroy %d on agt %s failure %X",           \
                       csap_tmp, ta_, rc);                               \
     } while (0)                                                         \
-                                                                    
+
     CLEANUP_CSAP(agt_a, sid_a, ip4_send_csap);
 
     if (udp_socket > 0)

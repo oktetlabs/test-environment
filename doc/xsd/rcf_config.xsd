@@ -10,7 +10,7 @@
         <xsd:sequence>
             <xsd:element name="arg" minOccurs="0" maxOccurs="unbounded">
                 <xsd:complexType>
-                    <xsd:attribute name="value" type="xsd:string" 
+                    <xsd:attribute name="value" type="xsd:string"
                         use="required">
                         <xsd:annotation>
                             <xsd:documentation>
@@ -27,7 +27,7 @@
                     Name of a function to call
                 </xsd:documentation>
             </xsd:annotation>
-        </xsd:attribute>     
+        </xsd:attribute>
         <xsd:attribute name="when" type="xsd:string">
             <xsd:annotation>
                 <xsd:documentation>
@@ -36,7 +36,7 @@
                     attribute is not empty
                 </xsd:documentation>
             </xsd:annotation>
-        </xsd:attribute>     
+        </xsd:attribute>
     </xsd:complexType>
 
     <xsd:simpleType name="conf_name">
@@ -160,7 +160,7 @@
             <xsd:documentation>
                 Test Environment
                 XML schema for RCF configuration file
-                
+
                 Copyright (C) 2003-2019 OKTET Labs.
 
                 Author: Elena Vengerova &lt;Elena.Vengerova@oktetlabs.ru&gt;
@@ -190,7 +190,7 @@
                             </xsd:element>
                             <xsd:choice>
                                 <xsd:element name="function"
-                                    type="function_call" 
+                                    type="function_call"
                                     minOccurs="0" maxOccurs="unbounded">
                                     <xsd:annotation>
                                         <xsd:documentation>
@@ -198,8 +198,8 @@
                                         </xsd:documentation>
                                     </xsd:annotation>
                                 </xsd:element>
-                                <xsd:element name="thread" 
-                                    type="function_call" 
+                                <xsd:element name="thread"
+                                    type="function_call"
                                     minOccurs="0" maxOccurs="unbounded">
                                     <xsd:annotation>
                                         <xsd:documentation>
@@ -207,8 +207,8 @@
                                         </xsd:documentation>
                                     </xsd:annotation>
                                 </xsd:element>
-                                <xsd:element name="task" 
-                                    type="function_call" 
+                                <xsd:element name="task"
+                                    type="function_call"
                                     minOccurs="0" maxOccurs="unbounded">
                                     <xsd:annotation>
                                         <xsd:documentation>
@@ -259,20 +259,20 @@
                             default="no">
                             <xsd:annotation>
                                 <xsd:documentation>
-                                    Indicate rebootability of TA.    
+                                    Indicate rebootability of TA.
                                 </xsd:documentation>
                             </xsd:annotation>
                         </xsd:attribute>
-                        
+
                         <xsd:attribute name="fake" type="xsd:string"
                             default="no">
                             <xsd:annotation>
                                 <xsd:documentation>
-                                    Indicate that TA is already running 
+                                    Indicate that TA is already running
                                     under gdb.
                                 </xsd:documentation>
                             </xsd:annotation>
-                        </xsd:attribute>                        
+                        </xsd:attribute>
 
                         <xsd:attribute name="disabled" type="xsd:string"
                             default="no">
@@ -281,7 +281,7 @@
                                     If 'yes', ignore this TA.
                                 </xsd:documentation>
                             </xsd:annotation>
-                        </xsd:attribute>                        
+                        </xsd:attribute>
 
                         <xsd:attribute name="cold_reboot" type="xsd:string">
                             <xsd:annotation>
@@ -302,5 +302,5 @@
             </xsd:sequence>
         </xsd:complexType>
     </xsd:element>
-    
+
 </xsd:schema>

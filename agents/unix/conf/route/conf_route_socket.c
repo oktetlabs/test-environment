@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
@@ -508,7 +508,7 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
         WARN("Route without destination address specification");
     }
 
-    
+
     if (msg->rtm_addrs & RTA_GATEWAY)
     {
         addrlen = te_sockaddr_get_size(addr);
@@ -559,7 +559,7 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
         }
         else
         {
-            /* 
+            /*
              * Gateway address is used to specify interface of the
              * direct route. Address should be own local address.
              * Map address to interface name.
@@ -650,12 +650,12 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
 
     rt_info->mtu = (msg->rtm_inits & RTV_MTU) ?
         (rt_info->flags |= TA_RT_INFO_FLG_MTU, msg->rtm_rmx.rmx_mtu) : 0;
-    
+
     rt_info->win = 0; /* No such metric */
-    
+
     rt_info->irtt = (msg->rtm_inits & RTV_RTT) ?
         (rt_info->flags |= TA_RT_INFO_FLG_IRTT, msg->rtm_rmx.rmx_rtt) : 0;
-    
+
     rt_info->tos = 0; /* No such metric/field */
 
     /* TODO: Wiser mapping */
@@ -885,7 +885,7 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
         addr = SA(((const uint8_t *)addr) + addrlen);
     }
 #if 0 /* def RTA_SRC */
-    /* 
+    /*
      * Currently source address is used as GW for direct routes,
      * it guaranties that this address is used as a source for such
      * routes. If this code is enabled, Solaris returns EADDRNOTAVAIL
@@ -903,15 +903,15 @@ ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
 
         memcpy(addr, &rt_info->src, addrlen);
 
-        msg->rtm_addrs |= RTA_SRC;        
+        msg->rtm_addrs |= RTA_SRC;
         msg->rtm_flags |= RTF_SETSRC;
-        
+
 #if HAVE_STRUCT_SOCKADDR_SA_LEN
         addr->sa_len = addrlen;
 #endif
         addr = SA(((const uint8_t *)addr) + addrlen);
     }
-#endif    
+#endif
 
     if (rt_info->flags & TA_RT_INFO_FLG_METRIC)
     {
@@ -1257,7 +1257,7 @@ cleanup:
 }
 
 /* See the description in conf_route.h */
-te_errno 
+te_errno
 ta_unix_conf_route_blackhole_del(ta_rt_info_t *rt_info)
 {
     int                 rt_sock = -1;

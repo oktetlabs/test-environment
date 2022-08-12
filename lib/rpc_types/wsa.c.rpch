@@ -16,7 +16,7 @@
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
- 
+
 #include "te_rpc_defs.h"
 #include "te_rpc_wsa.h"
 
@@ -111,7 +111,7 @@ INCLUDE(te_win_defs.h)
 unsigned int
 network_event_rpc2h(rpc_network_event flags)
 {
-    return 
+    return
            (!!(flags & RPC_FD_READ) * FD_READ) |
            (!!(flags & RPC_FD_WRITE) * FD_WRITE) |
            (!!(flags & RPC_FD_OOB) * FD_OOB) |
@@ -123,7 +123,7 @@ network_event_rpc2h(rpc_network_event flags)
            (!!(flags & RPC_FD_ROUTING_INTERFACE_CHANGE) *
                 FD_ROUTING_INTERFACE_CHANGE) |
            (!!(flags & RPC_FD_ADDRESS_LIST_CHANGE) *
-                FD_ADDRESS_LIST_CHANGE); 
+                FD_ADDRESS_LIST_CHANGE);
 }
 
 /** Convert native network evenet flags to RPC flags */
@@ -150,9 +150,9 @@ network_event_rpc2str(rpc_network_event events)
 {
     static char buf[128];
     char      * s = buf;
-    
+
     buf[0] = 0;
-    
+
 #define APPEND(_event)                                  \
     do {                                                \
         if (events & RPC_##_event)                      \
@@ -163,7 +163,7 @@ network_event_rpc2str(rpc_network_event events)
                 s += sprintf(s, " |  %s", #_event);     \
         }                                               \
     } while (0)
-    
+
     APPEND(FD_READ);
     APPEND(FD_WRITE);
     APPEND(FD_OOB);
@@ -220,7 +220,7 @@ network_event_rpc2str(rpc_network_event events)
 unsigned int
 transmit_file_flags_rpc2h(rpc_transmit_file_flags flags)
 {
-    return 
+    return
            (!!(flags & RPC_TF_DISCONNECT) * TF_DISCONNECT) |
            (!!(flags & RPC_TF_REUSE_SOCKET) * TF_REUSE_SOCKET) |
            (!!(flags & RPC_TF_USE_DEFAULT_WORKER) * TF_USE_DEFAULT_WORKER) |
@@ -295,15 +295,15 @@ servicetype_flags_h2rpc(unsigned int flags)
 unsigned int
 open_sock_flags_rpc2h(unsigned int flags)
 {
-    return 
+    return
            (!!(flags & RPC_WSA_FLAG_OVERLAPPED) * WSA_FLAG_OVERLAPPED) |
-           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_C_ROOT) * 
+           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_C_ROOT) *
             WSA_FLAG_MULTIPOINT_C_ROOT) |
-           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_C_LEAF) * 
+           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_C_LEAF) *
             WSA_FLAG_MULTIPOINT_C_LEAF) |
-           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_D_ROOT) * 
+           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_D_ROOT) *
             WSA_FLAG_MULTIPOINT_D_ROOT) |
-           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_D_LEAF) * 
+           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_D_LEAF) *
             WSA_FLAG_MULTIPOINT_D_LEAF) ;
 
 }
@@ -329,7 +329,7 @@ join_leaf_rpc2str(rpc_join_leaf_flags open_code)
 unsigned int
 join_leaf_flags_rpc2h(unsigned int flags)
 {
-    return 
+    return
            (!!(flags & RPC_JL_SENDER_ONLY) * JL_SENDER_ONLY) |
            (!!(flags & RPC_JL_RECEIVER_ONLY) * JL_RECEIVER_ONLY) |
            (!!(flags & RPC_JL_BOTH) * JL_BOTH);

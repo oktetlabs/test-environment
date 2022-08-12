@@ -2,14 +2,14 @@
 #
 # Windows Test Agent
 # Build library using native compiler
-# Agruments: 
+# Agruments:
 #     platform
 #     library name
 #     installation prefix for the platform
 #     list of source files (basenames only)
 #
 # Variable TE_BUILD_WIN_LIB_CPPFLAGS may be set to pass to pre-processor.
-#     
+#
 # Copyright (C) 2003-2018 OKTET Labs.
 #
 # Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -45,17 +45,17 @@ mkdir tmpsrc
 
 # Apply pre-processor
 
-for i in $* ; do 
+for i in $* ; do
     j=`basename $i`
     gcc -I${INCLUDE} ${TE_BUILD_WIN_LIB_CPPFLAGS} -I. \
         -include te_win.h -DWINDOWS \
-        -P -E -undef ${i} -o ${j}.tmp1 ; 
+        -P -E -undef ${i} -o ${j}.tmp1 ;
     cat ${j}.tmp1 | awk --posix '\
     /^INCLUDE/ { printf("#include <%s>\n", \
                  substr($1, 9, length($1) - 9)); next; } \
-    { print $0; }' > ${j}.tmp2 ; 
+    { print $0; }' > ${j}.tmp2 ;
     m4 -D__SOURCE__=${i} -P $BUILDER/rpcconv.m4 ${j}.tmp2 >${j}
-    rm ${j}.tmp* ; 
+    rm ${j}.tmp* ;
     indent $j ;
     mv $j tmpsrc
 done
@@ -63,15 +63,15 @@ rm -f *~
 
 # Generate the script
 cat >build.sh <<EOF
-MSSDK_CYGWIN=\$( cygpath -u "\$MSSDK" ) 
+MSSDK_CYGWIN=\$( cygpath -u "\$MSSDK" )
 export PATH="\${MSSDK_CYGWIN}/Bin$PATH_POSTFIX:\$PATH"
 rm src.tgz
-cd tmpsrc 
+cd tmpsrc
 cl /nologo -I../${PLATFORM}/include \
            -D_WIN32_WINNT=0x0501 -D_CRT_SECURE_NO_DEPRECATE \
            -DSOL_IP=IPPROTO_IP -DSOL_IPV6=IPPROTO_IPV6 \
            -DSOL_TCP=IPPROTO_TCP -DSOL_UDP=IPPROTO_UDP \
-   /Od *.c /c   
+   /Od *.c /c
 lib /OUT:${LIBNAME} /nologo *.obj
 EOF
 

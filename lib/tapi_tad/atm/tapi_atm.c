@@ -5,11 +5,11 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- */ 
+ */
 
 #define TE_LGR_USER     "TAPI ATM"
 
@@ -18,7 +18,7 @@
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#if HAVE_STRING_H 
+#if HAVE_STRING_H
 #include <string.h>
 #endif
 #if HAVE_STRINGS_H
@@ -38,7 +38,7 @@
 
 
 /* See the description in tapi_atm.h */
-te_errno 
+te_errno
 tapi_atm_add_csap_layer(asn_value      **csap_spec,
                         const char      *device,
                         ndn_atm_type     type,
@@ -71,7 +71,7 @@ tapi_atm_add_csap_layer(asn_value      **csap_spec,
 }
 
 /* See the description in tapi_atm.h */
-te_errno 
+te_errno
 tapi_atm_aal5_add_csap_layer(asn_value     **csap_spec,
                              const uint8_t  *cpcs_uu,
                              const uint8_t  *cpi)
@@ -154,7 +154,7 @@ tapi_atm_aal5_add_pdu(asn_value     **tmpl_or_ptrn,
                       te_bool         is_pattern,
                       const uint8_t  *cpcs_uu,
                       const uint8_t  *cpi)
-{ 
+{
     asn_value  *pdu;
 
     CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,

@@ -26,7 +26,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -84,7 +84,7 @@ typedef enum rgt_blk_type {
 
 /** The structure represents single variable in template */
 typedef struct rgt_var_def {
-    const char *name; /**< Name of a variable whose value should be 
+    const char *name; /**< Name of a variable whose value should be
                            output in this block */
     const char *fmt_str; /**< Format string for output this variable */
 } rgt_var_def_t;
@@ -97,17 +97,17 @@ typedef struct rgt_blk {
     /** The union field to access depends on the value of blk_type field */
     union {
         const char    *start_data; /**< Pointer to the beginning of
-                                        a constant string, which should 
+                                        a constant string, which should
                                         be output in this block */
         rgt_var_def_t  var; /**< Variable data structure */
     };
-    
+
 } rgt_blk_t;
 
 /** Structure to keep a single template */
 typedef struct rgt_tmpl {
     char         *fname; /**< Themplate file name */
-    char         *raw_ptr; /**< Pointer to the beginning of the memory 
+    char         *raw_ptr; /**< Pointer to the beginning of the memory
                                 allocated under a log template */
     rgt_blk_t    *blocks; /**< Pointer to an array of blocks */
     int           n_blocks; /**< Total number of blocks */
@@ -116,7 +116,7 @@ typedef struct rgt_tmpl {
 /**
  * Create rgt attribute list based on libxml attribute format
  *
- * @param xml_attrs  XML attributes in libxml native format 
+ * @param xml_attrs  XML attributes in libxml native format
  *                   (array of pairs: attribute name, attribute value)
  *
  * @return Pointer to the list of attributes in rgt format
@@ -158,10 +158,10 @@ extern void rgt_tmpls_attrs_saved_free(rgt_attrs_t *attrs);
 
 /**
  * Add a new string attribute into the list of rgt attributes.
- * 
+ *
  * @param attrs    Rgt attributes list
  * @param name     A new attribute name
- * @param fmt_str  Format string for the attribute value followed by 
+ * @param fmt_str  Format string for the attribute value followed by
  *                 the list of arguments
  */
 extern void rgt_tmpls_attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
@@ -170,10 +170,10 @@ extern void rgt_tmpls_attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
 /**
  * Update the value of string attribute in the list of rgt attributes.
  * If not exist it adds this attribute.
- * 
+ *
  * @param attrs    Rgt attributes list
  * @param name     A new attribute name
- * @param fmt_str  Format string for the attribute value followed by 
+ * @param fmt_str  Format string for the attribute value followed by
  *                 the list of arguments
  */
 extern void rgt_tmpls_attrs_set_fstr(rgt_attrs_t *attrs, const char *name,
@@ -181,7 +181,7 @@ extern void rgt_tmpls_attrs_set_fstr(rgt_attrs_t *attrs, const char *name,
 
 /**
  * Add a new uint32_t attribute into the list of rgt attributes.
- * 
+ *
  * @param attrs  Rgt attributes list
  * @param name   A new attribute name
  * @param val    Attribute value
@@ -192,7 +192,7 @@ extern void rgt_tmpls_attrs_add_uint32(rgt_attrs_t *attrs, const char *name,
 /**
  * Update the value of uint32_t attribute in the list of rgt attributes.
  * If not exist it adds this attribute.
- * 
+ *
  * @param attrs  Rgt attributes list
  * @param name   A new attribute name
  * @param val    Attribute value
@@ -201,10 +201,10 @@ extern void rgt_tmpls_attrs_set_uint32(rgt_attrs_t *attrs, const char *name,
                                        uint32_t val);
 
 /**
- * Get the value of attribute from the list of attributes in 
+ * Get the value of attribute from the list of attributes in
  * libxml native format.
  *
- * @param attrs  XML attributes in libxml native format 
+ * @param attrs  XML attributes in libxml native format
  *               (array of pairs: attribute name, attribute value)
  * @param name   Attribute name, whose value we want to get
  *

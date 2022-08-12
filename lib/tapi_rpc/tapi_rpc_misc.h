@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -272,7 +272,7 @@ extern int rpc_bond_get_slaves(rcf_rpc_server *rpcs,
  * @param handle      RPC server
  * @param type_name   Name of the type
  *
- * @return          Size of the type or 
+ * @return          Size of the type or
  *                  -1 if such a type does not exist.
  */
 extern tarpc_ssize_t rpc_get_sizeof(rcf_rpc_server *rpcs,
@@ -284,12 +284,12 @@ extern tarpc_ssize_t rpc_get_sizeof(rcf_rpc_server *rpcs,
  * @param rpcs               RPC server
  * @param buf1               buffer containing protocol info to compare
  * @param buf2               buffer containing protocol info to compare
- * @param is_wide1           boolean defining if fields of first 
- *                           protocol info  are wide-character 
- * @param is_wide2           boolean defining if fields of second 
- *                           protocol info are wide-character       
+ * @param is_wide1           boolean defining if fields of first
+ *                           protocol info  are wide-character
+ * @param is_wide2           boolean defining if fields of second
+ *                           protocol info are wide-character
  *
- * @return                   TRUE if information in @p buf1 is equal to 
+ * @return                   TRUE if information in @p buf1 is equal to
  *                           information in buf2
  */
 extern te_bool rpc_protocol_info_cmp(rcf_rpc_server *rpcs,
@@ -322,7 +322,7 @@ extern rpc_ptr rpc_get_addrof(rcf_rpc_server *rpcs, const char *name);
  * @note Routine jumps to failure is the variable is not found or incorrect
  *       parameters are provided
  */
-extern uint64_t rpc_get_var(rcf_rpc_server *rpcs, 
+extern uint64_t rpc_get_var(rcf_rpc_server *rpcs,
                             const char *name, tarpc_size_t size);
 
 /**
@@ -336,7 +336,7 @@ extern uint64_t rpc_get_var(rcf_rpc_server *rpcs,
  * @note Routine jumps to failure is the variable is not found or incorrect
  *       parameters are provided
  */
-extern void rpc_set_var(rcf_rpc_server *rpcs, 
+extern void rpc_set_var(rcf_rpc_server *rpcs,
                         const char *name, tarpc_size_t size, uint64_t val);
 
 /**
@@ -500,21 +500,21 @@ extern int rpc_wait_readable(rcf_rpc_server *rpcs, int s, uint32_t timeout);
  * Verification made by function, which name is passed.
  * This function should generate block of data by start sequence
  * number (which is passed) and length. Then received and generated
- * buffers are compared. 
- * Socket method recv(..., MSG_DONTWAIT) used. 
+ * buffers are compared.
+ * Socket method recv(..., MSG_DONTWAIT) used.
  *
  * @param handle            RPC server
  * @param s                 a socket to be user for receiving
  * @param gen_data_fname    name of function to generate data
- * @param start             sequence number of first byte will be 
- *                          received. 
+ * @param start             sequence number of first byte will be
+ *                          received.
  *
  * @return number of received bytes, -1 if system error, -2 if data
  *         not match.
  */
 extern int rpc_recv_verify(rcf_rpc_server *handle, int s,
                            const char *gen_data_fname, uint64_t start);
-                            
+
 /**
  * Routine which receives data from specified set of sockets and sends
  * data to specified set of sockets with maximum speed using I/O
@@ -617,7 +617,7 @@ extern int rpc_iomux_splice(rcf_rpc_server *rpcs, int iomux, int fd_in,
  * @param path_name     path name where write received data
  * @param timeout       timeout to finish processing
  *
- * @return Number of processed bytes or -1 in the case of failure 
+ * @return Number of processed bytes or -1 in the case of failure
  */
 extern ssize_t rpc_socket_to_file(rcf_rpc_server *handle,
                                   int sock, const char *path_name,
@@ -922,7 +922,7 @@ rpc_set_buf_off(rcf_rpc_server *rpcs, const uint8_t *src_buf,
  * Fill @b dst_buf located in TA address space by specified pattern
  *
  * @param rpcs     RPC server handle
- * @param pattern  pattern to be used for buffer filling 
+ * @param pattern  pattern to be used for buffer filling
  *                 (TAPI_RPC_BUF_RAND if the buffer
  *                 should be filled by random data)
  * @param len      length of data to be copied
@@ -930,7 +930,7 @@ rpc_set_buf_off(rcf_rpc_server *rpcs, const uint8_t *src_buf,
  * @param offset   displacement in the destination buffer
  */
 extern void rpc_set_buf_pattern_gen(rcf_rpc_server *rpcs, int pattern,
-                                    size_t len, 
+                                    size_t len,
                                     rpc_ptr dst_buf, size_t dst_off);
 static inline void
 rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
@@ -942,12 +942,12 @@ static inline void
 rpc_set_buf_pattern_off(rcf_rpc_server *rpcs, int pattern,
                         size_t len, rpc_ptr_off *dst_buf)
 {
-    rpc_set_buf_pattern_gen(rpcs, pattern, len, 
+    rpc_set_buf_pattern_gen(rpcs, pattern, len,
                             dst_buf->base, dst_buf->offset);
 }
 
 /**
- * Copy the @b src_buf buffer located in TA address space to the 
+ * Copy the @b src_buf buffer located in TA address space to the
  * @b dst_buf buffer.
  *
  * @param rpcs     RPC server handle
@@ -956,7 +956,7 @@ rpc_set_buf_pattern_off(rcf_rpc_server *rpcs, int pattern,
  * @param len      length of data to be copied
  * @param dst_buf  destination buffer
  */
-extern void rpc_get_buf_gen(rcf_rpc_server *rpcs, 
+extern void rpc_get_buf_gen(rcf_rpc_server *rpcs,
                             rpc_ptr src_buf, size_t src_off,
                             size_t len, uint8_t *dst_buf);
 static inline void
@@ -985,11 +985,11 @@ rpc_get_buf_off(rcf_rpc_server *rpcs, rpc_ptr_off *src_buf,
  * @param child_s        duplicated socket on @b pco_child
  */
 extern void rpc_create_child_process_socket(const char *method,
-                                            rcf_rpc_server *pco_father, 
-                                            int father_s, 
+                                            rcf_rpc_server *pco_father,
+                                            int father_s,
                                             rpc_socket_domain domain,
                                             rpc_socket_type sock_type,
-                                            rcf_rpc_server **pco_child, 
+                                            rcf_rpc_server **pco_child,
                                             int *child_s);
 
 /**
@@ -1011,7 +1011,7 @@ extern te_errno tapi_sigaction_simple(rcf_rpc_server *rpcs,
 
 /**
  * Join a multicasting group on specified interface.
- * 
+ *
  * @param  rpcs       RPC server handle
  * @param  s          socket descriptor
  * @param  mcast_addr multicast address (IPv4 or IPv6).
@@ -1021,7 +1021,7 @@ extern te_errno tapi_sigaction_simple(rcf_rpc_server *rpcs,
  *    @value TARPC_MCAST_ADD_DROP     sockopt IP_ADD/DROP_MEMBERSHIP
  *    @value TARPC_MCAST_JOIN_LEAVE   sockopt MCAST_JOIN/LEAVE_GROUP
  *    @value TARPC_MCAST_WSA          WSAJoinLeaf(), no leave
- * 
+ *
  * @return 0 on success, -1 on failure
  */
 
@@ -1040,7 +1040,7 @@ extern int rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
 
 /**
  * Join a multicasting group with source on specified interface.
- * 
+ *
  * @param  rpcs        RPC server handle
  * @param  s           socket descriptor
  * @param  mcast_addr  multicast address
@@ -1048,11 +1048,11 @@ extern int rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
  * @param  if_index    interface index
  * @param  how         joining method:
  *
- * @value TARPC_MCAST_SOURCE_ADD_DROP   
+ * @value TARPC_MCAST_SOURCE_ADD_DROP
  *          sockopt IP_ADD/DROP_SOURCE_MEMBERSHIP
- * @value TARPC_MCAST_SOURCE_JOIN_LEAVE 
+ * @value TARPC_MCAST_SOURCE_JOIN_LEAVE
  *          sockopt MCAST_JOIN/LEAVE_SOURCE_GROUP
- * 
+ *
  * @return 0 on success, -1 on failure
  */
 extern int rpc_mcast_source_join(rcf_rpc_server *rpcs, int s,
@@ -1093,7 +1093,7 @@ extern int rpc_common_mcast_leave(rcf_rpc_server *rpcs, int s,
  *
  * @return ioctl return code
  */
-extern int rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd, 
+extern int rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
                              const char *ifname, void *edata);
 #endif /* HAVE_LINUX_ETHTOOL_H */
 
@@ -1107,11 +1107,11 @@ extern int rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
  * @param n     Size of memory areas to be compared
  *
  * @return      An integer less than, equal to, or greater than zero if the
- *              first n bytes of s1 is found, respectively, to be less 
+ *              first n bytes of s1 is found, respectively, to be less
  *              than, to match, or be greater than the first n bytes of s2.
  * @note See memcmp(3)
  */
-extern int rpc_memcmp(rcf_rpc_server *rpcs, 
+extern int rpc_memcmp(rcf_rpc_server *rpcs,
                       rpc_ptr_off *s1, rpc_ptr_off *s2, size_t n);
 
 /**
@@ -1395,10 +1395,10 @@ extern te_errno tapi_set_if_mtu_smart2_rollback(te_saved_mtus *backup);
 
 /**
  * Check if the interface is VLAN interface.
- * 
+ *
  * @param rpcs       RPC server handler
  * @param interface  Interface name
- * 
+ *
  * @return @c TRUE if the interface is grabbed.
  */
 extern te_bool tapi_interface_is_vlan(rcf_rpc_server *rpcs,

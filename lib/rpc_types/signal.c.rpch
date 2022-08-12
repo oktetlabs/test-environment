@@ -60,7 +60,7 @@ signum_rpc2str(rpc_signum s)
         default: return "<SIG_FATAL_ERROR>";
     }
 }
-    
+
 /** Convert RPC signal number to the native one */
 int
 signum_rpc2h(rpc_signum s)
@@ -282,7 +282,7 @@ si_code_rpc2str(rpc_si_code si)
         default: return "<SI_CODE_FATAL_ERROR>";
     }
 }
-    
+
 /** Convert RPC signal code to the native one */
 int
 si_code_rpc2h(rpc_si_code si)
@@ -506,15 +506,15 @@ sighow_rpc2h(rpc_sighow how)
 {
     switch (how)
     {
-#ifdef SIG_BLOCK    
+#ifdef SIG_BLOCK
         RPC2H(SIG_BLOCK);
-#endif        
-#ifdef SIG_UNBLOCK    
+#endif
+#ifdef SIG_UNBLOCK
         RPC2H(SIG_UNBLOCK);
 #endif
 #ifdef SIG_SETMASK
         RPC2H(SIG_SETMASK);
-#endif        
+#endif
         default: return SIG_INVALID;
     }
 }
@@ -750,15 +750,15 @@ const char *
 tarpc_sigevent2str(const tarpc_sigevent *sigevent)
 {
     static char buf[256];
-    
+
     if (sigevent == NULL)
         return "NULL";
-        
+
     TE_SPRINTF(buf, "{ notify %s signo %s sigval %u function %s }",
                sigev_notify_rpc2str(sigevent->notify),
                signum_rpc2str(sigevent->signo),
                (unsigned)sigevent->value.tarpc_sigval_u.sival_int,
                sigevent->function == NULL ? "NULL" : sigevent->function);
-               
-    return buf;               
+
+    return buf;
 }

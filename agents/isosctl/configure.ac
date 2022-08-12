@@ -41,7 +41,7 @@ AC_C_INLINE
 export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$TE_PLATFORM/lib/pkgconfig/
 
 PKG_CHECK_MODULES(TAD, te-$with_tad)
-                            
+
 AC_CONFIG_FILES([Makefile])
 
 TE_APP_RESTORE

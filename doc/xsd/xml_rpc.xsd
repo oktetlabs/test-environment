@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schema xml:lang="en"
         xmlns="http://www.w3.org/2001/XMLSchema">
-  
+
     <documentation>
         Test Environment
         XML schema for RCF XML RPC
-  
+
         Copyright (C) 2003-2018 OKTET Labs.
 
         Author: Elena Vengerova &lt;Elena.Vengerova@oktetlabs.ru&gt;
@@ -48,7 +48,7 @@
                     </documentation>
                 </annotation>
             </attribute>
-            
+
             <attribute ="rc" use="require">
                 <annotation>
                     <documentation>
@@ -99,7 +99,7 @@
                     </documentation>
                 </annotation>
             </attribute>
-            
+
             <sequence>
                 <choice>
                     <element ref="struct" minOccurs="0"/>
@@ -116,7 +116,7 @@
                     Structure parameter.
                 </documentation>
             </annotation>
-            
+
             <sequence>
                 <element ref="param" minOccurs="1" maxOccurs="unbounded"/>
             </sequence>
@@ -130,7 +130,7 @@
                     Array parameter.
                 </documentation>
             </annotation>
-            
+
             <sequence>
                 <element ref="param" minOccurs="0" maxOccurs="unbounded"/>
             </sequence>

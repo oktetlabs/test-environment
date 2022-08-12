@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package version="1.0">
-    
+
     <description>Tests on generic TAD functionality.</description>
-    
+
     <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
 
     <session>

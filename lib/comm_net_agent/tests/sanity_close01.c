@@ -4,10 +4,10 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
- * 
+ *
  */
 
 #include <stdio.h>
@@ -44,7 +44,7 @@ remote_station_proc(void *arg)
     /* synchronize at this point */
     remote_synch(10);
 
-    /* 
+    /*
      * Now the local station does its actions
      */
 
@@ -82,8 +82,8 @@ local_station_proc(void *arg)
        exit(3);
     }
 
-    /* 
-     * The second call is disabled because it will case a coredump 
+    /*
+     * The second call is disabled because it will case a coredump
      * in the current implementation of RCF agent library
      */
 #if 0
@@ -108,7 +108,7 @@ local_station_proc(void *arg)
 
 /** @page test_rcf_net_agent_sanity_close01 rcf_comm_agent_close() sanity check on invalid parameters
  *
- * @descr A connection is established between the local and the remote 
+ * @descr A connection is established between the local and the remote
  * stations. The function @b rcf_comm_agent_close() is invoked one time with
  * the parameter @b p_rcc NULL, and second time with that parameter set to
  * a pointer not referencing a valid communication structure. The function
@@ -121,7 +121,7 @@ local_station_proc(void *arg)
  * @retval positive     Test failed
  *
  */
-int 
+int
 main(int argc, char *argv[])
 {
     int rc;
@@ -133,10 +133,10 @@ main(int argc, char *argv[])
     TEST_BUFFER_SANITY();
 
     /* launch the remote station thread */
-    rc = pthread_create(&remote_thread, /* attr */ NULL, 
+    rc = pthread_create(&remote_thread, /* attr */ NULL,
                      remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {           
+    {
        char err_buf[BUFSIZ];
 
        strerror_r(errno, err_buf, sizeof(err_buf));

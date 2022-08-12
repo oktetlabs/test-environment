@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -57,16 +57,16 @@ char *ta_name = "(win32)";
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef RCF_RPC
-extern te_errno create_process_rpc_server(const char *name, int32_t *pid, 
+extern te_errno create_process_rpc_server(const char *name, int32_t *pid,
                                           int flags);
-extern te_errno rcf_ch_rpc_server_thread(void *ready, 
+extern te_errno rcf_ch_rpc_server_thread(void *ready,
                                          int argc, char *argv[]);
 #endif
 
 extern int win32_process_exec(int argc, char **argv);
 
-/* 
-   Flushes local static ARP entries list 
+/*
+   Flushes local static ARP entries list
    Defined in win32conf.c
 */
 extern void flush_neigh_st_list();
@@ -107,16 +107,16 @@ rcf_ch_reboot(struct rcf_comm_connection *handle,
               const uint8_t *ba, size_t cmdlen, const char *params)
 {
     size_t len = answer_plen;
-    
+
     UNUSED(ba);
     UNUSED(cmdlen);
     UNUSED(params);
 
-    len += snprintf(cbuf + answer_plen,             
+    len += snprintf(cbuf + answer_plen,
                      buflen - answer_plen, "0") + 1;
-    RCF_CH_LOCK;                                  
-    rcf_comm_agent_reply(handle, cbuf, len);         
-    RCF_CH_UNLOCK;                                
+    RCF_CH_LOCK;
+    rcf_comm_agent_reply(handle, cbuf, len);
+    RCF_CH_UNLOCK;
     system("reboot -f 0");
     return 0;
 }
@@ -175,7 +175,7 @@ rcf_ch_vwrite(struct rcf_comm_connection *handle,
     UNUSED(var);
 
     /* Standard handler is OK */
-    
+
     return -1;
 }
 
@@ -223,22 +223,22 @@ uint32_t ta_processes_num = 0;
 
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_start_process(int *pid, 
+rcf_ch_start_process(int *pid,
                     int priority, const char *rtn, te_bool is_argv,
                     int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
     int   tries = 0;
-    
+
     UNUSED(priority);
 
     VERB("Start task handler is executed");
 
 #ifdef RCF_RPC
     if (strcmp(rtn, "rcf_pch_rpc_server_argv") == 0)
-        return create_process_rpc_server((char *)params[0], (int32_t *)pid, 
+        return create_process_rpc_server((char *)params[0], (int32_t *)pid,
                                          RCF_RPC_SERVER_GET_NET_INIT);
-#endif        
+#endif
 
     while (addr != NULL)
     {
@@ -264,14 +264,14 @@ rcf_ch_start_process(int *pid,
             int rc = TE_OS_RC(TE_TA_WIN32, errno);
 
             ERROR("%s(): fork() failed", __FUNCTION__);
-            
+
             if (tries++ > 10)
                 return rc;
-                
+
             sleep(1);
         }
         ta_processes_num++;
-        
+
         return 0;
     }
 
@@ -291,8 +291,8 @@ rcf_ch_start_process(int *pid,
             /* Set the process group to allow killing all children */
             setpgid(getpid(), getpid());
             logfork_register_user(rtn);
-            execlp(rtn, rtn, 
-                   params[0], params[1], params[2], params[3], params[4], 
+            execlp(rtn, rtn,
+                   params[0], params[1], params[2], params[3], params[4],
                    params[5], params[6], params[7], params[8], params[9]);
             _exit(0);
         }
@@ -301,14 +301,14 @@ rcf_ch_start_process(int *pid,
             int rc = TE_OS_RC(TE_TA_WIN32, errno);
 
             ERROR("%s(): fork() failed", __FUNCTION__);
-            
+
             return rc;
         }
         ta_processes_num++;
-        
+
         return 0;
     }
-    
+
     return TE_RC(TE_TA_WIN32, TE_ENOENT);
 }
 
@@ -336,20 +336,20 @@ rcf_ch_thread_wrapper(void *arg)
 
     if (parm->is_argv)
         parm->rc = ((rcf_argv_thr_rtn)(parm->addr))(
-                       &parm->params_processed, parm->argc, 
+                       &parm->params_processed, parm->argc,
                        (char **)(parm->params));
     else
     {
         parm->rc = ((rcf_thr_rtn)(parm->addr))(&parm->params_processed,
-                                               parm->params[0], 
-                                               parm->params[1], 
-                                               parm->params[2], 
-                                               parm->params[3], 
-                                               parm->params[4], 
+                                               parm->params[0],
+                                               parm->params[1],
+                                               parm->params[2],
+                                               parm->params[3],
+                                               parm->params[4],
                                                parm->params[5],
-                                               parm->params[6], 
-                                               parm->params[7], 
-                                               parm->params[8], 
+                                               parm->params[6],
+                                               parm->params[7],
+                                               parm->params[8],
                                                parm->params[9]);
     }
     VERB("thread is terminating");
@@ -366,7 +366,7 @@ rcf_ch_start_thread(int *tid,
                     int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
-    
+
     struct rcf_thread_parameter *iter;
 
     UNUSED(priority);
@@ -375,7 +375,7 @@ rcf_ch_start_thread(int *tid,
         VERB("start thread with entry point '%s'", rtn);
 
         pthread_mutex_lock(&thread_pool_mutex);
-        for (iter = thread_pool; 
+        for (iter = thread_pool;
              iter < thread_pool + TA_MAX_THREADS;
              iter++)
         {
@@ -394,7 +394,7 @@ rcf_ch_start_thread(int *tid,
                     sem_init(&iter->params_processed, FALSE, 0);
                     iter->sem_created = TRUE;
                 }
-                if ((rc = pthread_create(&iter->id, NULL, 
+                if ((rc = pthread_create(&iter->id, NULL,
                                          rcf_ch_thread_wrapper, iter)) != 0)
                 {
                     pthread_mutex_unlock(&thread_pool_mutex);
@@ -419,8 +419,8 @@ rcf_ch_start_thread(int *tid,
 int
 rcf_ch_kill_process(unsigned int pid)
 {
-    kill(pid, SIGTERM); 
-    kill(pid, SIGKILL); 
+    kill(pid, SIGTERM);
+    kill(pid, SIGKILL);
     return 0;
 }
 
@@ -518,16 +518,16 @@ create_data_file(char *pathname, char c, int len)
     char  buf[1024];
     FILE *f;
     int   err;
-    
+
     if ((f = fopen(pathname, "w")) == NULL)
     {
         err = errno;
         ERROR("fopen(\"%s\", \"w\") failed; errno %d", pathname, err);
         return TE_RC(TE_TA_WIN32, err);
     }
-    
+
     memset(buf, c, sizeof(buf));
-    
+
     while (len > 0)
     {
         int copy_len = ((unsigned int)len  > sizeof(buf)) ?
@@ -536,9 +536,9 @@ create_data_file(char *pathname, char c, int len)
         if ((copy_len = fwrite((void *)buf, sizeof(char), copy_len, f)) < 0)
         {
             int err = errno;
-            
+
             ERROR("fwrite() failed errno=%d", err);
-            
+
             fclose(f);
             return TE_RC(TE_TA_WIN32, err);
         }
@@ -570,7 +570,7 @@ rcf_ch_shutdown(struct rcf_comm_connection *handle,
                 char *cbuf, size_t buflen, size_t answer_plen)
 {
     int rc;
-    
+
     UNUSED(handle);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -599,15 +599,15 @@ extern void wsa_func_handles_discover();
  *
  * @param ready         semaphore to be posted after params processing
  * @param argc          number of arguments in argv array
- * @param argv          arguments (RPC server name first)     
+ * @param argv          arguments (RPC server name first)
  *
  * @return Status code.
  */
-te_errno 
+te_errno
 rcf_ch_rpc_server_thread(void *ready, int argc, char *argv[])
 {
     char *name;
-   
+
     if (argc < 1)
     {
         ERROR("Too few parameters for rcf_ch_rpcserver_thread");
@@ -619,20 +619,20 @@ rcf_ch_rpc_server_thread(void *ready, int argc, char *argv[])
         sem_post(ready);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    
+
     sem_post(ready);
     rcf_pch_rpc_server(name);
-    
+
     return 0;
 }
 #else
 
 /** Dummy */
-void 
+void
 sleep_ex(int msec)
 {
     usleep(msec * 1000);
-} 
+}
 
 #endif
 
@@ -642,23 +642,23 @@ sleep_ex(int msec)
  * Usage:
  *     tawin32 <ta_name> <communication library configuration string>
  */
-int 
+int
 main(int argc, char **argv)
 {
     int rc, retval = 0;
-    
+
     char buf[16];
 
     pthread_t tid;
-    
+
     te_log_init("(win32)", te_log_message_file);
 
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
-    
+
     if (win32_process_exec(argc, argv) != 0)
         return 1;
-    
+
     ta_name = argv[1];
 
 #ifdef RCF_RPC
@@ -689,7 +689,7 @@ main(int argc, char **argv)
         if (retval == 0)
             retval = rc;
     }
-    
+
     flush_neigh_st_list();
 
     return retval;

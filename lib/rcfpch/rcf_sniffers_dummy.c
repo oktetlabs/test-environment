@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
@@ -17,13 +17,13 @@
 /**
  * Dummy function for rcf_ch_get_sniffers call. Used when the agent does not
  * support the sniffer framework.
- * 
+ *
  * @return (TE_RCF_PCH, TE_ENOPROTOOPT)     value means the protocol is
  *                                          not supported
  */
 te_errno
-rcf_ch_get_sniffers(struct rcf_comm_connection *handle, char *cbuf, 
-                    size_t buflen, size_t answer_plen, 
+rcf_ch_get_sniffers(struct rcf_comm_connection *handle, char *cbuf,
+                    size_t buflen, size_t answer_plen,
                     const char *sniff_id_str)
 {
     UNUSED(handle);
@@ -37,13 +37,13 @@ rcf_ch_get_sniffers(struct rcf_comm_connection *handle, char *cbuf,
 /**
  * Dummy function for rcf_ch_get_snif_dump call. Used when the agent does
  * not support the sniffer framework.
- * 
+ *
  * @return (TE_RCF_PCH, TE_ENOPROTOOPT)     value means the protocol is
  *                                          not supported
  */
 te_errno
-rcf_ch_get_snif_dump(struct rcf_comm_connection *handle, char *cbuf, 
-                    size_t buflen, size_t answer_plen, 
+rcf_ch_get_snif_dump(struct rcf_comm_connection *handle, char *cbuf,
+                    size_t buflen, size_t answer_plen,
                     const char *sniff_id_str)
 {
     UNUSED(handle);

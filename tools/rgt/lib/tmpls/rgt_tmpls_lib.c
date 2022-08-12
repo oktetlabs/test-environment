@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -77,7 +77,7 @@ rgt_tmpls_attrs_new(const char **xml_attrs)
         global_attrs[0].type = RGT_ATTR_TYPE_UNKNOWN;
         return global_attrs;
     }
-    
+
     for (i = 0, j = 0;
          xml_attrs != NULL && xml_attrs[j] != NULL &&
          xml_attrs[j + 1] != NULL;
@@ -92,7 +92,7 @@ rgt_tmpls_attrs_new(const char **xml_attrs)
     }
 
     global_attrs[i].type = RGT_ATTR_TYPE_UNKNOWN;
-    
+
     global_attr_num = i;
     if (i == ATTR_NUM)
         assert(0);
@@ -262,9 +262,9 @@ rgt_tmpls_attrs_set_uint32(rgt_attrs_t *attrs, const char *name,
 /**
  * Check the attribute length. In case It is too long, new line tags will
  * be iserted.
- * 
+ *
  * @param str   Attribute string
- * 
+ *
  * @return A buffer with new string or NULL if the string was not changed
  */
 static char *
@@ -371,7 +371,7 @@ rgt_tmpls_output_gen(write_func func, void *dest, rgt_tmpl_t *tmpl,
             {
                 int n_row;
                 int n_col;
-                
+
                 get_error_point(tmpl->fname,
                                 tmpl->blocks[i].var.name -
                                 tmpl->raw_ptr,
@@ -586,12 +586,12 @@ rgt_tmpls_parse(const char **files, const char *prefix,
 
         fseek(fd, 0L, SEEK_END);
 
-        /* 
-         * Allocate memory under the template and plus one byte 
+        /*
+         * Allocate memory under the template and plus one byte
          * for the trailing '\0' character
          */
         tmpls[i].raw_ptr = (char *)malloc((fsize = ftell(fd)) + 1);
-        if (tmpls[i].raw_ptr == NULL || 
+        if (tmpls[i].raw_ptr == NULL ||
             (tmpls[i].fname = strdup(tmpl_path)) == NULL)
         {
             fprintf(stderr, "Not enough memory\n");
@@ -652,7 +652,7 @@ rgt_tmpls_parse(const char **files, const char *prefix,
                 var_ptr[0] = '\0';
                 var_ptr += 2;
                 end_var_ptr = strstr(var_ptr, RGT_TMPLS_VAR_DELIMETER);
-                
+
                 if (end_var_ptr == NULL)
                 {
                     get_error_point(tmpl_path, var_ptr - tmpls[i].raw_ptr,
@@ -681,12 +681,12 @@ rgt_tmpls_parse(const char **files, const char *prefix,
                             "variable name at %s:%d:%d\n",
                             tmpl_path, n_row, n_col);
                     rgt_tmpls_free(tmpls, tmpl_num);
-                    return 1;                    
+                    return 1;
                 }
                 *var_ptr = '\0';
                 var_ptr++;
 
-                /* 
+                /*
                  * Check that variable name hasn't got any space
                  * characters
                  */
@@ -771,13 +771,13 @@ get_error_point(const char *file, unsigned long offset, int *n_row,
     unsigned long  n_total = 0;
     int            ch;
     FILE          *fd;
-    
+
     *n_row = 1;
     *n_col = 0;
 
     if ((fd = fopen(file, "r")) == NULL)
         return;
-    
+
     while ((ch = fgetc(fd)) != EOF)
     {
         if (ch == '\n')

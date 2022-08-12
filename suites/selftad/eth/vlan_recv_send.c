@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * Simple RCF test
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * 
+ *
  */
 
 #define TE_TEST_NAME    "eth/vlan_recv_send"
@@ -34,20 +34,20 @@
 #include "tapi_env.h"
 
 #include "ndn_eth.h"
-#include "tapi_eth.h" 
+#include "tapi_eth.h"
 
 #include "logger_api.h"
 
 
 static void
 local_eth_frame_handler(const asn_value *packet, int layer,
-                        const ndn_eth_header_plain *header, 
-                        const uint8_t *payload, uint16_t plen, 
+                        const ndn_eth_header_plain *header,
+                        const uint8_t *payload, uint16_t plen,
                         void *userdata)
 {
     int  i;
     char buffer[100];
-    
+
     UNUSED(packet);
     UNUSED(layer);
     UNUSED(payload);
@@ -104,8 +104,8 @@ main(int argc, char *argv[])
 
     /* Prepare plain representation of Ethernet frame header */
     memset(&plain_hdr, 0, sizeof(plain_hdr));
-    memcpy(plain_hdr.dst_addr, hwaddr, ETHER_ADDR_LEN);  
-    plain_hdr.len_type = ETH_P_IP; 
+    memcpy(plain_hdr.dst_addr, hwaddr, ETHER_ADDR_LEN);
+    plain_hdr.len_type = ETH_P_IP;
     plain_hdr.is_tagged = 1;
     plain_hdr.vlan_id = 16;
 
@@ -123,7 +123,7 @@ main(int argc, char *argv[])
 
     /* Add some payload to traffic template */
     memset(payload, 0, sizeof(payload));
-    CHECK_RC(asn_write_value_field(template, payload, 
+    CHECK_RC(asn_write_value_field(template, payload,
                                    sizeof(payload),
                                    "payload.#bytes"));
 
@@ -154,7 +154,7 @@ main(int argc, char *argv[])
 
 
     /* Start receiver */
-    CHECK_RC(tapi_tad_trrecv_start(host_a->ta, 0, recv_csap, pattern, 
+    CHECK_RC(tapi_tad_trrecv_start(host_a->ta, 0, recv_csap, pattern,
                                    TAD_TIMEOUT_INF, 1 /* one packet */,
                                    RCF_TRRECV_PACKETS));
 
@@ -188,5 +188,5 @@ cleanup:
     asn_free_value(template); template = NULL;
     asn_free_value(pattern); pattern = NULL;
 
-    TEST_END; 
+    TEST_END;
 }
