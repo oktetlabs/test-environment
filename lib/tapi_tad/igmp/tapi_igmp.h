@@ -811,22 +811,24 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
             NULL),                              \
         (_src_addr), (_src_mac))
 
-#define IGMP3_SEND_ALLOW(_pco, _csap, _group_addr, _src_addr, _src_mac, _addr1,...) \
-    IGMP3_SEND_REPORT((_pco), (_csap),              \
-        IGMP3_GROUP_LIST(NULL,                      \
-            IGMP3_GROUP_RECORD(NULL,                \
-                IGMPV3_ALLOW_NEW_SOURCES,           \
-                (_group_addr), NULL, 0, _addr1, 0), \
-            NULL),                                  \
+#define IGMP3_SEND_ALLOW(_pco, _csap, _group_addr, _src_addr, _src_mac, \
+                         _addr1...)                                     \
+    IGMP3_SEND_REPORT((_pco), (_csap),                                  \
+        IGMP3_GROUP_LIST(NULL,                                          \
+            IGMP3_GROUP_RECORD(NULL,                                    \
+                IGMPV3_ALLOW_NEW_SOURCES,                               \
+                (_group_addr), NULL, 0, _addr1, 0),                     \
+            NULL),                                                      \
         (_src_addr), (_src_mac))
 
-#define IGMP3_SEND_BLOCK(_pco, _csap, _group_addr, _src_addr, _src_mac, _addr1,...) \
-    IGMP3_SEND_REPORT((_pco), (_csap),              \
-        IGMP3_GROUP_LIST(NULL,                      \
-            IGMP3_GROUP_RECORD(NULL,                \
-                IGMPV3_BLOCK_OLD_SOURCES,           \
-                (_group_addr), NULL, 0, _addr1, 0), \
-            NULL),                                  \
+#define IGMP3_SEND_BLOCK(_pco, _csap, _group_addr, _src_addr, _src_mac, \
+                         _addr1...)                                     \
+    IGMP3_SEND_REPORT((_pco), (_csap),                                  \
+        IGMP3_GROUP_LIST(NULL,                                          \
+            IGMP3_GROUP_RECORD(NULL,                                    \
+                IGMPV3_BLOCK_OLD_SOURCES,                               \
+                (_group_addr), NULL, 0, _addr1, 0),                     \
+            NULL),                                                      \
         (_src_addr), (_src_mac))
 
 
