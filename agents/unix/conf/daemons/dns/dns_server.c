@@ -10,7 +10,6 @@
  *
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  *
- * $Id$
  */
 
 #include "te_config.h"

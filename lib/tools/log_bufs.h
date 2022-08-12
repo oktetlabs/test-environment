@@ -15,7 +15,6 @@
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_LOG_BUFS_H__

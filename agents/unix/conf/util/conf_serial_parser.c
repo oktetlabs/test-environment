@@ -10,7 +10,6 @@
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef TE_LGR_USER

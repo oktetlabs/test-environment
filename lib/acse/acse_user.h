@@ -9,7 +9,6 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru
  *
- * $Id$
  */
 #ifndef __TE_LIB_ACSE_USER_H__
 #define __TE_LIB_ACSE_USER_H__

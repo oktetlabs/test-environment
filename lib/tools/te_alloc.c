@@ -11,7 +11,6 @@
  *
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "TE Alloc"

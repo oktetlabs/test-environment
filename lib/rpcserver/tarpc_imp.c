@@ -11,7 +11,6 @@
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "RPC"

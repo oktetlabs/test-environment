@@ -17,7 +17,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id: tapi_rpc.h 22478 2006-01-06 11:58:27Z arybchik $
  */
 
 /** User name of the library to be used for logging */

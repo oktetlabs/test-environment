@@ -7,7 +7,6 @@ dnl
 dnl Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 dnl Author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
 dnl
-dnl $Id$
 
 TE_HOST=
 

@@ -9,7 +9,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */
 #ifndef __TE_NDN_GENEREIC_H__
 #define __TE_NDN_GENEREIC_H__

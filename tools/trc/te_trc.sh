@@ -8,7 +8,6 @@
 #
 # Author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 #
-# $Id$
 #
 
 tmp_files=

@@ -9,7 +9,6 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #define TE_LGR_USER "TAPI PPP"

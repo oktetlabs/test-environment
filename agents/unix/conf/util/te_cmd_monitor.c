@@ -7,7 +7,6 @@
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  *
- * $Id$
  */
 #include "te_config.h"
 #if HAVE_CONFIG_H

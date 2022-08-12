@@ -3,7 +3,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */
 #ifndef __TE_FORWARDER_H__
 #define __TE_FORWARDER_H__

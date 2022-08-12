@@ -11,7 +11,6 @@
  *
  * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
  *
- * $Id: te_rpc_linux_net_tstamp.h 26840 2006-04-21 11:43:28Z arybchik $
  */
 
  

@@ -11,7 +11,6 @@
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  *
- * $Id:
  */
 
 #ifndef __TE_TAPI_CFG_XEN_H__

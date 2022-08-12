@@ -11,7 +11,6 @@
  *
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "Logger TEN"

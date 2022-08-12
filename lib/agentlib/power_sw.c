@@ -12,7 +12,6 @@
  * @author Ivan V. Soloduha <Ivan.Soloducha@oktetlabs.ru>
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "Power switch"

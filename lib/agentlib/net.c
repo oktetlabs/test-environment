@@ -13,7 +13,6 @@
  * @author Alexandra N. Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER      "Agent library"

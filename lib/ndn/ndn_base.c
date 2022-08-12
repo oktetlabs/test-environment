@@ -10,7 +10,6 @@
  *
  * @author Igor Labutin <Igor.Labutin@oktetlabs.ru>
  *
- * $Id: $
  */
 #include "te_config.h"
 

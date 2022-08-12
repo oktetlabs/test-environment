@@ -9,7 +9,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAPI_ACSE_H__

@@ -11,7 +11,6 @@
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Artem V. Andreev   <Artem.Andreev@oktetlabs.ru>
  *
- * $Id$
  */
  
 #ifndef __TE_AGENTLIB_H__

@@ -8,7 +8,6 @@
  *
  * @author Andrey Dmitrov  <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #include <stdio.h>

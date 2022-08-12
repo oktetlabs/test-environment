@@ -10,7 +10,6 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * 
- * $Id$
  */
 
 #ifndef __TE_BUILDER_TS_H__

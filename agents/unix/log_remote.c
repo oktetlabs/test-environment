@@ -10,8 +10,6 @@
  *
  *
  * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
- *
- * $Id: 
  */
 
 #define TE_LGR_USER      "Log Remote"

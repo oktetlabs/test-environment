@@ -4,7 +4,6 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs Ltd., St.-Petersburg, Russia
  *
- * $Id$
  */
 
 /** @page sockets-send_recv Basic send receive operations

@@ -6,6 +6,5 @@
 #
 # Author Roman Kolobov <Roman.Kolobov@oktetlabs.ru>
 #
-# $Id: $
 
 HTML_OPTION=false EXEC_NAME=$0 `dirname \`which $0\``/log.sh --html "$@"

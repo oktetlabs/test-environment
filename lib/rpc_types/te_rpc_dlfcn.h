@@ -11,7 +11,6 @@
  *
  * @author Nikita Rastegaev <Nikita.Rastegaev@oktetlabs.ru>
  *
- * $Id: $
  */
  
 #ifndef __TE_RPC_DLFCN_H__

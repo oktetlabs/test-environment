@@ -7,7 +7,6 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id$
  */
 #ifndef __CPE_BACKDOOR__H__
 #define __CPE_BACKDOOR__H__

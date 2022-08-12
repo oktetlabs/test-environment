@@ -9,7 +9,6 @@
  *
  * @author Evgeniy Vladimirovich Bobkov <kavri@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __RPC_SUITE_H__

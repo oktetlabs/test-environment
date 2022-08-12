@@ -9,7 +9,6 @@
  *
  * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  * 
- * $Id: clientserver.c
  */
 
 /** @page example client-server application

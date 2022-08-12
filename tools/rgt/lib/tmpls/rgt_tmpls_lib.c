@@ -11,7 +11,6 @@
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifdef HAVE_CONFIG_H

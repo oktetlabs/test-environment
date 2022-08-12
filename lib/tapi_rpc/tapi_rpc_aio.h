@@ -11,7 +11,6 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAPI_RPC_AIO_H__

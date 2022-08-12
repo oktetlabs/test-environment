@@ -10,7 +10,6 @@
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_RGT_CORE_IO_H__

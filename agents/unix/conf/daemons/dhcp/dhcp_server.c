@@ -10,7 +10,6 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id$
  */
 /* Still debugging, it switches off debug messages */
 

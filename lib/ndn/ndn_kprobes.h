@@ -9,7 +9,6 @@
  *
  * @author Aleksandr Platonov <Aleksandr.Platonov@oktetlabs.ru>
  *
- * $Id:$
  */
 
 #ifndef __TE_NDN_KPROBES_H__

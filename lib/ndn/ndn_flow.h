@@ -9,7 +9,6 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #ifndef __TE_NDN_FLOW_H__

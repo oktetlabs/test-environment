@@ -13,7 +13,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAPI_RPC_INTERNAL_H__

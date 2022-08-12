@@ -9,7 +9,6 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER "TAD ETH L3"

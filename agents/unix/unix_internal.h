@@ -11,7 +11,6 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id$
  */
  
 #ifndef __TE_TA_UNIX_INTERNAL_H__

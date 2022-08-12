@@ -14,7 +14,6 @@
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id$
 */
 
 #ifndef __TE_LIB_ACSE_INTERNAL_H__

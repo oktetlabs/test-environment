@@ -10,7 +10,6 @@
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  * 
- * $Id$
  */
 
 #define TE_TEST_NAME    "cli/serial"

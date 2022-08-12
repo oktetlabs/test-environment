@@ -7,7 +7,6 @@
  *
  * @author Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #include "te_config.h"

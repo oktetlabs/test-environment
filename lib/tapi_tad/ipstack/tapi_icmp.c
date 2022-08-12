@@ -9,7 +9,6 @@
  *
  * @author Damir Mansurov <dnman@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER "TAPI ICMP"

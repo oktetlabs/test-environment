@@ -15,7 +15,6 @@
  *
  * @author Alexandra Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_SHELL_CMD_H__

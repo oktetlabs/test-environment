@@ -9,7 +9,6 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_NDN_SOCKET_H__

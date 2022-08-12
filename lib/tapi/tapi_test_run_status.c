@@ -11,7 +11,6 @@
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "TAPI test run status"

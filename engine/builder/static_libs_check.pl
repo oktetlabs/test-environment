@@ -10,7 +10,6 @@
 #
 # Author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
 #
-# $Id$
 #
 
 use strict;

@@ -10,7 +10,6 @@
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_CMD_MONITOR_H__

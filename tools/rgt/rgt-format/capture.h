@@ -8,7 +8,6 @@
  *
  * @author Roman Kolobov  <Roman.Kolobov@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #ifndef __TE_RGT_CAPTURE_H__

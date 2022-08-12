@@ -11,7 +11,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "TAD Recv"

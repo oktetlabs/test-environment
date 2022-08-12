@@ -11,7 +11,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */
 #ifndef __TE_TAD_UTILS_H__
 #define __TE_TAD_UTILS_H__

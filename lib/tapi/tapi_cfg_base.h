@@ -13,7 +13,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAPI_CFG_BASE_H__

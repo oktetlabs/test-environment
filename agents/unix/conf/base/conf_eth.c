@@ -10,7 +10,6 @@
  *
  * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "Extra eth Conf"

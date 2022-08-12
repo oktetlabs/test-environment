@@ -13,7 +13,6 @@
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
  
 #ifndef __TE_RPC_NET_IF_ARP_H__

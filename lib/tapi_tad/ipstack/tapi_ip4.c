@@ -10,7 +10,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER "TAPI IPv4"

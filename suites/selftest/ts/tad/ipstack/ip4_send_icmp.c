@@ -7,7 +7,6 @@
  *
  * 
  *
- * $Id$
  */
 
 /** @page ipstack-ip4_send_icmp Send ICMP datagram via icmp4.ip4.eth CSAP and receive it via RAW socket

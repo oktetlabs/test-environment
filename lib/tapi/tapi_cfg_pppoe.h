@@ -11,7 +11,6 @@
  *
  * @author Igor Labutin <Igor.Labutin@oktetlabs.ru>
  *
- * $Id: tapi_cfg_dhcp.h 32571 2006-10-17 13:43:12Z edward $
  */
 
 #ifndef __TE_TAPI_CFG_PPPOE_H__

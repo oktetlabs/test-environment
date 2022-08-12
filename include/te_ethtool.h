@@ -6,7 +6,6 @@
  *
  * @author Alexandra Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_ETHTOOL_H__

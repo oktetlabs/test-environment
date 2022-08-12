@@ -9,7 +9,6 @@
  *
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER "TAPI IPv6"

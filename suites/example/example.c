@@ -9,7 +9,6 @@
  *
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  * 
- * $Id$
  */
 
 /** @page example An example test

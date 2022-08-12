@@ -10,7 +10,6 @@
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __RPC_TRANSPORT_H__

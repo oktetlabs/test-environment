@@ -11,7 +11,6 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef TE_LGR_USER

@@ -12,7 +12,6 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "HG CN WAN IP DHCP"

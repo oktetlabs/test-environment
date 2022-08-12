@@ -10,7 +10,6 @@
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_RCF_PCH_TA_CFG_H__

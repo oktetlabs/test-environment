@@ -9,7 +9,6 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_ACSE_MEM_H__

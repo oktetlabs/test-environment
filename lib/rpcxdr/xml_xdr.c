@@ -9,7 +9,6 @@
  *
  * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifdef HAVE_CONFIG_H

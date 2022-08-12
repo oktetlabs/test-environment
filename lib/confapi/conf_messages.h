@@ -11,7 +11,6 @@
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_CONF_MESSAGES_H__

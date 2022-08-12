@@ -4,7 +4,6 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs Ltd., St.-Petersburg, Russia
  *
- * $Id$
  */
 
 /** @page opt_ipv6_only IPV6_V6ONLY socket option with IPv4 nodes (SOCK_STREAM).

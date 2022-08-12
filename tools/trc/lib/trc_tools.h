@@ -11,7 +11,6 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #ifndef __TE_TRC_TOOLS_H__

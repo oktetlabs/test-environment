@@ -15,7 +15,6 @@
  *
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TOOLS_ALLOC_H__

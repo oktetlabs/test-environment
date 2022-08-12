@@ -6,7 +6,6 @@
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_ACSE_RPC_H__

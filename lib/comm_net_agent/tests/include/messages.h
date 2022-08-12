@@ -9,7 +9,6 @@
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  * 
- * @(#) $Id$
  */
 #ifndef __TE_COMM_NET_AGENT_TESTS_LIB_MESSAGES_H__
 #define __TE_COMM_NET_AGENT_TESTS_LIB_MESSAGES_H__

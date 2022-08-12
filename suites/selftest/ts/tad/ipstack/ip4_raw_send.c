@@ -7,7 +7,6 @@
  *
  * 
  *
- * $Id$
  */
 
 /** @page ipstack-ip4_raw_send Send IP datagram via ip4.eth CSAP and receive it via RAW socket

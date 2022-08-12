@@ -7,7 +7,6 @@
  *
  *
  *
- * $Id: phy.c 34433 2006-12-23 14:00:41Z arybchik $
  */
 
 /** @page cs-ts-phy Check configurator PHY management support

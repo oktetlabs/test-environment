@@ -9,7 +9,6 @@
 #
 # Author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
 #
-# $Id$
 #
 
 BEGIN { MODE = ARGV[1]; ARGV[1] = ""; deltafile = ARGV[2]; ARGV[2] = ""; MERGER = "tce_merge_" MODE}

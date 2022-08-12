@@ -12,7 +12,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAD_CSAP_SUPPORT_H__

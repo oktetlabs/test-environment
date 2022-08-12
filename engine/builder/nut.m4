@@ -6,7 +6,6 @@ dnl Copyright (C) 2003-2018 OKTET Labs.
 dnl
 dnl Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 dnl
-dnl $Id$
  
 changequote([,])
 

@@ -4,7 +4,6 @@
 #
 # Author: Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 #
-# $Id$
 
 SSH="ssh -qxTn -o BatchMode=yes"
 

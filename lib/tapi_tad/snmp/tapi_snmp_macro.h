@@ -10,7 +10,6 @@
  *
  * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
  *
- * $Id$
  */
 #ifndef __TE_TAPI_SNMP_MACRO_H__
 #define __TE_TAPI_SNMP_MACRO_H__ 

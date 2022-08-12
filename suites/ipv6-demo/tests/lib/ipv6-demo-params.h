@@ -7,7 +7,6 @@
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TS_IPV6_DEMO_PARAMS_H__

@@ -31,7 +31,6 @@
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_RGT_TMPLS_LIB_H__

@@ -11,7 +11,6 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 /** Logger user name to be used here */

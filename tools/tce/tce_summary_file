@@ -9,7 +9,6 @@
 #
 # Author: Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
 #
-# $Id: tce_summary 18119 2005-09-06 10:27:06Z artem $
 #
 
 mergefile="$1"

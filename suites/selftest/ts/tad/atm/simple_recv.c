@@ -7,7 +7,6 @@
  *
  * 
  * 
- * $Id$
  */
 
 /** @page atm-simple_recv Create ATM over Socket CSAP and receive one cell

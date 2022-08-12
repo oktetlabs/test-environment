@@ -9,7 +9,6 @@
  *
  * @author Ivan Soloducha <Ivan.Soloducha@oktetlabs.ru>
  * 
- * $Id$
  */
 
 /** @page loggertest Test for Logger

@@ -11,7 +11,6 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LOG_LEVEL    0xff

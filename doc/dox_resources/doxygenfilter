@@ -14,7 +14,6 @@
 #
 # Author Olg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
-# $Id: $
 #
 
 filename=$1

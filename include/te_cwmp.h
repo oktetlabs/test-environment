@@ -11,7 +11,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_CWMP_H__

@@ -15,7 +15,6 @@
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TOOLS_KERNEL_LOG_H__

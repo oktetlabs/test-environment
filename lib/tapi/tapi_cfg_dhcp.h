@@ -11,7 +11,6 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAPI_CFG_DHCP_H__

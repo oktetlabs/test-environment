@@ -11,7 +11,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAD_CSAP_ID_H__

@@ -10,7 +10,6 @@
  *
  * Author: Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_RGT_LOG_MSG_H__

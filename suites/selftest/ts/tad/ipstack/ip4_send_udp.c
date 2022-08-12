@@ -7,7 +7,6 @@
  *
  * 
  *
- * $Id$
  */
 
 /** @page ipstack-ip4_send_udp Send UDP/IP4 datagram via udp.ip4.eth CSAP and receive it via DGRAM socket

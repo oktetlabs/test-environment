@@ -5,7 +5,6 @@
  *
  * @author Maxim Alyutov <Maxim.Alyutov@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #ifndef __NETCONF_INTERNAL_H__

@@ -10,7 +10,6 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAD_ATM_IMPL_H__

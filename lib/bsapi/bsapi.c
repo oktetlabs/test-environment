@@ -9,7 +9,6 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * 
- * $Id$
  */
 
 #include "te_config.h"

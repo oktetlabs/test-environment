@@ -10,7 +10,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  * 
- * $Id$
  */
 
 #define TE_TEST_NAME    "ipstack/ip4_udp_dgm"

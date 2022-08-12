@@ -9,7 +9,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_NDN_INTERNAL_H__

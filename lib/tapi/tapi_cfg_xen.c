@@ -11,7 +11,6 @@
  *
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  *
- * $Id:
  */
 
 #define TE_LGR_USER     "TAPI CFG XEN"

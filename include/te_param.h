@@ -11,7 +11,6 @@
  *
  * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  *
- * $Id:
  */
 
 #ifndef __TE_PARAM_H__

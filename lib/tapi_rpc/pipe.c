@@ -11,7 +11,6 @@
  *
  * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #include "te_config.h"

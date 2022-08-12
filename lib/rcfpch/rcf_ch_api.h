@@ -16,7 +16,6 @@
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_RCF_CH_API_H__

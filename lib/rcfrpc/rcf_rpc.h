@@ -14,7 +14,6 @@
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_RCF_RPC_H__

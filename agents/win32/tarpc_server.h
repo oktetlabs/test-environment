@@ -10,7 +10,6 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TARPC_SERVER_H__

@@ -10,7 +10,6 @@
  *
  * @author Artemii Morozov <Artemii.Morozov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_RCF_H__

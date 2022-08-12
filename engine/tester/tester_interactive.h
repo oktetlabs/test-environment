@@ -12,7 +12,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Sergey Levi <sergeyle@tercom.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TESTER_INTERACTIVE_H__

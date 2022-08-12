@@ -13,7 +13,6 @@
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAPI_RPC_IFNAMEINDEX_H__

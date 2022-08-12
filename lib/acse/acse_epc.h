@@ -11,7 +11,6 @@
  *
  * 
  *
- * $Id$
  */
 
 #ifndef __TE_LIB_ACSE_EPC_H__

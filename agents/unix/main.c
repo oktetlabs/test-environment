@@ -12,7 +12,6 @@
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Alexandra N. Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER      "Main"

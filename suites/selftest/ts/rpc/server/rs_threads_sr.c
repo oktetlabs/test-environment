@@ -9,7 +9,6 @@
  *
  * @author Evgeniy Vladimirovich Bobkov <kavri@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_TEST_NAME    "rs_threads_sr"

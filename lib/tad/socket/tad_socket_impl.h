@@ -10,7 +10,6 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAD_SOCKET_IMPL_H__

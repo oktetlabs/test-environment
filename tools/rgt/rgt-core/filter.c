@@ -10,7 +10,6 @@
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #include <libxml/parser.h>

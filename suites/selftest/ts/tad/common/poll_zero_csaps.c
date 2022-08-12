@@ -7,7 +7,6 @@
  *
  * 
  * 
- * $Id$
  */
 
 /** @page common-poll_zero_csaps Call traffic poll operation with zero CSAPs

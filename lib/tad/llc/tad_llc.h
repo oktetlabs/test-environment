@@ -10,7 +10,6 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: tad_bps.h 29265 2006-06-16 09:16:55Z helen $
  */
 
 #ifndef __TE_TAD_LLC_H__

@@ -7,7 +7,6 @@
  *
  * 
  * 
- * $Id$
  */
 
 /** @page common-poll_one Call traffic poll operation for one CSAP

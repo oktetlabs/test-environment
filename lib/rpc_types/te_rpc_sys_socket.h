@@ -14,7 +14,6 @@
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
  
 #ifndef __TE_RPC_SYS_SOCKET_H__

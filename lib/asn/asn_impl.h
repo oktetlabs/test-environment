@@ -10,7 +10,6 @@
  *
  * Author: Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_ASN_IMPL_H__

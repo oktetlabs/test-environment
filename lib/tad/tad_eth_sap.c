@@ -11,7 +11,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "TAD PF_PACKET/BPF"

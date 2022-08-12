@@ -5,7 +5,6 @@
 --      This file contain attempt to describe Packets and filters format
 --      by ASN.1
 --
--- $Id: packets.asn,v 1.1 2003/10/28 09:35:41 arybchik Exp $
 --========================================================================
 
 TE-packet-defs 

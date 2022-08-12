@@ -14,7 +14,6 @@
  * 
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
- * $Id$
  */ 
 
 #ifndef __TE_LOGGER_TEN_H__

@@ -4,7 +4,6 @@
  * 
  * @author Marina Maslova <Marina.Maslova@oktetlabs.ru>
  * 
- * $Id: $
  */
 
 #include "cpe_backdoor.h"

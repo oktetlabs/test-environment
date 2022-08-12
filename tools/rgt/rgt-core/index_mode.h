@@ -12,7 +12,6 @@
  *
  * @author Dmitry Izbitsky  <Dmitry.Izbitsky@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_RGT_INDEX_MODE_H__

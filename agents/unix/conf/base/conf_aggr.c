@@ -11,7 +11,6 @@
  *
  * @author Alexandra Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  *
- * $Id: conf_sys.c 29991 2006-07-09 08:39:26Z arybchik $
  */
 
 #define TE_LGR_USER     "Conf Link Aggr"

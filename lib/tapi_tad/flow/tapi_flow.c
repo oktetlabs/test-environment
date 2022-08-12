@@ -4,7 +4,6 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs, St.-Petersburg, Russia
  *
- * $Id: flow_check.c 64234 2010-05-11 16:21:28Z kam $
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  */

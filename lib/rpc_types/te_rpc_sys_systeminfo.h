@@ -10,7 +10,6 @@
  *
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  *
- * $Id$
  */
  
 #ifndef __TE_RPC_SYS_SYSTEMINFO_H__

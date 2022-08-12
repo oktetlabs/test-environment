@@ -9,7 +9,6 @@
 # Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
 # Author: Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
 #
-# $Id$
 #
 
 . "${TE_BUILD}/builder.conf.processed"

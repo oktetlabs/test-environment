@@ -5,7 +5,6 @@
  * 
  * Author: Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  * 
- * $Id$
  *
  ****************************************************************/
 

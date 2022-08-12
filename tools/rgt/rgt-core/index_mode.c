@@ -12,7 +12,6 @@
  *
  * @author Dmitry Izbitsky  <Dmitry.Izbitsky@oktetlabs.ru>
  *
- * $Id$
  */
 
 #include "rgt_common.h"

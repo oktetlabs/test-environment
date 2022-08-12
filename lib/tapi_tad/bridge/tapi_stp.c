@@ -11,7 +11,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */ 
 
 #define TE_LGR_USER     "TAPI STP"

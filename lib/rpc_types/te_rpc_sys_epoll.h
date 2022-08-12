@@ -11,7 +11,6 @@
  *
  * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
  *
- * $Id$
  */
  
 #ifndef __TE_RPC_SYS_EPOLL_H__

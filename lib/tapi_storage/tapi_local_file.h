@@ -11,7 +11,6 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TAPI_LOCAL_FILE_H__

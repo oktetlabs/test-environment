@@ -11,7 +11,6 @@
  *
  * @author Vadim V. Galitsyn <Vadim.Galitsyn@oktetlabs.ru>
  *
- * $Id: te_ethernet_phy.h 33874 2006-11-28 17:08:31Z edward $
  */
 
 #ifndef __TE_ETHERNET_PHY_H__

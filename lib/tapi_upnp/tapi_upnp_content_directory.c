@@ -12,7 +12,6 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "TAPI UPnP Content Directory"

@@ -7,7 +7,6 @@
 #
 # Author: Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
 #
-# $Id$
 #
 
 outfile=$1

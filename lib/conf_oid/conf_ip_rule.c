@@ -9,7 +9,6 @@
  *
  * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #include "te_config.h"

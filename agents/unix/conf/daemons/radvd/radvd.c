@@ -10,7 +10,6 @@
  *
  * @author Konstantin G. Petrov <Konstantin.Petrov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #include "te_config.h"

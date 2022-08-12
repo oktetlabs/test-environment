@@ -3,7 +3,6 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs Ltd., St.-Petersburg, Russia
  *
- * $Id $
  */
 
 /** @page serial test 

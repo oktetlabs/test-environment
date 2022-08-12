@@ -10,7 +10,6 @@
  *
  * @author Alexander Kukuta <kam@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #define TE_LGR_USER     "TAD IGMPv2"

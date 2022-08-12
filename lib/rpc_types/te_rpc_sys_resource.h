@@ -11,7 +11,6 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id$
  */
  
 #ifndef __TE_RPC_SYS_RESOURCE_H__

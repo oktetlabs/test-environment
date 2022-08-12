@@ -9,7 +9,6 @@
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __RPCSERVER_IOMUX_H__

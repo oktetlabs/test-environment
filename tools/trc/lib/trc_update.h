@@ -11,7 +11,6 @@
  *
  * @author  Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TRC_UPDATE_H__

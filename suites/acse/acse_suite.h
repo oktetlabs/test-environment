@@ -9,7 +9,6 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  * 
- * $Id$
  */
 
 #ifndef __ACSE_SUITE_H__

@@ -14,7 +14,6 @@
  * @note This header is separated from principal `agentlib.h`, so that
  * it can be included into a automatically generated symbol table
  * definitions, without causing symbol definition mismatch
- * $Id$
  */
  
 #ifndef __TE_AGENTLIB_DEFS_H__

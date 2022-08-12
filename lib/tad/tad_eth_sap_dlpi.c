@@ -7,7 +7,6 @@
  *
  * @author Igor Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "TAD DLPI"

@@ -9,7 +9,6 @@
  *
  * @author Alexander Kukuta <kam@oktetlabs.ru>
  *
- * $Id$
  */
 #ifndef __TE_NDN_CLI_H__
 #define __TE_NDN_CLI_H__

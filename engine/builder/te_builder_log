@@ -9,7 +9,6 @@
 #
 # Author Elena Vengerova <Elena.Vengerova@oktet.ru>
 #
-# $Id$
 #
 
 while read message ; do

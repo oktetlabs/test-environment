@@ -9,7 +9,6 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  * 
- * $Id$
  */
 
 #ifndef __IPSTACK_SUITE_H__

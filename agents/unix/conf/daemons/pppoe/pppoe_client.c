@@ -10,7 +10,6 @@
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  * 
- * $Id: conf_eth.c 83223 2013-07-05 15:51:56Z andrey $
  */
 
 #define TE_LGR_USER     "PPPoE Client"

@@ -12,7 +12,6 @@
  *
  * @author Vadim V. Galitsyn <Vadim.Galitsyn@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAPI_CFG_PHY_H__

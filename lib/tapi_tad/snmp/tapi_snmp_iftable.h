@@ -10,7 +10,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */
 #ifndef __TE__TAPI_SNMP_IFTABLE_H__
 #define __TE__TAPI_SNMP_IFTABLE_H__ 

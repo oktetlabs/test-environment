@@ -11,7 +11,6 @@
  *
  * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  *
- * $Id:
  */
 
 #ifndef __TE_TESTER_H__

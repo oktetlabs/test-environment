@@ -13,7 +13,6 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id$
 */
 
 #ifndef __TE_CWMP_DATA__H__

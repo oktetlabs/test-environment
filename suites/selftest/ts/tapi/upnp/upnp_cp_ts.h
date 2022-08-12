@@ -7,7 +7,6 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __UPNP_CP_TS_H__

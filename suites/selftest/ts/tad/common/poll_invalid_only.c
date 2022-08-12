@@ -7,7 +7,6 @@
  *
  * 
  * 
- * $Id$
  */
 
 /** @page common-poll_invalid_only Call traffic poll operation for invalid only CSAPs

@@ -11,7 +11,6 @@
  *
  * @author Evgeny Omelchenko <Evgeny.Omelchenko@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #ifndef __TE_TAPI_RPC_TELEPHONY_H__

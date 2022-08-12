@@ -11,7 +11,6 @@
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "TAD CLI"

@@ -11,7 +11,6 @@
  *
  * @author Evgeny I. Omelchenko <Evgeny.Omelchenko@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #include "te_config.h"

@@ -10,7 +10,6 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * 
- * $Id$
  */
 
 /** @page eth-send_recv Send/receive of untagged/tagged Ethernet2/LLC+SNAP encapsulated frames

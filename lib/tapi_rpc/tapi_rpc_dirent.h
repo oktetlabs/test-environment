@@ -12,7 +12,6 @@
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAPI_RPC_DIRENT_H__

@@ -8,7 +8,6 @@
  *
  * @author Konstantin G. Petrov <Konstantin.Petrov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TA_UNIX_RADVD_H__

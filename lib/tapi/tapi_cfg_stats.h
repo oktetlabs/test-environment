@@ -11,7 +11,6 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAPI_CFG_STATS_H__

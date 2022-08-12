@@ -11,7 +11,6 @@
  *
  * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_RULE_H_

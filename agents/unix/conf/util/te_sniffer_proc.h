@@ -10,7 +10,6 @@
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #ifndef __TE_SNIFFER_PROC_H__

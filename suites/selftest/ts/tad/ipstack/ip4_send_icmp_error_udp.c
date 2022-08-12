@@ -8,7 +8,6 @@
  *
  * 
  *
- * $Id$
  */
 
 /** @page ipstack-ip4_send_icmp_error_udp Send ICMP datagram with udp error replu message via udp.ip4.icmp4.ip4.eth CSAP and check UDP socket error

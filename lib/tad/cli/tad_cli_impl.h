@@ -10,7 +10,6 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAD_CLI_IMPL_H__

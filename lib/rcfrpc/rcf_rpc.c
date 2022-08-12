@@ -12,7 +12,6 @@
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "RCF RPC"

@@ -11,7 +11,6 @@
  *
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_POWER_SW_H__

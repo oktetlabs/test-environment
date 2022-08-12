@@ -11,7 +11,6 @@
  * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "TAD IPv6"

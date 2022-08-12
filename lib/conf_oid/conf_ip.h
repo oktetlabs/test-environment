@@ -9,7 +9,6 @@
  *
  * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_LIB_CONF_OID_CONF_IP_H_

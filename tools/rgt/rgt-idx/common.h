@@ -7,7 +7,6 @@
  *
  * @author Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_RGT_IDX_COMMON_H__

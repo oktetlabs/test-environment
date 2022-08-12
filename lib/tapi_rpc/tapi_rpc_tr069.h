@@ -12,7 +12,6 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TAPI_RPC_TR069_H__

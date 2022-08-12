@@ -11,7 +11,6 @@
  *
  * @author Alexandra Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "TE Shell Cmd"

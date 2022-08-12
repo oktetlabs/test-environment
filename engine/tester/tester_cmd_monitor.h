@@ -11,7 +11,6 @@
  *
  * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_TESTER_CMD_MONITOR_H__

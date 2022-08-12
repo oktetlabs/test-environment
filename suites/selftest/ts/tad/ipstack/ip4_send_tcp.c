@@ -7,7 +7,6 @@
  *
  * 
  *
- * $Id:$
  */
 
 /** @page ipstack-ip4_send_tcp Send TCP packets via CSAP

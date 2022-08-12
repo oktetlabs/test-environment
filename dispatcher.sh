@@ -9,7 +9,6 @@
 # Author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 #
-# $Id$
 #
 
 bin_sh=`ls -l /bin/sh | sed "s/^.*-> //g"`

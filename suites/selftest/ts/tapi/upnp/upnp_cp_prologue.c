@@ -7,7 +7,6 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
- * $Id$
  */
 
 /** @page upnp_cp-prologue UPnP Control Point Test Suite prologue

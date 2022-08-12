@@ -12,7 +12,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Sergey Levi <sergeyle@tercom.ru>
  *
- * $Id$
  */
 
 #include "te_config.h"

@@ -10,7 +10,6 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 #
-# $Id$
 #
 
 SRC_DIR=$1

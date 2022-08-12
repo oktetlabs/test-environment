@@ -14,7 +14,6 @@
 #
 # Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
 #
-# $Id:  $
 #
 
 SCRIPT=`which $0`

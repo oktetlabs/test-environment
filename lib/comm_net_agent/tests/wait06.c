@@ -8,7 +8,6 @@
  *
  * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  * 
- * @(#) $Id$
  */
 
 /** @page test_rcf_net_agent_wait06 rcf_comm_agent_wait() random attachments

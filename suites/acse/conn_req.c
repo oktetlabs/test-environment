@@ -7,7 +7,6 @@
  *
  * 
  *
- * $Id$
  */
 
 /** @page CWMP test: Connection Request

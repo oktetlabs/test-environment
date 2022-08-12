@@ -7,7 +7,6 @@
  *
  * 
  * 
- * $Id$
  */
 
 /** @page atm-aal5_send Create AAL5.ATM over Socket CSAP and send one SDU

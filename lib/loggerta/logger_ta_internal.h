@@ -12,7 +12,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_LOGGER_TA_INTERNAL_H__

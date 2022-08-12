@@ -10,7 +10,6 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER      "Main"

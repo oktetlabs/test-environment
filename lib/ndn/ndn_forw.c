@@ -9,7 +9,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */
 #include "te_config.h"
 

@@ -10,7 +10,6 @@
  *
  * @author Evgeny Omelchenko <Evgeny.Omelchenko@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #define TE_LGR_USER     "Telephony"

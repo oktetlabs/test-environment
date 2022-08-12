@@ -10,7 +10,6 @@
  *
  * @author Roman Zhukov <Roman.Zhukov@oktetlabs.ru>
  *
- * $Id:
  */
 
 #define TE_LGR_USER     "Conf BPF"

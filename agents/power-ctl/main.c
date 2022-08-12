@@ -10,7 +10,6 @@
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  * 
- * $Id$
  */
 
 #define TE_LGR_USER     "Main"

@@ -7,7 +7,6 @@
  *
  * 
  * 
- * $Id$
  */
 
 /** @page common-poll_null_csaps Call traffic poll operation with NULL CSAPs pointer and positive number of CSAPs

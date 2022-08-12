@@ -9,7 +9,6 @@
  *
  * @author Andrey G. Ivanov <andron@oktetlabs.ru>
  *
- * $Id$
  */
 
 #include "te_config.h"

@@ -11,7 +11,6 @@
  *
  * @author Igor Labutin <Igor.Labutin@oktetlabs.ru>
  *
- * $Id: tapi_cfg_dhcp.c 32571 2006-10-17 13:43:12Z edward $
  */
 
 #define TE_LGR_USER     "TAPI CFG PPPOE"

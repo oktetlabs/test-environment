@@ -13,7 +13,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Oleg Kratsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER      "Configuration TAPI"

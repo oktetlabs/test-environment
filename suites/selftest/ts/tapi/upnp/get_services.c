@@ -7,7 +7,6 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
- * $Id$
  */
 
 /** @page upnp_cp-get_services Test to get UPnP services

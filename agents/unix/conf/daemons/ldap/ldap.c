@@ -10,7 +10,6 @@
  * @author Alexandra N. Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id$
  */
 
 #include "te_config.h"

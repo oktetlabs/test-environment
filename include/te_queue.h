@@ -15,7 +15,6 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs.
  *
- * $Id$
  */
 
 #ifndef    __TE_QUEUE_H__

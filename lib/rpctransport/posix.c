@@ -10,7 +10,6 @@
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  *
- * $Id$
  */
 
 #if (!defined(__CYGWIN__) && !defined(WINDOWS)) ||  \

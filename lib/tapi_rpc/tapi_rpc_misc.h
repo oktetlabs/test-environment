@@ -11,7 +11,6 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id: tapi_rpc_misc.h,v 94b3e14a5ce4 2015/09/24 09:58:33 Andrey $
  */
 
 #ifndef __TE_TAPI_RPC_MISC_H__

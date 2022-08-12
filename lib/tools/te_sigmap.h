@@ -14,7 +14,6 @@
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_SIGMAP_H__

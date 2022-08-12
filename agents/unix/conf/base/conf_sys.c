@@ -12,7 +12,6 @@
  *
  * @author Igor Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "Conf Sys Wide"

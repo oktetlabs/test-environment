@@ -12,7 +12,6 @@
  *
  * @author Ivan Soloducha <Ivan.Soloducha@oktetlabs.ru>
  *
- * $Id$
  */
 
 #include "te_config.h"

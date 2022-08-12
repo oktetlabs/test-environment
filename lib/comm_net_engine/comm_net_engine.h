@@ -9,7 +9,6 @@
  *
  * Author: Andrey G. Ivanov <andron@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TE_COMM_NET_ENGINE_H__

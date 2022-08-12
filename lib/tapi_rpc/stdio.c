@@ -12,7 +12,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Alexandra Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  *
- * $Id$
  */
 
 #include "te_config.h"

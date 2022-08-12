@@ -9,7 +9,6 @@
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  * 
- * $Id$
  */
 
 #include "te_config.h"

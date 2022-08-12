@@ -10,7 +10,6 @@
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  *
- * $Id$
  */
 #ifndef __TE__TAPI_SNMP_DEFS_H__
 #define __TE__TAPI_SNMP_DEFS_H__ 

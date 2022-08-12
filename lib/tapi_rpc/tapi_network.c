@@ -11,7 +11,6 @@
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "Network Configuration TAPI"

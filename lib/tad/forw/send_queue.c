@@ -3,7 +3,6 @@
  *
  * @author Konstantin Ushakov <kostik@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __USE_UNIX98

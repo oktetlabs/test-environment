@@ -9,7 +9,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */ 
 #ifndef __TE_ASN_TESTS_TYPES_H__
 #define __TE_ASN_TESTS_TYPES_H__

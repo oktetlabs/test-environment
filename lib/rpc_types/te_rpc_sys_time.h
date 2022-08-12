@@ -11,7 +11,6 @@
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id$
  */
  
 #ifndef __TE_RPC_SYS_TIME_H__

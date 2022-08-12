@@ -14,7 +14,6 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TAPI_MEDIA_PLAYER_MPLAYER_H__

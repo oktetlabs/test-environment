@@ -12,7 +12,6 @@
  *
  * @author Vadim V. Galitsyn <Vadim.Galitsyn@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "Configuration PHY"

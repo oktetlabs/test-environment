@@ -11,7 +11,6 @@
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER      "TAPI SockAddr"

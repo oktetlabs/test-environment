@@ -7,7 +7,6 @@
  *
  * 
  * 
- * $Id$
  */
 
 /** @page atm-simple_send Create ATM over Socket CSAP and send one cell

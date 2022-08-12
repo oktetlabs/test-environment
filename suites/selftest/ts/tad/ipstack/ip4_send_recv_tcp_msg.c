@@ -7,7 +7,6 @@
  *
  * 
  *
- * $Id:$
  */
 
 /** @page ipstack-ip4_send_msg_tcp Send and receive TCP packets via

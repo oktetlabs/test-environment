@@ -10,7 +10,6 @@
 #
 # Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
 #
-# $Id$
 #
 
 PARSER="`dirname $0`/../share/te_builder/nut.m4"

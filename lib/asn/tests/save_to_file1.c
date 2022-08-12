@@ -3,7 +3,6 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs, St.-Petersburg, Russia
  *
- * $Id$
  */
 
 /** @page save_to_file1 Usage of save_to_file() function

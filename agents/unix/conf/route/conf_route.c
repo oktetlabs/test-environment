@@ -13,7 +13,6 @@
  * @author Ivan Soloducha <Ivan.Soloducha@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "Unix Conf Route"

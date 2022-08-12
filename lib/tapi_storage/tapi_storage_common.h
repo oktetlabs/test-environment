@@ -11,7 +11,6 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TAPI_STORAGE_COMMON_H__

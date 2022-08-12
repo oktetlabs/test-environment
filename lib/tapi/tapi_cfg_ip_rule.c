@@ -9,7 +9,6 @@
  *
  * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #define TE_LGR_USER     "Configuration TAPI"

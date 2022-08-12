@@ -11,7 +11,6 @@
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  *
- * $Id$
  */
  
 #ifndef __TE_RPC_SYSCONF_H__

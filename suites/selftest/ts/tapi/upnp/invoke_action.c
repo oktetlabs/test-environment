@@ -7,7 +7,6 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
- * $Id$
  */
 
 /** @page upnp_cp-invoke_action Test to invoke UPnP action

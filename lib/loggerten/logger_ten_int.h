@@ -12,7 +12,6 @@
  * 
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
- * $Id$
  */ 
 
 #ifndef TE_LOGGER_TEN_INTERNALS

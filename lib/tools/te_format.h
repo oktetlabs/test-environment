@@ -16,7 +16,6 @@
  *
  * @author Ivan Soloducha <Ivan.Soloducha@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef  __TE_TOOLS_FORMAT_H__

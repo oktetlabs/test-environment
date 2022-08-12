@@ -10,7 +10,6 @@
  *
  * @author Alexander Kukuta <kam@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #ifndef __TE_TAD_IGMP_IMPL_H__

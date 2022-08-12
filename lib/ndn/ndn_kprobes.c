@@ -9,7 +9,6 @@
  *
  * @author Aleksandr Platonov <Aleksandr.Platonov@oktetlabs.ru>
  *
- * $Id:$
  */
 
 #if defined(__linux__)

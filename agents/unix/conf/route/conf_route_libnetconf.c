@@ -11,7 +11,6 @@
  *
  * @author Maxim Alyutov <Maxim.Alyutov@oktetlabs.ru>
  *
- * $Id: $
  */
 
 #include "te_config.h"

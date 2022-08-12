@@ -9,7 +9,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id$
  */
 #ifndef __TE_NDN_DHCP_H__
 #define __TE_NDN_DHCP_H__

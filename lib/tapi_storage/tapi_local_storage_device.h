@@ -14,7 +14,6 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
- * $Id$
  */
 
 #ifndef __TAPI_LOCAL_STORAGE_DEVICE_H__

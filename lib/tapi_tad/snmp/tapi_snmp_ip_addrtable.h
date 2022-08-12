@@ -10,7 +10,6 @@
  *
  * @author Anastasia Kazakova <Anastasia.Kazakova@oktetlabs.ru>
  *
- * $Id$
  */
 #ifndef __TE__TAPI_SNMP_IP_ADDRTABLE_H__
 #define __TE__TAPI_SNMP_IP_ADDRTABLE_H__ 

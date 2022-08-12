@@ -9,7 +9,6 @@
 #
 # Author: Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
 #
-# $Id$
 #
 
 function update_summary() 
