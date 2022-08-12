@@ -3,7 +3,7 @@
  *
  * Check TAPI NPtcp
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  */
 
 /** @page tapi-tool-nptcp-np_with_destroy Run NPtcp and destroy it

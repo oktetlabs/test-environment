@@ -3,7 +3,7 @@
 - comment: |
     ntpd configuration model.
 
-    Copyright (C) 2014-2021 OKTET Labs.
+    Copyright (C) 2014-2022 OKTET Labs.
 
     Author: Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
 

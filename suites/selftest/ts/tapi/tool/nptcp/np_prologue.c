@@ -3,7 +3,7 @@
  *
  * Test Suite prologue.
  *
- * Copyright (C) 2020 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2020-2022 OKTET Labs Ltd., St.-Petersburg, Russia
  *
  * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */

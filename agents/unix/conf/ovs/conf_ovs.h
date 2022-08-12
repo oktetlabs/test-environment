@@ -3,7 +3,7 @@
  *
  * Unix TA Open vSwitch deployment.
  *
- * Copyright (C) 2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
  * @author Ivan Malov <Ivan.Malov@oktetlabs.ru>
  */

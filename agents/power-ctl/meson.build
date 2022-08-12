@@ -1,4 +1,4 @@
-# Copyright (C) 2021 OKTET Labs. All rights reserved.
+# Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
 
 name = get_option('agent-powerctl-name')
 ta_platform = get_option('agent-powerctl-platform')

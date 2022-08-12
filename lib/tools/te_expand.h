@@ -3,7 +3,7 @@
  *
  * Definitions of the C API that allows to expand parameters in a string
  *
- * Copyright (C) 2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  */

@@ -3,7 +3,7 @@
  *
  * API to handle DPDK RPC related operations with offloads
  *
- * Copyright (C) 2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
  * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  */

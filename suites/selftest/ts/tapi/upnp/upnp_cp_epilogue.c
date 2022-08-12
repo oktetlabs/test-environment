@@ -3,7 +3,7 @@
  *
  * UPnP Control Point Test Suite epilogue.
  *
- * Copyright (C) 2004-2018 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *

@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
 
 subdir('xml2html')
 subdir('xml2text')

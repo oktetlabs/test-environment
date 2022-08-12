@@ -3,7 +3,7 @@
  *
  * Definition of unix TA BPF configuring support.
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
  * @author Sergey Nikitin <Sergey.Nikitin@oktetlabs.ru>
  */

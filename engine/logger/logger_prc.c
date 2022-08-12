@@ -3,7 +3,7 @@
  *
  * TEN side Logger library.
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>

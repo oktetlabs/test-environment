@@ -4,7 +4,7 @@
  * This module provides a view structure for log messages and
  * and a set of utility functions.
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
  * @author Viacheslav Galaktionov <Viacheslav.Galaktionov@oktetlabs.ru>
  */

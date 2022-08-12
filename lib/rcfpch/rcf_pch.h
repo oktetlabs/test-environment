@@ -4,7 +4,7 @@
  * Definition of the C API provided by Portable Commands Handler to the
  * Test Agent and Commands Handlers libraries.
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

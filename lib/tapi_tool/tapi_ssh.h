@@ -7,7 +7,7 @@
  *
  * TAPI to handle OpenSSH tools and utilities.
  *
- * Copyright (C) 2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
  *
  * @author Pavel Liulchak <Pavel.Liulchak@oktetlabs.ru>
  */

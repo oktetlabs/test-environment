@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
 
 common_sources = ['rgt_log_bundle_common.c', 'rgt_log_bundle_common.h']
 common_libs = declare_dependency(

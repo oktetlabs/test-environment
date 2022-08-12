@@ -3,7 +3,7 @@
  *
  * Communications with DUT through conserver implementation
  *
- * Copyright (C) 2004-2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  * @author Ivan Danilov <Ivan.Danilov@oktetlabs.ru>
  * @author Svetlana Menshikova <Svetlana.Menshikova@oktetlabs.ru>

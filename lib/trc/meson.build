@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
 
 if cc.has_type('xmlError', prefix: '#include <libxml/xmlerror.h>',
                dependencies: dep_libxml2)

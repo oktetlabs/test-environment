@@ -3,7 +3,7 @@
  *
  * Common functions and structures to use in BPF programs.
  *
- * Copyright (C) 2022 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2022-2022 OKTET Labs, St.-Petersburg, Russia
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */

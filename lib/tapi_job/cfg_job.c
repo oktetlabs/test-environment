@@ -3,7 +3,7 @@
  *
  * Definition of Configurator API for Agent job control
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
  * @author Dilshod Urazov <Dilshod.Urazov@oktetlabs.ru>
  * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>

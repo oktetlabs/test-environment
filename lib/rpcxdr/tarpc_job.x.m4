@@ -3,7 +3,7 @@
  *
  * Definition of RPC structures and functions for Agent job control
  *
- * Copyright (C) 2019 OKTET Labs.
+ * Copyright (C) 2019-2022 OKTET Labs.
  *
  * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  */

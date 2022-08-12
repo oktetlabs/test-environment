@@ -4,7 +4,7 @@
  * Redirection of stdout/stderr in two files: stdout merged with stderr,
  * stderr only.
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  */

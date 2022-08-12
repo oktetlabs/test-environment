@@ -3,7 +3,7 @@
  *
  * Implementation of get/set methods for qdisc node
  *
- * Copyright (C) 2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */

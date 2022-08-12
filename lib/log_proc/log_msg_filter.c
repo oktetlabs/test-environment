@@ -3,7 +3,7 @@
  *
  * Message filter implementation.
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
  * @author Viacheslav Galaktionov <Viacheslav.Galaktionov@oktetlabs.ru>
  */

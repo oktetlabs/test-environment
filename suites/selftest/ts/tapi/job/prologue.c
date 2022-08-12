@@ -3,7 +3,7 @@
  *
  * TAPI Job test suite prologue
  *
- * Copyright (C) 2022 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2022-2022 OKTET Labs Ltd., St.-Petersburg, Russia
  */
 
 /** @page job-prologue Start date process

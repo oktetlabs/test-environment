@@ -1,4 +1,4 @@
-# Copyright (C) 2020 OKTET Labs. All rights reserved.
+# Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
 
 headers += files('log_msg_view.h', 'log_msg_filter.h', 'log_flow_filters.h',
                  'log_filters_xml.h', 'log_filters_yaml.h')

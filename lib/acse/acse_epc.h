@@ -7,7 +7,7 @@
  * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

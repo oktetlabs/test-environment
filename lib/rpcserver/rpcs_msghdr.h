@@ -3,7 +3,7 @@
  *
  * API for processing struct msghdr in RPC calls
  *
- * Copyright (C) 2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
  *
  *

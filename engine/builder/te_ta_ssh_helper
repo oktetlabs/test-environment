@@ -11,7 +11,7 @@
 #  - <ta>_SSH_PORT (or TE_SSH_PORT) to use non-standard port
 #  - <ta>_SSH_USER (or TE_SSH_USER) to use different user
 #
-# Copyright (C) 2020 OKTET Labs.
+# Copyright (C) 2020-2022 OKTET Labs.
 #
 # Author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 #

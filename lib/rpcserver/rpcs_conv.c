@@ -4,7 +4,7 @@
  * Implementation of API used to convert between TARPC types and
  * native types.
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */

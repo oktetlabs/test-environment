@@ -4,7 +4,7 @@
  * Core library which must have no TE dependencies and required
  * for any entity which would like to use TE logging.
  *
- * Copyright (C) 2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */

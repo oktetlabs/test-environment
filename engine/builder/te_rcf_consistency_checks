@@ -7,7 +7,7 @@
 # It can extract checksum from target file
 # And it can manipulate the list of extern files for checksum
 #
-# Copyright (C) 2004-2018 OKTET Labs.
+# Copyright (C) 2004-2022 OKTET Labs.
 #
 # Author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
 #

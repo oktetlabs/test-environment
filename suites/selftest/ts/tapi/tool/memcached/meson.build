@@ -1,4 +1,4 @@
-# Copyright (C) 2022 OKTET Labs. All rights reserved.
+# Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
 
 install_headers('memcached.h')
 

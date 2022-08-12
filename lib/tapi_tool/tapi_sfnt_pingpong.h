@@ -7,7 +7,7 @@
  *
  * TAPI to handle sfnt-pingpong tool.
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
  * @author Artemii Morozov <Artemii.Morozov@oktetlabs.ru>
  */

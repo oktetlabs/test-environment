@@ -3,7 +3,7 @@
  *
  * Implementation of API for communicating with DUT via serial console.
  *
- * Copyright (C) 2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>

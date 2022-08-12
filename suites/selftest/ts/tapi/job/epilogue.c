@@ -3,7 +3,7 @@
  *
  * TAPI Job test suite epilogue
  *
- * Copyright (C) 2022 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2022-2022 OKTET Labs Ltd., St.-Petersburg, Russia
  */
 
 /** @page job-epilogue Recreate job

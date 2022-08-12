@@ -3,7 +3,7 @@
 # Helper script for building BPF programs, to be used in
 # TE_TA_APP() macro in builder configuration files.
 #
-# Copyright (C) 2022 OKTET Labs, St.-Petersburg, Russia
+# Copyright (C) 2022-2022 OKTET Labs, St.-Petersburg, Russia
 #
 # Author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
 #

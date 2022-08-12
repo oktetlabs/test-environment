@@ -2,7 +2,7 @@
 #
 # Script to generate test log.
 #
-# Copyright (C) 2012-2021 OKTET Labs, St.-Petersburg, Russia
+# Copyright (C) 2012-2022 OKTET Labs, St.-Petersburg, Russia
 #
 # Author Roman Kolobov <Roman.Kolobov@oktetlabs.ru>
 #

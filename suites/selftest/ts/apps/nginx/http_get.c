@@ -3,7 +3,7 @@
  *
  * Check that nginx replies on HTTP GET.
  *
- * Copyright (C) 2019 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2019-2022 OKTET Labs Ltd., St.-Petersburg, Russia
  *
  * @author Marina Maslova <Marina.Maslova@oktetlabs.ru>
  *

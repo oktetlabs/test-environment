@@ -4,7 +4,7 @@
  * Implementation of functions to create and log hex diff dumps of two
  * binary memory blocks.
  *
- * Copyright (C) 2021 OKTET Labs. All rights reserved.
+ * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
  *
  * @author Sergey Nikitin <Sergey.Nikitin@oktetlabs.ru>
  */

@@ -3,7 +3,7 @@
 - comment: |
     Linux /proc/sys configuration model.
 
-    Copyright (C) 2017-2020 OKTET Labs.
+    Copyright (C) 2017-2022 OKTET Labs.
 
     Author: Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
 

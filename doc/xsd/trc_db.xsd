@@ -9,7 +9,7 @@
             Test Environment
             XML schema for expected testing results data base
 
-            Copyright (C) 2004-2018 OKTET Labs.
+            Copyright (C) 2004-2022 OKTET Labs.
 
             Author: Andrew Rybchenko &lt;Andrew.Rybchenko@oktetlabs.ru&gt;
         </xsd:documentation>

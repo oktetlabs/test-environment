@@ -7,7 +7,7 @@
  * information is covered: network devices, IP addresses, neighbour
  * tables, routing tables.
  *
- * Copyright (C) 2008-2019 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2008-2022 OKTET Labs, St.-Petersburg, Russia
  *
  * @author Maxim Alyutov <Maxim.Alyutov@oktetlabs.ru>
  *

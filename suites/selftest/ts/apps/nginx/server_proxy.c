@@ -4,7 +4,7 @@
  * Configure pair of proxy and server nginx instances and test it
  * using HTTP benchmarking tool.
  *
- * Copyright (C) 2019 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2019-2022 OKTET Labs Ltd., St.-Petersburg, Russia
  *
  * @author Marina Maslova <Marina.Maslova@oktetlabs.ru>
  *

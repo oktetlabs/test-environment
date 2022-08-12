@@ -3,7 +3,7 @@
  *
  * RPC client API for helper DPDK functions
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
  * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  */

@@ -3,7 +3,7 @@
 - comment: |
     Linux configfs control tree.
 
-    Copyright (C) 2021 OKTET Labs.
+    Copyright (C) 2021-2022 OKTET Labs.
 
     Author: Andrew Rybchenko E-mail: andrew.rybchenko@oktetlabs.ru
 

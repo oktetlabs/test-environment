@@ -3,7 +3,7 @@
  *
  * Test API to control 'netperf' tool.
  *
- * Copyright (C) 2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
  * @author Artemii Morozov <Artemii.Morozov@oktetlabs.ru>
  */

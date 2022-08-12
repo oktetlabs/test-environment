@@ -2,7 +2,7 @@
 # after all the TE libraries and the main TE agent have been built.
 # More information can be found in the TE_TA_APP macro description.
 #
-# Copyright (C) 2020 OKTET Labs. All rights reserved.
+# Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
 
 # The restriction on the meson version is due to the use of arrays in options.
 project('ta_rpcprovider', 'c', meson_version: '>= 0.44.0')

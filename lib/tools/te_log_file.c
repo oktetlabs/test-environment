@@ -4,7 +4,7 @@
  * Logger library to be used by standalone TE off-line applications.
  *
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

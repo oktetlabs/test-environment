@@ -1,4 +1,4 @@
-# Copyright (C) 2022 OKTET Labs. All rights reserverd.
+# Copyright (C) 2022-2022 OKTET Labs. All rights reserverd.
 
 tests = [
     'cfg_basic_operations',

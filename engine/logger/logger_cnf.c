@@ -4,7 +4,7 @@
  * Logger configuration file parser.
  * No schema checking is carried out.
  *
- * Copyright (C) 2004-2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  * @author Igor B. Vasiliev <Igor.Vasiiev@oktetlabs.ru>
  * @author Viacheslav Galaktionov <Viacheslav.Galaktionov@oktetlabs.ru>

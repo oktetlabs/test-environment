@@ -7,7 +7,7 @@
       Test Environment
       XML schema for Logger configuration file.
 
-      Copyright (C) 2004-2018 OKTET Labs.
+      Copyright (C) 2004-2022 OKTET Labs.
 
       Author: Igor B. Vasiliev &lt;Igor.Vasiliev@oktetlabs.ru&gt;
     </xsd:documentation>

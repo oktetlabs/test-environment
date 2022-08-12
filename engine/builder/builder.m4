@@ -2,7 +2,7 @@ dnl Test Environment
 dnl
 dnl Builder configuration macros definitions
 dnl
-dnl Copyright (C) 2004-2020 OKTET Labs.
+dnl Copyright (C) 2004-2022 OKTET Labs.
 dnl
 dnl Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 dnl Author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>

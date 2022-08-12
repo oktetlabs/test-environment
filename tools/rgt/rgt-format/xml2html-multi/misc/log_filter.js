@@ -3,7 +3,7 @@
 //
 // Filters for log messages in HTML log
 //
-// Copyright (C) 2020 OKTET Labs.
+// Copyright (C) 2020-2022 OKTET Labs.
 //
 //
 // Author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>

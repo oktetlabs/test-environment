@@ -3,7 +3,7 @@
  *
  * Functions to operate the files.
  *
- * Copyright (C) 2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */

@@ -1,7 +1,7 @@
 /** @file
  * @brief Test Environment: RGT common declarations.
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

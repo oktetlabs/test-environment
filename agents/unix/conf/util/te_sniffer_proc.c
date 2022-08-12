@@ -3,7 +3,7 @@
  *
  * Sniffer process implementation.
  *
- * Copyright (C) 2004-2018 OKTET Labs.
+ * Copyright (C) 2004-2022 OKTET Labs.
  *
  * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *

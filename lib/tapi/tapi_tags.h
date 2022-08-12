@@ -8,7 +8,7 @@
  * Declaration of API to modify TRC tags from prologues.
  *
  *
- * Copyright (C) 2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
  *
  * @author Ivan Khodyrev <Ivan.Khodyrev@oktetlabs.ru>
  */

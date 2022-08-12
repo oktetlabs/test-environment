@@ -3,7 +3,7 @@
  *
  * Implementation of common functions for IPv4/IPv6 CSAP.
  *
- * Copyright (C) 2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */

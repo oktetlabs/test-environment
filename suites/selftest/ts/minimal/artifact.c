@@ -3,7 +3,7 @@
  *
  * Minial test scenario that yields an artifact.
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  */
 
 /** @page minimal_artifact Artifact test

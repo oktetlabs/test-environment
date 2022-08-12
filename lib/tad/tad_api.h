@@ -4,7 +4,7 @@
  * Traffic Application Domain Command Handler.
  * Declarations of types and functions which may be used outside RCF.
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

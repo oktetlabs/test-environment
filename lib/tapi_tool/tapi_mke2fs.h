@@ -7,7 +7,7 @@
  *
  * TAPI to handle mke2fs tool.
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
  * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */

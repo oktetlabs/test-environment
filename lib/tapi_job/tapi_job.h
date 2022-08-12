@@ -7,7 +7,7 @@
  *
  * API to manage subordinate jobs at the agent side
  *
- * Copyright (C) 2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  */

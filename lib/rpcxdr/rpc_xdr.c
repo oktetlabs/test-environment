@@ -3,7 +3,7 @@
  *
  * Implementation of routines used by RCF RPC to encode/decode RPC data.
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

@@ -2,7 +2,7 @@
 #
 # Helper script to build dpdkrpc application.
 #
-# Copyright (C) 2020 OKTET Labs. All rights reserved.
+# Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
 
 set -e
 

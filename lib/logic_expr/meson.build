@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
 
 headers += files('logic_expr.h')
 sources += files('logic_expr.c')

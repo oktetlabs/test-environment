@@ -2,7 +2,7 @@
  * @brief RCF routines for TA reboot
  *
  *
- * Copyright (C) 2021 OKTET Labs. All rights reserved.
+ * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
  *
  * @author Artemii Morozov <Artemii.Morozov@oktetlabs.ru>
  */

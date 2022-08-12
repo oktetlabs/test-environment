@@ -9,7 +9,7 @@
 #    tce_uninstrument_sources [-p <src_path>]
 #
 #
-# Copyright (C) 2004-2018 OKTET Labs.
+# Copyright (C) 2004-2022 OKTET Labs.
 #
 # Author Pavel A. Bolokhov <Pavel.Bolokhov@oktet.ru>
 #

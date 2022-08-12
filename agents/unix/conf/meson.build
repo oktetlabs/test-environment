@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
 
 install_data([ 'daemons/ldap/slapd_run.sh', 'daemons/ldap/slapd.conf' ],
              install_dir: tadir)

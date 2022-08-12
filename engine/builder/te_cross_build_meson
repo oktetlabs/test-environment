@@ -4,7 +4,7 @@
 #
 # Build TE using meson/ninja.
 #
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
 
 set -e
 set -E

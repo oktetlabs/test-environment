@@ -3,7 +3,7 @@
  *
  * IOMMU status
  *
- * Copyright (C) 2004-2021 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  * @author Ivan Ilchenko <Ivan.Ilchenko@oktetlabs.ru>
  */

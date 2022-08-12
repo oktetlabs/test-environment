@@ -7,7 +7,7 @@
  *
  * Generic API to use packetdrill test tool.
  *
- * Copyright (C) 2018-2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
  * @author Denis Pryazhennikov <Denis.Pryazhennikov@oktetlabs.ru>
  * @author Sergey Nikitin <Sergey.Nikitin@oktetlabs.ru>

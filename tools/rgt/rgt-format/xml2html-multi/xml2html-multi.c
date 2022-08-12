@@ -1,7 +1,7 @@
 /** @file
  * @brief Test Environment: xml2html multidocument utility callbacks.
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

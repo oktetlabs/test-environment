@@ -3,7 +3,7 @@
  *
  * Implementation of internal API for using Generic Netlink.
  *
- * Copyright (C) 2022 OKTET Labs.
+ * Copyright (C) 2022-2022 OKTET Labs.
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */

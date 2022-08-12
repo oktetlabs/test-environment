@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
 
 project('test-environment', 'c',
     default_options: ['default_library=shared'],

@@ -3,7 +3,7 @@
  *
  * Demonstrate the usage of TAPI ctorrent and TAPI bttrack
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  */
 
 /** @page tapi-tool-torrent-ctorrent Transfer file via tapi_ctorrent

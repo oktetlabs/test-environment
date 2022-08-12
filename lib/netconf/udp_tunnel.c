@@ -4,7 +4,7 @@
  *
  * Implementation of UDP Tunnel interfaces configuration commands.
  *
- * Copyright (C) 2019 OKTET Labs.
+ * Copyright (C) 2019-2022 OKTET Labs.
  *
  * @author Ian Dolzhansky <Ian.Dolzhansky@oktetlabs.ru>
  */

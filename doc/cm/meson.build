@@ -1,4 +1,4 @@
-# Copyright (C) 2019 OKTET Labs. All rights reserved.
+# Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
 
 cm_files = files(
     'cm_8021x.yml',

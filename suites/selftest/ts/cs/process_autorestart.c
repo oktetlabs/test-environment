@@ -3,7 +3,7 @@
  *
  * Check process autorestart support in Configurator
  *
- * Copyright (C) 2021 OKTET Labs. All rights reserved.
+ * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
  */
 
 /** @page process-autorestart Create process with autorestart feature

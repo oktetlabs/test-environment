@@ -4,7 +4,7 @@
  * Implementation of TAPI to print test state in case of failure
  *
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>

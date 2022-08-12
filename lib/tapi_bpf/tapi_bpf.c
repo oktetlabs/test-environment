@@ -3,7 +3,7 @@
  *
  * Test API to configure BPF/XDP programs (implementation).
  *
- * Copyright (C) 2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
  * @author Damir Mansurov <Damir.Mansurov@oktetlabs.ru>
  */

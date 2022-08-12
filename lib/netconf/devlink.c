@@ -3,7 +3,7 @@
  *
  * Implementation of devlink device configuration commands.
  *
- * Copyright (C) 2022 OKTET Labs.
+ * Copyright (C) 2022-2022 OKTET Labs.
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */

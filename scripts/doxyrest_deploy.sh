@@ -5,7 +5,7 @@
 # Script to deploy doxyrest that is required for doxygen->RST->SPHINX
 # documentation conversion.
 #
-# Copyright (C) 2020 OKTET Labs.
+# Copyright (C) 2020-2022 OKTET Labs.
 #
 # Author Konstantin.Ushakov <Konstantin.Ushakov@oktetlabs.ru>
 

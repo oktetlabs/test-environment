@@ -3,7 +3,7 @@
  *
  * TAPI Job options testing
  *
- * Copyright (C) 2022 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2022-2022 OKTET Labs Ltd., St.-Petersburg, Russia
  */
 
 /** @page jobopt-sample A sample of all types of TAPI Job option types

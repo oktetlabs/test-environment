@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
 
 if get_option('rpc-transport-local')
     c_args += [ '-DENABLE_LOCAL_TRANSPORT' ]

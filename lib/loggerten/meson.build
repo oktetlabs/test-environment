@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
 
 libname = 'logger_ten'
 headers += files('logger_ten.h', 'logger_ten_int.h')

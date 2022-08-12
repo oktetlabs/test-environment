@@ -3,7 +3,7 @@
  *
  * Command monitor process implementation.
  *
- * Copyright (C) 2004-2018 OKTET Labs.
+ * Copyright (C) 2004-2022 OKTET Labs.
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  *

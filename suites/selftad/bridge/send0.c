@@ -4,7 +4,7 @@
  * Simple BPDU CSAP test: create CSAP and send dummy BPDU from it
  *
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

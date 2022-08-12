@@ -5,7 +5,7 @@
  * @ingroup tapi_conf
  * @{
  *
- * Copyright (C) 2004-2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *

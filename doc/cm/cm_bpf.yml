@@ -3,7 +3,7 @@
 - comment: |
     Configuration information related to BPF programs.
 
-    Copyright (C) 2019-2020 OKTET Labs.
+    Copyright (C) 2019-2022 OKTET Labs.
 
     Author: Roman Zhukov E-mail: Roman.Zhukov@oktetlabs.ru
 

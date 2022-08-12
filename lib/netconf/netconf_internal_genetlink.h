@@ -3,7 +3,7 @@
  *
  * Declarations for internal API to work with Generic Netlink.
  *
- * Copyright (C) 2022 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2022-2022 OKTET Labs, St.-Petersburg, Russia
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */

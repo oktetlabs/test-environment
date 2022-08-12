@@ -4,7 +4,7 @@
  * Generic high level test API to control a network throughput test tool.
  *
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

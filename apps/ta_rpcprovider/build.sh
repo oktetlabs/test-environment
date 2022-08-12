@@ -3,7 +3,7 @@
 # Helper script to build ta_rpcprovider application.
 # The script uses environment variables exported by the TE_TA_APP macro.
 #
-# Copyright (C) 2020 OKTET Labs.
+# Copyright (C) 2020-2022 OKTET Labs.
 #
 # Author Damir.Mansurov <Damir.Mansurov@oktetlabs.ru>
 #

@@ -4,7 +4,7 @@
  * IPv4 CSAP test: send packet through ip4.eth CSAP with UDP payload,
  * caught it with UDP socket.
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

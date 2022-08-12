@@ -4,7 +4,7 @@
  * This module provides some functions prototypes and macros
  * for internal using by Logger modules.
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  */

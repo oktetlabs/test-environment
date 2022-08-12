@@ -3,7 +3,7 @@
  *
  * Auxiliary I/O multiplexers API definitions to be used in RPC calls.
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

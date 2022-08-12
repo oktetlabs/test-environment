@@ -4,7 +4,7 @@
  * The library provides types and functions that should be used by
  * TAPI job backends for agent job management.
  *
- * Copyright (C) 2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
  * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>

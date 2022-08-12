@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
 
 xml2html_multi_tmpls = files(
     'doc_cntrl_node_hash.tmpl',

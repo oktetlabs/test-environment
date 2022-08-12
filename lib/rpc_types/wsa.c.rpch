@@ -3,7 +3,7 @@
  *
  * RPC analogues of definitions from WinSock2.
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>

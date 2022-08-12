@@ -3,7 +3,7 @@
  *
  * Auxilliary functions and structures for BPF programs.
  *
- * Copyright (C) 2021 OKTET Labs. All rights reserved.
+ * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
  *
  * @author Roman Zhukov <Roman.Zhukov@oktetlabs.ru>
  */

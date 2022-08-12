@@ -4,7 +4,7 @@
     Configuration model for managing ports of transport protocols (TCP/UDP)
     in the system.
 
-    Copyright (C) 2020 OKTET Labs.
+    Copyright (C) 2020-2022 OKTET Labs.
 
     Author: Igor Romanov E-mail: Igor.Romanov@oktetlabs.ru
 

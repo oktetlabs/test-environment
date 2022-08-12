@@ -5,7 +5,7 @@
  * merging fragments back into raw log.
  *
  *
- * Copyright (C) 2016-2021 OKTET Labs. All rights reserved.
+ * Copyright (C) 2016-2022 OKTET Labs. All rights reserved.
  *
  *
  * @author Dmitry Izbitsky  <Dmitry.Izbitsky@oktetlabs.ru>

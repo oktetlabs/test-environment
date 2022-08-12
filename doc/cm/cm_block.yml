@@ -3,7 +3,7 @@
 - comment: |
     Block devices configuration model.
 
-    Copyright (C) 2018-2020 OKTET Labs.
+    Copyright (C) 2018-2022 OKTET Labs.
 
     Author: Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
 

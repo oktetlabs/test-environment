@@ -4,7 +4,7 @@
  *
  * Implementation of Geneve interfaces configuration commands.
  *
- * Copyright (c) 2019 OKTET Labs.
+ * Copyright (c) 2019-2022 OKTET Labs.
  *
  * @author Ian Dolzhansky <Ian.Dolzhansky@oktetlabs.ru>
  */

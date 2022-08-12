@@ -4,7 +4,7 @@
  * Implementation of test API for RTE mbuf TAD
  *
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

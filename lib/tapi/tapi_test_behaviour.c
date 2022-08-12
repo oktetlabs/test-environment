@@ -1,7 +1,7 @@
 /** @file
  * @brief Test behaviour switches API
  *
- * Copyright (C) 2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
  * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  */

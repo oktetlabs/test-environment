@@ -3,7 +3,7 @@
  *
  * Unix daemons common internal staff
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  */

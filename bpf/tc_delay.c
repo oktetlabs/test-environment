@@ -7,7 +7,7 @@
  * How much packets to wait before sending delayed packet is
  * specified in control map.
  *
- * Copyright (C) 2021 OKTET Labs. All rights reserved.
+ * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
  *
  * @author Sergey Nikitin <Sergey.Nikitin@oktetlabs.ru>
  */

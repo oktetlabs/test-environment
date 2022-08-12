@@ -8,7 +8,7 @@
  * Definition of Test API for DLNA UPnP Content Directory Resources
  * features.
  *
- * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  *

@@ -2,7 +2,7 @@
 #
 # Helper script to build i386 binaries with meson
 #
-# Copyright (C) 2020 OKTET Labs.
+# Copyright (C) 2020-2022 OKTET Labs.
 #
 # Author Damir Mansurov <Damir.Mansurov@oktetlabs.ru>
 #

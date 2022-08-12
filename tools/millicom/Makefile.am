@@ -2,7 +2,7 @@
 # automake file for Report Generator Core directory
 # Process it with automake
 #
-# Copyright (C) 2004-2018 OKTET Labs.
+# Copyright (C) 2004-2022 OKTET Labs.
 #
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #

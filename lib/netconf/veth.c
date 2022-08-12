@@ -3,7 +3,7 @@
  *
  * Implementation of VETH interfaces configuration commands.
  *
- * Copyright (C) 2004-2018 OKTET Labs.
+ * Copyright (C) 2004-2022 OKTET Labs.
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  */

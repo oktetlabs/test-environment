@@ -4,7 +4,7 @@
  * Definition of API to configure local subtree.
  *
  *
- * Copyright (C) 2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
  *
  * @author Denis Pryazhennikov <Denis.Pryazhennikov@oktetlabs.ru>

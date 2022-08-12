@@ -4,7 +4,7 @@
  * Implementation of TAPI to configure nginx.
  *
  *
- * Copyright (C) 2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
  * @author Marina Maslova <Marina.Maslova@oktetlabs.ru>
  */

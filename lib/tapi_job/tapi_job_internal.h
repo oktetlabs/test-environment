@@ -7,7 +7,7 @@
  *
  * Auxiliary functions for internal use in TAPI Job
  *
- * Copyright (C) 2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
  *
  * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */

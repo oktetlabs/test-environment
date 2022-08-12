@@ -3,7 +3,7 @@
  *
  * Implementation of configuration nodes for memory manipulation
  *
- * Copyright (C) 2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
  *
  * @author Artemii Morozov <Artemii.Morozov@oktetlabs.ru>
  */
