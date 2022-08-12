@@ -4,7 +4,7 @@
  * Definition of TAPI for remote calls of serial console.
  *
  *
- * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2019 OKTET Labs. All rights reserved.
  *
  * @author Svetlana Menshikova <Svetlana.Menshikova@oktetlabs.ru>
  */

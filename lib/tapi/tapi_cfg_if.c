@@ -3,7 +3,7 @@
  *
  * Definition of API to configure network interface.
  *
- * Copyright (C) 2003-2021 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2021 OKTET Labs. All rights reserved.
  *
  *
  *

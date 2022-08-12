@@ -3,7 +3,7 @@
  *
  * Definitions of ASN.1 types for NDN for Forwarder module.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

@@ -4,7 +4,7 @@
 # Calculates some variables for the Windows platform
 # Script is inserted from te_build_win_app and te_build_win_lib
 #
-# Copyright (C) 2003-2018 OKTET Labs.
+# Copyright (C) 2004-2018 OKTET Labs.
 #
 # Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
 #

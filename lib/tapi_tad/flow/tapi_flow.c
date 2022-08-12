@@ -2,7 +2,7 @@
  * Test qos/flow_check
  * QoS Classifiers creating/adjusting/deleting test
  *
- * Copyright (C) 2003-2018 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2004-2018 OKTET Labs, St.-Petersburg, Russia
  *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>

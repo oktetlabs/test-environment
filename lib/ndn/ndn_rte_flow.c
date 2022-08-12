@@ -4,7 +4,7 @@
  * Definitions of ASN.1 types for NDN of RTE flow
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

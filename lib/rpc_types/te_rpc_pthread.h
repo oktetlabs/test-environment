@@ -3,7 +3,7 @@
  *
  * RPC analogues of definitions from pthread.h.
  *
- * Copyright (C) 2003-2021 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2021 OKTET Labs. All rights reserved.
  *
  * @author Vasilij Ivanov <Vasilij.Ivanov@oktetlabs.ru>
  */

@@ -4,7 +4,7 @@
  * Common usefull definition
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *
@@ -43,7 +43,7 @@
 
 /** Test Environment copyright to be used in applications output */
 #define TE_COPYRIGHT \
-"Copyright (C) 2003-2018 OKTET Labs. All rights reserved.\n"
+"Copyright (C) 2004-2018 OKTET Labs. All rights reserved.\n"
 
 #ifndef NULL
 #define NULL ((void *)0)

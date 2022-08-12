@@ -3,7 +3,7 @@
  *
  * Definition of RPC structures and functions for UPnP Control Point
  *
- * Copyright (C) 2003-2018 OKTET Labs.
+ * Copyright (C) 2004-2018 OKTET Labs.
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */

@@ -4,7 +4,7 @@
  * Definition of TAPI for remote calls of WinSOCK2-specific routines.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

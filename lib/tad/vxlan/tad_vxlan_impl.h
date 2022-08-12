@@ -4,7 +4,7 @@
  * Traffic Application Domain Command Handler
  * VxLAN CSAP implementaion internal definitions
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

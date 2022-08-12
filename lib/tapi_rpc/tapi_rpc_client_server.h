@@ -9,7 +9,7 @@
  * to sending and receiving data to/from the particular remote peer.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

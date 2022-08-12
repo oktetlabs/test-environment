@@ -4,7 +4,7 @@
  * Definition of RPC structures and functions
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs.
+ * Copyright (C) 2004-2018 OKTET Labs.
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>

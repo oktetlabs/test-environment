@@ -3,7 +3,7 @@
  *
  * Lexer for test path specification.
  *
- * Copyright (C) 2003-2018 OKTET Labs.
+ * Copyright (C) 2004-2018 OKTET Labs.
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *

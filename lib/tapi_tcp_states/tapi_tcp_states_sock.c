@@ -4,7 +4,7 @@
  * TCP states API library - implementation of handlers used to change
  * TCP state, for the case when a socket is used on a peer.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

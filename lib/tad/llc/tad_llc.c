@@ -4,7 +4,7 @@
  * TAD support for IEEE Std 802.2 Logical Link Control sublayer
  * including SubNetwokr Attachment Point.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

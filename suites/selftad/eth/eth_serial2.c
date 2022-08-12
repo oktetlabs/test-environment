@@ -1,7 +1,7 @@
 /*
  * Test Package: POE Switch Management Interface
  *
- * Copyright (C) 2003-2018 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2004-2018 OKTET Labs Ltd., St.-Petersburg, Russia
  *
  */
 

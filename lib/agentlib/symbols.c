@@ -3,7 +3,7 @@
  *
  * Dynamic symbol lookup
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Alexandra N. Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>

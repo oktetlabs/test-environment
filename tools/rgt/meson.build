@@ -3,7 +3,7 @@
 # Common variable for rgt
 package = 'rgt'
 version = '0.4'
-te_copyright = '# Copyright (C) 2003-2018 OKTET Labs. All rights reserved.'
+te_copyright = '# Copyright (C) 2004-2018 OKTET Labs. All rights reserved.'
 
 # Common includes
 

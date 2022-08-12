@@ -5,7 +5,7 @@
  * Declarations of types and functions for TAD Receiver packet
  * representation.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

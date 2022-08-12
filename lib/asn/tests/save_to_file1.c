@@ -1,7 +1,7 @@
 /*
  * TE ASN.1 Library test suite
  *
- * Copyright (C) 2003-2018 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2004-2018 OKTET Labs, St.-Petersburg, Russia
  *
  */
 

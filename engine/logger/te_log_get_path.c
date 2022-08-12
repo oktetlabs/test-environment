@@ -4,7 +4,7 @@
  * Parse Logger configuration file to get path to capture logs. Print the
  * directory path to stdout.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  * @author Andrey Dmitrov  <Andrey.Dmitrov@oktetlabs.ru>
  */

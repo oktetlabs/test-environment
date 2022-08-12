@@ -3,7 +3,7 @@
  *
  * Power-ctl TA definitions
  *
- * Copyright (C) 2003-2021 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2021 OKTET Labs. All rights reserved.
  *
  * @author Artemii Morozov <Artemii.Morozov@oktetlabs.ru>
  *

@@ -3,7 +3,7 @@
  *
  * Separate Logger task for shutdowning main Logger process.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  */

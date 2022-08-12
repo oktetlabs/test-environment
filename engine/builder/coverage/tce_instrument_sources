@@ -14,7 +14,7 @@
 #                           ...
 #
 #
-# Copyright (C) 2003-2018 OKTET Labs.
+# Copyright (C) 2004-2018 OKTET Labs.
 #
 # Author Pavel A. Bolokhov <Pavel.Bolokhov@oktet.ru>
 #
@@ -164,7 +164,7 @@ function initialize_gct()
 #
 # Created by tce_instrument_sources, a tool of the Test Environment
 #
-# Copyright (C) 2003 OKTET Labs
+# Copyright (C) 2004 OKTET Labs
 #
 # Author Pavel A. Bolokhov <Pavel.Bolokhov@oktet.ru>
 #

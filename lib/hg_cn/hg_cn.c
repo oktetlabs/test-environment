@@ -4,7 +4,7 @@
  * Defition of Home Gateway configuration using ASN.1 syntax.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

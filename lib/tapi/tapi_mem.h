@@ -7,7 +7,7 @@
  * @{
  * Implementation of API to use memory-related functions in a convenient way
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

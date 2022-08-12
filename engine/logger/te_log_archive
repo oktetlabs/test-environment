@@ -4,7 +4,7 @@
 # This script takes no arguments. It archives in the storage
 # all files existing into temporary logger location.
 #
-# Copyright (C) 2003-2018 OKTET Labs.
+# Copyright (C) 2004-2018 OKTET Labs.
 #
 # Author: Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
 

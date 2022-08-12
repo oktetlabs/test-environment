@@ -3,7 +3,7 @@
  * Common data structures and declarations.
  * Different structures that represent log message are declared.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

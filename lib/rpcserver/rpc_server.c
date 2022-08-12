@@ -4,7 +4,7 @@
  * RCF RPC server entry point. The file is included to another one
  * to create TA-builtin and standalone RPC servers.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

@@ -4,7 +4,7 @@
  * Traffic Application Domain Command Handler.
  * IGMP version 2 PDU CSAP implementaion internal declarations.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

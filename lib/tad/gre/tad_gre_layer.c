@@ -4,7 +4,7 @@
  * Traffic Application Domain Command Handler
  * GRE CSAP layer-related callbacks
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

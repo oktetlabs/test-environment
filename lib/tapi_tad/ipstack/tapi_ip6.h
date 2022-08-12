@@ -5,7 +5,7 @@
  * @ingroup tapi_tad_ipstack
  * @{
  *
- * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2019 OKTET Labs. All rights reserved.
  *
  *
  *

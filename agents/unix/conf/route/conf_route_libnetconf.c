@@ -5,7 +5,7 @@
  * uses netlink interface to communicate with kernel, so it is
  * available only for linux.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

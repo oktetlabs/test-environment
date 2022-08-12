@@ -3,7 +3,7 @@
  *
  * Functions equivalent to <unistd> ones and supporting specific extra actions
  *
- * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2019 OKTET Labs. All rights reserved.
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */

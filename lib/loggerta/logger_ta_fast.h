@@ -9,7 +9,7 @@
  * If one of this restriction is broke, the result is unpredictable
  * up to segmentation fault and system crash.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2003-2018 OKTET Labs.
+# Copyright (C) 2004-2018 OKTET Labs.
 #
 # @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
 

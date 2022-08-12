@@ -3,7 +3,7 @@
  *
  * Implementation of high level functions of message processing.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2018 OKTET Labs. All rights reserved.
  *
  *
  *

@@ -3,7 +3,7 @@
  *
  * Declarations of Test API to CWMP (TR-069)
  *
- * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2019 OKTET Labs. All rights reserved.
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */

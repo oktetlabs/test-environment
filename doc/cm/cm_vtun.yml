@@ -3,7 +3,7 @@
 - comment: |
     Configuration virtual tunnels provided by VTund daemon.
 
-    Copyright (C) 2003-2020 OKTET Labs.
+    Copyright (C) 2004-2020 OKTET Labs.
 
     Author: Alexander Kukuta E-mail: Alexander.Kukuta@oktetlabs.ru
     Author: Andrew Rybchenko E-mail: Andrew.Rybchenko@oktetlabs.ru

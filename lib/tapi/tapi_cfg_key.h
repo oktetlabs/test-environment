@@ -4,7 +4,7 @@
  * API definitions to manage agent keys.
  *
  *
- * Copyright (C) 2003-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
  * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
