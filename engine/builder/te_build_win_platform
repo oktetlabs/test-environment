@@ -5,9 +5,6 @@
 # Script is inserted from te_build_win_app and te_build_win_lib
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
-#
 
 if test $PLATFORM != ${PLATFORM%64} ; then
 

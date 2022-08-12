@@ -4,8 +4,6 @@
 # The script uses environment variables exported by the TE_TA_APP macro.
 #
 # Copyright (C) 2020-2022 OKTET Labs.
-#
-#
 
 set -e
 

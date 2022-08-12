@@ -3,8 +3,6 @@
 # Process it with automake
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
 
 AUTOMAKE_OPTIONS = foreign
 SUBDIRS = .

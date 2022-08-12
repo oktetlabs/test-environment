@@ -12,8 +12,6 @@
 #  - <ta>_SSH_USER (or TE_SSH_USER) to use different user
 #
 # Copyright (C) 2020-2022 OKTET Labs.
-#
-#
 
 # Default SSH arguments, if you don't like it, you can override
 # it after sourcing the file.

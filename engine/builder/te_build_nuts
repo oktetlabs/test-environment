@@ -7,9 +7,6 @@
 #
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
-#
 
 PARSER="`dirname $0`/../share/te_builder/nut.m4"
 cat "$PARSER" "$1" | m4 > "${TE_TMP}/nut.conf.processed"

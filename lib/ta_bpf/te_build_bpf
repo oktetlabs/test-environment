@@ -4,8 +4,6 @@
 # TE_TA_APP() macro in builder configuration files.
 #
 # Copyright (C) 2022-2022 OKTET Labs, St.-Petersburg, Russia
-#
-#
 
 set -e
 

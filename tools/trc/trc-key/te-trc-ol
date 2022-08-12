@@ -5,9 +5,6 @@
 # Oktetlabs bugzilla page parser script
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
-#
 
 printf("<bugs>\n");
 

@@ -4,8 +4,6 @@
 #    (calls rgt-core utility).
 #
 # Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
-#
-#
 
 bindir="$(cd `dirname $0` && pwd)"
 

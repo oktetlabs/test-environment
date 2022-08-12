@@ -1,6 +1,5 @@
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
 
 
 # Partially based on DPDK's sample code which is distributed under the

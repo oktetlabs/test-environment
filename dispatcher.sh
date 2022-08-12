@@ -5,9 +5,6 @@
 # Script to build and start Test Environment.
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
-#
 
 bin_sh=`ls -l /bin/sh | sed "s/^.*-> //g"`
 case "$bin_sh" in

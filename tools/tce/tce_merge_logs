@@ -5,9 +5,6 @@
 # Log merging utility
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
-#
 
 usage() {
     if test -n "$1" ; then

@@ -4,8 +4,6 @@
 # Common constructions to be used in meson.build's related to RPCs
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
 
 set -eo pipefail
 

@@ -13,9 +13,6 @@
 # TE_INSTALL should be exported.
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
-#
 
 SCRIPT=`which $0`
 BUILDER=`dirname $SCRIPT`

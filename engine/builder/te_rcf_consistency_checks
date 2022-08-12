@@ -8,9 +8,6 @@
 # And it can manipulate the list of extern files for checksum
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
-#
 
 set -eo pipefail
 

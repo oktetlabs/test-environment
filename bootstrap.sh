@@ -6,9 +6,6 @@
 # directory.
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
-#
 
 if test -d .git; then
     # Remove files ignored by Git, excluding user's config files

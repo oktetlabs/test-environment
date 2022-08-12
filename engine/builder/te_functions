@@ -5,9 +5,6 @@
 # Collection of functions.
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
-#
 
 ##
 # Replace invalid characters in variable names

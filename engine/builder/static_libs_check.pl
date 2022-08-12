@@ -7,9 +7,6 @@
 # they depend on.
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
-#
 
 use strict;
 use warnings;

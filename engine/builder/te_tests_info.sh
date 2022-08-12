@@ -7,9 +7,6 @@
 # Usage: te_tests_info.sh <directory>
 #
 # Copyright (C) 2004-2022 OKTET Labs.
-#
-#
-#
 
 SRC_DIR=$1
 AWK_PROGRAM=$2
