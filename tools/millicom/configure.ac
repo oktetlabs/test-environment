@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.59])
 
-AC_INIT([millicom],[0.02],[Konstantin.Abramenko@oktetlabs.ru])
+AC_INIT([millicom],[0.02])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])

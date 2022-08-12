@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT([ta-switch-ctl],[0.1],[Andrew.Rybchenko@oktetlabs.ru])
+AC_INIT([ta-switch-ctl],[0.1])
 AC_CONFIG_SRCDIR([main.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])

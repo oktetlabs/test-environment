@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.53])
-AC_INIT([ipv6-demo],[0.1],[Oleg.Kravtsov@oktetlabs.ru])
+AC_INIT([ipv6-demo],[0.1])
 
 AC_CONFIG_SRCDIR([configure.ac])
 
