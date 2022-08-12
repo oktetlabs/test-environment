@@ -122,11 +122,11 @@ typedef struct tapi_igmp3_group_record_s {
                                                 32-bit words */
     void                   *aux_data;      /**< Pointer to auxiliaty data
                                                 buffer */
-    tapi_igmp3_src_list_t   src_list;      /**< Source Address list storage */
+    tapi_igmp3_src_list_t   src_list;      /**< Source Address List storage */
 } tapi_igmp3_group_record_t;
 
 /**
- * IGMPv3 Group Records List storage
+ * IGMPv3 Group Record List storage
  */
 typedef struct tapi_igmp3_group_list_s {
     tapi_igmp3_group_record_t **groups;        /**< Array of Group Records */
@@ -186,8 +186,8 @@ extern te_errno tapi_igmp2_add_pdu(asn_value          **tmpl_or_ptrn,
  * @param receive_mode  Bitmask with receive mode, see 'enum
  *                      tad_eth_recv_mode' in tad_common.h.
  *                      Use TAD_ETH_RECV_DEF by default.
- * @param eth_src       Local MAC address (or NULL)
- * @param src_addr      Local IP address in network byte order (or NULL)
+ * @param eth_src       Local MAC address (or @c NULL)
+ * @param src_addr      Local IP address in network byte order (or @c NULL)
  * @param igmp_csap     Location for the CSAP handle (OUT)
  *
  * @return Zero on success or error code
@@ -209,7 +209,7 @@ extern te_errno tapi_igmp_ip4_eth_csap_create(const char    *ta_name,
  * @param is_pattern    Is the first argument template or pattern
  * @param dst_addr      IPv4 layer Destination Multicast address (also used
  *                      for generating Ethernet multicast address)
- * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ * @param src_addr      IPv4 layer Source Address field or @c INADDR_ANY to
  *                      keep unspecified.
  *
  * @return              Status code.
@@ -229,7 +229,7 @@ extern te_errno tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
  * @param is_pattern    Is the first argument template or pattern
  * @param dst_addr      IPv4 layer Destination Multicast address (also used
  *                      for generating Ethernet multicast address)
- * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ * @param src_addr      IPv4 layer Source Address field or @c INADDR_ANY to
  *                      keep unspecified.
  * @param ttl           IP TTL
  * @param tos           IP ToS
@@ -253,9 +253,9 @@ extern te_errno tapi_igmp_add_ip4_pdu_gen(asn_value **tmpl_or_ptrn,
  * @param is_pattern    Is the first argument template or pattern
  * @param dst_addr      IPv4 layer Destination Multicast address (also used
  *                      for generating Ethernet multicast address)
- * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ * @param src_addr      IPv4 layer Source Address field or @c INADDR_ANY to
  *                      keep unspecified.
- * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ * @param eth_src       Ethernet layer Source Address field or @c NULL to keep
  *                      unspecified.
  * @param tos           IP ToS field
  *
@@ -280,9 +280,9 @@ extern te_errno tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
  * @param is_pattern    Is the first argument template or pattern
  * @param dst_addr      IPv4 layer Destination Multicast address (also used
  *                      for generating Ethernet multicast address)
- * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ * @param src_addr      IPv4 layer Source Address field or @c INADDR_ANY to
  *                      keep unspecified.
- * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ * @param eth_src       Ethernet layer Source Address field or @c NULL to keep
  *                      unspecified.
  * @param ttl           IP TTL field
  * @param tos           IP ToS field
@@ -306,12 +306,12 @@ extern te_errno tapi_igmp_add_ip4_eth_pdu_gen(
  * Send IGMPv1 report message
  *
  * @param ta_name       Test Agent name
- * @param sid           RCF SID
+ * @param session       RCF SID
  * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
  * @param group_addr    Multicast Group Address field of IGMPv2 message.
- * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ * @param src_addr      IPv4 layer Source Address field or @c INADDR_ANY to
  *                      keep unspecified.
- * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ * @param eth_src       Ethernet layer Source Address field or @c NULL to keep
  *                      unspecified.
  *
  * @return              Status code.
@@ -328,12 +328,12 @@ tapi_igmp1_ip4_eth_send_report(const char    *ta_name,
  * Send IGMPv2 report message
  *
  * @param ta_name       Test Agent name
- * @param sid           RCF SID
+ * @param session       RCF SID
  * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
  * @param group_addr    Multicast Group Address field of IGMPv2 message.
- * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ * @param src_addr      IPv4 layer Source Address field or @c INADDR_ANY to
  *                      keep unspecified.
- * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ * @param eth_src       Ethernet layer Source Address field or @c NULL to keep
  *                      unspecified.
  *
  * @return              Status code.
@@ -350,12 +350,12 @@ tapi_igmp2_ip4_eth_send_report(const char    *ta_name,
  * Send IGMPv2 Group Membership Leave message
  *
  * @param ta_name       Test Agent name
- * @param sid           RCF SID
+ * @param session       RCF SID
  * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
  * @param group_addr    Multicast Group Address field of IGMPv2 message.
- * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ * @param src_addr      IPv4 layer Source Address field or @c INADDR_ANY to
  *                      keep unspecified.
- * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ * @param eth_src       Ethernet layer Source Address field or @c NULL to keep
  *                      unspecified.
  *
  * @return              Status code.
@@ -372,15 +372,16 @@ tapi_igmp2_ip4_eth_send_leave(const char    *ta_name,
  * Send IGMPv2 Query message
  *
  * @param ta_name       Test Agent name
- * @param sid           RCF SID
+ * @param session       RCF SID
  * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
  * @param max_resp_time IGMP message maximum response time,
  *                      or negative to keep unspecified.
  * @param group_addr    Multicast Group Address field of IGMPv2 message.
- *                      For General Query should be 0.0.0.0 (INADDR_ANY)
- * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ *                      For General Query should be 0.0.0.0 (@c INADDR_ANY)
+ * @param src_addr      IPv4 layer Source Address field or @c INADDR_ANY to
  *                      keep unspecified.
- * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ * @param skip_eth      Do not add @p eth_src
+ * @param eth_src       Ethernet layer Source Address field or @c NULL to keep
  *                      unspecified.
  *
  * @return              Status code.
@@ -403,7 +404,7 @@ tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
  *                      pattern
  * @param pdu           Location for ASN.1 value pointer with added PDU
  * @param is_pattern    Is the first argument template or pattern
- * @param group_list    List of group records to be sent in this PDU
+ * @param group_list    List of Group Records to be sent in this PDU
  *
  * @return              Status code.
  */
@@ -417,12 +418,12 @@ tapi_igmp3_add_report_pdu(asn_value               **tmpl_or_ptrn,
  * Send IGMPv3 Group Membership report message
  *
  * @param ta_name       Test Agent name
- * @param sid           RCF SID
+ * @param session       RCF SID
  * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
- * @param group_list    List of group records to be sent in this PDU
- * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ * @param group_list    Group Record List to be sent
+ * @param src_addr      IPv4 layer Source Address field or @c INADDR_ANY to
  *                      keep unspecified.
- * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ * @param eth_src       Ethernet layer Source Address field or @c NULL to keep
  *                      unspecified.
  *
  * @return              Status code.
@@ -443,7 +444,7 @@ tapi_igmp3_ip4_eth_send_report(const char      *ta_name,
  *                      pattern
  * @param pdu           Location for ASN.1 value pointer with added PDU
  * @param is_pattern    Is the first argument template or pattern
- * @param max_resp_time IGMP message maximum response code,
+ * @param max_resp_code IGMP message maximum response code,
  *                      or negative to keep unspecified.
  * @param group_addr    Multicast Group Address field of IGMPv3 Query message.
  * @param s_flag        S Flag (Suppress Router-Side Processing) field
@@ -453,7 +454,7 @@ tapi_igmp3_ip4_eth_send_report(const char      *ta_name,
  * @param qqic          QQIC (Querier's Query Interval Code) field
  *                      of IGMPv3 Query message.
  * @param src_list      List of source addresses to be sent in this PDU,
- *                      or NULL
+ *                      or @c NULL
  *
  * @return              Status code.
  */
@@ -472,9 +473,9 @@ tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
  * Send IGMPv3 Group Membership Query message
  *
  * @param ta_name       Test Agent name
- * @param sid           RCF SID
+ * @param session       RCF SID
  * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through
- * @param max_resp_time IGMP message maximum response code,
+ * @param max_resp_code IGMP message maximum response code,
  *                      or negative to keep unspecified.
  * @param group_addr    Multicast Group Address field of IGMPv3 Query message.
  * @param s_flag        S Flag (Suppress Router-Side Processing) field
@@ -484,15 +485,16 @@ tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
  * @param qqic          QQIC (Querier's Query Interval Code) field
  *                      of IGMPv3 Query message.
  * @param src_list      List of source addresses to be sent in this PDU,
- *                      or NULL
- * @param src_addr      IPv4 layer Source Address field or INADDR_ANY to
+ *                      or @c NULL
+ * @param src_addr      IPv4 layer Source Address field or @c INADDR_ANY to
  *                      keep unspecified.
- * @param eth_src       Ethernet layer Source Address field or NULL to keep
+ * @param skip_eth      Do not add @p eth_src
+ * @param eth_src       Ethernet layer Source Address field or @c NULL to keep
  *                      unspecified.
  *
  * @note                To specify the case of General Query, @p group_addr
- *                      should be INADDR_ANY and message will be
- *                      sent to ALL_HOSTS (224.0.0.1)
+ *                      should be @c INADDR_ANY and message will be
+ *                      sent to @c ALL_HOSTS (224.0.0.1)
  *
  * @return              Status code.
  */
@@ -512,9 +514,9 @@ tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
 
 
 /**
- * Initialise source address list instance
+ * Initialise Source Address List instance
  *
- * @param src_list      Pointer to source address list to initialise
+ * @param src_list      Pointer to Source Address List to initialise
  *                      with default values
  *
  * @return              Status code.
@@ -523,9 +525,9 @@ extern te_errno
 tapi_igmp3_src_list_init(tapi_igmp3_src_list_t *src_list);
 
 /**
- * Free resources allocated by source address list instance
+ * Free resources allocated by Source Address List instance
  *
- * @param src_list      Pointer to source address list to finalise
+ * @param src_list      Pointer to Source Address List to finalise
  *
  * @return              N/A
  */
@@ -535,7 +537,7 @@ tapi_igmp3_src_list_free(tapi_igmp3_src_list_t *src_list);
 /**
  * Add source address to the list
  *
- * @param src_list      Source address list to add to
+ * @param src_list      Source Address List to add to
  * @param addr          IPv4 address to add
  *
  * @return              Status code.
@@ -544,10 +546,10 @@ extern te_errno
 tapi_igmp3_src_list_add(tapi_igmp3_src_list_t *src_list, in_addr_t addr);
 
 /**
- * Calculate the binary length of the source address list
+ * Calculate the binary length of the Source Address List
  * stored in IGMPv3 message
  *
- * @param src_list      Source address list to add to
+ * @param src_list      Source Address List
  *
  * @return              Length in bytes.
  */
@@ -557,12 +559,12 @@ tapi_igmp3_src_list_length(tapi_igmp3_src_list_t *src_list);
 /**
  * Pack the source list to store in IGMPv3 message
  *
- * @param src_list      Source address list to add to
- * @param buf           Buffer to pack the source address list at
- * @param buf_size      Size of pre-allocated buffer
- * @param offset        Buffer offset to start packing from (IN/OUT)
+ * @param[in]     src_list  Source Address List to pack
+ * @param[in]     buf       Buffer to pack the Source Address List at
+ * @param[in]     buf_size  Size of pre-allocated buffer
+ * @param[in,out] offset    Buffer offset to start packing from
  *
- * @return              Status Code.
+ * @return                  Status code.
  */
 extern te_errno
 tapi_igmp3_src_list_gen_bin(tapi_igmp3_src_list_t *src_list,
@@ -572,7 +574,7 @@ tapi_igmp3_src_list_gen_bin(tapi_igmp3_src_list_t *src_list,
  * Calculate the binary length of the Group Record
  * stored in IGMPv3 message
  *
- * @param group_record  Group record to pack
+ * @param group_record  Group Record to pack
  *
  * @return              Length in bytes.
  */
@@ -580,25 +582,25 @@ extern int
 tapi_igmp3_group_record_length(tapi_igmp3_group_record_t *group_record);
 
 /**
- * Pack the groups record structure with source addresses list
+ * Pack the Group Record structure with Source Address List
  * to store in IGMPv3 message
  *
- * @param group_record  Group record to pack
- * @param buf           Buffer to pack the source address list at
- * @param buf_size      Size of pre-allocated buffer
- * @param offset        Buffer offset to start packing from (IN/OUT)
+ * @param[in]     group_record  Group Record to pack
+ * @param[in]     buf           Buffer to pack the Group Record List at
+ * @param[in]     buf_size      Size of pre-allocated buffer
+ * @param[in,out] offset        Buffer offset to start packing from
  *
- * @return              Status Code.
+ * @return                      Status code.
  */
 extern te_errno
 tapi_igmp3_group_record_gen_bin(tapi_igmp3_group_record_t *group_record,
                                 void *buf, int buf_size, int *offset);
 
 /**
- * Calculate the binary length of the Group Records list
+ * Calculate the binary length of the Group Record List
  * packed in IGMPv3 message
  *
- * @param group_list    Group Records list to pack to pack
+ * @param group_list    Group Record List to pack
  *
  * @return              Length in bytes.
  */
@@ -606,15 +608,15 @@ extern int
 tapi_igmp3_group_list_length(tapi_igmp3_group_list_t *group_list);
 
 /**
- * Pack the Group Records list
+ * Pack the Group Record List
  * to store in IGMPv3 message
  *
- * @param group_list    Group Records list to pack
- * @param buf           Buffer to pack the source address list at
- * @param buf_size      Size of pre-allocated buffer
- * @param offset        Buffer offset to start packing from (IN/OUT)
+ * @param[in]     group_list  Group Record List to pack
+ * @param[in]     buf         Buffer to pack the Group Record List at
+ * @param[in]     buf_size    Size of pre-allocated buffer
+ * @param[in,out] offset      Buffer offset to start packing from
  *
- * @return              Status Code.
+ * @return                    Status code.
  */
 extern te_errno
 tapi_igmp3_group_list_gen_bin(tapi_igmp3_group_list_t *group_list,
@@ -623,14 +625,14 @@ tapi_igmp3_group_list_gen_bin(tapi_igmp3_group_list_t *group_list,
 /**
  * Initialise pre-allocated structure of Group Record with default values
  *
- * @param group_record  Group Record to initialise list to pack
- * @param group_type    Type of the group record
- * @param group_address Multicast Group Address
- * @param aux_data      Pointer to auxiliary data to be packed into the
- *                      record group)
- * @param aux_data_len  Length of the auxiliary data in 32-bit words
+ * @param group_record   Group Record to initialise
+ * @param group_type     Type of the Group Record
+ * @param group_address  Multicast Group Address
+ * @param aux_data       Pointer to auxiliary data to be packed into the
+ *                       record group.
+ * @param aux_data_len   Length of the auxiliary data in 32-bit words
  *
- * @return              Status Code.
+ * @return               Status code.
  */
 extern te_errno
 tapi_igmp3_group_record_init(tapi_igmp3_group_record_t *group_record,
@@ -642,48 +644,49 @@ tapi_igmp3_group_record_init(tapi_igmp3_group_record_t *group_record,
  *
  * @param group_record  Group Record to free
  *
- * @return              Status Code.
+ * @return              Status code.
  */
 extern void
 tapi_igmp3_group_record_free(tapi_igmp3_group_record_t *group_record);
 
 /**
- * Free system resources allocated by group_record
+ * Add source address to the group_record
  *
- * @param group_record  Group Record to free
+ * @param group_record  Group Record to add to
+ * @param src_addr      IPv4 source address to add
  *
- * @return              Status Code.
+ * @return              Status code.
  */
 extern te_errno
 tapi_igmp3_group_record_add_source(tapi_igmp3_group_record_t *group_record,
                                    in_addr_t src_addr);
 
 /**
- * Initialise the group records list with initial values
+ * Initialise the Group Record List with initial values
  *
- * @param group_list    Group Records list structure to initialise
+ * @param group_list  Group Record List structure to initialise
  *
- * @return              Status Code.
+ * @return            Status code.
  */
 extern te_errno
 tapi_igmp3_group_list_init(tapi_igmp3_group_list_t *group_list);
 
 /**
- * Free system resources allocated by group records list
+ * Free system resources allocated by Group Record List
  *
- * @param group_list    Group Record to free
+ * @param group_list  Group Record List to free
  *
- * @return              Status Code.
+ * @return            Status code.
  */
 extern void
 tapi_igmp3_group_list_free(tapi_igmp3_group_list_t *group_list);
 
 
 /**
- * Add group record to the Group Records list
+ * Add Group Record to the Group Record List
  *
- * @param group_list    Group Records list to add to
- * @param group_recordd Group Record structure to add
+ * @param group_list    Group Record List to add to
+ * @param group_record  Group Record structure to add
  *
  * @return              Status code.
  */
@@ -696,16 +699,33 @@ tapi_igmp3_group_list_add(tapi_igmp3_group_list_t *group_list,
  * Allocate, initialise and fill source list structure
  *
  * @param src_list    Source list to initialise and fill
- *                    Memory allocation will be skipped if this parameter is not NULL
+ *                    Memory allocation will be skipped if this parameter
+ *                    is not @c NULL
  * @param ...         List of source addresses to be added to the list
- *                    (list should be ended with 0 value (INADDR_ANY))
+ *                    (list should end with 0 value (@c INADDR_ANY))
  *
- * @return            Initialised source list, or NULL if failed.
+ * @return            Initialised source list, or @c NULL if failed.
  */
 extern tapi_igmp3_src_list_t *
 tapi_igmp3_src_list_new(tapi_igmp3_src_list_t *src_list, ...);
 
 
+/**
+ * Allocate, initialise and fill Group Record structure
+ *
+ * @param group_record   Group Record to initialise and fill
+ *                       Memory allocation will be skipped if this parameter is
+ *                       not @c NULL
+ * @param group_type     Type of the Group Record
+ * @param group_address  Multicast Group Address
+ * @param aux_data       Pointer to auxiliary data to be packed into the
+ *                       record group.
+ * @param aux_data_len   Length of the auxiliary data in 32-bit words
+ * @param ...            List of source addresses to be added to the record
+ *                       (list should end with 0 value (@c INADDR_ANY))
+ *
+ * @return               Initialised Group Record, or @c NULL if failed.
+ */
 extern tapi_igmp3_group_record_t *
 tapi_igmp3_group_record_new(tapi_igmp3_group_record_t *group_record,
                             int group_type, in_addr_t group_address,
@@ -713,14 +733,15 @@ tapi_igmp3_group_record_new(tapi_igmp3_group_record_t *group_record,
 
 
 /**
- * Allocate, initialise and fill group list structure
+ * Allocate, initialise and fill Group Record List structure
  *
- * @param group_list  Group Records list to initialise and fill (i
- *                    Memory allocation will be skipped if this parameter is not NULL
- * @param ...         List of group records to be added to the list
- *                    (list should be ended with NULL value)
+ * @param group_list  Group Record List to initialise and fill
+ *                    Memory allocation will be skipped if this parameter
+ *                    is not @c NULL
+ * @param ...         List of Group Records to be added to the list
+ *                    (list should end with @c NULL value)
  *
- * @return            Initialised source list, or NULL if failed.
+ * @return            Initialised Group Record List, or @c NULL if failed.
  */
 extern tapi_igmp3_group_list_t *
 tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
