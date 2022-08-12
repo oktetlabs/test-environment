@@ -4,10 +4,6 @@
  * Primary types support
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #include "te_config.h"

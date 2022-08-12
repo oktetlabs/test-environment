@@ -5,10 +5,6 @@
  * SNMP protocol MIB tables declarations.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #ifndef __TE__TAPI_SNMP_DEFS_H__
 #define __TE__TAPI_SNMP_DEFS_H__

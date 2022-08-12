@@ -4,8 +4,6 @@
  * Test to invoke UPnP action.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
- *
- *
  */
 
 /** @page upnp_cp-invoke_action Test to invoke UPnP action

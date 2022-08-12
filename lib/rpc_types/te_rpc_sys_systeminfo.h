@@ -4,11 +4,6 @@
  * RPC analogues of definitions from SunOS' sys/systeminfo.h.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TE_RPC_SYS_SYSTEMINFO_H__

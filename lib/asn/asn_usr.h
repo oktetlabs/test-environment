@@ -4,10 +4,6 @@
  * Declarations of user API for processing ASN.1 values.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_ASN_USR_H__

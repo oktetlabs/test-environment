@@ -2,11 +2,6 @@
  * @brief Test Environment: xml2html multidocument utility callbacks.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #include "te_config.h"

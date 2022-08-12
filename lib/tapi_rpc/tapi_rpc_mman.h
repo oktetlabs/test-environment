@@ -6,7 +6,6 @@
  *
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_TAPI_RPC_MMAN_H__

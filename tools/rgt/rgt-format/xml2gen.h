@@ -2,11 +2,6 @@
  * @brief Test Environment: XML2FORMAT module.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TE_RGT_XML2GEN_H__

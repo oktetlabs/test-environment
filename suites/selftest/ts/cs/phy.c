@@ -4,9 +4,6 @@
  * Check PHY support in Configurator
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
  */
 
 /** @page cs-ts-phy Check configurator PHY management support

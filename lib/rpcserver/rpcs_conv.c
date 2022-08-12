@@ -5,7 +5,6 @@
  * native types.
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include "rpcs_conv.h"

@@ -8,11 +8,6 @@
  * Generic client functions for storage service.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TAPI_STORAGE_CLIENT_H__

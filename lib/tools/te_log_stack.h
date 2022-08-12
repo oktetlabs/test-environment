@@ -4,7 +4,6 @@
  * Definitions of the C API that allows to put logs into a stack of buffers.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_LOG_STACK_H__

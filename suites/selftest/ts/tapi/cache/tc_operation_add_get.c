@@ -2,7 +2,6 @@
  * @brief TDD: Test Suite to test TAPI cache implementation
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #define TE_TEST_NAME  "tc_operation_add_get"

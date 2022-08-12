@@ -3,7 +3,6 @@
  * Send Receive functionality
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
- *
  */
 
 /** @page sockets-send_recv Basic send receive operations

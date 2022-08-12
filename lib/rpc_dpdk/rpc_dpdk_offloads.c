@@ -4,7 +4,6 @@
  * API to handle DPDK RPC related operations with offloads (implementation)
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include "te_config.h"

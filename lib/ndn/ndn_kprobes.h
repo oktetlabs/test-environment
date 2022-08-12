@@ -4,10 +4,6 @@
  * Definitions of ASN.1 types for NDN for Kprobes.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_NDN_KPROBES_H__

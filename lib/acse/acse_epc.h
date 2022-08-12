@@ -6,9 +6,6 @@
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
  */
 
 #ifndef __TE_LIB_ACSE_EPC_H__

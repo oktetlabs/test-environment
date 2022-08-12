@@ -4,11 +4,6 @@
  * Functions used by both TA and standalone RPC server
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifdef WINDOWS

@@ -4,10 +4,6 @@
  * Declarations of ASN.1 types for NDN for PPP&PPPoE protocols.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #ifndef __TE_NDN_PPP_H__
 #define __TE_NDN_PPP_H__

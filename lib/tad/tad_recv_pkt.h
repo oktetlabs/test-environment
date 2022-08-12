@@ -6,10 +6,6 @@
  * representation.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_TAD_RECV_PKT_H__

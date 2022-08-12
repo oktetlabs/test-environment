@@ -4,7 +4,6 @@
  * Demonstrate the usage of TAPI memaslap.
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #define TE_TEST_NAME "memaslap"

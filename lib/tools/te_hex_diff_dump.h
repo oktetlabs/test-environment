@@ -8,7 +8,6 @@
  * Functions to create a hex diff dump of two binary memory blocks and log it.
  *
  * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_HEX_DIFF_DUMP_H__

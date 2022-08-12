@@ -5,10 +5,6 @@
  * caught it with UDP socket.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #define TE_TEST_NAME    "ipstack/ip4_udp_dgm"

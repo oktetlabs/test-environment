@@ -4,8 +4,6 @@
  * Test to get UPnP content directory.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
- *
- *
  */
 
 /** @page upnp_cp-get_content Test to get UPnP content directory

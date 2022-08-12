@@ -2,8 +2,6 @@
  * @brief Network devices management in netconf library
  *
  * Copyright (C) 2004-2022 OKTET Labs, St.-Petersburg, Russia
- *
- *
  */
 
 #include "netconf.h"

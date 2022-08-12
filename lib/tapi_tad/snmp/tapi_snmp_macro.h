@@ -5,10 +5,6 @@
  * SNMP protocol implementaion internal declarations.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #ifndef __TE_TAPI_SNMP_MACRO_H__
 #define __TE_TAPI_SNMP_MACRO_H__

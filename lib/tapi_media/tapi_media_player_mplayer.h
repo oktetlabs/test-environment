@@ -8,11 +8,6 @@
  * Test API to control 'mplayer'.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TAPI_MEDIA_PLAYER_MPLAYER_H__

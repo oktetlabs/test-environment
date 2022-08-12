@@ -4,7 +4,6 @@
  * This module provides data structures and logic for listener handling.
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_LOGGER_LISTENER_H__

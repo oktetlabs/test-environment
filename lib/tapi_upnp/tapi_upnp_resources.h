@@ -9,11 +9,6 @@
  * features.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TAPI_UPNP_RESOURCES_H__

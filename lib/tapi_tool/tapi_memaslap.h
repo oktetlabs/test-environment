@@ -8,7 +8,6 @@
  * TAPI to manage *memaslap*.
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_TAPI_MEMASLAP_H__

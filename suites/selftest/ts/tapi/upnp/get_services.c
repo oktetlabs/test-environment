@@ -4,8 +4,6 @@
  * Test to get UPnP services.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
- *
- *
  */
 
 /** @page upnp_cp-get_services Test to get UPnP services

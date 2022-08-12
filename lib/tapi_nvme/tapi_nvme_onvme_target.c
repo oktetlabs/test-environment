@@ -4,7 +4,6 @@
  * API for control ONVMe target of NVMe Over Fabrics
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #define TE_LGR_USER "NVME ONVMe Target"

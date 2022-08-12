@@ -5,7 +5,6 @@
  * for internal using by Logger modules.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_LOGGER_INTERNAL_H__

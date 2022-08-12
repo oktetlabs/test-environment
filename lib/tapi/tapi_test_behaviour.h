@@ -2,8 +2,6 @@
  * @brief Test Behaviour API
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
- *
  */
 
 #ifndef __TE_TAPI_TEST_BEHAVIOUR_H__

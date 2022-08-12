@@ -4,7 +4,6 @@
  * Functions for time measurement
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include "te_stopwatch.h"

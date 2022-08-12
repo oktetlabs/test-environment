@@ -3,10 +3,6 @@
  *
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #define TE_LGR_USER "Netconf IP VLAN"

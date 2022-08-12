@@ -4,7 +4,6 @@
  * Defenition of unix Logger sniffers logging support.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include "te_sniffers.h"

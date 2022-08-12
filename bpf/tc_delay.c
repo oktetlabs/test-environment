@@ -8,7 +8,6 @@
  * specified in control map.
  *
  * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include <linux/bpf.h>

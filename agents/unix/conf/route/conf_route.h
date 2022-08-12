@@ -5,11 +5,6 @@
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TE_TA_UNIX_CONF_ROUTE_H__

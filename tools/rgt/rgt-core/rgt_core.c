@@ -3,11 +3,6 @@
  *    Implementation of main and usage/help functions.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #include "rgt_common.h"

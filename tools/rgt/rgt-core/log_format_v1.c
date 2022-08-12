@@ -4,11 +4,6 @@
  * Implementation of "RLF version 1" specific functions.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #include "te_config.h"

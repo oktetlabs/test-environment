@@ -4,8 +4,6 @@
  * Check that nginx instance can be created, started, stopped and deleted.
  *
  * Copyright (C) 2019-2022 OKTET Labs Ltd., St.-Petersburg, Russia
- *
- *
  */
 
 #ifndef DOXYGEN_TEST_SPEC

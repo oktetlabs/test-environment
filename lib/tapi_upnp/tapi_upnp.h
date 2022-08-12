@@ -8,11 +8,6 @@
  * Definition of Test API DLNA UPnP commons.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TAPI_UPNP_H__

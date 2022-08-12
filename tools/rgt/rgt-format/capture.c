@@ -2,11 +2,6 @@
  * @brief Test Environment: Callback functions of capture packets processing.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #include "xml2gen.h"

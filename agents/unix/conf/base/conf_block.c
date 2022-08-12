@@ -5,7 +5,6 @@
  *
  *
  * Copyright (C) 2018-2022 OKTET Labs
- *
  */
 
 #define TE_LGR_USER     "Conf Block"

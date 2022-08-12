@@ -8,10 +8,6 @@
  * Definition of API to manage ntpd daemon.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_TAPI_NTPD_H__

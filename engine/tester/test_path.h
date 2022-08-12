@@ -5,11 +5,6 @@
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TE_TESTER_TEST_PATH_H__

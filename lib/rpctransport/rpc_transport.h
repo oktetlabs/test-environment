@@ -5,10 +5,6 @@
  * RPC server and TA.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __RPC_TRANSPORT_H__

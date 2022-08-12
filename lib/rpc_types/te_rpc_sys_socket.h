@@ -6,11 +6,6 @@
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TE_RPC_SYS_SOCKET_H__

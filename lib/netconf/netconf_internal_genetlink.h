@@ -4,7 +4,6 @@
  * Declarations for internal API to work with Generic Netlink.
  *
  * Copyright (C) 2022-2022 OKTET Labs, St.-Petersburg, Russia
- *
  */
 
 #ifndef __NETCONF_INTERNAL_GENETLINK_H__

@@ -8,11 +8,6 @@
  * Definition of Test API for DLNA UPnP Device features.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TAPI_UPNP_DEVICE_INFO_H__

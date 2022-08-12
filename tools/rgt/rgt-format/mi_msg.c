@@ -2,8 +2,6 @@
  * @brief Implementation of API for logging MI messages
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
- *
  */
 
 #include "te_config.h"

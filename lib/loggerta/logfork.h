@@ -5,10 +5,6 @@
  * forked TA processes and newly created threads
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_LIB_LOGFORK_H__

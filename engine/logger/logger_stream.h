@@ -4,7 +4,6 @@
  * This module provides a public interface to streaming log messages.
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_LOGGER_STREAM_H__

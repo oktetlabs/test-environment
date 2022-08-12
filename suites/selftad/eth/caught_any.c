@@ -5,10 +5,6 @@
  * from first ('eth0') network card.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #define TE_TEST_NAME    "eth/caught_any"

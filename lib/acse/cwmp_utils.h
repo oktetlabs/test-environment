@@ -4,10 +4,6 @@
  * CWMP data structures user utilities declarations.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #ifndef __TE_CWMP_UTILS__H__
 #define __TE_CWMP_UTILS__H__

@@ -4,8 +4,6 @@
  * UPnP Control Point Test Suite epilogue.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
- *
- *
  */
 
 /** @page upnp_cp-epilogue UPnP Control Point Test Suite epilogue

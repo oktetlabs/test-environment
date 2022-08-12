@@ -8,11 +8,6 @@
  * Defenition of unix TA serial console parse configuring support.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TE_SERIAL_PARSER_H__

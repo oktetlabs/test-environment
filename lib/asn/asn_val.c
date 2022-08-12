@@ -4,10 +4,6 @@
  * Implementation of method to dynamic ASN.1 value processing.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #include "te_config.h"

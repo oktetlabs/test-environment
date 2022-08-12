@@ -4,7 +4,6 @@
  * Implementation of TAPI to handle ethtool tool.
  *
  * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include <stddef.h>

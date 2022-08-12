@@ -4,7 +4,6 @@
  * BPF program to count packets received via each RX queue.
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include <linux/bpf.h>

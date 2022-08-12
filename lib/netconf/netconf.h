@@ -8,8 +8,6 @@
  * tables, routing tables.
  *
  * Copyright (C) 2008-2022 OKTET Labs, St.-Petersburg, Russia
- *
- *
  */
 
 #ifndef __NETCONF_H__

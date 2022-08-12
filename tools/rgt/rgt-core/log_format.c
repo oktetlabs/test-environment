@@ -4,11 +4,6 @@
  * Implementation of a function that determines raw log file version.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #include <obstack.h>

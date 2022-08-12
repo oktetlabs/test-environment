@@ -4,8 +4,6 @@
  * Check nginx ssl settings can be configured.
  *
  * Copyright (C) 2019-2022 OKTET Labs Ltd., St.-Petersburg, Russia
- *
- *
  */
 
 #ifndef DOXYGEN_TEST_SPEC

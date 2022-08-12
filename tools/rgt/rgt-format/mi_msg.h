@@ -2,8 +2,6 @@
  * @brief Declaration of API for logging MI messages
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
- *
  */
 
 #ifndef __TE_RGT_MI_MSG_H__

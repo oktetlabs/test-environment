@@ -4,7 +4,6 @@
  * Implementation of configuration nodes for memory manipulation
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #define TE_LGR_USER "Unix Conf Memory Module"

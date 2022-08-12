@@ -4,9 +4,6 @@
  * Implementation of API to use memory-related functions in a convenient way
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
  */
 
 #define TE_LGR_USER     "TAPI Mem"

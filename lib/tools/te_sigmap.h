@@ -8,11 +8,6 @@
  * Definition of the mapping functions.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TE_SIGMAP_H__

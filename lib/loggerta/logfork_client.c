@@ -5,10 +5,6 @@
  * forked TA processes and newly created threads
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #define TE_LGR_USER     "LogFork Client"

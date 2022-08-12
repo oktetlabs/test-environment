@@ -2,7 +2,6 @@
  * @brief Test API NVMe internal
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TAPI_NVME_INTERNAL_H__

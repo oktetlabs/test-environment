@@ -4,7 +4,6 @@
  * Internal utilities for Logger configuration file parsing.
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_LOGGER_CNF_H__

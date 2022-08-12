@@ -4,10 +4,6 @@
  * UDP socket CSAP and respective TAPI test
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #define TE_TEST_NAME    "ipstack/udp_socket"

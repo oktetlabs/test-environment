@@ -2,8 +2,6 @@
  * @brief Routing tables management in netconf library
  *
  * Copyright (C) 2004-2022 OKTET Labs, St.-Petersburg, Russia
- *
- *
  */
 
 #include "te_config.h"

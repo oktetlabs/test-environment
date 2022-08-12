@@ -3,8 +3,6 @@
  * QoS Classifiers creating/adjusting/deleting test
  *
  * Copyright (C) 2004-2022 OKTET Labs, St.-Petersburg, Russia
- *
- *
  */
 #include "te_config.h"
 #include "te_defs.h"

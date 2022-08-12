@@ -8,7 +8,6 @@
  * Definition of API to configure BPF/XDP programs.
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_TAPI_BPF_H__

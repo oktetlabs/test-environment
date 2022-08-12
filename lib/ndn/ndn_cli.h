@@ -4,10 +4,6 @@
  * Declarations of ASN.1 types for NDN for CLI protocol.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #ifndef __TE_NDN_CLI_H__
 #define __TE_NDN_CLI_H__

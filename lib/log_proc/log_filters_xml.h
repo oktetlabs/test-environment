@@ -4,7 +4,6 @@
  * XML parsing for log filters.
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_LOG_FILTERS_XML_H__

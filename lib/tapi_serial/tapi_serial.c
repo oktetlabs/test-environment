@@ -4,8 +4,6 @@
  * Implementation of API for communicating with DUT via serial console.
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
- *
  */
 #include <sys/socket.h>
 #include <netinet/in.h>

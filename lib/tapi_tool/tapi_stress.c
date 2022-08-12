@@ -4,7 +4,6 @@
  * Test API to control 'stress' tool.
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #define TE_LGR_USER "TAPI STRESS"

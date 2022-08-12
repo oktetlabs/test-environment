@@ -5,10 +5,6 @@
  * Implementation of CSAP support DB methods.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #define TE_LGR_USER     "CSAP support"

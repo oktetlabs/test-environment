@@ -4,9 +4,6 @@
  * API for processing struct msghdr in RPC calls
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
- *
- *
  */
 
 #ifndef __RPCSERVER_RPCS_MSGHDR_H__

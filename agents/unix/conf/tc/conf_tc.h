@@ -4,7 +4,6 @@
  * Implementation of configuration nodes traffic control support
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_CONF_TC_H_

@@ -2,7 +2,6 @@
  * @brief Test API to manage agent keys
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #define TE_LGR_USER     "Conf Keys TAPI"

@@ -8,7 +8,6 @@
  * Functions that TAPI Job backend might implement.
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TAPI_JOB_METHODS__

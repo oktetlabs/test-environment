@@ -4,8 +4,6 @@
  * Common includes and definitions.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
- *
- *
  */
 
 #ifndef __UPNP_CP_TS_H__

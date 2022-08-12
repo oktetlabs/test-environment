@@ -4,7 +4,6 @@
  * TAPI to manage bttrack torrent tracker.
  *
  * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #define TE_LGR_USER "TAPI BTTRACK"

@@ -4,10 +4,6 @@
  * RCF Emulator definitions
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __RCF_EMUL_H__

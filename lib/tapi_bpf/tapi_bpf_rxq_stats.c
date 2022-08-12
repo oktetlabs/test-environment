@@ -4,7 +4,6 @@
  * Implementation of API to control rxq_stats BPF program.
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include "te_config.h"

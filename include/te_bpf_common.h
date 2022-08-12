@@ -6,7 +6,6 @@
  * You should define TE_BPF_U8 before including this header.
  *
  * Copyright (C) 2022-2022 OKTET Labs, St.-Petersburg, Russia
- *
  */
 #ifndef __TE_BPF_COMMON_H__
 #define __TE_BPF_COMMON_H__

@@ -8,7 +8,6 @@
  * Declaration of common functions for IPv4/IPv6 CSAP.
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_TAPI_IP_COMMON_H__

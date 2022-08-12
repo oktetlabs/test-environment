@@ -4,10 +4,6 @@
  * Traffic Application Domain library types.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_LIB_TAD_TYPES_H__

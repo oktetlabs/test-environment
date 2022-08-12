@@ -4,7 +4,6 @@
  * Definitions of the C API that allows to expand parameters in a string
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_TOOLS_EXPAND_H__

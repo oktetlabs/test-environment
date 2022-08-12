@@ -6,10 +6,6 @@
  * protocol-specific modules implemnting TAD.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #ifndef __TE_TAD_UTILS_H__
 #define __TE_TAD_UTILS_H__

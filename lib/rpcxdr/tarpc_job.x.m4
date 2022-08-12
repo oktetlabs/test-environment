@@ -4,7 +4,6 @@
  * Definition of RPC structures and functions for Agent job control
  *
  * Copyright (C) 2019-2022 OKTET Labs.
- *
  */
 
 struct tarpc_char_array {

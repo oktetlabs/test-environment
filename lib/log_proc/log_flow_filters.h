@@ -5,7 +5,6 @@
  * directly, but instead deal with flow nodes.
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_LOG_FLOW_FILTERS_H__

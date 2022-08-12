@@ -4,7 +4,6 @@
  * Definition of TAPI to configure OpenVPN.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_TAPI_CFG_OPENVPN_H__

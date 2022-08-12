@@ -4,7 +4,6 @@
  * Functions to operate the files.
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include "te_config.h"

@@ -8,7 +8,6 @@
  * TAPI to handle Configurator job factory.
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TAPI_JOB_FACTORY_CFG_H__

@@ -5,8 +5,6 @@
  *
  *
  * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
- *
- *
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_BASE_CONF_ETHTOOL_H_

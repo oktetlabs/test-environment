@@ -4,9 +4,6 @@
  * Tests on generic TAD functionality.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
  */
 
 /** @page common-poll_one Call traffic poll operation for one CSAP

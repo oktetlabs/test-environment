@@ -5,8 +5,6 @@
  * using HTTP benchmarking tool.
  *
  * Copyright (C) 2019-2022 OKTET Labs Ltd., St.-Petersburg, Russia
- *
- *
  */
 
 #ifndef DOXYGEN_TEST_SPEC

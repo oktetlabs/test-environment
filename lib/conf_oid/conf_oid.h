@@ -4,11 +4,6 @@
  * Object identifiers
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TE_CONF_OID_H__

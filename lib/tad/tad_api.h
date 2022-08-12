@@ -5,9 +5,6 @@
  * Declarations of types and functions which may be used outside RCF.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
  */
 
 #ifndef __TE_TAD_API__

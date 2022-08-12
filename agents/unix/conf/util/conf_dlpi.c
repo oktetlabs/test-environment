@@ -4,10 +4,6 @@
  * Unix TA configuring support using DLPI (implementation).
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #define TE_LGR_USER     "Unix Conf DLPI"

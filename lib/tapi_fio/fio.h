@@ -6,7 +6,6 @@
  * @{
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __FIO_H__

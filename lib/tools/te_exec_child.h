@@ -8,7 +8,6 @@
  * Routines to execute a program in a child process
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_EXEC_CHILD_H__

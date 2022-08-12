@@ -8,7 +8,6 @@
  * TAPI to handle NPtcp tool.
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_TAPI_NPTCP_H__

@@ -4,10 +4,6 @@
  * Implementation of capture log converter.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #include <stdio.h>
 #include <stdlib.h>

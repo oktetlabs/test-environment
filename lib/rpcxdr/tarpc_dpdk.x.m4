@@ -4,7 +4,6 @@
  * Definition of RPC structures and functions for DPDK (rte_*)
  *
  * Copyright (C) 2004-2022 OKTET Labs.
- *
  */
 
 /*

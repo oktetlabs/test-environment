@@ -8,7 +8,6 @@
  * Generic API to use packetdrill test tool.
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TAPI_PACKETDRILL_H__

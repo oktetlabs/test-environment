@@ -5,10 +5,6 @@
  * Ethernet Bridge/STP PDU CSAP implementaion internal declarations.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_TAD_BRIDGE_IMPL_H__

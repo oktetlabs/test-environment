@@ -4,7 +4,6 @@
  * Test API to control 'wrk' tool.
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #define TE_LGR_USER "TAPI WRK"

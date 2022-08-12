@@ -8,7 +8,6 @@
  * API to manage subordinate jobs at the agent side
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TAPI_JOB_H__

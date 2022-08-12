@@ -4,8 +4,6 @@
  * A set of macros intended to be used from tests.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
- *
- *
  */
 
 #ifndef __IPV6_DEMO_TEST_H__

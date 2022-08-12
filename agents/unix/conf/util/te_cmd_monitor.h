@@ -4,11 +4,6 @@
  * Defenition of command monitor function.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TE_CMD_MONITOR_H__

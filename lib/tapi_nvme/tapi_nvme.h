@@ -8,7 +8,6 @@
  * API for control NVMe Over Fabrics
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TAPI_NVME_H__

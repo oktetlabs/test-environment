@@ -4,7 +4,6 @@
  * Auxilliary functions and structures for BPF programs.
  *
  * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __BPF_STIM_HELPERS_H__

@@ -4,9 +4,6 @@
  * RPC routines implementation to call DPDK (rte_mempool_*) functions
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
  */
 
 #define TE_LGR_USER     "RPC DPDK MEMPOOL"

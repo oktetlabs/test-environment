@@ -5,7 +5,6 @@
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 #include "te_defs.h"
 #include "rcf_rpc.h"

@@ -4,7 +4,6 @@
  * Configurator IPC message preparation functions
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include "conf_ipc.h"

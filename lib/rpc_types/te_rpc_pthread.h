@@ -4,7 +4,6 @@
  * RPC analogues of definitions from pthread.h.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_RPC_PTHREAD_H__

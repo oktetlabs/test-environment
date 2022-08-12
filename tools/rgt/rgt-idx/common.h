@@ -2,10 +2,6 @@
  * @brief Test Environment: RGT - log index utilities - common declarations
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_RGT_IDX_COMMON_H__

@@ -5,8 +5,6 @@
  * rgt-log-split.
  *
  * Copyright (C) 2016-2022 OKTET Labs. All rights reserved.
- *
- *
  */
 
 #include <stdlib.h>

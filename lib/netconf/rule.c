@@ -3,9 +3,6 @@
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs.
- *
- *
- *
  */
 
 #define TE_LGR_USER "Netconf rule"

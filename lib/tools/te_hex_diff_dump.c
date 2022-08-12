@@ -5,7 +5,6 @@
  * binary memory blocks.
  *
  * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include <stdio.h>

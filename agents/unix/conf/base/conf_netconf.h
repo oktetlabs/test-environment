@@ -5,11 +5,6 @@
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_BASE_CONF_NETCONF_H_

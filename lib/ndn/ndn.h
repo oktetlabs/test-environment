@@ -4,10 +4,6 @@
  * Declarations of general NDN ASN.1 types
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #ifndef __TE_NDN_GENEREIC_H__
 #define __TE_NDN_GENEREIC_H__

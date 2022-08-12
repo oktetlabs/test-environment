@@ -5,7 +5,6 @@
  * and a set of utility functions.
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_LOG_MSG_VIEW_H__

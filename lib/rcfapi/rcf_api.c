@@ -4,10 +4,6 @@
  * RCF API library implementation
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #define TE_LGR_USER     "RCF API"

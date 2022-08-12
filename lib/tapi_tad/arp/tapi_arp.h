@@ -8,9 +8,6 @@
  * Declarations of test API for ARP TAD.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
  */
 
 #ifndef __TE_TAPI_ARP_H__

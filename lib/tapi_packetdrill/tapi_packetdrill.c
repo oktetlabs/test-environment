@@ -4,7 +4,6 @@
  * Generic API to use packetdrill test tool.
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
  */
 #define TE_LGR_USER     "TAPI packetdrill"
 

@@ -8,7 +8,6 @@
  * TAPI to handle RPC server job factory.
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TAPI_JOB_FACTORY_RPC_H__

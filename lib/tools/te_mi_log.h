@@ -8,7 +8,6 @@
  * Definition of API for machine interface data logging.
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_TOOLS_TE_MI_LOG_H__

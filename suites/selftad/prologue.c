@@ -4,8 +4,6 @@
  * Test Suite prologue.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
- *
- *
  */
 
 /** Logging subsystem entity name */

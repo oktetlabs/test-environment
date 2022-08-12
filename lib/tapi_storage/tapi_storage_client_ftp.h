@@ -8,11 +8,6 @@
  * Test API to FTP client routines.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TAPI_STORAGE_CLIENT_FTP_H__

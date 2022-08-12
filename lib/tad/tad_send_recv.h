@@ -5,10 +5,6 @@
  * Declarations of types and functions common for TAD Sender and Receiver.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_TAD_SEND_RECV_H__

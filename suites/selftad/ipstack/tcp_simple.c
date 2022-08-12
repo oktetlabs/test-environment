@@ -4,10 +4,6 @@
  * Simple UDP CSAP test
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #define TE_TEST_NAME    "ipstack/tcp_simple"

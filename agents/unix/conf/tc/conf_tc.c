@@ -4,7 +4,6 @@
  * Implementation of configuration nodes traffic control support
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #define TE_LGR_USER     "Unix Conf TC"

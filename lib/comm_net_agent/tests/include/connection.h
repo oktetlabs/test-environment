@@ -4,10 +4,6 @@
  * Connections API
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #ifndef __TE_COMM_NET_AGENT_TESTS_LIB_CONNECTION_H__
 #define __TE_COMM_NET_AGENT_TESTS_LIB_CONNECTION_H__

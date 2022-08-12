@@ -4,10 +4,6 @@
  * Definition of the API used by RCF RPC to encode/decode RPC data.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_RPC_XDR_H__

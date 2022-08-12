@@ -4,10 +4,6 @@
  * RCF Emulator implementation
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #define LOG_LEVEL 0xff

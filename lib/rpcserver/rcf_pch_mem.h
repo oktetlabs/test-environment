@@ -4,10 +4,6 @@
  * Memory mapping library
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_RCF_PCH_MEM_H__

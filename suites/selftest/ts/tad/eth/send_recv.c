@@ -5,10 +5,6 @@
  * encapsulation, 802.1Q tagged/untagged.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 /** @page eth-send_recv Send/receive of untagged/tagged Ethernet2/LLC+SNAP encapsulated frames

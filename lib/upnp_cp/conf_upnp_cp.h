@@ -4,11 +4,6 @@
  * Definition of unix TA UPnP Control Point configuring support.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __CONF_UPNP_CP_H__

@@ -4,11 +4,6 @@
  * Prototypes of functions related to backups processing
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TE_CONF_BACKUP_H__

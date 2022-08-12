@@ -4,7 +4,6 @@
  * Implementation.
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include "conf_defs.h"

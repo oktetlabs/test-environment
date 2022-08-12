@@ -4,7 +4,6 @@
  * Implementation of internal API for using Generic Netlink.
  *
  * Copyright (C) 2022-2022 OKTET Labs.
- *
  */
 
 #define TE_LGR_USER "Netconf genetlink"

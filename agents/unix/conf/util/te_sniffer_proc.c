@@ -4,8 +4,6 @@
  * Sniffer process implementation.
  *
  * Copyright (C) 2004-2022 OKTET Labs.
- *
- *
  */
 
 #include "te_config.h"

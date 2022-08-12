@@ -8,10 +8,6 @@
  * Declarations of test API for RTE mbuf TAD.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_TAPI_RTE_MBUF_H__

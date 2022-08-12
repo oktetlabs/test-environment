@@ -4,10 +4,6 @@
  * Declarations of ASN.1 types for NDN for Ethernet protocol.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #ifndef __TE_NDN_FORW_H__
 #define __TE_NDN_FORW_H__

@@ -4,7 +4,6 @@
  * Wrapper for net/if.h need for resolve confict with linux/if.h and net/if.h
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include "te_config.h"

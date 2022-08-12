@@ -4,7 +4,6 @@
  * Definitions for Unix TA configuration with getmsg()/putmsg()
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_CONF_GETMSG_H__

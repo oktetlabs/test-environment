@@ -14,7 +14,6 @@
  * does not present or it does not provide corresponding list.
  *
  * Copyright (C) 2004-2022 OKTET Labs.
- *
  */
 
 #ifndef    __TE_QUEUE_H__

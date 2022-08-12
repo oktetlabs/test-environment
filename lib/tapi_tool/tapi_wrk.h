@@ -8,7 +8,6 @@
  * TAPI to handle wrk tool.
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_TAPI_WRK_H__

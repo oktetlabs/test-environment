@@ -4,10 +4,6 @@
  * WinPIPE RPC transport
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #if (defined(__CYGWIN__) || defined(WINDOWS)) &&    \

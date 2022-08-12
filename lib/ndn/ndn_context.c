@@ -4,10 +4,6 @@
  * Declarations of context-specific NDN ASN.1 types
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #include "te_config.h"

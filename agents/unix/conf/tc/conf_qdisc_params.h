@@ -4,7 +4,6 @@
  * Implementation of get/set methods for qdisc netem node
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_CONF_QDISC_PARAMS_H_

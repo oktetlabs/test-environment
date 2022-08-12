@@ -4,7 +4,6 @@
  * API to control network stimuli.
  *
  * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TAPI_BPF_STIM_H__

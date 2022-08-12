@@ -4,10 +4,6 @@
  * Declaration of Traffic Application Domain interface to Ethernet.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_TAD_ETH_SAP_H__

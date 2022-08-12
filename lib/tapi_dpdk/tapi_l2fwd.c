@@ -4,8 +4,6 @@
  * Test API for DPDK l2fwd helper functions
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
- *
  */
 
 #define TE_LGR_USER     "TAPI l2fwd"

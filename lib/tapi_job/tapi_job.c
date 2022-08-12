@@ -4,8 +4,6 @@
  * Test API for Agent job control functions (implementation)
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
- *
  */
 
 #include "te_config.h"

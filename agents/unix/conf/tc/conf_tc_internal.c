@@ -4,7 +4,6 @@
  * Unix TA configuring support Traffic Control
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #define TE_LGR_USER     "Unix Conf"

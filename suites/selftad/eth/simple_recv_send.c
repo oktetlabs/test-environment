@@ -5,10 +5,6 @@
  * on another CSAP.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #define TE_TEST_NAME    "eth/simple_recv_send"

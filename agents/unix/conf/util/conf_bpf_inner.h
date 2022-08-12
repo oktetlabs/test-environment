@@ -4,7 +4,6 @@
  * Definition of unix TA BPF configuring support.
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_BPF_INNER_H__

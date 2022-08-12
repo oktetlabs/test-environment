@@ -5,7 +5,6 @@
  * (doc/cm/cm_ovs.yml).
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_TAPI_CFG_OVS_H__

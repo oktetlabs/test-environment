@@ -4,10 +4,6 @@
  * Definitions of ASN.1 types for NDN for Ethernet protocol.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #include "te_config.h"
 

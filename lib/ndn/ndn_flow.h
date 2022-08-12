@@ -4,10 +4,6 @@
  * Definitions of ASN.1 types for NDN for traffic flow processing.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_NDN_FLOW_H__

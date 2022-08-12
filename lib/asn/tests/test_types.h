@@ -4,10 +4,6 @@
  * Definitions of ASN types used for tests.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #ifndef __TE_ASN_TESTS_TYPES_H__
 #define __TE_ASN_TESTS_TYPES_H__

@@ -4,7 +4,6 @@
  * Implementation of get/set methods for qdisc node
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include "te_defs.h"

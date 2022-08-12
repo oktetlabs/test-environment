@@ -4,11 +4,6 @@
  * Definitions necessary for RPC implementation
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TARPC_SERVER_H__

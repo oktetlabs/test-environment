@@ -8,7 +8,6 @@
  * Test API to control 'fio' tool.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TAPI_FIO_H__

@@ -4,7 +4,6 @@
  * Unix TA virtual machines support
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_VM_H_

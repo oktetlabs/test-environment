@@ -4,7 +4,6 @@
  * Test Suite prologue.
  *
  * Copyright (C) 2020-2022 OKTET Labs Ltd., St.-Petersburg, Russia
- *
  */
 
 /** @page tapi-tool-nptcp-prologue TAPI NPtcp test prologue

@@ -4,10 +4,6 @@
  * Common definitions for RPC test suite.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __RPC_SUITE_H__

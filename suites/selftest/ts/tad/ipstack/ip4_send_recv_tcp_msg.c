@@ -4,9 +4,6 @@
  * Check TCP/IP4/ETH CSAP data-sending behaviour
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
  */
 
 /** @page ipstack-ip4_send_msg_tcp Send and receive TCP packets via

@@ -14,7 +14,6 @@
  * configuration.
  *
  * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_TAPI_ETHTOOL_H__

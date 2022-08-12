@@ -4,11 +4,6 @@
  * Implementation of high level functions of message processing.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #include "rgt_common.h"

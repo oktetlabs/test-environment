@@ -4,7 +4,6 @@
  * Implementation of devlink device configuration commands.
  *
  * Copyright (C) 2022-2022 OKTET Labs.
- *
  */
 
 #define TE_LGR_USER "Netconf devlink"

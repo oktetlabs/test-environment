@@ -2,8 +2,6 @@
  * @brief Support functions for netconf library
  *
  * Copyright (C) 2004-2022 OKTET Labs, St.-Petersburg, Russia
- *
- *
  */
 
 #ifndef __NETCONF_INTERNAL_H__

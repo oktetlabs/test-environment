@@ -5,10 +5,6 @@
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 #ifndef _TELEPHONY_H
 #define _TELEPHONY_H

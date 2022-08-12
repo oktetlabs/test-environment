@@ -5,8 +5,6 @@
  * advertisement daemon radvd.
  *
  * Copyright (C) 2004-2022 OKTET Labs.
- *
- *
  */
 
 #ifndef __TE_TA_UNIX_RADVD_H__

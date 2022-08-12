@@ -5,10 +5,6 @@
  * to create TA-builtin and standalone RPC servers.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #include "rpc_server.h"

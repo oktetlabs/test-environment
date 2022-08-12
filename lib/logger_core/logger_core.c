@@ -5,7 +5,6 @@
  * for any entity which would like to use TE logging.
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #include "te_config.h"

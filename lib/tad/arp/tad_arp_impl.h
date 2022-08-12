@@ -5,10 +5,6 @@
  * ARP CSAP support internal declarations.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_TAD_ARP_IMPL_H__

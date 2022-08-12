@@ -4,7 +4,6 @@
  * RCF interaction auxiliary routines
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_CONF_RCF_H__

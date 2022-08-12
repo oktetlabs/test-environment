@@ -4,11 +4,6 @@
  * The module is responsible for making descisions about message filtering.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #include <libxml/parser.h>

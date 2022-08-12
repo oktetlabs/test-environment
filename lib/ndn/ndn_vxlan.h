@@ -4,9 +4,6 @@
  * ASN.1 type definition for VxLAN
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
  */
 #ifndef __TE_NDN_VXLAN_H__
 #define __TE_NDN_VXLAN_H__

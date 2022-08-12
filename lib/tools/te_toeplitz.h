@@ -8,9 +8,6 @@
  * Definition of API to calculate hash used by RSS
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
  */
 
 #ifndef __TE_TOOLS_TOEPLITZ_H__

@@ -8,9 +8,6 @@
  * Declarations of API for TAPI ATM.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
  */
 
 #ifndef __TE_TAPI_ATM_H__

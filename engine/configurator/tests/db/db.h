@@ -4,10 +4,6 @@
  * Database structure definition
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __DB_H__

@@ -10,7 +10,6 @@
  * TAPI job backends for agent job management.
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TA_JOB_H__

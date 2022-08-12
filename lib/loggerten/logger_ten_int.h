@@ -6,11 +6,6 @@
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef TE_LOGGER_TEN_INTERNALS

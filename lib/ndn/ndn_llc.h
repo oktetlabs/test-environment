@@ -4,10 +4,6 @@
  * Declarations of ASN.1 types for NDN for IEEE Std 802.2 LLC protocol.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_NDN_LLC_H__

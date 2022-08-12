@@ -8,11 +8,6 @@
  * Generic server functions for storage server.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #ifndef __TAPI_STORAGE_SERVER_H__

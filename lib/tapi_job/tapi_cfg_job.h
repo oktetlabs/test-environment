@@ -10,7 +10,6 @@
  * terms "job" and "process" are used interchangeably in this file.
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_TAPI_CFG_JOB_H__

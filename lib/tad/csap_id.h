@@ -5,10 +5,6 @@
  * Definition of CSAP IDs database functions.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #ifndef __TE_TAD_CSAP_ID_H__

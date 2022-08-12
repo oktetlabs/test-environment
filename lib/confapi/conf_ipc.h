@@ -4,7 +4,6 @@
  * Configurator IPC message preparation functions
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_CONF_IPC_H__

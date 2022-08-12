@@ -2,11 +2,6 @@
  * @brief Test Environment: xml-merge utility callbacks.
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
- *
  */
 
 #include <stdio.h>

@@ -3,10 +3,6 @@
  * Network Communication Library Tests - Test Agent side
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
- *
- *
- *
- *
  */
 
 #include <stdio.h>

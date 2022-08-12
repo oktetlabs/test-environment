@@ -5,7 +5,6 @@
  * in term of log streaming.
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
- *
  */
 
 #ifndef __TE_LOGGER_STREAM_RULES_H__
