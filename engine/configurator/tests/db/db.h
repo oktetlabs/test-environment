@@ -8,7 +8,6 @@
  *
  *
  *
- * @author  Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  */
 
 #ifndef __DB_H__

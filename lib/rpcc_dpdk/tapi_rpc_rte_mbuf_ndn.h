@@ -11,7 +11,6 @@
  *
  *
  *
- * @author Ivan Malov <Ivan.Malov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_RPC_RTE_MBUF_NDN_H__

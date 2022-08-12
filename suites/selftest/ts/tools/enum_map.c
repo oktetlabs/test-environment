@@ -15,7 +15,6 @@
  *
  * @par Test sequence:
  *
- * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  */
 
 /** Logging subsystem entity name */

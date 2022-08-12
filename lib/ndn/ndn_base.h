@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Igor Labutin <Igor.Labutin@oktetlabs.ru>
  *
  */
 #ifndef __TE_NDN_BASE_H__

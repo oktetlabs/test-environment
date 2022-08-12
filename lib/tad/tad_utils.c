@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 #define TE_LGR_USER     "TAD Utils"

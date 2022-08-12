@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Roman Zhukov <Roman.Zhukov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "RPC rte_flow"

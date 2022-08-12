@@ -9,8 +9,6 @@
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
- * @author Denis Pryazhennikov <Denis.Pryazhennikov@oktetlabs.ru>
- * @author Sergey Nikitin <Sergey.Nikitin@oktetlabs.ru>
  */
 
 #ifndef __TAPI_PACKETDRILL_H__

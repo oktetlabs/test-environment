@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
- * @author Artemii Morozov <Artemii.Morozov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER "TAPI NETPERF"

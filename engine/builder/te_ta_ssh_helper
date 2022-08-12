@@ -13,7 +13,6 @@
 #
 # Copyright (C) 2020-2022 OKTET Labs.
 #
-# Author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 #
 
 # Default SSH arguments, if you don't like it, you can override

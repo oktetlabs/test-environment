@@ -8,8 +8,6 @@
  *
  *
  *
- * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
- * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  *
  */
 

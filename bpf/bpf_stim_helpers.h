@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
  *
- * @author Roman Zhukov <Roman.Zhukov@oktetlabs.ru>
  */
 
 #ifndef __BPF_STIM_HELPERS_H__

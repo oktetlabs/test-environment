@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  *
  */
 

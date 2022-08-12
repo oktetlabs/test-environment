@@ -6,7 +6,6 @@
  *
  *
  *
- * @author Roman Kolobov  <Roman.Kolobov@oktetlabs.ru>
  *
  */
 

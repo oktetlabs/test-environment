@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  */
 #ifndef __TE_NDN_ISCSI_H__

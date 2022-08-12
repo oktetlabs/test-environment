@@ -8,7 +8,6 @@
  *
  * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
  *
- * @author Sergey Nikitin <Sergey.Nikitin@oktetlabs.ru>
  */
 
 #include <linux/bpf.h>

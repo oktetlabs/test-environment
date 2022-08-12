@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
  *
- * @author Daniil Byshenko <Daniil.Byshenko@oktetlabs.ru>
  */
 
 #define TE_TEST_NAME "memcached"

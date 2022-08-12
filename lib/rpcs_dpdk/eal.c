@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "RPC DPDK EAL"

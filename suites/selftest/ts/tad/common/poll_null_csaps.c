@@ -20,7 +20,6 @@
  * -# Call @b rcf_trpoll( @c NULL, @c 1, @c 0 ).
  *    Check that @c TE_EFAULT is returned.
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

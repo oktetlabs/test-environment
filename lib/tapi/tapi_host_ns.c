@@ -12,7 +12,6 @@
  *
  *
  *
- * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "Host NS TAPI"

@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  */
 
 #ifndef __TE_CONF_SNIFFER_H__

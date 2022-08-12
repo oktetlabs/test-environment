@@ -7,8 +7,6 @@
  *
  *
  *
- * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 

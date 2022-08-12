@@ -8,8 +8,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Mamadou Ngom <Mamadou.Ngom@oktetlabs.ru>
  *
  */
 

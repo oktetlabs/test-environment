@@ -4,7 +4,6 @@
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
  *
- * @author Dmitry Izbitsky  <Dmitry.Izbitsky@oktetlabs.ru>
  */
 
 #ifndef __TE_RGT_MI_MSG_H__

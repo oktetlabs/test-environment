@@ -6,7 +6,6 @@
  *
  *
  *
- * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  */
 
@@ -150,7 +149,6 @@ local_station_proc(void *arg)
  * period of time. Then the remote station issues an incoming connection
  * request. The function must not return before the request was issued.
  *
- * @author Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  * @return Test result
  * @retval 0            Test succeeded

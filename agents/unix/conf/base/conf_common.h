@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_BASE_CONF_COMMON_H_

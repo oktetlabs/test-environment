@@ -15,7 +15,6 @@
  *
  *
  *
- * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_IOMUX_H_

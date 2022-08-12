@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
- * @author Dilshod Urazov <Dilshod.Urazov@oktetlabs.ru>
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_PROCESS_H_

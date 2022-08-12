@@ -8,7 +8,6 @@
  *
  *
  *
- * @author  Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  */
 
 #define LOG_LEVEL 0xff

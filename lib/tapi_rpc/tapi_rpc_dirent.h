@@ -10,7 +10,6 @@
  *
  *
  *
- * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
 

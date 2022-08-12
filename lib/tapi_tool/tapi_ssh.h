@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
  *
- * @author Pavel Liulchak <Pavel.Liulchak@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_SSH_H__

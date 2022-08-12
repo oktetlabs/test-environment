@@ -46,7 +46,6 @@
  * -# Check that IPv4 header has correct checksum
  * -# Destroy CSAP and close socket
  *
- * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

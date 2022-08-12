@@ -41,7 +41,6 @@
  *        e) Check that mode is advertised
  * -# Restart PHY autonegotiation
  *
- * @author Vadim V. Galitsyn <Vadim.Galitsyn@oktetlabs.ru>
  */
 
 #define TE_TEST_NAME    "phy"

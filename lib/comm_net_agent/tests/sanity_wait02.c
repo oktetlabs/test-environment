@@ -6,7 +6,6 @@
  *
  *
  *
- * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  */
 
@@ -101,7 +100,6 @@ local_station_proc(void *arg)
  * set to an invalid value. The function must return an invalid parameter
  * failure.
  *
- * @author Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  * @return Test result
  * @retval 0            Test succeeded

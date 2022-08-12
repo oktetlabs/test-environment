@@ -13,7 +13,6 @@
  *
  *
  *
- * @author Albert Podusenko <albert.podusenko@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_CFG_L2TP_H__

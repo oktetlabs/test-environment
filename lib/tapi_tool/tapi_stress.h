@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
- * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_STRESS_H__

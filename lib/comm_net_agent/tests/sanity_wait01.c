@@ -6,7 +6,6 @@
  *
  *
  *
- * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  */
 
@@ -122,7 +121,6 @@ local_station_proc(void *arg)
  * so that all three first parameters will have held the value NULL.
  * The function must return a bad parameter failure each time.
  *
- * @author Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  * @return Test result
  * @retval 0            Test succeeded

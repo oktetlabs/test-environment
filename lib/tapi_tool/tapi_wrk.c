@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
- * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER "TAPI WRK"

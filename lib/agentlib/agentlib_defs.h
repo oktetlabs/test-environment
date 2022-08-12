@@ -8,8 +8,6 @@
  *
  *
  *
- * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * @author Artem V. Andreev   <Artem.Andreev@oktetlabs.ru>
  *
  * @note This header is separated from principal `agentlib.h`, so that
  * it can be included into a automatically generated symbol table

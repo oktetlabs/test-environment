@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Roman Zhukov <Roman.Zhukov@oktetlabs.ru>
  *
  */
 

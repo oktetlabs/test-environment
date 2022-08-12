@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  */
 #ifndef __TE_CWMP_UTILS__H__

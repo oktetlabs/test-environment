@@ -1,7 +1,6 @@
 /** @file
  * @breaf TE TAPI for Forwarder additional module implementations
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 

@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Ivan Malov <Ivan.Malov@oktetlabs.ru>
  */
 #ifndef __TE_NDN_GENEVE_H__
 #define __TE_NDN_GENEVE_H__

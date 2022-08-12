@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
  */
 

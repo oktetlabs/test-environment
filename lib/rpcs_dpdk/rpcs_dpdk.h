@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 #ifndef __TE_LIB_RPCS_DPDK_H__

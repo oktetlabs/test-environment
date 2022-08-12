@@ -12,7 +12,6 @@
  *
  *
  *
- * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_TAD_FLOW_H__

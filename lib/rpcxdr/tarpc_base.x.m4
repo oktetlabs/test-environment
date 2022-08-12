@@ -6,8 +6,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs.
  *
- * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  */
 

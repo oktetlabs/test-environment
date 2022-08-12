@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2022-2022 OKTET Labs, St.-Petersburg, Russia
  *
- * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */
 
 #ifndef __NETCONF_INTERNAL_GENETLINK_H__

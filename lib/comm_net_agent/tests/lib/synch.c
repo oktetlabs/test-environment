@@ -7,7 +7,6 @@
  *
  *
  *
- * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  */
 

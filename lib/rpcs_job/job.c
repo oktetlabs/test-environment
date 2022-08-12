@@ -7,8 +7,6 @@
  *
  *
  *
- * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
- * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "RPC JOB"

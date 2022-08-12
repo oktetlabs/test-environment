@@ -1,7 +1,6 @@
 /** @file
  * @breaf TE TAD Forwarder additional module internal declarations
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 

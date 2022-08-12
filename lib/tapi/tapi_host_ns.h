@@ -14,7 +14,6 @@
  *
  *
  *
- * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_HOST_NS_H__

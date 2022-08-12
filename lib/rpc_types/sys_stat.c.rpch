@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 #include "te_config.h"

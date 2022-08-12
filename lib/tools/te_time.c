@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */
 #include "te_config.h"
 #include "te_defs.h"

@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs.
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 /*

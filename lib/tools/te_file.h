@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
- * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */
 
 #ifndef __TE_FILE_H__

@@ -9,8 +9,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_IP_H__

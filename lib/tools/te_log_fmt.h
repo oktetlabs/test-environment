@@ -14,8 +14,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Ivan Soloducha <Ivan.Soloducha@oktetlabs.ru>
  *
  */
 

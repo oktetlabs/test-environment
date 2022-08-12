@@ -13,7 +13,6 @@
  *
  *
  *
- * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_FILE_H__

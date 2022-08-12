@@ -45,7 +45,6 @@
  * -# Close socket on @p pco_tt.
  * -# Destroy all created CSAPs.
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

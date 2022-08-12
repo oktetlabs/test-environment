@@ -17,7 +17,6 @@
  * @par Scenario:
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

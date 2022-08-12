@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
  *
- * @author Pavel Liulchak <Pavel.Liulchak@oktetlabs.ru>
  */
 #include <stddef.h>
 

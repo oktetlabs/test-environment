@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Evgeny Omelchenko <Evgeny.Omelchenko@oktetlabs.ru>
  *
  */
 

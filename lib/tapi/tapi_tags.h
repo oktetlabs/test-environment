@@ -10,7 +10,6 @@
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
  *
- * @author Ivan Khodyrev <Ivan.Khodyrev@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_TAGS_H__

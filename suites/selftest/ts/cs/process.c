@@ -12,7 +12,6 @@
  *
  * @par Scenario:
  *
- * @author Dilshod Urazov <Dilshod.Urazov@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

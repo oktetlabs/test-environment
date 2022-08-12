@@ -13,7 +13,6 @@
  *
  * @par Test sequence:
  *
- * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

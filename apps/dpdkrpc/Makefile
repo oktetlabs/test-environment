@@ -1,7 +1,6 @@
 #
 # Copyright (C) 2004-2022 OKTET Labs.
 #
-# @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
 
 
 # Partially based on DPDK's sample code which is distributed under the

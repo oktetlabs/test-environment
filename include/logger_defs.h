@@ -12,7 +12,6 @@
  *
  *
  *
- * @author Igor Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
  */
 

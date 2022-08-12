@@ -21,7 +21,6 @@
  * -# Call @b rcf_trpoll( @c NULL or @c not-NULL, @c 0, @c 0 ).
  *    Check that @c TE_EINVAL is returned.
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

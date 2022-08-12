@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Damir Mansurov <dnman@oktetlabs.ru>
  *
  */
 

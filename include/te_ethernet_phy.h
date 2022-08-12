@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Vadim V. Galitsyn <Vadim.Galitsyn@oktetlabs.ru>
  *
  */
 

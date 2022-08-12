@@ -13,7 +13,6 @@
  *
  *
  *
- * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */
 
 #ifndef __TAPI_TCP_STATES_H__

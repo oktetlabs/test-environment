@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Alexander.Kukuta <kam@oktetlabs.ru>
  *
  */
 #ifndef __TE_NDN_IGMP_H__

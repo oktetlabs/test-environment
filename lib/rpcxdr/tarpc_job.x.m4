@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs.
  *
- * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  */
 
 struct tarpc_char_array {

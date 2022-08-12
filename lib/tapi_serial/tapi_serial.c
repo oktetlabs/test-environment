@@ -6,7 +6,6 @@
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
  *
- * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  */
 #include <sys/socket.h>
 #include <netinet/in.h>

@@ -15,7 +15,6 @@
  *
  * -# Up all interfaces mentioned in /net/node configuration.
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

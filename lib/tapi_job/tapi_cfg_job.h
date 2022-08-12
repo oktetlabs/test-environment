@@ -11,8 +11,6 @@
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
- * @author Dilshod Urazov <Dilshod.Urazov@oktetlabs.ru>
- * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_CFG_JOB_H__

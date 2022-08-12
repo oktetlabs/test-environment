@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  */
 
@@ -54,7 +53,6 @@
  *      - Otherwise, only one frame should be received.
  * -# Destroy created CSAPs.
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

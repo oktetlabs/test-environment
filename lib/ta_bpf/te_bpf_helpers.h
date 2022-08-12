@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2022-2022 OKTET Labs, St.-Petersburg, Russia
  *
- * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */
 #ifndef __TE_BPF_HELPERS_H__
 #define __TE_BPF_HELPERS_H__

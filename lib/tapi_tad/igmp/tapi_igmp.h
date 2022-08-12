@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_IGMP2_H__

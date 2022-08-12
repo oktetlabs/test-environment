@@ -11,7 +11,6 @@
  *
  *
  *
- * @author Denis Pryazhennikov <Denis.Pryazhennikov@oktetlabs.ru>
  */
 
 #ifndef __TE_TOOLS_TOEPLITZ_H__

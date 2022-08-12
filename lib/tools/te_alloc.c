@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  *
  */
 

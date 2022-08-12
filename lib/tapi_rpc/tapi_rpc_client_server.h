@@ -14,8 +14,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
 
@@ -170,7 +168,6 @@ extern int rpc_stream_client(rcf_rpc_server *clnt,
  * @retval srvr_s       @c SOCK_STREAM socket reside on @p srvr
  * @retval clnt_s       @c SOCK_STREAM socket reside on @p clnt
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 /**
@@ -221,7 +218,6 @@ extern int rpc_stream_connection(rcf_rpc_server *srvr,
  * @retval srvr_s       @c SOCK_DGRAM socket reside on @p srvr
  * @retval clnt_s       @c SOCK_DGRAM socket reside on @p clnt
  *
- * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  */
 
 /**

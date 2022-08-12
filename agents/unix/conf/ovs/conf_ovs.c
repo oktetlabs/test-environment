@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
- * @author Ivan Malov <Ivan.Malov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER "TA Unix OVS"

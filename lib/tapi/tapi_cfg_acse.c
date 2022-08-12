@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
  *
  */
 

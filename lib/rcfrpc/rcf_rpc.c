@@ -9,8 +9,6 @@
  *
  *
  *
- * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
  */
 

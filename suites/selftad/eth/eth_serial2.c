@@ -10,7 +10,6 @@
  * @objective This test verifies for creation ethernet frame flow
  *              using 'length' payload specificator.
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
 
 #define TE_LOG_LEVEL 3

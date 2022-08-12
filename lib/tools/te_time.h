@@ -13,7 +13,6 @@
  *
  *
  *
- * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */
 
 #ifndef __TE_TIME_H__

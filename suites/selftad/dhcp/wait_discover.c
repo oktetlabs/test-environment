@@ -54,7 +54,6 @@
  *
  * @post Reader can write test specification in sources of the test package
  *
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  */
 
 #define TE_TEST_NAME    "dhcp/wait_discover"

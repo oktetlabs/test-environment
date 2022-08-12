@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
- * @author Dilshod Urazov <Dilshod.Urazov@oktetlabs.ru>
  */
 
 #include "te_config.h"

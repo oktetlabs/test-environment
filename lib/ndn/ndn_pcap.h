@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  */
 #ifndef __TE_NDN_PCAP_H__

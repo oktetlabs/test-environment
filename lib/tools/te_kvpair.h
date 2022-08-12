@@ -13,7 +13,6 @@
  *
  *
  *
- * @author Denis Pryazhennikov <Denis.Pryazhennikov@oktetlabs.ru>
  */
 
 #ifndef __TE_TOOLS_KV_PAIRS_H__

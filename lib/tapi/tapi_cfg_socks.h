@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Svetlana Fishchuk <Svetlana.Fishchuk@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_CFG_SOCKS_H__

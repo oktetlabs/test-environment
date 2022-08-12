@@ -6,7 +6,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
- * @author Ivan Ilchenko <Ivan.Ilchenko@oktetlabs.ru>
  */
 
 #include "te_meas_stats.h"

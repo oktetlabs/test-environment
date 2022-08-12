@@ -11,7 +11,6 @@
  *
  *
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
 #ifndef __TE_TAPI_FORW_H__
 #define __TE_TAPI_FORW_H__

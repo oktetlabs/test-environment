@@ -7,7 +7,6 @@
 #
 # Copyright (C) 2020-2022 OKTET Labs.
 #
-# Author Konstantin.Ushakov <Konstantin.Ushakov@oktetlabs.ru>
 
 help() {
     cat <<EOF

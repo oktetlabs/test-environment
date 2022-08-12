@@ -6,7 +6,6 @@
  *
  *
  *
- * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  */
 
@@ -157,7 +156,6 @@ local_station_proc(void *arg)
  *        further connection requests. Correctness check should verify the
  *        remote address of the new connection.
  *
- * @author Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  * @return Test result
  * @retval 0            Test succeeded

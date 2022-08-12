@@ -3,7 +3,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */
 
 #define TE_TEST_NAME  "tc_prologue"

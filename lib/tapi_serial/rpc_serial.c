@@ -6,7 +6,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Svetlana Menshikova <Svetlana.Menshikova@oktetlabs.ru>
  */
 #include "te_defs.h"
 #include "rcf_rpc.h"

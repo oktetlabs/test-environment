@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
  *
  */
 #ifndef __TE_TAPI_SNMP_MACRO_H__

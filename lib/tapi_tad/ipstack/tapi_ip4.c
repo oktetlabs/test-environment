@@ -7,8 +7,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 

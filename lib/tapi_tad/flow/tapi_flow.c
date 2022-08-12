@@ -5,7 +5,6 @@
  * Copyright (C) 2004-2022 OKTET Labs, St.-Petersburg, Russia
  *
  *
- * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  */
 #include "te_config.h"
 #include "te_defs.h"

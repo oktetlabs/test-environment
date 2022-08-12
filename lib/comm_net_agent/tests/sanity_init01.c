@@ -6,7 +6,6 @@
  *
  *
  *
- * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  */
 
@@ -92,7 +91,6 @@ local_station_proc(void *arg)
  * parameter @b p_rcc set to NULL. Both times the function must return
  * a bad parameter failure.
  *
- * @author Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  * @return Test result
  * @retval 0            Test succeeded

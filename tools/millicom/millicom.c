@@ -3,7 +3,6 @@
  * Test Environment.
  * TTY interaction implementation
  *
- * Author: Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  *
  ****************************************************************/

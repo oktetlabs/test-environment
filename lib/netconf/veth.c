@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs.
  *
- * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER "Netconf VETH"

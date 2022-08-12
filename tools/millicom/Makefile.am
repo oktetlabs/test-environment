@@ -4,7 +4,6 @@
 #
 # Copyright (C) 2004-2022 OKTET Labs.
 #
-# Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
 AUTOMAKE_OPTIONS = foreign

@@ -12,8 +12,6 @@
  *
  * @par Scenario:
  *
- * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
- * @author Eugene Suslov <Eugene.Suslov@oktetlabs.ru>
  */
 
 #define TE_TEST_NAME    "file_get"

@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Roman Zhukov <Roman.Zhukov@oktetlabs.ru>
  */
 
 #include "te_config.h"

@@ -11,7 +11,6 @@
  *
  *
  *
- * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  *
  */
 

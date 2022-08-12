@@ -7,8 +7,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Denis Pryazhennikov <Denis.Pryazhennikov@oktetlabs.ru>
  */
 
 #include "te_config.h"

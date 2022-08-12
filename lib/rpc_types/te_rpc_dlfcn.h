@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Nikita Rastegaev <Nikita.Rastegaev@oktetlabs.ru>
  *
  */
 

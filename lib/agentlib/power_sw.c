@@ -8,9 +8,6 @@
  *
  *
  *
- * @author Igor Vasiliev <Igor.Vasiliev@oktetlabs.ru>
- * @author Ivan V. Soloduha <Ivan.Soloducha@oktetlabs.ru>
- * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
  *
  */
 

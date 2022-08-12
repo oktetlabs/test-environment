@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Roman Zhukov <Roman.Zhukov@oktetlabs.ru>
  */
 
 #ifndef __TE_RTE_FLOW_NDN_H__

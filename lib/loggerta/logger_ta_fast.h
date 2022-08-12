@@ -14,8 +14,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
  */
 

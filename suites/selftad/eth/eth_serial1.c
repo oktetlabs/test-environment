@@ -11,7 +11,6 @@
  *            incapsulating UDP payload. The payload length can be managed
  *            from test.
  *
- * @author Igor Vasiliev Igor.Vasiliev@oktetlabs.ru>
  */
 
 #define TE_TEST_NAME    "eth/serial_udp_pld"

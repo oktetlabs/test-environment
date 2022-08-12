@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Igor Labutin <Igor.Labutin@oktetlabs.ru>
  *
  */
 #include "te_config.h"

@@ -6,7 +6,6 @@
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
  *
- * @author Georgiy Levashov <Georgiy.Levashov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "TAPI l2fwd"

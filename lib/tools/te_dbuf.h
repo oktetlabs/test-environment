@@ -13,7 +13,6 @@
  *
  *
  *
- * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
  *
  * Example of using:

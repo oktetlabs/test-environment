@@ -8,7 +8,6 @@
  *
  *
  *
- * @author  Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  */
 
 #include "db.h"

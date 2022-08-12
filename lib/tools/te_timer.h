@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
  * @section te_tools_te_timer_example Example of usage
  *

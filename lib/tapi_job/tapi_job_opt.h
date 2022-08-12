@@ -10,7 +10,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
- * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_JOB_OPT_H__

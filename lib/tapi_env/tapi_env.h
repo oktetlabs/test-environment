@@ -15,7 +15,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 #ifndef __TS_TAPI_ENV_ENV_H__

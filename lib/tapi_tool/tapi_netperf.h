@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
- * @author Artemii Morozov <Artemii.Morozov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_NETPERF_H__

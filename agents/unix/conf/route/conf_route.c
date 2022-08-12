@@ -9,9 +9,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Ivan Soloducha <Ivan.Soloducha@oktetlabs.ru>
- * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
 

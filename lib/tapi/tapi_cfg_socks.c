@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Svetlana Fishchuk <Svetlana.Fishchuk@oktetlabs.ru>
  */
 
 #include "te_config.h"

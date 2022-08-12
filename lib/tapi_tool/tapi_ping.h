@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
- * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_PING_H__

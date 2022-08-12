@@ -15,7 +15,6 @@
  *
  * @par Test sequence:
  *
- * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

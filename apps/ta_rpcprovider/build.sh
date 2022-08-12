@@ -5,7 +5,6 @@
 #
 # Copyright (C) 2020-2022 OKTET Labs.
 #
-# Author Damir.Mansurov <Damir.Mansurov@oktetlabs.ru>
 #
 
 set -e

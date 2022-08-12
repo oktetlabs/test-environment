@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
- * @author Marina Maslova <Marina.Maslova@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_CFG_NGINX_H__

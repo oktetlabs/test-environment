@@ -3,7 +3,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "Conf Keys TAPI"

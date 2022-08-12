@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */
 
 #include "rpcs_msghdr.h"

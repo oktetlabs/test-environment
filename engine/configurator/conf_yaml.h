@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
- * @author Ivan Malov <Ivan.Malov@oktetlabs.ru>
  */
 
 #ifndef __TE_CONF_YAML_H__

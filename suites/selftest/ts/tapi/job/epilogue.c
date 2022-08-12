@@ -14,7 +14,6 @@
  *
  * @par Scenario:
  *
- * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */
 
 #define TE_TEST_NAME "job/epilogue"

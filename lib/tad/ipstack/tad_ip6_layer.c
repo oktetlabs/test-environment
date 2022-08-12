@@ -8,8 +8,6 @@
  *
  *
  *
- * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
- * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
 

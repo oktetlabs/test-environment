@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
  *
- * @author Artemii Morozov <Artemii.Morozov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER "Unix Conf Memory Module"

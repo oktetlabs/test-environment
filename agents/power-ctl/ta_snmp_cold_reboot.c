@@ -6,7 +6,6 @@
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
- * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  *
  */
 

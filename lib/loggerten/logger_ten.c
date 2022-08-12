@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
  */
 

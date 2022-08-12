@@ -7,8 +7,6 @@
  *
  *
  *
- * @author Alexandra N. Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
- * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  */
 

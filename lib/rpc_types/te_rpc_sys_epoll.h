@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
  *
  */
 

@@ -5,7 +5,6 @@
  *
  * Common definitions for RPC test suite.
  *
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  */
 #ifndef __CPE_BACKDOOR__H__

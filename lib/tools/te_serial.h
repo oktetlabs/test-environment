@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Svetlana Menshikova <Svetlana.Menshikova@oktetlabs.ru>
  */
 
 #ifndef __TE_SERIAL_H__

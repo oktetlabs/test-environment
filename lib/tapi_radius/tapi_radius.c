@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  *
  */
 

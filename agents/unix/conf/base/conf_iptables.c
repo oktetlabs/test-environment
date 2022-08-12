@@ -8,8 +8,6 @@
  *
  *
  *
- * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
- * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "TA iptables"

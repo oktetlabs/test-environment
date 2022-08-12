@@ -10,7 +10,6 @@
  *
  *
  *
- * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_CFG_IP_RULE_H_

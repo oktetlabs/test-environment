@@ -21,7 +21,6 @@
  * -#
  * -#
  *
- * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  */
 
 #define TE_TEST_NAME  "basic/send_recv"

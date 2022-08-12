@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
- * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_CONF_QDISC_PARAMS_H_

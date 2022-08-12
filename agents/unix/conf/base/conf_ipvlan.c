@@ -6,7 +6,6 @@
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
  *
- * @author Damir Mansurov <dnman@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "Unix Conf IP VLAN"

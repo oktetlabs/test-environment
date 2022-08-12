@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
- * @author Dilshod Urazov <Dilshod.Urazov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_CFG_PROCESS_H__

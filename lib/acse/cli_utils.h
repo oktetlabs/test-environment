@@ -3,7 +3,6 @@
  *
  * Utilities for simple CLI tool
  *
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  */
 

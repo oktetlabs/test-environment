@@ -34,5 +34,4 @@
  * -# Close CWMP session: wait for empty HTTP Post from CPE,
  *    response to it with empty HTTP OK.
  *
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  */

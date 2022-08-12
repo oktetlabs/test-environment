@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */
 
 #ifndef __RPCSERVER_RPCS_MSGHDR_H__

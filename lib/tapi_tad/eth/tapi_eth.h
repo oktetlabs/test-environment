@@ -13,8 +13,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_ETH_H__

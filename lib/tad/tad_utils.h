@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 #ifndef __TE_TAD_UTILS_H__

@@ -10,7 +10,6 @@
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
  *
- * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_SERIAL_H__

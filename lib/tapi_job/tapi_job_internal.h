@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
  *
- * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */
 
 #ifndef __TAPI_JOB_INTERNAL_H__

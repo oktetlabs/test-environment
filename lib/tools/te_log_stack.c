@@ -3,7 +3,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  *
   */
 

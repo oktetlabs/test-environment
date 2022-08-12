@@ -31,7 +31,6 @@
  * -# Receive TCP packet on @p pco_iut
  * -# Close connection by sending RST from @ pco_tst.
  *
- *  @author Aleksandr Platonov <Aleksandr.Platonov@oktetlabs.ru>
  */
 #ifndef DOXYGEN_TEST_SPEC
 

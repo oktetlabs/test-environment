@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  */
 
@@ -772,7 +771,6 @@ forget_master(cfg_object *dependant, cfg_object *obj)
  *
  * @return  0 or TE_EINVAL, if error occurred.
  *
- * @author Igor Baryshev <Igor.Baryshev@oktetlabs.ru>
  */
 te_errno
 cfg_db_unregister_obj_by_id_str(char *id,

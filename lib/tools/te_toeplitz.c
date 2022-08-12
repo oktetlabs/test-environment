@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Denis Pryazhennikov <Denis.Pryazhennikov@oktetlabs.ru>
  */
 #define TE_LGR_USER     "TOEPLITZ"
 

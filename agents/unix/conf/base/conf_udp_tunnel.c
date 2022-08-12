@@ -7,7 +7,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
- * @author Ian Dolzhansky <Ian.Dolzhansky@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "Unix Conf UDP Tunnel"

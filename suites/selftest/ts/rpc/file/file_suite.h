@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
- * @author Eugene Suslov <Eugene.Suslov@oktetlabs.ru>
  */
 
 #ifndef __FILE_SUITE_H__

@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 #ifndef __TE_NDN_GENEREIC_H__

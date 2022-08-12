@@ -8,7 +8,6 @@
  *
  *
  *
- * Author: Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
 

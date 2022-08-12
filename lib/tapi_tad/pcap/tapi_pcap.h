@@ -10,7 +10,6 @@
  *
  *
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_PCAP_H__

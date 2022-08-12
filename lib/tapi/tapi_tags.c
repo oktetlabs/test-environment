@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
  *
- * @author Ivan Khodyrev <Ivan.Khodyrev@oktetlabs.ru>
  */
 
 #define TE_LGR_USER "TAPI Tags"

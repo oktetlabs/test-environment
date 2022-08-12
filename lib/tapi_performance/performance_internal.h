@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */
 
 #ifndef __PERFORMANCE_INTERNAL_H__

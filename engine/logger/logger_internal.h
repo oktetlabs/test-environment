@@ -6,7 +6,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  */
 
 #ifndef __TE_LOGGER_INTERNAL_H__

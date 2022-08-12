@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Maxim Alyutov <Maxim.Alyutov@oktetlabs.ru>
  *
  */
 

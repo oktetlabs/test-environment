@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Anastasia Kazakova <Anastasia.Kazakova@oktetlabs.ru>
  *
  */
 #ifndef __TE__TAPI_SNMP_IP_ADDRTABLE_H__

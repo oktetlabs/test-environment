@@ -10,7 +10,6 @@
  *
  *
  *
- * @author Andrey Ivanov <andron@oktet.ru>
  *
  */
 

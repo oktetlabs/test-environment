@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Igor Labutin <Igor.Labutin@oktetlabs.ru>
  *
  */
 

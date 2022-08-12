@@ -19,7 +19,6 @@
  *
  *
  *
- * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_PROC_H__

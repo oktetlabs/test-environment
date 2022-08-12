@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  */
 #define TE_TEST_NAME    "snmp/trap_any"

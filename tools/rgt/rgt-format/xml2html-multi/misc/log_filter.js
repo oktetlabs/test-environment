@@ -6,8 +6,6 @@
 // Copyright (C) 2020-2022 OKTET Labs.
 //
 //
-// Author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
-// Author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
 //
 
 // NOTE: for formatting of this file

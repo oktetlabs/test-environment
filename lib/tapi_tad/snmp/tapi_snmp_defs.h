@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  *
  */
 #ifndef __TE__TAPI_SNMP_DEFS_H__

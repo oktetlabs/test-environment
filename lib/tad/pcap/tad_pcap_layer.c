@@ -8,8 +8,6 @@
  *
  *
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  */
 

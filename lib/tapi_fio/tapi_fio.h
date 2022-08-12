@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
 
 #ifndef __TAPI_FIO_H__

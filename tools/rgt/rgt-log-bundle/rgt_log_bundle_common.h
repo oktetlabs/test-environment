@@ -8,7 +8,6 @@
  * Copyright (C) 2016-2022 OKTET Labs. All rights reserved.
  *
  *
- * @author Dmitry Izbitsky  <Dmitry.Izbitsky@oktetlabs.ru>
  */
 
 #ifndef __TE_RGT_LOG_BUNDLE_COMMON_H__

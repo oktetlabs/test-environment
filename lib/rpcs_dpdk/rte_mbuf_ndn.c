@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Ivan Malov <Ivan.Malov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "RPC RTE mbuf layer"

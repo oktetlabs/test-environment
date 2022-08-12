@@ -14,8 +14,6 @@
  *
  *
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
- * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_SNMP_H__

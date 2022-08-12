@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Artemii Morozov <Artemii.Morozov@oktetlabs.ru>
  *
  */
 

@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Ivan Malov <Ivan.Malov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "TAPI Mem"

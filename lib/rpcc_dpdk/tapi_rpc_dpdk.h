@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
- * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_RPC_DPDK_H__

@@ -28,7 +28,6 @@
  *    timeout. Check that @c 0 is returned and @a status is set to
  *    @c TE_ETADCSAPNOTEX.
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

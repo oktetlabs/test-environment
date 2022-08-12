@@ -5,8 +5,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * @author Alexandra N. Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  *
  */
 

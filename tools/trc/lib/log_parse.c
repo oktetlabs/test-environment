@@ -9,8 +9,6 @@
  *
  *
  *
- * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  */
 

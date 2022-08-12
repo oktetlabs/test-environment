@@ -5,8 +5,6 @@
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
- * @author Denis Pryazhennikov <Denis.Pryazhennikov@oktetlabs.ru>
- * @author Sergey Nikitin <Sergey.Nikitin@oktetlabs.ru>
  */
 #define TE_LGR_USER     "TAPI packetdrill"
 

@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs.
  *
- * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */
 
 /*

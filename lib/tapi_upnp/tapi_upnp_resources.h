@@ -13,8 +13,6 @@
  *
  *
  *
- * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
- * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
  */
 

@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_ICMP6_H__

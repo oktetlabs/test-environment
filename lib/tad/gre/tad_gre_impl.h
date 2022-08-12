@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Ivan Malov <Ivan.Malov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAD_GRE_IMPL_H__

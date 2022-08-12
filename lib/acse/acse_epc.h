@@ -4,8 +4,6 @@
  * ACSE EPC declarations, common for both sites: ACSE process
  *      and head TA process.
  *
- * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *

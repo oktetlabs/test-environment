@@ -3,8 +3,6 @@
  *
  * Fuctions to process ACSE RPC calls
  *
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
- * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
  *
  */
 

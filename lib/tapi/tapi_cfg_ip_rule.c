@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
  *
  */
 

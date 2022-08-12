@@ -8,8 +8,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Yurij Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
  *
  */
 

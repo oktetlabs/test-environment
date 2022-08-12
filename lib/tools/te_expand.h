@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
- * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  */
 
 #ifndef __TE_TOOLS_EXPAND_H__

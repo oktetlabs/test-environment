@@ -13,7 +13,6 @@
  *
  *
  *
- * @author Alexandra Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  *
  */
 

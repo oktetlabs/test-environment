@@ -2,7 +2,6 @@
 #
 # Script to generate set of TRC tags for the host.
 #
-# Author: Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 #
 
 SSH="ssh -qxTn -o BatchMode=yes"

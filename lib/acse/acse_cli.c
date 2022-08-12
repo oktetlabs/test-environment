@@ -3,7 +3,6 @@
  *
  * ACS Emulator CLI tool
  *
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  */
 #include "te_config.h"

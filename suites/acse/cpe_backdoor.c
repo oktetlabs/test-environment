@@ -2,7 +2,6 @@
  * @brief Functions, used in CWMP-related tests for make
  * some management of CPE behind CWMP.
  *
- * @author Marina Maslova <Marina.Maslova@oktetlabs.ru>
  *
  */
 

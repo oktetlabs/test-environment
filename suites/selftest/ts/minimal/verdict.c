@@ -12,7 +12,6 @@
  *
  * @par Test sequence:
  *
- * @author Viacheslav Galaktionov <Viacheslav.Galaktionov@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

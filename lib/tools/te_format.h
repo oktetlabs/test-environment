@@ -14,7 +14,6 @@
  *
  *
  *
- * @author Ivan Soloducha <Ivan.Soloducha@oktetlabs.ru>
  *
  */
 

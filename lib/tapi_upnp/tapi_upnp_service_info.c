@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
  */
 #define TE_LGR_USER     "TAPI UPnP Service Info"

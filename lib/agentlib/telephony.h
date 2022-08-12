@@ -8,8 +8,6 @@
  *
  *
  *
- * @author Evgeny Omelchenko <Evgeny.Omelchenko@oktetlabs.ru>
- * @author Konstantin Petrov <Konstantin.Petorv@oktetlabs.ru>
  *
  */
 #ifndef _TELEPHONY_H

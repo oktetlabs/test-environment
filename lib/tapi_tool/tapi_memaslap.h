@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
  *
- * @author Daniil Byshenko <Daniil.Byshenko@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_MEMASLAP_H__

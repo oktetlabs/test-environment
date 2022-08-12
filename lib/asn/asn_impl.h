@@ -8,7 +8,6 @@
  *
  *
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 

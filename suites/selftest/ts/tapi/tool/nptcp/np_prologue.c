@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2020-2022 OKTET Labs Ltd., St.-Petersburg, Russia
  *
- * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */
 
 /** @page tapi-tool-nptcp-prologue TAPI NPtcp test prologue
@@ -14,7 +13,6 @@
  *
  * @par Scenario:
  *
- * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */
 
 #define TE_TEST_NAME "nptcp/prologue"

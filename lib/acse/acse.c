@@ -9,8 +9,6 @@
  *
  *
  *
- * @author Edward Makarov <Edward.Makarov@oktetlabs.ru>
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  */
 

@@ -7,7 +7,6 @@
  *
  *
  *
- * Author: Andrey G. Ivanov <andron@oktetlabs.ru>
  *
  */
 

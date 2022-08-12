@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Ivan Ilchenko <Ivan.Ilchenko@oktetlabs.ru>
  */
 
 #include <sys/types.h>

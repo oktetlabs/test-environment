@@ -5,7 +5,6 @@
  *
  *
  *
- * @author Nikolai Kondrashov <Nikolai.Kondrashov@oktetlabs.ru>
  *
  */
 

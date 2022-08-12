@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Dmitry Izbitsky  <Dmitry.Izbitsky@oktetlabs.ru>
  */
 
 #ifndef __TE_RGT_JUNIT_MODE_H__

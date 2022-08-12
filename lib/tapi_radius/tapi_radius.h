@@ -9,8 +9,6 @@
  *
  *
  *
- * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
- * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_RADIUS_H__

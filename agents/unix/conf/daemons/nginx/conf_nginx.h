@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
- * @author Marina Maslova <Marina.Maslova@oktetlabs.ru>
  */
 #ifndef __TE_AGENTS_UNIX_CONF_NGINX_H_
 #define __TE_AGENTS_UNIX_CONF_NGINX_H_

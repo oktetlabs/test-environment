@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
  *
  */
 

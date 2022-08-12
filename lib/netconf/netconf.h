@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2008-2022 OKTET Labs, St.-Petersburg, Russia
  *
- * @author Maxim Alyutov <Maxim.Alyutov@oktetlabs.ru>
  *
  */
 

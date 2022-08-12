@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2021-2022 OKTET Labs Ltd., St.-Petersburg, Russia
  *
- * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */
 
 #define TE_TEST_NAME "ctorrent/prologue"

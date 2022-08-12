@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs.
  *
- * @author Georgiy Levashov <Georgiy.Levashov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER "Netconf bridge"

@@ -10,7 +10,6 @@
  *
  *
  *
- * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "Conf Sys Tree"

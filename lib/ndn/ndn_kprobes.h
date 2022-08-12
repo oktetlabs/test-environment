@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Aleksandr Platonov <Aleksandr.Platonov@oktetlabs.ru>
  *
  */
 

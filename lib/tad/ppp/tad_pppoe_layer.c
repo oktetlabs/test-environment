@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  */
 

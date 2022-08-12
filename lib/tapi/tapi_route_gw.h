@@ -17,7 +17,6 @@
  *
  *
  *
- * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_ROUTE_GW_H__

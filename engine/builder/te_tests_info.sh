@@ -8,7 +8,6 @@
 #
 # Copyright (C) 2004-2022 OKTET Labs.
 #
-# Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 #
 #
 

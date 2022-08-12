@@ -4,7 +4,6 @@
  *
  * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
  *
- * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  *
  */
 

@@ -9,7 +9,6 @@
  *
  * WARN  Tester  Parser  16:34:33 958 ms                           5 s 715 ms
  *
- * Author: Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  */
 #include    <stdio.h>
 #include    <stdlib.h>

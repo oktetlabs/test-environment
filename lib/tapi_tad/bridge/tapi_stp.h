@@ -12,7 +12,6 @@
  *
  *
  *
- * @author Oleg Kravtsov <oleg@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_BRIDGE_STP_H__

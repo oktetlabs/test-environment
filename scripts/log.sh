@@ -4,7 +4,6 @@
 #
 # Copyright (C) 2012-2022 OKTET Labs, St.-Petersburg, Russia
 #
-# Author Roman Kolobov <Roman.Kolobov@oktetlabs.ru>
 #
 
 TS_GUESS_SH="$(dirname "$(which "$0")")"/guess.sh

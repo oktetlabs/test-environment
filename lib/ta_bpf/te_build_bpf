@@ -5,7 +5,6 @@
 #
 # Copyright (C) 2022-2022 OKTET Labs, St.-Petersburg, Russia
 #
-# Author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
 #
 
 set -e

@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
  *
- * @author Damir Mansurov <Damir.Mansurov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_BPF_H__

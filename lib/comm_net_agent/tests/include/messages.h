@@ -7,7 +7,6 @@
  *
  *
  *
- * Author: Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>
  *
  */
 #ifndef __TE_COMM_NET_AGENT_TESTS_LIB_MESSAGES_H__

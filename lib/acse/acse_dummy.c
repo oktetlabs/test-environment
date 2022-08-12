@@ -3,7 +3,6 @@
  *
  * ACS Emulator dummy tool
  *
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  */
 

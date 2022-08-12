@@ -6,7 +6,6 @@
  *
  * Copyright (C) 2018-2022 OKTET Labs
  *
- * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  */
 
 #define TE_LGR_USER     "Conf Block"

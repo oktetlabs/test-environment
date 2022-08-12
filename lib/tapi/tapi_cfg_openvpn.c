@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Svetlana Fishchuk <Svetlana.Fishchuk@oktetlabs.ru>
  */
 
 #include "te_config.h"

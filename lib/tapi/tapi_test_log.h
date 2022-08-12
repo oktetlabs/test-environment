@@ -15,8 +15,6 @@
  *
  *
  *
- * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_TEST_LOG_H__

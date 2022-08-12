@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  */
 /* Still debugging, it switches off debug messages */

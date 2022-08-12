@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
  *
  */
 

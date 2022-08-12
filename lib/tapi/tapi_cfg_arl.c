@@ -10,8 +10,6 @@
  *
  *
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Oleg Kratsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  */
 

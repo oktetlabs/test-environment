@@ -7,8 +7,6 @@
  *
  *
  *
- * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
- * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  *
  */
 

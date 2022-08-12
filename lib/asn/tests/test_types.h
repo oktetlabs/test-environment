@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 #ifndef __TE_ASN_TESTS_TYPES_H__

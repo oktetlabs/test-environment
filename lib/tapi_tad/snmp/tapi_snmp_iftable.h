@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 #ifndef __TE__TAPI_SNMP_IFTABLE_H__

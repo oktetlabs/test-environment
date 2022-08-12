@@ -9,8 +9,6 @@
  *
  *
  *
- * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
- * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  *
  */
 

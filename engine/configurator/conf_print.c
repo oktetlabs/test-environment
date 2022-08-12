@@ -8,8 +8,6 @@
  *
  *
  *
- * @author Igor Baryshev <Igor.Baryshev@oktetlabs.ru>
- * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  */
 

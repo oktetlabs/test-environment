@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Damir Mansurov <dnman@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_ICMP_H__

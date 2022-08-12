@@ -4,7 +4,6 @@
 #
 # Copyright (C) 2021-2022 OKTET Labs, St.-Petersburg, Russia
 #
-# Author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
 #
 
 export TMPDIR="${TMPDIR:-${TE_TMP:-/tmp/}}"

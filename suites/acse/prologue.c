@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
  *
- * @author Konstantin Abramenko <Konstantin Abramenko@oktetlabs.ru>
  *
  */
 

@@ -15,7 +15,6 @@
  *
  * -# Create udp.ip4.eth CSAP on @p pco_csap.
  *
- * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC

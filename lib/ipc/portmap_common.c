@@ -8,8 +8,6 @@
  *
  *
  *
- * @author Andrey Ivanov <andron@oktet.ru>
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  */
 

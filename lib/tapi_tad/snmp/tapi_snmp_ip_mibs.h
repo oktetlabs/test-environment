@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  */
 #ifndef __TE__TAPI_SNMP_IP_MIBS_H__

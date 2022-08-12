@@ -7,7 +7,6 @@
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
  *
- * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_CFG_KEY_H__

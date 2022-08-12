@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Alexander Kukuta <kam@oktetlabs.ru>
  *
  */
 

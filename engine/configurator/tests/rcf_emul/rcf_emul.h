@@ -8,7 +8,6 @@
  *
  *
  *
- * @author  Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
  */
 
 #ifndef __RCF_EMUL_H__

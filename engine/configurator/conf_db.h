@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  */
 
@@ -414,7 +413,6 @@ extern te_errno cfg_db_obj_print_deps(const char *filename,
  *
  * @return  0 or TE_EINVAL, if error occurred.
  *
- * @author Igor Baryshev <Igor.Baryshev@oktetlabs.ru>
  */
 extern te_errno cfg_db_unregister_obj_by_id_str(char *id,
                                                 const unsigned int log_lvl);

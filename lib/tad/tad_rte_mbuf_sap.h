@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Ivan Malov <Ivan.Malov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAD_RTE_MBUF_SAP_H__

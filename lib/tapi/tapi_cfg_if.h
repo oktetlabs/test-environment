@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  */
 
 #ifndef __TE_TAPI_CFG_IF_H__

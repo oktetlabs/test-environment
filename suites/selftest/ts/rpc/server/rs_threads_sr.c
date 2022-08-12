@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Evgeniy Vladimirovich Bobkov <kavri@oktetlabs.ru>
  *
  */
 

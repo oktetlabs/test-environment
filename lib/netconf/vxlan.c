@@ -6,7 +6,6 @@
  *
  * Copyright (C) 2019-2022 OKTET Labs.
  *
- * @author Ian Dolzhansky <Ian.Dolzhansky@oktetlabs.ru>
  */
 
 #define TE_LGR_USER "Netconf VXLAN"

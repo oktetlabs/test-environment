@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *
  */
 

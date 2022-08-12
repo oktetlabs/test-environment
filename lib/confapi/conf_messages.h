@@ -9,7 +9,6 @@
  *
  *
  *
- * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  */
 

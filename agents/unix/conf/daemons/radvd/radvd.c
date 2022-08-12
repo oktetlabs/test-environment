@@ -8,7 +8,6 @@
  *
  *
  *
- * @author Konstantin G. Petrov <Konstantin.Petrov@oktetlabs.ru>
  *
  */
 

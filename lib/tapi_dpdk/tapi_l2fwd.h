@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
  *
- * @author Georgiy Levashov <Georgiy.Levashov@oktetlabs.ru>
  */
 
 #ifndef __TAPI_L2FWD_H__

@@ -12,7 +12,6 @@
  *
  * @par Scenario:
  *
- * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  */
 
 #define TE_TEST_NAME "jobopt/sample"

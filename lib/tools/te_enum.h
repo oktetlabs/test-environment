@@ -9,7 +9,6 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
  *
- * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  *
  */
 

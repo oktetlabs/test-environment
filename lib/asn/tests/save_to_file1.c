@@ -19,7 +19,6 @@
  *    - read string from created asn_value;
  *    - check that obtained string equals to string we put in file.
  *
- * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  */
 
 #include "te_config.h"

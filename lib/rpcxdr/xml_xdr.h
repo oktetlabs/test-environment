@@ -7,7 +7,6 @@
  *
  *
  *
- * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
  *
  */
 #ifndef __BASE_TYPE_CVT_H__

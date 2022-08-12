@@ -33,7 +33,6 @@
  * -# In other cases check that no datagram is received.
  * -# Destroy CSAP and close socket
  *
- * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC
