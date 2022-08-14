@@ -3,7 +3,7 @@
 #    Process Raw Log File according to user specified XML filter file
 #    (calls rgt-core utility).
 #
-# Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
 bindir="$(cd `dirname $0` && pwd)"
 

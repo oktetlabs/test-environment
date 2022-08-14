@@ -10,7 +10,7 @@
 #
 # Variable TE_BUILD_WIN_LIB_CPPFLAGS may be set to pass to pre-processor.
 #
-# Copyright (C) 2004-2022 OKTET Labs.
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
 SCRIPT=`which $0`
 BUILDER=`dirname $SCRIPT`

@@ -2,7 +2,7 @@
  * IPv6 Demo Test Suite
  * IPv6 specific socket options
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page opt_ipv6_only IPV6_V6ONLY socket option with IPv4 nodes (SOCK_STREAM).

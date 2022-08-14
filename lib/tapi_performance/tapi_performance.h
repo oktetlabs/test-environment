@@ -7,7 +7,7 @@
  *
  * Generic high level test API to control a network throughput test tool.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  *
  *
  * @section tapi_performance_notes Notes

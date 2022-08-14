@@ -3,7 +3,7 @@
  *
  * Internal utilities for Logger configuration file parsing.
  *
- * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include <stdio.h>

@@ -3,7 +3,7 @@
  *
  * Check ACSE functionality: ConnectionRequest to CPE
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page CWMP test: Connection Request

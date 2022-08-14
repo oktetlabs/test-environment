@@ -4,7 +4,7 @@
  * The module is responsible for keeping track of occured events and
  * checking if new events are legal.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "rgt_common.h"

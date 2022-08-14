@@ -2,7 +2,7 @@
  * Test qos/flow_check
  * QoS Classifiers creating/adjusting/deleting test
  *
- * Copyright (C) 2004-2022 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 #include "te_config.h"
 #include "te_defs.h"

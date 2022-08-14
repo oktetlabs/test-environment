@@ -8,7 +8,7 @@
  * Declarations of API for TAPI CLI.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_CLI_H__

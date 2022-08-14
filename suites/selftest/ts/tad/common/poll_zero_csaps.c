@@ -3,7 +3,7 @@
  *
  * Tests on generic TAD functionality.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page common-poll_zero_csaps Call traffic poll operation with zero CSAPs

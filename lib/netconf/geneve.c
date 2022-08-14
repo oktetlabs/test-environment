@@ -4,7 +4,7 @@
  *
  * Implementation of Geneve interfaces configuration commands.
  *
- * Copyright (c) 2019-2022 OKTET Labs.
+ * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER "Netconf Geneve"

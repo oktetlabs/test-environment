@@ -4,7 +4,7 @@
  * Tools for collecting statistical characteristics and
  * stabilization of samples.
  *
- * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_meas_stats.h"

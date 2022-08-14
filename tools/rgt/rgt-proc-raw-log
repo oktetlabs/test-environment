@@ -2,7 +2,7 @@
 #
 # Script to generate various kinds of logs from TE RAW log.
 #
-# Copyright (C) 2021-2022 OKTET Labs, St.-Petersburg, Russia
+# Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.
 
 export TMPDIR="${TMPDIR:-${TE_TMP:-/tmp/}}"
 

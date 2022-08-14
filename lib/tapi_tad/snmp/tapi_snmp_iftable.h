@@ -4,7 +4,7 @@
  * Traffic Application Domain Command Handler
  * SNMP protocol implementaion internal declarations.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 #ifndef __TE__TAPI_SNMP_IFTABLE_H__
 #define __TE__TAPI_SNMP_IFTABLE_H__

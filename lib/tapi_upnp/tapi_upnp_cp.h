@@ -7,7 +7,7 @@
  *
  * Definition of API to configure UPnP Control Point.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TAPI_UPNP_CP_H__

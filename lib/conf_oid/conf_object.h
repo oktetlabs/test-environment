@@ -30,7 +30,7 @@
  * @b te_conf_obj_from_str and @b te_conf_obj_compare.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_LIB_CONF_OID_CONF_OBJECT_H_

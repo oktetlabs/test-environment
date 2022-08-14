@@ -5,7 +5,7 @@
  * LAN side configuration.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_HG_CN_LAN_H__

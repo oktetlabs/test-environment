@@ -4,7 +4,7 @@
  * Minimal test scenario that yields a MI measurement artifact
  * which can be displayed as a graph in HTML log.
  *
- * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page minimal_mi_meas_line_graph Test for line-graph views of MI measurement artifacts

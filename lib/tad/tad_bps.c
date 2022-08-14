@@ -4,7 +4,7 @@
  * Traffic Application Domain Command Handler.
  * Traffic Application Domain Binary Protocol Support implementation.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 #define TE_LGR_USER     "TAD BPS"
 

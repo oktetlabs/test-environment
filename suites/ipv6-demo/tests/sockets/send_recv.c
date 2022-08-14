@@ -2,7 +2,7 @@
  * IPv6 Demo Test Suite
  * Send Receive functionality
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page sockets-send_recv Basic send receive operations

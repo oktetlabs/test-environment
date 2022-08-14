@@ -4,7 +4,7 @@
  * Gramma for logical expressions specification.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 %{
 #include "te_config.h"

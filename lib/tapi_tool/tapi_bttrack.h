@@ -7,7 +7,7 @@
  *
  * TAPI to manage *bttrack* torrent tracker (from *bittornado* package).
  *
- * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_BTTRACK_H__

@@ -4,7 +4,7 @@
  * This module provides some filters that do not work with log messages
  * directly, but instead deal with flow nodes.
  *
- * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER "Log processing"

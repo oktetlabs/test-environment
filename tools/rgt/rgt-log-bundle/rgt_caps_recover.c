@@ -5,7 +5,7 @@
  * RAW log bundle.
  *
  *
- * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include <stdlib.h>

@@ -8,7 +8,7 @@
  * Declaration of API to collect long log messages.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_LOG_BUFS_H__

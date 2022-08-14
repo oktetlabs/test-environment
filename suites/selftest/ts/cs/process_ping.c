@@ -3,7 +3,7 @@
  *
  * Check support for killing CS controlled processes and waiting for them
  *
- * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page process-ping Run ping process, kill it and wait for it

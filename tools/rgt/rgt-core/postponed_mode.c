@@ -4,7 +4,7 @@
  * Interface for output control message events and regular messages
  * into the XML file.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "rgt_common.h"

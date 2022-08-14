@@ -6,7 +6,7 @@
 # libraries obtained via TE_EXT_LIBS are provided with libraries
 # they depend on.
 #
-# Copyright (C) 2004-2022 OKTET Labs.
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
 use strict;
 use warnings;

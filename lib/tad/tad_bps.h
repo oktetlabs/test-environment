@@ -5,7 +5,7 @@
  * Traffic Application Domain Binary Protocol Support definitions
  * of data types and provided functions.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 #ifndef __TE_TAD_BPS_H__
 #define __TE_TAD_BPS_H__

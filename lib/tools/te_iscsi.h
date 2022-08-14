@@ -8,7 +8,7 @@
  * Functions and constant declared here can be used bothe on the agent
  * and in tests.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_ISCSI_H__

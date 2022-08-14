@@ -4,7 +4,7 @@
  *
  * Test Agent configuration library
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RCF_PCH_TA_CFG_H__

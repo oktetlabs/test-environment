@@ -3,7 +3,7 @@
  *
  * Definition of Configurator API for Agent job control
  *
- * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_config.h"

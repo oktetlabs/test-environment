@@ -3,7 +3,7 @@
  *
  * Auxiliary I/O multiplexers API definitions to be used in RPC calls.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __RPCSERVER_IOMUX_H__

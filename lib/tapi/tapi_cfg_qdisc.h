@@ -5,7 +5,7 @@
  * @ingroup tapi_conf
  * @{
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  *
  *
  * @section tapi_cfg_qdisc_example Example of usage

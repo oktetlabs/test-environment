@@ -2,7 +2,7 @@
  * @brief Test Environment
  * Network Communication Library Tests - Test Agent side
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page test_rcf_net_agent_wait06 rcf_comm_agent_wait() random attachments

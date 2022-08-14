@@ -7,7 +7,7 @@
  *
  * Definition of API for communicating with DUT via serial console.
  *
- * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_SERIAL_H__

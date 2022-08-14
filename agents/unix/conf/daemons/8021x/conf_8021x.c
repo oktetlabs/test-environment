@@ -3,7 +3,7 @@
  *
  * IEEE 802.1x supplicants configuring (xsupplicant, wpa_supplicant)
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_config.h"

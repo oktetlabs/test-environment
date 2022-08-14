@@ -4,7 +4,7 @@
  * Definition of test API for network configuration model
  * (doc/cm/cm_pci.yml).
  *
- * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_CFG_PCI_H__

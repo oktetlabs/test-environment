@@ -3,7 +3,7 @@
  *
  * Append data to created file on Agent.
  *
- * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page file_append Test for append data to file

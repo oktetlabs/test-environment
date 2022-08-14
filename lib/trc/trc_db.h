@@ -4,7 +4,7 @@
  * Definition of database representation and functions.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TRC_DB_H__

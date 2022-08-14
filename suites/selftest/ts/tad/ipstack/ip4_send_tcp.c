@@ -3,7 +3,7 @@
  *
  * Check TCP/IP4/ETH CSAP data-sending behaviour
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page ipstack-ip4_send_tcp Send TCP packets via CSAP

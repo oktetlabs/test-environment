@@ -4,7 +4,7 @@
 #
 # Script to process TE raw log and run TRC report generator.
 #
-# Copyright (C) 2004-2022 OKTET Labs.
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
 tmp_files=
 

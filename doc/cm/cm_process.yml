@@ -6,7 +6,7 @@
     It is assumed to care about processes spawned from the Test Agent via
     the configuration tree. Other processes are not tracked/represented.
 
-    Copyright (C) 2020-2022 OKTET Labs.
+    Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
 
 
 - register:

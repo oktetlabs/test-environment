@@ -3,7 +3,7 @@
  *
  * Common functions and structures to use in BPF programs.
  *
- * Copyright (C) 2022-2022 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
  */
 #ifndef __TE_BPF_HELPERS_H__
 #define __TE_BPF_HELPERS_H__

@@ -3,7 +3,7 @@
  *
  * Auxiluary routines to execute a program in a child process
  *
- * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "TE Exec Child"

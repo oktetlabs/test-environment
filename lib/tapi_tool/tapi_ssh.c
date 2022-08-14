@@ -3,7 +3,7 @@
  *
  * Test API to control OpenSSH tools and utilities.
  *
- * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
  */
 #include <stddef.h>
 

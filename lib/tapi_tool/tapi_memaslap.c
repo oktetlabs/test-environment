@@ -3,7 +3,7 @@
  *
  * TAPI to manage memaslap.
  *
- * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER "TAPI MEMASLAP"

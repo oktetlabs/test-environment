@@ -5,7 +5,7 @@
  * merging fragments back into raw log.
  *
  *
- * Copyright (C) 2016-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RGT_LOG_BUNDLE_COMMON_H__

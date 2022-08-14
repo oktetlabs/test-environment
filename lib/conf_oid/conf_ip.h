@@ -2,7 +2,7 @@
  * @brief Type for ip rule and ip route
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_LIB_CONF_OID_CONF_IP_H_

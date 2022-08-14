@@ -4,7 +4,7 @@
  * Procedures that provide access to test parameter.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "TAPI Params"

@@ -4,7 +4,7 @@
  * Unix TA Network Interface Interrupt Coalescing settings
  *
  *
- * Copyright (C) 2021-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "Conf Intr Coalesce"

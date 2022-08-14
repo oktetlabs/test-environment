@@ -7,7 +7,7 @@
     E.g. if IP router is tested, all nodes connected to router port via
     Ethernet hub should be considered as elements of the same network.
 
-    Copyright (C) 2004-2022 OKTET Labs.
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
 
 - register:

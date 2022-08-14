@@ -26,7 +26,7 @@ class TestGenerator(Generator):
             if self.rights:
                 c.write('', self.rights.format(year=year))
             else:
-                c.write('', 'Copyright (C) 2004-{year} OKTET Labs. '\
+                c.write('', 'Copyright (C) 2004-{year} OKTET Labs Ltd. '\
                         'All rights reserved.'.format(year=year))
         self.write('')
 

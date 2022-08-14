@@ -2,7 +2,7 @@
  * @brief API to locate the first entry of command name in PATH variable
  *
  *
- * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RGT_WHICH_H__

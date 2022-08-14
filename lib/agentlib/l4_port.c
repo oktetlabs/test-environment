@@ -3,7 +3,7 @@
  *
  * Network port related routines
  *
- * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER "Agent library"

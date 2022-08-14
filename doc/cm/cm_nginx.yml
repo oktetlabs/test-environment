@@ -3,7 +3,7 @@
 - comment: |
     This configuration model describes nginx server configuration and control.
 
-    Copyright (C) 2019-2022 OKTET Labs.
+    Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
 
 
 - register:

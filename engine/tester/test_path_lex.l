@@ -3,7 +3,7 @@
  *
  * Lexer for test path specification.
  *
- * Copyright (C) 2004-2022 OKTET Labs.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 %{
 #define TE_LGR_USER     "Test Path Lexer"

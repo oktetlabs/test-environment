@@ -4,7 +4,7 @@
  * Different transports which can be used for interaction between
  * RPC server and TA.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __RPC_TRANSPORT_H__

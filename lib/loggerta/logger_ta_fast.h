@@ -9,7 +9,7 @@
  * If one of this restriction is broke, the result is unpredictable
  * up to segmentation fault and system crash.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_LOGGER_TA_FAST_H__

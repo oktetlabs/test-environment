@@ -4,7 +4,7 @@
  * Definition of the C API provided by RCF to TE subsystems and tests
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RCF_API_H__

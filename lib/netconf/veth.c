@@ -3,7 +3,7 @@
  *
  * Implementation of VETH interfaces configuration commands.
  *
- * Copyright (C) 2004-2022 OKTET Labs.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER "Netconf VETH"

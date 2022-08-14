@@ -3,7 +3,7 @@
  *
  * Unix TA configuring support Traffic Control
  *
- * Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_TC_INTERNAL_H_

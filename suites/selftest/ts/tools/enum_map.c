@@ -3,7 +3,7 @@
  *
  * Testing te_enum.h correctness
  *
- * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page tools_enum_map te_enum.h test

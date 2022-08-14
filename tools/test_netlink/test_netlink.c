@@ -2,7 +2,7 @@
  *
  * Catches changes of IP on network intefaces from netlink socket.
  *
- * Copyright (C) 2004-2022 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include <linux/rtnetlink.h>

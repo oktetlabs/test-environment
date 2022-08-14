@@ -3,7 +3,7 @@
  *
  * UPnP Control Point Test Suite prologue.
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page upnp_cp-prologue UPnP Control Point Test Suite prologue

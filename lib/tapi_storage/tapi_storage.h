@@ -7,7 +7,7 @@
  *
  * Generic high level functions to work with storage.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TAPI_STORAGE_H__

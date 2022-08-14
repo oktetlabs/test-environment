@@ -3,7 +3,7 @@
  *
  * A test example
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page atm-simple_send Create ATM over Socket CSAP and send one cell

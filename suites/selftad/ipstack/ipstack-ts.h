@@ -3,7 +3,7 @@
  *
  * Common definitions for Self-TAD IP stack test suite.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __IPSTACK_SUITE_H__

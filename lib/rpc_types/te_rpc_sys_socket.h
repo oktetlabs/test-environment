@@ -5,7 +5,7 @@
  * Socket IOCTL requests are defined here as well.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RPC_SYS_SOCKET_H__

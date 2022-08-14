@@ -4,7 +4,7 @@
  * Declarations of ASN.1 types for NDN for an Ethernet Address
  * Resolution protocol (RFC 826).
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_NDN_ARP_H__

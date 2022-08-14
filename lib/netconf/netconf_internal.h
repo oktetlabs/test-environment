@@ -1,7 +1,7 @@
 /** @file
  * @brief Support functions for netconf library
  *
- * Copyright (C) 2004-2022 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __NETCONF_INTERNAL_H__

@@ -3,7 +3,7 @@
  *
  * POSIX RPC transport (local or TCP sockets)
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #if (!defined(__CYGWIN__) && !defined(WINDOWS)) ||  \

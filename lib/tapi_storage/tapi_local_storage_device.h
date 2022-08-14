@@ -7,7 +7,7 @@
  *
  * Functions for convenient work with storage device.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TAPI_LOCAL_STORAGE_DEVICE_H__

@@ -3,7 +3,7 @@
  *
  * Testing unit conversions
  *
- * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page tools_units te_units.h test

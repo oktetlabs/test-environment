@@ -4,7 +4,7 @@
  * Common definitions for CPE WAN Management Protocol (TR-069).
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_CWMP_H__

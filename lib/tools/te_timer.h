@@ -7,7 +7,7 @@
  *
  * Functions to check if time expired
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  *
  *
  * @section te_tools_te_timer_example Example of usage

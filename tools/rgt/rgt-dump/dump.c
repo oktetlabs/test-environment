@@ -1,7 +1,7 @@
 /** @file
  * @brief Test Environment: RGT - log dumping utility
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_config.h"

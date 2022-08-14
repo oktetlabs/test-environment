@@ -6,7 +6,7 @@
 # Usage: te_build_nuts <configuration file>
 #
 #
-# Copyright (C) 2004-2022 OKTET Labs.
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
 PARSER="`dirname $0`/../share/te_builder/nut.m4"
 cat "$PARSER" "$1" | m4 > "${TE_TMP}/nut.conf.processed"

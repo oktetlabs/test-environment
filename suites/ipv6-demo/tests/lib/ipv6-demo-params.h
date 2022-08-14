@@ -3,7 +3,7 @@
  *
  * Macros to get suite specific test parameters.
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TS_IPV6_DEMO_PARAMS_H__

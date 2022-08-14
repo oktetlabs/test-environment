@@ -2,7 +2,7 @@
 #
 # Script to generate test log.
 #
-# Copyright (C) 2012-2022 OKTET Labs, St.-Petersburg, Russia
+# Copyright (C) 2012-2022 OKTET Labs Ltd. All rights reserved.
 
 TS_GUESS_SH="$(dirname "$(which "$0")")"/guess.sh
 if test -f "${TS_GUESS_SH}" ; then

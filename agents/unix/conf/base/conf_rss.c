@@ -4,7 +4,7 @@
  * Unix TA Network Interface Receive Side Scaling settings
  *
  *
- * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 

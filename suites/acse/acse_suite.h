@@ -3,7 +3,7 @@
  *
  * Common definitions for ACSE test suite.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __ACSE_SUITE_H__

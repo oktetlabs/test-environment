@@ -7,7 +7,7 @@
  *
  * TAPI to handle stress tool.
  *
- * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_STRESS_H__

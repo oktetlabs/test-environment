@@ -4,7 +4,7 @@
  * Definition of XML log parsing common types and routines.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_LOG_PARSE_H__

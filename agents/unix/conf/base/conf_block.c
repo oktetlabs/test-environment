@@ -4,7 +4,7 @@
  * Block devices management
  *
  *
- * Copyright (C) 2018-2022 OKTET Labs
+ * Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "Conf Block"

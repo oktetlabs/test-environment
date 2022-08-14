@@ -13,7 +13,7 @@
 
 /**
  * @copyright
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  *
  *
  *

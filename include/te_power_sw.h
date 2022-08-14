@@ -4,7 +4,7 @@
  * Type definitions for remote calls of power switch.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_POWER_SW_H__

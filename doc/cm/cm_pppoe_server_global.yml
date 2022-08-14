@@ -5,7 +5,7 @@
 
     See cm_pppoe_server.yml for per-interface configuration model.
 
-    Copyright (C) 2017-2022 OKTET Labs.
+    Copyright (C) 2017-2022 OKTET Labs Ltd. All rights reserved.
 
 
 - register:

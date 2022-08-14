@@ -3,7 +3,7 @@
  *
  * TAPI Job test suite CFG basic operations test
  *
- * Copyright (C) 2022-2022 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page job-cfg_basic_operations Perform basic TAPI Job operations with ping created by CFG factory

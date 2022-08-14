@@ -8,7 +8,7 @@
     and iptables rules for different interfaces should not interact
     with each other.
 
-    Copyright (C) 2004-2022 OKTET Labs.
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
 
 - register:

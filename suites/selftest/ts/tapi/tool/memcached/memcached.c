@@ -3,7 +3,7 @@
  *
  * Demonstrate the usage of TAPI memcached.
  *
- * Copyright (C) 2022-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_TEST_NAME "memcached"

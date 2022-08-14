@@ -4,7 +4,7 @@
  * Check that nginx config is updated when some parameter is changed
  * for running instance.
  *
- * Copyright (C) 2019-2022 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef DOXYGEN_TEST_SPEC

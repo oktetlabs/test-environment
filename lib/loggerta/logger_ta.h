@@ -17,7 +17,7 @@
  * has not to take care about validity of logged data.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_LOGGER_TA_H__

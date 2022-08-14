@@ -8,7 +8,7 @@
  * Functions for convinient work with the files on the engine and TA.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_FILE_H__

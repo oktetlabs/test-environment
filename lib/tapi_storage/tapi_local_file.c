@@ -4,7 +4,7 @@
  * Functions for convenient work with the files on the engine and TA.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "TAPI Local File"

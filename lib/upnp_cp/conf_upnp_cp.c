@@ -3,7 +3,7 @@
  *
  * Implementation of unix TA UPnP Control Point configuring support.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef TE_LGR_USER

@@ -7,7 +7,7 @@
  *
  * Packet flow processing API.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_TAD_FLOW_H__

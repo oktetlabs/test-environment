@@ -4,7 +4,7 @@
  * Configure pair of proxy and server nginx instances and test it
  * using HTTP benchmarking tool.
  *
- * Copyright (C) 2019-2022 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef DOXYGEN_TEST_SPEC

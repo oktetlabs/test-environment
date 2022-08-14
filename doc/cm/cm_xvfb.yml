@@ -3,7 +3,7 @@
 - comment: |
     Xvfb daemon cofiguration model.
 
-    Copyright (C) 2005-2022 OKTET Labs.
+    Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
 
 
 - register:

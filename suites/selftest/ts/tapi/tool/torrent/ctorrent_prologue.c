@@ -3,7 +3,7 @@
  *
  * Test Suite prologue.
  *
- * Copyright (C) 2021-2022 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_TEST_NAME "ctorrent/prologue"

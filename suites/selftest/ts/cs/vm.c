@@ -3,7 +3,7 @@
  *
  * Check virtual machines support in Configurator
  *
- * Copyright (C) 2019-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page vm Create virtual machine

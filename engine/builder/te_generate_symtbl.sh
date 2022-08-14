@@ -2,7 +2,7 @@
 #
 # Shell wrapper to generate symbol table.
 #
-# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
 
 MYDIR="$(dirname "$0")"
 

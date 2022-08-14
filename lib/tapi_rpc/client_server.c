@@ -9,7 +9,7 @@
  * to sending and receiving data to/from the particular remote peer.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** User name of the library to be used for logging */

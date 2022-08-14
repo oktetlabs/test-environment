@@ -4,7 +4,7 @@
  * Definition of RPC structures and functions
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 

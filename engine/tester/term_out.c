@@ -4,7 +4,7 @@
  * Output to terminal routines
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** Logger user name to be used here */

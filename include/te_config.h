@@ -3,7 +3,7 @@
  *
  * Includes file with definitions of all platform-dependent constants.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_CONFIG_H__

@@ -3,7 +3,7 @@
  *
  * AAL5 CSAP create and send.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page atm-aal5_send Create AAL5.ATM over Socket CSAP and send one SDU

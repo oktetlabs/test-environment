@@ -4,7 +4,7 @@
  * Implementation of API for working with struct sockaddr.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 //#ifndef __CYGWIN__

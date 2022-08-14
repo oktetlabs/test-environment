@@ -4,7 +4,7 @@
  * Implementation routines to access media through BPF (Berkley Packet
  * Filter) or through AF_PACKET sockets.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "TAD PF_PACKET/BPF"

@@ -10,7 +10,7 @@
  * User manual:
  *   https://oktetlabs.ru/dokuwiki/doku.php/te/serial_console_parser
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_SERIAL_PARSE_H__

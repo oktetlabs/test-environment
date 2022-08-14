@@ -6,7 +6,7 @@
  * sendfile()).
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_RPC_UNISTD_H__

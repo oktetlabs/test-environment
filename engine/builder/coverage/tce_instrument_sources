@@ -14,7 +14,7 @@
 #                           ...
 #
 #
-# Copyright (C) 2004-2022 OKTET Labs.
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
 #
 # Initialization and default configuration
@@ -160,7 +160,7 @@ function initialize_gct()
 #
 # Created by tce_instrument_sources, a tool of the Test Environment
 #
-# Copyright (C) 2004-2022 OKTET Labs
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 #
 #
 # GCT (without Expansion Kits) is distributed under GPL

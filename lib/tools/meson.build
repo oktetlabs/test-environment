@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
 
 te_lib_logger_file = static_library('logger_file', 'te_log_file.c',
                                     install: install_lib,

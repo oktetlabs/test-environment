@@ -3,7 +3,7 @@
  *
  * Common includes and definitions.
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __IPV6_DEMO_TS_H__

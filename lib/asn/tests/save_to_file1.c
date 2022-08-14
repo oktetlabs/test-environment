@@ -1,7 +1,7 @@
 /*
  * TE ASN.1 Library test suite
  *
- * Copyright (C) 2004-2022 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 /** @page save_to_file1 Usage of save_to_file() function

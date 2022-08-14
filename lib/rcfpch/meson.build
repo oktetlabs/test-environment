@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
 
 rcf_sniffers_dummy = library('rcf_sniffers_dummy',
                              'rcf_sniffers_dummy.c', install: install_lib,

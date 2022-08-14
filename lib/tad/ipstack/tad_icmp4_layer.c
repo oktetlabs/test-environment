@@ -4,7 +4,7 @@
  * Traffic Application Domain Command Handler.
  * ICMPv4 CSAP layer-related callbacks.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "TAD ICMPv4"

@@ -3,7 +3,7 @@
 - comment: |
     Configuration information related to link aggregation.
 
-    Copyright (C) 2012-2022 OKTET Labs.
+    Copyright (C) 2012-2022 OKTET Labs Ltd. All rights reserved.
 
 
 - register:

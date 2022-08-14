@@ -3,7 +3,7 @@
  *
  * Common definitions for rpc/file test suite.
  *
- * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __FILE_SUITE_H__

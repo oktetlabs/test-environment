@@ -4,7 +4,7 @@
  * Common declarations for Unix TA configuration
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_BASE_CONF_COMMON_H_

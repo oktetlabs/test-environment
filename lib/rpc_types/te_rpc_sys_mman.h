@@ -4,7 +4,7 @@
  * RPC analogues of definitions from sys/mman.h.
  *
  *
- * Copyright (C) 2020-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RPC_SYS_MMAN_H__

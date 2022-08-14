@@ -5,7 +5,7 @@
  * @ingroup tapi_fio
  * @{
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __FIO_INTERNAL_H__

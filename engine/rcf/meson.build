@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2022 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
 
 rcf_consistency_checks = custom_target('get-rcf-consistency-check',
     output: 'rcf_consistency_checks.c',

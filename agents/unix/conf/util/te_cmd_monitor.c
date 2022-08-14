@@ -3,7 +3,7 @@
  *
  * Command monitor process implementation.
  *
- * Copyright (C) 2004-2022 OKTET Labs.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 #include "te_config.h"
 #if HAVE_CONFIG_H

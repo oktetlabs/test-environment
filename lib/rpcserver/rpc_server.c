@@ -4,7 +4,7 @@
  * RCF RPC server entry point. The file is included to another one
  * to create TA-builtin and standalone RPC servers.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "rpc_server.h"

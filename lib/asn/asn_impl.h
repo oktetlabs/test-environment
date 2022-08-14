@@ -4,7 +4,7 @@
  * Definitions of structures for internal ASN.1 value presentation.
  * Declarations of API for processing ASN.1 values.
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_ASN_IMPL_H__

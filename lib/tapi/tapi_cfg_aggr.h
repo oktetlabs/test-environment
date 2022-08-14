@@ -8,7 +8,7 @@
  * Definition of API to configure linux trunks (IEEE 802.3ad) and bridges.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs. All rights reserved.
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_CFG_AGGR_H__
