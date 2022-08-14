@@ -182,12 +182,6 @@ ta_log_trylock(ta_log_lock_key *key)
     return rc;
 }
 
-#elif HAVE_VXWORKS_H
-
-#error "We only have vxworks.h"
-#define LGR_LOCK(lock)    lock = intLock()
-#define LGR_UNLOCK(lock)  intUnlock(lock)
-
 #else
 
 #error "We have no any locks"
