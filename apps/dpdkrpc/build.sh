@@ -43,15 +43,6 @@ dpdk_get_libs() {
     DPDK_EXTRA_ARGS="${extra_args}"
 }
 
-build_using_make() {
-    cp -a "${EXT_SOURCES}"/Makefile .
-    make V=1 RTE_SDK_BIN="${RTE_SDK_BIN}" O="$(pwd -P)"
-    # DPDK install rules for make do not fit us
-    for ta_type in ${TE_TA_TYPES} ; do
-        cp -t "${TE_AGENTS_INST}/${ta_type}/" dpdkrpc
-    done
-}
-
 build_using_meson() {
     local meson_opts=()
     local c_args="${TE_PLATFORM_CPPFLAGS} ${TE_PLATFORM_CFLAGS} ${TE_CPPFLAGS}"
@@ -89,8 +80,4 @@ build_using_meson() {
 
 RTE_SDK_BIN="$(pwd -P)/../../../ext/dpdk/build"
 
-if test -f "${RTE_SDK_BIN}/.config" ; then
-    build_using_make
-else
-    build_using_meson
-fi
+build_using_meson
