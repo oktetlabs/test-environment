@@ -3,7 +3,7 @@
  * Test Environment. Research document.
  * API samples for template, patterns, and packets handling.
  *
- *
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  *
  ****************************************************************/
 

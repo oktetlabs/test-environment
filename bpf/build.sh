@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
 #
 # This script can be used to build some or all of the programs.
 # It can be used inside TE_TA_APP macro in build.conf, see README.md.

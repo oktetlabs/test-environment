@@ -1,4 +1,5 @@
 #! /bin/bash
+# Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved.
 
 # Script to create SLAPD database and run slapd
 # Intended to be used from the Test Agent.

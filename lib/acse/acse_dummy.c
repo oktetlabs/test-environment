@@ -3,7 +3,7 @@
  *
  * ACS Emulator dummy tool
  *
- *
+ * Copyright (C) 2010-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include<stdlib.h>

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (C) 2014-2022 OKTET Labs Ltd. All rights reserved. -->
 <trc_db>
   <test name="ipv6-demo" type="package">
     <objective>Test Suite platform-ts</objective>

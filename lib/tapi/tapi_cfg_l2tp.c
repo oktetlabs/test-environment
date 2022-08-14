@@ -1,3 +1,5 @@
+/* Copyright (C) 2015-2022 OKTET Labs Ltd. All rights reserved. */
+
 #include "te_config.h"
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>

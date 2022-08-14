@@ -1,3 +1,4 @@
+# Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved.
 
 ifneq ($(KERNELRELEASE),)
 obj-m  := dl2k.o

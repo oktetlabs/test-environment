@@ -1,3 +1,4 @@
+# Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
 
 tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 

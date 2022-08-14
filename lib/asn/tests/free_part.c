@@ -3,6 +3,7 @@
  *
  * Parse plain syntax values.
  *
+ * Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved.
  */
 #include "te_config.h"
 

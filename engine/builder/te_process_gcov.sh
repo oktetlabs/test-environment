@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (C) -2022 OKTET Labs Ltd. All rights reserved.
 #
 # Helper script to process gcov files
 #

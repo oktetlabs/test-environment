@@ -1,7 +1,7 @@
 /** @file
  * @breaf TE TAD Forwarder additional module internal declarations
  *
- *
+ * Copyright (C) 2010-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_SEND_QUEUE_H__

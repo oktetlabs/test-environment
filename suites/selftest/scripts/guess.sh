@@ -1,3 +1,6 @@
+#
+# Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+#
 # Script should be sources to guess TE parameters if they're not
 # specified in the shell environment.
 

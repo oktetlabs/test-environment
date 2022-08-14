@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
 
 RUN_DIR="${PWD}"
 

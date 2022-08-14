@@ -1,3 +1,4 @@
+# Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
 
 #EXTRA_DIST = package.dox
 

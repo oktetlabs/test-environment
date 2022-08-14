@@ -1,3 +1,4 @@
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 

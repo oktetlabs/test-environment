@@ -1,3 +1,5 @@
+/* Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved. */
+
 #ifndef __PREAD_PWRITE_H__
 #define __PREAD_PWRITE_H__
 #ifndef TEST_START_VARS

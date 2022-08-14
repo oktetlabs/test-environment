@@ -1,5 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
 
 AC_PREREQ([2.59])
 AC_INIT([ta-vxworks],[0.01])

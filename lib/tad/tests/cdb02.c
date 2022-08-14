@@ -1,3 +1,5 @@
+/* Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved. */
+
 #include <stdio.h>
 
 #include "tad_ch_impl.h"

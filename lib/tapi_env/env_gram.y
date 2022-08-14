@@ -1,4 +1,5 @@
 %{
+/* Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved. */
 #define TE_LOG_USER     "Env String Parser"
 
 #include "te_config.h"

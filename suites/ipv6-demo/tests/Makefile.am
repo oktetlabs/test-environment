@@ -1,3 +1,5 @@
+# Copyright (C) 2007-2022 OKTET Labs Ltd. All rights reserved.
+
 SUBDIRS = lib . sockets
 
 EXTRA_DIST = Doxyfile mainpage.dox

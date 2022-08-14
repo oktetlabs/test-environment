@@ -1,4 +1,5 @@
 <test name="enum_map" type="script">
+<!-- Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved. -->
     <objective>Testing te_enum.h correctness</objective>
     <notes/>
     <iter result="PASSED">

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
 
 cd ${TE_BASE}/doc/sphinx/generated || exit -1;
 

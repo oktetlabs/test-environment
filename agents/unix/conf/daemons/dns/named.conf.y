@@ -1,4 +1,5 @@
 %{
+/* Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved. */
     #include <stdio.h>
     #include <stdlib.h>
     extern void dns_parse_set_forwarder(const char *fwd);

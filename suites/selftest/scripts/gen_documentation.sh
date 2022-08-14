@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (C) -2022 OKTET Labs Ltd. All rights reserved.
 #
 # - DOXYREST_PREFIX   - prefix path to doxyrest if you want to use sphinx to
 #                       generate HTML

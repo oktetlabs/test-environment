@@ -1,4 +1,6 @@
 #
+# Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved.
+#
 # Builder configuration file to build TE logs processing and report
 # generation tools only.
 #

@@ -1,4 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
+dnl
+dnl Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
 
 AC_INIT([example],[0.01])
 

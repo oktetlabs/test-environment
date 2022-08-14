@@ -1,6 +1,7 @@
 ##
 ## Makefile.am for IPv6 Demo test suite - sockets package.
 ##
+# Copyright (C) 2007-2022 OKTET Labs Ltd. All rights reserved.
 
 AM_CPPFLAGS = @TS_CPPFLAGS@
 AM_CFLAGS   = @TS_CFLAGS@

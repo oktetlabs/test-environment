@@ -3,6 +3,7 @@
  *
  * Definition of DHCP server configuration notions.
  *
+ * Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved.
  */
 #ifndef __TE_TA_UNIX_DHCP_SERVER_H__
 #define __TE_TA_UNIX_DHCP_SERVER_H__

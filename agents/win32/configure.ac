@@ -1,4 +1,6 @@
 #                                               -*- Autoconf -*-
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+#
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])

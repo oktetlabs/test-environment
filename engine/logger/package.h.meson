@@ -1,2 +1,3 @@
+/* Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved. */
 /* Define to 1 if you have the `sem_init' function. */
 #mesondefine HAVE_SEM_INIT

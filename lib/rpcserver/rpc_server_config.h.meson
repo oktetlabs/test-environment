@@ -1,3 +1,4 @@
+/* Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved. */
 /* Whether to enable type-safe RPCs */
 #mesondefine ENABLE_TYPESAFE_RPC
 

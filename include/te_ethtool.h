@@ -4,7 +4,7 @@
  * It is not easy to include linux/ethtool.h for kernels <= 2.6.17.
  * This wrapper solves the problem for users.
  *
- *
+ * Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_ETHTOOL_H__

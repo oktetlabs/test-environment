@@ -9,6 +9,7 @@
  *
  * WARN  Tester  Parser  16:34:33 958 ms                           5 s 715 ms
  *
+ * Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
  */
 #include    <stdio.h>
 #include    <stdlib.h>

@@ -2,7 +2,7 @@
  * @brief Functions, used in CWMP-related tests for make
  * some management of CPE behind CWMP.
  *
- *
+ * Copyright (C) 2010-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "cpe_backdoor.h"

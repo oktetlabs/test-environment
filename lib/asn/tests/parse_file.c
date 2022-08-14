@@ -1,3 +1,5 @@
+/* Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved. */
+
 #include "te_config.h"
 
 #include <stdio.h>

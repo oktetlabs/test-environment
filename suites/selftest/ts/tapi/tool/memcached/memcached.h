@@ -1,3 +1,5 @@
+/* Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved. */
+
 #ifndef __MEMCACHED_H__
 #define __MEMCACHED_H__
 

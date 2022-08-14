@@ -3,7 +3,7 @@
  *
  * Fuctions to process ACSE RPC calls
  *
- *
+ * Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_ACSE_RPC_H__

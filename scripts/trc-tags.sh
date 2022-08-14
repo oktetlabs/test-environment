@@ -1,4 +1,5 @@
 #! /bin/sh
+# Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
 #
 # Script to generate set of TRC tags for the host.
 #

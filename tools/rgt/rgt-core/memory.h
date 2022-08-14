@@ -1,3 +1,4 @@
+/* Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved. */
 
 #ifndef __TE_RGT_MEMORY_H__
 #define __TE_RGT_MEMORY_H__

@@ -1,4 +1,5 @@
 #! /bin/bash
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
 #rm -rf /tmp/te-replace
 #mkdir /tmp/te-replace

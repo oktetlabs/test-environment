@@ -1,4 +1,5 @@
 #!/bin/sh
+# Copyright (C) 2007-2022 OKTET Labs Ltd. All rights reserved.
 
 if test -z "${TE_BASE}" ; then
     if test -e dispatcher.sh ; then

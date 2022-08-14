@@ -1,7 +1,7 @@
 /** @file
  * @breaf TE TAD Forwarder additional module internal implementation
  *
- *
+ * Copyright (C) 2010-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __USE_UNIX98
