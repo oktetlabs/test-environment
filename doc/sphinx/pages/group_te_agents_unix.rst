@@ -34,8 +34,6 @@ Unix Test Egent supports the following features:
 
 * Traffic Application Domain (TAD) support for network protocols (ARP, ATM, DHCP, Ethernet, IGMP, UDP, TCP, IPv4, ICMPv4, IPv6, ICMPv6, PPP, SNMP, iSCSI);
 
-* Automatic configuration server (ACS) engine for testing TR-069 specification;
-
 * Periodically running specified commands and logging their output (te_cmd_monitor).
 
 

@@ -3,7 +3,6 @@
 headers += files(
     'tapi_cache.h',
     'tapi_cfg.h',
-    'tapi_cfg_acse.h',
     'tapi_cfg_aggr.h',
     'tapi_cfg_arl.h',
     'tapi_cfg_base.h',
@@ -60,7 +59,6 @@ headers += files(
 sources += files(
     'tapi_cache.c',
     'tapi_cfg.c',
-    'tapi_cfg_acse.c',
     'tapi_cfg_aggr.c',
     'tapi_cfg_arl.c',
     'tapi_cfg_base.c',

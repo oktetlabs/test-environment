@@ -487,7 +487,6 @@ Then in RCF configuration file we can specify 'rcfsolaris' as the value of 'rcfl
 |			:ref:`TAPI for RTE MEMPOOL API remote calls<doxid-group__te__lib__rpc__rte__mempool>`
 |			:ref:`TAPI for RTE mbuf layer API remote calls<doxid-group__te__lib__rpc__rte__mbuf__ndn>`
 |			:ref:`TAPI for RTE ring API remote calls<doxid-group__te__lib__rpc__rte__ring>`
-|			:ref:`TAPI for TR-069 ACS<doxid-group__te__lib__rpc__tr069>`
 |			:ref:`TAPI for asynchronous I/O calls<doxid-group__te__lib__rpc__aio>`
 |			:ref:`TAPI for directory operation calls<doxid-group__te__lib__rpc__dirent>`
 |			:ref:`TAPI for interface name/index calls<doxid-group__te__lib__rpc__ifnameindex>`

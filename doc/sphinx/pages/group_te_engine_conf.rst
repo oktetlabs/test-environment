@@ -325,7 +325,6 @@ Actually as object instance value you can use syntax of BASH Parameter Substitut
 |			:ref:`Solarflare PTP daemon configuration<doxid-group__tapi__conf__sfptpd>`
 |			:ref:`System parameters configuration<doxid-group__tapi__cfg__sys>`
 |			:ref:`TA system options configuration (OBSOLETE)<doxid-group__tapi__conf__proc>`
-|			:ref:`TR-069 Auto Configuration Server Engine (ACSE) configuration<doxid-group__tapi__conf__acse>`
 |			:ref:`Test API to handle a cache<doxid-group__tapi__cache>`
 |			:ref:`VTund configuration<doxid-group__tapi__conf__vtund>`
 |			:ref:`Virtual machines configuration<doxid-group__tapi__conf__vm>`

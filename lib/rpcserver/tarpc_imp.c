@@ -6976,30 +6976,6 @@ TARPC_FUNC(setuid, {}, { MAKE_CALL(out->retval = func(in->uid)); })
 TARPC_FUNC(seteuid, {}, { MAKE_CALL(out->retval = func(in->uid)); })
 
 
-#ifdef WITH_TR069_SUPPORT
-#include "acse_rpc.h"
-/*-------------- cwmp_op_call() -------------------*/
-TARPC_FUNC(cwmp_op_call, {},
-{
-    MAKE_CALL(func_ptr(in, out));
-}
-)
-
-/*-------------- cwmp_op_check() -------------------*/
-TARPC_FUNC(cwmp_op_check, {},
-{
-    MAKE_CALL(func_ptr(in, out));
-}
-)
-
-/*-------------- cwmp_conn_req() -------------------*/
-TARPC_FUNC(cwmp_conn_req, {}, { MAKE_CALL(func_ptr(in, out)); })
-
-/*-------------- cwmp_acse_start() -------------------*/
-TARPC_FUNC(cwmp_acse_start, {}, { MAKE_CALL(func_ptr(in, out)); })
-
-#endif
-
 /*-------------- simple_sender() -------------------------*/
 /**
  * Simple sender.

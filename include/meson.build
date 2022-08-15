@@ -344,7 +344,6 @@ headers = [ te_config_internal ]
 headers += [
     'comm_agent.h',
     'cs_common.h',
-    'cwmp_soapStub.h',
     'logger_api.h',
     'logger_defs.h',
     'logger_int.h',
@@ -356,7 +355,6 @@ headers += [
     'tad_common.h',
     'te_bpf_common.h',
     'te_config.h',
-    'te_cwmp.h',
     'te_defs.h',
     'te_errno.h',
     'te_ethernet.h',

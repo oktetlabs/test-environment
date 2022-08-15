@@ -15,7 +15,6 @@ TAPI: Remote Procedure Calls (RPC)
 	/generated/group_te_lib_rpc_rte_mempool.rst
 	/generated/group_te_lib_rpc_rte_mbuf_ndn.rst
 	/generated/group_te_lib_rpc_rte_ring.rst
-	/generated/group_te_lib_rpc_tr069.rst
 	/generated/group_te_lib_rpc_aio.rst
 	/generated/group_te_lib_rpc_dirent.rst
 	/generated/group_te_lib_rpc_ifnameindex.rst
@@ -638,7 +637,6 @@ For example:
 |	:ref:`TAPI for RTE MEMPOOL API remote calls<doxid-group__te__lib__rpc__rte__mempool>`
 |	:ref:`TAPI for RTE mbuf layer API remote calls<doxid-group__te__lib__rpc__rte__mbuf__ndn>`
 |	:ref:`TAPI for RTE ring API remote calls<doxid-group__te__lib__rpc__rte__ring>`
-|	:ref:`TAPI for TR-069 ACS<doxid-group__te__lib__rpc__tr069>`
 |	:ref:`TAPI for asynchronous I/O calls<doxid-group__te__lib__rpc__aio>`
 |	:ref:`TAPI for directory operation calls<doxid-group__te__lib__rpc__dirent>`
 |	:ref:`TAPI for interface name/index calls<doxid-group__te__lib__rpc__ifnameindex>`

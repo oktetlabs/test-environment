@@ -167,8 +167,6 @@ process_library_rpcserver() {
                 add_meson_lib_opt ${l} ${lrname} rpcserver-idle-plugins false ;;
             --enable-mem=no|--disable-mem)
                 add_meson_lib_opt ${l} ${lrname} rpcserver-smart-mem false ;;
-            --with-tr069)
-                add_meson_lib_opt ${l} ${lrname} rpcserver-tr069 true ;;
             --enable-static-rpc-lookup)
                 add_meson_lib_opt ${l} ${lrname} static-rpc-lookup true ;;
             --enable-typesafe-rpc=no|--disable-typesafe-rpc)
@@ -348,8 +346,6 @@ process_agent_unix_parms() {
             --with-tirpc)
                 # added automatically
                 ;;
-            --with-tr069)
-                conf="${conf} tr069" ;;
             --with-upnp_cp)
                 conf="${conf} upnp_cp" ;;
             --with-vcm)

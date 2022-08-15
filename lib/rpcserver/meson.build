@@ -14,10 +14,6 @@ if get_variable('opt-rpcserver-smart-mem'.underscorify())
     conf.set('ENABLE_RPC_MEM', 1)
 endif
 
-if get_variable('opt-rpcserver-tr069'.underscorify())
-    conf.set('WITH_TR069_SUPPORT', 1)
-endif
-
 if get_variable('opt-static-rpc-lookup'.underscorify())
     conf.set('DEFAULT_STATIC_RPC_LOOKUP', 1)
 endif

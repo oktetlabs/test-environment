@@ -11,9 +11,6 @@
 /* Whether to enable idle plugins */
 #mesondefine ENABLE_RPC_PLUGINS
 
-/* Whether to enable TR-069 support */
-#mesondefine WITH_TR069_SUPPORT
-
 /* Define to 1 if you have the <scsi/sg.h> header file. */
 #mesondefine HAVE_SCSI_SG_H
 

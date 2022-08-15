@@ -207,10 +207,6 @@ if not cc.has_function('aio_read', args: te_cflags)
 endif
 
 
-if get_option('tr069')
-    ta_symtbl_libs += [ 'acse_cwmp' ]
-endif
-
 foreach l : ta_non_symtbl_libs + ta_symtbl_libs
     deps += [ get_variable('dep_lib_static_' + l) ]
 endforeach

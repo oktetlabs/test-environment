@@ -93,7 +93,6 @@ The following diagram gives more detailed information on relations between Test 
 |				:ref:`Solarflare PTP daemon configuration<doxid-group__tapi__conf__sfptpd>`
 |				:ref:`System parameters configuration<doxid-group__tapi__cfg__sys>`
 |				:ref:`TA system options configuration (OBSOLETE)<doxid-group__tapi__conf__proc>`
-|				:ref:`TR-069 Auto Configuration Server Engine (ACSE) configuration<doxid-group__tapi__conf__acse>`
 |				:ref:`Test API to handle a cache<doxid-group__tapi__cache>`
 |				:ref:`VTund configuration<doxid-group__tapi__conf__vtund>`
 |				:ref:`Virtual machines configuration<doxid-group__tapi__conf__vm>`
@@ -118,7 +117,6 @@ The following diagram gives more detailed information on relations between Test 
 |				:ref:`TAPI for RTE MEMPOOL API remote calls<doxid-group__te__lib__rpc__rte__mempool>`
 |				:ref:`TAPI for RTE mbuf layer API remote calls<doxid-group__te__lib__rpc__rte__mbuf__ndn>`
 |				:ref:`TAPI for RTE ring API remote calls<doxid-group__te__lib__rpc__rte__ring>`
-|				:ref:`TAPI for TR-069 ACS<doxid-group__te__lib__rpc__tr069>`
 |				:ref:`TAPI for asynchronous I/O calls<doxid-group__te__lib__rpc__aio>`
 |				:ref:`TAPI for directory operation calls<doxid-group__te__lib__rpc__dirent>`
 |				:ref:`TAPI for interface name/index calls<doxid-group__te__lib__rpc__ifnameindex>`

@@ -28,8 +28,6 @@ option('large-logs', type: 'boolean', value: true,
        description: 'Support large logs')
 option('trc', type: 'boolean', value: true,
        description: 'Integrate with TRC')
-option('tr069', type: 'boolean', value: false,
-       description: 'TR-069 support')
 
 option('sniffers', type: 'boolean', value: true,
        description: 'Enable the sniffer framework on agent (and rcfpch library)')
@@ -48,8 +46,6 @@ option('rpcserver-idle-plugins', type: 'boolean', value: true,
        description: 'RPC server supports idle plugins (enabled by default)')
 option('rpcserver-smart-mem', type: 'boolean', value: true,
        description: 'RPC server smart memory management (enabled by default)')
-option('rpcserver-tr069', type: 'boolean', value: false,
-       description: 'RPC server supports TR-069')
 option('static-rpc-lookup', type: 'boolean', value: false,
        description: 'Use compile-time symbol resolution by default')
 option('typesafe-rpc', type: 'boolean', value: true,
@@ -83,7 +79,7 @@ option('agent-unix-platform', type: 'string', value: '',
 option('agent-unix-conf', type: 'array', value: [],
        choices: ['8021x', 'aggr', 'bpf', 'disable-networkmanager-check',
                  'iptables', 'ntpd', 'ovs', 'pam', 'pci', 'serial',
-                 'serial-parser', 'sfptpd', 'tc', 'tr069', 'upnp_cp', 'vcm'],
+                 'serial-parser', 'sfptpd', 'tc', 'upnp_cp', 'vcm'],
        description: 'Unix Test Agent configuration support')
 option('agent-unix-daemons', type: 'array', value: [],
        choices: ['dhcp', 'dns', 'echo', 'ftp', 'isc-dhcp-server', 'l2tp', 'named', 'nginx', 'openvpn',

@@ -125,7 +125,6 @@ lib_opts_rpcserver = [
     'rpcserver-agentlib',
     'rpcserver-idle-plugins',
     'rpcserver-smart-mem',
-    'rpcserver-tr069',
     'static-rpc-lookup',
     'typesafe-rpc',
 ]

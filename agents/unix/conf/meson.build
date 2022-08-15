@@ -72,9 +72,6 @@ endif
 if conf.contains('vcm')
     sources += files('base/conf_vcm.c')
 endif
-if conf.contains('tr069')
-    sources += files('base/conf_acse.c')
-endif
 if conf.contains('iptables')
     c_args += [ '-DWITH_IPTABLES' ]
     sources += files('base/conf_iptables.c')

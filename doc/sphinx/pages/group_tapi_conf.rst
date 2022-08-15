@@ -41,7 +41,6 @@ TAPI: Test API for configuration nodes
 	/generated/group_tapi_conf_sfptpd.rst
 	/generated/group_tapi_cfg_sys.rst
 	/generated/group_tapi_conf_proc.rst
-	/generated/group_tapi_conf_acse.rst
 	/generated/group_tapi_cache.rst
 	/generated/group_tapi_conf_vtund.rst
 	/generated/group_tapi_conf_vm.rst
@@ -85,7 +84,6 @@ Test scenarios can use functions exported by Configurator API directly: :ref:`AP
 |	:ref:`Solarflare PTP daemon configuration<doxid-group__tapi__conf__sfptpd>`
 |	:ref:`System parameters configuration<doxid-group__tapi__cfg__sys>`
 |	:ref:`TA system options configuration (OBSOLETE)<doxid-group__tapi__conf__proc>`
-|	:ref:`TR-069 Auto Configuration Server Engine (ACSE) configuration<doxid-group__tapi__conf__acse>`
 |	:ref:`Test API to handle a cache<doxid-group__tapi__cache>`
 |	:ref:`VTund configuration<doxid-group__tapi__conf__vtund>`
 |	:ref:`Virtual machines configuration<doxid-group__tapi__conf__vm>`

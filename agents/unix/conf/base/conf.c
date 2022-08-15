@@ -243,10 +243,6 @@ extern te_errno iscsi_initiator_conf_init(void);
 extern te_errno ta_unix_conf_iptables_init(void);
 #endif
 
-#ifdef WITH_TR069_SUPPORT
-extern te_errno ta_unix_conf_acse_init(void);
-#endif
-
 #ifdef WITH_SERIALPARSE
 extern te_errno ta_unix_serial_parser_init(void);
 extern te_errno ta_unix_serial_parser_cleanup(void);
@@ -1342,10 +1338,6 @@ rcf_ch_conf_init(void)
 
 #ifdef ENABLE_VCM_SUPPORT
         if (ta_unix_conf_vcm_init() != 0)
-            goto fail;
-#endif
-#ifdef WITH_TR069_SUPPORT
-        if (ta_unix_conf_acse_init() != 0)
             goto fail;
 #endif
 #ifdef ENABLE_8021X

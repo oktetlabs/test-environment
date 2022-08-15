@@ -300,11 +300,6 @@ typedef enum {
                        /**< IPC synchronisation is broken */
 /*@}*/
 
-/** @name ACSE errno's */
-    TE_GSOAP_ERROR = TE_MIN_ERRNO + 1300, /**< Internal gSOAP error */
-    TE_CWMP_FAULT,      /**< CWMP Fault received */
-/*@}*/
-
     TE_MAX_ERRNO, /**< Auxiliary value. It must be the last in the enum. */
 } te_errno_codes;
 
@@ -356,8 +351,6 @@ typedef enum {
     TE_TOOL_EXT,        /**< External tools */
     TE_TAD_BPF,         /**< TAD Ethernet using BPF */
     TE_TRC,             /**< Testing Results Comparator library */
-    TE_ACSE,            /**< ACS Emulator */
-    TE_TA_ACSE,         /**< TA interface to ACS Emulator */
     TE_RPCS,            /**< RPC server internal errors */
 
     TE_MAX_MODULE,      /**< Auxiliary value. It must be the last
@@ -462,8 +455,6 @@ te_rc_mod2str(te_errno err)
         MOD2STR(ISCSI_TARGET);
         MOD2STR(TOOL_EXT);
         MOD2STR(TRC);
-        MOD2STR(ACSE);
-        MOD2STR(TA_ACSE);
         MOD2STR(RPCS);
         case TE_MODULE_NONE: return "";
         default:
@@ -722,7 +713,6 @@ te_rc_err2str(te_errno err)
         ERR2STR(ESYNCFAILED);
 
         ERR2STR(GSOAP_ERROR);
-        ERR2STR(CWMP_FAULT);
 
         case 0:  return "OK";
         default:
