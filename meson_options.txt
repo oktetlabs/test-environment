@@ -57,8 +57,6 @@ option('agentlib-ftp', type: 'boolean', value: false,
        description: 'Enable FTP support in TA RPC helper library')
 option('agentlib-power-sw', type: 'boolean', value: false,
        description: 'Enable power switch support in TA RPC helper library')
-option('agentlib-telephony', type: 'boolean', value: false,
-       description: 'Enable telephony support in TA RPC helper library')
 option('agentlib-upnp', type: 'boolean', value: false,
        description: 'Enable UPnP support in TA RPC helper library')
 

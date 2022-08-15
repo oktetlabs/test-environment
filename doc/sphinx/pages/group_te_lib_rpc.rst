@@ -107,7 +107,6 @@ Test code should not use :ref:`rcf_rpc_call() <doxid-group__te__lib__rcfrpc_1ga3
 |		:ref:`TAPI for remote calls of Winsock2-specific routines<doxid-group__te__lib__rpc__winsock2>`
 |		:ref:`TAPI for remote calls of dynamic linking loader<doxid-group__te__lib__rpc__dlfcn>`
 |		:ref:`TAPI for remote calls of power switch<doxid-group__te__lib__rpc__power__sw>`
-|		:ref:`TAPI for remote calls of telephony<doxid-group__te__lib__rpc__telephony>`
 |		:ref:`TAPI for signal and signal sets remote calls<doxid-group__te__lib__rpc__signal>`
 |		:ref:`TAPI for socket API remote calls<doxid-group__te__lib__rpc__socket>`
 |		:ref:`TAPI for some file operations calls<doxid-group__te__lib__rpc__unistd>`

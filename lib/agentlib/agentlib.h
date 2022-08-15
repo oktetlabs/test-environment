@@ -162,10 +162,6 @@ extern int ta_kill_and_wait(pid_t pid, int sig, unsigned int timeout_s);
  */
 extern te_errno mkdirp(const char *path, int mode);
 
-#if defined(ENABLE_TELEPHONY)
-#include "telephony.h"
-#endif /* ENABLE_TELEPHONY */
-
 #if defined(ENABLE_POWER_SW)
 /**
  * Turn ON, turn OFF or restart power lines specified by mask

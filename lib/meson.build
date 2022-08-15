@@ -117,7 +117,6 @@ lib_opts_agentlib = [
     'agentlib-dlfcn-lookup',
     'agentlib-ftp',
     'agentlib-power-sw',
-    'agentlib-telephony',
     'agentlib-upnp',
 ]
 

@@ -8,9 +8,6 @@
 /* Whether to enable power switch management support */
 #mesondefine ENABLE_POWER_SW
 
-/* Whether to enable telephony support */
-#mesondefine ENABLE_TELEPHONY
-
 /* Whether to enable upnp support */
 #mesondefine ENABLE_UPNP
 

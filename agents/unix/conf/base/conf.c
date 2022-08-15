@@ -1280,10 +1280,6 @@ rcf_ch_conf_init(void)
                           rcf_pch_rsrc_grab_dummy,
                           rcf_pch_rsrc_release_dummy);
 
-        rcf_pch_rsrc_info("/agent/telephony_port",
-                          interface_grab,
-                          interface_release);
-
         if (ta_unix_conf_base_init() != 0)
             goto fail;
 

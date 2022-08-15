@@ -37,8 +37,6 @@ headers += [ agentlib_config_h ]
 headers += files(
     'agentlib.h',
     'agentlib_defs.h',
-    'dahdi_user.h',
-    'telephony.h',
 )
 
 sources += files(
@@ -49,7 +47,6 @@ sources += files(
     'power_sw.c',
     'process.c',
     'symbols.c',
-    'telephony.c',
     'unistd.c',
 )
 te_libs += [

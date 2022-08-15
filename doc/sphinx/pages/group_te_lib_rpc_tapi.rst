@@ -23,7 +23,6 @@ TAPI: Remote Procedure Calls (RPC)
 	/generated/group_te_lib_rpc_winsock2.rst
 	/generated/group_te_lib_rpc_dlfcn.rst
 	/generated/group_te_lib_rpc_power_sw.rst
-	/generated/group_te_lib_rpc_telephony.rst
 	/generated/group_te_lib_rpc_signal.rst
 	/generated/group_te_lib_rpc_socket.rst
 	/generated/group_te_lib_rpc_unistd.rst
@@ -645,7 +644,6 @@ For example:
 |	:ref:`TAPI for remote calls of Winsock2-specific routines<doxid-group__te__lib__rpc__winsock2>`
 |	:ref:`TAPI for remote calls of dynamic linking loader<doxid-group__te__lib__rpc__dlfcn>`
 |	:ref:`TAPI for remote calls of power switch<doxid-group__te__lib__rpc__power__sw>`
-|	:ref:`TAPI for remote calls of telephony<doxid-group__te__lib__rpc__telephony>`
 |	:ref:`TAPI for signal and signal sets remote calls<doxid-group__te__lib__rpc__signal>`
 |	:ref:`TAPI for socket API remote calls<doxid-group__te__lib__rpc__socket>`
 |	:ref:`TAPI for some file operations calls<doxid-group__te__lib__rpc__unistd>`
