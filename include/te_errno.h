@@ -712,8 +712,6 @@ te_rc_err2str(te_errno err)
 
         ERR2STR(ESYNCFAILED);
 
-        ERR2STR(GSOAP_ERROR);
-
         case 0:  return "OK";
         default:
             snprintf(unknown_errno, sizeof(unknown_errno),
