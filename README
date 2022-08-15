@@ -3,10 +3,7 @@
 #################################
 
 OKTET Labs Test Environment (TE) is a software product that is intended to
-ease creating automated test suites. The history of TE goes back to 2000
-year when the first prototype of software was created. At that time the
-product was used for testing SNMP MIBs and CLI commands. Two years later (in
-2002) software was extended to support testing of IPv6 protocol.
+ease creating automated test suites.
 
 Table of Contents
 =================
