@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
 
 # Create xml document contains Configurator subtree local file system which
 # is used in TAPI storage. It scans particular directory file system and

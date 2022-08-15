@@ -1,3 +1,6 @@
+#
+# Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
+
 import os
 from io import StringIO
 from configparser import ConfigParser

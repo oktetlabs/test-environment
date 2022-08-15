@@ -1,3 +1,6 @@
+..
+  Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+
 .. index:: pair: group; Test Results Comparator
 .. _doxid-group__trc:
 

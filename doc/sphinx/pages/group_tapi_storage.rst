@@ -1,3 +1,6 @@
+..
+  Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+
 .. index:: pair: group; Test API to operate the storage
 .. _doxid-group__tapi__storage:
 

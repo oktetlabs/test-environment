@@ -1,3 +1,6 @@
+..
+  Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+
 .. index:: pair: group; Network topology configuration of Test Agents
 .. _doxid-group__te__lib__tapi__conf__net:
 

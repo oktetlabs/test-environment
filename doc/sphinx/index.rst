@@ -1,3 +1,6 @@
+..
+  Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+
 .. index:: pair: group; Test Environment
 .. _doxid-group__te:
 

@@ -1,3 +1,6 @@
+..
+  Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+
 .. index:: pair: page; ASN.1 library
 .. _doxid-asn:
 

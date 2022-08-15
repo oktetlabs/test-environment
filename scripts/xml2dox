@@ -1,4 +1,5 @@
 #! /usr/bin/awk -f
+# Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
 
 # This script extracts comments from a `package.xml' file and converts them
 # to the form suitable for Doxygen processing

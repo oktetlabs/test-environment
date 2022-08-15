@@ -1,3 +1,4 @@
+dnl Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved.
 
 dnl Specifies parameters for NUT bootable image building.
 dnl Moreover the NUT image name is included to the list of NUT images

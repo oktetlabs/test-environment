@@ -1,4 +1,5 @@
 <?xml version="1.0"?>
+<!-- Copyright (C) 2007-2022 OKTET Labs Ltd. All rights reserved. -->
 <rcf>
     <ta name="Agt_A" type="linux" rcflib="rcfunix" synch_time="yes">
         <conf name="port">5012</conf>

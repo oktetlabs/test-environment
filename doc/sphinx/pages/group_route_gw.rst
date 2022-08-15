@@ -1,3 +1,6 @@
+..
+  Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+
 .. index:: pair: group; Route Gateway TAPI
 .. _doxid-group__route__gw:
 

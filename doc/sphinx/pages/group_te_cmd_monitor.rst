@@ -1,3 +1,6 @@
+..
+  Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+
 .. index:: pair: group; Command Output Logging
 .. _doxid-group__te__cmd__monitor:
 

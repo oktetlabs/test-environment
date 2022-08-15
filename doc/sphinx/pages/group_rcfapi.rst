@@ -1,3 +1,6 @@
+..
+  Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+
 .. index:: pair: group; API Usage: Remote Control Facility API
 .. _doxid-group__rcfapi:
 

@@ -1,3 +1,6 @@
+..
+  Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+
 .. index:: pair: group; Traffic Application Domain
 .. _doxid-group__tapi__tad__main:
 

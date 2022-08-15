@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (C) 2012-2022 OKTET Labs Ltd. All rights reserved.
 
 # The script addes table of contents for HTML pages generated for all @groups.
 # doxygen names these html files as group__<name>.html. It goes through the

@@ -1,3 +1,6 @@
+..
+  Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+
 .. index:: pair: group; TAPI: Remote Procedure Calls (RPC)
 .. _doxid-group__te__lib__rpc__tapi:
 

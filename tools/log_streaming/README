@@ -113,3 +113,5 @@ The following flags can be specified before the listener URL:
 Keep in mind that, at least in the current version of the script, the delays
 between requests are not emulated. In other words, once a response is received,
 the next request will be sent immediately.
+
+# Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.

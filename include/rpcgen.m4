@@ -1,3 +1,4 @@
+m4_dnl Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
 m4_changecom(`/*',`*/')m4_dnl
 m4_define(`_rpc_counter', `1')m4_dnl
 m4_dnl RPC entry point numbers normally start with 1 for each RPC program

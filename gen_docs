@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
 #
 # doxygen filter can expect the following environment variables are set:
 # - DOWNLOAD_DOC_LINK - path to TAR.GZ packed documentation file.

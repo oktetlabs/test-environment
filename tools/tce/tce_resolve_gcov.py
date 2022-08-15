@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Copyright (C) -2022 OKTET Labs Ltd. All rights reserved.
 
 import sys
 import os
