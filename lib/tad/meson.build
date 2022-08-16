@@ -66,7 +66,6 @@ else
         'tad_bps.c',
         'tad_ch.c',
         'tad_eth_sap.c',
-        'tad_eth_sap_dlpi.c',
         'tad_pkt.c',
         'tad_poll.c',
         'tad_recv.c',

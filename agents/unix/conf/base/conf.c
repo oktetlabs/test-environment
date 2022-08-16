@@ -67,10 +67,6 @@
 #include <dirent.h>
 #endif
 
-#ifdef HAVE_LIBDLPI
-#include <libdlpi.h>
-#endif
-
 #ifdef _NET_TIMESTAMPING_H
 #include <linux/net_tstamp.h>
 #endif
@@ -174,7 +170,6 @@ typedef struct pam_message const pam_message_t;
 #include "rcf_pch_ta_cfg.h"
 #include "logger_api.h"
 #include "unix_internal.h"
-#include "conf_dlpi.h"
 #include "conf_ovs.h"
 #include "conf_route.h"
 #include "conf_rule.h"
@@ -553,9 +548,6 @@ typedef struct mma_list_el {
 
 typedef struct ifs_list_el {
     char                ifname[IFNAMSIZ];
-#ifdef HAVE_LIBDLPI
-    dlpi_handle_t       fd;
-#endif
     struct mma_list_el *mcast_addresses;
     struct ifs_list_el *next;
 } ifs_list_el;
@@ -3294,7 +3286,7 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
-#if ((defined(USE_LIBNETCONF)) || (defined(HAVE_SYS_DLPI_H)))
+#if (defined(USE_LIBNETCONF)
 /*
  * Next functions are pulled out from iproute internals
  * to be accessible here and renamed.
@@ -3536,51 +3528,6 @@ iface_kind_get(unsigned int gid, const char *oid, char *value,
 #endif
 }
 
-#ifdef HAVE_LIBDLPI
-static te_errno
-mcast_link_addr_change_dlpi(dlpi_handle_t hnd, const char *addr, int op)
-{
-    uint8_t     mac_addr[ETHER_ADDR_LEN];
-    int         i;
-    char       *p;
-    te_errno    rc;
-
-    for (i = 0, p = addr; i < ETHER_ADDR_LEN; i++, p++)
-    {
-        unsigned tmp = strtoul(p, (char **)&p, 16);
-
-        if (tmp > UCHAR_MAX)
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        if (*p != ':' && (*p != '\0' || i < ETHER_ADDR_LEN - 1))
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        mac_addr[i] = tmp;
-    }
-    if (op == SIOCADDMULTI)
-    {
-        if ((rc = dlpi_enabmulti(hnd, mac_addr, ETHER_ADDR_LEN)) !=
-            DLPI_SUCCESS)
-        {
-            ERROR("dlpi_enabmulti() failed, rc = %x", rc);
-            return TE_EINVAL;
-        }
-    }
-    else if (op == SIOCDELMULTI)
-    {
-        if ((rc = dlpi_disabmulti(hnd, mac_addr, ETHER_ADDR_LEN)) !=
-            DLPI_SUCCESS)
-        {
-            ERROR("dlpi_disabmulti() failed, rc = %x", rc);
-            return TE_EINVAL;
-        }
-    }
-    else
-    {
-        ERROR("Invalid operation: %d", op);
-        return TE_EINVAL;
-    }
-    return 0;
-}
-#endif
 static te_errno
 mcast_link_addr_change_ioctl(const char *ifname, const char *addr, int op)
 {
@@ -3653,9 +3600,6 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
         strcpy(p->ifname, ifname);
         p->mcast_addresses = NULL;
         p->next = interface_stream_list;
-#ifdef HAVE_LIBDLPI
-        dlpi_open(ifname, &p->fd, DLPI_NATIVE);
-#endif
         interface_stream_list = p;
     }
 
@@ -3666,10 +3610,6 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
         q = (mma_list_el *)malloc(sizeof(mma_list_el));
         /* Against setting too long value for MAC address */
         te_strlcpy(q->value, addr, sizeof(q->value));
-#ifdef HAVE_LIBDLPI
-        /* Adding the address via DLPI */
-        rc = mcast_link_addr_change_dlpi(p->fd, addr, SIOCADDMULTI);
-#endif
         q->next = p->mcast_addresses;
         p->mcast_addresses = q;
     }
@@ -3711,18 +3651,11 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
     }
     if (strcmp(p->mcast_addresses->value, addr) == 0)
     {
-#ifdef HAVE_LIBDLPI
-        /* Deleting address via DLPI */
-        rc = mcast_link_addr_change_dlpi(p->fd, addr, SIOCDELMULTI);
-#endif
         q = p->mcast_addresses->next;
         free(p->mcast_addresses);
         p->mcast_addresses = q;
         if (q == NULL)
         {
-#ifdef HAVE_LIBDLPI
-            dlpi_close(p->fd);
-#endif
             if (p == interface_stream_list)
             {
                 interface_stream_list = p->next;
@@ -3751,10 +3684,6 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
         else
         {
             mma_list_el *tmp = q->next->next;
-#ifdef HAVE_LIBDLPI
-            /* Deleting address via DLPI */
-            rc = mcast_link_addr_change_dlpi(p->fd, addr, SIOCDELMULTI);
-#endif
             free(q->next);
             q->next = tmp;
         }
@@ -5371,30 +5300,6 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     else
         ptr = (const uint8_t *)my_ifr_hwaddr_data(req);
 
-#elif HAVE_SYS_DLPI_H
-    do {
-        size_t  len = sizeof(buf);
-
-        rc = ta_unix_conf_dlpi_phys_addr_get(ifname, buf, &len);
-        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-        {
-            /* No link-layer or address */
-            break;
-        }
-        else if (rc != 0)
-        {
-            ERROR("Failed to get interface link-layer address using "
-                  "DLPI: %r", rc);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
-        if (len != ETHER_ADDR_LEN)
-        {
-            ERROR("%s(): Unsupported link-layer address length %u",
-                  __FUNCTION__, (unsigned)len);
-            return TE_RC(TE_TA_UNIX, TE_ENOSYS);
-        }
-        ptr = (const uint8_t *)buf;
-    } while (0);
 #elif defined(__FreeBSD__)
 
     void           *ifconf_buf = NULL;
@@ -5483,14 +5388,6 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
     memcpy(my_ifr_hwaddr_data(req), link_addr, sizeof(link_addr));
 
     CFG_IOCTL(cfg_socket, SIOCSIFHWADDR, &req);
-#elif HAVE_SYS_DLPI_H
-    rc = ta_unix_conf_dlpi_phys_addr_set(ifname,
-                                         link_addr, sizeof(link_addr));
-    if (rc != 0)
-    {
-        ERROR("Failed to set interface link-layer address using "
-              "DLPI: %r", rc);
-    }
 #else
     ERROR("Set of link-layer address is not supported");
     rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
@@ -5593,26 +5490,6 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
 #if defined(USE_LIBNETCONF)
     return iface_get_property_netconf(ifname, value,
                                       IF_PROP_BCAST_ADDR);
-#elif HAVE_SYS_DLPI_H
-    do {
-        size_t  len = sizeof(buf);
-
-        rc = ta_unix_conf_dlpi_phys_bcast_addr_get(ifname, buf, &len);
-        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-        {
-            /* No link-layer or broadcast address */
-            break;
-        }
-        else if (rc != 0)
-        {
-            ERROR("Failed to get interface link-layer broadcast address "
-                  "using DLPI: %r", rc);
-            break;
-        }
-        link_addr_n2a((unsigned char *)buf, len, value, RCF_MAX_VAL);
-    } while (0);
-
-    return rc;
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif

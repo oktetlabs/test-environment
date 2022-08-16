@@ -44,7 +44,6 @@ sources += files(
     'route/conf_route_socket.c',
     'rule/conf_rule.c',
     'util/conf_cmd_monitor.c',
-    'util/conf_dlpi.c',
     'util/conf_getmsg.c',
     'util/te_cmd_monitor.c',
     'vm/conf_vm.c',

@@ -80,7 +80,6 @@ check_headers = [
     'strings.h',
     'stropts.h',
     'sys/cdefs.h',
-    'sys/dlpi.h',
     'sys/errno.h',
     'sys/ethernet.h',
     'sys/filio.h',

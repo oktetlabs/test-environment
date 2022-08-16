@@ -225,9 +225,6 @@
 /* Define to 1 if you have the <sys/cdefs.h> header file. */
 #mesondefine HAVE_SYS_CDEFS_H
 
-/* Define to 1 if you have the <sys/dlpi.h> header file. */
-#mesondefine HAVE_SYS_DLPI_H
-
 /* Define to 1 if you have the <sys/errno.h> header file. */
 #mesondefine HAVE_SYS_ERRNO_H
 

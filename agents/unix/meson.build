@@ -140,19 +140,6 @@ if not cc.has_function('sendfile', args: te_cflags)
 endif
 
 #
-# libdlpi is provided on Solaris
-#
-dep_dlpi = cc.find_library('dlpi', required: false)
-if dep_dlpi.found() and cc.has_function('dlpi_open', args: te_cflags,
-                                        dependencies: dep_dlpi)
-    deps += [ dep_dlpi ]
-    h = 'libdlpi.h'
-    if cc.has_header(h)
-        c_args += [ '-DHAVE_' + h.to_upper().underscorify() ]
-    endif
-endif
-
-#
 # Dynamic linker functions are provided by:
 #  - -ldl in Linux;
 #  - -lc in FreeBSD;
