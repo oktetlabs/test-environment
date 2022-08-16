@@ -3286,7 +3286,7 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
-#if (defined(USE_LIBNETCONF)
+#if (defined(USE_LIBNETCONF))
 /*
  * Next functions are pulled out from iproute internals
  * to be accessible here and renamed.
