@@ -4,7 +4,7 @@
 
   <description>Ethernet CSAP tests</description>
 
-  <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
+  <author mailto="te-maint@oktetlabs.ru"/>
 
   <req id="TAD_ETH" sticky="true"/>
 

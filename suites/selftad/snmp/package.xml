@@ -4,7 +4,7 @@
 
     <description>Tests on TAD SNMP functionality.</description>
 
-    <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
+    <author mailto="te-maint@oktetlabs.ru"/>
 
     <session random="true">
         <arg name="ta" handdown="true">

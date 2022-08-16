@@ -1,7 +1,7 @@
 /* Copyright (C) 2007-2022 OKTET Labs Ltd. All rights reserved. */
 /** @page IPv6 Socket API Tests
 
-@author Oleg Kravtsov <Oleg.Kravtsov.ru>
+@author TE Maintainers <te-maint.ru>
 
 @par Tests:
 

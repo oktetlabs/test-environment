@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------
 -- file:        packets-asn1.txt
--- author:      Abramenko Konstantin <konst@oktetlabs.ru>
+-- author:      TE Maintainers <te-maint@oktetlabs.ru>
 -- description:
 --      This file contain attempt to describe Packets and filters format
 --      by ASN.1

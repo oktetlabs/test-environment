@@ -4,7 +4,7 @@
 
     <description>PCAP CSAP tests</description>
 
-    <author mailto="Alexander.Kukuta@oktetlabs.ru"/>
+    <author mailto="te-maint@oktetlabs.ru"/>
 
     <session>
         <arg name="ta" handdown="true">

@@ -185,7 +185,7 @@ Workflow with test suite scenarios
 
      .. code-block:: none
 
-     	$TE_BASE/scripts/scenarios.py --postreview -s OKTL-0000999-example_ts.yml -t example-ts -a "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" -c "Copyright (C) {year} Example Ltd." -r example-ts
+     	$TE_BASE/scripts/scenarios.py --postreview -s OKTL-0000999-example_ts.yml -t example-ts -a "TE Maintainers <te-maint@oktetlabs.ru>" -c "Copyright (C) {year} Example Ltd." -r example-ts
 
      Where:
 
@@ -193,7 +193,7 @@ Workflow with test suite scenarios
 
      * ``-t example-ts`` the relative or absolute test suite location;
 
-     * ``-a "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>"`` the author for test templates in the created review request;
+     * ``-a "TE Maintainers <te-maint@oktetlabs.ru>"`` the author for test templates in the created review request;
 
      * ``-c "Copyright (C) {year} Example Ltd."`` the copyright string format. Can contain argument **{year}** which will be replaced by the current year value. Optional. Default is **TE_COPYRIGHT**;
 
@@ -203,7 +203,7 @@ Workflow with test suite scenarios
 
      .. code-block:: none
 
-     	$TE_BASE/scripts/scenarios.py --post -d 999 -t example-ts -a "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" -r example-ts
+     	$TE_BASE/scripts/scenarios.py --post -d 999 -t example-ts -a "TE Maintainers <te-maint@oktetlabs.ru>" -r example-ts
 
      Where:
 
@@ -253,8 +253,8 @@ Workflow with test suite scenarios
 
    * .. code-block:: none
 
-     	$TE_BASE/scripts/scenarios.py -p -s OKTL-0000999-example_ts.yml -t example-ts -a "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" -r example-ts
-     	$TE_BASE/scripts/scenarios.py -p -s OKTL-0000999-example_ts.yml -t example-ts -a "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" -e 1111
+     	$TE_BASE/scripts/scenarios.py -p -s OKTL-0000999-example_ts.yml -t example-ts -a "TE Maintainers <te-maint@oktetlabs.ru>" -r example-ts
+     	$TE_BASE/scripts/scenarios.py -p -s OKTL-0000999-example_ts.yml -t example-ts -a "TE Maintainers <te-maint@oktetlabs.ru>" -e 1111
 
      Where:
 
@@ -284,7 +284,7 @@ Workflow with test suite scenarios
 
      .. code-block:: none
 
-     	$TE_BASE/scripts/scenarios.py -i -s OKTL-0000999-example_ts.yml -t example-ts -a "Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>" --scenario-in-test 10 -f -r example_ts.first_part.third
+     	$TE_BASE/scripts/scenarios.py -i -s OKTL-0000999-example_ts.yml -t example-ts -a "TE Maintainers <te-maint@oktetlabs.ru>" --scenario-in-test 10 -f -r example_ts.first_part.third
 
      Where:
 

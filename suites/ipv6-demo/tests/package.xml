@@ -4,7 +4,7 @@
 
     <description>IPv6 Demo Test Suite</description>
 
-    <author mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+    <author mailto="te-maint@oktetlabs.ru"/>
 
     <session>
         <!-- Environment for IPv4 networks -->

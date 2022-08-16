@@ -4,7 +4,7 @@
 
     <description>Tests on TAD IP stack functionality.</description>
 
-    <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
+    <author mailto="te-maint@oktetlabs.ru"/>
     <req id="TAD_IPSTACK" sticky="true"/>
 
     <session>

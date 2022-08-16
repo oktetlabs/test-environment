@@ -227,7 +227,7 @@ The content of ${PRJ_ROOT}/conf_ipv6/tester.conf is:
 
 	<?xml version="1.0"?>
 	<tester_cfg version="1.0">
-	    <maintainer mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+	    <maintainer mailto="te-maint@oktetlabs.ru"/>
 	    <description>Minimal test suite</description>
 
 	    <suite name="test-suite" src="${PRJ_ROOT}/suite-src"/>

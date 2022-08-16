@@ -137,7 +137,7 @@ XSD schema of :ref:`Tester <doxid-group__te__engine__tester>` configuration file
 
 	<?xml version="1.0"?>
 	<tester_cfg version="1.0">
-	    <maintainer name="Oleg Kravtsov" mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+	    <maintainer name="TE Maintainers" mailto="te-maint@oktetlabs.ru"/>
 
 	    <description>IPv6 Protocol Testing</description>
 
@@ -188,7 +188,7 @@ If you only need to build a set of test suites you can have :ref:`Tester <doxid-
 
 	<?xml version="1.0"?>
 	<tester_cfg version="1.0">
-	    <maintainer name="Oleg Kravtsov" mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+	    <maintainer name="TE Maintainers" mailto="te-maint@oktetlabs.ru"/>
 	    <description>Build IPv6 related test suites</description>
 
 	    <suite name="ipv6_host" src="${TE_TS_IPV6_HOST}"/>
@@ -226,7 +226,7 @@ Here is an example of the simplest package description file:
 	<package version="1.0">
 	  <description>Device LED operation Test Suite</description>
 
-	    <author mailto="Oleg.Kravtsov@oktetlabs.ru"/>
+	    <author mailto="te-maint@oktetlabs.ru"/>
 
 	    <session>
 	        <enum name="led_type">

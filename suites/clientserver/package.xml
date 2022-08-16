@@ -2,7 +2,7 @@
 <!-- Copyright (C) 2012-2022 OKTET Labs Ltd. All rights reserved. -->
 <package version="1.0">
     <description>Sniffer framework test</description>
-    <author mailto="Andrey.Dmitrov@oktetlabs.ru"/>
+    <author mailto="te-maint@oktetlabs.ru"/>
     <session track_conf="silent">
         <run>
             <script name="clientserver"/>
