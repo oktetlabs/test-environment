@@ -1,3 +1,4 @@
+-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
 -- Specify input and output paths:
 OUTPUT_FILE = "doc/generated/rst/index.rst"
 INPUT_FILE = "doc/generated/xml/index.xml"

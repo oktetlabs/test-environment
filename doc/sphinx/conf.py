@@ -1,3 +1,6 @@
+#
+# Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+
 # -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.

@@ -1,3 +1,5 @@
+// Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+
 pipeline {
     options {
         buildDiscarder(logRotator(numToKeepStr:'14'))

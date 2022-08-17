@@ -1,4 +1,5 @@
 <doxygenlayout version="1.0">
+<!-- Copyright (C) 2012-2022 OKTET Labs Ltd. All rights reserved. -->
   <!-- Navigation index tabs for HTML output -->
   <navindex>
     <tab type="mainpage" visible="yes" title=""/>

@@ -1,3 +1,5 @@
+-- Copyright (C) 2009-2022 OKTET Labs Ltd. All rights reserved.
+
 PPPoE server configuration model in TE.
 
 Configuration model:

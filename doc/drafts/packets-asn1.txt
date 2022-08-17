@@ -1,3 +1,5 @@
+-- Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
 -------------------------------------------------------------------------
 -- file:        packets-asn1.txt
 -- author:      TE Maintainers <te-maint@oktetlabs.ru>

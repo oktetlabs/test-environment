@@ -1,3 +1,5 @@
+/* Copyright (C) 2010-2022 OKTET Labs Ltd. All rights reserved. */
+
 /* Night testing results tracking database */
 
 DROP DATABASE trc;
