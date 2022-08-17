@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @brief Test Environment: rgt-core implementation.
  *    Implementation of main and usage/help functions.

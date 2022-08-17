@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @brief Bridge interfaces management using netconf library
  *

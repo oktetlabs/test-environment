@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @brief Mapping of unix signal name->number and number->name
  *

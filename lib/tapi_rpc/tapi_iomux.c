@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @brief Implementation of I/O multiplexers test API
  *

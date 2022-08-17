@@ -1,4 +1,5 @@
 <?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved. -->
 <package version="1.0">
     <description>Package for self-tests of unistd functions</description>

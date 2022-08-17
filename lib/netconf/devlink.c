@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @brief Device management using netconf library
  *

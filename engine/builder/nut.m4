@@ -1,10 +1,9 @@
+dnl SPDX-License-Identifier: Apache-2.0
+dnl Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
 dnl Test Environment
 dnl
 dnl Nut configuration macros definitions
-dnl
-dnl Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
-dnl
-dnl
 
 changequote([,])
 

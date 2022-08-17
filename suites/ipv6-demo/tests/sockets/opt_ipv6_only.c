@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * IPv6 Demo Test Suite
  * IPv6 specific socket options

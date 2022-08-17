@@ -1,3 +1,4 @@
 #! /bin/sh
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved.
 echo -n "[[2,8,A+B]] sub [[4,6,B]] = [[2,3,A+B],[4,6,A],[7,8,A+B]]" | ./scen_op_test

@@ -1,3 +1,4 @@
 #! /bin/sh
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved.
 echo -n "[[1,9,A]] or [[2,3,A]] = [[1,9,A]]" | ./scen_op_test

@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
 #
 # This script can be used to build some or all of the programs.

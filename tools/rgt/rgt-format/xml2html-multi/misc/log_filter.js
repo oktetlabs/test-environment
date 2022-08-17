@@ -3,6 +3,7 @@
 //
 // Filters for log messages in HTML log
 //
+// SPDX-License-Identifier: Apache-2.0
 // Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
 //
 //

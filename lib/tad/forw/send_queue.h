@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @breaf TE TAD Forwarder additional module internal declarations
  *

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 #
 # automake file for Report Generator Core directory
 # Process it with automake

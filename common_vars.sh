@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2012-2022 OKTET Labs Ltd. All rights reserved.
 
 # Path to external libraries

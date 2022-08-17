@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 
 /** @file
  * @brief Functions to opearate with socket

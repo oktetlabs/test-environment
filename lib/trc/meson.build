@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
 
 if cc.has_type('xmlError', prefix: '#include <libxml/xmlerror.h>',

@@ -1,4 +1,6 @@
+-- SPDX-License-Identifier: Apache-2.0
 -- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+
 -- Specify input and output paths:
 INPUT_FILE = "ts/doc/generated/xml/index.xml"
 OUTPUT_FILE = "ts/doc/generated/rst/index.rst"

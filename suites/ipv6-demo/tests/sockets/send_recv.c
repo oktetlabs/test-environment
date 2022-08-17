@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * IPv6 Demo Test Suite
  * Send Receive functionality

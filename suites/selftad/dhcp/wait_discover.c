@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Test Package: CableHome Provisioning Test (PSP-01)
  *

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 # Process this file with autoconf to produce a configure script.
 #
 # Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

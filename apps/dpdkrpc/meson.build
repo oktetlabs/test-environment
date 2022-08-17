@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
 
 project('dpdkrpc', 'c', version: '1.0')

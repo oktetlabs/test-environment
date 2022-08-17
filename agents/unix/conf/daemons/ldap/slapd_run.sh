@@ -1,4 +1,5 @@
 #! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved.
 
 # Script to create SLAPD database and run slapd

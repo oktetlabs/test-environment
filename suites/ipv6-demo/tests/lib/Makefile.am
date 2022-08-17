@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2007-2022 OKTET Labs Ltd. All rights reserved.
 
 AM_CPPFLAGS = @TS_CPPFLAGS@

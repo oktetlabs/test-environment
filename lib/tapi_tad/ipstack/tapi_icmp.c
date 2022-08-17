@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @brief Test API for TAD. Wrappers for IPv4/IPv6 ICMP stack CSAP
  *

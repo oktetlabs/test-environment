@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved. */
 #ifndef __TE_CONFIG_INTERNAL_H__
 #error te_config_internal.h cannot be included directly

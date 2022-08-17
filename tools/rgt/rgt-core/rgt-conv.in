@@ -1,9 +1,10 @@
 #! @SHELL@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+#
 # rgt-conv --
 #    Process Raw Log File according to user specified XML filter file
 #    (calls rgt-core utility).
-#
-# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
 bindir="$(cd `dirname $0` && pwd)"
 

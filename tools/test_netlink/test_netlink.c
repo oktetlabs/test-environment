@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  *
  * Catches changes of IP on network intefaces from netlink socket.

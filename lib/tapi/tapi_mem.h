@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @brief Test API to use malloc, calloc, realloc, memcpy and strdup
  *

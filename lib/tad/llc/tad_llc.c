@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @brief TAD IEEE 802.2 LLC sublayer
  *

@@ -1,4 +1,5 @@
 #! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
 #
 # Helper script to build ta_rpcprovider application.
 # The script uses environment variables exported by the TE_TA_APP macro.

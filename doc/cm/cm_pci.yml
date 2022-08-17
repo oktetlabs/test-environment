@@ -1,4 +1,5 @@
 ---
+# SPDX-License-Identifier: Apache-2.0
 
 - comment: |
     Configuration information related to PCI devices.

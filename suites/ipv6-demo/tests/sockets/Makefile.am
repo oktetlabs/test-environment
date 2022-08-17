@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 ##
 ## Makefile.am for IPv6 Demo test suite - sockets package.
 ##

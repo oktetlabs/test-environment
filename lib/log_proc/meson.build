@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
 
 headers += files('log_msg_view.h', 'log_msg_filter.h', 'log_flow_filters.h',

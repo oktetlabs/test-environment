@@ -1,4 +1,5 @@
 #! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
 #rm -rf /tmp/te-replace

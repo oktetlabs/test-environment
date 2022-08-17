@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * Test Environment: RGT Core
  * Common data structures and declarations.

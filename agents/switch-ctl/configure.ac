@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 #

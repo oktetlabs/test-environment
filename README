@@ -85,4 +85,5 @@ If you want to use BASH-completion with TE scripts, add in your
 
 complete -F _configure_func $default ./dispatcher.sh ./run.sh
 
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

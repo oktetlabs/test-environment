@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @brief UDP Tunnel (Virtual eXtensible Local Area Network (VXLAN) and
  * GEneric NEtwork Virtualization Encapsulation (Geneve)) interface

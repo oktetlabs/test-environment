@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  *
  * @page rcfunix_conflib RCF Library for UNIX Test Agents

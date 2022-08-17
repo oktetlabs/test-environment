@@ -1,4 +1,6 @@
 #! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
 #
 # Test Environment Builder
 #
@@ -10,8 +12,6 @@
 #  - <ta>_SSH_KEY (or TE_SSH_KEY) to use identity to login
 #  - <ta>_SSH_PORT (or TE_SSH_PORT) to use non-standard port
 #  - <ta>_SSH_USER (or TE_SSH_USER) to use different user
-#
-# Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
 
 # Default SSH arguments, if you don't like it, you can override
 # it after sourcing the file.

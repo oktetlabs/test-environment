@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
 #
 # Shell wrapper to generate symbol table.
 #

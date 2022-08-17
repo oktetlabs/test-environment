@@ -1,4 +1,6 @@
+m4_dnl SPDX-License-Identifier: Apache-2.0
 m4_dnl Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
+
 m4_dnl GNU m4 defines platform-specific macros that collide
 m4_dnl with GCC-provided ones, so just undefine them
 m4_undefine(`__unix__')m4_dnl

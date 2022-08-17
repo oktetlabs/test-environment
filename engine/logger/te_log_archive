@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
 
 # Test Environment, Logger subsystem.
 # This script takes no arguments. It archives in the storage

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @brief Generic UDP Tunnel (VXLAN and Geneve)
  * interfaces management using netconf library

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @brief Virtual eXtensible Local Area Network (vxlan)
  * interfaces management using netconf library

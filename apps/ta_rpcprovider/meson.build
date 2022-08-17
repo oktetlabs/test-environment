@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 # This meson script is intended to be used with the TE_TA_APP macro
 # after all the TE libraries and the main TE agent have been built.
 # More information can be found in the TE_TA_APP macro description.

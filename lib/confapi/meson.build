@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
 
 deps += [ dep_lib_conf_oid, dep_lib_rcfapi ]

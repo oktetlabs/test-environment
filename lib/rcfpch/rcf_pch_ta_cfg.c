@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  * @brief Common library for test agents which is very useful
  * in supporting read-create instances implementing "commit" operation.

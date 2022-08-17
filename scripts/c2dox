@@ -1,4 +1,5 @@
 #! /usr/bin/awk -f
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
 
 # This script extracts comments from a `package.xml' file and converts them

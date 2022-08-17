@@ -1,4 +1,5 @@
 import os
+# SPDX-License-Identifier: Apache-2.0
 import datetime
 
 from scenarios.generator import Generator
