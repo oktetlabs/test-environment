@@ -1,0 +1,141 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use IPC::Open2;
+use File::Basename;
+
+my $sh_path;
+my $sh_ld_library_path;
+my $trc_mv = 0;
+my $trc_result = "tmp_trc_db.xml";
+my $tester_conf_used = 0;
+my $db_used = 0;
+my $rules_used = 0;
+my $test_name_used = 0;
+
+my $def_tester_conf = "tester.conf";
+my $def_trc_db = "trc/top.xml";
+
+my $guess_script_path = "";
+my $script_dir = dirname(__FILE__);
+
+if (!(-f ($guess_script_path =
+                  $ENV{"TE_BASE"}."/scripts/guess_to_perl.sh")))
+{
+    print STDERR "Failed to find guess_to_perl.sh\n";
+    exit(1);
+}
+$script_dir = dirname($guess_script_path);
+
+my $pid = open2(*RDR, undef, $guess_script_path);
+while (<RDR>)
+{
+    eval($_);
+}
+
+$ENV{"PATH"} = $sh_path;
+$ENV{"LD_LIBRARY_PATH"} = $sh_ld_library_path;
+
+sub escape_str
+{
+    my $str = $_[0];
+    $str =~ s/([\\!"\$])/\\$1/g;
+    return $str;
+}
+
+sub help_info
+{
+    print "trc_update - Script to interact with TRC update tool.\n";
+    print "      --trc-mv                Move result in TRC DB\n";
+    my $rc = system("te_trc_update --help");
+    exit $rc;
+}
+
+my $opts = "";
+my $arg;
+
+foreach $arg (@ARGV)
+{
+    if ($arg =~ m/^--trc-mv/)
+    {
+        $trc_mv = 1;
+    }
+    elsif ($arg =~ m/^--def-conf-tester=(.*)$/)
+    {
+        $def_tester_conf = $1;
+    }
+    elsif ($arg =~ m/^--def-db=(.*)$/)
+    {
+        $def_trc_db = $1;
+    }
+    elsif ($arg =~ m/^(.*?)=(.*)$/)
+    {
+        $opts = $opts." ".$1."=\"".escape_str($2)."\"";
+
+        if ($arg =~ m/^--trc-save=(.*)$/)
+        {
+            $trc_result = $1;
+        }
+        elsif ($arg =~ m/^--conf-tester=(.*)$/)
+        {
+            $tester_conf_used = 1;
+        }
+        elsif ($arg =~ m/^--db=(.*)$/)
+        {
+            $db_used = 1;
+        }
+        elsif ($arg =~ m/^--rules=(.*)$/)
+        {
+            $rules_used = 1;
+        }
+        elsif ($arg =~ m/^--test-name=(.*)$/)
+        {
+            $test_name_used = 1;
+        }
+    }
+    elsif ($arg =~ m/^--help/)
+    {
+        help_info();
+    }
+    elsif ($arg =~ m/--log-save-by-tags$/)
+    {
+        $opts = $arg." ".$opts;
+    }
+    else
+    {
+        $opts = $opts." \"".escape_str($arg)."\"";
+    }
+}
+
+if ($tester_conf_used == 0)
+{
+    $opts = $opts." --conf-tester=${def_tester_conf}";
+}
+
+if ($db_used == 0)
+{
+    if ($rules_used == 1 && $test_name_used == 0)
+    {
+        $opts = $opts." --db=tmp_trc_db.xml";
+    }
+    else
+    {
+        $opts = $opts." --db=${def_trc_db}";
+    }
+}
+
+$opts = $opts." --cmd=\"".$0." ".escape_str(join(" ", @ARGV))."\"";
+
+my $rc = system("te_trc_update ".$opts);
+
+if ($rc == 0 && $trc_mv == 1)
+{
+    my $trc_dir = dirname($def_trc_db);
+    my $trc_root = basename($def_trc_db);
+
+    $rc = system("te_trc_mv --conf-dir=$trc_dir ".
+                 "--conf-root=$trc_root $trc_result");
+}
+
+exit ($rc >> 8);

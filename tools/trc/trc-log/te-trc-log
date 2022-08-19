@@ -1,0 +1,121 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment: Testing Results Comparator
+#
+# Script to process TE raw log and generate log for further processing.
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+# Assume that the script is located in TE bin installation directory and
+# all used TE executables are located there
+bindir="$(cd "$(dirname "$(which "$0")")" && pwd -P)"
+
+raw_log_file=
+output_file=
+
+usage()
+{
+    test -n "$1" && echo "$1" >&2
+cat <<EOF
+Usage: te-trc-log [<options>] [<raw-log-file> [<output-file>]]
+If <output-file> is unspecified, output is generated to stdout.
+If <raw-log-file> is unspecified, raw log is read from stdin.
+'--' may be used to terminate <options>.
+
+OPTIONS:
+  -o <output-file>          Specify output file name
+  -z                        Compress output using gzip
+  -j                        Compress output using bzip2
+  --ignore-unknown-id       Ignore log messages with unknown ID
+
+  --help                    Show this help message
+
+EOF
+    exit 1
+}
+
+rgt_opts=("--incomplete-log" "-m" "postponed")
+compress=
+end_of_options=
+while test -z "$end_of_options" -a -n "$1" ; do
+    case "$1" in
+        --help) usage
+                ;;
+        -z)     which gzip >/dev/null || usage "gzip is not found"
+                test -z "$compress" ||\
+                    usage "Only one compression method may be specified"
+                compress="gzip --best --stdout"
+                ;;
+        -j)     which bzip2 >/dev/null || usage "gzip is not found"
+                test -z "$compress" ||\
+                    usage "Only one compression method may be specified"
+                compress="bzip2 --best --stdout"
+                ;;
+        -o)     shift 1
+                output_file="$1"
+                ;;
+
+        --ignore-unknown-id) rgt_opts+=("--ignore-unknown-id") ;;
+
+        --)     end_of_options=yes
+                ;;
+        -*)     usage "Unknown option: $1"
+                ;;
+        *)      if test -z "$raw_log_file" ; then
+                    raw_log_file="$1"
+                elif test -z "$output_file" ; then
+                    output_file="$1"
+                else
+                    usage "Unexpected argument: $1"
+                fi
+                ;;
+    esac
+    shift 1
+done
+
+if test -n "$end_of_options" ; then
+    raw_log_file="$1"
+    output_file="$2"
+    test -z "$3" || usage "Unexpected argument: $3"
+fi
+
+
+rgt_filter="$(mktemp /tmp/tmp.XXXXXX)"
+cat <<EOF >"$rgt_filter"
+<?xml version="1.0"?>
+<filters>
+  <entity-filter>
+    <exclude entity=""/>
+    <include entity="Tester">
+        <user name="TRC tags"/>
+    </include>
+    <include entity="Tester">
+        <user name="Target Requirements"/>
+    </include>
+    <include entity="Tester">
+        <user name="Globals"/>
+    </include>
+    <include entity="Tester">
+        <user name="Run"/>
+    </include>
+  </entity-filter>
+</filters>
+EOF
+
+if test -z "$compress" ; then
+    "${bindir}"/rgt-conv "${rgt_opts[@]}" -c "$rgt_filter" \
+        ${raw_log_file:+-f} "$raw_log_file" \
+        ${output_file:+-o} "$output_file"
+elif test -z "$output_file" ; then
+    "${bindir}"/rgt-conv "${rgt_opts[@]}" -c "$rgt_filter" \
+        ${raw_log_file:+-f} "$raw_log_file" | $compress
+else
+    "${bindir}"/rgt-conv "${rgt_opts[@]}" -c "$rgt_filter" \
+        ${raw_log_file:+-f} "$raw_log_file" | $compress >"$output_file"
+fi
+status=$?
+
+rm "$rgt_filter"
+
+exit $?

@@ -1,0 +1,189 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Date::Manip;
+use File::Temp qw/ tempfile /;
+use URI::Escape;
+
+my @logs = ();
+my $first_log = "";
+my $log_str = "";
+my $path = "";
+my $night_logs_cache = $ENV{"TRC_UPDATE_DEFAULT_CACHE"};
+my $date_from = new Date::Manip::Date;
+my $date_to = new Date::Manip::Date;
+my $tags_by_logs = 0;
+my $date = new Date::Manip::Date;
+my $arg;
+my $opts = "";
+my $user_opts = "";
+my @tests = ();
+my $dummy_tags = $ENV{"TRC_UPDATE_DUMMY_TAGS"};
+my $dummy_opts;
+my $tmp_file;
+my $s;
+my $rc = 0;
+
+$dummy_tags =~ s/^\s+|\s+$//g;
+$dummy_tags =~ s/\s+/,/g;
+$dummy_tags =~ s/,+/,/g;
+$dummy_tags = quotemeta($dummy_tags);
+$dummy_opts = "--tags-list=${dummy_tags} --rules-save=rules.xml ".
+              "--confls-all --no-exp-only --simpl-tags";
+
+$date_from->parse("2000.01.01");
+$date_to->parse("2100.01.01");
+
+sub escape_file
+{
+    my $str = $_[0];
+    $str =~ s/[!]/_not_/g;
+    return $str;
+}
+
+foreach (@ARGV)
+{
+    if ($_ =~ /--tags-by-logs/)
+    {
+        $tags_by_logs = 1;
+    }
+}
+
+foreach $arg (@ARGV)
+{
+    if ($arg =~ m/^--from=(.*)$/ || $arg =~ m/^-f(.*)$/)
+    {
+        $date_from->parse($1);
+    }
+    elsif ($arg =~ m/^--to=(.*)$/ || $arg =~ m/^-t(.*)$/)
+    {
+        $date_to->parse($1);
+    }
+    elsif ($arg =~ m/^--cache=(.*)/)
+    {
+        $night_logs_cache = $1;
+    }
+    elsif ($arg =~ m/^--path=(.*)$/ || $arg =~ m/^-p(.*)$/)
+    {
+        $path = $1;
+    }
+    elsif ($arg =~ m/^--dummy$/ || $arg =~ m/^-d$/)
+    {
+        $opts .= " ".$dummy_opts;
+    }
+    elsif ($arg =~ m/^--help$/ || $arg =~ m/^-h$/)
+    {
+        print "This script is for running trc_update with loaded ".
+              "night testing logs\n".
+              "--from=, -f          From which date to process\n".
+              "--to=, -t            To which date to process\n".
+              "--path=, -p          Where to find loaded logs \n".
+              "                     (if not specified, night logs dump\n".
+              "                     from web interface will be used)\n".
+              "--cache=             Night logs cache (only useful when\n".
+              "                     night logs dump is used as a source\n".
+              "                     of logs; 'linux_v5_default' by default)\n".
+              "--dummy=, -d         Add options ${dummy_opts}\n".
+              "--help, -h           Display this message\n".
+              "\n".
+              "Any other option will be treated as an option ".
+              "of trc_update\n";
+        exit(0);
+    }
+    elsif ($arg =~ m/([^=]*)=(.*)/)
+    {
+        my $name = $1;
+        my $value = $2;
+
+        $user_opts .= " ".$name."=\"".$value."\"";
+
+        if ($name =~ /--test-name/)
+        {
+            push(@tests, $value);
+        }
+    }
+    else
+    {
+        $user_opts .= " ".$arg;
+    }
+}
+
+if (length($path) > 0)
+{
+    @logs = `ls ${path}/*.xml`;
+
+    foreach $s (@logs)
+    {
+        $s =~ s/\n//g;
+        $s =~ /\/([0-9.-]*)\-[^\/]*$/;
+        $date->parse_format('%y\\.%m\\.%d\\-%H\\.%M', $1);
+
+        next if ($date->cmp($date_from) < 0);
+        next if ($date->cmp($date_to) > 0);
+
+        $s =~  /([^\/]*)$/;
+        if (!defined($first_log) || length($first_log) == 0)
+        {
+            if ($tags_by_logs == 1)
+            {
+                $first_log = " --tags=\"".escape_file($1)."\"";
+            }
+            $first_log .=  " --log=".$s;
+        }
+        else
+        {
+            if ($tags_by_logs == 1)
+            {
+                $log_str .= " --tags=\"".escape_file($1)."\"";
+            }
+            $log_str .= " --log=".$s;
+        }
+    }
+
+    (undef, $tmp_file) = tempfile("opts-XXXX");
+    open(MYFILE, "> ${tmp_file}");
+    print MYFILE "te_trc_update_wrapper ".$log_str;
+    close(MYFILE);
+
+    $rc = system("te_trc_update_wrapper ".$opts." ${first_log} ".
+                 "--opts-file=${tmp_file} ".$user_opts);
+    system("rm -rf ${tmp_file}");
+}
+else
+{
+    my $tests_str = "";
+    my $curl_cmd = "";
+
+    foreach my $test (@tests)
+    {
+        if (length($tests_str) > 0)
+        {
+            $tests_str .= ",";
+        }
+        $tests_str .= $test;
+    }
+
+    (undef, $tmp_file) = tempfile("logs-dump-XXXX");
+
+    $curl_cmd = "curl -s -u : --negotiate -L ".
+                $ENV{"TRC_UPDATE_NIGHT_HISTORY_HREF"}."/process_form.pl?".
+                "start_date=".$date_from->printf("%d.%m.%Y")."\\&".
+                "end_date=".$date_to->printf("%d.%m.%Y")."\\&".
+                "tests=".uri_escape($tests_str)."\\&".
+                "cache=".$night_logs_cache."\\&".
+                "binary_report=1 -f -o ${tmp_file}";
+
+    $rc = system($curl_cmd);
+    if ($rc != 0)
+    {
+        print "Failed to get logs dump\n";
+        exit ($rc >> 8);
+    }
+
+    $rc = system("te_trc_update_wrapper ".$opts." --logs-dump=${tmp_file} ".
+                 $user_opts);
+    system("rm -rf ${tmp_file}");
+}
+
+exit ($rc >> 8);

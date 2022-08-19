@@ -1,0 +1,116 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Kernel modules control configuration model.
+
+    Copyright (C) 2017-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/module"
+      access: read_create
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         System module.
+         Name: Name of the system module
+
+    - oid: "/agent/module/loaded"
+      access: read_write
+      type: integer
+      d: |
+         Control module state. Set to 1 to load the module.
+         Set to 0 to unload it.
+
+         Value: 1 means loaded
+
+    - oid: "/agent/module/loaded_oper"
+      access: read_only
+      volatile: true
+      type: integer
+      d: |
+        Is the module loaded in the system from the human
+        point of view.
+
+        Value: 1 means loaded
+
+    - oid: "/agent/module/unload_holders"
+      access: read_write
+      type: integer
+      d: |
+         Toggle indicating whether an attempt to unload module holders
+         is made before the module itself is unloaded
+         Name:  none
+         Value: 1 - try to unload holders, 0 - do not unload (default)
+
+    - oid: "/agent/module/filename"
+      access: read_write
+      type: string
+      volatile: true
+      d: |
+         Name of the file containing the module or 'unknown'.
+         modinfo integration is not yet there.
+         Value: path in the file system
+
+    - oid: "/agent/module/version"
+      access: read_only
+      type: string
+      d: |
+         Module version.
+         Value: string describing version
+
+    - oid: "/agent/module/filename/load_dependencies"
+      access: read_write
+      type: integer
+      d: |
+         A means to demand that dependencies be queried and
+         resolved for the given module prior calling insmod.
+
+         @note The internal implementation calls modinfo on
+               the module file after changing /agent/module/loaded
+               value to 1 and then calls modprobe for every
+               dependency discovered. Then insmod is called.
+
+         Name:  none
+         Value: 0, 1
+
+    - oid: "/agent/module/filename/fallback"
+      access: read_write
+      type: integer
+      d: |
+         Boolean node indicating whether to load module shipped with the
+         currently running kernel if path specified in /agent/filename doesn't
+         exist.
+         Name:  none
+         Value: 0, 1
+
+    - oid: "/agent/module/parameter"
+      access: read_create
+      type: string
+      depends:
+        - oid: "/agent/module/loaded"
+      d: |
+         Parameter of a system module.
+         Name: Name of the parameter
+         Value: Value of the parameter
+
+    - oid: "/agent/module/driver"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/module/loaded"
+      d: |
+         Driver implemented by a system module.
+         Name: Name of the driver
+
+    - oid: "/agent/module/driver/device"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Reference to a device of a given driver
+         Name: Name of the device
+         Value: Reference to the device in configuration tree

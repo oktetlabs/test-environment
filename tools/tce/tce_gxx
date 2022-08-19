@@ -1,0 +1,12 @@
+#! /bin/sh
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Coverage Estimation
+#
+# A wrapper around tce_gcc to simulate g++
+#
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+export TCE_CC=${TCE_CXX}
+exec tce_gcc "$@"

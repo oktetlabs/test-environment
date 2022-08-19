@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="memcached" type="package">
+    <objective>TAPI memcached implementation</objective>
+    <iter result="PASSED">
+        <test name="memcached">
+            <objective/>
+            <iter result="PASSED">
+                <arg name="env"/>
+            </iter>
+        </test>
+        <test name="memaslap">
+            <objective/>
+            <iter result="PASSED">
+                <arg name="env"/>
+            </iter>
+        </test>
+    </iter>
+</test>

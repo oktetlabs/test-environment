@@ -1,0 +1,118 @@
+#! /usr/bin/awk -f
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Coverage Estimation report generator
+#
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+BEGIN {
+    FS=":";
+    runs = 1;
+    fun = "*";
+    lines = 0;
+    executed = 0;
+    nbranches = 0;
+    exbranches = 0;
+}
+
+$2 == 0 {
+    if ($3 == "Source")
+    {
+        if ((getline tmp < $4) > 0)
+        {
+            ("cksum " $4) | getline sourcefile;
+        }
+        else
+        {
+            sourcefile = "n/a n/a " $4
+        }
+    }
+    else if ($3 == "Data" || $3 == "Object")
+    {
+    	objfile = $4
+    }
+    else if ($3 == "Runs")
+    {
+        runs = $4 + 0;
+    }
+    next
+}
+
+{
+    if (!header)
+    {
+        header = 1;
+        print "FILE", objfile, sourcefile, checksum, runs
+    }
+}
+
+NF == 1 {
+    split($0, subfields, " ")
+    if (subfields[1] == "function")
+    {
+        fun = subfields[4] ":" subfields[6] ":" subfields[9]
+        gsub(/%/, "", fun);
+    }
+    else if (subfields[1] == "branch")
+    {
+        branches[subfields[2] + 0] = subfields[4] + 0;
+        nbranches++;
+        if (subfields[4] + 0 != 0) exbranches++;
+    }
+    else if (subfields[1] == "call")
+    {
+        calls[subfields[2] + 0] = subfields[4] + 0
+    }
+    next
+}
+
+function print_branches() {
+    bs = "";
+    for (i = 0; i in branches; i++)
+    {
+        bs = bs branches[i] ":"
+    }
+    cs = "";
+    for (i = 0; i in calls; i++)
+    {
+        cs = cs calls[i] ":"
+    }
+    sub(/:$/, "", bs);
+    sub(/:$/, "", cs);
+    print " ", fun, bs ? bs : "*", cs ? cs : "*"
+}
+
+{
+    if (header > 1)
+    {
+        print_branches();
+    }
+    else
+    {
+        header++;
+    }
+
+    split("", branches);
+    split("", calls);
+    fun = "*"
+}
+
+$1 ~ /#$/ { lines++; printf 0; next }
+{
+    gsub(/[[:space:]]/, "");
+    if ($1 != "-")
+    {
+        lines++;
+        executed++;
+    }
+    printf $1;
+}
+
+END {
+    print_branches();
+    print "SUMMARY", lines, executed, nbranches, exbranches
+}
+
+
+

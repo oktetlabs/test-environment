@@ -1,0 +1,151 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+
+pipeline {
+    options {
+        buildDiscarder(logRotator(numToKeepStr:'14'))
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    parameters {
+        string defaultValue: 'te-build-only',
+               description: 'Label for run build only job',
+               name: 'buildOnlyLabel', trim: false
+    }
+
+    agent {
+        label "te-build"
+    }
+
+    triggers {
+        cron('@daily')
+    }
+
+    environment {
+        TE_BASE = "${env.WORKSPACE}/te"
+        TE_BUILD = "${env.WORKSPACE}/te-build"
+        TE_INSTALL = "${env.WORKSPACE}/te-build/inst"
+        TS_TOPDIR = "${env.WORKSPACE}/te/suites/selftest"
+        TS_RUNDIR = "${env.WORKSPACE}/te-selftest-run"
+    }
+
+    stages {
+        stage("Build") {
+            steps {
+                script {
+                    lastStage = env.STAGE_NAME
+                }
+                dir("$TS_RUNDIR") {
+                    sh '${TS_TOPDIR}/run.sh --build-only'
+                }
+            }
+        }
+        stage("Build on various platforms") {
+            steps {
+                script {
+                    def builders = [:]
+                    def nodes = getNodes(params.buildOnlyLabel)
+
+                    for (p in nodes) {
+                        def platform = p
+                        builders[platform] = {
+                            node(platform) {
+                                checkout scm
+                                withEnv(["TE_BASE=${env.WORKSPACE}/te",
+                                         "TE_BUILD=${env.WORKSPACE}/te-build",
+                                         "TE_INSTALL=${env.WORKSPACE}/te-build/inst",
+                                         "TS_TOPDIR=${env.WORKSPACE}/te/suites/selftest",
+                                         "TS_RUNDIR=${env.WORKSPACE}/te-selftest-run"])
+                                {
+                                    dir("$TS_RUNDIR") {
+                                        try {
+                                            sh '${TS_TOPDIR}/run.sh --build-only'
+                                        }
+                                        catch (error) {
+                                            unstable("Build failed")
+                                            currentBuild.result = 'FAILURE'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    parallel builders
+                }
+            }
+        }
+        stage("Analyze Build") {
+            steps {
+                recordIssues tools: [gcc()]
+            }
+        }
+        stage("Run") {
+            steps {
+                script {
+                    lastStage = env.STAGE_NAME
+                }
+                dir ("$TS_RUNDIR") {
+                    sh 'rm -fr * || true'
+                    sh '''${TS_TOPDIR}/run.sh -n --log-junit=junit.log \
+                              --tester-req=\\!BROKEN                   \
+                              --cfg=gimli1
+                    '''
+                }
+            }
+        }
+        stage("Report") {
+            steps {
+                script {
+                    lastStage = env.STAGE_NAME
+                }
+                dir ("$TS_RUNDIR") {
+                    archiveArtifacts artifacts: 'tmp_raw_log'
+                    archiveArtifacts artifacts: 'log.txt'
+                    junit 'junit.log'
+                }
+            }
+        }
+    }
+
+    post {
+        unsuccessful {
+            emailext (
+                from: "cbs@oktetlabs.ru",
+                to: "andrew.rybchenko@oktetlabs.ru",
+                recipientProviders: [requestor(), culprits()],
+                subject: "[CI TE] ${env.JOB_NAME} job ${env.BUILD_NUMBER} unsuccessful",
+                body: "Check console output at: ${env.BUILD_URL}, failure step $lastStage",
+            )
+        }
+        success {
+            emailext (
+                from: "cbs@oktetlabs.ru",
+                to: "andrew.rybchenko@oktetlabs.ru",
+                recipientProviders: [requestor()],
+                subject: "[CI TE] ${env.JOB_NAME} job ${env.BUILD_NUMBER} success",
+                body: "Check console output at: ${env.BUILD_URL}",
+            )
+        }
+        fixed {
+            emailext (
+                from: "cbs@oktetlabs.ru",
+                to: "andrew.rybchenko@oktetlabs.ru",
+                recipientProviders: [requestor(), culprits()],
+                subject: "[CI TE] ${env.JOB_NAME} job ${env.BUILD_NUMBER} fixed",
+                body: "Check console output at: ${env.BUILD_URL}",
+            )
+        }
+    }
+}
+
+@NonCPS
+def getNodes(String label) {
+    def nodes = jenkins.model.Jenkins.instance.nodes
+    def filteredNodes = nodes.findAll { node ->
+        node.labelString.contains("${label}")
+    }
+    return filteredNodes.collect { node ->
+        node.name
+    }
+}

@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+
+    <description>CLI CSAP tests</description>
+
+    <author mailto="te-maint@oktetlabs.ru"/>
+
+    <session>
+        <arg name="ta" handdown="true">
+            <value>Agt_A</value>
+        </arg>
+
+        <run>
+            <script name="clitest"/>
+            <arg name="ta"/>
+        </run>
+
+        <run>
+            <script name="tapi_cli_test"/>
+            <arg name="ta"/>
+            <arg name="host">
+                <value>melkor</value>
+            </arg>
+            <arg name="user">
+                <value>testercli</value>
+            </arg>
+            <arg name="passwd">
+                <value>testercli</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="tapi_cli_serial"/>
+            <arg name="ta"/>
+            <arg name="device">
+                <value>/dev/ttyS0</value>
+            </arg>
+            <arg name="user">
+                <value>admin</value>
+            </arg>
+            <arg name="passwd">
+                <value>admin</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="tapi_cli_telnet"/>
+            <arg name="ta"/>
+            <arg name="host">
+                <value>192.168.150.1</value>
+            </arg>
+            <arg name="user">
+                <value>admin</value>
+            </arg>
+            <arg name="passwd">
+                <value>admin</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="tapi_cli_shell"/>
+            <arg name="ta"/>
+            <arg name="shell_args">
+                <value>gdb</value>
+            </arg>
+            <arg name="cprompt">
+                <value>(gdb) </value>
+            </arg>
+        </run>
+
+    </session>
+
+</package>

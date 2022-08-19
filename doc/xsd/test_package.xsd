@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!--
+    See test_environment/engine/tester/tester_defs.xsd for definitions
+    common for specifications of Test Package description file and
+    Tester configuration file.
+  -->
+<schema targetNamespace="http://www.oktetlabs.ru/proteos"
+        xmlns:proteos="http://www.oktetlabs.ru/proteos"
+        xml:lang="en"
+        xmlns="http://www.w3.org/2001/XMLSchema">
+
+    <annotation>
+        <documentation>
+            Test Environment
+            XML schema for Test Package definition file
+
+            Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+        </documentation>
+    </annotation>
+
+    <include schemaLocation="tester_defs.xsd">
+        <annotation>
+            <documentation>
+                Bring in the definitions and declarations contained in
+                file with common definition for Test Subsystem (Tester).
+            </documentation>
+        </annotation>
+    </include>
+
+    <element name="package">
+
+        <complexType>
+
+            <element name="description" type="string">
+                <annotation>
+                    <documentation>
+                        Mandatory description of the package as well
+                        as its purpose.
+                    </documentation>
+                </annotation>
+            </element>
+
+            <element name="author" type="PersonInfo"
+                                   minOccurs="0" maxOccurs="unbounded">
+                <annotation>
+                    <documentation>
+                        Optional information about authors of Test
+                        Package. If no authors are specified, authors
+                        of the parent package are considered as authors
+                        of this one.  Hence this field is mandatory for
+                        top-level packages only.
+                    </documentation>
+                </annotation>
+            </element>
+
+            <element name="req" type="Requirement"
+                                 minOccurs="0" maxOccurs="unbounded">
+                <annotation>
+                    <documentation>
+                        Compete set of requirements verified by the
+                        package. It's assumed that other requirements
+                        are not verified by the package including lower
+                        level packages. If no requirements are
+                        specified for descendant, it's assumed that it
+                        verifies this set of requirements. Descendant's
+                        set should be a subset of this one. If no
+                        requirments are specified, descendants should
+                        be analized.
+                    </documentation>
+                </annotation>
+            </element>
+
+            <element name="session" type="Session">
+                <annotation>
+                    <documentation>
+                        Description of the session provided by the
+                        package.
+                    </documentation>
+                </annotation>
+            </element>
+
+        </complexType>
+
+    </element>
+
+</schema>

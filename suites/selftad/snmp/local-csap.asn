@@ -1,0 +1,6 @@
+-- SPDX-License-Identifier: Apache-2.0
+-- Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
+
+{ snmp:{ security v2c:{community "public"}, version plain:1,
+          snmp-agent plain:"localhost"}}
+

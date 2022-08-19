@@ -1,0 +1,55 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved. */
+/* Whether to enable dlsym()-based lookup */
+#mesondefine ENABLE_DLFCN_LOOKUP
+
+/* Whether to enable FTP support */
+#mesondefine ENABLE_FTP
+
+/* Whether to enable power switch management support */
+#mesondefine ENABLE_POWER_SW
+
+/* Whether to enable upnp support */
+#mesondefine ENABLE_UPNP
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#mesondefine HAVE_DLFCN_H
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#mesondefine HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <linux/ppdev.h> header file. */
+#mesondefine HAVE_LINUX_PPDEV_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#mesondefine HAVE_MEMORY_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#mesondefine HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#mesondefine HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#mesondefine HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#mesondefine HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#mesondefine HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#mesondefine HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <termios.h> header file. */
+#mesondefine HAVE_TERMIOS_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#mesondefine HAVE_UNISTD_H
+
+/* Define to 1 if you have the <pwd.h> header file. */
+#mesondefine HAVE_PWD_H
+
+/* Define to 1 if you have getpwnam_r function file. */
+#mesondefine HAVE_GETPWNAM_R

@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="tad" type="package">
+    <objective>Tests on TAD functionality.</objective>
+    <iter result="PASSED">
+        <notes/>
+
+        <test name="tad_prologue" type="script">
+            <objective>Push UP all interfaces of all testing networks.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tad/common.trc.xml" parse="xml"/>
+
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tad/atm.trc.xml" parse="xml"/>
+
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tad/ipstack.trc.xml" parse="xml"/>
+    </iter>
+</test>

@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="atm" type="package">
+    <objective>CSAP ATM layer tests</objective>
+    <notes/>
+    <iter result="PASSED">
+        <test name="simple_send" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="gfc"/>
+                <arg name="vpi"/>
+                <arg name="vci"/>
+                <arg name="congestion"/>
+                <arg name="clp"/>
+            </iter>
+        </test>
+        <test name="simple_recv" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="type"/>
+                <arg name="csap_vpi"/>
+                <arg name="csap_vci"/>
+                <arg name="csap_congestion"/>
+                <arg name="csap_clp"/>
+                <arg name="ptrn_gfc"/>
+                <arg name="ptrn_vpi"/>
+                <arg name="ptrn_vci"/>
+                <arg name="ptrn_payload_type"/>
+                <arg name="ptrn_congestion"/>
+                <arg name="ptrn_clp"/>
+                <arg name="gfc"/>
+                <arg name="vpi"/>
+                <arg name="vci"/>
+                <arg name="payload_type"/>
+                <arg name="congestion"/>
+                <arg name="clp"/>
+            </iter>
+        </test>
+        <test name="aal5_send" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="gfc"/>
+                <arg name="vpi"/>
+                <arg name="vci"/>
+                <arg name="congestion"/>
+                <arg name="clp"/>
+                <arg name="cpcs_uu"/>
+                <arg name="cpi"/>
+            </iter>
+        </test>
+    </iter>
+</test>

@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<xsd:schema
+  xml:lang="en"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+    <xs:annotation>
+        <xs:documentation>
+            Test Environment
+            XML schema for configuration file of Configurator subsystem
+
+            Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+        </xs:documentation>
+    </xs:annotation>
+
+    <xs:annotation>
+        <xs:documentation>
+
+            Configuration file may be either "backup" - list
+            of objects and object instances or "history" - list
+            of register, add, set and delete commands.
+
+        </xs:documentation>
+    </xs:annotation>
+
+    <xs:simpleType name="yes_no">
+        <xs:annotation>
+            <xs:documentation>
+                yes/no
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:token">
+            <xs:enumeration value="yes"/>
+            <xs:enumeration value="no"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:element name="object">
+        <xs:annotation>
+            <xs:documentation>
+                Object description
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="depends"
+                            minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            An object OID the given object depends on
+                        </xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="oid"
+                                      type="xs:string" use="required"/>
+                        <xs:attribute name="scope" default="instance">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:token">
+                                    <xs:enumeration value="instance"/>
+                                    <xs:enumeration value="object"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:attribute>
+                    </xs:complexType>
+               </xs:element>
+            </xs:sequence>
+            <xs:attribute name="oid" type="xs:string" use="required"/>
+            <xs:attribute name="type" default="none">
+                <xs:simpleType>
+                    <xs:restriction base="xs:token">
+                        <xs:enumeration value="none"/>
+                        <xs:enumeration value="integer"/>
+                        <xs:enumeration value="string"/>
+                        <xs:enumeration value="address"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="access" default="read_create">
+                <xs:simpleType>
+                    <xs:restriction base="xs:token">
+                        <xs:enumeration value="read_write"/>
+                        <xs:enumeration value="read_only"/>
+                        <xs:enumeration value="read_create"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="default" type="xs:string"/>
+            <xs:attribute name="volatile" default="false">
+                <xs:simpleType>
+                    <xs:restriction base="xs:token">
+                        <xs:enumeration value="true"/>
+                        <xs:enumeration value="false"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="parent-dep" type="yes_no" default="yes" />
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="instance">
+        <xs:annotation>
+            <xs:documentation>
+                Object instance description
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:attribute name="oid" type="xs:string" use="required"/>
+            <xs:attribute name="value" type="xs:string"/>
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="register">
+        <xs:annotation>
+            <xs:documentation>
+                Register object command
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="object" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="add">
+        <xs:annotation>
+            <xs:documentation>
+                Add object instance command (attribute value of
+                the instance element is required for objects with integer,
+                string or address types).
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="instance" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="set">
+        <xs:annotation>
+            <xs:documentation>
+                Change object instance value (attribute value of the
+                instance element is required for objects with integer,
+                string or address types).
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="instance" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="get">
+        <xs:annotation>
+            <xs:documentation>
+                Get value from object instance and store it in either
+                environmental variable or add kvpair entry for further
+                substitutions in conf files.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="instance" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="delete">
+        <xs:annotation>
+            <xs:documentation>
+                Delete object instance (attribute value of the instance
+                element is ignored, if specified).
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="instance" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="copy">
+        <xs:annotation>
+            <xs:documentation>
+                Copy recursively instances from source subtree to
+                destination subtree. Copy value if instance exists
+                in destination tree and has read-create or read-write access.
+                Instances, that were exist in destination subtree
+                before copy, remain.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="instance" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="reboot">
+        <xs:annotation>
+            <xs:documentation>
+                Reboot Test Agent.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:attribute name="ta" type="xs:string" use="required"/>
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="backup">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="object" maxOccurs="unbounded"
+                                         minOccurs="0"/>
+                <xs:element ref="instance" maxOccurs="unbounded"
+                                           minOccurs="0"/>
+            </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="history">
+        <xs:complexType>
+            <xs:sequence maxOccurs="unbounded" minOccurs="0">
+                <xs:choice>
+                    <xs:element ref="register"/>
+                    <xs:element ref="add"/>
+                    <xs:element ref="set"/>
+                    <xs:element ref="delete"/>
+                    <xs:element ref="reboot"/>
+                    <xs:element ref="history"/>
+                </xs:choice>
+            </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+</xsd:schema>

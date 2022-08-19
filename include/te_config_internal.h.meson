@@ -1,0 +1,406 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved. */
+#ifndef __TE_CONFIG_INTERNAL_H__
+#error te_config_internal.h cannot be included directly
+#else
+
+/* Define to 1 if you have the <aio.h> header file. */
+#mesondefine HAVE_AIO_H
+
+/* Define to 1 if you have the <arpa/inet.h> header file. */
+#mesondefine HAVE_ARPA_INET_H
+
+/* Define to 1 if you have the <assert.h> header file. */
+#mesondefine HAVE_ASSERT_H
+
+/* Define to 1 if you have the <ctype.h> header file. */
+#mesondefine HAVE_CTYPE_H
+
+/* Define to 1 if you have the <dirent.h> header file. */
+#mesondefine HAVE_DIRENT_H
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#mesondefine HAVE_DLFCN_H
+
+/* Define to 1 if you have the <errno.h> header file. */
+#mesondefine HAVE_ERRNO_H
+
+/* Define to 1 if you have the <fcntl.h> header file. */
+#mesondefine HAVE_FCNTL_H
+
+/* Define to 1 if you have the <fnmatch.h> header file. */
+#mesondefine HAVE_FNMATCH_H
+
+/* Define to 1 if you have the <ftw.h> header file. */
+#mesondefine HAVE_FTW_H
+
+/* Define to 1 if you have the <glob.h> header file. */
+#mesondefine HAVE_GLOB_H
+
+/* Define to 1 if you have the <inet/mib2.h> header file. */
+#mesondefine HAVE_INET_MIB2_H
+
+/* Define to 1 if you have the <inet/nd.h> header file. */
+#mesondefine HAVE_INET_ND_H
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#mesondefine HAVE_INTTYPES_H
+
+/* Define to 1 if the system has the type `in_port_t'. */
+#mesondefine HAVE_IN_PORT_T
+
+/* Define to 1 if you have the <libgen.h> header file. */
+#mesondefine HAVE_LIBGEN_H
+
+/* Define to 1 if you have the <limits.h> header file. */
+#mesondefine HAVE_LIMITS_H
+
+/* Define to 1 if you have the <linux/ethtool.h> header file. */
+#mesondefine HAVE_LINUX_ETHTOOL_H
+
+/* Define to 1 if you have the <linux/if_ether.h> header file. */
+#mesondefine HAVE_LINUX_IF_ETHER_H
+
+/* Define to 1 if you have the <linux/if_packet.h> header file. */
+#mesondefine HAVE_LINUX_IF_PACKET_H
+
+/* Define to 1 if you have the <linux/net_tstamp.h> header file. */
+#mesondefine HAVE_LINUX_NET_TSTAMP_H
+
+/* Define to 1 if you have the <linux/ptp_clock.h> header file. */
+#mesondefine HAVE_LINUX_PTP_CLOCK_H
+
+/* Define to 1 if you have the <linux/sockios.h> header file. */
+#mesondefine HAVE_LINUX_SOCKIOS_H
+
+/* Define to 1 if you have the <linux/udp.h> header file. */
+#mesondefine HAVE_LINUX_UDP_H
+
+/* Define to 1 if you have the <math.h> header file. */
+#mesondefine HAVE_MATH_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#mesondefine HAVE_MEMORY_H
+
+/* Define to 1 if you have the <netdb.h> header file. */
+#mesondefine HAVE_NETDB_H
+
+/* Define to 1 if you have the <netinet/ether.h> header file. */
+#mesondefine HAVE_NETINET_ETHER_H
+
+/* Define to 1 if you have the <netinet/if_ether.h> header file. */
+#mesondefine HAVE_NETINET_IF_ETHER_H
+
+/* Define to 1 if you have the <netinet/in.h> header file. */
+#mesondefine HAVE_NETINET_IN_H
+
+/* Define to 1 if you have the <netinet/in_systm.h> header file. */
+#mesondefine HAVE_NETINET_IN_SYSTM_H
+
+/* Define to 1 if you have the <netinet/ip.h> header file. */
+#mesondefine HAVE_NETINET_IP_H
+
+/* Define to 1 if you have the <netinet/ip_icmp.h> header file. */
+#mesondefine HAVE_NETINET_IP_ICMP_H
+
+/* Define to 1 if you have the <netinet/icmp6.h> header file. */
+#mesondefine HAVE_NETINET_ICMP6_H
+
+/* Define to 1 if you have the <netinet/tcp.h> header file. */
+#mesondefine HAVE_NETINET_TCP_H
+
+/* Define to 1 if you have the <netinet/udp.h> header file. */
+#mesondefine HAVE_NETINET_UDP_H
+
+/* Define to 1 if you have the <netpacket/packet.h> header file. */
+#mesondefine HAVE_NETPACKET_PACKET_H
+
+/* Define to 1 if you have the <net/ethernet.h> header file. */
+#mesondefine HAVE_NET_ETHERNET_H
+
+/* Define to 1 if you have the <net/if_arp.h> header file. */
+#mesondefine HAVE_NET_IF_ARP_H
+
+/* Define to 1 if you have the <net/if_dl.h> header file. */
+#mesondefine HAVE_NET_IF_DL_H
+
+/* Define to 1 if you have the <net/if_ether.h> header file. */
+#mesondefine HAVE_NET_IF_ETHER_H
+
+/* Define to 1 if you have the <net/if.h> header file. */
+#mesondefine HAVE_NET_IF_H
+
+/* Define to 1 if you have the <net/route.h> header file. */
+#mesondefine HAVE_NET_ROUTE_H
+
+/* Define to 1 if you have the <net-snmp/definitions.h> header file. */
+#mesondefine HAVE_NET_SNMP_DEFINITIONS_H
+
+/* Define to 1 if you have the <net-snmp/net-snmp-config.h> header file. */
+#mesondefine HAVE_NET_SNMP_NET_SNMP_CONFIG_H
+
+/* Define to 1 if you have the <net-snmp/session_api.h> header file. */
+#mesondefine HAVE_NET_SNMP_SESSION_API_H
+
+/* Define to 1 if you have the <obstack.h> header file. */
+#mesondefine HAVE_OBSTACK_H
+
+/* Define to 1 if you have the <pcap.h> header file. */
+#mesondefine HAVE_PCAP_H
+
+/* Define to 1 if you have the <pcre.h> header file. */
+#mesondefine HAVE_PCRE_H
+
+/* Define to 1 if you have the <poll.h> header file. */
+#mesondefine HAVE_POLL_H
+
+/* Define to 1 if you have the <popt.h> header file. */
+#mesondefine HAVE_POPT_H
+
+/* Define to 1 if you have the <pthread.h> header file. */
+#mesondefine HAVE_PTHREAD_H
+
+/* Define to 1 if you have the <pwd.h> header file. */
+#mesondefine HAVE_PWD_H
+
+/* Define to 1 if you have the <regex.h> header file. */
+#mesondefine HAVE_REGEX_H
+
+/* Define to 1 if you have the <rpc/auth.h> header file. */
+#mesondefine HAVE_RPC_AUTH_H
+
+/* Define to 1 if you have the <rpc/clnt.h> header file. */
+#mesondefine HAVE_RPC_CLNT_H
+
+/* Define to 1 if you have the <rpc/pmap_clnt.h> header file. */
+#mesondefine HAVE_RPC_PMAP_CLNT_H
+
+/* Define to 1 if you have the <rpc/types.h> header file. */
+#mesondefine HAVE_RPC_TYPES_H
+
+/* Define to 1 if you have the <rpc/xdr.h> header file. */
+#mesondefine HAVE_RPC_XDR_H
+
+/* Define to 1 if you have the <scsi/sg.h> header file. */
+#mesondefine HAVE_SCSI_SG_H
+
+/* Define to 1 if you have the <search.h> header file. */
+#mesondefine HAVE_SEARCH_H
+
+/* Define to 1 if you have the <semaphore.h> header file. */
+#mesondefine HAVE_SEMAPHORE_H
+
+/* Define to 1 if you have the <setjmp.h> header file. */
+#mesondefine HAVE_SETJMP_H
+
+/* Define to 1 if you have the <signal.h> header file. */
+#mesondefine HAVE_SIGNAL_H
+
+/* Define to 1 if you have the <stdarg.h> header file. */
+#mesondefine HAVE_STDARG_H
+
+/* Define to 1 if you have the <stddef.h> header file. */
+#mesondefine HAVE_STDDEF_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#mesondefine HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdio.h> header file. */
+#mesondefine HAVE_STDIO_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#mesondefine HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#mesondefine HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#mesondefine HAVE_STRING_H
+
+/* Define to 1 if you have the <stropts.h> header file. */
+#mesondefine HAVE_STROPTS_H
+
+/* Define to 1 if `sa_len' is a member of `struct sockaddr'. */
+#mesondefine HAVE_STRUCT_SOCKADDR_SA_LEN
+
+/* Define to 1 if you have the <sys/cdefs.h> header file. */
+#mesondefine HAVE_SYS_CDEFS_H
+
+/* Define to 1 if you have the <sys/errno.h> header file. */
+#mesondefine HAVE_SYS_ERRNO_H
+
+/* Define to 1 if you have the <sys/ethernet.h> header file. */
+#mesondefine HAVE_SYS_ETHERNET_H
+
+/* Define to 1 if you have the <sys/filio.h> header file. */
+#mesondefine HAVE_SYS_FILIO_H
+
+/* Define to 1 if you have the <sys/ioctl.h> header file. */
+#mesondefine HAVE_SYS_IOCTL_H
+
+/* Define to 1 if you have the <sys/mman.h> header file. */
+#mesondefine HAVE_SYS_MMAN_H
+
+/* Define to 1 if you have the <sys/mount.h> header file. */
+#mesondefine HAVE_SYS_MOUNT_H
+
+/* Define to 1 if you have the <sys/param.h> header file. */
+#mesondefine HAVE_SYS_PARAM_H
+
+/* Define to 1 if you have the <sys/poll.h> header file. */
+#mesondefine HAVE_SYS_POLL_H
+
+/* Define to 1 if you have the <sys/queue.h> header file. */
+#mesondefine HAVE_SYS_QUEUE_H
+
+/* Define to 1 if you have the <sys/resource.h> header file. */
+#mesondefine HAVE_SYS_RESOURCE_H
+
+/* Define to 1 if you have the <sys/select.h> header file. */
+#mesondefine HAVE_SYS_SELECT_H
+
+/* Define to 1 if you have the <sys/sendfile.h> header file. */
+#mesondefine HAVE_SYS_SENDFILE_H
+
+/* Define to 1 if you have the <sys/socket.h> header file. */
+#mesondefine HAVE_SYS_SOCKET_H
+
+/* Define to 1 if you have the <sys/sockio.h> header file. */
+#mesondefine HAVE_SYS_SOCKIO_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#mesondefine HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/sysmacros.h> header file. */
+#mesondefine HAVE_SYS_SYSMACROS_H
+
+/* Define to 1 if you have the <sys/syscall.h> header file. */
+#mesondefine HAVE_SYS_SYSCALL_H
+
+/* Define to 1 if you have the <sys/sysctl.h> header file. */
+#mesondefine HAVE_SYS_SYSCTL_H
+
+/* Define to 1 if you have the <sys/tihdr.h> header file. */
+#mesondefine HAVE_SYS_TIHDR_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#mesondefine HAVE_SYS_TIME_H
+
+/* Define to 1 if you have the <sys/timex.h> header file. */
+#mesondefine HAVE_SYS_TIMEX_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#mesondefine HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/uio.h> header file. */
+#mesondefine HAVE_SYS_UIO_H
+
+/* Define to 1 if you have the <sys/un.h> header file. */
+#mesondefine HAVE_SYS_UN_H
+
+/* Define to 1 if you have the <sys/utsname.h> header file. */
+#mesondefine HAVE_SYS_UTSNAME_H
+
+/* Define to 1 if you have the <sys/wait.h> header file. */
+#mesondefine HAVE_SYS_WAIT_H
+
+/* Define to 1 if you have the <termio.h> header file. */
+#mesondefine HAVE_TERMIO_H
+
+/* Define to 1 if you have the <time.h> header file. */
+#mesondefine HAVE_TIME_H
+
+/* Define to 1 if you have the <ucd-snmp/snmp_impl.h> header file. */
+#mesondefine HAVE_UCD_SNMP_SNMP_IMPL_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#mesondefine HAVE_UNISTD_H
+
+/* Name of package */
+#mesondefine PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#mesondefine PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#mesondefine PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#mesondefine PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#mesondefine PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#mesondefine PACKAGE_URL
+
+/* Define to the version of this package. */
+#mesondefine PACKAGE_VERSION
+
+/* The size of `char', as computed by sizeof. */
+#mesondefine SIZEOF_CHAR
+
+/* The size of `int', as computed by sizeof. */
+#mesondefine SIZEOF_INT
+
+/* The size of `long', as computed by sizeof. */
+#mesondefine SIZEOF_LONG
+
+/* The size of `long long', as computed by sizeof. */
+#mesondefine SIZEOF_LONG_LONG
+
+/* The size of `off_t', as computed by sizeof. */
+#mesondefine SIZEOF_OFF_T
+
+/* The size of `short', as computed by sizeof. */
+#mesondefine SIZEOF_SHORT
+
+/* The size of `size_t', as computed by sizeof. */
+#mesondefine SIZEOF_SIZE_T
+
+/* The size of `socklen_t', as computed by sizeof. */
+#mesondefine SIZEOF_SOCKLEN_T
+
+/* The size of `te_log_id', as computed by sizeof. */
+#mesondefine SIZEOF_TE_LOG_ID
+
+/* The size of `te_log_level', as computed by sizeof. */
+#mesondefine SIZEOF_TE_LOG_LEVEL
+
+/* The size of `te_log_nfl', as computed by sizeof. */
+#mesondefine SIZEOF_TE_LOG_NFL
+
+/* The size of `te_log_seqno', as computed by sizeof. */
+#mesondefine SIZEOF_TE_LOG_SEQNO
+
+/* The size of `te_log_ts_sec', as computed by sizeof. */
+#mesondefine SIZEOF_TE_LOG_TS_SEC
+
+/* The size of `te_log_ts_usec', as computed by sizeof. */
+#mesondefine SIZEOF_TE_LOG_TS_USEC
+
+/* The size of `te_log_version', as computed by sizeof. */
+#mesondefine SIZEOF_TE_LOG_VERSION
+
+/* The size of `void *', as computed by sizeof. */
+#mesondefine SIZEOF_VOID_P
+
+/* Define to 1 if you have the ANSI C header files. */
+#mesondefine STDC_HEADERS
+
+/* Thread-local storage specifier */
+#mesondefine TE_THREAD_LOCAL
+
+/* Version number of package */
+#mesondefine VERSION
+
+/* check if in_port_t data type is defined */
+#mesondefine in_port_t
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+#mesondefine inline
+#endif
+
+#endif

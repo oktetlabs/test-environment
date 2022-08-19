@@ -1,0 +1,118 @@
+#############################
+## Log streaming user tools #
+#############################
+
+This directory provides several scripts that can be useful for debugging
+and testing TE's log streaming functionality:
+
+1. listener_server.pl - provides a "reference" implementation of a log listener
+2. log_replay.pl - emulates the requests that TE sends to log listeners
+
+This document describes these scripts and their usage.
+
+1. listener_server.pl
+=====================
+
+This script implements a basic log listener with the following capabilities:
+
+* Receive HTTP requests that carry information about test execution
+* Provide a minimal user interface to track test execution results and artifacts
+* Allow the user to stop the current test run
+* Record the log streaming session in a file (called 'weblog') in a format that
+  can be used by log_replay.pl
+
+In order to use this script with TE, the user has to do the following:
+
+1. Prepare a configuration file for Logger
+
+Listener configuration is performed in the "listeners" section. The following
+example should suffice in most cases:
+
+```
+---
+listeners:
+    - name: listener_test
+      url: http://localhost:3000/
+      enabled: yes
+      interval: 10
+      buffer_size: 65536
+      buffers_num: 4
+      allow_stop: no
+      rules:
+        - filter:
+            - exclude: 1
+            - include: 1
+              entity: Tester
+              user: Control
+          rule: test_progress
+        - filter:
+            - exclude: 1
+            - include: 1
+              level: MI
+              user: Artifact
+          rule: artifact
+```
+
+2. Start the server
+
+This script uses the Mojolicious framework and the JSON package, so the user
+needs to make sure they have it installed. On Debian-based systems, this can be
+done with this command:
+
+sudo apt-get install libmojolicious-perl libjson-perl
+
+Once Mojolicious is installed, the user can start the server like this:
+
+./listener_server.pl daemon
+
+3. Start TE
+
+In order to enable log streaming in TE, an additional command-line argument must
+be specified:
+
+* --logger-listener=<NAME> - enables a listener, a listener with the given name
+                             is expected to be described in the config file
+
+With the configuration file shown above, the full command to run the selftest
+test suite looks like this:
+
+./run.sh --cfg=gimli1 --logger-listener=listener_test --tester-req=\!BROKEN
+
+2. log_replay.pl
+================
+
+This script takes a file with a log streaming session and replays the requests
+to a given listener.
+
+It relies on LWP and JSON perl packages. On Debian-based systems, they can be
+installed like this:
+
+sudo apt-get install libwww-perl libjson-perl
+
+Once the user has installed the dependencies and prepared a recording of a log
+streaming session, they can start the script like this:
+
+./log_replay.pl http://localhost:3000 weblog
+
+The following flags can be specified before the listener URL:
+
+* --trailing-slash will make the script append trailing slashes to the URLs it
+  uses to communicate with the listener (required for Bublik and other projects
+  that use Django).
+
+* --update-timestamps can be specified to make this script pretend that testing
+  started now, i.e. the "init" event's timestamp will be set to current time
+  and other timestamps will be adjusted to keep the same test duration. This is
+  particularly useful with Bublik, where different runs usually require
+  different timestamps.
+
+* --start-timestamp=UNIXTIME is analogous to --update-timestamps, but allows
+  the user to manually set the initial timestamp for the run. UNIXTIME is
+  expected to be a UNIX timestamp.
+
+Keep in mind that, at least in the current version of the script, the delays
+between requests are not emulated. In other words, once a response is received,
+the next request will be sent immediately.
+
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.

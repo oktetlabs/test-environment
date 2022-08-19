@@ -1,0 +1,34 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Linux namespaces configuration on Agents.
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/namespace"
+      access: read_only
+      type: none
+      d: |
+         Generic linux namespaces management subtree.
+         Name:  empty
+
+    - oid: "/agent/namespace/net"
+      access: read_create
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         Network namespaces.
+         Name: Name of the namespace.
+
+    - oid: "/agent/namespace/net/interface"
+      access: read_create
+      type: none
+      d: |
+         Interfaces wich are moved from the current agent namespace to the
+         specified.
+         Name: Name of the interface.

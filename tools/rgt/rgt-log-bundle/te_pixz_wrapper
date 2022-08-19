@@ -1,0 +1,10 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
+
+# This is a simple wrapper over pixz making possible to use
+# it with tar while setting higher compression level.
+# Note: increasing compression level results in slower
+# extraction of individual files.
+
+pixz -6 $@

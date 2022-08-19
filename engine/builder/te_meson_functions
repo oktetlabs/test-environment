@@ -1,0 +1,42 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment Builder
+#
+# Collection of meson-specific functions.
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+#
+# For unknown reason ninja does not apply NINJA_STATUS variable
+# when installing/preserving files.
+#
+declare -a NINJA_STDOUT_LIST
+NINJA_STDOUT_LIST+=("Installing ")
+NINJA_STDOUT_LIST+=("Preserving existing file ")
+
+declare -a NINJA_EXTRA_OPTS
+if test -n "$BUILDER_DEBUG" ; then
+     NINJA_EXTRA_OPTS+=("-dexplain")
+fi
+
+# Helper function to split ninja output into stdout and stderr
+function ninja_status_filter () {
+    local l n
+
+    while read -r l; do
+        n=${l#\[ninja\]}
+        if test "$l" != "$n" ; then
+            printf "%s\n" "$n"
+        else
+            local found=false
+            for i in "${NINJA_STDOUT_LIST[@]}" ; do
+                if test "$l" != "${l#${i}}" ; then
+                    found=true
+                    break
+                fi
+            done
+            ${found} && printf "%s\n" "$l" || printf "%s\n" "$l" >&2
+        fi
+    done
+}

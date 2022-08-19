@@ -1,0 +1,206 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    configuration related to L2TP server on Agents.
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+- register:
+
+    - oid: "/agent/l2tp/"
+      access: read_write
+      type: integer
+      d: |
+         A root object for the L2TP server
+         Name: none
+
+    - oid: "/agent/l2tp/listen"
+      access: read_write
+      type: address
+      d: |
+         The IP address of the interface on which
+         the daemon listens
+         Name: empty
+
+    - oid: "/agent/l2tp/port"
+      access: read_write
+      type: integer
+      d: |
+         The UDP port xl2tpd should use.
+         Name: empty
+
+    - oid: "/agent/l2tp/lns"
+      access: read_write
+      type: none
+      d: |
+         An object for the LNS section
+         Name: LNS section name
+
+    - oid: "/agent/l2tp/lns/ip_range"
+      access: read_create
+      type: string
+      d: |
+         This object stores the ranges of ipv4 addresses
+         which will(not) be assigned to the clients
+         Name: START-END
+         Value allow or deny
+
+    - oid: "/agent/l2tp/lns/lac_range"
+      access: read_create
+      type: string
+      d: |
+         This object stores the ranges of LAC's ipv4 addresses
+         which can(can't) establish the connection with LNS
+         Name: START-END
+         Value allow or deny
+
+    - oid: "/agent/l2tp/lns/connected"
+      access: read_only
+      type: address
+      d: |
+         This identifier describes the connected
+         clients to LNS
+         Name: empty
+
+    - oid: "/agent/l2tp/lns/local_ip"
+      access: read_write
+      type: address
+      d: |
+         This identifier describes the local
+         ipv4 address of the L2TP server
+         Name: empty
+
+    - oid: "/agent/l2tp/lns/bit"
+      access: read_create
+      type: string
+      d: |
+         The L2TP additional bits.
+         Name: hidden, length, flow
+         Value: no or yes
+
+    - oid: "/agent/l2tp/lns/ppp_debug"
+      access: read_write
+      type: string
+      d: |
+         The L2TP additional bits.
+         Name: empty
+         Value: no or yes
+
+    - oid: "/agent/l2tp/lns/auth"
+      access: read_create
+      type: none
+      d: |
+         Authentication methods.
+         Name: chap, pap or authentication for
+         the remote peer to authenticate itself.
+
+    - oid: "/agent/l2tp/lns/auth/refuse"
+      access: read_write
+      type: string
+      d: |
+         Whether refuse the authentication.
+         Name: empty
+         Value: no or yes
+
+    - oid: "/agent/l2tp/lns/auth/require"
+      access: read_write
+      type: string
+      d: |
+         Whether require the authentication.
+         Name: empty
+         Value: no or yes
+
+    - oid: "/agent/l2tp/lns/auth/client"
+      access: read_write
+      type: none
+      d: |
+         Client name for the authentication secrets.
+         Name: any
+               "*" indicates that any client is allowed
+
+    - oid: "/agent/l2tp/lns/auth/client/server"
+      access: read_write
+      type: string
+      d: |
+         Server name for the authentication secrets.
+         Name: any
+               "*" indicates that any server is allowed
+
+    - oid: "/agent/l2tp/lns/auth/client/secret"
+      access: read_write
+      type: string
+      d: |
+         Secret for the authentication secrets.
+         Name: any
+               "*" indicates that any secret is allowed
+
+    - oid: "/agent/l2tp/lns/auth/client/ipv4"
+      access: read_write
+      type: string
+      d: |
+         IPv4 for the authentication secrets.
+         Name: IPv4 in human notation (with dots)
+               "*" indicates that any IP address is allowed
+
+    - oid: "/agent/l2tp/lns/use_challenge"
+      access: read_write
+      type: string
+      d: |
+         Use challenge authentication to authenticate peer.
+         Name: empty
+         Value: no or yes
+
+    - oid: "/agent/l2tp/lns/unix_auth"
+      access: read_write
+      type: string
+      d: |
+         Use /etc/passwd for remote peer ppp authentication.
+         Name: empty
+         Value: no or yes
+
+    - oid: "/agent/l2tp/lns/pppopt/"
+      access: read_write
+      type: none
+      d: |
+         Root object for the pppd configuration parameters
+         Name: empty
+
+    - oid: "/agent/l2tp/lns/pppopt/mtu"
+      access: read_write
+      type: integer
+      d: |
+         Specifying the MTU
+         Name: empty
+
+    - oid: "/agent/l2tp/lns/pppopt/mru"
+      access: read_write
+      type: integer
+      d: |
+         Specifying the MRU
+         Name: empty
+
+    - oid: "/agent/l2tp/lns/pppopt/lcp-echo-failure"
+      access: read_write
+      type: integer
+      d: |
+         pppd will presume
+         the peer to be dead if n LCP echo-requests are
+         sent without receiving a valid LCP echo-reply.
+         Name: empty
+
+    - oid: "/agent/l2tp/lns/pppopt/lcp-echo-interval"
+      access: read_write
+      type: integer
+      d: |
+         pppd will send an LCP
+         echo-request frame to the peer every n seconds
+         Name: empty
+
+    - oid: "/agent/l2tp/lns/pppopt/option"
+      access: read_create
+      type: none
+      d: |
+         Addtitional options to pppd
+         Name: as example: nodeflate, noproxyarp, lock.
+               Other options can be found in man pppd

@@ -1,0 +1,28 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Helper script to build i386 binaries with meson
+#
+# Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+
+set -e
+
+pkg_cfg_path="$(pkg-config --variable pc_path pkg-config)"
+if test "${pkg_cfg_path/x86_64/}" != "${pkg_cfg_path}" ; then
+    # Debian/Ubuntu
+    pkg_cfg_path="${pkg_cfg_path//x86_64/i386}"
+elif test "${pkg_cfg_path/lib64/}" != "${pkg_cfg_path}" ; then
+    # RHEL7, RHEL8, Fedora
+    pkg_cfg_path="${pkg_cfg_path//lib64/lib}"
+else
+    echo "ERROR: unknown PKG_CONFIG_PATH: $pkg_cfg_path" >&2
+    exit 1
+fi
+
+# Add existing PKG_CONFIG_PATH to the end of the list since
+# pkg_cfg_path variable contains path to system directories
+test -n "$PKG_CONFIG_PATH" && pkg_cfg_path+=":${PKG_CONFIG_PATH}"
+export PKG_CONFIG_PATH="$pkg_cfg_path"
+
+export CPPFLAGS="-m32"
+export LDFLAGS="-m32"

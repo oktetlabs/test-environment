@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>Package for demonstrating TAPI/RPC file tests</description>
+    <author mailto="te-maint@oktetlabs.ru"/>
+    <session track_conf="silent">
+        <run>
+            <script name="file_create_delete"/>
+        </run>
+        <run>
+            <script name="file_put"/>
+            <arg name="len">
+                <value>42</value>
+            </arg>
+        </run>
+        <run>
+            <script name="file_get"/>
+        </run>
+        <run>
+            <script name="file_read"/>
+        </run>
+        <run>
+            <script name="file_write"/>
+        </run>
+        <run>
+            <script name="file_append"/>
+        </run>
+        <run>
+            <script name="file_copy"/>
+        </run>
+        <run>
+            <script name="file_directory"/>
+            <arg name="nfiles">
+                <value>42</value>
+            </arg>
+        </run>
+    </session>
+</package>

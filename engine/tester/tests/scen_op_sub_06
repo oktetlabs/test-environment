@@ -1,0 +1,4 @@
+#! /bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved.
+echo -n "[] sub [[2,8,A]] = []" | ./scen_op_test

@@ -1,0 +1,45 @@
+#! /bin/sh
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Coverage Estimation
+#
+# Log merging utility
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+usage() {
+    if test -n "$1" ; then
+        echo -e "$1" >&2
+    fi
+    cat >&2 <<EOF
+
+USAGE: tce_merge_logs BASE-LOG-FILE NEW-LOG-FILE
+
+Merges the data from NEW-LOG-FILE produced by tce_report
+into BASE-LOG-FILE.
+
+EOF
+    exit 1
+}
+
+mergefile="$1"
+newlog="$2"
+
+if test -z "$mergefile" -o -z "$newlog"; then
+    usage "Missing arguments"
+fi
+
+if test -z "`which tce_merge`" ; then
+    mydir=`dirname $0`
+    if test -x "${mydir}/tce_merge" ; then
+        export PATH="${mydir}:${PATH}"
+    else
+        echo "Supporting scripts not found!!!" >&2
+        exit 1
+    fi
+fi
+
+
+ar x "$newlog"
+ar t "$newlog" | awk -vFS=. '{ print $0, $2 }' | xargs -n2 tce_merge $mergefile "" ""
+ar t "$newlog" | xargs -n1 rm -f

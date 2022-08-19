@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+
+    <description>Tests on TAD DHCP functionality.</description>
+
+    <author mailto="te-maint@oktetlabs.ru"/>
+
+    <session random="true">
+        <run>
+            <script name="wait_discover">
+                <req id="TAD_SNMP"/>
+            </script>
+        </run>
+    </session>
+
+</package>

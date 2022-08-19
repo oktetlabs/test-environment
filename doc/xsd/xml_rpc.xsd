@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<schema xml:lang="en"
+        xmlns="http://www.w3.org/2001/XMLSchema">
+
+    <documentation>
+        Test Environment
+        XML schema for RCF XML RPC
+
+        Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+    </documentation>
+
+    <element name="call">
+        <annotation>
+            <documentation>
+                RPC call request.
+            </documentation>
+        </annotation>
+
+        <complexType>
+            <attribute name="name" type="string" use="require">
+                <annotation>
+                    <documentation>
+                        Name of the routine to be called.
+                    </documentation>
+                </annotation>
+            </attribute>
+
+            <sequence>
+                <element ref="param" minOccurs="0" maxOccurs="unbounded"/>
+            </sequence>
+        </complexType>
+    </element>
+
+    <element name="result">
+        <annotation>
+            <documentation>
+                RPC call request.
+            </documentation>
+        </annotation>
+
+        <complexType>
+            <attribute name="name" type="string" use="require">
+                <annotation>
+                    <documentation>
+                        Name of the routine returning the result.
+                    </documentation>
+                </annotation>
+            </attribute>
+
+            <attribute ="rc" use="require">
+                <annotation>
+                    <documentation>
+                        Return code.
+                    </documentation>
+                </annotation>
+                <simpleType>
+                  <restriction base="token">
+                    <enumeration value="OK"/>
+                    <enumeration value="FAIL"/>
+                  </restriction>
+                </simpleType>
+            </attribute>
+            <attribute ="reason" type="string">
+                <annotation>
+                    <documentation>
+                        Error description.
+                    </documentation>
+                </annotation>
+            </attribute>
+
+            <sequence>
+                <element ref="param" minOccurs="0" maxOccurs="unbounded"/>
+            </sequence>
+        </complexType>
+    </element>
+
+    <element name="param">
+        <annotation>
+            <documentation>
+                In/out parameter value of element of the structure or array.
+            </documentation>
+        </annotation>
+
+        <complexType>
+            <attribute name="name" type="string">
+                <annotation>
+                    <documentation>
+                        Parameter/field name.
+                    </documentation>
+                </annotation>
+            </attribute>
+
+            <attribute name="value" type="string">
+                <annotation>
+                    <documentation>
+                        Value for simple type parameters.
+                    </documentation>
+                </annotation>
+            </attribute>
+
+            <sequence>
+                <choice>
+                    <element ref="struct" minOccurs="0"/>
+                    <element ref="array" minOccurs="0"/>
+                </choice>
+            </sequence>
+        </complexType>
+    </element>
+
+    <element name="struct">
+        <complexType>
+            <annotation>
+                <documentation>
+                    Structure parameter.
+                </documentation>
+            </annotation>
+
+            <sequence>
+                <element ref="param" minOccurs="1" maxOccurs="unbounded"/>
+            </sequence>
+        </complexType>
+    </element>
+
+    <element name="array">
+        <complexType>
+            <annotation>
+                <documentation>
+                    Array parameter.
+                </documentation>
+            </annotation>
+
+            <sequence>
+                <element ref="param" minOccurs="0" maxOccurs="unbounded"/>
+            </sequence>
+        </complexType>
+    </element>
+
+</schema>

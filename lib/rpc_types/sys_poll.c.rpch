@@ -1,0 +1,90 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/** @file
+ * @brief RPC types definitions
+ *
+ * RPC analogues of definitions from sys/poll.h.
+ *
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ */
+
+#include "te_config.h"
+#include "config.h"
+
+#if HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#if HAVE_SYS_POLL_H
+#include <sys/poll.h>
+#endif
+
+#include "te_rpc_defs.h"
+#include "te_rpc_sys_poll.h"
+
+
+/** Invalid poll evend */
+#define POLL_UNKNOWN 0xFFFF
+
+/**
+ * To have these constants defined in Linux, specify
+ * -D_GNU_SOURCE (or other related feature test macro) in
+ * TE_PLATFORM macro in your builder.conf
+ */
+#ifndef POLLRDNORM
+#define POLLRDNORM  0
+#endif
+#ifndef POLLWRNORM
+#define POLLWRNORM  0
+#endif
+#ifndef POLLRDBAND
+#define POLLRDBAND  0
+#endif
+#ifndef POLLWRBAND
+#define POLLWRBAND  0
+#endif
+#ifndef POLLRDHUP
+#define POLLRDHUP  0
+#endif
+
+/** All known poll events */
+#define POLL_ALL        (POLLIN | POLLPRI | POLLOUT | \
+                         POLLRDNORM | POLLWRNORM | \
+                         POLLRDBAND | POLLWRBAND | \
+                         POLLERR | POLLHUP | POLLNVAL | \
+                         POLLRDHUP)
+
+unsigned int
+poll_event_rpc2h(unsigned int events)
+{
+    if ((events & ~RPC_POLL_ALL) != 0)
+        return POLL_UNKNOWN;
+
+    return (!!(events & RPC_POLLIN) * POLLIN) |
+           (!!(events & RPC_POLLPRI) * POLLPRI) |
+           (!!(events & RPC_POLLOUT) * POLLOUT) |
+           (!!(events & RPC_POLLRDNORM) * POLLRDNORM) |
+           (!!(events & RPC_POLLWRNORM) * POLLWRNORM) |
+           (!!(events & RPC_POLLRDBAND) * POLLRDBAND) |
+           (!!(events & RPC_POLLWRBAND) * POLLWRBAND) |
+           (!!(events & RPC_POLLERR) * POLLERR) |
+           (!!(events & RPC_POLLHUP) * POLLHUP) |
+           (!!(events & RPC_POLLNVAL) * POLLNVAL) |
+           (!!(events & RPC_POLLRDHUP) * POLLRDHUP);
+}
+
+unsigned int
+poll_event_h2rpc(unsigned int events)
+{
+    return (!!(events & ~POLL_ALL) * RPC_POLL_UNKNOWN)
+           | (!!(events & POLLIN) * RPC_POLLIN)
+           | (!!(events & POLLPRI) * RPC_POLLPRI)
+           | (!!(events & POLLOUT) * RPC_POLLOUT)
+           | (!!(events & POLLRDNORM) * RPC_POLLRDNORM)
+           | (!!(events & POLLWRNORM) * RPC_POLLWRNORM)
+           | (!!(events & POLLRDBAND) * RPC_POLLRDBAND)
+           | (!!(events & POLLWRBAND) * RPC_POLLWRBAND)
+           | (!!(events & POLLERR) * RPC_POLLERR)
+           | (!!(events & POLLHUP) * RPC_POLLHUP)
+           | (!!(events & POLLNVAL) * RPC_POLLNVAL)
+           | (!!(events & POLLRDHUP) * RPC_POLLRDHUP)
+           ;
+}

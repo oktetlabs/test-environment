@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+
+    <description>Test package for TAPI Job options</description>
+
+    <author mailto="Artem.Andreev@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+        <run>
+            <script name="sample"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+        </run>
+    </session>
+</package>

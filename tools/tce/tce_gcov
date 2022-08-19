@@ -1,0 +1,24 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Coverage Estimation
+#
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+TOPDIR="$1"
+DATAFILE="$2"
+
+case "$DATAFILE" in
+    *.gcda) version=`od -tc $DATAFILE | awk '{ print $9 "." $7; exit 0}'`
+    gcov=`eval echo \$\{TE_GCOV_${version/./_}\}`
+    test -z "$gcov" && gcov=gcov-$version
+    ;;
+    *.da)     gcov=${TE_GCOV_OLD:-gcov-3.3} ;;
+    *) echo "Strange data file $DATAFILE" >&2; exit 1 ;;
+esac
+if ! which $gcov >/dev/null 2>&1 ; then
+    gcov=gcov
+fi
+cd "$TOPDIR"
+exec $gcov -l -c -b "${DATAFILE#$PWD/}" >/dev/null

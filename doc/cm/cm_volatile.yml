@@ -1,0 +1,64 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Miscellaneous volatile configurations inculding test engine and
+    test API options.
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/volatile"
+      access: read_create
+      type: none
+      volatile: true
+      d: |
+         Volatile engine data root.
+         Name: empty
+
+    - oid: "/volatile/alien_link_addr"
+      access: read_write
+      type: address
+      volatile: true
+      d: |
+        Link layer address (IEEE 802.3 MAC address) which does not belong to any
+        testing network node. It is incremented automatically on every allocation.
+          Name: empty
+          Value: Link layer address
+
+    - oid: "/volatile/fake_link_addr"
+      access: read_write
+      type: address
+      volatile: true
+      d: |
+        Link layer address (IEEE 802.3 MAC address) which does not belong to any
+        testing network node. It is allocated once.
+          Name: empty
+          Value: Link layer address
+
+    - oid: "/volatile/sockaddr_port"
+      access: read_write
+      type: integer
+      volatile: true
+      d: |
+        Cache used for unique port allocation.
+          Name: empty
+          Value: transport port number
+
+    - oid: "/volatile/ta_sockets"
+      access: read_create
+      type: string
+      d: |
+         Socket library ("berkeley", "winsock2").
+         Name: TA name
+         Value: readable library name
+
+    - oid: "/volatile/cache"
+      access: read_create
+      type: none
+      d: |
+         Root node for cached data
+         Name: empty
+         Value: none

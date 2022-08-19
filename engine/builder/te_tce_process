@@ -1,0 +1,574 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Coverage Estimation
+# Process TCE for all NUT images
+#
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+. "${TE_BUILD}/builder.conf.processed"
+
+SCRIPT_DIR=`dirname $0`
+. ${SCRIPT_DIR}/te_functions
+
+function die
+{
+    echo "ERROR: $*" > /dev/stderr
+    exit 1
+}
+
+TCE_WS="${TE_BUILD}/tce_workspace"
+
+if test -d "${TCE_WS}" ; then
+    rm -rf "${TCE_WS}"
+fi
+mkdir "${TCE_WS}" || \
+    die "fail to create workspace to process TCE"
+
+declare -A platform_ws
+
+for platform in $TE_BS_PLATFORMS ; do
+    ws_file="${TE_BUILD}/platforms/${platform}/${platform}.ws"
+    ws_dir="$(cat "$ws_file")"
+    platform_ws[${platform}]="${ws_dir}"
+done
+
+declare -A platform_tce
+declare -A platform_tce_build
+
+for platform in $TE_BS_PLATFORMS; do
+    tce_list="$*"
+    if test "$tce_list" = all; then
+        alltce="TE_BS_TCE_$platform"
+        tce_list="${!alltce}"
+    fi
+    fake_sbd=
+    if test -n "$tce_list" -a -f "${TE_BUILD}/${platform}.sbd"; then
+        # When shadow build directory is used, GCOV data files will be
+        # created in that directory, instead of the normal build directory.
+        # That's a limitation of GCC+GCOV which in principle can be
+        # circumvented by a combination of GCC scripts and environment
+        # variables, but it seems like this way is simpler and more reliable
+        sbd="$(cat "${TE_BUILD}/${platform}.sbd")"
+        if test "${sbd}" != "${TE_BUILD}"; then
+            te_eval_or_ssh "${platform}" "
+               sudo tar -C '${sbd}' -czf - . ;
+               sudo rm -rf '${sbd}' >/dev/null
+            " | tar -C "${TE_BUILD}" -xzf -
+            # The build directory may contain files with profilable code,
+            # e.g. headers with inline functions.
+            # If a shadow build directory has been used, it will be searched
+            # by gcov, so we create a local fake symlink to it
+            ln -s "${TE_BUILD}" "${sbd}"
+            fake_sbd=1
+        fi
+    fi
+    for tce in $tce_list ; do
+        srcvar="TE_BS_TCE_${platform}_${tce}_SOURCES"
+        if test -z "${!srcvar}"; then
+            echo "warning: TCE component $tce not defined for platform $platform" >&2
+            continue
+        fi
+        buildvar="TE_BS_TCE_${platform}_${tce}_MESON_BUILDDIR"
+        if ! test -d "${!buildvar}" ; then
+            buildvar="TE_BS_TCE_${platform}_${tce}_BUILDDIR"
+            if ! test -d "${!buildvar}" ; then
+                echo "warning: TCE component $tce not built for platform $platform @ ${!buildvar}" >&2
+                continue
+            fi
+        else
+            test -d "${!buildvar}/../src" || ln -s "${!srcvar}" "${!buildvar}/../src"
+        fi
+        if test -f "${!buildvar}/build.ninja"; then
+            wsdir="${platform_ws[${platform}]}"
+            build="${!buildvar#${TE_BUILD}/platforms/${platform}/}"
+
+            platform_tce[${platform}]+=" ${tce}"
+            platform_tce_build["${platform}_${tce}"]="${build}"
+
+            continue
+        fi
+        find "${!buildvar}" -name '*.da' -o -name '.*.da' -o -name '*.gcda' -o -name '.*.gcda' | \
+            xargs -r -n1 tce_gcov "${!buildvar}" || exit 1
+        find "${!buildvar}" -name '*.gcov' -o -name '.*.gcov' | sort | \
+            xargs -r -n1 tce_report >${TE_LOG_DIR}/tce_log_${platform}_${tce}.tce || exit 1
+        mkdir -p ${TE_LOG_DIR}/tce_log_${platform}_${tce}_files
+        excludevar="TE_BS_TCE_${platform}_${tce}_EXCLUDESRC"
+        (cd "${!buildvar}";
+         tce_summary -vEXCLUDE="${!excludevar}" -vSORTMODE=coverage \
+                     -vDATADIR=${TE_LOG_DIR}/tce_log_${platform}_${tce}_files \
+                     ${TE_LOG_DIR}/tce_log_${platform}_${tce}.tce > \
+                     ${TE_LOG_DIR}/tce_log_${platform}_${tce}.html)
+    done
+    test -n "$fake_sbd" && rm -f "$sbd"
+done
+
+function parse_ta_list_line
+{
+    local _map=$1
+    shift
+    local line=( $@ )
+    local platform="${line[2]}"
+    local host="${line[1]}"
+    local hosts=
+
+    test \( -n "${platform}" \) -a \( -n "${host}" \) || \
+        return 1
+
+    hosts="$(eval echo "\${${_map}[${platform}]}")"
+    hosts="${hosts}${hosts:+ }${host}"
+
+    eval "${_map}[${platform}]=\"${hosts}\""
+}
+
+function map_platform_to_hosts
+{
+    local ta_file="${TE_TA_LIST_FILE}"
+    local line=
+    declare -gA platform_hosts
+
+    while read line ; do
+        test -n "$line" || \
+            continue
+        parse_ta_list_line platform_hosts "$line" || \
+            die "fail to parse the list of TA hosts"
+    done < "${ta_file}" || \
+        die "fail to read the list of TA hosts"
+}
+
+map_platform_to_hosts
+
+function set_platform_host_ssh
+{
+    local platform=$1
+    local host=$2
+    local p_host_ssh="${platform}_${host}_SSH"
+    local host_ssh="${!p_host_ssh}"
+    local p_ssh="${platform}_SSH"
+    local ssh="${!p_ssh}"
+
+    test -n "$host_ssh" && \
+        return 0
+
+    host_ssh=$(echo "${ssh}" | sed "s/ [^ ]\+$/ ${host}/")
+
+    export ${p_host_ssh}="${host_ssh}"
+}
+
+function check_host_dir
+{
+    local platform="$1"
+    local host="$2"
+    local dir="$3"
+    local rc=
+
+    te_eval_or_ssh "${platform}_${host}" \
+                   "test -d \"$dir\""
+    rc=$?
+
+    case $rc in
+    0|1)
+        return $rc
+        ;;
+    *)
+        die "fail to check directory: " \
+            "platform ${platform} host {$host}"
+        ;;
+    esac
+}
+
+function rsync_fnmatch_from
+{
+    local fnm="$1"
+    local platform="$2"
+    local src="$3"
+    local dst="$4"
+    local p_ssh="${platform}_SSH"
+    local ssh="${!p_ssh}"
+    local rsync="rsync -a --include=${fnm} --include=*/ --exclude=*"
+
+    if test -n "${ssh}" ; then
+        ${rsync} -e "${ssh% *}" "${ssh##* }:${src}/" "${dst}/"
+    else
+        ${rsync} "${src}/" "${dst}/"
+    fi
+}
+
+function rsync_fnmatch_to
+{
+    local fnm="$1"
+    local platform="$2"
+    local src="$3"
+    local dst="$4"
+    local p_ssh="${platform}_SSH"
+    local ssh="${!p_ssh}"
+    local rsync="rsync -a --include=${fnm} --include=*/ --exclude=*"
+
+    if test -n "${ssh}" ; then
+        ${rsync} -e "${ssh% *}" "${src}/" "${ssh##* }:${dst}/"
+    else
+        ${rsync} "${src}/" "${dst}/"
+    fi
+}
+
+function tce_ws_dir
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+
+    echo "${TCE_WS}/${platform}_${host}_${tce}"
+}
+
+function fetch_host_tce
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+    local hostdir="${platform_ws[${platform}]}"
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+
+    mkdir -p "${tcedir}/build" || \
+        die "fail to create directory to save TCE: " \
+            "platform ${platform} host ${host} tce ${tce}"
+
+    # Check TCE provided by a host
+    check_host_dir ${platform} ${host} "${hostdir}/${build}" || \
+        return 0
+
+    rsync_fnmatch_from "*.gcda" "${platform}_${host}" "${hostdir}/${build}" \
+                       "${tcedir}/build" || \
+        die "fail to fetch TCE: " \
+            "platform ${platform} host ${host} tce ${tce}"
+}
+
+function clean_platform_tce
+{
+    local platform=$1
+    local tce=$2
+    local hostdir="${platform_ws[${platform}]}"
+    local hostdest="${hostdir}/destdir/${TE_INSTALL}/${platform}"
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+
+    te_eval_or_ssh "${platform}" "
+                   export PATH=\"${hostdest}/bin:\${PATH}\" ;
+                   te_clean_gcov.sh \"${hostdir}/${build}\"
+                   " || \
+        die "fail to clean platform TCE: " \
+            "platform ${platform} tce ${tce}"
+}
+
+function process_host_tce
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local hostdir="${platform_ws[${platform}]}"
+    local hostdest="${hostdir}/destdir/${TE_INSTALL}/${platform}"
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+
+    rsync_fnmatch_to "*.gcda" ${platform} "${tcedir}/build" \
+                     "${hostdir}/${build}" || \
+        die "fail to place TCE onto platform: " \
+            "platform ${platform} host ${host} tce ${tce}"
+
+    te_eval_or_ssh ${platform} "
+                   export PATH=\"${hostdest}/bin:\${PATH}\" ;
+                   te_process_gcov.sh \"${hostdir}/${build}\"
+                   " || \
+        die "fail to process TCE on platform: " \
+            "platform ${platform} host ${host} tce ${tce}"
+
+    rsync_fnmatch_from "*.gcov" ${platform} "${hostdir}/${build}" \
+                       "${tcedir}/build" || \
+        die "fail to fetch TCE from platform: " \
+            "platform ${platform} host ${host} tce ${tce}"
+}
+
+function link_platform_tce_install
+{
+    local platform=$1
+    local tce=$2
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local pbuild="${TE_BUILD}/platforms/${platform}"
+    local inst="$(realpath ${pbuild}/${build}/../inst)"
+
+    test -d "${inst}" && \
+        return 0
+
+    test -d "${TE_INSTALL}/${platform}" || \
+        die "fail to locate install directory: " \
+            "platform ${platform} tce ${tce}"
+
+    ln -s "${TE_INSTALL}/${platform}" "${inst}" || \
+        die "fail to link install directory: " \
+            "platform ${platform} tce ${tce}"
+}
+
+function resolve_platform_host_tce
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+    local hostdir="${platform_ws[${platform}]}"
+    local pbuild="${TE_BUILD}/platforms/${platform}"
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local conf="${tcedir}/tce.conf"
+
+    cat > "${conf}" << EOF
+{
+    "build" : "${build}",
+    "inst" : "../inst",
+    "plat_build" : "${pbuild}/${build}",
+    "host_build" : "${hostdir}/${build}",
+    "host_inst" : "${hostdir}/destdir/${TE_INSTALL}/${platform}",
+    "unres" : "unres.txt"
+}
+EOF
+
+    tce_resolve_gcov.py "${conf}" || \
+        die "fail to resolve gcovs: " \
+            "platform ${platform} host ${host} tce ${tce}"
+}
+
+tce_py="${TE_INSTALL}/${TE_HOST}/lib"
+export PYTHONPATH="${tce_py}:${PYTHONPATH}"
+
+for platform in "${!platform_tce[@]}" ; do
+    tce_list="${platform_tce[${platform}]}"
+    hosts="${platform_hosts[${platform}]}"
+
+    for host in ${hosts} ; do
+        set_platform_host_ssh ${platform} ${host}
+
+        for tce in ${tce_list} ; do
+            fetch_host_tce ${platform} ${host} ${tce}
+        done
+    done
+
+    for host in ${hosts} ; do
+        for tce in ${tce_list} ; do
+            clean_platform_tce ${platform} ${tce}
+            process_host_tce ${platform} ${host} ${tce}
+        done
+    done
+
+    for tce in ${tce_list} ; do
+        link_platform_tce_install ${platform} ${tce}
+
+        for host in ${hosts} ; do
+            resolve_platform_host_tce ${platform} ${host} ${tce}
+        done
+    done
+done
+
+function get_tce_platforms
+{
+    local tce=$1
+    local platform=
+    local tce_list=
+    local platforms=
+
+    for platform in "${!platform_tce[@]}" ; do
+        tce_list="${platform_tce[${platform}]}"
+        test "${tce_list/${tce}/ }" != "$tce_list" && \
+            platforms+="${platform} "
+    done
+
+    echo "${platforms}"
+}
+
+function clean_tce_on_build
+{
+    local platform=$1
+    local tce=$2
+    local build=""${platform_tce_build["${platform}_${tce}"]}""
+    local wsdir="${TE_BUILD}/platforms/${platform}"
+    local files=
+    local f=
+
+    pushd "${wsdir}/${build}" > /dev/null || \
+        die "fail to locate build: " \
+            "platform ${platform} tce ${tce}"
+
+    files=$(find . -name \*.gcda -o -name \*.gcov) || \
+        die "fail to list TCE files into build: " \
+            "platform ${platform} tce ${tce}"
+
+    for f in ${files} ; do
+        rm "$f" || \
+            die "fail to remove $f from build: " \
+                "platform ${platform} tce ${tce}"
+    done
+
+    popd > /dev/null
+}
+
+function copy_tce_to_build
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local wsdir="${TE_BUILD}/platforms/${platform}"
+
+    test -d "${tcedir}/build" || \
+        die "fail to locate TCE files: " \
+            "platform ${platform} host ${host} tce ${tce}"
+
+    rsync -a --include=\*.gcov --include=\*/ --exclude=\* \
+          "${tcedir}/build/" "${wsdir}/${build}/" || \
+        die "fail to place TCE into build: " \
+            "platform ${platform} host ${host} tce ${tce}"
+}
+
+function report_host_tce
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local wsdir="${TE_BUILD}/platforms/${platform}"
+    local report="${tcedir}/report.tce"
+    local files=
+    local f=
+
+    > "${report}" || \
+        die "fail to clean TCE report: " \
+            "platform ${platform} host ${host} tce ${tce}"
+
+    pushd "${wsdir}/${build}" > /dev/null || \
+        die "fail to locate build: " \
+            "platform ${platform} host ${host} tce ${tce}"
+
+    files=$(find . -name \*.gcov | sort) || \
+        die "fail to list TCE files into build: " \
+            "platform ${platform} host ${host} tce ${tce}"
+
+    for f in ${files} ; do
+        cat "$f" | tce_report >> "${report}" || \
+            die "fail to process report for TCE file $f: " \
+                "platform ${platform} host ${host} tce ${tce}"
+    done
+
+    popd > /dev/null
+}
+
+function summarise_tce
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+    local repname="$4"
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local report="${tcedir}/report.tce"
+    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local wsdir="${TE_BUILD}/platforms/${platform}"
+    local p_excl="TE_BS_TCE_${platform}_${tce}_EXCLUDESRC"
+    local excl="${!p_excl}"
+    local resbase="${TE_LOG_DIR}/${repname}"
+
+    test -d "${resbase}_files" && \
+        rm -r "${resbase}_files"
+
+    mkdir -p "${resbase}_files"
+
+    pushd "${wsdir}/${build}" > /dev/null || \
+        die "fail to locate platform to summarise TCE: " \
+             "platform ${platform} host ${host} tce ${tce}"
+
+    tce_summary -vEXCLUDE="${excl}" -vSORTMODE=coverage \
+                -vDATADIR="${resbase}_files" \
+                "${report}" > \
+                "${resbase}.html" || \
+        die "fail to create summary for TCE report" \
+             "platform ${platform} host ${host} tce ${tce}"
+
+    popd > /dev/null
+}
+
+function copy_host_report
+{
+    local platform=$1
+    local host=$2
+    local tce=$3
+    local mtcedir="$(tce_ws_dir "${platform}" "" "${tce}")"
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local conf="${tcedir}/tce.conf"
+    local report="${tcedir}/report.tce"
+
+    test -d "${mtcedir}" && \
+        rm -r "${mtcedir}"
+
+    mkdir -p "${mtcedir}"
+
+    cp -t "${mtcedir}" "${conf}" "${report}" || \
+        die "fail to copy TCE into merge workspace: " \
+            "platform ${platform} host ${host} tce ${tce}"
+}
+
+function merge_host_report
+{
+    local mplatform=$1
+    local platform=$2
+    local host=$3
+    local tce=$4
+    local mtcedir="$(tce_ws_dir "${mplatform}" "" "${tce}")"
+    local mconf="${mtcedir}/tce.conf"
+    local mreport="${mtcedir}/report.tce"
+    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
+    local conf="${tcedir}/tce.conf"
+    local report="${tcedir}/report.tce"
+
+    tce_merge_report.py "${mconf}" "${mreport}" \
+                         "${conf}" "${report}" || \
+        die "fail to merge reports: " \
+            "merge platform ${mplatform} " \
+            "platform ${platform} host ${host} tce ${tce}"
+}
+
+all_tce="$(echo "${platform_tce[@]}" | sed 's/ \+/\n/g' | sort -u)"
+
+for tce in $all_tce ; do
+    platforms="$(get_tce_platforms ${tce})"
+    platform=
+    hosts=
+    host=
+    mplatform=
+
+    for platform in ${platforms} ; do
+        hosts="${platform_hosts[${platform}]}"
+
+        for host in ${hosts} ; do
+            repname="tce_log_${platform}_${host}_${tce}"
+
+            clean_tce_on_build ${platform} ${tce}
+            copy_tce_to_build ${platform} ${host} ${tce}
+            report_host_tce ${platform} ${host} ${tce}
+            summarise_tce ${platform} ${host} ${tce} "${repname}"
+        done
+    done
+
+    for platform in ${platforms} ; do
+        hosts="${platform_hosts[${platform}]}"
+
+        for host in ${hosts} ; do
+            if test -z "${mplatform}" ; then
+                copy_host_report ${platform} ${host} ${tce}
+                mplatform="${platform}"
+                continue
+            fi
+
+            merge_host_report ${mplatform} ${platform} ${host} ${tce}
+        done
+    done
+
+    repname="tce_log_${tce}"
+    summarise_tce ${mplatform} "" ${tce} "${repname}"
+done

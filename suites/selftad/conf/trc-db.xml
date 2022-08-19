@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved. -->
+<trc_db>
+  <test name="selftad" type="package">
+    <objective>Tests on TAD functionality.</objective>
+    <notes/>
+    <iter result="PASSED">
+      <notes/>
+      <test name="prologue" type="script">
+        <objective>Assign IPv4 address in test networks.</objective>
+        <notes/>
+        <iter result="PASSED">
+          <notes/>
+        </iter>
+      </test>
+      <test name="snmp" type="package">
+        <objective>Tests on TAD SNMP functionality.</objective>
+        <notes/>
+        <iter result="PASSED">
+          <notes/>
+          <test name="snmp_gets" type="script">
+            <objective/>
+            <notes/>
+            <iter result="FAILED">
+              <arg name="ta">Agt_A</arg>
+              <arg name="snmp_agt">192.168.37.18</arg>
+              <arg name="snmp_version">2</arg>
+              <arg name="mib_name">SNMPv2-MIB.txt</arg>
+              <arg name="mib_object">sysDescr</arg>
+              <notes/>
+            </iter>
+            <iter result="FAILED">
+              <arg name="ta">Agt_A</arg>
+              <arg name="snmp_agt">192.168.37.18</arg>
+              <arg name="snmp_version">2</arg>
+              <arg name="mib_name">SNMPv2-MIB.txt</arg>
+              <arg name="mib_object">sysObjectID</arg>
+              <notes/>
+            </iter>
+            <iter result="FAILED">
+              <arg name="ta">Agt_A</arg>
+              <arg name="snmp_agt">192.168.37.18</arg>
+              <arg name="snmp_version">2</arg>
+              <arg name="mib_name">SNMPv2-MIB.txt</arg>
+              <arg name="mib_object">ifNumber</arg>
+              <notes/>
+            </iter>
+            <iter result="FAILED">
+              <arg name="ta">Agt_A</arg>
+              <arg name="snmp_agt">192.168.37.18</arg>
+              <arg name="snmp_version">2</arg>
+              <arg name="mib_name">SNMPv2-MIB.txt</arg>
+              <arg name="mib_object">ifType</arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="snmp_get_if_table" type="script">
+            <objective/>
+            <notes/>
+            <iter result="FAILED">
+              <arg name="ta">Agt_A</arg>
+              <arg name="snmp_agt">192.168.37.18</arg>
+              <arg name="snmp_version">2</arg>
+              <arg name="mib_name">SNMPv2-MIB.txt</arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="walk" type="script">
+            <objective/>
+            <notes/>
+            <iter result="FAILED">
+              <arg name="ta">Agt_A</arg>
+              <arg name="snmp_agt">192.168.37.18</arg>
+              <arg name="snmp_version">2</arg>
+              <arg name="mib_name">SNMPv2-MIB.txt</arg>
+              <arg name="mib_table">ifTable</arg>
+              <notes/>
+            </iter>
+            <iter result="FAILED">
+              <arg name="ta">Agt_A</arg>
+              <arg name="snmp_agt">192.168.37.18</arg>
+              <arg name="snmp_version">2</arg>
+              <arg name="mib_name">SNMPv2-MIB.txt</arg>
+              <arg name="mib_table">atTable</arg>
+              <notes/>
+            </iter>
+            <iter result="FAILED">
+              <arg name="ta">Agt_A</arg>
+              <arg name="snmp_agt">192.168.37.18</arg>
+              <arg name="snmp_version">2</arg>
+              <arg name="mib_name">SNMPv2-MIB.txt</arg>
+              <arg name="mib_table">ipAddrTable</arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="trap_any" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="snmp_agt">192.168.37.18</arg>
+              <arg name="ta">Agt_A</arg>
+              <arg name="snmp_version">2</arg>
+              <notes/>
+            </iter>
+          </test>
+        </iter>
+      </test>
+      <test name="eth" type="package">
+        <objective>Ethernet CSAP tests</objective>
+        <notes/>
+        <iter result="PASSED">
+          <notes/>
+          <test name="caught_any" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="num_pkts">2</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">FALSE</arg>
+              <arg name="dump_packets">FALSE</arg>
+              <arg name="blocked_mode">FALSE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">2</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">FALSE</arg>
+              <arg name="dump_packets">FALSE</arg>
+              <arg name="blocked_mode">TRUE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">2</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">FALSE</arg>
+              <arg name="dump_packets">TRUE</arg>
+              <arg name="blocked_mode">FALSE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">2</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">FALSE</arg>
+              <arg name="dump_packets">TRUE</arg>
+              <arg name="blocked_mode">TRUE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">2</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">TRUE</arg>
+              <arg name="dump_packets">FALSE</arg>
+              <arg name="blocked_mode">FALSE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">2</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">TRUE</arg>
+              <arg name="dump_packets">FALSE</arg>
+              <arg name="blocked_mode">TRUE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">2</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">TRUE</arg>
+              <arg name="dump_packets">TRUE</arg>
+              <arg name="blocked_mode">FALSE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">2</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">TRUE</arg>
+              <arg name="dump_packets">TRUE</arg>
+              <arg name="blocked_mode">TRUE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">5</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">FALSE</arg>
+              <arg name="dump_packets">FALSE</arg>
+              <arg name="blocked_mode">FALSE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">5</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">FALSE</arg>
+              <arg name="dump_packets">FALSE</arg>
+              <arg name="blocked_mode">TRUE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">5</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">FALSE</arg>
+              <arg name="dump_packets">TRUE</arg>
+              <arg name="blocked_mode">FALSE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">5</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">FALSE</arg>
+              <arg name="dump_packets">TRUE</arg>
+              <arg name="blocked_mode">TRUE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">5</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">TRUE</arg>
+              <arg name="dump_packets">FALSE</arg>
+              <arg name="blocked_mode">FALSE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">5</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">TRUE</arg>
+              <arg name="dump_packets">FALSE</arg>
+              <arg name="blocked_mode">TRUE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">5</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">TRUE</arg>
+              <arg name="dump_packets">TRUE</arg>
+              <arg name="blocked_mode">FALSE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">5</arg>
+              <arg name="timeout">2000</arg>
+              <arg name="pass_results">TRUE</arg>
+              <arg name="dump_packets">TRUE</arg>
+              <arg name="blocked_mode">TRUE</arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="simple_recv_send" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="send_src_csap">FALSE</arg>
+              <arg name="send_src_tmpl">FALSE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="send_src_csap">FALSE</arg>
+              <arg name="send_src_tmpl">TRUE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="send_src_csap">TRUE</arg>
+              <arg name="send_src_tmpl">FALSE</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="send_src_csap">TRUE</arg>
+              <arg name="send_src_tmpl">TRUE</arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="vlan_recv_send" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="env">{'host_a'{if:'if_a',addr:'hwaddr':ether:alien}}</arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="eth_serial1" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <notes/>
+            </iter>
+          </test>
+        </iter>
+      </test>
+      <test name="ipstack" type="package">
+        <objective>Tests on TAD IP stack functionality.</objective>
+        <notes/>
+        <iter result="PASSED">
+          <notes/>
+          <test name="ip4_simple" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="env">{{{'pco':tester},addr:'pco_addr':inet:unicast,if:'pco_if'}}</arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="ip4_recv_send" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="num_pkts">10</arg>
+              <arg name="enum_iterator">FALSE</arg>
+              <arg name="pld_len">50</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="num_pkts">10</arg>
+              <arg name="enum_iterator">TRUE</arg>
+              <arg name="pld_len">50</arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="ip4_udp_dgm" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="env">{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:fake,if:'csap_if'},                 {{'pco':tester},addr:'pco_addr':inet:unicast,if:'pco_if'}}                 </arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="ip4_fragments" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="env">{{{'pco':tester},addr:'pco_addr':inet:unicast,if:'pco_if'},                 'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}                 </arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="tcp_flood_iter" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="env">{                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'},                  'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}                 </arg>
+              <arg name="pld_len">30</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="env">{                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'},                  'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}                 </arg>
+              <arg name="pld_len">100</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="env">{                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'},                  'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}                 </arg>
+              <arg name="pld_len">500</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="env">{                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'},                  'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}                 </arg>
+              <arg name="pld_len">1400</arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="tcp_flood_func" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="env">{                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'},                  'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}                 </arg>
+              <arg name="pld_len">1400</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="env">{                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'},                  'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}                 </arg>
+              <arg name="pld_len">500</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="env">{                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'},                  'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}                 </arg>
+              <arg name="pld_len">30</arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="env">{                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'},                  'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'}}                 </arg>
+              <arg name="pld_len">100</arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="tcp_conn" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="is_server">FALSE</arg>
+              <arg name="init_close">FALSE</arg>
+              <arg name="env">{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}                 </arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="is_server">FALSE</arg>
+              <arg name="init_close">TRUE</arg>
+              <arg name="env">{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}                 </arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="is_server">TRUE</arg>
+              <arg name="init_close">FALSE</arg>
+              <arg name="env">{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}                 </arg>
+              <notes/>
+            </iter>
+            <iter result="PASSED">
+              <arg name="is_server">TRUE</arg>
+              <arg name="init_close">TRUE</arg>
+              <arg name="env">{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}                 </arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="tcp_conn_reset" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="env">{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}                 </arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="tcp_data" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="env">{'host_csap'{addr:'csap_addr':inet:unicast,if:'csap_if'},                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}                 </arg>
+              <notes/>
+            </iter>
+          </test>
+          <test name="udp_socket" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+              <arg name="env">{'host_csap'{addr:'csap_addr':inet:unicast,if:'csap_if'},                 {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}                 </arg>
+              <notes/>
+            </iter>
+          </test>
+        </iter>
+      </test>
+      <test name="iscsi" type="package">
+        <objective>Tests on TAD iSCSI csap functionality.</objective>
+        <notes/>
+        <iter result="FAILED">
+          <notes/>
+          <test name="simple" type="script">
+            <objective/>
+            <notes/>
+            <iter result="FAILED">
+              <notes/>
+            </iter>
+          </test>
+          <test name="double" type="script">
+            <objective/>
+            <notes/>
+            <iter result="FAILED">
+              <notes/>
+            </iter>
+          </test>
+        </iter>
+      </test>
+      <test name="dhcp" type="package">
+        <objective>Tests on TAD DHCP functionality.</objective>
+        <notes/>
+        <iter result="FAILED">
+          <notes/>
+          <test name="wait_discover" type="script">
+            <objective/>
+            <notes/>
+            <iter result="FAILED">
+              <notes/>
+            </iter>
+          </test>
+        </iter>
+      </test>
+    </iter>
+  </test>
+</trc_db>

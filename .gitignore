@@ -1,0 +1,19 @@
+syntax: glob
+TAGS
+tags
+doc/generated
+doxygen.warn
+*~
+*.pyc
+.idea
+CMakeLists.txt
+cmake-build-*
+GTAGS
+GRTAGS
+GPATH
+cscope*
+.reviewboardrc
+.dir-locals.el
+build
+cmake
+.vscode

@@ -1,0 +1,36 @@
+%YAML 1.2
+---
+name: TE Log
+scope: text
+file_extensions: [telog]
+first_line_match: ^Log report$
+
+# To use this syntax, save this file to %APPDATA%\Sublime Text 3\Packages\nginx-log.sublime-syntax
+# Then, select Nginx Log from the syntax selector in the bottom-right of Sublime
+
+contexts:
+  main:
+    - match: '^(\[)(ERROR)'
+      captures:
+        1: text
+        2: markup.deleted
+    - match: '^(\[)(RING)'
+      captures:
+        1: text
+        2: markup.inserted
+    - match: '^(\[)(WARN)'
+      captures:
+        1: text
+        2: keyword.control
+    - match: '^(\[)(INFO)'
+      scope: text
+    - match: '^(\[)(MI).*(ERROR).*'
+      scope: markup.deleted
+    - match: '^(\[)(MI)'
+      captures:
+        1: text
+        2: entity.name.struct
+    - match: '(Obtained result.*)'
+      scope: markup.bold
+    - match: '(Expected result.*)'
+      scope: markup.bold

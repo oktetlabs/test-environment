@@ -1,0 +1,45 @@
+<html>
+<head>
+<title>TE Log report</title>
+<script>
+function op() { //This function is used with folders that do not open pages themselves. See online docs.
+}
+</script>
+
+<script src="node_0_0_log_names.js">
+</script>
+
+<script>
+    /* Define global varibale for filtering window object */
+    var filter_win;
+
+    /* Current ID of the left frame */
+    var lfId = null;
+
+    /* Highlight object */
+    var hlName = null;
+
+    /* Id used by Tree View to position into the right branch */
+    var PageId = null;
+</script>
+
+</head>
+
+<!--
+(Please keep all copyright notices.)
+This frameset document includes the Treeview script.
+Script found in: http://www.treeview.net
+Author: Marcelino Alves Martins
+
+You may make other changes, see online instructions, 
+but do not change the names of the frames (treeframe and basefrm)
+-->
+
+
+<FRAMESET cols="1*,4*" onResize="if (navigator.family == 'nn4') window.location.reload()"> 
+  <FRAME src="left_frame.html" name="treeframe" > 
+  <FRAME SRC="@@SHARED_URL@@right_frame.html" name="basefrm"> 
+</FRAMESET> 
+
+
+</HTML>

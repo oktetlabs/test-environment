@@ -1,0 +1,399 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Base hardware properties.
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/hardware"
+      access: read_only
+      type: none
+      d: |
+         The root of all hardware-related information
+         Name: none
+         Value: none
+
+    - oid: "/agent/hardware/identity"
+      access: read_only
+      type: none
+      d: |
+         The container for various board identification strings.
+         Name: none
+         Value: none
+
+         Identification strings provided by SMBIOS/DMI record types 0-4.
+         The names correspond to Linux sysfs entries under
+         /sys/devices/virtual/dmi/id/
+         @todo other DMI identification strings for things like DIMMs.
+
+         Name: none
+         Value: identification string
+
+    - oid: "/agent/hardware/identity/bios_date"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/bios_version"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/bios_vendor"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/board_asset_tag"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/board_name"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/board_serial"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/board_vendor"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/board_version"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/chassis_asset_tag"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/chassis_serial"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/chassis_vendor"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/chassis_version"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/product_name"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/product_serial"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/product_uuid"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/product_version"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/identity/sys_vendor"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/node"
+      access: read_only
+      type: string
+      d: |
+         Computing node (e.g. NUMA node).
+         On small-scale systems there will be a single node.
+         The available CPU info is organized into a tree (node >
+         physical package > core > logical cpu), rather than a linear list
+         of logical CPU so that it be possible to use node/package/core OIDs
+         for resource grabbing.
+
+         The tree is always visible because the current implementation
+         consists only of read-only nodes and the tests should have
+         the ability to choose a CPU with needed properties before grabbing.
+         If any read-write nodes are implemented in the future, the subtrees
+         with that nodes should be made invisible until the parent tree is
+         grabbed as a resource.
+
+         Currently all nodes are assumed to have the same architecture,
+         but true heterogenous systems may eventually be supported.
+         The arch value must be from a controlled vocabulary, not raw
+         uname -m string.
+
+         The following set of arch values is defined:
+           - i386
+           - x86_64
+           - powerpc
+           - powerpc64
+           - powerpc64le
+
+         Name: integer node ID
+         Value: arch identifier
+
+    - oid: "/agent/hardware/node/cpu"
+      access: read_only
+      type: none
+      d: |
+         Physical CPU of a node
+         Name: CPU package/socket id
+         Value: none
+
+    - oid: "/agent/hardware/node/cpu/identity"
+      access: read_only
+      type: none
+      d: |
+         Container for CPU identity strings
+         Name: none
+         Value: none
+
+    - oid: "/agent/hardware/node/cpu/identity/vendor"
+      access: read_only
+      type: string
+      d: |
+         Those are strings found in /proc/cpuinfo on Linux.
+         On x86(_64) some of these values are integers, but since it
+         cannot be warranted on all possible platforms, all values are
+         declared as strings.
+
+         Name: none
+         Value: identity string
+
+    - oid: "/agent/hardware/node/cpu/identity/family"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/node/cpu/identity/model"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/node/cpu/identity/model_name"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/node/cpu/identity/stepping"
+      access: read_only
+      type: string
+
+
+    - oid: "/agent/hardware/node/cpu/fpu"
+      access: read_only
+      type: integer
+      d: |
+         FPU is present.
+         On embedded architectures, this is a crucial feature, so it
+         deserves its own node.
+
+         Name: none
+         Value: 1 - hardware FPU, 0 - no hardware FPU
+
+    - oid: "/agent/hardware/node/cpu/feature"
+      access: read_only
+      type: none
+      d: |
+         A set of CPU features.
+         Since such a set is open and is platform-dependent, it's
+         unreasonable to have a named boolean node for each feature.
+         Instead, we have an empty node indexed by a feature designator as
+         reported by /proc/cpuinfo Test libraries may (and should) provide
+         wrapper function to check for more high-level and platform-specific
+         conditions (e.g. the largest set of vectorized ops available etc)
+
+         Name: feature ID
+         Value: none
+
+    - oid: "/agent/hardware/node/cpu/cache"
+      access: read_only
+      type: string
+      d: |
+         CPU cache information.
+         Caches may be attached to a CPU package or to a CPU core, hence
+         this subtree is repeated below for /agent/hardware/node/cpu/core
+         @todo Cache performance nodes
+
+         Name: index of cache
+         Value: type of cache: instruction, data, unified
+
+    - oid: "/agent/hardware/node/cpu/cache/level"
+      access: read_only
+      type: integer
+      d: |
+         Cache level (L1, L2, L3)
+
+         Name: none
+         Value: level number
+
+    - oid: "/agent/hardware/node/cpu/cache/linesize"
+      access: read_only
+      type: integer
+      d: |
+         Cache coherence line size in bytes
+
+         Name: none
+         Value: cache line size
+
+    - oid: "/agent/hardware/node/cpu/cache/size"
+      access: read_only
+      type: integer
+      d: |
+         Cache size in bytes
+
+         Name: none
+         Value: cache size
+
+    - oid: "/agent/hardware/node/cpu/cache/assoc"
+      access: read_only
+      type: integer
+      d: |
+         Cache associativity
+
+         Name: none
+         Value: number of ways of associativity (1, 2, 4...)
+
+    - oid: "/agent/hardware/node/cpu/core"
+      access: read_only
+      type: none
+      d: |
+         CPU core
+
+         Name: system-wide # of a core
+         Value: none
+
+    - oid: "/agent/hardware/node/cpu/core/thread"
+      access: read_only
+      type: integer
+      d: |
+         CPU thread (as in hyper-threading)
+         @todo Performance counters
+         @note The CPU frequency is intentionally omitted, because it is
+               a number which virtually means nothing. CPU identity strings
+               may be used to deduce nominal clock frequency
+
+         Name: system-wide # of a thread
+         Value: # of a logical CPU
+
+    - oid: "/agent/hardware/node/cpu/core/thread/isolated"
+      access: read_only
+      type: integer
+      d: |
+         CPU isolation
+
+         Name: none
+         Value: 1 - logical CPU is isolated; 0 - logical CPU is not isolated
+
+    - oid: "/agent/hardware/node/cpu/core/thread/interrupt"
+      access: read_write
+      type: integer
+      d: |
+         Interrupt affinity to a CPU
+
+         Name: IRQ number
+         Value: 1 - enable routing it to this thread; 0 - disable it
+
+    - oid: "/agent/hardware/node/cpu/core/thread/interrupt/count"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Number of interrupts for a given IRQ to a given thread.
+
+         Name: none
+         Value: interrupt count
+
+    - oid: "/agent/hardware/node/cpu/core/cache"
+      access: read_only
+      type: string
+      d: |
+         Per-core cache information, see /agent/hardware/node/cpu/cache
+         for details
+
+    - oid: "/agent/hardware/node/cpu/core/cache/level"
+      access: read_only
+      type: integer
+
+    - oid: "/agent/hardware/node/cpu/core/cache/linesize"
+      access: read_only
+      type: integer
+
+    - oid: "/agent/hardware/node/cpu/core/cache/size"
+      access: read_only
+      type: integer
+
+    - oid: "/agent/hardware/node/cpu/core/cache/assoc"
+      access: read_only
+      type: integer
+
+
+    - oid: "/agent/hardware/node/memory"
+      access: read_only
+      type: integer
+      d: |
+         Amount of physical memory on a given node
+         Name: none
+         Value: node memory in bytes
+
+         @todo Performance data, in particular NUMA non-local allocations
+         @todo It would be helpful to detect physical parameters of memory
+               chips, like the number of channels or clock speed. However,
+               the required information is scattered between ACPI, DMI and
+               EDAC and any arbitrary piece of it may be missing, so
+               a reliable detection method, covering a wide range of
+               platforms, is not, perhaps, worth the effort.
+
+    - oid: "/agent/hardware/node/memory/free"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Free physical memory
+         Name: none
+         Value: amount of available physical memory
+
+    - oid: "/agent/hardware/node/memory/range"
+      access: read_only
+      type: none
+      d: |
+         A range of physical addresses belonging to a given node
+         Name: start-end in hex format (like: 0000000000000000-FFFFFFFFFFFFFFFF)
+         Value: none
+
+    - oid: "/agent/hardware/node/distance"
+      access: read_only
+      type: integer
+      d: |
+         NUMA memory access distance. In NUMA systems for every two nodes
+         there is a metric showing how expensive is the access to memory
+         at one node from a CPU at another node.  The absolute values are
+         not meaningful and should be compared to the cost of local access.
+         So, /agent:XXX/hardware/node:0/distance:1 would contain the
+         distance from node 0 to node 1, wherea
+         /agent:XXX/hardware/node:0/distance:0 would contain the cost value
+         of local access.
+
+         Name: target node ID
+         Value: access distance
+
+    - oid: "/agent/hardware/sensor"
+      access: read_only
+      type: none
+      d: |
+         The conceptual problem with sensors, as well as with performance
+         counters: the set of available counters/sensors varies greatly
+         across systems, and the raw data are often meaningless, requiring
+         some sort of calibration.
+         So there are two ways:
+           - provide low-level access to everything the system may provide
+             and let the test or some other entity interpret the data,
+           - identify some set of important parameters and make a bona fide
+             effort to provide platform-independent way to access them.
+
+    - oid: "/agent/hardware/iommu"
+      access: read_only
+      type: string
+      d: |
+         Node indicating if IOMMU is enabled
+         Name: none
+         Value: "on", "off"

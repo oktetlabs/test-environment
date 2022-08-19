@@ -1,0 +1,66 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Configuration related to iptables rules on Agents.
+
+    To avoid system-wide iptables rules usage, per-interface chains
+    are created. Network interfaces are not shared between test agents
+    and iptables rules for different interfaces should not interact
+    with each other.
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/interface/iptables"
+      access: read_only
+      type: none
+      d: |
+         Root object of iptables rules for the specific interface.
+         Name: empty
+
+    - oid: "/agent/interface/iptables/table"
+      access: read_only
+      type: none
+      d: |
+         Table name
+         Name: filter, mangle, nat or raw
+
+    - oid: "/agent/interface/iptables/table/chain"
+      access: read_create
+      type: integer
+      d: |
+         Per-interface chain, may have name of built-in chain
+         If TRUE, then jump rule is added to the common chain (without prefix)
+         Jump is always conditional with interface matching.
+         Input or output direction is assumed by the chain name.
+         Name: chain name without <interface>_ prefix
+
+    - oid: "/agent/interface/iptables/table/chain/rules"
+      access: read_write
+      type: string
+      d: |
+         Chain rules list. When set operation is performed, the chain is
+         flushed and filled again.
+         Name: Empty
+         Value: whole list of rules as a single string value in
+                the per-interface chain
+
+    - oid: "/agent/interface/iptables/table/chain/cmd"
+      access: read_write
+      type: string
+      volatile: true
+      d: |
+         Execute iptables command for the chain, used to simplify TAPI
+         Name: Empty
+         Value: iptables command to execute
+
+    - oid: "/agent/iptables_tool_opts"
+      access: read_write
+      type: string
+      d: |
+         iptables tool extra options.
+         Name: none
+         Value: list of iptables tool options, for example "--wait"

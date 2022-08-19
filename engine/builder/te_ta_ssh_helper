@@ -1,0 +1,450 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+#
+# Test Environment Builder
+#
+# Collection of helper function to use SSH for Test Agents.
+# It supports the following variables which define various
+# attributes of the SSH command (where <ta> is a test agent
+# alias, e.g. TE_IUT):
+#  - <ta> as a host name to login to
+#  - <ta>_SSH_KEY (or TE_SSH_KEY) to use identity to login
+#  - <ta>_SSH_PORT (or TE_SSH_PORT) to use non-standard port
+#  - <ta>_SSH_USER (or TE_SSH_USER) to use different user
+
+# Default SSH arguments, if you don't like it, you can override
+# it after sourcing the file.
+# Do not add -n since it break TA signature retrivial.
+declare -a TE_SSH_ARGS_DEF
+TE_SSH_ARGS_DEF=(-qxT -o BatchMode=yes -o StrictHostKeyChecking=no)
+
+# SSH arguments to be used for a test agent host access
+declare -a TE_SSH_ARGS
+# SSH hostname (included in above arguments)
+declare TE_SSH_HOST
+
+#######################################
+# Log error and exit with failure status
+#
+# Arguments:
+#   Error message
+#######################################
+fail() {
+    echo "ERROR: $*" >&2
+    exit 1
+}
+
+#######################################
+# Build TE_SSH_ARGS array variable for a test agent.
+# Do nothing but return 1 if ${ta}_BUILD is "local".
+#
+# Globals:
+#   TE_SSH_ARGS_DEF
+#   TE_SSH_ARGS
+#   TE_SSH_HOST
+#   ${ta}
+#   ${ta}_BUILD
+#   ${ta}_SSH_KEY
+#   TE_SSH_KEY
+#   ${ta}_SSH_PORT
+#   TE_SSH_PORT
+#   ${ta}_SSH_PROXY
+#   TE_SSH_PROXY
+#   ${ta}_SSH_USER
+#   TE_SSH_USER
+#   ${ta}_BUILD_HOST
+#   ${ta}_BUILD_SSH_KEY
+#   ${ta}_BUILD_SSH_PORT
+#   ${ta}_BUILD_SSH_PROXY
+#   ${ta}_BUILD_SSH_USER
+#
+# Arguments:
+#   Test agent alias name (e.g. TE_IUT)
+#######################################
+te_ta_ssh_args() {
+    local ta="$1"; shift
+
+    local build="${ta}_BUILD"
+
+    test "${!build}" != local || return 1
+
+    local build_host="${ta}_BUILD_HOST"
+    local pfx="${ta}"
+
+    test -z "${!build_host}" || pfx+="_BUILD"
+
+    local -a ssh_args=("${TE_SSH_ARGS_DEF[@]}")
+    local ssh_key_var="${pfx}_SSH_KEY"
+    local ssh_key="${!ssh_key_var:-${TE_SSH_KEY}}"
+    local ssh_port_var="${pfx}_SSH_PORT"
+    local ssh_port="${!ssh_port_var:-${TE_SSH_PORT}}"
+    local ssh_user_var="${pfx}_SSH_USER"
+    local ssh_user="${!ssh_user_var:-${TE_SSH_USER}}"
+    local ssh_proxy_var="${pfx}_SSH_PROXY"
+    local ssh_proxy="${!ssh_proxy_var:-${TE_SSH_PROXY}}"
+
+    if test -n "${ssh_proxy}" ; then
+        local proxy_cmd=(ssh "${TE_SSH_ARGS_DEF[@]}" -W %h:%p "${ssh_proxy}")
+        ssh_args+=(-o ProxyCommand=\"${proxy_cmd[*]}\")
+    fi
+
+    test -z "${ssh_key}" || ssh_args+=(-i "${ssh_key}")
+    test -z "${ssh_port}" || ssh_args+=(-p "${ssh_port}")
+    test -z "${ssh_user}" || ssh_args+=(-l "${ssh_user}")
+
+    TE_SSH_HOST="${!build_host:-${!ta}}"
+    TE_SSH_ARGS=("${ssh_args[@]}" "${TE_SSH_HOST}")
+}
+
+#######################################
+# Filter out unused test agent aliases from the list.
+# An agent alias is used if its variable has non empty value.
+#
+# Globals:
+#   ${ta} for each list element
+#
+# Arguments:
+#   List of test agent alias names (e.g. TE_IUT TE_TST1 TE_TST2)
+#######################################
+te_ta_list_get_used() {
+    local ta
+    local build_host
+
+    for ta ; do
+        build_host="${ta}_BUILD_HOST"
+        test -z "${!ta}" -a -z "${!build_host}" || echo "${ta}"
+    done
+}
+
+
+#######################################
+# Detect TA type using SSH and uname
+#
+# Globals:
+#   TE_SSH_ARGS
+#   TE_SSH_HOST
+#   ${ta}
+#   ${ta}_TA_TYPE
+#   see also te_ta_ssh_args()
+#
+# Arguments:
+#   ta - Test agent alias name (e.g. TE_IUT)
+#######################################
+te_ta_detect_type() {
+    local ta="$1"; shift
+
+    local ssh_args=()
+    local kname
+    local ta_type
+
+    # Get TE_SSH_ARGS and TE_SSH_HOST for the TA, or signal if TA is local
+    te_ta_ssh_args "${ta}" \
+        && ssh_args=("${TE_SSH_ARGS[@]}")
+
+    kname="$(${ssh_args:+ssh "${ssh_args[@]}"} uname -s)" \
+        || fail "Failed to get ${ta} (${TE_SSH_HOST}) kernel name"
+    # Base TA type is just lowercase kernel name by default
+    ta_type="${kname,,}"
+
+    export "${ta}_TA_TYPE"="${ta_type}"
+}
+
+#######################################
+# Detect TA types for a list of test agent aliases.
+# Do not override if TA type is already set.
+#
+# Globals:
+#   ${ta}_TA_TYPE for each list element
+#   see also te_ta_detect_type()
+#
+# Arguments:
+#   List of test agent alias names (e.g. TE_IUT TE_TST1 TE_TST2)
+#######################################
+te_ta_list_detect_type() {
+    local ta
+
+    for ta in $(te_ta_list_get_used $*) ; do
+        local ta_type="${ta}_TA_TYPE"
+
+        test -n "${!ta_type}" || te_ta_detect_type "${ta}"
+    done
+}
+
+#######################################
+# Append signature to TA type
+#
+# Globals:
+#   TE_SSH_ARGS
+#   ${ta}
+#   ${ta}_CC
+#   ${ta}_CFLAGS
+#   ${ta}_CFLAGS_VAR
+#   ${ta}_TA_SIGNATURE
+#   ${ta}_TA_TYPE
+#   see also te_ta_ssh_args()
+#
+# Arguments:
+#   ta - Test agent alias name (e.g. TE_IUT)
+#######################################
+te_ta_type_add_signature() {
+    local ta="$1"; shift
+
+    local ta_type_var="${ta}_TA_TYPE"
+    local cc="${ta}_CC"
+    local cflags="${ta}_CFLAGS"
+    local cflags_extra="${ta}_CFLAGS_VAR"
+    local ta_signature_var="${ta}_TA_SIGNATURE"
+    local ta_signature
+    local ssh_args=()
+    local cc_args=("${!cc:-gcc} ${!cflags} ${!cflags_extra}")
+
+    test -n "${!ta_type_var}" \
+        || fail "Base TA type ${ta_type_var} is unspecified"
+
+    # Get TE_SSH_ARGS for the TA, or signal if TA is local
+    te_ta_ssh_args "${ta}" \
+        && ssh_args=("${TE_SSH_ARGS[*]}")
+
+    # Get signature for the TA host
+    ta_signature="${!ta_signature_var}"
+    if test -z "${ta_signature}" ; then
+        if test ${#ssh_args[@]} -gt 0 ; then
+            ta_signature="$(te_ta_signature "${ssh_args[*]}" "${cc_args[*]}")" \
+                || fail "Failed to get ${ta} (${ssh_args[*]}) signature"
+        else
+            ta_signature="$(te_ta_signature_local "${cc_args[*]}")" \
+                || fail "Failed to get ${ta} signature"
+        fi
+    fi
+
+    export ${ta_type_var}="${!ta_type_var}_${ta_signature}"
+}
+
+#######################################
+# Detect TA types with signature for a test agent alias.
+# Do not override if TA type is already set.
+#
+# Globals:
+#   ${ta}_TA_TYPE
+#   see also te_ta_detect_type()
+#   see also te_ta_type_add_signature()
+#
+# Arguments:
+#   ta - Test agent alias name (e.g. TE_IUT)
+#######################################
+te_ta_detect_type_with_signature() {
+    local ta="$1"; shift
+
+    local ta_type="${ta}_TA_TYPE"
+
+    if test -z "${!ta_type}" ; then
+        te_ta_detect_type "${ta}"
+        te_ta_type_add_signature "${ta}"
+    fi
+}
+
+#######################################
+# Pick TA type builder for a test agent.
+# If dedicated build host is already specified for the agent,
+# do not override it.
+#
+# Globals:
+#   TE_TA_BUILDERS
+#   ${builder} from ${TE_TA_BUILDERS} list
+#   ${builder}_BUILD
+#   ${builder}_SSH_KEY
+#   ${builder}_SSH_PORT
+#   ${builder}_SSH_PROXY
+#   ${builder}_SSH_USER
+#   ${builder}_TA_TYPE
+#   ${ta}_BUILD
+#   ${ta}_BUILD_HOST
+#   ${ta}_BUILD_SSH_KEY
+#   ${ta}_BUILD_SSH_PORT
+#   ${ta}_BUILD_SSH_PROXY
+#   ${ta}_BUILD_SSH_USER
+#   ${ta}_TA_TYPE
+#
+# Arguments:
+#   ta - Test agent alias name (e.g. TE_IUT)
+#######################################
+te_ta_pick_builder() {
+    local ta="$1"; shift
+
+    local ta_type="${ta}_TA_TYPE"
+    local ta_build_host="${ta}_BUILD_HOST"
+    local builder
+
+    test -n "${!ta_build_host}" && return
+
+    for builder in ${TE_TA_BUILDERS} ; do
+        local builder_type="${builder}_TA_TYPE"
+
+        test "${!ta_type}" != "${!builder_type}" && continue
+
+        maybe_export "${ta}_BUILD" "${builder}_BUILD"
+
+        rewrite_export "${ta_build_host}"       "${builder}"
+        rewrite_export "${ta}_BUILD_SSH_KEY"    "${builder}_SSH_KEY"
+        rewrite_export "${ta}_BUILD_SSH_PORT"   "${builder}_SSH_PORT"
+        rewrite_export "${ta}_BUILD_SSH_PROXY"  "${builder}_SSH_PROXY"
+        rewrite_export "${ta}_BUILD_SSH_USER"   "${builder}_SSH_USER"
+        break
+    done
+}
+
+
+#######################################
+# Add signature to the list of TA types
+#
+# Globals:
+#   see te_ta_type_add_signature()
+#
+# Arguments:
+#   List of test agent alias names (e.g. TE_IUT TE_TST1 TE_TST2)
+#######################################
+te_ta_list_add_signature() {
+    local ta
+
+    for ta in $(te_ta_list_get_used $*) ; do
+        te_ta_type_add_signature "${ta}"
+    done
+}
+
+#######################################
+# Detect TA types with signature for a list of test agent aliases.
+# Do not override if TA type is already set.
+#
+# Globals:
+#   see te_ta_detect_type_with_signature()
+#
+# Arguments:
+#   List of test agent alias names (e.g. TE_IUT TE_TST1 TE_TST2)
+#######################################
+te_ta_list_detect_type_with_signature() {
+    local ta
+
+    for ta in $(te_ta_list_get_used $*) ; do
+        te_ta_detect_type_with_signature "${ta}"
+    done
+}
+
+#######################################
+# Pick TA type builders for a list of test agents.
+#
+# Globals:
+#   see te_ta_pick_builder()
+#
+# Arguments:
+#   List of test agent alias names (e.g. TE_IUT TE_TST1 TE_TST2)
+#######################################
+te_ta_list_pick_builder() {
+    local ta
+
+    te_ta_list_detect_type_with_signature ${TE_TA_BUILDERS}
+
+    for ta in $(te_ta_list_get_used $*) ; do
+        te_ta_pick_builder "${ta}"
+    done
+}
+
+#######################################
+# Export dst equal src value if p src has a value and dst does not.
+#
+# Globals:
+#   ${dst}
+#   ${src}
+#
+# Arguments:
+#   dst - Destination variable name
+#   src - Source variable name
+#######################################
+maybe_export() {
+    local dst="$1"; shift
+    local src="$1"; shift
+
+    test -n "${!dst}" -o -z "${!src}" || export "${dst}"="${!src}"
+}
+
+#######################################
+# Export dst equal src value. It can rewrite dst value!
+#
+# Arguments:
+#   dst - Destination variable name
+#   src - Source variable name
+#######################################
+rewrite_export() {
+    local dst="$1"; shift
+    local src="$1"; shift
+
+    # Do not export value if it is not changed. Just to avoid exporting empties
+    test "${!dst}" = "${!src}" || export "${dst}"="${!src}"
+}
+
+#######################################
+# Setup platform build as build for the Test Agent
+#
+# Globals:
+#   TE_SSH_ARGS
+#   TE_SSH_HOST
+#   ${ta}
+#   ${ta}_CC
+#   ${ta}_CFLAGS
+#   ${ta}_CFLAGS_VAR
+#   ${ta}_CPPFLAGS
+#   ${ta}_CPPFLAGS_VAR
+#   ${platform}_CC
+#   ${platform}_CFLAGS
+#   ${platform}_CFLAGS_VAR
+#   ${platform}_CPPFLAGS
+#   ${platform}_CPPFLAGS_VAR
+#   ${platform}_HOST
+#   ${platform}_SSH
+#   see also te_ta_ssh_args()
+#
+# Arguments:
+#   ta - Test agent alias name (e.g. TE_IUT)
+#   platform - platform to configure
+#######################################
+te_ta_to_platform() {
+    local ta="$1"; shift
+    local platform="$1"; shift
+
+    # The values of variables *FLAGS are used for generating files
+    # configure and Makefile. The values of variables *FLAGS_VAR are
+    # used for execution files configure and Makefile.
+    maybe_export "${platform}_CC"           "${ta}_CC"
+    maybe_export "${platform}_CFLAGS"       "${ta}_CFLAGS"
+    maybe_export "${platform}_CFLAGS_VAR"   "${ta}_CFLAGS_VAR"
+    maybe_export "${platform}_CPPFLAGS"     "${ta}_CPPFLAGS"
+    maybe_export "${platform}_CPPFLAGS_VAR" "${ta}_CPPFLAGS_VAR"
+
+    local platform_ssh="${platform}_SSH"
+    # Get TE_SSH_ARGS and TE_SSH_HOST for the TA
+    if test -z "${!platform_ssh}" && te_ta_ssh_args "${ta}" ; then
+        export "${platform}_HOST"="${TE_SSH_HOST}"
+        export "${platform_ssh}"="ssh ${TE_SSH_ARGS[*]}"
+    fi
+}
+
+#######################################
+# Setup TA type as platform for the Test Agent
+#
+# Globals:
+#   ${ta}_TA_TYPE
+#   see also te_ta_to_platform()
+#
+# Arguments:
+#   ta - Test agent alias name (e.g. TE_IUT)
+#######################################
+te_ta_type_as_platform() {
+    local ta="$1"; shift
+
+    local ta_type="${ta}_TA_TYPE"
+
+    test -n "${!ta_type}" \
+        || fail "Test agent ${ta} type variable ${ta_type} is unset"
+
+    te_ta_to_platform "${ta}" "${!ta_type}"
+}

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>Check TAPI tool implementation</description>
+    <author mailto="Andrey.Izrailev@oktetlabs.ru"/>
+
+    <session>
+        <run>
+            <package name="memcached"/>
+        </run>
+
+        <run>
+            <package name="nptcp"/>
+        </run>
+
+        <run>
+            <package name="torrent"/>
+        </run>
+    </session>
+</package>

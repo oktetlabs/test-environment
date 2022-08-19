@@ -1,0 +1,193 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
+
+export TMPDIR="${TMPDIR:-/tmp}"
+
+# Add TE libraries installation path to LD_LIBRARY_PATH since
+# RGT tools may be linked dynamically to some TE libraries
+bindir="$(cd `dirname $0` && pwd)"
+export LD_LIBRARY_PATH="$(dirname "${bindir}")/lib:${LD_LIBRARY_PATH}"
+
+raw_log_path="${PWD}/log.raw"
+bundle_path="${PWD}/raw_log_bundle.tpxz"
+
+sniff_logs=false
+sniff_log_dir=
+
+usage()
+{
+cat <<EOF
+Usage: rgt-log-bundle-create [<options>]
+  --raw-log=PATH        Path to raw log
+  --bundle=PATH         Path to raw log bundle to be created
+  -v, --verbose         Print logs about what is done
+  --sniff-log           Include sniffer capture files
+  --sniff-log-dir=PATH  Where to find sniffer capture files (by default
+                        it looks for "caps" subfolder in the same folder
+                        in which RAW log bundle is stored)
+EOF
+}
+
+verbose=false
+
+print_log()
+{
+    $verbose && echo "$@"
+}
+
+while [[ "$#" -gt 0 ]] ; do
+    opt="$1"
+    case "${opt}" in
+        ""          ) ;; # Ignore empty arguments
+        --help      )   usage ; exit 0 ;;
+        --raw-log=* )   raw_log_path=$(readlink -f "${opt#--raw-log=}") ;;
+        --bundle=*  )   bundle_path=$(readlink -f "${opt#--bundle=}") ;;
+        -v) ;&
+        --verbose)      verbose=true ;;
+
+        --sniff-log) sniff_logs=true ;;
+        --sniff-log-dir=*) sniff_log_dir="${1#--sniff-log-dir=}" ;;
+
+                   *)   echo "Unknown option: ${opt}" >&2;
+                        usage ;
+                        exit 1 ;;
+    esac
+
+    shift 1
+done
+
+bundle_tmpdir=$(mktemp -d "${TMPDIR}/raw_log_bundle_XXXXXX")
+if test $? -ne 0 ; then
+    echo "Failed to create temporary directory" >&2
+    exit 1
+fi
+
+declare -a sniff_args
+declare -a sniff_rec_args
+sniff_rec_dir=
+if [[ "${sniff_logs}" == "true" ]] ; then
+    if [[ -z "${sniff_log_dir}" ]] ; then
+        sniff_log_dir="$(dirname "${raw_log_path}")/caps"
+    fi
+
+    if [[ ! -d "${sniff_log_dir}" ]] ; then
+        echo >&2 \
+          "Cannot find capture directory, no sniffer logs will be included"
+        sniff_logs=false
+        sniff_log_dir=
+    else
+        sniff_args=("--sniff-log-dir=${sniff_log_dir}")
+
+        sniff_rec_dir="${bundle_tmpdir}/recovered_caps/"
+        sniff_rec_args=("--caps=${sniff_rec_dir}")
+    fi
+fi
+
+cleanup()
+{
+    if test -n "${bundle_tmpdir}" ; then
+        rm -r "${bundle_tmpdir}"
+    fi
+}
+
+err_cleanup()
+{
+    echo "$1" >&2
+    if test -n "${bundle_path}" ; then
+        rm "${bundle_path}"
+    fi
+    cleanup
+    exit 1
+}
+
+if test \! \( -r "${raw_log_path}" \) ; then
+    err_cleanup "Raw log file '${raw_log_path}' cannot be read"
+fi
+
+if [[ "${raw_log_path}" =~ [.]bz2$ ]] ; then
+    print_log "Extracting raw log..."
+    bunzip2 --keep "${raw_log_path}" -c >"${bundle_tmpdir}/raw_log"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to extract raw log file"
+    fi
+    raw_log_path="${bundle_tmpdir}/raw_log"
+fi
+
+if [[ "${raw_log_path}" =~ [.]xz$ ]] ; then
+    print_log "Extracting raw log..."
+    xz --decompress --keep --stdout "${raw_log_path}" \
+          >"${bundle_tmpdir}/raw_log"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to extract raw log file"
+    fi
+    raw_log_path="${bundle_tmpdir}/raw_log"
+fi
+
+print_log "Indexing raw log..."
+"${bindir}"/rgt-conv --mode=index "${raw_log_path}" \
+                                    "${bundle_tmpdir}/log_idx"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to index raw log file"
+fi
+
+print_log "Sorting raw log index according to record time..."
+export LC_NUMERIC=POSIX
+sort -n "${bundle_tmpdir}/log_idx" >"${bundle_tmpdir}/sorted_log_idx"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to sort raw log index"
+fi
+
+print_log "Fragmenting raw log..."
+mkdir -p "${bundle_tmpdir}/fragments"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to create subdir in ${bundle_tmpdir}"
+fi
+
+"${bindir}"/rgt-log-split --raw-log="${raw_log_path}" \
+    --log-index="${bundle_tmpdir}/sorted_log_idx" \
+    --output-dir="${bundle_tmpdir}/fragments/" "${sniff_args[@]}"
+if test $? -ne 0 ; then
+    err_cleanup "rgt-log-split failed"
+fi
+
+print_log "Archiving fragmented raw log..."
+pushd "${bundle_tmpdir}/fragments/" >/dev/null
+if test $? -ne 0 ; then
+    err_cleanup "pushd to /fragments/ subdir failed"
+fi
+
+tar -I"${bindir}/te_pixz_wrapper" -cf "${bundle_path}" *
+if test $? -ne 0 ; then
+    popd >/dev/null
+    err_cleanup "Failed to create raw log bundle"
+fi
+
+popd >/dev/null
+if test $? -ne 0 ; then
+    err_cleanup "popd failed"
+fi
+
+print_log "Checking whether original log can be recovered..."
+"${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
+    --raw-log="${bundle_tmpdir}/recovered_raw_log" "${sniff_rec_args[@]}"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to recover original raw log"
+fi
+
+diff "${raw_log_path}" "${bundle_tmpdir}/recovered_raw_log"
+if test $? -ne 0 ; then
+    err_cleanup "Recovered raw log differ from the original one"
+fi
+
+if [[ "${sniff_logs}" == "true" ]] ; then
+    print_log "Checking whether original capture files can be recovered..."
+
+    diff -rq "${sniff_log_dir}" "${sniff_rec_dir}"
+    if test $? -ne 0 ; then
+        err_cleanup "Recovered capture files differ from the original ones"
+    fi
+fi
+
+cleanup
+exit 0

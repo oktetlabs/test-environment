@@ -1,0 +1,71 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment Builder
+#
+# Script for calculation ta_signature for local or remote host
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+usage()
+{
+cat <<EOF
+Usage: get_te_signature [<generic options>]
+Generic options:
+  --cc=<CC>             Compiler with flags (default: "cc").
+  --host=<HOST>         Remote host for signature calculation.
+                        Calculation is performed locally if it is missing.
+  --te-base=<TE_BASE>   Path to TE source directory.
+                        Current directory will be used as default directory
+                        if environment variable TE_BASE is not defined
+  --help, -h            Display this help message and exit.
+
+EOF
+}
+
+#
+# Process script options
+#
+process_opts()
+{
+    for opt ; do
+        case "$opt" in
+            --cc=* )        CC="${opt#--cc=}" ;;
+            --host=* )      HOST="${opt#--host=}" ;;
+            --te-base=* )   TE_BASE="${opt#--te-base=}" ;;
+
+            -h | --help )
+                usage
+                exit 0
+                ;;
+
+            *)  echo "Unknown option: $opt" >&2;
+                usage
+                exit 1
+                ;;
+        esac
+    done
+}
+
+# Set default values
+CC=cc
+HOST=
+if test -z "${TE_BASE}" ; then
+    TE_BASE=$(dirname "$(readlink -f "$(which $0)")")
+fi
+
+process_opts "$@"
+
+if ! test -f "$TE_BASE/engine/builder/te_functions" ; then
+    echo "Cannot find TE scripts - exiting." >&2
+    exit 1
+fi
+
+. "$TE_BASE/engine/builder/te_functions"
+
+# Calculate signature
+if test -z "$HOST" ; then
+    te_ta_signature_local "$CC"
+else
+    te_ta_signature "$HOST" "$CC"
+fi

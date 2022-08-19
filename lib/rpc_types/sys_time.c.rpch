@@ -1,0 +1,188 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/** @file
+ * @brief RPC types definitions
+ *
+ * Functions for processing time-related types.
+ *
+ *
+ * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
+ */
+
+#include "te_config.h"
+#include "config.h"
+
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#ifdef HAVE_SYS_TIMEX_H
+#include <sys/timex.h>
+#endif
+#if HAVE_TIME_H
+#include <time.h>
+#endif
+
+#include "te_defs.h"
+#include "te_string.h"
+#include "rcf_rpc_defs.h"
+#include "te_rpc_sys_time.h"
+
+/* See description in te_rpc_sys_time.h */
+int
+clock_id_rpc2h(rpc_clock_id id)
+{
+    switch (id)
+    {
+        RPC2H_CHECK(CLOCK_REALTIME);
+        RPC2H_CHECK(CLOCK_MONOTONIC);
+        RPC2H_CHECK(CLOCK_PROCESS_CPUTIME_ID);
+        RPC2H_CHECK(CLOCK_THREAD_CPUTIME_ID);
+        RPC2H_CHECK(CLOCK_MONOTONIC_RAW);
+        RPC2H_CHECK(CLOCK_REALTIME_COARSE);
+        RPC2H_CHECK(CLOCK_MONOTONIC_COARSE);
+        RPC2H_CHECK(CLOCK_BOOTTIME);
+        RPC2H_CHECK(CLOCK_REALTIME_ALARM);
+        RPC2H_CHECK(CLOCK_BOOTTIME_ALARM);
+
+        default:
+            return -1;
+    }
+}
+
+/* See description in te_rpc_sys_time.h */
+const char *
+clock_id_rpc2str(rpc_clock_id id)
+{
+    switch (id)
+    {
+        RPC2STR(CLOCK_REALTIME);
+        RPC2STR(CLOCK_MONOTONIC);
+        RPC2STR(CLOCK_PROCESS_CPUTIME_ID);
+        RPC2STR(CLOCK_THREAD_CPUTIME_ID);
+        RPC2STR(CLOCK_MONOTONIC_RAW);
+        RPC2STR(CLOCK_REALTIME_COARSE);
+        RPC2STR(CLOCK_MONOTONIC_COARSE);
+        RPC2STR(CLOCK_BOOTTIME);
+        RPC2STR(CLOCK_REALTIME_ALARM);
+        RPC2STR(CLOCK_BOOTTIME_ALARM);
+
+        default:
+            return "<UNKNOWN>";
+    }
+}
+
+/* See description in te_rpc_sys_time.h */
+unsigned int
+adj_mode_flags_rpc2h(unsigned int flags)
+{
+    unsigned int res = 0;
+
+    RPC2H_FLAG_CHECK(res, flags, ADJ_OFFSET);
+    RPC2H_FLAG_CHECK(res, flags, ADJ_FREQUENCY);
+    RPC2H_FLAG_CHECK(res, flags, ADJ_MAXERROR);
+    RPC2H_FLAG_CHECK(res, flags, ADJ_ESTERROR);
+    RPC2H_FLAG_CHECK(res, flags, ADJ_STATUS);
+    RPC2H_FLAG_CHECK(res, flags, ADJ_TIMECONST);
+    RPC2H_FLAG_CHECK(res, flags, ADJ_TAI);
+    RPC2H_FLAG_CHECK(res, flags, ADJ_SETOFFSET);
+    RPC2H_FLAG_CHECK(res, flags, ADJ_MICRO);
+    RPC2H_FLAG_CHECK(res, flags, ADJ_NANO);
+    RPC2H_FLAG_CHECK(res, flags, ADJ_TICK);
+
+    return res;
+}
+
+/* See description in te_rpc_sys_time.h */
+unsigned int
+adj_mode_flags_h2rpc(unsigned int flags)
+{
+    unsigned int res = 0;
+
+    H2RPC_FLAG_CHECK(res, flags, ADJ_OFFSET);
+    H2RPC_FLAG_CHECK(res, flags, ADJ_FREQUENCY);
+    H2RPC_FLAG_CHECK(res, flags, ADJ_MAXERROR);
+    H2RPC_FLAG_CHECK(res, flags, ADJ_ESTERROR);
+    H2RPC_FLAG_CHECK(res, flags, ADJ_STATUS);
+    H2RPC_FLAG_CHECK(res, flags, ADJ_TIMECONST);
+    H2RPC_FLAG_CHECK(res, flags, ADJ_TAI);
+    H2RPC_FLAG_CHECK(res, flags, ADJ_SETOFFSET);
+    H2RPC_FLAG_CHECK(res, flags, ADJ_MICRO);
+    H2RPC_FLAG_CHECK(res, flags, ADJ_NANO);
+    H2RPC_FLAG_CHECK(res, flags, ADJ_TICK);
+
+    if (flags != 0)
+        res |= RPC_ADJ_UNKNOWN;
+
+    return res;
+}
+
+/* See description in te_rpc_sys_time.h */
+unsigned int
+timex_status_flags_rpc2h(unsigned int flags)
+{
+    unsigned int res = 0;
+
+    RPC2H_FLAG_CHECK(res, flags, STA_PLL);
+    RPC2H_FLAG_CHECK(res, flags, STA_PPSFREQ);
+    RPC2H_FLAG_CHECK(res, flags, STA_PPSTIME);
+    RPC2H_FLAG_CHECK(res, flags, STA_FLL);
+    RPC2H_FLAG_CHECK(res, flags, STA_INS);
+    RPC2H_FLAG_CHECK(res, flags, STA_DEL);
+    RPC2H_FLAG_CHECK(res, flags, STA_UNSYNC);
+    RPC2H_FLAG_CHECK(res, flags, STA_FREQHOLD);
+    RPC2H_FLAG_CHECK(res, flags, STA_PPSSIGNAL);
+    RPC2H_FLAG_CHECK(res, flags, STA_PPSJITTER);
+    RPC2H_FLAG_CHECK(res, flags, STA_PPSWANDER);
+    RPC2H_FLAG_CHECK(res, flags, STA_PPSERROR);
+    RPC2H_FLAG_CHECK(res, flags, STA_CLOCKERR);
+    RPC2H_FLAG_CHECK(res, flags, STA_NANO);
+    RPC2H_FLAG_CHECK(res, flags, STA_MODE);
+    RPC2H_FLAG_CHECK(res, flags, STA_CLK);
+
+    return res;
+}
+
+/* See description in te_rpc_sys_time.h */
+unsigned int
+timex_status_flags_h2rpc(unsigned int flags)
+{
+    unsigned int res = 0;
+
+    H2RPC_FLAG_CHECK(res, flags, STA_PLL);
+    H2RPC_FLAG_CHECK(res, flags, STA_PPSFREQ);
+    H2RPC_FLAG_CHECK(res, flags, STA_PPSTIME);
+    H2RPC_FLAG_CHECK(res, flags, STA_FLL);
+    H2RPC_FLAG_CHECK(res, flags, STA_INS);
+    H2RPC_FLAG_CHECK(res, flags, STA_DEL);
+    H2RPC_FLAG_CHECK(res, flags, STA_UNSYNC);
+    H2RPC_FLAG_CHECK(res, flags, STA_FREQHOLD);
+    H2RPC_FLAG_CHECK(res, flags, STA_PPSSIGNAL);
+    H2RPC_FLAG_CHECK(res, flags, STA_PPSJITTER);
+    H2RPC_FLAG_CHECK(res, flags, STA_PPSWANDER);
+    H2RPC_FLAG_CHECK(res, flags, STA_PPSERROR);
+    H2RPC_FLAG_CHECK(res, flags, STA_CLOCKERR);
+    H2RPC_FLAG_CHECK(res, flags, STA_NANO);
+    H2RPC_FLAG_CHECK(res, flags, STA_MODE);
+    H2RPC_FLAG_CHECK(res, flags, STA_CLK);
+
+    if (flags != 0)
+        res |= RPC_STA_UNKNOWN;
+
+    return res;
+}
+
+/* See description in te_rpc_sys_time.h */
+te_errno
+timex_tarpc2te_str(const tarpc_timex *val, te_string *str)
+{
+    return te_string_append(str, "{ .modes = %s, .status = %s, offset = %"
+                            TE_PRINTF_64 "d, freq = %" TE_PRINTF_64 "d, "
+                            "time = { %ld, %ld } }",
+                            adj_mode_flags_rpc2str(val->modes),
+                            timex_status_flags_rpc2str(val->status),
+                            val->offset, val->freq,
+                            (long int)(val->time.tv_sec),
+                            (long int)(val->time.tv_usec));
+}

@@ -1,0 +1,33 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    PPPoE client on Agents.
+
+    To resolve conflicts between PPPoE servers spawned by different test
+    agents, each PPPoE server should be related to specific interface
+    resource. But to reduce the amount of pppoe-server processes, it is
+    allowed to configure PPPoE server to work with several vlan interfaces
+    over the specified master interface.
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/interface/pppoe"
+      access: read_create
+      type: integer
+      d: |
+         Collection of PPPoE clients on the specific interface.
+         Name: An arbitrary string that identifies
+               the instance of PPPoE client
+         Value: Enable/disable PPPoE instance
+
+    - oid: "/agent/interface/pppoe/mac_addr"
+      access: read_write
+      type: address
+      d: |
+         PPPoE client local MAC address.
+         By default MAC address of an interface is to be used.
+         Name: empty

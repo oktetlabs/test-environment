@@ -1,0 +1,79 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/** @file
+ * @brief RPC types definitions
+ *
+ * RPC analogues of definitions from sys/wait.h.
+ *
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ */
+
+#include "te_config.h"
+#include "config.h"
+
+#if HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
+#include "te_rpc_defs.h"
+#include "te_rpc_sys_wait.h"
+#include "te_rpc_signal.h"
+
+
+/** Convert RPC waitpid options to native options */
+int
+waitpid_opts_rpc2h(rpc_waitpid_opts opts)
+{
+    return (!!(opts & RPC_WNOHANG) * WNOHANG) |
+           (!!(opts & RPC_WUNTRACED) * WUNTRACED) |
+#ifdef WCONTINUED
+           (!!(opts & RPC_WCONTINUED) * WCONTINUED) |
+#endif
+           0;
+}
+
+
+/** Convert status flag to string */
+const char *
+wait_status_flag_rpc2str(rpc_wait_status_flag flag)
+{
+    return
+        flag == RPC_WAIT_STATUS_EXITED ? "EXITED" :
+        flag == RPC_WAIT_STATUS_SIGNALED ? "SIGNALED" :
+        flag == RPC_WAIT_STATUS_STOPPED ? "STOPPED" :
+        flag == RPC_WAIT_STATUS_RESUMED ? "RESUMED" :
+        flag == RPC_WAIT_STATUS_CORED ? "CORED" : "UNKNOWN";
+}
+
+/** Convert native status value to RPC status structure */
+rpc_wait_status
+wait_status_h2rpc(int st)
+{
+    rpc_wait_status ret = {RPC_WAIT_STATUS_UNKNOWN, 0};
+
+    if (WIFEXITED(st))
+    {
+        ret.flag = RPC_WAIT_STATUS_EXITED;
+        ret.value = WEXITSTATUS(st);
+    }
+    else if (WIFSIGNALED(st))
+    {
+        ret.value = signum_h2rpc(WTERMSIG(st));
+#ifdef WCOREDUMP
+        if (WCOREDUMP(st))
+            ret.flag = RPC_WAIT_STATUS_CORED;
+        else
+#endif
+            ret.flag = RPC_WAIT_STATUS_SIGNALED;
+    }
+    else if (WIFSTOPPED(st))
+    {
+        ret.flag = RPC_WAIT_STATUS_STOPPED;
+        ret.value = signum_h2rpc(WSTOPSIG(st));
+    }
+#ifdef WIFCONTINUED
+    else if (WIFCONTINUED(st))
+        ret.flag = RPC_WAIT_STATUS_RESUMED;
+#endif
+
+    return ret;
+}

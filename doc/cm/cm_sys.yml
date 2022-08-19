@@ -1,0 +1,348 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Linux /proc/sys configuration model.
+
+    Copyright (C) 2017-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/sys"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/.
+         Name: empty
+
+    - oid: "/agent/sys/console_loglevel"
+      access: read_write
+      type: integer
+      d: |
+         Console log level.
+         Name: empty
+         Value: the number of the current log level for console
+
+    - oid: "/agent/sys/core_pattern"
+      access: read_write
+      type: string
+      d: |
+         Pattern for core files.
+         Name: empty
+         Value: the pattern to be used by system when creating a core file
+                in case of segmenation fault and similar.
+
+    - oid: "/agent/sys/vm"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/vm.
+         Name: empty
+
+    - oid: "/agent/sys/vm/nr_hugepages"
+      access: read_write
+      type: integer
+      d: |
+         Indicates the current number of persistent hugepages
+         in the kernel's huge page pool.
+         Name: empty
+         Value: the current number of pre-allocated huge pages
+
+    - oid: "/agent/sys/fs"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/fs.
+         Name: empty
+
+    - oid: "/agent/sys/fs/file-max"
+      access: read_write
+      type: uint64
+      d: |
+         The maximum number of file handles that the Linux kernel will
+         allocate.
+         Name: empty
+         Value: the current maximum number of file handles
+
+    - oid: "/agent/sys/fs/file-nr"
+      access: read_only
+      type: uint64
+      volatile: true
+      d: |
+         Current status of file handles allocation.
+         Name: empty
+         Value: Three numbers - the number of allocated file handles,
+                the number of allocated but unused file handles, and
+                the maximum number of file handles
+
+    - oid: "/agent/sys/net"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/net/.
+
+         Objects corressponding to files under /proc/sys/net.
+
+         To make particular parameter from /proc/sys/net/* paths
+         available, you should also register an object named after
+         that parameter under appropriate object corresponding
+         to a directory.
+
+         Name: empty
+
+    - oid: "/agent/sys/net/core"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/net/core/.
+         Name: empty
+
+    - oid: "/agent/sys/net/core/somaxconn"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/core/wmem_default"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/core/wmem_max"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/core/rmem_default"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/core/rmem_max"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/core/optmem_max"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/netfilter"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/net/netfilter/.
+         Name: empty
+
+    - oid: "/agent/sys/net/netfilter/nf_conntrack_max"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/net/ipv4/.
+         Name: empty
+
+    - oid: "/agent/sys/net/ipv4/ip_forward"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/ipfrag_max_dist"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/ipfrag_high_thresh"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_timestamps"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_syncookies"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_max_syn_backlog"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_keepalive_time"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_keepalive_probes"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_keepalive_intvl"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_retries2"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_orphan_retries"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_syn_retries"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_synack_retries"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_fin_timeout"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_wmem"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_rmem"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_sack"
+      access: read_write
+      type: integer
+      d: |
+         Enable select acknowledgments (SACKS).
+         Name: empty
+
+    - oid: "/agent/sys/net/ipv4/tcp_dsack"
+      access: read_write
+      type: integer
+      d: |
+         Allows TCP to send duplicate SACKs.
+         Name: empty
+
+    - oid: "/agent/sys/net/ipv4/igmp_max_memberships"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_early_retrans"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/fib_multipath_hash_policy"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/ip_default_ttl"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_congestion_control"
+      access: read_write
+      type: string
+      d: |
+         Set the congestion control algorithm to be used for new
+         connections. The algorithm 'reno' is always available, but
+         additional choices may be available based on kernel configuration.
+         Name: empty
+
+    - oid: "/agent/sys/net/ipv4/conf"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         System settings from /proc/sys/net/ipv4/conf/.
+         Name: name of a directory under */conf/
+
+    - oid: "/agent/sys/net/ipv4/conf/forwarding"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/conf/rp_filter"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/conf/arp_ignore"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/conf/proxy_arp"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/neigh"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         System settings from /proc/sys/net/ipv4/neigh/.
+         Name: name of a directory under */neigh/
+
+    - oid: "/agent/sys/net/ipv4/neigh/gc_thresh3"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv4/route"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/net/ipv4/route/.
+         Name: empty
+
+    - oid: "/agent/sys/net/ipv4/route/mtu_expires"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv6"
+      access: read_only
+      type: none
+
+    - oid: "/agent/sys/net/ipv6/neigh"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+
+    - oid: "/agent/sys/net/ipv6/auto_flowlabels"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv6/conf"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         System settings from /proc/sys/net/ipv6/conf/.
+         Name: name of a directory under */conf/
+
+    - oid: "/agent/sys/net/ipv6/conf/disable_ipv6"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv6/conf/forwarding"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv6/conf/proxy_ndp"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv6/conf/keep_addr_on_down"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv6/conf/hop_limit"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv6/route"
+      access: read_only
+      type: none
+
+    - oid: "/agent/sys/net/ipv6/route/mtu_expires"
+      access: read_write
+      type: integer
+
+    - oid: "/agent/sys/net/ipv6/fib_multipath_hash_policy"
+      access: read_write
+      type: integer

@@ -1,0 +1,309 @@
+#! @SHELL@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+#
+# rgt-conv --
+#    Process Raw Log File according to user specified XML filter file
+#    (calls rgt-core utility).
+
+bindir="$(cd `dirname $0` && pwd)"
+
+unset cfg_file
+unset rlf_file
+unset out_file
+unset extra_flags
+op_mode="postponed"
+end_opts="false"
+
+prog_name=`basename $0`
+
+#
+# This script gets the following parameters:
+#   -m MODE, --mode=MODE        Choose mode of RGT opertation.
+#   --no-cntrl-msg              Process Tester control messages as ordinary
+#   -c FILE, --cfg-filter=FILE  Specify XMl filter file name.
+#   -f FILE, --raw-log=FILE     Specify Raw Log file name.
+#   -o FILE, --output=FILE      Output file name.
+#   -v, --version               Output version information.
+#   -h, --help                  Display help and exit.
+#
+
+#
+# Print information about how to use this utility and exit
+#
+usage () {
+    cat <<EOF
+Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
+  Processes Raw Log file specified with -o option according to user filters
+  passed with -c option. Result file is output in specified file or stdout.
+
+  OPTIONS:
+  -m MODE, --mode=MODE     Specify mode of RGT operation.
+                           It can be live, postponed, index or junit
+                           (postponed by default).
+
+  --no-cntrl-msg           Process Tester control messages as ordinary.
+
+  --incomplete-log         Do not shout on truncated log report, but complete
+                           it automatically.
+
+  --ignore-unknown-id      Do not stop log construction on encountering a
+                           message with ID not matching any opened log node.
+
+  -c FILE,                 Specify XML filter configuration file. If no file
+  --cfg-filter=FILE        specified no filtering is applied.
+
+  -f FILE, --raw-log=FILE  Specify Raw Log file name to be processed.
+
+  -o FILE, --output=FILE   Result file name. If it is not specified then the
+                           result is output in stdout.
+
+  --no-queue-offload       Do not offload queues of messages to files
+                           (can result in more RAM consumption but faster
+                            speed of processing). Alternatively, you can set
+                           RGT_DISABLE_QUEUE_OFFLOADING environment variable
+                           to "yes" to achieve the same effect.
+
+  -v, --version            Display version information.
+
+  -h, --help               Show this help message.
+
+EOF
+}
+
+#
+# Checks if operation mode is valid (should be one of "live", "postponed",
+# "index" or "junit")
+#
+check_op_mode () {
+    case "$1" in live|postponed|index|junit)
+        # Mode is ok.
+        ;;
+
+    *)
+        usage
+        echo "Specify mode of operation: live, postponed, index or junit"
+        { (exit 1); exit 1; }
+        ;;
+    esac
+}
+
+#
+# Check for presense file in file system
+#
+check_file () {
+    if ! [ -f "$1" ]; then
+        if [ -z "$1" ]; then
+            echo "You should specify $2" >&2
+        else
+            echo "$1: No such file" >&2
+        fi
+        { (exit 1); exit 1; }
+    fi
+}
+
+#
+# Print information about version number, copyright statement and exit.
+#
+version_info () {
+    echo "Package @PACKAGE@ ($prog_name) version @VERSION@"
+    echo "@TE_COPYRIGHT@"
+    { (exit 0); exit 0; }
+}
+
+#
+# Find a tmp directory, set TMP_DIR to its path
+#
+get_tmp_dir_path () {
+    TMP_DIR="${TE_TMP:-${TMPDIR}}"
+    if test x"${TMP_DIR}" = x -o ! -d "${TMP_DIR}" ; then
+        TMP_DIR=
+        for t in /tmp /var/tmp ${PWD}; do
+            if ! [ -d $t ] || ! [ -w $t ] ; then
+                continue;
+            fi
+            TMP_DIR=$t
+            break;
+        done
+    fi
+}
+
+#
+# Generates unique temp file name and creates it.
+# The name of the file is placed in variable with name given
+# in the first argument.
+#
+get_tmp_file_name () {
+
+    get_tmp_dir_path
+
+    # choose tmp file name
+    tmp=""
+    {
+        tmp=`(umask 077 && mktemp -q "$TMP_DIR/$prog_name.XXXXXX") 2>/dev/null` &&
+        test -n "$tmp" && test -f "$tmp"
+    } ||
+    {
+        tmp="$TMP_DIR/$prog_name.$$-$RANDOM"
+        (umask 077 && touch $tmp)
+    } ||
+    {
+        echo "$prog_name: cannot create a temporary file." >&2
+        { (exit 1); exit 1; }
+    }
+    eval "$1=$tmp"
+}
+
+# Check arguments
+while [ $# != 0 ]
+do
+    case "$1" in
+    -m)
+        op_mode=$2
+        check_op_mode $op_mode
+        shift
+        ;;
+    --mode*)
+        if echo $1 | grep '=' >/dev/null ; then
+            op_mode=`echo $1 | sed 's/^--mode=//'`
+        else
+            op_mode=$2
+            shift
+        fi
+        check_op_mode $op_mode
+        ;;
+    --no-cntrl-msg)
+        extra_flags="$extra_flags $1"
+        ;;
+    --incomplete-log)
+        extra_flags="$extra_flags $1"
+        ;;
+    --ignore-unknown-id)
+        extra_flags="$extra_flags $1"
+        ;;
+    -c)
+        cfg_file=$2
+        check_file $cfg_file "filter configuration file"
+        shift
+        ;;
+    --cfg-filter*)
+        if echo $1 | grep '=' >/dev/null ; then
+            cfg_file=`echo $1 | sed 's/^--cfg-filter=//'`
+        else
+            cfg_file=$2
+            shift
+        fi
+        check_file $cfg_file "filter configuration file"
+        ;;
+    -f)
+        rlf_file=$2
+        check_file $rlf_file "raw log file"
+        shift
+        ;;
+    --raw-log*)
+        if echo $1 | grep '=' >/dev/null ; then
+            rlf_file=`echo $1 | sed 's/^--raw-log=//'`
+        else
+            rlf_file=$2
+            shift
+        fi
+        check_file $rlf_file "raw log file"
+        ;;
+    -o)
+        out_file=$2
+        shift
+        ;;
+    --no-queue-offload)
+        export RGT_DISABLE_QUEUE_OFFLOADING=yes
+        ;;
+    --output*)
+        if echo $1 | grep '=' >/dev/null ; then
+            out_file=`echo $1 | sed 's/^--output=//'`
+        else
+            out_file=$2
+            shift
+        fi
+        ;;
+    -v)
+        version_info
+        ;;
+    --version)
+        version_info
+        ;;
+    -h)
+        usage
+        { (exit 0); exit 0; }
+        ;;
+    --help)
+        usage
+        { (exit 0); exit 0; }
+        ;;
+    --)
+        end_opts="true"
+        ;;
+    *)
+        if [ "$end_opts" = "false" ] && [[ $1 = -* ]] ; then
+            usage
+            echo "Unknown option: $1" >&2
+            { (exit 1); exit 1; }
+        fi
+
+        if [ -z "$rlf_file" ]; then
+            rlf_file=$1
+            check_file $rlf_file "raw log file"
+        elif [ -z "$out_file" ]; then
+            out_file=$1
+        else
+            usage
+            echo "Too many parameters specified" >&2
+            { (exit 1); exit 1; }
+        fi
+        ;;
+    esac
+    shift
+done
+
+if [ -n "$cfg_file" ]; then
+    extra_flags="$extra_flags -f $cfg_file"
+fi
+
+if [ -z "$out_file" ]; then
+    out_file="&1"
+fi
+
+# Add TE libraries installation path to LD_LIBRARY_PATH since rgt-core uses it
+export LD_LIBRARY_PATH="$(dirname "${bindir}")/lib:${LD_LIBRARY_PATH}"
+
+if test x"${RGT_DISABLE_QUEUE_OFFLOADING}" != x"yes" ; then
+    get_tmp_dir_path
+    tmpdir=$(mktemp -d "${TMP_DIR}/rgt_core_XXXXXX")
+    result=$?
+
+    sigint_cleanup()
+    {
+        rm -rf "${tmpdir}"
+        exit 1
+    }
+
+    if test $result -eq 0 ; then
+
+        trap sigint_cleanup SIGINT
+
+        # Process raw log file with filter
+        eval "$bindir/rgt-core -m $op_mode " \
+             "--tmpdir=\"${tmpdir}\" $extra_flags $rlf_file >$out_file"
+        result=$?
+
+        rm -rf "${tmpdir}"
+    fi
+else
+    # Process raw log file with filter
+    eval "$bindir/rgt-core -m $op_mode " \
+         "$extra_flags $rlf_file >$out_file"
+    result=$?
+fi
+
+test $result -eq 0 || rm -f $out_file
+
+exit $result
+

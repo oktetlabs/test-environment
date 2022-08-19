@@ -1,0 +1,33 @@
+<!-- Empty space is placed at the end so that when all logs are filtered
+     out, page does not move back to head and filter buttons remain where
+     they are -->
+<div style="height:75vh;"></div>
+</body>
+<script>
+/*
+    levels = window.top.level_s;
+*/
+    levels = window.top.level_info[0];
+    all_entities = window.top.entities;
+    divList = getAllLogs();
+
+    for (i = 0; i < divList.length; i++)
+    {
+        DivElem = divList.item(i);
+        level = DivElem.getAttribute("level");
+        if (!level)
+            continue;
+
+        if ((levels & level) &&
+            (all_entities[DivElem.getAttribute("entityname")]
+                         [DivElem.getAttribute("username")] & level))
+        {
+            divList.item(i).style.display = "";
+        }
+        else
+        {
+            divList.item(i).style.display = "none";
+        }
+    }
+</script>
+</html>

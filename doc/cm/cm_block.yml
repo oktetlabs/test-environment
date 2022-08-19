@@ -1,0 +1,19 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Block devices configuration model.
+
+    Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/block"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         Block devices list.
+         Name: Name of the block device

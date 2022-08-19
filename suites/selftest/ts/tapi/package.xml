@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>Check TAPI implementation</description>
+    <author mailto="te-maint@oktetlabs.ru"/>
+
+    <session>
+        <run>
+            <package name="cache"/>
+        </run>
+
+        <run>
+            <package name="cfg_key"/>
+        </run>
+
+        <run>
+            <package name="job"/>
+        </run>
+
+        <run>
+            <package name="jobopt"/>
+        </run>
+
+        <run>
+            <package name="tool"/>
+        </run>
+
+    <!-- FIXME. Bug11561: Broken with Debian 11
+        <run>
+            <package name="upnp"/>
+        </run>
+    -->
+    </session>
+</package>

@@ -1,0 +1,85 @@
+#! /usr/bin/awk -f
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Coverage Estimation
+#
+# Script to merge TCE results from different sources
+#
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+BEGIN {
+    lines = 0;
+    executed = 0;
+    nbranches = 0;
+    exbranches = 0;
+}
+
+
+NF != 8 {
+    print "master and delta files are incompatible" >"/dev/stderr";
+    exit 1
+}
+
+function intmin(x, y)
+{
+    if (x == "-" || y == "-") return "-";
+    return x + 0 < y + 0 ? x : y
+}
+
+{
+    $1 = intmin($1, $5)
+    if ($2 == "*")
+        $2 = $6;
+    else if ($6 != "*")
+    {
+        split($2, f1, ":");
+        split($6, f2, ":");
+        $2 = intmin(f1[1], f2[1]) ":" intmin(f1[2], f2[2]) ":" intmin(f1[3], f2[3]);
+    }
+    if ($3 == "*")
+        $3 = $7;
+    else if ($7 != "*")
+    {
+        split($3, b1, ":");
+        split($7, b2, ":");
+        $3 = ""
+        for (i = 1; i in b1 || i in b2; i++)
+        {
+            $3 = $3 intmin(b1[i], b2[i]) ":"
+            nbranches++;
+            if (intmin(b1[i], b2[i]) + 0 != 0) exbranches++;
+        }
+        sub(/:$/, "", $3);
+    }
+    if ($4 == "*")
+        $4 = $8;
+    else if ($8 != "*")
+    {
+        split($4, c1, ":");
+        split($8, c2, ":");
+        $4 = ""
+        for (i = 1; i in c1 || i in c2; i++)
+        {
+            $4 = $4 intmin(c1[i], c2[i]) ":"
+        }
+        sub(/:$/, "", $4);
+    }
+    if ($1 != "-")
+    {
+        lines++;
+        if ($1 + 0 != 0)
+            executed++;
+    }
+
+    $5 = "";
+    $6 = "";
+    $7 = "";
+    $8 = "";
+    print
+}
+
+END {
+    print "SUMMARY", lines, executed, nbranches, exbranches
+}
+

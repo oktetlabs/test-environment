@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="job" type="package">
+    <objective>Test TAPI Job implemetation</objective>
+    <iter result="PASSED">
+        <test name="prologue" type="script">
+            <objective>Check autorestart and recreate TAPI Job features</objective>
+
+            <iter result="PASSED"/>
+        </test>
+
+        <test name="epilogue" type="script">
+            <objective>Check support of TAPI Job recreate feature</objective>
+
+            <iter result="PASSED"/>
+        </test>
+
+        <test name="cfg_basic_operations" type="script">
+            <objective>Check support of TAPI Job operations for jobs created by CFG factory</objective>
+
+            <iter result="PASSED"/>
+        </test>
+    </iter>
+</test>

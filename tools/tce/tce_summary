@@ -1,0 +1,182 @@
+#! /usr/bin/awk -f
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Coverage Estimation
+#
+# Script to generate HTML representation of the TCE report
+#
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+function update_summary()
+{
+    sumline = sprintf("%d %d %d %d %s %d", lines, executed, branches, exbranches, sourcefile, nfile);
+    if (SORTMODE == "filename")
+        summary[sourcefile] = sumline;
+    else if (SORTMODE == "lines")
+        summary[sprintf("%8.8d", lines)] = sumline;
+    else if (SORTMODE == "executed")
+        summary[sprintf("%8.8d", executed)] = sumline;
+    else if (SORTMODE == "branches")
+        summary[sprintf("%8.8d", branches)] = sumline;
+    else if (SORTMODE == "executed_branches")
+        summary[sprintf("%8.8d", exbranches)] = sumline;
+    else if (SORTMODE == "coverage")
+        summary[sprintf("%5.5d", lines != 0 ? executed * 10000 / lines : 10000)] = sumline;
+    else if (SORTMODE == "branch_coverage")
+        summary[sprintf("%5.5d", branches != 0 ? exbranches * 1000 / branches : 1000)] = sumline;
+    lines = 0;
+    executed = 0;
+    branches = 0;
+    exbranches = 0;
+}
+
+$1 == "FILE" {
+    if (EXCLUDE)
+    {
+        while ($5 ~ EXCLUDE)
+        {
+            while (getline > 0)
+            {
+                if ($1 == "FILE") break;
+            }
+            if ($1 != "FILE") next;
+        }
+    }
+    if (GROUP_HEADERS && prevobj && prevobj != $2)
+    {
+        prevobj = $2
+        update_summary();
+    }
+    lineno = 0;
+    funno = 0;
+    nfile++;
+    sourcefile = $5;
+    destfile = sprintf("%s/%d.html", DATADIR, nfile);
+    print "<html>" > destfile
+    print "<head><title>" sourcefile "</title></head>" >> destfile
+    print "<body>" >> destfile
+    printf "<p><a href=\"%d.html\">[prev]</a><a href=\"%d.html\">[next]</a>\n", nfile - 1, nfile + 1 >> destfile
+    print "<table>" >> destfile
+    printf "<caption>%s (%s): %d runs</caption>\n", sourcefile, $2, $NF >> destfile
+    next;
+}
+
+$1 == "SUMMARY" {
+    lines += $2
+    executed += $3;
+    branches += $4;
+    exbranches += $5;
+    if (!GROUP_HEADERS) update_summary();
+    print "</table>" >> destfile
+    print "</body>" >> destfile
+    print "</html>" >> destfile
+    close(destfile);
+    close(sourcefile);
+    next;
+}
+
+{
+    source="/** unavailable **/"
+    lineno++;
+    getline source < sourcefile;
+    if (compactify && $1 == "-" && $2 == "*" && $3 == "*" && $4 == "*")
+    {
+        skipped++;
+        next;
+    }
+    gsub(/&/, "\\&amp;", source);
+    gsub(/</, "\\&lt;", source);
+    gsub(/>/, "\\&gt;", source);
+    gsub(/ /, "\\&nbsp;", source);
+    gsub(/\t/, "\\&nbsp;\\&nbsp;\\&nbsp;\\&nbsp;", source);
+    if (skipped != 0)
+    {
+        printf "<tr><td colspan=\"2\">at line %d:</td></tr>\n", lineno >> destfile
+    }
+    if ($2 != "*")
+    {
+        split($2, fun, ":");
+        printf "<tr><td><a name=\"fun%d\" href=\"#fun%d\">[prev]</a><a href=\"#fun%d\">[next]</a></td>", funno, funno - 1, funno + 1 >> destfile;
+        printf "<td>%sFunction called %d times, returned %.2f%%, %.2f%% blocks executed%s</td></tr>\n",
+            fun[1] + 0 == 0 ? "<strong>" : "", fun[1], fun[2], fun[3], fun[1] + 0 == 0 ? "</strong>" : "" >> destfile;
+        funno++;
+    }
+    brc = "";
+    if ($3 != "*" && $1 != "0")
+    {
+        split($3, br, ":");
+        for (i = 1; i in br; i++)
+        {
+            brc = sprintf("%s%s[branch %d: %.2f%%]%s",
+                          brc,
+                          br[i] + 0 == 0 ? "<strong>" : "",
+                          i,
+                          ($1 + 0 == 0 ? 100 : br[i] * 100 / $1),
+                          br[i] + 0 == 0 ? "</strong>" : "");
+        }
+    }
+    cc = "";
+    if ($4 != "*" && $1 != "0")
+    {
+        split($4, cl, ":");
+        for (i = 1; i in cl; i++)
+        {
+            cc = sprintf("%s%s[call %d returned: %.2f%%]%s",
+                         cc,
+                         cl[i] + 0 == 0 ? "<strong>" : "",
+                         i,
+                         ($1 + 0 == 0 ? 100 : cl[i] * 100 / $1),
+                         cl[i] + 0 == 0 ? "</strong>" : "");
+        }
+    }
+
+    if ($1 == "0")
+    {
+        empho = "<strong>";
+        emphc = "</strong>";
+    }
+    else
+    {
+        empho = "";
+        emphc = "";
+    }
+    if ($1 == "-0" || $1 == "-") $1 = "";
+    if ($1 == "+0") $1 = "0";
+    if ($1 == "")
+    {
+        empho = "<font color=\"gray\">";
+        emphc = "</font>"
+    }
+    printf "<tr><td align=\"right\">%s%s%s</td><td>%s%s%s %s%s</td></tr>\n",
+        empho, $1, emphc, empho, source, emphc,
+        (brc ? "<small>" : "") brc (brc ? "</small>" : ""),
+        (cc ? "<small>" : "") cc (cc ? "</small>" : "") >> destfile;
+
+    skipped = 0;
+}
+
+
+END {
+    if (GROUP_HEADERS) update_summary();
+    asorti(summary, sorted);
+    print "<html>"
+    print "<head><title>TCE summary</title></head>"
+    print "<body>"
+    print "<table border=\"1\">";
+    print "<th>Filename</th><th>Lines executed</th><th>Branches executed</th>"
+    url = DATADIR
+    sub(/^.*\//, "", url);
+    for (i = 1; i in sorted; i++)
+    {
+        split(summary[sorted[i]], sumfields);
+        printf "<tr><td><a href=\"%s/%d.html\">%s</a></td><td>%.2f%% of %d</td><td>%.2f%% of %d</td>",
+            url, sumfields[6], sumfields[5],
+            sumfields[1] == 0 ? "100" : (sumfields[2] * 100 / sumfields[1]), sumfields[1],
+            sumfields[3] == 0 ? "100" : (sumfields[4] * 100 / sumfields[3]), sumfields[3];
+    }
+    print "</table>"
+    print "</body>"
+    print "</html>"
+}
+

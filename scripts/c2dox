@@ -1,0 +1,81 @@
+#! /usr/bin/awk -f
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
+
+# This script extracts comments from a `package.xml' file and converts them
+# to the form suitable for Doxygen processing
+
+/\/\*\*.*@/ {
+    if (header_finished == 1)
+    {
+        print "*/\n";
+    }
+    header_finished = 0;
+}
+/\/\*\*.*\*\// && !header_finished { header_finished = 1; print; next; }
+
+/\/\*\*/ && !header_finished { in_header = 1; print; next; }
+
+in_header && /[[:space:]]*@author/ {
+    author = $0;
+    next;
+}
+in_header && /\*\// { in_header = 0; header_finished = 1; next; }
+in_header { print; next; }
+
+/\/\*-/ { sub(/^.*\/\*-/, ""); sub(/^/, " -#"); while(sub(/-#-/, "  -#"));
+    in_dox_comment = 1;
+    was_comment = 1;
+    printf " *";
+}
+
+in_dox_comment && /\*\// { sub(/\*\/.*/, "");
+    in_dox_comment = 0;
+    if ($0 ~ /^[[:space:]]*$/) next;
+    if ($0) print;
+    next;
+}
+
+in_dox_comment { print $0; next }
+
+# Fetch scenario from the logging steps
+
+/TEST_STEP\(|TEST_STEP_PUSH\(/ {
+  in_dox_log_comment = 1;
+  was_comment = 1;
+  printf "   -# ";
+}
+
+/TEST_STEP_POP/ {
+  in_dox_log_comment = 0;
+  was_comment = 0;
+}
+
+/TEST_SUBSTEP/ {
+    in_dox_log_comment = 1;
+    was_comment = 1;
+    printf "     - ";
+}
+
+in_dox_log_comment {
+    sub(/ *TEST_STEP\("/, "");
+    sub(/ *TEST_SUBSTEP\("/, "");
+    sub(/ *TEST_STEP_PUSH\("/, "");
+    sub(/ *TEST_STEP_POP\("/, "");
+
+    $0 = gensub(/([^\\])"/, "\\1", "g");
+    sub(/^"/, "");
+    sub(/"$/, "");
+    $0 = gensub(/\\"/, "\"", "g");
+}
+
+in_dox_log_comment && /);\s*$/ {
+    sub(/);\s*$/, "");
+    print $0;
+    in_dox_log_comment = 0;
+    next;
+}
+
+in_dox_log_comment { print $0; next }
+
+END { printf " *\n" author "\n */\n";}

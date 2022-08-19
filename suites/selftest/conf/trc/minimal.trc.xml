@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="minimal" type="package">
+    <objective>Package for demonstrating minimal tests</objective>
+    <iter result="PASSED">
+        <test name="helloworld" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="artifact" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="mi_meas_line_graph" type="script">
+            <objective>Demo of using line-graph views with MI measurement artifacts</objective>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="verdict" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+                <results tags="tag1">
+                    <result key="key 1" notes="Expected result with tag1" value="PASSED">
+                        <verdict>Test verdict 1</verdict>
+                        <verdict>Test verdict 2</verdict>
+                    </result>
+                    <result notes="FAILED is also accepted when tag1 is enabled"
+                            key="key 2" value="FAILED"/>
+                </results>
+                <results tags="tag_set_by_prologue">
+                    <result key="key 3" notes="Expected result" value="PASSED">
+                        <verdict>Test verdict 1</verdict>
+                        <verdict>Test verdict 2</verdict>
+                    </result>
+                </results>
+            </iter>
+        </test>
+        <test name="env" type="script">
+            <objective>Get the environment</objective>
+            <iter result="PASSED">
+                <arg name="env">{{{'pco_iut':IUT},if:'iut_if'}}</arg>
+                <notes/>
+            </iter>
+        </test>
+    </iter>
+</test>

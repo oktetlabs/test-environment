@@ -1,0 +1,42 @@
+-- SPDX-License-Identifier: Apache-2.0
+-- Copyright (C) 2017-2022 OKTET Labs Ltd. All rights reserved.
+
+TE-NDN-RTE_flow
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS Generic-PDU
+            FROM TE-NDN-Context-General;
+
+EXPORTS Flow-Rule;
+
+Attributes ::= IMPLICIT SEQUENCE
+{
+    group       INTEGER(0..4294967295) OPTIONAL,
+    priority    INTEGER(0..4294967295) OPTIONAL,
+    ingress     INTEGER(0..1) OPTIONAL,
+    egress      INTEGER(0..1) OPTIONAL,
+}
+
+Action-Type ::= INTEGER
+{
+    void(0),
+    queue(1),
+}
+
+Action ::= IMPLICIT SEQUENCE
+{
+    type        Action-Type,
+    conf        CHOICE {    -- for future actions
+        index   INTEGER(0..65535),
+    } OPTIONAL,
+}
+
+Flow-Rule ::= IMPLICIT SEQUENCE
+{
+    attr        Attributes,
+    pattern     SEQUENCE OF Generic-PDU,
+    actions     SEQUENCE OF Action,
+}
+
+END

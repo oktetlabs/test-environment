@@ -1,0 +1,98 @@
+#!/usr/bin/perl -w
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment: Logger subsystem
+#
+# This script provides logging of the string messages and text files.
+# It takes four arguments for processing. Three beggining arguments are
+# mandatory. Four argument is processed as string containing full file
+# name of logged file if it exists. All symbols allowable in C-string
+# are allowable in MESSAGE.
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+use File::Basename qw(basename);
+use File::Copy qw(copy);
+
+# Make time stamp ASAP
+my $sec;
+my $usec;
+if (eval 'require Time::HiRes')
+{
+    import Time::HiRes qw(gettimeofday);
+    ($sec, $usec) = Time::HiRes::gettimeofday();
+}
+else
+{
+    ($sec, $usec) = (time, 0);
+}
+
+# Validate number of parameters
+if ((@ARGV < 3) || (@ARGV > 4))
+{
+    print STDOUT "Usage: te_log_message ENTITY USER MESSAGE [FILENAME]\n";
+    exit 1;
+}
+
+my $te_log_path = $ENV{TE_LOG_DIR};
+my $te_log_raw  = $ENV{TE_LOG_RAW};
+
+open(OUTFILE, ">>" . $te_log_raw) or
+    die("Can't to open output file " . $te_log_raw . ": $!");
+
+binmode OUTFILE;
+
+my @lens;
+my $i;
+for ($i = 0; $i < @ARGV; $i++)
+{
+    $lens[$i] = length($ARGV[$i]);
+}
+
+my $fname = "";
+my $fname_field_len = 0;
+
+# Process logged file if exists
+if (@ARGV == 4)
+{
+    # Get base name of the file
+    $fname = basename($ARGV[3]);
+
+    # Copy file in TE log directory
+    copy($ARGV[3], $te_log_path . "/" . $fname) or
+        die("Copy of file failed: $!");
+
+    # Calculate length of the file name
+    $fname_field_len = length($fname) + 2;
+}
+
+my $log_level = 4; # RING log level (see include/logger_defs.h)
+
+# Write log message:
+# - version (1 byte);
+# - timestamp (two 32-bit integer in "network" (big-endian) order)
+# - log level (16-bit integer in "network" (big-endian) order)
+# - test ID equal to 0 (32-bit integer in "network" (big-endian) order)
+print OUTFILE pack("CNNnN", 1, $sec, $usec, $log_level, 0);
+
+# Write length of Entity name filed and itself one
+print OUTFILE pack("nA*", $lens[0], $ARGV[0]);
+
+# Write length of User name field and itself one
+print OUTFILE pack("nA*", $lens[1], $ARGV[1]);
+
+# Write length of message string and itself one
+print OUTFILE pack("nA*", $lens[2], $ARGV[2]);
+
+# Write length of logged file name and itsef one
+if (@ARGV == 4)
+{
+    print OUTFILE pack("nA*", $fname_field_len - 2, $fname);
+}
+
+# Write EOR marker
+print OUTFILE pack("n", 0xffff);
+
+close OUTFILE;
+
+exit 0;

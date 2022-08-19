@@ -1,0 +1,21 @@
+
+var level_info = new Array();
+level_info[0] = 0xffff;
+level_info[1] = 0;
+level_info[2] = 0;
+
+/*
+var levels = 0xffff;
+var levels_changed = 0;
+var levels_updated = 0;
+*/
+
+var entities = window.top.entities;
+var user_names;
+
+if (typeof entities == 'undefined')
+{
+    entities = new Array();
+}
+
+user_names = new Array();

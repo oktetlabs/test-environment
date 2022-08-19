@@ -1,0 +1,199 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment Builder
+#
+# Script for building of the test package.
+# Parameters are unique package name and package source directory.
+#
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+# Parameters are package name
+
+if test -n "${TE_BUILD}" ; then
+    cd ${TE_BUILD}
+fi
+if test -e builder.conf.processed ; then
+    . builder.conf.processed
+else
+    SCRIPT_DIR="`dirname $0`"
+fi
+
+SUITE="$1"
+SOURCES="$2"
+FROM_MAKEFILE=$3
+
+if test "${SOURCES:0:1}" != "/" ; then
+    if test -z "${TE_BASE}" ; then
+        echo 'Export TE_BASE or full path to suite sources, please'
+        exit 1
+    fi
+    SOURCES="${TE_BASE}/suites/${SOURCES:-${SUITE}}"
+fi
+
+if which meson &>/dev/null && test -f "${SOURCES}"/meson.build ; then
+    MESON_BUILD=true
+else
+    MESON_BUILD=false
+fi
+
+pushd "${SOURCES}" >/dev/null
+if ! ${MESON_BUILD} && test -e configure.ac ; then
+    if test ! -e configure ; then
+        aclocal -I ${TE_BASE}/auxdir || exit 1 ;
+        if cat configure.ac | grep -q AC_CONFIG_HEADER ; then
+            autoheader || exit 1 ;
+        fi ;
+        autoconf -Wall || exit 1 ;
+        automake --add-missing || exit 1 ;
+    fi
+fi
+popd >/dev/null
+
+if test -n "${TE_BUILD}" ; then
+    cd "${TE_BUILD}"
+    mkdir -p "suites/${SUITE}"
+    cd "suites/${SUITE}"
+else
+    cd "${SOURCES}"
+fi
+
+mkdir -p ${TE_INSTALL_SUITE}
+
+. ${TE_BASE}/engine/builder/te_meson_functions
+
+# Helper function to run ninja taking ninja-build vs ninja difference
+# on various distos into account and split stdout and stderr streams
+function run_ninja () {
+    local ninja_exec
+
+    which ninja-build >/dev/null 2>&1 &&
+        ninja_exec=ninja-build ||
+        ninja_exec=ninja
+    # Run ninja in subshell to avoid pipefail option setting inheritance
+    (
+        set -o pipefail
+        export NINJA_STATUS="[ninja][%f/%t] "
+        ${ninja_exec} "${NINJA_EXTRA_OPTS[@]}" "$@" | ninja_status_filter
+    )
+}
+
+# Helper function to run meson install for changed files only
+function run_meson_install () {
+    # Run meson in subshell to avoid pipefail option setting inheritance
+    (
+        set -o pipefail
+        export NINJA_STATUS="[ninja][%f/%t] "
+        meson install --only-changed | ninja_status_filter
+    )
+}
+
+# Helper function for running meson/ninja install
+function build_and_install () {
+    meson install --help | grep "meson install" > /dev/null 2> /dev/null
+    supports_steps=$?
+    if test ${supports_steps} -eq 0 ; then
+        # Build with ninja
+        run_ninja -v
+        # And install only changed files with meson
+        run_meson_install
+    else
+        # Not all meson versions support builtin build/install wrapper,
+        # so we run ninja instead if it is the case.
+        # Known bad versions: <=0.45
+        run_ninja -v install
+    fi
+}
+
+if ${MESON_BUILD} ; then
+    ADD_CPPFLAGS="`eval echo '$'${TE_HOST}'_CPPFLAGS'` \
+                  `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_CPPFLAGS'`"
+    ADD_CFLAGS="`eval echo '$'${TE_HOST}'_CFLAGS'` \
+                `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_CFLAGS'`"
+    ADD_LDFLAGS="`eval echo '$'${TE_HOST}'_LDFLAGS'` \
+                 `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_LDFLAGS'`"
+
+    cflags="-I${TE_INSTALL}/${TE_HOST}/include ${ADD_CPPFLAGS} -O0 -ggdb -Wall -W ${ADD_CFLAGS}"
+    ldflags="${ADD_LDFLAGS}"
+
+    pkg_config_path="${TE_INSTALL}/${TE_HOST}/lib/pkgconfig/"
+    if test ! -z "${PKG_CONFIG_PATH}" ; then
+        export PKG_CONFIG_PATH="${pkg_config_path}:${PKG_CONFIG_PATH}"
+    else
+        export PKG_CONFIG_PATH="${pkg_config_path}"
+    fi
+
+    meson_nv_args="--prefix=\"${TE_INSTALL_SUITE}\""
+    meson_args=
+    if [[ "$(meson -v)" > "0.50.1" ]]; then
+        meson_args="${meson_args} -Dpkg_config_path=\"${PKG_CONFIG_PATH}\""
+    fi
+    meson_args="${meson_args} -Dte_path=\"${TE_PATH}\""
+    meson_args="${meson_args} -Dte_cflags=\"${cflags}\""
+    meson_args="${meson_args} -Dte_ldflags=\"${ldflags}\""
+    meson_args="${meson_args} -Dte_libdir=\"${TE_INSTALL}/${TE_HOST}/lib\""
+
+    echo "${meson_args}" >meson.args.new
+
+    if test ! -f meson.args ; then
+        eval meson ${meson_nv_args} ${meson_args} "${SOURCES}" || exit 1
+        echo "${meson_nv_args}" >meson.nv_args
+        echo "${meson_args}" >meson.args
+    elif ! diff -q meson.args meson.args.new 2>/dev/null ; then
+        eval meson configure ${meson_args} || exit 1
+        echo "${meson_args}" >meson.args
+    fi
+    build_and_install || exit 1
+
+    exit 0
+fi
+
+if test ! -e Makefile ; then
+    SUITE_NAME=`echo ${SUITE} | tr .- _`
+    PARMS="`eval echo '$TE_BS_SUITE_'${SUITE_NAME}'_PARMS'`"
+
+    ADD_CPPFLAGS="`eval echo '$'${TE_HOST}'_CPPFLAGS'` \
+                  `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_CPPFLAGS'`"
+    ADD_CFLAGS="`eval echo '$'${TE_HOST}'_CFLAGS'` \
+                `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_CFLAGS'`"
+    ADD_LDFLAGS="`eval echo '$'${TE_HOST}'_LDFLAGS'` \
+                 `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_LDFLAGS'`"
+
+    HOST_CC="`eval echo '$'${TE_HOST}'_CC'`"
+    if test "$HOST_CC" ; then
+        PARMS="$PARMS CC=$HOST_CC"
+    fi
+
+    PARMS="$PARMS --build=`gcc -dumpmachine` \
+           TE_BASE=\"$TE_BASE\" \
+           TE_PATH=\"$TE_PATH\" \
+           TE_M4=\"$TE_BASE/auxdir\" \
+           TE_CPPFLAGS=\"-I${TE_INSTALL}/${TE_HOST}/include ${ADD_CPPFLAGS}\" \
+           TE_CFLAGS=\"-O0 -ggdb -Wall -W ${ADD_CFLAGS} \" \
+           TE_LDFLAGS=\"-L${TE_INSTALL}/${TE_HOST}/lib ${ADD_LDFLAGS}\" \
+           TE_LDADD=\"$LDADD\" \
+           TE_PLATFORM=$TE_HOST"
+
+#    echo $PARMS | grep "\-\-host=" >/dev/null || PARMS="--host=linux $PARMS"
+
+    echo "${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} $PARMS"
+
+    CFLAGS="" \
+    eval "${SOURCES}/configure" -q --prefix="${TE_INSTALL_SUITE}" \
+          $PARMS || exit 1
+fi
+make ${BUILD_MAKEFLAGS} install || exit 1
+
+if test "${FROM_MAKEFILE}" = "yes" ; then
+    exit 0
+fi
+
+# Now upgrade dynamic builder.conf
+if test -n "${TE_BUILD}" ; then
+   if ! cat "${TE_BUILD}/suites/Makefile.suites" | grep -q "=${SUITE}" ; then
+       echo TE_BS_SUITES+=${SUITE} >> "${TE_BUILD}/suites/Makefile.suites"
+   fi
+fi
+
+exit 0

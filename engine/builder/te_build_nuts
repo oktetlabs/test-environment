@@ -1,0 +1,72 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment Builder
+#
+# Script for building of NUT libraries and images
+# Usage: te_build_nuts <configuration file>
+#
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+PARSER="`dirname $0`/../share/te_builder/nut.m4"
+cat "$PARSER" "$1" | m4 > "${TE_TMP}/nut.conf.processed"
+. "${TE_TMP}/nut.conf.processed"
+
+mkdir -p "${TE_INSTALL_NUT}"
+
+for i in $NUTS ; do
+    NUT_SCRIPT="`eval echo '$NUT_'$i'_SCRIPT'`"
+    NUT_SOURCES="`eval echo '$NUT_'$i'_SOURCES'`"
+    NUT_PARMS="`eval echo '$NUT_'$i'_PARMS'`"
+    if test -n "`eval echo '$NUT_'$i'_TCE'`" ; then
+        test -n "$CC" && export TCE_CC="$CC"
+        test -n "$CXX" && export TCE_CXX="$CXX"
+        export CC="`which tce_gcc`"
+        export CXX="`which tce_gxx`"
+
+        tce_src="`eval echo '$NUT_'$i'_TCE_SRC'`"
+        if test -z "${NUT_SOURCES}" ; then
+            # Can do nothing with TCE_SRC
+            TCE_SRC=$tce_src
+        else
+            # Path to NUT sources is specified
+            if test -z "$tce_src" ; then
+                # Set TCE_SRC to all NUT sources
+                TCE_SRC=${NUT_SOURCES}
+            else
+                # Append path to NUT sources as prefix if necessary
+                TCE_SRC=
+                for i in $tce_src ; do
+                    if test "${i:0:1}" != "/" ; then
+                        TCE_SRC="${TCE_SRC} ${NUT_SOURCES}/$i"
+                    else
+                        TCE_SRC="${TCE_SRC} $i"
+                    fi
+                done
+            fi
+        fi
+        export TCE_SRC
+
+        tce_src_exclude="`eval echo '$NUT_'$i'_TCE_SRC_EXCLUDE'`"
+        if test -z "${NUT_SOURCES}" ; then
+            # Can do nothing with TCE_SRC
+            TCE_SRC_EXCLUDE=$tce_src_exclude
+        else
+            # Path to NUT sources is specified
+            # Append path to NUT sources as prefix if necessary
+            TCE_SRC_EXCLUDE=
+            for i in $tce_src_exclude ; do
+                if test "${i:0:1}" != "/" ; then
+                    TCE_SRC_EXCLUDE="${TCE_SRC_EXCLUDE} ${NUT_SOURCES}/$i"
+                else
+                    TCE_SRC_EXCLUDE="${TCE_SRC_EXCLUDE} $i"
+                fi
+            done
+        fi
+        export TCE_SRC_EXCLUDE
+    fi
+    ${NUT_SCRIPT} "${NUT}" "${NUT_SOURCES}" ${NUT_PARMS} || exit 1
+done
+
+exit 0

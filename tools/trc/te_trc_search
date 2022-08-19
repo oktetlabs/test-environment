@@ -1,0 +1,179 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment: TRC database search tool
+#
+# Script to find test iteration(s) by MD5 sum of iteration parameters
+# or iteration parameters set.
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+usage()
+{
+    echo "TRC search tool"
+    echo "Usage:"
+    echo "  te_trc_search <TRC file> <test name> MD5|-p <parameters list>"
+    echo
+    echo "  Parameters list may contain any number of test parameters in"
+    echo "  format name value. All matching iterations will be listed."
+    exit 1
+}
+
+[ $# -lt 3 ] && usage
+
+FILE=`basename $1`
+PREFIX="`dirname $1`"
+TEST=$2
+PARAM_NUM=0
+LINE_NUM=0
+
+PROCESSED=
+
+add_param ()
+{
+    local val="`echo $2 | sed 's/\"/\\\\\"/g'`";
+
+    PARAM_NUM=$((PARAM_NUM + 1))
+    eval PAR_${PARAM_NUM}_NAME="$1"
+    eval PAR_${PARAM_NUM}_VAL=\"$val\"
+}
+
+if [ $3 == "-p" ] ; then
+    MD5=
+    shift 3
+    while [ $# -ne 0 ] ; do
+        [ $# -eq 1 ] && usage
+        add_param $1 "$2"
+        shift 2
+    done
+else
+    MD5=$3
+    [ $# -ne 3 ] && usage
+fi
+
+check_iter ()
+{
+    FILE=$1
+    LINE=$2
+
+    shift 2
+
+    if [ -n "$MD5" ] ; then
+        rm -f tmp*iter
+
+        # Print parameters as is
+        while [ $# -ne 0 ] ; do
+            echo $1 $2 >> tmp.iter
+            shift 2
+        done
+
+        # Sort them
+        cat tmp.iter | sort | sed s/\\n//g >tmp1.iter
+
+        # Remove line breaks
+        echo -n `cat tmp1.iter` > tmp2.iter
+
+        # Check MD5
+        md5=`md5sum tmp2.iter | awk '{ print $1 }'`
+        rm -f tmp*iter
+        [ "$MD5" = "$md5" ] && echo $FILE $LINE
+
+    else
+
+        # Mark all specified parameters as unchecked
+        for i in `seq 1 $PARAM_NUM` ; do
+            eval PAR_${i}_OK=""
+        done
+
+        # Find and match iteration parameters
+        while [ $# -ne 0 ] ; do
+            name=$1
+            value="`echo $2`"
+            found=false
+
+            shift 2
+            for i in `seq 1 $PARAM_NUM` ; do
+                pname=PAR_${i}_NAME
+                pval=PAR_${i}_VAL
+                [ "${!pname}" = "$name" ] && { found=true ; break ; }
+            done
+
+            [ "$found" = true ] || continue
+            [ "${!pval}" = "${value}" ] || return
+            eval PAR_${i}_OK="yes"
+        done
+
+        # Check that all specified parameters have matched
+        for i in `seq 1 $PARAM_NUM` ; do
+            name=PAR_${i}_OK
+            [ -z "${!name}" ] && return
+        done
+
+        echo $FILE $LINE
+    fi
+}
+
+process_file()
+{
+    cat $1 | awk --assign TEST="$TEST" '
+        BEGIN { INSIDE_TEST=0 ; }
+
+        /xi:include/ {
+            f=substr($2, 7); f=substr(f, 0, length(f) - 1);
+            printf("file %s\n", f) ;
+            next ;
+        }
+
+        /<test name=/ && ($2 == "name=\""TEST"\"" || TEST == "all") {
+            INSIDE_TEST=1 ; next ;
+        }
+
+        /<\/test/ { INSIDE_TEST=0; next ; }
+
+        /<iter result=/ { if (INSIDE_TEST == 0) next; printf("%d", NR); }
+
+        /<\/iter>/ { if (INSIDE_TEST == 0) next; printf("\n"); }
+
+       /<arg name/ {
+           if (INSIDE_TEST != 1) next;
+
+           s=$0; s=substr($0, index($0, "<arg"));
+           s=substr(s, 12); i=index(s, "\">");
+           printf(" %s ", substr(s, 0, i - 1));
+
+           s=substr(s, i + 2); i=index(s, "</arg>");
+           if (i != 0)
+           {
+               ARG_VAL=substr(s, 0, i - 1);
+               gsub("\"", "\\\\\\\"", ARG_VAL);
+               printf("\"%s\"", ARG_VAL);
+           }
+           else
+               ARG_VAL=s;
+           next;
+       }
+
+       /<\/arg>/ && INSIDE_TEST == 1 {
+           s=substr($0, i + 2); i=index(s, "</arg>");
+           ARG_VAL=ARG_VAL""substr(s, 0, i - 1);
+           gsub("\"", "\\\\\\\"", ARG_VAL);
+           printf("\"%s\"", ARG_VAL);
+           ARG_VAL="";
+           next;
+       }
+
+       INSIDE_TEST == 1 {
+           ARG_VAL=ARG_VAL$0
+       }
+    ' | while read l ; do
+        if echo $l | grep -q "^file" ; then
+            process_file "$PREFIX/`echo $l | awk '{ print $2 }'`"
+        else
+            eval check_iter $1 $l ;
+        fi
+    done
+
+    PROCESSED="$PROCESSED $1"
+}
+
+process_file $PREFIX/$FILE

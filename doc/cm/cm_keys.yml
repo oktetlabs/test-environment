@@ -1,0 +1,53 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Key management subtree
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/key"
+      access: read_create
+      type: string
+      d: |
+        Agent-managed security keys.
+        A new key is generated when an instance is created,
+        and regenerated if key parameters have changed.
+
+        Name: arbitrary label
+        Value: key manager type (currently only 'ssh')
+
+    - oid: "/agent/key/type"
+      access: read_write
+      type: string
+      d: |
+        The type of a key (key manager specific).
+        For 'ssh', the value will be passed to
+        'ssh-keygen -t'
+
+    - oid: "/agent/key/bitsize"
+      access: read_write
+      type: integer
+      d: |
+        The length of the key in bits
+
+    - oid: "/agent/key/private_file"
+      access: read_only
+      type: string
+      d: |
+        The name of the file at the agent side,
+        holding the private part of the key (if exists).
+        The name is guaranteed to be stable when a key is
+        re-generated
+
+    - oid: "/agent/key/public"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+        The string representation of a public key
+        (it is _not_ a name of a file). The format of the
+        string is manager-specific

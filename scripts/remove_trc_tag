@@ -1,0 +1,153 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use File::Temp qw/ tempfile /;
+
+my $path = $ARGV[0];
+my $tag = $ARGV[1];
+my @files = ();
+
+print "*****************************************************************\n";
+print "This script removes results associated with a given tag\n";
+print "from TRC XML files. It may remove not all the related results,\n";
+print "review what it did before committing it.\n";
+print "*****************************************************************\n";
+
+if (!defined($path) || !defined($tag))
+{
+    print "Usage: ./remove_trc_tag path/to/trc/dir/or/file tag_to_remove\n";
+    exit(0);
+}
+
+sub fix_trc_file
+{
+    my $file = $_[0];
+    my $fh;
+    my $tmp_file;
+    my $tmp_fh;
+    my $filtered = 1;
+    my $saved = "";
+    my $check_skipped = 0;
+    my $skipped_only = 0;
+
+    print "Processing $file\n";
+
+    open($fh, '<', $file) or die "Failed to open $file";
+    ($tmp_fh, $tmp_file) = tempfile("${file}_XXXXX");
+
+    while (my $row = <$fh>)
+    {
+        if ($row =~ /^\s*<results\s/ &&
+            $row =~ /\stags=("[^"]*")/)
+        {
+            my $tags = $1;
+            my $tags_aux;
+
+            # If <results> have only the single tag to be removed,
+            # filter it out.
+            if ($tags eq "\"$tag\"" ||
+                $tags eq "\"($tag)\"")
+            {
+                $filtered = 0;
+            }
+
+            # If <results> have only the single negated tag matching
+            # the tag we want to remove, then remove these <results>
+            # if they only contain SKIPPED <result>.
+            if ($tags eq "\"!$tag\"")
+            {
+                $filtered = 0;
+                $check_skipped = 1;
+                $skipped_only = 1;
+            }
+
+            # Check whether tag expression is a single conjunction
+            # containing a tag to be removed. If so, filter <results>
+            # out. Expression is a single conjunction if there is no
+            # '|' symbols (or they are only inside brackets).
+            $tags_aux = $tags;
+            # This is done to ignore '|' which is inside brackets.
+            $tags_aux =~ s/\([^\(]*\)//g;
+            if (!($tags_aux =~ /\|/) &&
+                $tags_aux =~ /[;"](${tag})[\&"]/)
+            {
+                $filtered = 0;
+            }
+
+            # Remove from complex tag expression parts containing the tag
+            # to be removed, for example linux|removed_tag -> linux.
+            $tags =~ s/\|$tag\|/\|/g;
+            $tags =~ s/(["\(])$tag\|/$1/g;
+            $tags =~ s/\|$tag(["\)])/$1/g;
+            $row =~ s/(\s)tags="[^"]*"/ tags=$tags/;
+        }
+
+        if ($filtered == 1)
+        {
+            print $tmp_fh $row;
+        }
+        else
+        {
+            # Lines which are filtered out are saved because
+            # later we may discover that they actually should
+            # be left intact. For example, if we encounter
+            # tags="!removed_tag", and later discover that
+            # it is not just SKIPPED result here.
+            $saved = $saved.$row;
+        }
+
+        if ($row =~ /<\/results>/)
+        {
+            $filtered = 1;
+            # If TRC is malformed so that </results> is
+            # not the only tag in a line, we will not filter
+            # <results> out here.
+            if (!($row =~ /^\s*<\/results>\s*$/))
+            {
+                print $tmp_fh $saved;
+            }
+            if ($check_skipped == 1 && $skipped_only == 0)
+            {
+                print $tmp_fh $saved;
+            }
+            $saved = "";
+            $check_skipped = 0;
+            $skipped_only = 0;
+        }
+
+        if ($skipped_only == 1 &&
+            !($row =~ /^\s*$/ ||
+              $row =~ /^\s*<results\s/ ||
+              $row =~ /^\s*<result\s\s*value="SKIPPED"\s*\/>\s*$/))
+        {
+            $skipped_only = 0;
+        }
+    }
+
+    system("mv $tmp_file $file");
+    unlink($tmp_file);
+}
+
+print "Removing results for tag $tag from '$path'\n";
+
+if (-f $path)
+{
+    push(@files, $path);
+    $path = "";
+}
+else
+{
+    @files = `ls $path | grep "[.]xml\$"`;
+}
+
+foreach my $file (@files)
+{
+    $file =~ s/\s*$//;
+    if (length($path) > 0)
+    {
+        $file = $path."/".$file;
+    }
+
+    fix_trc_file($file);
+}

@@ -1,0 +1,55 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    TFTP server configuration model.
+
+    Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/tftpserver"
+      access: read_write
+      type: integer
+      d: |
+         TFTP server enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/tftpserver/net_addr"
+      access: read_write
+      type: address
+      d: |
+         Network address TFTP server is bound to.
+         Name:  empty
+         Value: Wildcard address if the Server listens on all addresses
+         Limit: 1
+
+    - oid: "/agent/tftpserver/last_fname"
+      access: read_only
+      type: string
+      d: |
+         Name of the last file sucessfully transferred by TFTP server.
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/tftpserver/last_time"
+      access: read_only
+      type: string
+      d: |
+         Timestamp of the last request that sucessfully completed
+         on TFTP server. Specifies the number of seconds elapsed
+         since 00:00:00 on January 1, 1970, Coordinated Universal Time (UTC)
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/tftpserver/root_dir"
+      access: read_only
+      type: string
+      d: |
+         Root directory of TFTP server.
+         Name:  empty
+         Limit: 1
+

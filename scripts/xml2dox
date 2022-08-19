@@ -1,0 +1,353 @@
+#! /usr/bin/awk -f
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
+
+# This script extracts comments from a `package.xml' file and converts them
+# to the form suitable for Doxygen processing
+
+function objective_handle(str, do_next)
+{
+    if (sub(/@objective/, str)) {
+        in_objective = 1;
+        objective = ""
+    }
+
+    if (in_objective) {
+        # if we were in objective - it's time to leave
+        if (!match(str, /@objective/) && (match(str, /@/) || match(str, /<run/))) {
+            gsub(/ [ ]+/, " ", objective);
+            # we need another newline
+            printf("@objective %s\n\n", objective);
+            in_objective = 0;
+            objective = "";
+        }
+    }
+
+    if (in_objective) {
+        objective_line = str;
+        gsub("<!---", "", objective_line);
+        gsub("-->", "", objective_line);
+        gsub("@objective ", "", objective_line);
+        gsub(" *[\n]+$", "", objective_line);
+        objective = objective " " objective_line;
+
+        if (do_next)
+            next
+    }
+}
+
+function process(str)
+{
+    if (sub(/-->.*/, " ", str)) {
+        objective_handle(str, 1);
+        in_dox_comment = 0;
+    }
+    else
+        in_dox_comment = 1;
+
+    if (sub(/@page/, str) || sub(/@defgroup/, str) \
+        || sub(/@ingroup/, str) || sub(/@addtogroup/, str) \
+        || sub(/@autogroup/, str)) {
+        if (in_page) {
+            if (run_found && auto_group) {
+                printf("\n@run_name %s\n", run_name);
+            }
+            if (in_run) {
+                print "@endcode"
+            }
+            print "*/";
+        }
+
+        print "/**";
+        in_page = 1;
+
+        run_found = 0;
+    }
+
+    if (sub(/@endpage/, str) || sub(/@}/, str)) {
+        if (in_page) {
+            sub(/[ \t]+/, "", str);
+            print str
+            print "*/";
+        }
+        in_page = 0;
+        in_group = 0;
+        run_found = 0;
+    }
+
+    if (sub(/@autogroupall/, str)) {
+        sub("[ \t]+", "", str)
+        sub("@autogroupall", "", str)
+        default_group = str;
+        has_default_group = 1
+        # we should start the comment!
+        print "/**"
+        next;
+    }
+    else if (sub(/@autogroupprefix/, str)) {
+        gsub("[ \t]+", "", str)
+        gsub("@autogroupprefix", "", str)
+        default_group_prefix = str;
+        next;
+    }
+    else if (sub(/@autogroup/, str)) {
+        auto_group = 1;
+        next;
+    }
+
+    if (in_dox_comment) {
+        objective_handle(str, 1)
+    }
+
+    if (in_page) {
+        print str;
+    }
+
+    return;
+}
+
+in_dox_comment && /^[[:space:]]*\*/ { sub(/^[[:space:]]*\*/, ""); }
+
+/<!---/ {
+    line = $0;
+    gsub(".*<!--- ", "", $line);
+    process($line);
+
+    next;
+}
+
+/@{/ {
+    in_group = 1;
+    sub(/[ \t]+/, "");
+    print $0
+    next
+}
+
+/@}/ {
+    in_group = 0;
+    sub(/[ \t]+/, "");
+    print $0
+    next
+}
+
+in_dox_comment {
+    objective_handle($0, 1)
+}
+
+in_dox_comment && /@ingroup/ {
+    sub(/[ \t]+/, "");
+    print;
+    next
+}
+
+in_dox_comment && /-->/ {
+    sub(/.*-->.*/, "\n");
+    if ($0)
+        print;
+    in_dox_comment = 0;
+    next;
+}
+
+!in_run && /<enum / {
+  if (has_default_group)
+      printf("@ingroup %s\n", default_group);
+  else if (! in_page)
+      next;
+
+  in_enum = 1;
+  if (match($0, /description=/)) {
+      printf("@defgroup %s %s\n@{\n\n%s\n",
+             gensub(/\./, "-", "g", gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0)),
+             gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0),
+             gensub(/.* description="(.*)".*/, "\\1", 1, $0))
+  }
+  else {
+      printf("@defgroup %s %s\n@{\n",
+             gensub(/\./, "-", "g", gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0)),
+             gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0))
+  }
+  next;
+}
+
+in_enum && /<value/ {
+  sub(/<\/value>/, ",");
+}
+
+in_enum && /req=/ {
+  sub(/.*req="/, "-# (req=");
+  sub(/">/, ") ");
+  print $0;
+  next;
+}
+
+in_enum && /<value[ ]+ref="/ {
+  sub(/.*<value[ ]+ref="/, "-# ");
+  sub(/".*\/>/, "");
+  print $0;
+  next;
+}
+
+in_enum && /<value/ {
+  sub(/.*>/, "-# ");
+  print $0;
+  next;
+}
+
+in_enum && /<\/enum>/ {
+  sub(/ *<\/enum>/, "@}");
+
+  in_enum = 0;
+  print $0;
+  next;
+}
+
+/<var / {
+    in_var = 1;
+    if (has_default_group)
+        printf("@ingroup %s\n", default_group);
+
+    if (match($0, /description=/)) {
+        printf("@defgroup %s %s\n@{\n\n%s\n",
+               gensub(/\./, "-", "g", gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0)),
+               gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0),
+               gensub(/.* description="(.*)".*/, "\\1", 1, $0))
+    }
+    else {
+        printf("@defgroup %s %s\n@{\n",
+               gensub(/\./, "-", "g", gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0)),
+               gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0))
+    }
+    next;
+}
+
+in_var && /<value/ {
+    rc = sub(/<\/value>/, "");
+    sub(/<value.*>/, "");
+    print "@code"
+    print $0
+    if (rc)
+        print "@endcode"
+    next;
+}
+
+in_var && /<\/value>/ {
+    sub(/<\/value>/, "\n@endcode");
+    print $0;
+    next;
+}
+
+/<\/var>/ {
+    sub(/ *<\/var>/, "@}");
+
+    in_var = 0;
+    print $0;
+    next;
+}
+
+in_var {
+    print $0
+    next
+}
+
+in_page && /<run>/ {
+    run_code_line = $0
+    in_run = 1;
+    next;
+}
+
+function group_start(str)
+{
+    if (auto_group) {
+        if (run_found) {
+            printf("@defgroup %s%s-run %s\n",
+                   default_group_prefix, run_name, run_name)
+            printf("@ingroup %s%s %s%s\n",
+                   default_group_prefix, run_name,
+                   default_group_prefix, script_name);
+        }
+        else {
+            printf("@defgroup %s%s-run %s\n",
+                   default_group_prefix, script_name, script_name)
+            printf("@ingroup %s%s\n",
+                   default_group_prefix, script_name);
+        }
+        printf("@{\n");
+        print "@code"
+    }
+}
+
+/<run name/ {
+    if (in_page) {
+        run_code_line = $0
+        run_name = $0
+        gsub(" .*<run name=\"", "", run_name);
+        gsub("\".*>", "", run_name);
+        run_found = 1;
+        in_run = 1
+
+        next
+    }
+}
+
+/<script name/ {
+    if (in_page) {
+        code_line = $0
+        script_name = $0
+        gsub(" .*<script name=\"", "", script_name);
+        gsub("\".*>", "", script_name);
+
+        group_start()
+        # Log <run> that we skipped when it was handled
+        print run_code_line
+        print code_line
+        in_run = 1
+        next
+    }
+}
+
+/<session/ {
+    if (in_page) {
+        group_start()
+        print run_code_line
+        print $0
+        next
+    }
+}
+
+auto_group && in_run && /<\/run>/ {
+    print $0
+    print "@endcode"
+    print "@}"
+    print "*/"
+    run_found = 0
+    in_run = 0;
+    if (auto_group) {
+        in_page = 0;
+        auto_group = 0;
+    }
+    next
+}
+
+in_run {
+    print $0
+    next
+}
+
+in_group {
+    print $0
+    next
+}
+
+in_dox_comment {
+    print $0
+    next
+}
+
+END {
+    if (in_page) {
+        if (run_found) {
+            printf("\n@run_name %s\n", run_name);
+        }
+    }
+    print "*/";
+}

@@ -1,0 +1,22 @@
+-- SPDX-License-Identifier: Apache-2.0
+-- Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
+
+TE-NDN-Dummy
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+EXPORTS File-Message, File-CSAP;
+
+
+File-Message ::= IMPLICIT SEQUENCE {
+    line        DATA-UNIT{UniversalString},
+}
+
+File-CSAP ::= IMPLICIT SEQUENCE {
+    filename    DATA-UNIT{UniversalString},
+    mode        DATA-UNIT{UniversalString} OPTIONAL
+}
+
+END

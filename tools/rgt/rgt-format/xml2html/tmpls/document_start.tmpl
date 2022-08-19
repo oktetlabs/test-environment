@@ -1,0 +1,73 @@
+<HTML>
+<HEAD>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<TITLE>Log report</TITLE>
+<link rel="stylesheet" type="text/css" href="@@%s:DATADIR@@/misc/style.css">
+
+<script>
+var hide = new Array();
+
+function getAllLogs()
+{
+    if (document.getElementsByTagName)
+    {
+        return document.getElementsByTagName("div");
+    }
+    else if (document.getElementsById)
+    {
+        alert("Extend sources with getElementsById");
+    }
+    else
+    {
+        alert("Not supported");
+    }
+}
+
+function open_filter_window()
+{
+    window.open("@@%s:DATADIR@@/misc/filter_conf.html", "parwin", "dependent,toolbar=no,menubar=no,status=no,width=400,height=300,screenX=300,screenY=100,scrollbars=no");
+}
+
+function toggle_node(node)
+{
+    if (typeof node == 'string')
+        node = document.getElementById(node);
+    if (!node)
+        return;
+    node.style.display = (node.style.display != 'none') ? 'none' : 'block';
+}
+</script>
+
+</HEAD>
+
+<BODY>
+
+<table border="0"cellpadding="0" cellspacing="0" width="100%">
+<tr class="tdheading">
+    <td width="100%" class="heading" height="25">&nbsp;&nbsp;&nbsp;Logs Template for Proteos TE</td>
+</table>
+<br>
+
+<form name="form0">
+    <input type="button" value="Log Filter" onClick="javascript:open_filter_window()">
+</form>
+<br/>
+
+<table border="0"cellpadding="0" cellspacing="0" width="100%">
+<tr>
+    <td class="tdsubheading">
+        <table border="0"cellpadding="0" cellspacing="0">
+        <tr>
+            <td width="50" class="tdsubhead">Level</td>
+            <td width="100" class="tdsubhead">Entity Name</td>
+            <td width="100" class="tdsubhead">User Name</td>
+            <td width="150" class="tdsubhead">Timestamp</td>
+            <td class="tdsubhead">Log content</td>
+        </tr>
+        </table>
+    </td>
+</tr>
+</table>
+
+<br>
+

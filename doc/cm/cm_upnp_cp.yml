@@ -1,0 +1,42 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    UPnP Control Points on Test Agents.
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/upnp_cp"
+      access: read_only
+      type: string
+      d: |
+         Root object for the UPnP Control Point process
+         Name: empty
+
+    - oid: "/agent/upnp_cp/enable"
+      access: read_write
+      type: integer
+      d: |
+         Enable the UPnP Control Point
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+
+    - oid: "/agent/upnp_cp/target"
+      access: read_write
+      type: string
+      d: |
+         Search Target for UPnP devices and/or services
+         Name:  empty
+         Value: a search target string; for example, "ssdp:all"
+
+    - oid: "/agent/upnp_cp/iface"
+      access: read_write
+      type: string
+      d: |
+         Network interface which be used by UPnP Control Point to interact
+         with UPnP devices
+         Name:  empty
+         Value: a network interface

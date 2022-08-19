@@ -1,0 +1,155 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/** @file
+ * @brief RPC types definitions
+ *
+ * RPC analogues of definitions from sys/epoll.h.
+ *
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ */
+
+#include "te_config.h"
+#include "config.h"
+
+#if HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#if HAVE_SYS_EPOLL_H
+#include <sys/epoll.h>
+#endif
+
+#ifndef EPOLLIN
+#define EPOLLIN 0
+#endif
+#ifndef EPOLLPRI
+#define EPOLLPRI 0
+#endif
+#ifndef EPOLLOUT
+#define EPOLLOUT 0
+#endif
+#ifndef EPOLLRDNORM
+#define EPOLLRDNORM 0
+#endif
+#ifndef EPOLLWRNORM
+#define EPOLLWRNORM 0
+#endif
+#ifndef EPOLLRDBAND
+#define EPOLLRDBAND 0
+#endif
+#ifndef EPOLLWRBAND
+#define EPOLLWRBAND 0
+#endif
+#ifndef EPOLLMSG
+#define EPOLLMSG 0
+#endif
+#ifndef EPOLLERR
+#define EPOLLERR 0
+#endif
+#ifndef EPOLLHUP
+#define EPOLLHUP 0
+#endif
+#ifndef EPOLLRDHUP
+#define EPOLLRDHUP 0
+#endif
+#ifndef EPOLLONESHOT
+#define EPOLLONESHOT 0
+#endif
+#ifndef EPOLLET
+#define EPOLLET 0
+#endif
+#ifndef EPOLL_CLOEXEC
+#define EPOLL_CLOEXEC 0
+#endif
+#ifndef EPOLL_NONBLOCK
+#define EPOLL_NONBLOCK 0
+#endif
+
+#include "te_rpc_defs.h"
+#include "te_rpc_sys_epoll.h"
+
+/** Invalid epoll evend */
+#define EPOLL_UNKNOWN 0xFFFFFFFF
+
+#define EPOLL_FLAG_UNKNOWN 0xFFFFFFFF
+
+#ifndef EPOLLONESHOT
+#define EPOLLONESHOT  0
+#endif
+
+#ifndef EPOLL_CLOEXEC
+#define EPOLL_CLOEXEC  0
+#endif
+
+#ifndef EPOLL_NONBLOCK
+#define EPOLL_NONBLOCK  0
+#endif
+
+/** All known poll events */
+#define EPOLL_ALL        (EPOLLIN | EPOLLPRI | EPOLLOUT | \
+                          EPOLLRDNORM | EPOLLWRNORM | \
+                          EPOLLRDBAND | EPOLLWRBAND | \
+                          EPOLLMSG | EPOLLERR | EPOLLHUP | \
+                          EPOLLRDHUP | \
+                          EPOLLONESHOT | EPOLLET)
+
+/** All known epoll flags */
+#define EPOLL_FLAGS_ALL     ( EPOLL_CLOEXEC | EPOLL_NONBLOCK )
+
+unsigned int
+epoll_event_rpc2h(unsigned int events)
+{
+    if ((events & ~RPC_EPOLL_ALL) != 0)
+        return EPOLL_UNKNOWN;
+
+    return (!!(events & RPC_EPOLLIN) * EPOLLIN) |
+           (!!(events & RPC_EPOLLPRI) * EPOLLPRI) |
+           (!!(events & RPC_EPOLLOUT) * EPOLLOUT) |
+           (!!(events & RPC_EPOLLRDNORM) * EPOLLRDNORM) |
+           (!!(events & RPC_EPOLLWRNORM) * EPOLLWRNORM) |
+           (!!(events & RPC_EPOLLRDBAND) * EPOLLRDBAND) |
+           (!!(events & RPC_EPOLLWRBAND) * EPOLLWRBAND) |
+           (!!(events & RPC_EPOLLMSG) * EPOLLMSG) |
+           (!!(events & RPC_EPOLLERR) * EPOLLERR) |
+           (!!(events & RPC_EPOLLHUP) * EPOLLHUP) |
+           (!!(events & RPC_EPOLLRDHUP) * EPOLLRDHUP) |
+           (!!(events & RPC_EPOLLONESHOT) * EPOLLONESHOT) |
+           (!!(events & RPC_EPOLLET) * EPOLLET);
+}
+
+unsigned int
+epoll_flags_rpc2h(unsigned int flags)
+{
+    if ((flags & ~RPC_EPOLL_FLAGS_ALL) != 0)
+        return EPOLL_FLAG_UNKNOWN;
+
+    return (!!(flags & RPC_EPOLL_CLOEXEC) * EPOLL_CLOEXEC) |
+           (!!(flags & RPC_EPOLL_NONBLOCK) * EPOLL_NONBLOCK);
+}
+
+unsigned int
+epoll_event_h2rpc(unsigned int events)
+{
+    return (!!(events & ~EPOLL_ALL) * RPC_EPOLL_UNKNOWN)
+           | (!!(events & EPOLLIN) * RPC_EPOLLIN)
+           | (!!(events & EPOLLPRI) * RPC_EPOLLPRI)
+           | (!!(events & EPOLLOUT) * RPC_EPOLLOUT)
+           | (!!(events & EPOLLRDNORM) * RPC_EPOLLRDNORM)
+           | (!!(events & EPOLLWRNORM) * RPC_EPOLLWRNORM)
+           | (!!(events & EPOLLRDBAND) * RPC_EPOLLRDBAND)
+           | (!!(events & EPOLLWRBAND) * RPC_EPOLLWRBAND)
+           | (!!(events & EPOLLMSG) * RPC_EPOLLMSG)
+           | (!!(events & EPOLLERR) * RPC_EPOLLERR)
+           | (!!(events & EPOLLHUP) * RPC_EPOLLHUP)
+           | (!!(events & EPOLLRDHUP) * RPC_EPOLLRDHUP)
+           | (!!(events & EPOLLONESHOT) * RPC_EPOLLONESHOT)
+           | (!!(events & EPOLLET) * RPC_EPOLLET)
+           ;
+}
+
+unsigned int
+epoll_flags_h2rpc(unsigned int flags)
+{
+    return (!!(flags & ~EPOLL_FLAGS_ALL) * RPC_EPOLL_FLAG_UNKNOWN)
+           | (!!(flags & EPOLL_CLOEXEC) * RPC_EPOLL_CLOEXEC)
+           | (!!(flags & EPOLL_NONBLOCK) * RPC_EPOLL_NONBLOCK)
+           ;
+}

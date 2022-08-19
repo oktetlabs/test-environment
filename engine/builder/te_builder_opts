@@ -1,0 +1,78 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment Builder
+#
+# Process builder options passed to dispatcher.sh
+#
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+TE_BUILD_LOG=
+QUIET=
+
+if test -z $1 ; then
+    exit 0 ;
+fi
+
+##
+# Build set of packages.
+#
+# @param  string with paths separated by spaces
+#
+# @return 0 or 1
+#
+function build()
+{
+    for i in $1 ; do
+        CURRDIR=`pwd`
+        i=${i#build\/} ;
+        if ! cd ${TE_BUILD}/$i ; then
+            echo Directory ${TE_BUILD}/$i not found ; exit 1 ;
+        fi
+        if test -n "$CFLAGS" ; then
+            if test -n "${QUIET}" ; then
+                make clean >>${TE_BUILD_LOG}
+            else
+                make clean
+            fi
+        fi
+        if test -z "$CFLAGS" ; then
+            if test -n "${QUIET}" ; then
+                make install >>${TE_BUILD_LOG}|| exit 1
+            else
+                make install || exit 1
+            fi
+        else
+            if test -n "${QUIET}" ; then
+                make CFLAGS=$CFLAGS install >>${TE_BUILD_LOG}|| exit 1
+            else
+                make CFLAGS=$CFLAGS install || exit 1
+            fi
+        fi
+        cd ${CURRDIR}
+    done
+}
+
+while test -n "$1" ; do
+    CFLAGS=
+    case $1 in
+        --quiet=*)
+            TE_BUILD_LOG=${1#--quiet=*} ; QUIET=yes ;;
+
+        --pathlog=* )
+            OPT="${1#--pathlog=}" ; CFLAGS=-DTE_LOG_LEVEL=0xFFFF ;;
+
+        --pathnolog=* )
+            OPT="${1#--pathnolog=}" ; CFLAGS=-UTE_LOG_LEVEL ;;
+
+        *)
+           echo Invalid option build option ; exit 1 ;;
+    esac
+
+    test -z "${OPT}" || build ${OPT}
+
+    shift 1
+done
+
+exit 0

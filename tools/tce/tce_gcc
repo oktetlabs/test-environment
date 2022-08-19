@@ -1,0 +1,85 @@
+#! /bin/sh
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Coverage Estimation
+#
+# TE_GCC -- a wrapper around GCC to perform TCE with gcov
+#
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+# Use 'gcc' by default
+test -z "${TCE_CC}" && TCE_CC="gcc"
+
+tce_coverage_options="-g -O0 -ftest-coverage -fprofile-arcs -D_init=_target_init -D_fini=_target_fini"
+
+coverage_options=
+processed_options=
+forward_next=
+for arg in "$@"; do
+    if test -n "$forward_next" ; then
+        forward_next=""
+        processed_options="$processed_options $arg"
+        continue
+    fi
+    case "$arg" in
+        --version|-E|-version)
+        exec ${TCE_CC} "$@"
+        ;;
+        -c) nobbhook=yes
+        processed_options="$processed_options -c" ;;
+        -O[1-9]|-O) processed_options="$processed_options -D__OPTIMIZE__=1" ;;
+        -g|-ftest-coverage|-fprofile-arcs|-nostartfiles|-O0) ;;
+        -o) processed_options="$processed_options $arg" ; forward_next=yes ;;
+        -*) processed_options="$processed_options $arg" ;;
+        *)
+        coverage_options="$tce_coverage_options"
+        if test -n "${TCE_SRC_EXCLUDE}"; then
+            if test -L $arg ; then
+                link=`readlink $arg`
+                mydir=`dirname $arg`/`dirname $link`
+                myself=`basename $link`
+            else
+                mydir=`dirname $arg`
+                myself=`basename $arg`
+            fi
+            fullpath=`cd $mydir && echo $PWD`/$myself
+            for src in ${TCE_SRC_EXCLUDE} ; do
+                case "$fullpath" in
+                    $src*) coverage_options="" ; break ;;
+                esac
+                # The following hack is a quick solution of issues
+                # with symlinks in the path
+                if test `basename $fullpath` == `basename $src` ; then
+                    coverage_options="" ; break
+                fi
+            done
+        fi
+        processed_options="$processed_options $arg"
+           ;;
+    esac
+done
+
+if test -z "$nobbhook"; then
+    TCELIB=/tmp/tcelib$$
+    BBHOOK_O=$TCELIB/bbhook.o
+    LIBGCOV_A=$TCELIB/libgcov.a
+    mkdir $TCELIB
+    for i in $CC; do
+        tmpcc=$i
+    done
+    ${TCE_CC} -c ${TCE_CFLAGS} -o $BBHOOK_O -I${TCE_SRC}/include ${TCE_SRC}/bbhook.c
+    ar crs $LIBGCOV_A $BBHOOK_O
+    BBHOOK_O="-L$TCELIB -lgcov"
+else
+    BBHOOK_O=""
+fi
+
+${TCE_CC} $coverage_options $processed_options $BBHOOK_O
+gccstatus=$?
+
+if test -z "$nobbhook"; then
+    rm -rf $TCELIB
+fi
+
+exit $gccstatus

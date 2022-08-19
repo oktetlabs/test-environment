@@ -1,0 +1,274 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved.
+
+/^ *\/\*+ *parse layout *\*\/ *$/ {
+    do_parse = 1;
+    next;
+}
+
+/^ *\/\*+ *end parse layout *\*\/ *$/ {
+    do_parse = 0;
+    next;
+}
+
+do_parse && $1 == "struct"  && ($2 !~ /;$/) {
+    if (ignore_next) ignore_next = "";
+    else
+    {
+        in_struct = (next_name ? next_name : $2);
+        next_name = "";
+        next_offset= "0";
+    }
+    next;
+}
+
+do_parse && $1 == "typedef" && $2 == "struct" && ($4 !~ /;$/) {
+    if (ignore_next) ignore_next = "";
+    else
+    {
+        in_struct = (next_name ? next_name : $3);
+        next_name = "";
+        next_offset = "0";
+    }
+    next;
+}
+
+in_struct && ($0 ~ /^\}/) {
+    next_offset = "";
+    mostly_reserved = "";
+    next_name = "";
+    in_struct = "";
+    next;
+}
+
+function print_bits()
+{
+    if (field_bit_shift != "")
+    {
+        printf "#define %s_SHIFT (%s)\n", varname, field_bit_shift;
+         printf "#define %s_MASK (%s)\n", varname, field_bit_mask;
+    }
+    result_type = (field_bit_shift != "") && bit_field_type ? bit_field_type : field_type;
+    tohost = tonet = "";
+    if (network_order)
+    {
+        if (result_type == "uint16_t" || result_type == "int16_t")
+        {
+            tohost = "ntohs";
+            tonet  = "htons";
+        }
+        else if (result_type == "uint32_t" || result_type == "uint32_t")
+        {
+            tohost = "ntohl";
+            tonet  = "htonl";
+        }
+    }
+
+    if (field_reader)
+    {
+        if (array_access)
+        {
+            printf "\nstatic inline %s %s*\n%s(%s void *x)\n",
+                (array_access == "raw" ? "" : "const"),
+                result_type,
+                accessor_prefix "get_" accessname,
+                (array_access == "raw" ? "" : "const");
+            printf "{\n    return ((%s *)((uint8_t *)x + %s));\n",
+                field_type, field_type, varname "_OFFSET";
+        }
+        else
+        {
+            printf "\nstatic inline %s\n%s(const void *x%s)\n",
+                result_type,
+                accessor_prefix "get_" accessname,
+                (array_boundary ? ", unsigned idx" : "");
+            printf "{\n   %s val = ((%s *)((uint8_t *)x + %s))[%s];\n",
+                field_type, field_type, varname "_OFFSET",
+                (array_boundary ? "idx" : "0");
+            if (field_bit_shift == "")
+            {
+                printf  "    return %s(val);\n", tohost;
+            }
+            else
+            {
+                printf "    return (%s)((%s(val) & %s_MASK) >> %s_SHIFT);\n",
+                    result_type, tohost, varname, varname;
+            }
+        }
+        print "}";
+    }
+    if (field_writer)
+    {
+        if (array_access)
+        {
+            printf "\nstatic inline void\n%s(void *x, %s *data)\n",
+                accessor_prefix "set_" accessname, result_type;
+            printf "{\n    memcpy((uint8_t *)x + %s_OFFSET, data, %s_SIZE);\n",
+                varname, varname;
+        }
+        else if (result_type == "te_bool")
+        {
+            printf "\nstatic inline void\n%s(void *x)\n",
+                accessor_prefix "set_" accessname;
+            printf "{\n   %s *dest = ((%s *)((uint8_t *)x + %s));\n",
+                field_type, field_type, varname "_OFFSET";
+            printf "   *dest |= %s_MASK;\n", varname;
+            print "}"
+            printf "\nstatic inline void\n%s(void *x)\n",
+                accessor_prefix "unset_" accessname;
+            printf "{\n   %s *dest = ((%s *)((uint8_t *)x + %s));\n",
+                field_type, field_type, varname "_OFFSET";
+            printf "   *dest &= ~%s_MASK;\n", varname;
+        }
+        else
+        {
+            printf "\nstatic inline void\n%s(void *x%s, %s val)\n",
+                accessor_prefix "set_" accessname,
+                (array_boundary ? ", unsigned idx" : ""),
+                result_type;
+            printf "{\n   %s *dest = ((%s *)((uint8_t *)x + %s)) + %s;\n",
+                field_type, field_type, varname "_OFFSET",
+                (array_boundary ? "idx" : "0");
+            if (field_bit_shift != "")
+            {
+                printf  "    *dest = %s(val);\n", tonet;
+            }
+            else
+            {
+                printf "    *dest = (%s(*dest) & ~%s_MASK) | (((%s)val << %s_SHIFT) & %s_MASK)\n",
+                    tohost, varname, field_type, varname, varname;
+                if (tonet)
+                    printf "   *dest = %s(*dest);\n", tonet;
+            }
+        }
+        print "}";
+    }
+    bit_field_type  = "";
+    field_bit_shift = "";
+    field_bit_mask  = "";
+}
+
+in_struct && ($1 ~ /^[[:alpha:]_][[:alnum:]_]*/) && ($2 ~ /^\**[[:alpha:]][[:alnum:]_]*(\[[^\]]+\])*;$/) {
+    if (next_name)
+        varname = next_name;
+    else
+    {
+        varname = $2;
+        gsub(/[^[:alnum:]_]/, "", varname);
+    }
+    accessname = tolower(varname)
+    varname = toupper(in_struct) "_" toupper(varname);
+
+    if (!reserved_field)
+    {
+        printf "#define %s_OFFSET (%s)\n", varname, next_offset;
+        next_offset = varname "_OFFSET";
+    }
+    pointers = $2;
+    gsub(/\[[^\]]+\]/, "", pointers); # to eliminate possible multiply signs in array boundary
+    gsub(/[^*]/, "", pointers);
+    size = "sizeof(" $1 pointers ")";
+    array_boundary = $2;
+    sub(/^[^\[]*/, "", array_boundary);
+    sub(/[^\]]*$/, "", array_boundary);
+    gsub(/\[/, " * (", array_boundary);
+    gsub(/\]/, ")", array_boundary);
+    size = size array_boundary;
+    field_type = $1 pointers;
+    if (!reserved_field)
+    {
+        printf "#define %s_SIZE (%s)\n", varname, size;
+        print_bits();
+    }
+    next_offset = next_offset " + " size;
+    reserved_field = mostly_reserved;
+    field_bit_shift = "";
+    field_bit_mask = "";
+    next_name = "";
+    next;
+}
+
+in_struct && field_bit_shift && ($0 ~ /^ *\/\*+-\*+\/ *$/) {
+    varname = toupper(in_struct) "_" toupper(next_name);
+    next_name = "";
+    print_bits();
+    next;
+}
+
+do_parse && ($0 ~ /^ *\/\*+( *[[:alpha:]_]+: *[^;]*;)+ *\**\/ *$/) {
+    sub(/^ *\/\**/, "");
+    sub(/ *\**\/ *$/, "");
+    split($0, subfields, ";");
+    for (sf in subfields)
+    {
+        fieldname = subfields[sf];
+        fieldval = subfields[sf];
+        sub(/:.*$/, "", fieldname);
+        sub(/^ */, "", fieldname);
+        sub(/^[^:]*: */, "", fieldval);
+        sub(/ *$/, "", fieldval);
+        if (fieldname == "reserved")
+        {
+            reserved_field = (fieldval == "yes");
+        }
+        else if (fieldname == "mostly_reserved")
+        {
+            mostly_reserved = (fieldval == "yes");
+            if (mostly_reserved) reserved_field = 1;
+        }
+        else if (fieldname == "bits" || fieldname == "bit")
+        {
+            field_bit_shift = fieldval;
+            sub(/-.*$/, "", field_bit_shift);
+            field_bit_mask = fieldval;
+            sub(/^.*-/, "", field_bit_mask);
+            if (!field_bit_mask)
+                field_bit_mask = 1;
+            else
+            {
+                field_bit_mask -= field_bit_shift;
+                field_bit_mask++;
+                field_bit_mask = "(((1 << " field_bit_mask ") - 1) << " field_bit_shift ")";
+            }
+            reserved_field = 0;
+        }
+        else if (fieldname == "bittype")
+        {
+            bit_field_type = fieldval;
+        }
+        else if (fieldname == "array")
+        {
+            array_access = fieldval;
+        }
+        else if (fieldname == "reader")
+        {
+            field_reader = (fieldval == "yes");
+            reserved_field = 0;
+        }
+        else if (fieldname == "writer")
+        {
+            field_writer = (fieldval == "yes");
+            reserved_field = 0;
+        }
+        else if (fieldname == "name")
+        {
+            next_name = fieldval;
+            accessname = tolower(fieldval);
+            reserved_field = 0;
+        }
+        else if (fieldname == "byteorder")
+        {
+            network_order = (fieldval == "network");
+        }
+        else if (fieldname == "accessors")
+        {
+            accessor_prefix = fieldval;
+        }
+        else if (fieldname == "ignore")
+        {
+            ignore_next = (fieldval == "yes");
+        }
+    }
+}
+
+

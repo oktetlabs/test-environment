@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>Tests on Configurator functionality.</description>
+    <author mailto="te-maint@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+
+        <run>
+            <script name="dir" />
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="vlans">
+                <req id="CS_VLAN"/>
+                <req id="BROKEN"/>
+            </script>
+            <arg name="env">
+                <value>{'host_csap'{if:'csap_if'}}</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="phy" track_conf="nohistory">
+                <req id="BROKEN"/>
+            </script>
+            <arg name="ta">
+                <value>Agt_A</value>
+            </arg>
+            <arg name="speed">
+                <value>10</value>
+            </arg>
+            <arg name="duplex">
+                <value>0</value>
+            </arg>
+            <arg name="speed_adver">
+                <value>100</value>
+            </arg>
+            <arg name="duplex_adver">
+                <value>1</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="vm">
+                <req id="BROKEN"/>
+            </script>
+        </run>
+
+        <run>
+            <script name="process">
+            </script>
+        </run>
+
+        <run>
+            <script name="process_autorestart"/>
+        </run>
+
+        <run>
+            <script name="process_ping"/>
+        </run>
+
+    </session>
+</package>

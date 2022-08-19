@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>Package for demonstrating minimal tests</description>
+    <author mailto="te-maint@oktetlabs.ru"/>
+
+    <session>
+        <run>
+            <script name="helloworld"/>
+        </run>
+        <run>
+            <script name="artifact"/>
+        </run>
+        <run>
+            <script name="verdict"/>
+        </run>
+        <run>
+            <script name="mi_meas_line_graph"/>
+        </run>
+        <run>
+            <script name="env"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT},if:'iut_if'}}</value>
+            </arg>
+        </run>
+    </session>
+</package>

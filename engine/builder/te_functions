@@ -1,0 +1,315 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+#
+# Test Environment Builder
+#
+# Collection of functions.
+
+##
+# Replace invalid characters in variable names
+#
+te_ta_sanitize()
+{
+    sed 's/[-.]/_/g'
+}
+
+##
+# Calculate a signature on the local machine
+#
+# @param CC    compiler with flags
+#
+te_ta_signature_local()
+{
+    local CC=$1
+
+    if test -z "$TE_TA_SIGNATURE_FIELDS"; then
+        local TE_TA_SIGNATURE_FIELDS="gcc-target libc-version"
+    fi
+
+    if te_is_in_list "gcc-target" ${TE_TA_SIGNATURE_FIELDS} ||
+       te_is_in_list "libc-version" ${TE_TA_SIGNATURE_FIELDS} ||
+       te_is_in_list "header-version" ${TE_TA_SIGNATURE_FIELDS}; then
+        # Use option '-print-multiarch' with different gcc versions
+        # gives different results:
+        #  - exit code @c 1 with message on stderr (for old gcc version in
+        #    RHEL 6, Debian 6)
+        #  - exit code @c 0 with empty message (for RHEL 7)
+        #  - exit code @c 0 with correct triplet on stdout (for Ubuntu 14.04,
+        #    Debian 7 or 8)
+        local GCC_TARGET=$($CC -print-multiarch 2>/dev/null)
+        if test -z "$GCC_TARGET" ; then
+            # '-dumpmachine' returns triplet independently on options
+            # '-m32' and '-m64'
+            GCC_TARGET=$($CC -dumpmachine)
+
+            # Determine architecture manually
+            local march=i386
+            if echo | $CC -E -dM - |
+                grep -q '^#define\s*__x86_64__\s*1$' ; then
+                march=x86_64
+            fi
+
+            # Fix the triplet if it is necessary
+            case "$GCC_TARGET:$march" in
+                x86_64-*:x86_64 ) ;;
+                x86_64-*:i386 )   GCC_TARGET="i386-${GCC_TARGET#*-}" ;;
+                *:x86_64 )        GCC_TARGET="x86_64-${GCC_TARGET#*-}" ;;
+                *:* )             ;;
+            esac
+        fi
+    fi
+
+    if te_is_in_list "libc-version" ${TE_TA_SIGNATURE_FIELDS} ||
+       te_is_in_list "header-version" ${TE_TA_SIGNATURE_FIELDS}; then
+        case "$GCC_TARGET" in
+            *-linux-gnu* | \
+            *-redhat-linux )
+                local TEMP_IN="$(mktemp /tmp/tmp.XXXXXXXXXX.c)"
+                echo '
+                    #include <stdio.h>
+                    #include <linux/version.h>
+                    int main() {
+                        printf("%i.%i.%i",
+                            LINUX_VERSION_CODE/0x10000,
+                            LINUX_VERSION_CODE/0x100  %0x100,
+                            LINUX_VERSION_CODE        %0x100);
+                        return 0;
+                    }
+                ' >$TEMP_IN
+                local TEMP_OUT=$(mktemp)
+                $CC $TEMP_IN -o $TEMP_OUT
+                if test $? -ne 0; then
+                    echo "Cannot build application to get variable"\
+                        "LINUX_VERSION_CODE" >&2
+                    exit 1
+                fi
+                local LIBC=`ldd $TEMP_OUT |
+                    sed -n "s/^\s*libc.so.6 => \(.*\)(0x[0-9a-f]*)$/\1/p"`
+                local LD_LINUX=`ldd $TEMP_OUT |
+                    sed -n "s/^\s*\(\/.*\/ld-linux.*\)\s(.*)$/\1/p"`
+                local LINUX_VERSION_CODE=`$TEMP_OUT`
+                rm -f $TEMP_OUT
+                rm -f $TEMP_IN
+
+                local LIBC_VERSION
+                if test -x $LIBC; then
+                    LIBC_VERSION=`$LIBC | head -n 1`
+                else
+                    LIBC_VERSION=`$LD_LINUX --version | head -n 1`
+                fi
+                LIBC_VERSION=`echo $LIBC_VERSION |
+                    sed -n "s/.*version \(\(\.\?[0-9]\+\)*\).*/\1/p;q"`
+                ;;
+
+            * ) ;;
+        esac
+    fi
+
+    local SEPARATOR=""
+    for FIELD in $TE_TA_SIGNATURE_FIELDS; do
+        case "$FIELD" in
+            gcc-target)
+                echo -n "${SEPARATOR}${GCC_TARGET}"
+                ;;
+            libc-version)
+                echo -n "${SEPARATOR}glibc${LIBC_VERSION}"
+                ;;
+            header-version)
+                echo -n "${SEPARATOR}header${LINUX_VERSION_CODE}"
+                ;;
+            kernel-version)
+                local KERNEL_VERSION=`uname -r |
+                    sed -n "s/\(\([.-]\?[0-9]\+\)*\).*/\1/p;q"`
+                echo -n "${SEPARATOR}kernel${KERNEL_VERSION}"
+                ;;
+            kernel-version-full)
+                local KERNEL_VERSION=`uname -r`
+                echo -n "${SEPARATOR}kernel${KERNEL_VERSION}"
+                ;;
+            cpu-arch)
+                local CPU_ARCH=`${CC} -march=native -Q --help=target |
+                    awk '/-march=/ {print $2; exit}'`
+                echo -n "${SEPARATOR}cpuarch_${CPU_ARCH}"
+                ;;
+            cpu-flags-*)
+                local FLAGS=${FIELD#cpu-flag-}
+                echo -n "${SEPARATOR}cpu"
+                local ALL_CPU_FLAGS=`awk '/^flags\s*:/ {
+                        $1 = $2 = "";
+                        gsub(/^[ \t]+|[ \t]+$/, "");
+                        print " " $0 " ";
+                        exit
+                    }' /proc/cpuinfo`
+                local OLD_IFS=${IFS}
+                IFS=-
+                for FLAG in $FLAGS; do
+                    if [[ "$ALL_CPU_FLAGS" =~ " ${FLAG} " ]]; then
+                        echo -n "_${FLAG}"
+                    fi
+                done
+                IFS=${OLD_IFS}
+                ;;
+            os-version)
+                local OS_VERSION
+                if [ -f /etc/os-release ]; then
+                    OS_VERSION=`. /etc/os-release; echo $ID$VERSION_ID`
+                else
+                    # Fixme: Add something here if/when we need to support
+                    # non-systemd OSes.  All Linux distros (even
+                    # non-systemd ones) have this /etc/os-release file.
+                    OS_VERSION=
+                fi
+                echo -n "${SEPARATOR}${OS_VERSION}"
+                ;;
+            *)
+                echo "Unknown TA signature field: '${FIELD}'" >&2
+                exit 1
+        esac
+        SEPARATOR="__"
+    done | te_ta_sanitize
+}
+
+
+##
+# Calculate a signature of the specified agent
+#
+# @param name of agent host
+# @param compiler with flags
+#
+te_ta_signature()
+{
+    local HOST=$1
+    local CC=$2
+    { echo "export TE_TA_SIGNATURE_FIELDS=\"${TE_TA_SIGNATURE_FIELDS}\""; \
+        cat ${TE_BASE}/engine/builder/te_functions;  \
+        echo -e "\nte_ta_signature_local '$CC'"; } | \
+        ssh $HOST /bin/bash -
+    local RES=$?
+    test $RES -ne 0 && exit $RES
+    return 0
+}
+
+
+##
+# Executes the instructions on specified host
+#
+# @param platform signature
+# @param instructions
+#
+# Note: The function converts the @b instructions to a one-line representation,
+# replacing newlines with spaces, as a remote ssh command can run in /bin/tcsh,
+# which cannot handle multi-line command arguments.
+# See: https://github.com/tcsh-org/tcsh/blob/master/BUGS#L52
+#
+te_eval_or_ssh() {
+    local SSHVAR=${1}_SSH
+    shift
+
+    local cmd="${@//$'\n'/ }"
+
+    if test -z "${!SSHVAR}" ; then
+        ( cd /tmp && eval "${cmd}" )
+    else
+        local ssh_eval="${!SSHVAR}"
+        test -n "$BUILDER_DEBUG" && ssh_eval+=" -vv"
+
+        # Replace single quotes by '"'"' since /bin/bash already uses
+        # it in the command parameters
+        cmd="$(echo "${cmd}" | sed "s/'/\'\"\'\"\'/g")"
+
+        # SSH command may have arguments in double-quotes with spaces
+        eval "${ssh_eval} \"/bin/bash -c 'set -e; cd /tmp; \${cmd}'\""
+    fi
+}
+
+##
+# Executes the instructions on specified host in the same directory
+# as current (assuming NFS).
+#
+# @param platform signature
+# @param instructions
+#
+te_eval_or_ssh_pwd() {
+    local SSHVAR=${1}_SSH
+    shift
+    if test -z "${!SSHVAR}" ; then
+        ( eval "${@}" )
+    else
+        # SSH command may have arguments in double-quotes with spaces
+        eval "${!SSHVAR} \"set -e; cd '\$PWD'; \${@}\""
+    fi
+}
+
+
+##
+# Check if the @p list contains the @p target
+#
+# @param target String for search
+# @param list   Elements list
+#
+# @return       @c 0 in case target argument is found,
+#               else - @c 1 is returned.
+#
+te_is_in_list() {
+    local target=$1
+    shift
+    for i in ${@} ; do
+        if test "$target" = "$i" ; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+##
+# Check whether a given component is eligible for TCE
+#
+# @param platform  Platform name
+# @param component Component name
+#
+# @return          @c 0 if TCE is supported
+#                  @c 1 otherwise
+te_check_tce() {
+    local tcevar="TE_BS_TCE_${1}_${2}_SOURCES"
+    local component="$2"
+
+    if test -n "${!tcevar}"; then
+        if test "${TE_DO_TCE}" = all ||
+                te_is_in_list ${component} ${TE_DO_TCE}; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+##
+# Recursively update Makefiles
+#
+# @param $1     Directory name
+#
+# @return exit code from @b make
+#
+recursive_update_makefiles() {
+    local filename="$TE_BASE/auxdir/Makefile.update"
+    make -C "$1" MASTER_FILE=Makefile MAKEFILE_UPDATE="$filename" \
+        -f "$filename" update-recursive
+    return $?
+}
+
+##
+# Convert hostname to valid for sh variable name
+#
+# @param $1     Hostname
+#
+# @return       Valid name of variable
+#
+te_hostname2shname() {
+    echo "$1" |
+    sed '
+        s/-/_1/g
+        s/\./_2/g
+        s/^[0-9]/_&/
+    '
+}
+

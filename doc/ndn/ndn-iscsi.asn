@@ -1,0 +1,28 @@
+-- SPDX-License-Identifier: Apache-2.0
+-- Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
+
+TE-NDN-ISCSI
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+EXPORTS  ISCSI-Message, ISCSI-CSAP;
+
+ISCSI-Message ::= IMPLICIT SEQUENCE {
+    message OCTET STRING,
+    length INTEGER,
+    param INTEGER,
+    ...
+}
+
+
+ISCSI-CSAP ::= IMPLICIT SEQUENCE {
+    type     INTEGER {server(0), net(1), target(2)},
+    ip4-addr IpAddress OPTIONAL,
+    port     INTEGER(1 .. 65536) OPTIONAL,
+    socket   INTEGER(1 .. 65536) OPTIONAL,
+    ...
+}
+
+END

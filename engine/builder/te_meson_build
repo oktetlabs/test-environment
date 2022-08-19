@@ -1,0 +1,955 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment
+#
+# Build TE using meson/ninja.
+#
+# Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
+
+set -e
+set -E
+
+SCRIPT_DIR="$(dirname "$0")"
+
+with_config="$1"
+
+# List of all available TAD protocols
+TAD_PROTOCOLS_ALL="arp"
+TAD_PROTOCOLS_ALL+=" atm"
+TAD_PROTOCOLS_ALL+=" bridge"
+TAD_PROTOCOLS_ALL+=" cli"
+TAD_PROTOCOLS_ALL+=" dhcp"
+TAD_PROTOCOLS_ALL+=" eth"
+TAD_PROTOCOLS_ALL+=" flow"
+TAD_PROTOCOLS_ALL+=" forw"
+TAD_PROTOCOLS_ALL+=" geneve"
+TAD_PROTOCOLS_ALL+=" gre"
+TAD_PROTOCOLS_ALL+=" igmp"
+TAD_PROTOCOLS_ALL+=" ipstack"
+TAD_PROTOCOLS_ALL+=" iscsi"
+TAD_PROTOCOLS_ALL+=" pcap"
+TAD_PROTOCOLS_ALL+=" ppp"
+TAD_PROTOCOLS_ALL+=" rte_mbuf"
+TAD_PROTOCOLS_ALL+=" snmp"
+TAD_PROTOCOLS_ALL+=" socket"
+TAD_PROTOCOLS_ALL+=" vxlan"
+
+error() {
+    echo ERROR: $* >&2
+    exit 1
+}
+
+warning() {
+    echo WARNING: $* >&2
+}
+
+on_error() {
+    error "Unhandled error at ${BASH_SOURCE[0]}:${BASH_LINENO[0]}"
+}
+
+trap on_error ERR
+
+process_parameters() {
+    local pfx="$1"; shift
+    local msg="$1"; shift
+
+    local parms_var="${pfx}PARMS"
+    test -z "${!parms_var}" ||
+        warning "${msg} parameters not supported: ${!parms_var}"
+
+    local cppflags_var="${pfx}CPPFLAGS"
+    test -z "${!cppflags_var}" ||
+        warning "${msg} CPPFLAGS not supported: ${!cppflags_var}"
+
+    local cflags_var="${pfx}_CFLAGS"
+    test -z "${!cflags_var}" ||
+        warning "${msg} CFLAGS not supported: ${!cflags_var}"
+
+    local ldflags_var="${pfx}LDFLAGS"
+    test -z "${!ldflags_var}" ||
+        warning "${msg} LDFLAGS not supported: ${!ldflags_var}"
+
+    local libs_var="${pfx}LIBS"
+    test -z "${!libs_var}" ||
+        warning "${msg} LIBS not supported: ${!libs_var}"
+}
+
+set_sniffers() {
+    local val="${1}"; shift
+
+    if test -n "${use_sniffers}" -a "${use_sniffers}" != "${val}" ; then
+        error "The passed parameters --with/without-sniffers are inconsistent"
+    else
+        use_sniffers="${val}"
+    fi
+}
+
+add_meson_lib_opt() {
+    local l="$1"; shift
+    local lrname="$1"; shift
+    local name="$1"; shift
+    local value="$@"
+
+    test -z "${name}" -o -n "${name//[[:alnum:]_-]/}" &&
+        error "Wrong meson option name: ${name}"
+
+    local opt_name="${l//-/_}_${name//-/_}"
+    meson_lib_opts+=" ${opt_name}"
+
+    eval meson_lib_lname_${opt_name}=\"\${l}\"
+    eval meson_lib_lrname_${opt_name}=\"\${lrname}\"
+    eval meson_lib_opt_name_${opt_name}=\"\${name}\"
+    eval meson_lib_opt_val_${opt_name}=\"\${value}\"
+}
+
+process_library_agentlib() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+    local p
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --disable-dlfcn-lookup) ;;
+            --enable-dlfcn-lookup)
+                add_meson_lib_opt ${l} ${lrname} agentlib-dlfcn-lookup true ;;
+            --disable-ftp) ;;
+            --enable-ftp)
+                add_meson_lib_opt ${l} ${lrname} agentlib-ftp true ;;
+            --disable-power-sw) ;;
+            --enable-power-sw)
+                add_meson_lib_opt ${l} ${lrname} agentlib-power-sw true ;;
+            --disable-dlfcn-upnp) ;;
+            --enable-dlfcn-upnp)
+                add_meson_lib_opt ${l} ${lrname} agentlib-upnp true ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+}
+
+process_library_rcfpch() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+    local p
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --with-sniffers=yes|--with-sniffers)
+                set_sniffers true
+                ;;
+            --with-sniffers=no|--without-sniffers)
+                set_sniffers false
+                ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+}
+
+process_library_rpcserver() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+    local p
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --with-agentlib=*)
+                add_meson_lib_opt ${l} ${lrname} rpcserver-agentlib "${p#--with-agentlib=}" ;;
+            --enable-plugins=no|--disable-plugins)
+                add_meson_lib_opt ${l} ${lrname} rpcserver-idle-plugins false ;;
+            --enable-mem=no|--disable-mem)
+                add_meson_lib_opt ${l} ${lrname} rpcserver-smart-mem false ;;
+            --enable-static-rpc-lookup)
+                add_meson_lib_opt ${l} ${lrname} static-rpc-lookup true ;;
+            --enable-typesafe-rpc=no|--disable-typesafe-rpc)
+                add_meson_lib_opt ${l} ${lrname} typesafe-rpc false ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+}
+
+process_library_rpcxdr() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+    local p
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --with-rpcdefs=*)
+                meson_args="${meson_args} -Drpcdefs=\"${p#--with-rpcdefs=}\"" ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+}
+
+update_tad_with_protocols() {
+    local tad_protos="${1}"; shift
+    local tad_proto
+
+    for tad_proto in ${tad_protos} ; do
+        local proto_add=true
+        local tad_with_proto
+        for tad_with_proto in ${tad_with_protocols} ; do
+            if test "${tad_proto}" = "${tad_with_proto}" ; then
+                proto_add=false
+                break
+            fi
+        done
+        test ${proto_add} && tad_with_protocols="${tad_with_protocols} ${tad_proto}"
+    done
+}
+
+process_library_tad() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+    local p
+    local lib_tad_protocols=
+    local without_tad=false
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --without-cs)
+                add_meson_lib_opt ${l} ${lrname} tad-cs false ;;
+            --with-packet-mmap-rx-ring)
+                add_meson_lib_opt ${l} ${lrname} tad-packet_mmap_rx_ring true ;;
+            --with-*)
+                lib_tad_protocols="${lib_tad_protocols} ${p#--with-}" ;;
+            --without-static-libc)
+                # default, in fact --with-static-libc is not supported yet
+                ;;
+            --without-tad)
+                without_tad=true
+                ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+
+    if "${without_tad}" ; then
+        lib_tad_protocols=""
+    elif test -z "${lib_tad_protocols}" ; then
+        lib_tad_protocols="${TAD_PROTOCOLS_ALL}"
+    else
+        # tad protocol name may contain a hyphen (rte-mbuf)
+        lib_tad_protocols="${lib_tad_protocols//-/_}"
+    fi
+
+    add_meson_lib_opt ${l} ${lrname} tad-protocols "${lib_tad_protocols}"
+
+    update_tad_with_protocols "${lib_tad_protocols}"
+
+    eval ${parms_var}=\"${parms}\"
+}
+
+process_library_tapi_tad() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+    local p
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --with-*)
+                update_tad_with_protocols "${p#--with-}" ;;
+            --without-*)
+                tad_without_protocols="${tad_without_protocols} ${p#--without-}" ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+}
+
+process_library() {
+    local p="$1"; shift
+    local l="$1"; shift
+    local lrname="$1"; shift
+    local pfx="TE_BS_LIB_${p}_${l}_"
+    local msg="Platform library ${p}/${l}"
+
+    case "${lrname}" in
+        agentlib)   process_library_agentlib "${pfx}" ;;
+        rcfpch)     process_library_rcfpch "${pfx}" ;;
+        rpcserver)  process_library_rpcserver "${pfx}" ;;
+        rpcxdr)     process_library_rpcxdr "${pfx}" ;;
+        tad)        process_library_tad "${pfx}" ;;
+        tapi_tad)   process_library_tapi_tad "${pfx}" ;;
+    esac
+
+
+    process_parameters "${pfx}" "${msg}"
+}
+
+process_agent_unix_parms() {
+    local p
+
+    while test -n "$1" ; do
+        p="$1"
+        case "${p}" in
+            --with-cfg-unix-daemons=*)
+                daemons="${p#--with-cfg-unix-daemons=}"
+                ;;
+            --with-8021x)
+                conf="${conf} 8021x" ;;
+            --with-aggr)
+                conf="${conf} aggr" ;;
+            --with-bpf)
+                conf="${conf} bpf" ;;
+            --with-iptables)
+                conf="${conf} iptables" ;;
+            --with-libnetconf)
+                # automatic if netconf library is built
+                ;;
+            --with-ntpd)
+                conf="${conf} ntpd" ;;
+            --with-ovs)
+                conf="${conf} ovs" ;;
+            --with-pam)
+                conf="${conf} pam" ;;
+            --enable-pci)
+                conf="${conf} pci" ;;
+            --with-pcre)
+                # may be ignored since pulled as rpcs_job dependency in
+                # the case of meson build
+                ;;
+            --with-rcf-rpc)
+                # always
+                ;;
+            --with-serialparse)
+                conf="${conf} serial-parser" ;;
+            --with-serial)
+                conf="${conf} serial" ;;
+            --with-sfptpd)
+                conf="${conf} sfptpd" ;;
+            --with-sniffers=yes|--with-sniffers)
+                set_sniffers true
+                ;;
+            --with-sniffers=no|--without-sniffers)
+                set_sniffers false
+                ;;
+            --with-tc)
+                conf="${conf} tc" ;;
+            --with-tirpc)
+                # added automatically
+                ;;
+            --with-upnp_cp)
+                conf="${conf} upnp_cp" ;;
+            --with-vcm)
+                conf="${conf} vcm" ;;
+            --without-static-libc)
+                # default, in fact --with-static-libc is not supported yet
+                ;;
+            --disable-networkmanager-check)
+                conf="${conf} disable-networkmanager-check" ;;
+            *)
+                parms="${parms}${parms:+ }\"${p}\"" ;;
+        esac
+        shift
+    done
+}
+
+process_agent_powerctl_parms() {
+    local p
+
+    set_sniffers false
+
+     while test -n "$1" ; do
+        p="$1"
+        case "${p}" in
+            *)
+                parms="${parms}${parms:+ }\"${p}\"" ;;
+        esac
+        shift
+    done
+}
+
+make_meson_opt_array() {
+    local option="$1"; shift
+    local o
+    local vals=""
+
+    for o in ${option} ; do
+        test -z "${vals}" && vals=${o} || vals+=",${o}"
+    done
+    echo ${vals}
+}
+
+process_agent_unix() {
+    local ta="$1"; shift
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local libs_var="${pfx}LIBS"
+    local ta_platform="${pfx}PLATFORM"
+    local parms=
+    local conf=
+    local daemons=
+
+    meson_args="${meson_args} -Dagent-unix-name=${ta}"
+    meson_args="${meson_args} -Dagent-unix-platform=${!ta_platform}"
+
+    # eval is required interpret correctly parameter values with
+    # whitespaces in quotes
+    eval process_agent_unix_parms ${!parms_var}
+
+    eval ${parms_var}=\"\${parms}\"
+
+    test -z "${conf}" ||
+        meson_args="${meson_args} -Dagent-unix-conf=\"$(make_meson_opt_array "${conf}")\""
+    test -z "${daemons}" ||
+        meson_args="${meson_args} -Dagent-unix-daemons=\"$(make_meson_opt_array "${daemons}")\""
+
+    test -z "${!libs_var}" || {
+        meson_args="${meson_args} -Dagent-unix-libs=\"$(make_meson_opt_array "${!libs_var}")\""
+        eval ${libs_var}=
+    }
+}
+
+process_agent_powerctl() {
+    local ta="$1"; shift
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local libs_var="${pfx}LIBS"
+    local ta_platform="${pfx}PLATFORM"
+    local parms=
+
+    meson_args="${meson_args} -Dagent-powerctl-name=${ta}"
+    meson_args="${meson_args} -Dagent-powerctl-platform=${!ta_platform}"
+
+    # eval is required interpret correctly parameter values with
+    # whitespaces in quotes
+    eval process_agent_powerctl_parms ${!parms_var}
+
+    eval ${parms_var}=\"\${parms}\"
+
+    test -z "${!libs_var}" || {
+        meson_args="${meson_args} -Dagent-powerctl-libs=\"$(make_meson_opt_array "${!libs_var}")\""
+        eval ${libs_var}=
+    }
+}
+
+process_agent() {
+    local p="$1"; shift
+    local ta="$1"; shift
+    local pfx="TE_BS_TA_${ta}_"
+    local msg="Agent ${ta}"
+
+    local src_var="${pfx}SOURCES"
+    local ta_src="$(basename "${!src_var}")"
+
+    local ta_apps_var="TE_BS_TA_APPS_${ta}"
+
+    build_agents="${build_agents} ${ta_src}"
+
+    case "${ta_src}" in
+        unix)   process_agent_unix "${ta}" "${pfx}" ;;
+        powerctl|power-ctl) process_agent_powerctl "${ta}" "${pfx}" ;;
+    esac
+
+    process_parameters "${pfx}" "${msg}"
+}
+
+generate_config_file() {
+    local p="$1"; shift
+    local parms_var="$1"; shift
+    local conffile="${TE_BUILD}/${p}.meson_conf"
+    local host=
+    local cc=
+    local cpp=
+    local ld=
+    local ar=
+    local as=
+    local strip=
+    local pkgconfig=
+    local others=
+    for parm in ${parms_var} ; do
+        case ${parm} in
+            --host=*)
+                host="${parm#--host=}" ;;
+            CC=*)
+                cc="${parm#CC=}" ;;
+            CPP=*)
+                cpp="${parm#CPP=}" ;;
+            LD=*)
+                ld="${parm#LD=}" ;;
+            AR=*)
+                ar="${parm#AR=}" ;;
+            AS=*)
+                as="${parm#AS=}" ;;
+            STRIP=*)
+                strip="${parm#STRIP=}" ;;
+            PKG_CONFIG=*)
+                pkgconfig="${parm#PKG_CONFIG=}" ;;
+            *)
+                others="${others} ${parm}" ;;
+        esac
+    done
+    if test -n "${others}" ; then
+        warning "Unsupported platform parameters:${others}"
+    fi
+
+    if test -z "${host}${cc}${cpp}${ld}${ar}${as}${strip}${pkg_config}" ; then
+        return
+    fi
+
+    if test -z "$host" -o "$host" = $(gcc -dumpmachine); then
+        echo "[binaries]" > $conffile
+        test -n "$cc" && echo "c = '${cc}'" >> $conffile
+        test -n "$cpp" && echo "cpp = '${cpp}'" >> $conffile
+        test -n "$ld" && echo "ld = '${ld}'" >> $conffile
+        test -n "$ar" && echo "ar = '${ar}'" >> $conffile
+        test -n "$as" && echo "as = '${as}'" >> $conffile
+        test -n "$strip" && echo "strip = '${strip}'" >> $conffile
+        test -n "$pkgconfig" && echo "pkgconfig = '${pkgconfig}'" >> $conffile
+        meson_args="${meson_args} --native-file=${conffile}"
+        return
+    fi
+
+    test -z "$cc" && cc="${host}-gcc"
+    local dumpmachine=$($cc -dumpmachine)
+    local cpu_family="$(cut -d'-' -f1 <<<"$dumpmachine")"
+    local system="$(echo $dumpmachine | rev | cut -d'-' -f2 | rev)"
+
+    test -z "$cpp" && cpp="${host}-cpp"
+    test -z "$ld" && ld="${host}-ld"
+    test -z "$ar" && ar="${host}-ar"
+    test -z "$as" && as="${host}-as"
+    test -z "$strip" && strip="${host}-strip"
+    test -z "$pkgconfig" && pkgconfig="${host}-pkg-config"
+
+    cat >$conffile <<-EOF
+	[binaries]
+	c = '${cc}'
+	cpp = '${cpp}'
+	ld = '${ld}'
+	ar = '${ar}'
+	as = '${as}'
+	strip = '${strip}'
+	pkgconfig = '${pkgconfig}'
+
+	[host_machine]
+	system = '${system}'
+	cpu_family = '${cpu_family}'
+	cpu = ''
+	endian = ''
+	EOF
+    meson_args="${meson_args} --cross-file=${conffile}"
+}
+
+process_platform() {
+    local p="$1"; shift
+    local tad_protocols="${TAD_PROTOCOLS_ALL}"
+    local tad_with_protocols=
+    local tad_without_protocols=
+    local use_sniffers=
+
+    local parms_var="${p}_PARMS"
+    if test -n "${!parms_var}" ; then
+        generate_config_file "${p}" "${!parms_var}"
+    fi
+
+    local te_cflags=
+    for suffix in CPPFLAGS_VAR CFLAGS_VAR CPPFLAGS CFLAGS ; do
+        local var=${p}_${suffix}
+        local value=${!var}
+        test -z "${value}" || te_cflags="${te_cflags} ${value}"
+    done
+    test -z "${te_cflags}" ||
+        meson_args="${meson_args} -Dcflags=\"${te_cflags}\""
+
+    local ldflags_var="${p}_LDFLAGS"
+    if test -n "${!ldflags_var}" ; then
+        local te_ldflags="${!ldflags_var}"
+        meson_args="${meson_args} -Dldflags=\"${te_ldflags}\""
+    fi
+
+    local libs="${p}_LIBS"
+    if test -n "${!libs}" ; then
+        meson_args="${meson_args} -Dlibs=\"${!libs}\""
+    fi
+
+    for l in ${!libs} ; do
+        local lrname
+        local plsrc="TE_BS_LIB_${p}_${l}_SOURCES"
+        if test -n "${!plsrc}" ; then
+            # plsrc can point to sources outside of TE sources, but
+            # we are trying to get the real name of the TE's library
+            lrname=${!plsrc/${TE_BASE}\/lib\//}
+        else
+            lrname=${l}
+        fi
+
+        process_library ${p} ${l} ${lrname}
+    done
+
+    if test -n "${tad_with_protocols}" ; then
+        tad_protocols="${tad_with_protocols}"
+    elif test -n "${tad_without_protocols}" ; then
+        local protocol
+        local protocols=
+
+        for protocol in ${tad_protocols} ; do
+            echo "${tad_without_protocols}" | grep -wq "${protocol}" ||
+                protocols="${protocols} ${protocol}"
+        done
+        tad_protocols="${protocols}"
+    fi
+    test -z "${tad_protocols}" ||
+        meson_args="${meson_args} -Dtad-protocols=\"${tad_protocols}\""
+
+    local build_agents=
+    for ta in ${TE_BS_TA} ; do
+        local platform="TE_BS_TA_${ta}_PLATFORM"
+        test "${!platform}" != "${p}" || process_agent "${p}" "${ta}"
+    done
+
+    test -z "${use_sniffers}" ||
+        meson_args="${meson_args} -Dsniffers=\"${use_sniffers}\""
+    test -z "${build_agents}" ||
+        meson_args="${meson_args} -Dagents=\"${build_agents}\""
+
+    local papps="TE_BS_TA_APPS_$p"
+    if test -n "${!papps}" ; then
+        # Pass the list of agent apps to make sure the meson will build
+        # static libraries for use with these apps
+        meson_args="${meson_args} -Dagent-apps=\"${!papps}\""
+
+        # Install headers and libraries
+        meson_args="${meson_args} -Dinstall-dev=true"
+    fi
+}
+
+process_engine_configurator() {
+    local param="$1"; shift
+    case "${param}" in
+        --with-conf-yaml|--with-conf-yaml=yes)
+            meson_args="${meson_args} -Dcs-conf-yaml=true" ;;
+        --without-conf-yaml|--with-conf-yaml=no)
+            meson_args="${meson_args} -Dcs-conf-yaml=false" ;;
+        *) return 1 ;;
+    esac
+    return 0
+}
+
+process_engine_app() {
+    local a="$1"; shift
+    local pfx="TE_BS_APP_${a}_"
+    local msg="Engine application ${a}"
+    local p
+
+    local parms_var="${pfx}PARMS"
+    local parms=
+    for p in ${!parms_var} ; do
+        # Just ignore --with-large-logs since it is the default in meson build
+        test "${a}" = logger -a "${p}" = "--with-large-logs" &&
+            continue
+        test "${a}" = rcf -a "${p}" = "--enable-ltdl-install" &&
+            continue
+        test "${a}" = configurator && process_engine_configurator "${p}" &&
+            continue
+        test "${a}" = tester -a "${p}" = "--with-trc" && {
+            meson_args="${meson_args} -Dtrc=true"
+            continue
+        }
+        parms="${parms}${parms:+ }${p}"
+    done
+    eval ${parms_var}=\"${parms}\"
+
+    process_parameters "${pfx}" "${msg}"
+}
+
+process_engine_apps() {
+    local a
+
+    for a in ${TE_BS_APPS} ; do
+        process_engine_app "${a}"
+    done
+}
+
+process_engine_tool() {
+    local t="$1"; shift
+    local pfx="TE_BS_TOOL_${t}_"
+    local msg="Engine tool ${t}"
+    local p
+
+    local parms_var="${pfx}PARMS"
+    local parms=
+    for p in ${!parms_var} ; do
+        # Just ignore --with-large-logs since it is the default in meson build
+        test "${t}" = rgt -a "${p}" = "--with-large-logs" &&
+            continue
+        if test "${t}" = trc ; then
+            case ${p} in
+                --with-spoilers)
+                    meson_args="${meson_args} -Dtrc-spoilers=true" ;;
+                --with-popups)
+                    meson_args="${meson_args} -Dtrc-popups=true" ;;
+                --with-log-urls)
+                    meson_args="${meson_args} -Dtrc-log-urls=true" ;;
+                --with-hidden-stats)
+                    meson_args="${meson_args} -Dtrc-hidden-stats=true" ;;
+                --with-ext-scripts=*)
+                    meson_args="${meson_args} -Dtrc-ext-scripts=\"${p#--with-ext-scripts=}\"" ;;
+                *)
+                    parms="${parms}${parms:+ }${p}" ;;
+            esac
+        else
+            parms="${parms}${parms:+ }${p}"
+        fi
+    done
+    eval ${parms_var}=\"${parms}\"
+
+    process_parameters "${pfx}" "${msg}"
+}
+
+process_engine_tools() {
+    local t
+
+    for t in ${TE_BS_TOOLS} ; do
+        process_engine_tool "${t}"
+    done
+}
+
+# Checks for host programs.
+process_host_exec() {
+    local i
+
+    for i in $TE_BS_HOST_EXEC ; do
+        which $i &>/dev/null || error "No host tool $i"
+    done
+}
+
+process_builder_conf() {
+    local config="$1"
+
+    # Parse configuration file
+    echo TE_BASE=$TE_BASE
+    echo TE_BUILD=$TE_BUILD
+    echo TE_INSTALL=$TE_INSTALL
+    echo TE_INSTALL_NUT=$TE_INSTALL_NUT
+    echo TE_INSTALL_SUITE=$TE_INSTALL_SUITE
+
+    # Defaults
+    echo TE_BS_APPS=\"builder rcf logger tester configurator\"
+
+    if test -n "${config}" ; then
+        if test ! -e "${config}" ; then
+            error "Cannot find ${config}"
+        fi
+        cat "${TE_BASE}/engine/builder/builder.m4" "${config}" |
+            m4 -I"$(dirname "${config}")"
+    fi
+    echo 'TE_PATH=${TE_INSTALL}/${TE_HOST}/bin'
+}
+
+read_processed_builder_conf() {
+    local builder_conf_processed="$1"
+
+    # Dummy loop to avoid breaking in the case of error
+    while test 1 ; do
+        . "${builder_conf_processed}"
+        break
+    done
+    if test -n "$TE_BS_CONF_ERR" ; then
+        echo $TE_BS_CONF_ERR >&2
+        exit 1
+    fi
+    ( set -o posix ; set ) >/tmp/vars
+}
+
+process_platforms() {
+    local p
+
+    for p in ${TE_BS_PLATFORMS} ; do
+        local build=${p}_BUILD
+
+        # Non-volatile arguments which require build workspace bootstrap
+        # --libdir is required to avoid host type subdir in lib/
+        local meson_nv_args="--prefix=${TE_INSTALL}/${p} --libdir=lib"
+        # Volatile argument which require workspace reconfigure
+        local meson_args="-Dagentsdir=${TE_INSTALL}/agents"
+
+        local meson_lib_opts=
+
+        process_platform "${p}"
+
+        if test ${p} = "${TE_HOST}" ; then
+            meson_args="${meson_args} -Dengine=true"
+            process_host_exec
+            meson_args="${meson_args} -Dengine-apps=\"${TE_BS_APPS}\""
+            process_engine_apps
+            test -z "${TE_BS_TOOLS}" || {
+                meson_args="${meson_args} -Dtools=\"${TE_BS_TOOLS}\""
+                process_engine_tools
+            }
+        else
+            # Build only static libraries for non-default platforms
+            meson_nv_args="${meson_nv_args} --default-library=static"
+        fi
+
+        local clo=
+        local opt
+        for opt in ${meson_lib_opts} ; do
+            local plname="meson_lib_lname_${opt}"
+            local plrname="meson_lib_lrname_${opt}"
+            local popt_name="meson_lib_opt_name_${opt}"
+            local popt_val="meson_lib_opt_val_${opt}"
+            test -n "${clo}" && clo+=","
+            clo+="'${!plname}:${!plrname}:${!popt_name}:${!popt_val}'"
+        done
+        clo="-Dcustom-lib-opts=\"[${clo}]\""
+
+        meson_args="${meson_args} ${clo}"
+
+        eval TE_BS_MESON_${p}_NV_ARGS=\"\${meson_nv_args}\"
+        eval TE_BS_MESON_${p}_ARGS=\"\${meson_args}\"
+    done
+}
+
+build_platform() {
+    local p="$1" ; shift
+    local build=${p}_BUILD
+
+    case "${!build}" in
+        ""|meson)
+            local pmeson_nv_args="TE_BS_MESON_${p}_NV_ARGS"
+            local pmeson_args="TE_BS_MESON_${p}_ARGS"
+
+            ${SCRIPT_DIR}/te_cross_build_meson "${p}" \
+                "${!pmeson_nv_args}" "${!pmeson_args}" \
+                || error "Platform ${p} cross build using meson failed"
+            ;;
+        *)
+            error "Unknown build system '${!build}' for platform '$p'"
+    esac
+}
+
+wait_for_log_files() {
+    local log_pfx="$1" ; shift
+    local p="$1" ; shift
+    # Maximum number of attempts to wait
+    local wait_attempts=10
+
+    while test $wait_attempts -gt 0 ; do
+        test -f "${log_pfx}.${p}.2" -a -f "${log_pfx}.${p}.1" && break
+        sleep .3
+        wait_attempts=$((wait_attempts-1))
+    done
+
+    # Return zero code anyway: if some file will not created,
+    # the command "tail ..." will throw errors about this
+    return 0
+}
+
+trap_sigint() {
+    local ret=$?
+    echo "ERROR: $(basename $0): SIGINT signal is received, build stopped." >&2
+    exit $ret
+}
+
+do_build() {
+    local p
+    local pid
+    local tail_pid
+    local log_pfx="${TE_RUN_DIR}/builder.log"
+    declare -A PIDS
+    declare -A ERRORS
+
+    local te_agents="${TE_INSTALL}"/agents
+
+    mkdir -p "${te_agents}"
+
+    trap trap_sigint INT
+
+    # Start building in background
+    for p in ${TE_BS_PLATFORMS} ; do
+        local phost="${p}_HOST"
+        local host="${!phost}"
+
+        echo "Build platform ${p}${host:+ on }${host} - start" >&2
+        echo "  location of log files: ${log_pfx}.${p}.{1,2}" >&2
+        build_platform "${p}" 2>"${log_pfx}.${p}.2" 1>"${log_pfx}.${p}.1" &
+
+        PIDS[$!]="$p"
+    done
+
+    # Wait for all jobs to be finished and check results
+    for pid in ${!PIDS[@]} ; do
+        p="${PIDS[$pid]}"
+
+        # Make sure that log files have been created by the job
+        wait_for_log_files "$log_pfx" "$p"
+
+        tail -f -c +1 --pid=${pid} "${log_pfx}.${p}.1" &
+        local pid_t1=$!
+        tail -f -c +1 --pid=${pid} "${log_pfx}.${p}.2" >&2 &
+        local pid_t2=$!
+
+        local rc=0
+        wait "$pid" || rc=$?
+
+        local rc_t1=0
+        wait "$pid_t1" || rc_t1=$?
+        local rc_t2=0
+        wait "$pid_t2" || rc_t2=$?
+
+        if test $rc -eq 0 -a $rc_t1 -eq 0 -a $rc_t2 -eq 0; then
+            echo "Platform ${p} build - pass" >&2
+        else
+            echo "Platform ${p} build - fail (${rc}, ${rc_t1}, ${rc_t2})" >&2
+            ERRORS[$p]=$rc
+        fi
+    done
+
+    if test ${#ERRORS[@]} -ne 0 ; then
+        echo "Build failed, for more details see files:" >&2
+        for p in ${!ERRORS[@]} ; do
+            echo "  ${log_pfx}.${p}.{1,2}" >&2
+        done
+
+        exit 1
+    fi
+}
+
+
+build_all () {
+    # List of all platforms
+    local TE_BS_PLATFORMS=
+    # TE_BS_TOOLS - what tools should be built by "make all" command.
+    local TE_BS_TOOLS=
+    # List of Test Agents
+    local TE_BS_TA=
+    # List of suites
+    local TE_BS_SUITES=
+
+    process_builder_conf "${with_config}" >builder.conf.processed
+
+    # builder.conf.processed variables are required in both process_platforms() and do_build()
+    while test 1 ; do
+        . builder.conf.processed
+        break
+    done
+    if test -n "$TE_BS_CONF_ERR" ; then
+        echo $TE_BS_CONF_ERR >&2
+        exit 1
+    fi
+
+    process_platforms
+
+    do_build
+}
+
+
+cd "${TE_BUILD}"
+build_all

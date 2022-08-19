@@ -1,0 +1,239 @@
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-gb" xml:lang="en-gb" >
+<head>
+<meta http-equiv="content-language" content="en"/>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="@@%s:shared_url@@bootstrap.min.css">
+<link rel="stylesheet" href="@@%s:shared_url@@log_style.css">
+<link rel="stylesheet" href="@@%s:shared_url@@Chart.min.css">
+
+<!-- jQuery library -->
+<script src="@@%s:shared_url@@jquery.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src="@@%s:shared_url@@bootstrap.min.js"></script>
+
+<script src="@@%s:shared_url@@renderjson.js"></script>
+<script src="@@%s:shared_url@@Chart.bundle.min.js"></script>
+<script src="@@%s:shared_url@@hammer.min.js"></script>
+<script src="@@%s:shared_url@@chartjs-plugin-zoom.js"></script>
+<script>
+    // By default show root's children for JSON, not just single
+    // root node.
+    renderjson.set_show_to_level(1);
+
+    //
+    // Create a graph in which array of numbers is shown as
+    // a line. Each element of array is represented as a point
+    // with X = index of the element in the array and Y = value
+    // of the element. Line connects these points.
+    //
+    // @param canvasID    ID of canvas element where to display the
+    //                    graph.
+    // @param title       Title of the graph (may be empty).
+    // @param axis_x      What should be on axis X.
+    // @param axis_y      What should be on axis Y.
+    //
+    // @return Pointer to Chart object.
+    function add_graph(canvasID, title, axis_x, axis_y)
+    {
+        var c;
+        var i;
+        var j;
+        var datasets = [];
+
+        for (i = 0; i < axis_y.length; i++)
+        {
+            var dataset = {};
+
+            dataset.label = axis_y[i].label;
+            dataset.fill = false;
+            dataset.lineTension = 0;
+            dataset.showLine = true;
+            dataset.borderColor = axis_y[i].color;
+
+            dataset.data = [];
+
+            for (j = 0; j < axis_y[i].values.length; j++)
+            {
+                if (axis_x.auto_seqno)
+                {
+                    dataset.data.push({x: j, y: axis_y[i].values[j]});
+                }
+                else
+                {
+                    if (j >= axis_x.values.length)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        dataset.data.push({x: axis_x.values[j],
+                                           y: axis_y[i].values[j]});
+                    }
+                }
+            }
+
+            datasets.push(dataset);
+        }
+
+        ctx = document.getElementById(canvasID);
+        c = new Chart(ctx,
+                {
+                    type: "scatter",
+                    data: {
+                      datasets: datasets
+                    },
+                    options: {
+                        title: {
+                            fontSize: 17,
+                            text: title,
+                            display: (title.length > 0)
+                        },
+                        legend: {
+                            labels: {
+                                fontSize: 15,
+                                fontStyle: "bold"
+                            }
+                        },
+                        scales: {
+                            xAxes: [{
+                                ticks: {
+                                    fontSize: 15
+                                },
+                                scaleLabel: {
+                                    display: (axis_x.label.length > 0),
+                                    fontSize: 17,
+                                    fontStyle: "bold",
+                                    labelString: axis_x.label
+                                }
+                            }],
+                            yAxes: [{
+                                ticks: {
+                                    fontSize: 15
+                                }
+                            }],
+                        },
+                        maintainAspectRatio: false,
+                        plugins: {
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'xy'
+                                },
+                                zoom: {
+                                    enabled: true,
+                                    mode: 'xy'
+                                }
+                            }
+                        },
+                    }
+                });
+
+        return c;
+    }
+
+    //
+    // Show a list if it is hidden, hide a list if it is displayed.
+    // Change a text and color of the element clicked to show/hide accodingly.
+    //
+    // @param link_el       HTML element clicked to show/hide the list.
+    // @param list_id       ID of the list.
+    // @param hide_text     Text to display when list is displayed.
+    // @param show_text     Text to display when list is hidden.
+    function show_hide_list(link_el, list_id, hide_text, show_text)
+    {
+        var list_el = document.getElementById(list_id);
+
+        if (list_el.style.display == "none")
+        {
+            list_el.style.display = "block";
+            link_el.innerText = hide_text;
+            link_el.className = link_el.className.replace(/\bshow_link\b/g,
+                                                          "hide_link");
+        }
+        else
+        {
+            list_el.style.display = "none";
+            link_el.innerText = show_text;
+            link_el.className = link_el.className.replace(/\bhide_link\b/g,
+                                                          "show_link");
+        }
+    }
+
+</script>
+
+<style type="text/css">
+    td {
+      padding: 2px !important;
+      padding-left: 1px;
+      padding-right: 1px;
+      padding-top: 2px;
+      padding-bottom: 2px;
+    }
+    .col-sm-1 {
+      white-space: nowrap;
+    }
+    .te_fold {
+      font-family: monospace;
+    }
+    .te_filter_button {
+      margin-top: 0.5em;
+      font-family: monospace;
+    }
+    .te_params {
+      width: 50% !important;
+    }
+    .ERROR { background-color: #FFD2C8; valign: top; }
+    .WARN { background-color: #FCA85A80; valign: top; }
+    .INFO { background-color: #ECEDEC !important; valign: top; }
+    .VERB { background-color: #EFF2FF; valign: top; }
+    .PACKET { background-color: #E5E5E5; valign: top; }
+
+    .renderjson .disclosure { color: firebrick; font-size: 150% }
+    .renderjson .string { color: crimson; }
+    .renderjson .number { color: blueviolet; }
+    .renderjson .boolean { color: darkorange; }
+    .renderjson .key { color: blue; }
+    .renderjson .keyword { color: blue; }
+    .renderjson .object.syntax { color: green; }
+    .renderjson .array.syntax  { color: brown; }
+
+    .show_link { cursor: pointer; color: blue; }
+    .hide_link { cursor: pointer; color: crimson; }
+
+    .graph_warn { color: crimson; }
+</style>
+
+<title>
+  Logs from @@%s:reporter@@
+</title>
+
+</head>
+<body>
+
+<script src="@@%s:shared_url@@log_filter.js"></script>
+<script type="text/javascript">
+
+function activate_link(name, doc_name, par_name)
+{
+    parent.treeframe.activate_node(name, par_name);
+    document.location.href = doc_name;
+}
+
+function toggle_node(node)
+{
+    if (typeof node == 'string')
+        node = document.getElementById(node);
+    if (!node)
+        return;
+    node.style.display = (node.style.display != 'none') ? 'none' : 'block';
+}
+
+document.addEventListener("DOMContentLoaded", function(event) {
+  init_log_filter();
+});
+
+</script>
+

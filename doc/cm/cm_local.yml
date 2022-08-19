@@ -1,0 +1,219 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Miscellaneous local configurations inculding test engine and
+    test API options.
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/local"
+      access: read_create
+      type: none
+      d: |
+         Root object of the local configuration tree.
+         Name: agent name or none
+
+    - oid: "/local/reqs"
+      access: read_create
+      type: string
+      d: |
+         Requirements dynamically by prologue which, for exmaple, identifies,
+         that some functionality is not supported.
+           Name: test ID
+           Value: requirements expression
+
+    - oid: "/local/trc_tags"
+      access: read_create
+      type: string
+      d: |
+         Names and values of TRC tags (used by tapi_tags_add_tag()).
+           Name: TRC tag name
+           Value: TRC tag value
+
+    - oid: "/local/ip4_alien"
+      access: read_write
+      type: address
+      d: |
+        Address to be returned as alien IPv4 address when address of such type is
+        requested in environment.
+          Name: none
+          Value: IPv4 address
+
+    - oid: "/local/ip6_alien"
+      access: read_write
+      type: address
+      d: |
+        Address to be returned as alien IPv6 address when address of such type is
+        requested in environment.
+          Name: none
+          Value: IPv6 address
+
+    - oid: "/local/socklib"
+      access: read_write
+      type: string
+      d: |
+        Dynamic library to be used on IUT RPC server to search for functions.
+        Different for different test agents specified to level instance name.
+          Name: none
+          Value: Path to dynamic library to open on corresponding host.
+
+    - oid: "/local/env"
+      access: read_create
+      type: string
+      d: |
+        Environment variables to be set on corresponding test agents upon request
+        (see tapi_cfg_env_local_to_agent() in lib/tapi). Typically it is done
+        from prologue. It allows to forward test engine side environment variables
+        value to test agents.
+          Name: environment variable name
+          Value: environment variable value
+
+    - oid: "/local/rpcserver"
+      access: read_create
+      type: string
+      d: |
+        RPC servers to be created on corresponding test agents upon request
+        (see tapi_cfg_rpcs_local_to_agent() in lib/tapi). Typically it is done
+        from prologues.
+          Name: RPC server name
+          Value: RPC server value (see /agent/rpcserver)
+
+    - oid: "/local/rpcserver_force_restart"
+      access: read_write
+      type: integer
+      d: |
+         Ignore errors returned when RPC server is destroyed and try to
+         continue restart process. Delete operation may return non-zero
+         value if ta_waitpid() returns non-zero status code, e.g. if the
+         process is killed or segfaults. In fact the option is dedicated to
+         tune behavior of function rcf_rpc_server_restart().
+
+         Name: none
+         Value: 0 = report all errors, 1 = ignore errors
+
+    - oid: "/local/iut_errno_change_no_check"
+      access: read_write
+      type: integer
+      d: |
+        Do not treat errno change in the case of successful RPC call
+        on IUT RPC server as an error.
+          Name: none
+          Value: 0 = errno change is an error,
+                 not 0 = errno change is not an error
+
+    - oid: "/local/saved_mtus"
+      access: read_create
+      type: string
+      d: |
+         Name of temporary file with saved MTU values
+         (used by tapi_store_saved_mtus(), tapi_retrieve_saved_mtus()).
+
+         Name: unique string identifying list of MTU values.
+         Value: temporary file name.
+
+    - oid: "/local/no_reuse_pco"
+      access: read_write
+      type: integer
+      volatile: true
+      d: |
+         Disable reuse_pco mode for the one next test iteration
+         (used by tapi_no_reuse_pco_* functions.
+
+         Name: none
+         Value: 1 = disable reuse_pco mode, 0 = usual behavior
+
+    - oid: "/local/use_static_arp"
+      access: read_write
+      type: integer
+      d: |
+        Whether static ARP or neighbour cache entries should be used when
+        test network is setup.
+          Name: none
+          Value: 0 = do not use static neighbour entries
+                 not 0 = use static neighbour entries
+
+    - oid: "/local/dpdk_driver"
+      access: read_create
+      type: string
+      d: |
+         Name of a generic PCI driver compatible with DPDK. Used in
+         tapi_net_cfg in driver bind functions.
+
+         Name: none
+         Value: name of a DPDK driver
+
+    - oid: "/local/net_driver"
+      access: read_create
+      type: string
+      d: |
+         Name of a kernel net PCI driver. Used in tapi_net_cfg in driver
+         bind functions.
+
+         Name: none
+         Value: name of a net driver
+
+    - oid: "/local/mem_channels"
+      access: read_write
+      type: integer
+      d: |
+        Number of DRAM memory channels on corresponding host.
+        It is important for DPDK performance and there is no easy
+        way to auto-detect it.
+
+    - oid: "/local/path"
+      access: read_create
+      type: string
+      d: |
+        Path to something
+
+        Name: name of the entity for which path is specified
+        Value: filesystem path
+
+    - oid: "/local/test"
+      access: read_only
+      type: none
+      d: |
+         Test-related data.
+
+    - oid: "/local/test/behaviour"
+      access: read_create
+      type: string
+      d: |
+         Test behaviour tuning. Must not be used to pass test parameters! It's
+         just 'how the test should handle different things' type of behaviour.
+
+         Name: name of the behaviour/tunable
+         Value: 0/1
+
+- add:
+    - oid: "/local:"
+
+- add:
+    - oid: "/local:/test:/behaviour:wait_on_fail"
+      value: "${TE_TEST_BEHAVIOUR_WAIT_ON_FAIL:-0}"
+    - oid: "/local:/test:/behaviour:wait_on_cleanup"
+      value: "${TE_TEST_BEHAVIOUR_WAIT_ON_CLEANUP:-0}"
+    - oid: "/local:/test:/behaviour:log_stack"
+      value: "${TE_TEST_BEHAVIOUR_LOG_STACK:-0}"
+    - oid: "/local:/test:/behaviour:log_test_fail_state"
+      value: "${TE_TEST_BEHAVIOUR_LOG_TEST_FAIL_STATE:-0}"
+    - oid: "/local:/test:/behaviour:log_all_rpc"
+      value: "${TE_TEST_BEHAVIOUR_LOG_ALL_RPC:-0}"
+    - oid: "/local:/test:/behaviour:cleanup_fd_leak_check"
+      value: "${TE_TEST_BEHAVIOUR_CLEANUP_FD_LEAK_CHECK:-1}"
+    - oid: "/local:/test:/behaviour:cleanup_fd_close_enforce_libc"
+      value: "${TE_TEST_BEHAVIOUR_CLEANUP_FD_CLOSE_ENFORCE_LIBC:-0}"
+    - oid: "/local:/test:/behaviour:prologue_sleep"
+      value: "${TE_TEST_BEHAVIOUR_PROLOGUE_SLEEP:-0}"
+    - oid: "/local:/test:/behaviour:fail_verdict"
+      value: "${TE_TEST_BEHAVIOUR_FAIL_VERDICT:-0}"
+    - oid: "/local:/test:/behaviour:rpc_fail_verdict"
+      value: "${TE_TEST_BEHAVIOUR_RPC_FAIL_VERDICT:-0}"
+    - oid: "/local:/test:/behaviour:use_chk_funcs"
+      value: "${TE_TEST_BEHAVIOUR_USE_CHK_FUNCS:-0}"
+    - oid: "/local:/test:/behaviour:iface_toggle_delay_ms"
+      value: "${TE_TEST_BEHAVIOUR_IFACE_TOOGLE_DELAY_MS:-0}"

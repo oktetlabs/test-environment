@@ -1,0 +1,72 @@
+Iptables configuration model in TE.
+
+Goals:
+- Configurator should be able to track changes in iptables rules
+  made by tests and rollback that changes.
+- Configurator should not allow conflicts between different test
+  agents running on the host.
+
+Resolving Conflicts:
+  To avoid conflicts between different test agents, separate chains
+for each interface should be created.
+  Each network interface is a resource of test agent and is not shared
+with other TAs. Thus operating with per-interface chains only will not
+affect other interfaces.
+  Сommon (built-in) chains for each table should be duplicated and
+corresponding jump rules added (inserted) with interface-only matching.
+
+For example:
+  For NAT table and interface eth1 we should create chains: eth1_PREROUTING,
+eth1_POSTROUTING and eth1_OUTPUT, and add conditional jumps to PREROUTING,
+POSTROUTING and OUTPUT chains of NAT table with intarface matching
+(-i for incoming packets, or -o for outgoing)
+
+Configuration Tree Model:
+  1) Iptables configuration subtree should be under interface node:
+    /agent/interface/iptables/
+
+    Iptables node is not accessible and has no named instances.
+    It is created to simplify sync for iptables subtree.
+
+  2) Each table should be represented as standalone instance
+  (filter, mangle, nat, raw):
+    /agent/interface/iptables/table
+
+  3) Each table has several per-interface chains
+    /agent/interface/iptables/table/chain
+
+    Chains instances are not created automatically to avoid a lot of unused chains creation.
+    One of the built-in chains should be used as an instance name.
+    When instance is added, user-defined chain with <interface>_ prefix is created.
+    Chain instance has boolean value that shows whether jump rule is installed or not.
+
+    - Get operation checks whether jump rule is installed by
+      grepping 'iptables -t <table> -S' output
+    - Set operation adds/deletes to/from common chain jumping
+      rule for per-interface chain.
+    - List operations returnes list of per-interface chains
+      in the corresponding table returned by 'iptables -S' command
+      grepping lines started with '-N <interface>_'.
+
+  4) List of rules for each chain is stored as a single string value.
+    /agent/interface/iptables/table/chain/rules
+
+    It has only one instance with empty name. There are no named lists of rules.
+    All rules are listed with '|' delimiter ('\n' delimiter usage is restricted
+    by RCF encoding rules).
+
+    - Get operation returns list of rules generated
+      by 'iptables -t <table> -S <chain>' command.
+
+    - Set operation flushes the chain and fills up new
+      chain rules list with iptables tool.
+
+  5) To avoid operations with plain value of rules list,
+     cmd write-only volatile object is introduced.
+
+     /agent/interface/iptables/table/chain/cmd
+
+     This node allows to execute iptables command by setting its value.
+     It updates rules list, so sync is required for rules node.
+
+     Chain name in the iptables command should be omitted to avoid ambiguity.

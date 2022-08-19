@@ -1,0 +1,189 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment Builder
+#
+# Script for building external components
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+SCRIPT_DIR=`dirname $0`
+. ${SCRIPT_DIR}/te_functions
+
+set -e
+
+install_extension_parts () {
+    local objlist="$1"
+    local destdir="$2"
+
+    if test -n "$objlist"; then
+        (
+            te_eval_or_ssh "$platform" \
+                           "mkdir -p '$destdir';
+                            cd '$srcdir';
+                            export EXT_SOURCES=\"\$PWD\";
+                            test -n '$builddir' && cd '$builddir';
+                            cp -a $objlist '$destdir';
+                            find -H \"$destdir\" -type l | \
+                            xargs \"${te_builder_dir}/te_fixlink\" \"$PWD\" \"$destdir\";"
+        )
+    fi
+}
+
+declare prefix=
+declare platform=
+declare cppflags=
+declare cflags=
+declare ldflags=
+declare te_builder_dir=
+declare srcdir=
+declare prepare=
+declare builddir=
+declare build=
+declare telibs=
+declare teincludes=
+declare expheaders=
+declare expheaders_dest=
+declare explibs=
+declare expbin=
+declare tatypes=
+declare envvars=
+declare tce=
+declare build_meson=false
+declare bin=
+
+for arg; do
+    case "$arg" in
+        --prefix=*)
+            prefix="${arg#--prefix=}"
+            ;;
+        --platform=*)
+            platform="${arg#--platform=}"
+            ;;
+        --cppflags=*)
+            cppflags="${arg#--cppflags=}"
+            ;;
+        --cflags=*)
+            cflags="${arg#--cflags=}"
+            ;;
+        --ldflags=*)
+            ldflags="${arg#--ldflags=}"
+            ;;
+        --te_builder_dir=*)
+            te_builder_dir="${arg#--te_builder_dir=}"
+            ;;
+        --srcdir=*)
+            srcdir="${arg#--srcdir=}"
+            ;;
+        --prepare=*)
+            prepare="${arg#--prepare=}"
+            ;;
+        --builddir=*)
+            builddir="${arg#--builddir=}"
+            ;;
+        --build=*)
+            build="${arg#--build=}"
+            ;;
+        --telibs=*)
+            telibs="${telibs}${telibs:+ }${arg#--telibs=}"
+            ;;
+        --includes=*)
+            teincludes="${teincludes}${teincludes:+ }${arg#--includes=}"
+            ;;
+        --expheaders=*)
+            expheaders="${expheaders}${expheaders:+ }${arg#--expheaders=}"
+            ;;
+        --expheaders-dest=*)
+            expheaders_dest="${arg#--expheaders-dest=}"
+            ;;
+        --explibs=*)
+            explibs="${explibs}${explibs:+ }${arg#--explibs=}"
+            ;;
+        --expbin=*)
+            expbin="${expbin}${expbin:+ }${arg#--expbin=}"
+            ;;
+        --tatypes=*)
+            tatypes="${arg#--tatypes=}"
+            ;;
+        --envvars=*)
+            envvars="${envvars}${envvars:+ }${arg#--envvars=}"
+            ;;
+        --tce)
+            tce=1
+            ;;
+        --build-meson)
+            build_meson=true
+            ;;
+        --bin=*)
+            bin="${arg#--bin=}"
+            ;;
+        *)
+            echo "Invalid option '$arg'" >&2
+            exit 1
+            ;;
+    esac
+done
+
+declare telibflags
+declare l
+declare inc
+declare v
+declare exports=
+
+telibflags="-L$prefix/$platform/lib"
+for l in $telibs; do
+    telibflags="$telibflags -l$l"
+done
+
+tecppflags=""
+for inc in $teincludes; do
+    tecppflags="$tecppflags -I$prefix/$platform/include/$inc"
+done
+tecppflags="$tecppflags -I$prefix/$platform/include"
+
+for v in $envvars; do
+        exports="$exports export $v=\"${!v}\"; "
+done
+
+(
+    if test -n "${prepare}" ; then
+        if "${build_meson}" ; then
+                echo "ERROR: source preparation scripts are not supported with meson build" >&2
+                exit 1
+        else
+            cd "$srcdir"; eval "export EXT_BUILDDIR=\"${builddir:-.}\"; $prepare"
+        fi
+    fi
+)
+
+(
+        te_eval_or_ssh "$platform" "cd $srcdir ;
+                      test -n \"$builddir\" && mkdir -p \"$builddir\" ;
+                      cd ${builddir:-.} ;
+                      export TE_PREFIX=\"$prefix/$platform\" ;
+                      export TE_DO_TCE=\"$tce\" ;
+                      export TE_PLATFORM_CPPFLAGS=\"$cppflags\" ;
+                      export TE_PLATFORM_CFLAGS=\"$cflags\" ;
+                      export TE_PLATFORM_LDFLAGS=\"$ldflags\" ;
+                      export TE_CPPFLAGS=\"$tecppflags\" ;
+                      export TE_LDFLAGS=\"$telibflags\" ;
+                      export TE_LIBS=\"$telibs\" ;
+                      export EXT_SOURCES=\"$srcdir\" ;
+                      export PKG_CONFIG_PATH=\"$prefix/$platform/lib/pkgconfig\" ;
+                      if test -n \"$bin\" ; then
+                          export PATH=\"\$PATH:$bin\" ;
+                      fi ;
+                      if test -n \"$tatypes\" ; then
+                          export TE_TA_TYPES=\"$tatypes\" ;
+                          export TE_AGENTS_INST=\"$prefix/agents\" ;
+                      fi ;
+                      ${exports}
+                      $build"
+)
+
+install_extension_parts "$expheaders" \
+    "$prefix/$platform/include/${expheaders_dest}"
+install_extension_parts "$explibs" "$prefix/$platform/lib"
+for tatype in ${tatypes} ; do
+    install_extension_parts "$expbin" "$prefix/agents/$tatype"
+done

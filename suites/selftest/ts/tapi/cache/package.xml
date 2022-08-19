@@ -1,0 +1,420 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+
+    <description>Test Suite to test TAPI cache implementation</description>
+
+    <author mailto="Ivan.Melnikov@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+        <run name="registration">
+            <session track_conf="silent">
+                <run name="tc_register_single_area">
+                    <script name="tc_register"/>
+                    <arg name="areas">
+                        <value>foo</value>
+                        <value>foo/bar</value>
+                        <value>foo/bar/baz</value>
+                        <!-- the same area -->
+                        <value>foo</value>
+                        <value>foo/bar</value>
+                    </arg>
+                    <arg name="methods">
+                        <value>m1</value>
+                        <value>m1,m2</value>
+                        <value>m1,m2,m3</value>
+                        <!-- the same method -->
+                        <value>m1,m1</value>
+                        <value>m2,m2</value>
+                    </arg>
+                </run>
+                <run name="tc_register_many_areas">
+                    <script name="tc_register"/>
+                    <arg name="areas">
+                        <value>foo,foo/bar</value>
+                        <value>foo,foo/bar,foo/bar/baz</value>
+                    </arg>
+                    <arg name="methods">
+                        <value>m1</value>
+                        <value>m1,m2</value>
+                        <value>m1,m2,m3</value>
+                        <!-- the same method -->
+                        <value>m1,m1</value>
+                        <value>m2,m2</value>
+                    </arg>
+                </run>
+            </session>
+        </run>
+        <run name="invalidation">
+            <session track_conf="silent">
+                <run name="tc_invalidate_all">
+                    <script name="tc_invalidate_all"/>
+                    <arg name="areas">
+                        <value>foo:FOO</value>
+                        <value>foo:FOO,foo:FOO1</value>
+                    </arg>
+                    <arg name="subinstances">
+                        <value>nil</value>
+                        <value>BAR</value>
+                        <value>BAR,BAR1</value>
+                        <value>BAR,nil</value>
+                        <value>nil,BAR</value>
+                    </arg>
+                    <arg name="methods">
+                        <value>m1</value>
+                        <value>m1,m2</value>
+                        <value>m1,m2,m3</value>
+                    </arg>
+                    <arg name="inv_method_by_method">
+                        <value>FALSE</value>
+                        <value>TRUE</value>
+                    </arg>
+                </run>
+                <run name="tc_invalidate_method_one">
+                    <script name="tc_invalidate"/>
+                    <arg name="areas">
+                        <value>foo:FOO,foo:FOO1</value>
+                    </arg>
+                    <arg name="subinstances">
+                        <value>nil,BAR,BAR1</value>
+                        <value>BAR,nil,BAR1</value>
+                        <value>BAR,BAR1,nil</value>
+                    </arg>
+                    <arg name="methods">
+                        <value>m1</value>
+                    </arg>
+                    <arg name="inv_methods">
+                        <value>m1</value>
+                    </arg>
+                    <arg name="inv_area" list="inv">
+                        <value>foo:FOO</value>
+                        <value>foo:FOO1</value>
+                        <value>foo:*</value>
+                        <value>foo:FOO/bar:BAR</value>
+                        <value>foo:FOO/bar:*</value>
+                    </arg>
+                    <arg name="expected_missing" list="inv">
+                        <value>foo:FOO,foo:FOO/bar:BAR,foo:FOO/bar:BAR1</value>
+                        <value>foo:FOO1,foo:FOO1/bar:BAR,foo:FOO1/bar:BAR1</value>
+                        <value>foo:FOO,foo:FOO/bar:BAR,foo:FOO/bar:BAR1,foo:FOO1,foo:FOO1/bar:BAR,foo:FOO1/bar:BAR1</value>
+                        <value>foo:FOO/bar:BAR</value>
+                        <value>foo:FOO/bar:BAR,foo:FOO/bar:BAR1</value>
+                    </arg>
+                </run>
+                <run name="tc_invalidate_method_many">
+                    <script name="tc_invalidate"/>
+                    <arg name="areas">
+                        <value>foo:FOO,foo:FOO1</value>
+                    </arg>
+                    <arg name="subinstances">
+                        <value>nil,BAR,BAR1</value>
+                        <value>BAR,nil,BAR1</value>
+                        <value>BAR,BAR1,nil</value>
+                    </arg>
+                    <arg name="methods">
+                        <value>m1,m2,m3</value>
+                    </arg>
+                    <arg name="inv_methods">
+                        <value>m1</value>
+                        <value>m2</value>
+                        <value>m3</value>
+                        <value>m1,m2</value>
+                        <value>m1,m3</value>
+                        <value>m2,m3</value>
+                    </arg>
+                    <arg name="inv_area" list="inv">
+                        <value>foo:FOO</value>
+                        <value>foo:*</value>
+                        <value>foo:FOO/bar:BAR</value>
+                        <value>foo:FOO/bar:*</value>
+                    </arg>
+                    <arg name="expected_missing" list="inv">
+                        <value>foo:FOO,foo:FOO/bar:BAR,foo:FOO/bar:BAR1</value>
+                        <value>foo:FOO,foo:FOO/bar:BAR,foo:FOO/bar:BAR1,foo:FOO1,foo:FOO1/bar:BAR,foo:FOO1/bar:BAR1</value>
+                        <value>foo:FOO/bar:BAR</value>
+                        <value>foo:FOO/bar:BAR,foo:FOO/bar:BAR1</value>
+                    </arg>
+                </run>
+            </session>
+        </run>
+        <run name="actualization">
+            <session track_conf="silent">
+                <epilogue>
+                    <script name="tc_prologue"/>
+                </epilogue>
+                <run name="tc_actualize_unregistered">
+                    <script name="tc_actualize_unregistered"/>
+                    <arg name="area">
+                        <value>foo:FOO</value>
+                    </arg>
+                    <arg name="method">
+                        <value>m1</value>
+                    </arg>
+                </run>
+                <run name="actualization_root">
+                    <session>
+                        <prologue>
+                            <script name="tc_prologue"/>
+                        </prologue>
+                        <run name="tc_actualize_root">
+                            <script name="tc_actualize_root"/>
+                            <arg name="areas">
+                                <value>foo:FOO</value>
+                                <value>foo:FOO,foo:FOO1</value>
+                            </arg>
+                            <arg name="subinstances">
+                                <value>BAR</value>
+                                <value>BAR,BAR1</value>
+                            </arg>
+                            <arg name="methods">
+                                <value>m1</value>
+                                <value>m1,m2</value>
+                                <value>m1,m2,m3,m2,m3</value>
+                            </arg>
+                        </run>
+                    </session>
+                </run>
+                <run name="actualization_sub">
+                    <session>
+                        <prologue>
+                            <script name="tc_prologue"/>
+                        </prologue>
+                        <run name="tc_actualize_sub">
+                            <script name="tc_actualize_sub"/>
+                            <arg name="areas">
+                                <value>foo:FOO</value>
+                                <value>foo:FOO1</value>
+                            </arg>
+                            <arg name="subinstances">
+                                <value>BAR</value>
+                                <value>BAR,BAR1</value>
+                                <value>BAR,BAR1,BAR2</value>
+                            </arg>
+                            <arg name="methods">
+                                <value>m1</value>
+                                <value>m1,m2</value>
+                                <value>m1,m2,m3,m2,m3</value>
+                            </arg>
+                        </run>
+                    </session>
+                </run>
+                <run name="actualization_star">
+                    <session>
+                        <prologue>
+                            <script name="tc_prologue"/>
+                        </prologue>
+                        <run name="tc_actualize_star">
+                            <script name="tc_actualize_star"/>
+                            <arg name="areas" list="inst">
+                                <value>foo:*</value>
+                                <value>foo:FOO/bar:*</value>
+                                <value>foo:FOO/bar:*,foo:FOO1/bar:*</value>
+                            </arg>
+                            <arg name="instances" list="inst">
+                                <value>FOO,FOO1</value>
+                                <value>BAR,BAR1</value>
+                                <value>BAR,BAR1,BAR2</value>
+                            </arg>
+                            <arg name="methods">
+                                <value>m1</value>
+                                <value>m1,m2</value>
+                                <value>m1,m2,m3,m2,m3</value>
+                            </arg>
+                        </run>
+                    </session>
+                </run>
+                <run name="actualization_indirect">
+                    <session>
+                        <run name="tc_actualize_indirect">
+                            <script name="tc_actualize_indirect"/>
+                            <arg name="init_inst">
+                                <value>FOO,FOO1</value>
+                            </arg>
+                            <arg name="init_subinst">
+                                <value>BAR,BAR1</value>
+                            </arg>
+                            <arg name="methods">
+                                <value>m1</value>
+                                <value>m1,m2</value>
+                                <value>m1,m2,m3,m2,m3</value>
+                            </arg>
+                            <arg name="area_regs" list="area">
+                                <value>nil</value>
+                                <value>nil</value>
+                                <value>foo</value>
+                                <value>foo,foo1</value>
+                                <value>foo/bar</value>
+                                <value>foo/bar</value>
+                                <value>foo1,foo/bar</value>
+                                <value>foo,foo/bar</value>
+                            </arg>
+                            <arg name="area_act" list="area">
+                                <value>nil</value>
+                                <value>foo:*</value>
+                                <value>nil</value>
+                                <value>nil</value>
+                                <value>foo:*</value>
+                                <value>nil</value>
+                                <value>nil</value>
+                                <value>nil</value>
+                            </arg>
+                            <arg name="expected_act" list="area">
+                                <value>nil</value>
+                                <value>nil</value>
+                                <value>foo</value>
+                                <value>foo,foo1</value>
+                                <value>foo/bar</value>
+                                <value>foo/bar</value>
+                                <value>foo1,foo/bar</value>
+                                <value>foo</value>
+                            </arg>
+                            <arg name="expected_error" list="area">
+                                <value>ENOENT</value>
+                                <value>ENOENT</value>
+                                <value>ECHILD</value>
+                                <value>0</value>
+                                <value>0</value>
+                                <value>ECHILD</value>
+                                <value>0</value>
+                                <value>ECHILD</value>
+                            </arg>
+                        </run>
+                    </session>
+                </run>
+            </session>
+        </run>
+        <run name="operations_add_get">
+            <session track_conf="silent">
+                <prologue>
+                    <script name="tc_actualize_root"/>
+                    <arg name="areas">
+                        <value>foo:FOO,foo:FOO1</value>
+                    </arg>
+                    <arg name="subinstances">
+                        <value>BAR,BAR1</value>
+                    </arg>
+                    <arg name="methods">
+                        <value>m1,m2,m3</value>
+                    </arg>
+                </prologue>
+                <epilogue>
+                    <script name="tc_prologue"/>
+                </epilogue>
+                <run name="tc_operation_get">
+                    <script name="tc_operation_get"/>
+                    <arg name="instance">
+                        <value>foo:FOO/bar:BAR/baz:</value>
+                        <value>foo:FOO/bar:BAR1/baz:</value>
+                        <value>foo:FOO1/bar:BAR/baz:</value>
+                        <value>foo:FOO1/bar:BAR1/baz:</value>
+                    </arg>
+                    <arg name="method" list="result">
+                        <value>m1</value>
+                        <value>m2</value>
+                        <value>m3</value>
+                    </arg>
+                    <arg name="expected_value" list="result">
+                        <value>m1</value>
+                        <value>m2</value>
+                        <value>m3</value>
+                    </arg>
+                </run>
+                <run name="tc_operation_add_get">
+                    <script name="tc_operation_add_get"/>
+                    <arg name="instance" list="vut">
+                        <value>foo:FOO/bar:BAR/quux:m1</value>
+                        <value>foo:FOO/bar:BAR/quuz:m1</value>
+                        <value>foo:FOO/bar:BAR/corge:m1</value>
+                    </arg>
+                    <arg name="type" list="vut">
+                        <value>integer</value>
+                        <value>string</value>
+                        <value>address</value>
+                    </arg>
+                    <arg name="value" list="vut">
+                        <value>42</value>
+                        <value>twoflower</value>
+                        <value>192.0.2.1</value>
+                    </arg>
+                </run>
+                <run name="tc_operation_add_get_parents">
+                    <script name="tc_operation_add_get"/>
+                    <arg name="instance" list="vut">
+                        <value>foo:FOO2/bar:BAR2/quux:m1</value>
+                        <value>foo:FOO2/bar:BAR2/quuz:m1</value>
+                        <value>foo:FOO2/bar:BAR3/corge:m1</value>
+                        <value>foo:FOO3/baz:m1</value>
+                    </arg>
+                    <arg name="type" list="vut">
+                        <value>integer</value>
+                        <value>string</value>
+                        <value>address</value>
+                        <value>string</value>
+                    </arg>
+                    <arg name="value" list="vut">
+                        <value>42</value>
+                        <value>twoflower</value>
+                        <value>192.0.2.1</value>
+                        <value>rincewind</value>
+                    </arg>
+                </run>
+            </session>
+        </run>
+        <run name="operations_find_del">
+            <session track_conf="silent">
+                <prologue>
+                    <script name="tc_actualize_root"/>
+                    <arg name="areas">
+                        <value>foo:FOO,foo:FOO1</value>
+                    </arg>
+                    <arg name="subinstances">
+                        <value>BAR,BAR1</value>
+                    </arg>
+                    <arg name="methods">
+                        <value>m1,m2,m3</value>
+                    </arg>
+                </prologue>
+                <run name="tc_operation_find">
+                    <script name="tc_operation_find"/>
+                    <arg name="instance" list="result">
+                        <value>foo:FOO/bar:BAR</value>
+                        <value>foo:FOO/bar:BAR/baz:m1</value>
+                        <value>foo:FOO/bar:BAR/baz:*</value>
+                        <value>foo:FOO/bar:*</value>
+                    </arg>
+                    <arg name="expected_found" list="result">
+                        <value>foo:FOO/bar:BAR</value>
+                        <value>foo:FOO/bar:BAR/baz:m1</value>
+                        <value>foo:FOO/bar:BAR/baz:m1,foo:FOO/bar:BAR/baz:m2,foo:FOO/bar:BAR/baz:m3</value>
+                        <value>foo:FOO/bar:BAR,foo:FOO/bar:BAR1</value>
+                    </arg>
+                </run>
+                <run name="tc_operation_del_one">
+                    <script name="tc_operation_del"/>
+                    <arg name="instance">
+                        <value>foo:FOO/bar:BAR1</value>
+                    </arg>
+                    <arg name="expected_existing">
+                        <value>foo:FOO/bar:BAR,foo:FOO1/bar:*</value>
+                    </arg>
+                    <arg name="expected_missing">
+                        <value>foo:FOO/bar:BAR1</value>
+                    </arg>
+                </run>
+                <run name="tc_operation_del_star">
+                    <script name="tc_operation_del"/>
+                    <arg name="instance">
+                        <value>foo:FOO1/bar:*</value>
+                    </arg>
+                    <arg name="expected_existing">
+                        <value>foo:FOO/bar:*</value>
+                    </arg>
+                    <arg name="expected_missing">
+                        <value>foo:FOO1/bar:BAR,foo:FOO1/bar:BAR1</value>
+                    </arg>
+                </run>
+            </session>
+        </run>
+    </session>
+</package>

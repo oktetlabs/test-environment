@@ -1,0 +1,44 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved. */
+/* Define if your curses library supports color. */
+#mesondefine HAVE_COLOR
+
+/* Define whether openssl library is availiable. */
+#mesondefine HAVE_OPENSSL
+
+/* Define whether readline library is availiable. */
+#mesondefine HAVE_READLINE
+
+/* Define to 1 if the system has the type `xmlError'. */
+#mesondefine HAVE_XMLERROR
+
+/* Name of package */
+#mesondefine PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#mesondefine PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#mesondefine PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#mesondefine PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#mesondefine PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#mesondefine PACKAGE_URL
+
+/* Define to the version of this package. */
+#mesondefine PACKAGE_VERSION
+
+/* Version number of package */
+#mesondefine VERSION
+
+/* Use Libxml as XML Parser */
+#mesondefine WITH_LIBXML
+
+/* Define to 1 if `lex' declares `yytext' as a `char *' by default, not a
+   `char[]'. */
+#mesondefine YYTEXT_POINTER

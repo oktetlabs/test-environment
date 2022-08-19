@@ -1,0 +1,104 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
+
+bindir="$(cd `dirname $0` && pwd)"
+
+export TMPDIR="${TMPDIR:-/tmp}"
+
+usage()
+{
+cat <<EOF
+Usage: rgt-log-bundle-get-original [<options>]
+  --bundle=PATH         Path to raw log bundle
+  --raw-log=PATH        Where to save restored raw log
+  --output=PATH         The same as --raw-log (for backward
+                        compatibility)
+  --caps=PATH           Where to save restored capture files
+
+EOF
+}
+
+caps_path=
+raw_log_path=
+bundle_path=
+
+while [[ "$#" -gt 0 ]] ; do
+    opt="$1"
+    case "${opt}" in
+        ""          ) ;; # Ignore empty arguments
+        --help      )   usage ; exit 0 ;;
+        --raw-log=* )   raw_log_path="${opt#--raw-log=}" ;;
+        --output=*  )   raw_log_path="${opt#--output=}" ;
+                        echo "Usage of --output is deprecated," \
+                             "use --raw-log instead" >&2 ;;
+        --caps=*    )   caps_path="${opt#--caps=}" ;;
+        --bundle=*  )   bundle_path="${opt#--bundle=}" ;;
+                   *)   echo "Unknown option: ${opt}" >&2;
+                        usage ;
+                        exit 1 ;;
+    esac
+
+    shift 1
+done
+
+bundle_tmpdir=$(mktemp -d "${TMPDIR}/raw_log_bundle_XXXXXX")
+if test $? -ne 0 ; then
+    echo "Failed to create temporary directory" >&2
+    exit 1
+fi
+
+cleanup()
+{
+    if test -n "${bundle_tmpdir}" ; then
+        rm -r "${bundle_tmpdir}"
+    fi
+}
+
+err_cleanup()
+{
+    echo "$1" >&2
+    if test -n "${raw_log_path}" ; then
+        rm "${raw_log_path}"
+    fi
+    cleanup
+    exit 1
+}
+
+if test \! \( -r "${bundle_path}" \) ; then
+    err_cleanup "Cannot read raw log bundle from ${bundle_path}"
+fi
+
+if [[ -z "${raw_log_path}" ]] && [[ -z "${caps_path}" ]] ; then
+    err_cleanup "Neither raw log nor capture files output path is specified"
+fi
+
+pixz -x <"${bundle_path}" | tar x -C "${bundle_tmpdir}"
+if test $? -ne 0 ; then
+    err_cleanup "failed to unpack '${bundle_path}'"
+fi
+
+# Add TE libraries installation path to LD_LIBRARY_PATH since
+# rgt-log-recover uses it
+export LD_LIBRARY_PATH="$(dirname "${bindir}")/lib:${LD_LIBRARY_PATH}"
+
+if [[ -n "${raw_log_path}" ]] ; then
+    "${bindir}"/rgt-log-recover --split-log="${bundle_tmpdir}" \
+        --output="${raw_log_path}"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to recover original raw log from '${bundle_path}'"
+    fi
+fi
+
+if [[ -n "${caps_path}" ]] ; then
+    mkdir -p "${caps_path}" \
+        && "${bindir}"/rgt-caps-recover --split-log="${bundle_tmpdir}" \
+                                        --caps="${caps_path}"
+
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to recover original capture files from '${bundle_path}'"
+    fi
+fi
+
+cleanup
+exit 0

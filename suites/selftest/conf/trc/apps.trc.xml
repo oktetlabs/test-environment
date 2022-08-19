@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="apps" type="package">
+    <objective>Check TAPI implementation</objective>
+    <iter result="PASSED">
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="apps/nginx.trc.xml" parse="xml"/>
+    </iter>
+</test>

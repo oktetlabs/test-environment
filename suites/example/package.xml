@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>Logger test</description>
+    <author mailto="te-maint@oktetlabs.ru"/>
+    <session>
+        <run>
+            <script name="example"/>
+        </run>
+    </session>
+</package>

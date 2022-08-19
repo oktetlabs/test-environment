@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="server" type="package">
+    <objective>Tests on RCF server functionality</objective>
+    <notes/>
+    <iter result="PASSED">
+        <test name="rpc_server_prologue" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+            </iter>
+        </test>
+        <test name="rpctest" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+            </iter>
+        </test>
+        <test name="rs_threads_sr" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+            </iter>
+        </test>
+    </iter>
+</test>

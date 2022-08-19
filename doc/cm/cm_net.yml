@@ -1,0 +1,128 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Network topology.
+
+    Division into "networks" is pure logical and depends on testing purposes.
+    E.g. if IP router is tested, all nodes connected to router port via
+    Ethernet hub should be considered as elements of the same network.
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/net"
+      access: read_create
+      type: none
+      d: |
+         Root object of the network configuration tree.
+         Name: network name
+
+    - oid: "/net/ip4_subnet"
+      access: read_create
+      type: address
+      d: |
+         IPv4 subnet assigned to the network.
+         Name: /net_pool:ip4/entry:X handle
+
+    - oid: "/net/ip6_subnet"
+      access: read_create
+      type: address
+      d: |
+         IPv6 subnet assigned to the network.
+         Name: /net_pool:ip6/entry:X handle
+
+    - oid: "/net/node"
+      access: read_create
+      type: string
+      d: |
+         Node of the network.
+         Name: node name
+         Value: OID of the connection point
+
+                For nodes of Agent type the value is in the following format:
+                /agent:<agent name>/interface:<interface name>
+                E.g.: /agent:A/interface:eth0
+
+                For nodes of type bridge the value is in the following format:
+                /agent:<agent name>/port:<port id>
+                E.g.: /agent:bridge/port:20
+                Note that nodes of type bridge are identified as nodes of
+                type nut.
+
+    - oid: "/net/node/type"
+      access: read_write
+      type: integer
+      d: |
+         Type of the network node.
+         Name: none
+         Value: 0 (agent), 1(nut), others...
+
+    - oid: "/net/node/ip4_address"
+      access: read_create
+      type: address
+      d: |
+         IPv4 address assigned to the network node.
+         Name: /net_pool:ip4/entry:X/pool:/entry:Y handle
+
+    - oid: "/net/node/ip6_address"
+      access: read_create
+      type: address
+      d: |
+         IPv6 address assigned to the network node.
+         Name: /net_pool:ip6/entry:X/pool:/entry:Y handle
+
+    - oid: "/net_pool"
+      access: read_create
+      type: none
+      d: |
+         Root object of network pool
+         Name: ip4 or ip6
+         Value: None
+
+    - oid: "/net_pool/entry"
+      access: read_create
+      type: integer
+      d: |
+         Network pool entry (subnetwork information)
+         Name: Network address
+         Value: Whether this network pool entry is reserved or
+                it is free to use (1 - reserved, 0 - free to use).
+
+         Network address together with prefix length give complete
+         information for allocation of network address that is from
+         the particular subnetwork.
+
+    - oid: "/net_pool/entry/prefix"
+      access: read_write
+      type: integer
+      d: |
+         Prefix length for this pool entry
+         Name: Empty
+         Value: Prefix length
+
+    - oid: "/net_pool/entry/n_entries"
+      access: read_write
+      type: integer
+      d: |
+         The number of entries allocated from this network address pool
+         Name: Empty
+         Value: The number of entries
+
+    - oid: "/net_pool/entry/pool"
+      access: read_write
+      type: none
+      d: |
+         A node to keep a collection of allocated network addresses
+         Name: Empty
+         Value: None
+
+    - oid: "/net_pool/entry/pool/entry"
+      access: read_create
+      type: integer
+      d: |
+         A node to keep the exact instance of allocated network address
+         Name: Allocated network address
+         Value: TODO

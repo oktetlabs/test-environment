@@ -1,0 +1,19 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Linux configfs control tree.
+
+    Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/configfs"
+      access: read_create
+      type: string
+      volatile: true
+      d: |
+        Mount Linux configfs.
+        Name: Arbitrary name. Used just to identify the instance.
+        Value: ConfigFS mount point.

@@ -1,0 +1,79 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Test Agents control using Configurator.
+
+    Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/rcf"
+      access: read_only
+      type: none
+      d: |
+         RCF (Remove Control Facility) configuration tree.
+         The configuration tree is handled by the Contfigurator itself and
+         makes rcf_add_ta() and rcf_del_ta() calls to add/delete test agents.
+         Name: none
+
+    - oid: "/rcf/agent"
+      access: read_create
+      type: string
+      d: |
+         Test agent control.
+         No changes are allowed in the subtree when the agent is started.
+         Name: test agent name
+         Value: test agent type (e.g. linux)
+
+    - oid: "/rcf/agent/status"
+      access: read_write
+      type: integer
+      d: |
+         Test agent status.
+         Name: none
+         Value: 0 (disabled) or 1 (enabled)
+
+    - oid: "/rcf/agent/rcflib"
+      access: read_write
+      type: string
+      d: |
+         RCF test agent library name to control and talk to the test agent.
+         Name: none
+         Value: library name (e.g. rcfunix)
+
+    - oid: "/rcf/agent/synch_time"
+      access: read_write
+      type: integer
+      d: |
+         Control time synchronization using RCF protocol.
+         Name: none
+         Value: 0 (disabled) or 1 (enabled)
+
+    - oid: "/rcf/agent/rebootable"
+      access: read_write
+      type: integer
+      d: |
+         Is it allows to reboot the host where the test agent is running?
+         Name: none
+         Value: 0 (denied) or 1 (allowed)
+
+    - oid: "/rcf/agent/conf"
+      access: read_create
+      type: string
+      d: |
+         Configuration paramters to be passed to RCF test agent library when
+         the test agent is started. These parameters are opaque to RCF itself,
+         interpreted by corresponding test agent library. Set parameters
+         supported by a test agent library is defined in it.
+         Name: parameter name
+         Value: parameter value
+
+    - oid: "/rcf/agent/vm"
+      access: read_write
+      type: string
+      d: |
+         Virtual machine this agent runs on.
+         Name: none
+         Value: empty or OID of the VM

@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="ipstack" type="package">
+    <objective>Tests on TAD IP stack (IPv4, ICMPv4, IPv6, ICMPv6, UDP, TCP functionality.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <test name="ip4_raw_send" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="pld_len"/>
+                <arg name="proto"/>
+                <arg name="hcsum"/>
+            </iter>
+        </test>
+        <test name="ip4_send_icmp" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="type"/>
+                <arg name="code"/>
+                <arg name="chksum"/>
+            </iter>
+        </test>
+        <test name="ip4_send_udp" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="pld_len"/>
+                <arg name="chksum"/>
+            </iter>
+        </test>
+        <test name="ip4_send_tcp" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="payload_len"/>
+                <arg name="check_sum"/>
+            </iter>
+        </test>
+    </iter>
+</test>

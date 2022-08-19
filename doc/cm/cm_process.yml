@@ -1,0 +1,130 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Processes control configuration model.
+
+    It is assumed to care about processes spawned from the Test Agent via
+    the configuration tree. Other processes are not tracked/represented.
+
+    Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/process"
+      access: read_create
+      type: none
+      d: |
+        Process instance.
+        Name: internal process name
+
+    - oid: "/agent/process/exe"
+      access: read_write
+      type: string
+      substitution: true
+      d: |
+        Executable to run with search in PATH if there is no path separators.
+
+    - oid: "/agent/process/status"
+      access: read_write
+      type: integer
+      d: |
+        Either 1 (start/running) or 0 (stop/stopped/crashed) for
+        non-autorestart processes.
+        For processes with non-zero autorestart value 1 means start or
+        that the process should be restarted when it stopped running;
+        0 means stop, restart failure, or that the process should not be
+        restarted.
+        If the status is 0, it is not allowed to reconfigure the process.
+
+    - oid: "/agent/process/status/exit_status"
+      access: read_only
+      type: none
+      d: |
+        Root node for process termination status.
+
+    - oid: "/agent/process/status/exit_status/type"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+        Cause of last process termination.
+        0 - process terminated normally (by exit() or return from main)
+        1 - process was terminated by a signal
+        2 - the cause of process termination is not known
+        If the process has never terminated yet (i.e. the process has never
+        started or it is running for the first time), the value is 2.
+
+    - oid: "/agent/process/status/exit_status/value"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+        Either a last exit status of the process or a number of a signal which
+        caused the process last termination.
+        If the process has never terminated yet, the value is 0.
+
+    - oid: "/agent/process/autorestart"
+      access: read_write
+      type: integer
+      d: |
+        Time period in seconds to check if the process stopped working and
+        restart it if this is the case. 0 means that the process should not be
+        restarted.
+
+    - oid: "/agent/process/long_option_value_separator"
+      access: read_write
+      type: string
+      d: |
+        Separator to be used between long option and its value.
+        Supported values are empty (default) and '='.
+        If value is empty, long option and its value are passed as different
+        arguments. If value is '=', long option and its value are passed as
+        --<long>=<value>.
+
+    - oid: "/agent/process/option"
+      access: read_create
+      type: string
+      d: |
+        Process options to be passed as -<short> <value> or --<long> <value>.
+        If value is empty string, it is assumed that the option has no value and
+        should be passed without it, i.e. --<long>.
+        Note: above makes it imposisble to have an option with really empty string
+              value, but such options could be passed using /agent/process/arg.
+        Name: option name (short if one letter, long otherwise)
+
+    - oid: "/agent/process/arg"
+      access: read_create
+      type: string
+      substitution: true
+      d: |
+        Process raw arguments to be added in specified order after options.
+        Name: order
+
+    - oid: "/agent/process/env"
+      access: read_create
+      type: string
+      d: |
+        Additional process environment variables.
+        Name: environment variable name
+
+    - oid: "/agent/process/kill"
+      access: read_only
+      type: none
+      d: |
+        Root node for nodes that allow sending signals to the process.
+
+    - oid: "/agent/process/kill/self"
+      access: read_write
+      type: string
+      volatile: true
+      d: |
+        Name of a signal that will be sent to the process immediately.
+
+    - oid: "/agent/process/kill/group"
+      access: read_write
+      type: string
+      volatile: true
+      d: |
+        Name of a signal that will be sent to the process group immediately.

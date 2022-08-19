@@ -1,0 +1,17 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Xvfb daemon cofiguration model.
+
+    Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/Xvfb"
+      access: read_create
+      type: none
+      d: |
+         Xvfb daemon.
+         Name: display number

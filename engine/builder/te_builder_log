@@ -1,0 +1,13 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment Builder
+#
+# Script for logging of builder output
+#
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+while read message ; do
+    te_log_message Engine Builder "$message" ;
+done ;

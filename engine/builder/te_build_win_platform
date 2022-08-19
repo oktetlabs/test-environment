@@ -1,0 +1,29 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Windows Test Agent
+# Calculates some variables for the Windows platform
+# Script is inserted from te_build_win_app and te_build_win_lib
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+if test $PLATFORM != ${PLATFORM%64} ; then
+
+DIR_POSTFIX=64
+PATH_POSTFIX=/win64/x86/AMD64
+LIB_POSTFIX="\\AMD64"
+ADD_LIB="bufferoverflowU.lib"
+
+else
+
+DIR_POSTFIX=32
+PATH_POSTFIX=
+LIB_POSTFIX=
+ADD_LIB=
+
+fi
+
+if test -n "$TE_WIN32_BUILD_HOST_KEY" ; then
+    KEY="-i $TE_WIN32_BUILD_HOST_KEY "
+fi
+

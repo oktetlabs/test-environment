@@ -1,0 +1,279 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Configuration virtual tunnels provided by VTund daemon.
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/vtund"
+      access: read_only
+      type: none
+      d: |
+         VTund configuration root
+         Name: empty
+
+
+    - oid: "/agent/vtund/server"
+      access: read_create
+      type: integer
+      d: |
+         VTund server
+         Name: listening port
+         Value: 0 - disable server, 1 - enable server
+
+    - oid: "/agent/vtund/server/type"
+      access: read_write
+      type: string
+      d: |
+         VTund server type
+         Name: empty
+         Value: stand - standalone,
+                inetd - using (x)inetd
+
+    - oid: "/agent/vtund/server/timeout"
+      access: read_write
+      type: integer
+      d: |
+         General timeout
+         Name: empty
+         Value: timeout in seconds
+
+    - oid: "/agent/vtund/server/syslog"
+      access: read_write
+      type: string
+      d: |
+         VTund syslog specification
+         Name: empty
+
+    - oid: "/agent/vtund/server/ppp"
+      access: read_write
+      type: string
+      d: |
+         Path to ppp program
+         Name: empty
+
+    - oid: "/agent/vtund/server/ifconfig"
+      access: read_write
+      type: string
+      d: |
+         Path to ifconfig program
+         Name: empty
+
+    - oid: "/agent/vtund/server/route"
+      access: read_write
+      type: string
+      d: |
+         Path to route program
+         Name: empty
+
+    - oid: "/agent/vtund/server/ip"
+      access: read_write
+      type: string
+      d: |
+         Path to ip program
+         Name: empty
+
+    - oid: "/agent/vtund/server/firewall"
+      access: read_write
+      type: string
+      d: |
+         Path to firewall program
+         Name: empty
+
+    - oid: "/agent/vtund/server/session"
+      access: read_create
+      type: none
+      d: |
+         VTund connection
+         Name: session name (arbitrary string)
+
+    - oid: "/agent/vtund/server/session/password"
+      access: read_write
+      type: string
+      d: |
+         Password for VTund connection
+         Name: empty
+         Value: arbitrary string
+
+    - oid: "/agent/vtund/server/session/type"
+      access: read_write
+      type: string
+      d: |
+         Type of VTund connection
+         Name: empty
+         Value: tun, ether, tty or pipe
+
+    - oid: "/agent/vtund/server/session/device"
+      access: read_write
+      type: string
+      d: |
+         VTund device name
+         Name: empty
+         Value: "tun1"-like
+
+    - oid: "/agent/vtund/server/session/proto"
+      access: read_write
+      type: string
+      d: |
+         Protocol used for VTund connection
+         Name: empty
+         Value: tcp, udp
+
+    - oid: "/agent/vtund/server/session/compress_method"
+      access: read_write
+      type: string
+      d: |
+         Compression method to use for VTund connection (server only)
+         Name: empty
+         Value: no, yes, zlib, lzo
+
+    - oid: "/agent/vtund/server/session/compress_level"
+      access: read_write
+      type: integer
+      d: |
+         Compression level to use for VTund connection (server only)
+         Name: empty
+         Value: 1 (the best speed) - 9 (the best compression ratio)
+
+    - oid: "/agent/vtund/server/session/encrypt"
+      access: read_write
+      type: integer
+      d: |
+         Encryption method to use for VTund connection
+         Name: empty
+         Value: 0 - disable, 1 - enable
+
+    - oid: "/agent/vtund/server/session/keepalive"
+      access: read_write
+      type: integer
+      d: |
+         Enable/disable connection keep-alive for VTund connection
+         Name: empty
+         Value: 0 - disable, 1 - enable
+
+    - oid: "/agent/vtund/server/session/stats"
+      access: read_write
+      type: integer
+      d: |
+         Enable/disable connection statistics for VTund connection
+         Name: empty
+         Value: 0 - disable, 1 - enable
+
+    - oid: "/agent/vtund/server/session/speed_to_client"
+      access: read_write
+      type: integer
+      d: |
+         VTund connection speed to client
+         Name: empty
+         Value: speed of the connection in kilobits/second (8,16,32,64,
+                128,256,etc), 0 (the  default) means maximum possible
+                speed without shaping
+
+    - oid: "/agent/vtund/server/session/speed_from_client"
+      access: read_write
+      type: integer
+      d: |
+         VTund connection speed from client
+         Name: empty
+         Value: speed of the connection in kilobits/second (8,16,32,64,
+                128,256,etc), 0 (the  default) means maximum possible
+                speed without shaping
+
+    - oid: "/agent/vtund/server/session/multi"
+      access: read_write
+      type: string
+      d: |
+         Wheter to allow multiple connections
+         Name: empty
+         Value: allow, deny, killold
+
+    - oid: "/agent/vtund/server/session/interface"
+      access: read_only
+      type: string
+      d: |
+         Name of the created network interface
+         Name: empty
+         Value: Interface name
+
+
+    - oid: "/agent/vtund/client"
+      access: read_create
+      type: integer
+      d: |
+         VTund connection client side
+         Name: session name (arbitrary string)
+         Value: 0 - disable/disconnect, 1 - enable/connect
+
+    - oid: "/agent/vtund/client/server"
+      access: read_write
+      type: address
+      d: |
+         VTund connection server
+         Name: empty
+         Value: Empty on server side or
+                DNS name or IP address on client side
+
+    - oid: "/agent/vtund/client/port"
+      access: read_write
+      type: integer
+      d: |
+         VTund connection server port
+         Name: empty
+         Value: server port number to connect to
+
+    - oid: "/agent/vtund/client/password"
+      access: read_write
+      type: string
+      d: |
+         Password for VTund connection
+         Name: empty
+         Value: arbitrary string
+
+    - oid: "/agent/vtund/client/device"
+      access: read_write
+      type: string
+      d: |
+         VTund device name
+         Name: empty
+         Value: "tun1"-like
+
+    - oid: "/agent/vtund/client/timeout"
+      access: read_write
+      type: integer
+      d: |
+         Connect timeout
+         Name: empty
+         Value: timeout in seconds
+
+    - oid: "/agent/vtund/client/persist"
+      access: read_write
+      type: string
+      d: |
+         VTund Persist mode (try to recoonnect after connection)
+         termination)
+         Name: empty
+         Value: yes|keep|no
+                If yes, the client will try to reconnect to the server
+                after connection termination. If keep, the  client will
+                not  remove and re-add the tunXX or tapXX device when
+                reconnectng.  If no, the client will exit (default).
+
+    - oid: "/agent/vtund/client/stats"
+      access: read_write
+      type: integer
+      d: |
+         Enable/disable connection statistics for VTund connection
+         Name: empty
+         Value: 0 - disable, 1 - enable
+
+    - oid: "/agent/vtund/client/interface"
+      access: read_only
+      type: string
+      d: |
+         Name of the created network interface
+         Name: empty
+         Value: Interface name

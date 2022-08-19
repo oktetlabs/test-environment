@@ -1,0 +1,234 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.
+
+set -e
+
+on_error() {
+    echo "Unhandled error at ${BASH_SOURCE[0]}:${BASH_LINENO[0]}" >&2
+    exit 1
+}
+
+trap on_error ERR
+
+TELOG_SCRIPT=$(realpath "$0")
+
+TE_BAT=${TE_BAT:-bat}
+hash "$TE_BAT" >/dev/null 2>&1 || TE_BAT=batcat
+TE_BAT_COMMON_OPTS=(
+    --language telog
+)
+[ -z "$BAT_THEME" ] && TE_BAT_COMMON_OPTS+=(--theme ansi-light)
+
+LOG_FILE=log.txt
+TERMINAL_LINES=$(tput lines)
+PREVIEW_LINES=$(((TERMINAL_LINES - 5) / 2))
+MODE='--open'
+
+TE_FZF=${TE_FZF:-fzf}
+TE_FZF_BASIC_OPTS=(
+    --no-sort
+    "--history=$HOME/.telog-fzf-history"
+)
+# shellcheck disable=SC2054
+TE_FZF_OPTS_DEFAULT_ARRAY=(
+    --height 90%
+    --bind alt-n:next-history,alt-p:previous-history,ctrl-n:down,ctrl-p:up
+)
+
+TE_FZF_COMMON_OPTS=${TE_FZF_OPTS:-${TE_FZF_OPTS_DEFAULT_ARRAY[*]}}
+TE_FZF_COMMON_OPTS="$TE_FZF_COMMON_OPTS ${TE_FZF_BASIC_OPTS[*]}"
+FZF_INITIAL=
+
+# Actions
+do_fzf=false
+do_fzf_preview=false
+
+if [ -n "$1" ] ; then
+    MODE=$1
+    shift
+fi
+
+help() {
+  cat <<EOF
+telog is a TE log viewer that can handle TE log in a single-line mode.
+
+NOTE: you need to invoke run.sh/dispatcher.sh with --log-txt-line-prefix for it
+to work, cause it expects single-line text log.
+
+It allows you do fuzzy-search across the log as well as open the log at
+the exact location. It uses BAT and FZF. See --help-setup for installation
+details.
+
+Usage: telog [mode] [initial_search]
+
+$ telog                     : just open the file with syntax highlighting
+$ telog -F [initial search] : open FZF and optionally search for an argument
+$ telog -F "'[ERROR"        : search for the first ERROR
+$ telog -P                  : open with preview mode on the right
+$ telog -P "'[ERROR"        : open a preview around the first ERROR
+$ telog -P  and press Alt-P : search for previous string
+
+Help:
+           --help : help
+     --help-setup : instructions on how to set things up
+       --help-bat : telog is using bat for syntax highlighting
+
+Modes:
+
+         --fzf|-F : allow fuzzy search through the file
+ --fzf-preview|-P : FZF with preview, requires wide terminal (for now)
+           --open : open the log.txt file with syntax highlight (default)
+   --open-at <ln> : open the log.txt file on a specific line
+
+Env:
+
+  - TE_FZF, TE_BAT : location of the tools
+  - TE_FZF_OPTS : user options given to FZF, default:
+    ${TE_FZF_OPTS_DEFAULT_ARRAY[@]}
+
+FZF Bindings:
+
+  - Ctrl-P/Ctrl-N or arrows : next/previous result
+  - <enter>: : open the log file on this line
+  - Alt-P/Alt-N : previous/next string in search (remembers 1000 strings)
+
+FZF Syntax:
+  - https://github.com/junegunn/fzf#search-syntax
+
+EOF
+}
+
+help_setup() {
+  cat <<EOF
+
+1. BAT installation:
+
+apt install bat
+
+should do the job in most of the cases. Sometimes (Ubuntu) it installs batcat
+binary - you can symlink or alias. telog will handle both
+
+For syntax highlighting:
+
+mkdir \$(bat --config-dir)/syntaxes
+cp \$TE_BASE/scripts/telog.sublime-syntax \$(bat --config-dir)/syntaxes
+bat cache --build
+# bat --list-languages
+# search for telog to make sure it's supported
+
+2. FZF installation:
+
+apt install fzf
+
+if you have it or https://github.com/junegunn/fzf#installation
+
+3. You can export TE_FZF and TE_BAT to exact binaries.
+
+EOF
+}
+
+help_bat() {
+    cat <<EOF
+BAT is an opensource tool used to implement syntax highlighting.
+
+The way telog is using it is we're creating a new language 'telog'.
+See --help-setup on instruction on how to set it up.
+
+By default it's using theme for white background. If you want black:
+
+$ bat --list-themes
+
+select the one you like and:
+
+export BAT_THEME=<theme name>
+
+Bat config file is (as per --help-setup) located in \$(bat --config-dir)/syntaxes.
+You can add your syntax highlights there. Note, that it uses sublime yaml syntax
+and you don't specify the colors - you specify the type of element.
+
+https://www.sublimetext.com/docs/3/scope_naming.html has the list of the
+supported elements. This is not exactly convenient from a single-user perspective,
+but allows you to change the theme w/o rewriting half of the config.
+EOF
+}
+
+if ! hash $TE_FZF >/dev/null 2>&1 ; then
+    echo -e "---> Install FZF\n"
+    help_setup
+    exit 1
+fi
+if ! hash $TE_BAT >/dev/null 2>&1 ; then
+    echo -e "---> Install BAT\n"
+    help_setup
+    exit 1
+fi
+
+case "$MODE" in
+    --help|-h)
+        help
+        exit 0
+        ;;
+    --help-setup)
+        help_setup
+        exit 0
+        ;;
+    --fzf|-F)
+        do_fzf=true
+        ;;
+    --fzf-preview|-P)
+        do_fzf=true
+        do_fzf_preview=true
+        ;;
+    --preview)
+        # not documented in help - internal option
+        echo "$@" | grep "\[" >/dev/null || exit 0
+        LINE=$(echo "$@" | sed "s/\[.*//; s/ +//g;")
+        $TE_BAT --style numbers --color=always "${TE_BAT_COMMON_OPTS[@]}" \
+                -r $((LINE > PREVIEW_LINES ? LINE - PREVIEW_LINES : 1)):$((LINE + PREVIEW_LINES))\
+                "$LOG_FILE"
+        ;;
+    --open)
+        $TE_BAT "${TE_BAT_COMMON_OPTS[@]}" --style=plain $LOG_FILE
+        ;;
+    --open-at)
+        if [ -n "$1" ] ; then
+            LINE=${1/ */}
+        else
+            LINE=$(sed "s/\[.*//; s/[ \t]//g;" <&0)
+        fi
+        if [ -z $LINE ] ; then
+            echo "Nothing to open"
+            exit 0
+        fi
+        PAGER_CMD="less +$LINE -R -p '^ *$LINE '"
+
+        # we specify very big terminal width so that wrapping is handled by
+        # PAGER, not by bat - otherwise +LINE will mismatch with the
+        # unwrapped line number
+        $TE_BAT --style numbers --terminal-width 1000 \
+                "${TE_BAT_COMMON_OPTS[@]}" --pager="$PAGER_CMD" "$LOG_FILE"
+        ;;
+    *)
+        echo "Unknown mode '$MODE'" >&2
+        echo "" >&2
+        help
+        exit 1
+
+        ;;
+esac
+
+if $do_fzf ; then
+    [ -n "$1" ] && FZF_INITIAL=(--query "$1")
+
+    if $do_fzf_preview ; then
+        cat -n $LOG_FILE | \
+            $TE_FZF $TE_FZF_COMMON_OPTS \
+                    --preview "$TELOG_SCRIPT --preview $(echo {} | sed 's/\[.*//; s/ //g;')" \
+                    ${FZF_INITIAL[*]} | \
+            $TELOG_SCRIPT --open-at
+    else
+        cat -n $LOG_FILE | $TE_FZF $TE_FZF_COMMON_OPTS ${FZF_INITIAL[*]} | \
+            "$TELOG_SCRIPT" --open-at
+    fi
+fi

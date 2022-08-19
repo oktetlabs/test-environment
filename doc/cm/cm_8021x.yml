@@ -1,0 +1,212 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    WiFi interfaces on Agents.
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/interface/supplicant"
+      access: read_write
+      type: integer
+      d: |
+         Root object of wpa_supplicant configuration for the interface.
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/network"
+      access: read_write
+      type: string
+      d: |
+         Wireless network ESSID name
+
+    - oid: "/agent/interface/supplicant/bssid"
+      access: read_write
+      type: string
+      d: |
+         Wireless identifier of device within basic service set (BSSID).
+         It's used to connect to particular device instead of any of one ESSID
+
+    - oid: "/agent/interface/supplicant/identity"
+      access: read_write
+      type: string
+      d: |
+         EAP identity: Double-quoted ASCII
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/cur_method"
+      access: read_write
+      type: string
+      d: |
+         EAP method: "eap-md5", "eap-tls" etc.
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/proto"
+      access: read_write
+      type: string
+      d: |
+         Authentication protocol: "WPA", "WPA2" or "RSN"
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/key_mgmt"
+      access: read_write
+      type: string
+      d: |
+         Key management: "WPA-PSK", "WPA-EAP" or "NONE"
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/pmf"
+      access: read_write
+      type: integer
+      d: |
+         Protected Management Frames (global): "0" - disabled (default),
+         "1" - enabled, "2" - required
+         Name: empty
+         Limit: [0;2]
+
+    - oid: "/agent/interface/supplicant/ieee80211w"
+      access: read_write
+      type: integer
+      d: |
+         Protected Management Frames (per-network): "0" - disabled (default),
+         "1" - optional, "2" - required
+         Name: empty
+         Limit: [0;2]
+
+    - oid: "/agent/interface/supplicant/wep_key0"
+      access: read_write
+      type: string
+      d: |
+         WEP key0: Double-quoted string of hex digits
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/wep_key1"
+      access: read_write
+      type: string
+      d: |
+         WEP key1: Double-quoted string of hex digits
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/wep_key2"
+      access: read_write
+      type: string
+      d: |
+         WEP key2: Double-quoted string of hex digits
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/wep_key3"
+      access: read_write
+      type: string
+      d: |
+         WEP key3: Double-quoted string of hex digits
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/wep_tx_keyidx"
+      access: read_write
+      type: string
+      d: |
+         Default WEP key index 0..3, double-quoted digit symbol
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/auth_alg"
+      access: read_write
+      type: string
+      d: |
+         Authentication algorithm "OPEN" or "SHARED" or "LEAP"
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/group"
+      access: read_write
+      type: string
+      d: |
+         RSN group cipher: "TKIP", "CCMP" or "TKIP CCMP"
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/pairwise"
+      access: read_write
+      type: string
+      d: |
+         RSN pairwise cipher: "TKIP", "CCMP" or "TKIP CCMP"
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/psk"
+      access: read_write
+      type: string
+      d: |
+         RSN personal security key, double quoted ASCII 8..63 symbols
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/eap-tls"
+      access: read_write
+      type: none
+      d: |
+         Node with EAP-TLS settings
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/eap-tls/cert"
+      access: read_write
+      type: string
+      d: |
+         EAP-TLS path to user certificate file, double quoted filename
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/eap-tls/key"
+      access: read_write
+      type: string
+      d: |
+         EAP-TLS path to user private key file, double quoted filename
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/eap-tls/key_passwd"
+      access: read_write
+      type: string
+      d: |
+         EAP-TLS password for user private key, double-quoted ASCII
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/eap-tls/root_cert"
+      access: read_write
+      type: string
+      d: |
+         EAP-TLS path to root certificate file, double quoted filename
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/eap-md5"
+      access: read_write
+      type: none
+      d: |
+         Node with EAP-MD5 settings
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/eap-md5/username"
+      access: read_write
+      type: string
+      d: |
+         EAP-MD5 username, double-quoted ASCII
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/eap-md5/passwd"
+      access: read_write
+      type: string
+      d: |
+         EAP-MD5 password, double-quoted ASCII
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/optstr"
+      access: read_write
+      type: string
+      d: |
+         String with additional startup options for
+         wpa_supplicant, double-quoted ASCII
+         Name: empty
+
+    - oid: "/agent/interface/supplicant/scan_ssid"
+      access: read_write
+      type: string
+      d: |
+         wpa_supplicant configuration option scan_ssid used to test
+         access points with hidden SSID, ASCII digit symbol
+         Value: 0..1
+         Name: empty

@@ -1,0 +1,133 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Socks server on Test Agents
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/socks"
+      access: read_create
+      type: integer
+      d: |
+         A root object for the socks server
+         Name: any
+         Value: 0 - disabled, 1 - enabled
+
+    - oid: "/agent/socks/status"
+      access: read_write
+      type: integer
+      d: |
+         Server's actual status
+         Name: empty
+         Value: 0 - disabled, 1 - enabled
+
+    - oid: "/agent/socks/impl"
+      access: read_write
+      type: string
+      d: |
+         The implementation to use for that server
+         Name: empty
+         Value: "srelay" - srelay server
+
+    - oid: "/agent/socks/proto"
+      access: read_create
+      type: integer
+      d: |
+         The set of protocols to use for that server. Note that support of this
+         parameter is implementation dependent
+         Name: any
+         Value: integer value representing protocol, e.g. RPC_IPPROTO_TCP
+
+    - oid: "/agent/socks/interface"
+      access: read_create
+      type: string
+      d: |
+         Interfaces for incoming connections to listen at.
+         Name: any
+         Value: e.g. 'eth1'
+
+    - oid: "/agent/socks/interface/port"
+      access: read_write
+      type: integer
+      d: |
+         Port to be used for selected interface.
+         Name: empty
+         Value: any valid port
+
+    - oid: "/agent/socks/interface/addr_family"
+      access: read_write
+      type: integer
+      d: |
+         Address family to be used for selected interface.
+         Name: empty
+         Value: any valid address family integer value, e.g. RPC_AF_INET
+
+    - oid: "/agent/socks/outbound_interface"
+      access: read_write
+      type: string
+      d: |
+         Interface to pass packets to.
+         Name: empty
+         Value: e.g. 'eth1'
+
+    - oid: "/agent/socks/cipher"
+      access: read_create
+      type: string
+      d: |
+         Cipher to use for extra security. Note that support of this parameter
+         is implementation-dependent.
+         Name: any
+         Value: any value supported by target implementation
+
+    - oid: "/agent/socks/auth"
+      access: read_write
+      type: string
+      d: |
+         Authentication type which is used for user verification.
+         Name: any
+         Value: any value supported by target implementation, e.g. "plain"
+
+    - oid: "/agent/socks/user"
+      access: read_create
+      type: none
+      d: |
+         List of users for relaying.
+         Name: any
+         Value: none
+
+    - oid: "/agent/socks/user/next_hop"
+      access: read_write
+      type: string
+      d: |
+         Next hop for the relaying user.
+         Name: empty
+         Value: IP of next SOCKS server
+
+    - oid: "/agent/socks/user/username"
+      access: read_write
+      type: string
+      d: |
+         Internal username for the relaying user.
+         Name: empty
+         Value: any valid string
+
+    - oid: "/agent/socks/user/password"
+      access: read_write
+      type: string
+      d: |
+         Password for the relaying user.
+         Name: empty
+         Value: any valid string
+
+    - oid: "/agent/socks/process_id"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Process ID of the running SOCKS daemon
+         Name: any
+         Value: process ID of running daemon, or -1

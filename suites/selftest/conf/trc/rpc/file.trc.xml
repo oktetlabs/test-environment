@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="file" type="package">
+    <objective>Package for demonstrating TAPI/RPC file tests</objective>
+    <notes/>
+    <iter result="PASSED">
+        <notes/>
+        <test name="file_create_delete" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="file_put" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="len"/>
+                <notes/>
+            </iter>
+        </test>
+        <test name="file_get" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="file_read" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="file_write" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="file_append" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="file_copy" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="file_directory" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="nfiles"/>
+                <notes/>
+            </iter>
+        </test>
+    </iter>
+</test>

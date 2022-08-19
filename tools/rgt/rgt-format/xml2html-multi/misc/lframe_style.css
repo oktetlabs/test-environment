@@ -1,0 +1,16 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2006-2022 OKTET Labs Ltd. All rights reserved. */
+BODY {background-color: white}
+TD {font-size: 10pt;
+    font-family: verdana,helvetica;
+    text-decoration: none;
+    white-space:nowrap;}
+A  {text-decoration: none;
+    color: black}
+.err {
+        padding-left: 2px;
+        padding-right: 2px;
+        border: 2px dotted black;
+     }
+
+.specialClass {font-family:garamond; font-size:12pt;color:green;font-weight:bold;text-decoration:underline}

@@ -1,0 +1,17 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    SSH server configuration model.
+
+    Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/sshd"
+      access: read_create
+      type: none
+      d: |
+         SSH daemon.
+         Name:  port

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>Check RPC implementation</description>
+    <author mailto="te-maint@oktetlabs.ru"/>
+
+    <session>
+        <run track_conf="silent">
+            <package name="server"/>
+        </run>
+        <run>
+            <package name="file"/>
+        </run>
+        <run>
+            <package name="unistd"/>
+        </run>
+    </session>
+</package>

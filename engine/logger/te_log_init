@@ -1,0 +1,46 @@
+#!/usr/bin/perl -w
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment: Logger subsystem
+#
+# Script takes no arguments, creates and initializes temporary raw log file.
+# This script has to be called before Logging functionality will be used.
+#
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+use File::Path;
+
+# Validate number of parameters
+if (@ARGV != 0)
+{
+    print STDOUT "Usage: te_log_init\n";
+    exit 1;
+}
+
+my $te_log_path = $ENV{TE_LOG_DIR};
+if (length($te_log_path) == 0)
+{
+    die("TE_LOG_DIR environment variable must be set\n");
+}
+
+eval { mkpath($te_log_path) };
+if ($@)
+{
+    die("Couldn't create directory for logs: " . $te_log_path . ": " . $@);
+}
+
+my $te_log_raw  = $ENV{TE_LOG_RAW};
+
+unlink($te_log_raw);
+open(OUTFILE, ">" . $te_log_raw) or
+    die("Can't create raw log file: " . $te_log_raw . ": $!");
+
+binmode OUTFILE;
+
+# Write log file version
+print OUTFILE pack("C", 1);
+
+close OUTFILE;
+
+exit 0;

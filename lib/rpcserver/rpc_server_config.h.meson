@@ -1,0 +1,196 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved. */
+/* Whether to enable type-safe RPCs */
+#mesondefine ENABLE_TYPESAFE_RPC
+
+/* Whether to use static RPC symbol lookup by default */
+#mesondefine DEFAULT_STATIC_RPC_LOOKUP
+
+/* Whether to enable smart memory management */
+#mesondefine ENABLE_RPC_MEM
+
+/* Whether to enable idle plugins */
+#mesondefine ENABLE_RPC_PLUGINS
+
+/* Define to 1 if you have the <scsi/sg.h> header file. */
+#mesondefine HAVE_SCSI_SG_H
+
+/* Define to 1 if you have the <cam/scsi/scsi_sg.h> header file. */
+#mesondefine HAVE_CAM_SCSI_SCSI_SG_H
+
+/* check RTLD_NODELETE constant */
+#mesondefine HAVE_RTLD_NODELETE
+
+/* Define to 1 if `si_addr_lsb' is a member of `siginfo_t'. */
+#mesondefine HAVE_SIGINFO_T_SI_ADDR_LSB
+
+/* Define to 1 if `si_band' is a member of `siginfo_t'. */
+#mesondefine HAVE_SIGINFO_T_SI_BAND
+
+/* Define to 1 if `si_fd' is a member of `siginfo_t'. */
+#mesondefine HAVE_SIGINFO_T_SI_FD
+
+/* Define to 1 if `si_int' is a member of `siginfo_t'. */
+#mesondefine HAVE_SIGINFO_T_SI_INT
+
+/* Define to 1 if `si_overrun' is a member of `siginfo_t'. */
+#mesondefine HAVE_SIGINFO_T_SI_OVERRUN
+
+/* Define to 1 if `si_ptr' is a member of `siginfo_t'. */
+#mesondefine HAVE_SIGINFO_T_SI_PTR
+
+/* Define to 1 if `si_stime' is a member of `siginfo_t'. */
+#mesondefine HAVE_SIGINFO_T_SI_STIME
+
+/* Define to 1 if `si_timerid' is a member of `siginfo_t'. */
+#mesondefine HAVE_SIGINFO_T_SI_TIMERID
+
+/* Define to 1 if `si_trapno' is a member of `siginfo_t'. */
+#mesondefine HAVE_SIGINFO_T_SI_TRAPNO
+
+/* Define to 1 if `si_utime' is a member of `siginfo_t'. */
+#mesondefine HAVE_SIGINFO_T_SI_UTIME
+
+/* Define to 1 if `arp_dev' is a member of `struct arpreq'. */
+#mesondefine HAVE_STRUCT_ARPREQ_ARP_DEV
+
+/* Define to 1 if `d_namelen' is a member of `struct dirent'. */
+#mesondefine HAVE_STRUCT_DIRENT_D_NAMELEN
+
+/* Define to 1 if `d_off' is a member of `struct dirent'. */
+#mesondefine HAVE_STRUCT_DIRENT_D_OFF
+
+/* Define to 1 if `d_offset' is a member of `struct dirent'. */
+#mesondefine HAVE_STRUCT_DIRENT_D_OFFSET
+
+/* Define to 1 if `d_type' is a member of `struct dirent'. */
+#mesondefine HAVE_STRUCT_DIRENT_D_TYPE
+
+/* Define to 1 if the system has the type `struct epoll_event'. */
+#mesondefine HAVE_STRUCT_EPOLL_EVENT
+
+/* Define to 1 if the system has the type `struct group_req'. */
+#mesondefine HAVE_STRUCT_GROUP_REQ
+
+/* Define to 1 if `ifr_enaddr' is a member of `struct ifreq'. */
+#mesondefine HAVE_STRUCT_IFREQ_IFR_ENADDR
+
+/* Define to 1 if `ifr_hwaddr' is a member of `struct ifreq'. */
+#mesondefine HAVE_STRUCT_IFREQ_IFR_HWADDR
+
+/* Define to 1 if `ifr_mtu' is a member of `struct ifreq'. */
+#mesondefine HAVE_STRUCT_IFREQ_IFR_MTU
+
+/* Define to 1 if the system has the type `struct if_nameindex'. */
+#mesondefine HAVE_STRUCT_IF_NAMEINDEX
+
+/* Define to 1 if `ipv6mr_ifindex' is a member of `struct ipv6_mreq'. */
+#mesondefine HAVE_STRUCT_IPV6_MREQ_IPV6MR_IFINDEX
+
+/* Define to 1 if `ipv6mr_interface' is a member of `struct ipv6_mreq'. */
+#mesondefine HAVE_STRUCT_IPV6_MREQ_IPV6MR_INTERFACE
+
+/* Define to 1 if the system has the type `struct mmsghdr'. */
+#mesondefine HAVE_STRUCT_MMSGHDR
+
+/* Define to 1 if the system has the type `struct ip_mreqn'. */
+#mesondefine HAVE_STRUCT_IP_MREQN
+
+/* Define to 1 if the system has the type `struct lifreq'. */
+#mesondefine HAVE_STRUCT_LIFREQ
+
+/* Define to 1 if `lifr_mtu' is a member of `struct lifreq'. */
+#mesondefine HAVE_STRUCT_LIFREQ_LIFR_MTU
+
+/* Define to 1 if `pw_gecos' is a member of `struct passwd'. */
+#mesondefine HAVE_STRUCT_PASSWD_PW_GECOS
+
+/* Define to 1 if the system has the type `struct ptp_clock_caps'. */
+#mesondefine HAVE_STRUCT_PTP_CLOCK_CAPS
+
+/* Define to 1 if `n_pins' is a member of  `struct ptp_clock_caps'. */
+#mesondefine HAVE_STRUCT_PTP_CLOCK_CAPS_N_PINS
+
+/* Define to 1 if `cross_timestamping' is a member of  `struct ptp_clock_caps'. */
+#mesondefine HAVE_STRUCT_PTP_CLOCK_CAPS_CROSS_TIMESTAMPING
+
+/* Define to 1 if `adjust_phase' is a member of  `struct ptp_clock_caps'. */
+#mesondefine HAVE_STRUCT_PTP_CLOCK_CAPS_ADJUST_PHASE
+
+/* Define to 1 if the system has the type `struct ptp_sys_offset'. */
+#mesondefine HAVE_STRUCT_PTP_SYS_OFFSET
+
+/* Define to 1 if the system has the type `struct ptp_sys_offset_extended'. */
+#mesondefine HAVE_STRUCT_PTP_SYS_OFFSET_EXTENDED
+
+/* Define to 1 if the system has the type `struct ptp_sys_offset_precise'. */
+#mesondefine HAVE_STRUCT_PTP_SYS_OFFSET_PRECISE
+
+/* Define to 1 if the system has the type `struct sg_io_hdr'. */
+#mesondefine HAVE_STRUCT_SG_IO_HDR
+
+/* Define to 1 if `sa_restorer' is a member of `struct sigaction'. */
+#mesondefine HAVE_STRUCT_SIGACTION_SA_RESTORER
+
+/* Define to 1 if the system has the type `struct tcp_info'. */
+#mesondefine HAVE_STRUCT_TCP_INFO
+
+/* Define to 1 if `tcpi_rcv_rtt' is a member of `struct tcp_info'. */
+#mesondefine HAVE_STRUCT_TCP_INFO_TCPI_RCV_RTT
+
+/* Define to 1 if you have the `svcunix_create' function. */
+#mesondefine HAVE_SVCUNIX_CREATE
+
+/* Define to 1 if you have the `preadv' function. */
+#mesondefine HAVE_PREADV
+
+/* Define to 1 if you have the `pwritev' function. */
+#mesondefine HAVE_PWRITEV
+
+/* Define to 1 if the system has the type `SVCXPRT'. */
+#mesondefine HAVE_SVCXPRT
+
+/* Define to 1 if you have the `svc_exit' function. */
+#mesondefine HAVE_SVC_EXIT
+
+/* Define to 1 if you have the <sys/systeminfo.h> header file. */
+#mesondefine HAVE_SYS_SYSTEMINFO_H
+
+/* Define to 1 if you have the <sys/klog.h> header file. */
+#mesondefine HAVE_SYS_KLOG_H
+
+/* Define to 1 if you have the <linux/if_vlan.h> header file. */
+#mesondefine HAVE_LINUX_IF_VLAN_H
+
+/* Define to 1 if you have the <sys/statvfs.h> header file. */
+#mesondefine HAVE_SYS_STATVFS_H
+
+/* Define to 1 if you have the <termios.h> header file. */
+#mesondefine HAVE_TERMIOS_H
+
+/* Define to 1 if you have the <linux/ppdev.h> header file. */
+#mesondefine HAVE_LINUX_PPDEV_H
+
+/* Define to 1 if `sigval_int' is a member of `union sigval'. */
+#mesondefine HAVE_UNION_SIGVAL_SIGVAL_INT
+
+/* Define to 1 if `sigval_ptr' is a member of `union sigval'. */
+#mesondefine HAVE_UNION_SIGVAL_SIGVAL_PTR
+
+/* Define to 1 if `sival_int' is a member of `union sigval'. */
+#mesondefine HAVE_UNION_SIGVAL_SIVAL_INT
+
+/* Define to 1 if `sival_ptr' is a member of `union sigval'. */
+#mesondefine HAVE_UNION_SIGVAL_SIVAL_PTR
+
+/* RPC XDR for unsigned 8bit width type */
+#mesondefine xdr_uint16_t
+
+/* RPC XDR for unsigned 32bit width type */
+#mesondefine xdr_uint32_t
+
+/* RPC XDR for unsigned 64bit width type */
+#mesondefine xdr_uint64_t
+
+/* RPC XDR for unsigned 8bit width type */
+#mesondefine xdr_uint8_t

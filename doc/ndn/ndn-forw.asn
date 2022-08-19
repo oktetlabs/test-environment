@@ -1,0 +1,48 @@
+-- SPDX-License-Identifier: Apache-2.0
+-- Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
+
+
+TE-NDN-Forwarder
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+
+
+Forwarder-Delay-Cont ::= SEQUENCE {
+    delay-min [1] INTEGER,
+    delay-max [2] INTEGER
+}
+
+Discret-Pair ::= SEQUENCE {
+    prob        [1] INTEGER(1..100),
+    delay       [2] INTEGER -- in microseconds
+}
+
+Forwarder-Delay-Discrete ::= SEQUENCE OF Discret-Pair;
+
+Forwarder-Action-Delay-Params ::= CHOICE {
+    cont  [1] Forwarder-Delay-Cont,
+    discr [2] Forwarder-Delay-Discrete
+}
+
+Forwarder-Action-Reorder-Params ::= SEQUENCE {
+    type            [0] INTEGER {disabled(0), random(1), reversed(2)},
+    timeout         [1] DATA-UNIT {INTEGER},
+    reorder-size    [2] DATA-UNIT {INTEGER}
+}
+
+Forwarder-Action-Drop-Params ::= CHOICE {
+    random-rate  [0] INTEGER(1..100),
+    pattern-mask [1] BIT STRING
+}
+
+Forwarder-Action ::= SEQUENCE {
+    id        [0] UniversalString,
+    delay     [1] Forwarder-Action-Delay-Params OPTIONAL,
+    reorder   [3] Forwarder-Action-Reorder-Params OPTIONAL,
+    drop      [4] Forwarder-Action-Drop-Params OPTIONAL
+}
+
+END

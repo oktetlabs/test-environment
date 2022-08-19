@@ -1,0 +1,91 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Windows Test Agent
+# Build library using native compiler
+# Agruments:
+#     platform
+#     library name
+#     installation prefix for the platform
+#     list of source files (basenames only)
+#
+# Variable TE_BUILD_WIN_LIB_CPPFLAGS may be set to pass to pre-processor.
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+SCRIPT=`which $0`
+BUILDER=`dirname $SCRIPT`
+PLATFORM="$1"
+LIBNAME="$2"
+INCLUDE="$3/include"
+shift 3
+
+. $BUILDER/te_build_win_platform
+
+WIN_DIR=${USER}_build/${LIBNAME%%.lib}_${DIR_POSTFIX}
+
+if test -z "$TE_WIN32_BUILD_HOST" ; then
+    echo "Warning: build host for windows is not specified; \
+          library $LIBNAME is not (re-)built"
+    touch ${LIBNAME}
+    exit 0
+fi
+
+if ! ssh $KEY $TE_WIN32_BUILD_HOST \
+         "rm -rf $WIN_DIR; mkdir -p $WIN_DIR" >/dev/null; then
+    echo "Error: build host $TE_WIN32_BUILD_HOST is unreachable"
+    exit 1
+fi
+
+rm -rf tmpsrc "${LIBNAME}"
+mkdir tmpsrc
+
+# Apply pre-processor
+
+for i in $* ; do
+    j=`basename $i`
+    gcc -I${INCLUDE} ${TE_BUILD_WIN_LIB_CPPFLAGS} -I. \
+        -include te_win.h -DWINDOWS \
+        -P -E -undef ${i} -o ${j}.tmp1 ;
+    cat ${j}.tmp1 | awk --posix '\
+    /^INCLUDE/ { printf("#include <%s>\n", \
+                 substr($1, 9, length($1) - 9)); next; } \
+    { print $0; }' > ${j}.tmp2 ;
+    m4 -D__SOURCE__=${i} -P $BUILDER/rpcconv.m4 ${j}.tmp2 >${j}
+    rm ${j}.tmp* ;
+    indent $j ;
+    mv $j tmpsrc
+done
+rm -f *~
+
+# Generate the script
+cat >build.sh <<EOF
+MSSDK_CYGWIN=\$( cygpath -u "\$MSSDK" )
+export PATH="\${MSSDK_CYGWIN}/Bin$PATH_POSTFIX:\$PATH"
+rm src.tgz
+cd tmpsrc
+cl /nologo -I../${PLATFORM}/include \
+           -D_WIN32_WINNT=0x0501 -D_CRT_SECURE_NO_DEPRECATE \
+           -DSOL_IP=IPPROTO_IP -DSOL_IPV6=IPPROTO_IPV6 \
+           -DSOL_TCP=IPPROTO_TCP -DSOL_UDP=IPPROTO_UDP \
+   /Od *.c /c
+lib /OUT:${LIBNAME} /nologo *.obj
+EOF
+
+chmod a+x build.sh
+ln -s ${TE_INSTALL}/${PLATFORM} ${PLATFORM}
+tar czhf src.tgz tmpsrc ${PLATFORM} build.sh
+scp $KEY src.tgz ${TE_WIN32_BUILD_HOST}:${WIN_DIR}
+rm -rf src.tgz tmpsrc ${PLATFORM} build.sh
+rm -rf tmpsrc ${PLATFORM} build.sh
+
+ssh $KEY ${TE_WIN32_BUILD_HOST} \
+"bash -l -c \"cd $WIN_DIR ; tar xzf src.tgz ; ./build.sh\""
+
+scp $KEY ${TE_WIN32_BUILD_HOST}:$WIN_DIR/tmpsrc/${LIBNAME} .
+
+if test -e ${LIBNAME} ; then
+    exit 0
+fi
+
+exit 1

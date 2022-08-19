@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
+
+TRY_DEBUG=${TRY_DEBUG:-false}
+
+red=`tput setaf 1`
+green=`tput setaf 2`
+reset=`tput sgr0`
+# echo "${red}red text ${green}green text${reset}"
+
+fail () {
+    echo "" >&2
+    echo $* >&2
+    exit 1
+}
+
+try () {
+    $TRY_DEBUG && echo "${red}\$ $*${reset}"
+    $* || fail "Failed: $*"
+}
+
+enter () {
+    pushd "$*" >/dev/null
+}
+
+leave () {
+    popd >/dev/null
+}

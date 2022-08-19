@@ -1,0 +1,45 @@
+#! /bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+#
+# Test Coverage Estimation
+#
+# Script to summarize coverage data for a file
+
+mergefile="$1"
+begincond="$2"
+endcond="$3"
+resultfile="$4"
+
+ar x $mergefile $resultfile
+tce_count $resultfile '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' "$begincond" "$endcond" |
+{
+    read linesratio sum
+    echo -n "$linesratio% $sum "
+}
+
+tce_count $resultfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' "$begincond" "$endcond" |
+(
+    read ratio sum
+    echo -n "$ratio% $sum "
+)
+
+tce_count $resultfile '^branch[[:space:]]*[0-9]+ (never executed|taken 0)' \
+    '^branch[[:space:]]*[0-9]+ taken[[:space:]]*[1-9][0-9]*' "$begincond" "$endcond" |
+(
+    read ratio sum
+    if test "$ratio" == "0.00" -a "$linesratio" == "100.00"; then
+        ratio=100.00
+    fi
+
+    echo -n "$ratio% $sum "
+)
+
+tce_count $resultfile '^[[:space:]]*call[[:space:]]*[0-9]+ never executed' \
+    '^[[:space:]]*call[[:space:]]*[0-9]+ return' "$begincond" "$endcond" |
+(
+    read ratio sum
+    echo -n "$ratio% $sum "
+)
+echo "`awk -vFS=: '{ print $NF; exit 0 }' $resultfile` $resultfile"
+rm -f $resultfile

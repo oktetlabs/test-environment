@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="readlink" type="script">
+    <objective>Test for te_readlink_fmt correctness</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>

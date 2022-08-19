@@ -1,0 +1,283 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+
+  <description>Tests on TAD IP stack (IPv4, ICMPv4, IPv6, ICMPv6, UDP, TCP functionality.</description>
+
+  <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
+
+  <req id="TAD_IPSTACK" sticky="true"/>
+
+  <session>
+
+    <run>
+      <script name="ip4_raw_send">
+        <req id="TAD_IP4"/>
+      </script>
+      <arg name="env">
+        <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+      </arg>
+      <arg name="pld_len">
+        <value>50</value>
+      </arg>
+      <arg name="proto">
+        <value>IPPROTO_UDP</value>
+        <value>IPPROTO_ICMP</value>
+      </arg>
+      <arg name="hcsum">
+        <value>correct</value>
+        <value>=1</value>
+        <value>+1</value>
+      </arg>
+    </run>
+
+    <run>
+      <session>
+        <run>
+          <script name="ip4_send_icmp">
+            <req id="TAD_IP4"/>
+          </script>
+          <arg name="env">
+            <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+          </arg>
+          <arg name="type">
+            <value>3</value>
+          </arg>
+          <arg name="code">
+            <value>0</value>
+            <value>1</value>
+            <value>2</value>
+            <value>3</value>
+            <value>4</value>
+            <value>5</value>
+            <value>6</value>
+            <value>7</value>
+            <value>8</value>
+            <value>9</value>
+            <value>10</value>
+            <value>11</value>
+            <value>12</value>
+            <value>13</value>
+            <value>14</value>
+            <value>15</value>
+          </arg>
+          <arg name="chksum">
+            <value>correct</value>
+            <value>+1</value>
+          </arg>
+        </run>
+      </session>
+    </run>
+
+    <run>
+      <session>
+        <run>
+          <script name="ip4_send_icmp">
+            <req id="TAD_IP4"/>
+          </script>
+          <arg name="env">
+            <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+          </arg>
+          <arg name="type">
+            <value>5</value>
+          </arg>
+          <arg name="code">
+            <value>0</value>
+            <value>1</value>
+            <value>2</value>
+            <value>3</value>
+          </arg>
+          <arg name="chksum">
+            <value>correct</value>
+            <value>+1</value>
+          </arg>
+        </run>
+      </session>
+    </run>
+
+    <run>
+      <session>
+        <run>
+          <script name="ip4_send_icmp">
+            <req id="TAD_IP4"/>
+          </script>
+          <arg name="env">
+            <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+          </arg>
+          <arg name="type">
+            <value>11</value>
+            <value>12</value>
+          </arg>
+          <arg name="code">
+            <value>0</value>
+            <value>1</value>
+          </arg>
+          <arg name="chksum">
+            <value>correct</value>
+            <value>+1</value>
+          </arg>
+        </run>
+      </session>
+    </run>
+
+    <run>
+      <session>
+        <run>
+          <script name="ip4_send_icmp">
+            <req id="TAD_IP4"/>
+          </script>
+          <arg name="env">
+            <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+          </arg>
+          <arg name="type">
+            <value>0</value>
+            <value>4</value>
+            <value>8</value>
+            <value>9</value>
+            <value>10</value>
+            <value>13</value>
+            <value>14</value>
+            <value>15</value>
+            <value>16</value>
+            <value>17</value>
+            <value>18</value>
+          </arg>
+          <arg name="code">
+            <value>0</value>
+          </arg>
+          <arg name="chksum">
+            <value>correct</value>
+            <value>+1</value>
+          </arg>
+        </run>
+      </session>
+    </run>
+
+    <run>
+      <script name="ip4_send_udp">
+        <req id="TAD_IP4"/>
+      </script>
+      <arg name="env">
+        <value>{'host_csap'{{'pco_a':tester},addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+      </arg>
+      <arg name="pld_len">
+        <value>50</value>
+      </arg>
+      <arg name="chksum">
+        <value>correct</value>
+        <value>+1</value>
+      </arg>
+    </run>
+
+    <run>
+      <session>
+        <run>
+          <script name="ip4_send_icmp_error_udp">
+            <req id="TAD_IP4"/>
+            <req id="BROKEN"/>
+          </script>
+          <arg name="env">
+              <value>{'host_csap'{{'pco_a':tester}, addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
+          </arg>
+          <arg name="type" list="">
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>3</value>
+            <value>11</value>
+            <value>11</value>
+          </arg>
+          <arg name="code" list="">
+            <value>0</value>
+            <value>1</value>
+            <value>2</value>
+            <value>3</value>
+            <value>5</value>
+            <value>6</value>
+            <value>7</value>
+            <value>8</value>
+            <value>9</value>
+            <value>10</value>
+            <value>11</value>
+            <value>12</value>
+            <value>13</value>
+            <value>14</value>
+            <value>15</value>
+            <value>0</value>
+            <value>1</value>
+          </arg>
+          <arg name="exp_errno" list="">
+            <value>ENETUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>ENOPROTOOPT</value>
+            <value>ECONNREFUSED</value>
+            <value>EOPNOTSUPP</value>
+            <value>ENETUNREACH</value>
+            <value>EHOSTDOWN</value>
+            <value>ENONET</value>
+            <value>ENETUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>ENETUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>EHOSTUNREACH</value>
+            <value>EHOSTUNREACH</value>
+          </arg>
+        </run>
+      </session>
+    </run>
+
+    <run>
+      <session>
+        <run>
+          <script name="ip4_send_tcp">
+            <req id="TAD_IP4"/>
+          </script>
+          <arg name="env">
+            <value>{{{'iut_pco':IUT},addr:'iut_addr':inet:unicast,addr:'iut_mac':ether:unicast,if:'iut_if'},{{'tst_pco':tester},addr:'tst_addr':inet:unicast,addr:'tst_mac':ether:unicast,if:'tst_if'}}</value>
+          </arg>
+          <arg name="payload_len">
+            <value>99</value>
+          </arg>
+          <arg name="check_sum">
+            <value>correct</value>
+            <value>incorrect</value>
+          </arg>
+        </run>
+      </session>
+    </run>
+
+    <run>
+      <session>
+        <run>
+          <script name="ip4_send_recv_tcp_msg">
+            <req id="TAD_IP4"/>
+            <req id="BROKEN"/>
+          </script>
+          <arg name="env">
+            <value>{{{'iut_pco':IUT},addr:'iut_addr':inet:unicast,addr:'iut_mac':ether:unicast,if:'iut_if'},{{'tst_pco':tester},addr:'tst_addr':inet:unicast,addr:'tst_mac':ether:unicast,if:'tst_if'}}</value>
+          </arg>
+          <arg name="payload_len">
+            <value>99</value>
+          </arg>
+        </run>
+      </session>
+    </run>
+
+  </session>
+
+</package>

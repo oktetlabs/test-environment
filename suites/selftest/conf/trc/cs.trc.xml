@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="cs" type="package">
+    <objective>Package for demonstrating minimal tests</objective>
+    <iter result="PASSED">
+        <test name="dir" type="script">
+            <objective> Check that TA reports its directories sanely</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env">{{{'pco_iut':IUT}}}</arg>
+                <notes/>
+            </iter>
+        </test>
+        <test name="vm" type="script">
+            <objective>Check that virtual machine may be created and test agent started on it.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="process" type="script">
+            <objective>Check processes support in Configurator</objective>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="process_autorestart" type="script">
+            <objective>Check processes autorestart support in Configurator</objective>
+
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="process_ping" type="script">
+            <objective>Check support for killing and waiting processes in Configurator</objective>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+    </iter>
+</test>

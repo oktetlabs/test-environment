@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>TE Self Tests</description>
+    <author mailto="te-maint@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+        <prologue>
+            <script name="prologue"/>
+        </prologue>
+
+        <run>
+            <package name="minimal"/>
+        </run>
+
+        <run>
+            <package name="tools"/>
+        </run>
+
+        <run>
+            <package name="cs"/>
+        </run>
+
+        <run>
+            <package name="tapi"/>
+        </run>
+
+        <run>
+            <package name="rpc"/>
+        </run>
+
+        <run>
+            <package name="apps"/>
+        </run>
+
+        <run>
+            <package name="tad"/>
+        </run>
+    </session>
+
+</package>

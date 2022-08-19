@@ -1,0 +1,333 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Virtual machines configuration and control.
+
+    Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/vm"
+      access: read_create
+      type: none
+      d: |
+         Virtual machine instance.
+         Name: VM name
+
+    - oid: "/agent/vm/qemu"
+      access: read_write
+      type: string
+      d: |
+         QEMU system emulator to use. qemu-system-x86_64 by default.
+         Name: None
+
+    - oid: "/agent/vm/status"
+      access: read_write
+      type: integer
+      d: |
+         Status of the virtual machine. Is it running or not?
+         Name: None
+
+    - oid: "/agent/vm/ssh_port"
+      access: read_only
+      type: none
+      d: |
+         SSH port information.
+         Name: None
+
+    - oid: "/agent/vm/ssh_port/host"
+      access: read_only
+      type: integer
+      d: |
+         SSH port of the local host forwarded to the virtual machine.
+         The TCP port should be used by the rcfunix to start test agent.
+         Name: None
+
+    - oid: "/agent/vm/ssh_port/guest"
+      access: read_write
+      type: integer
+      d: |
+         SSH port in the virtual machine SSH daemon is listening to.
+         Host SSH port is forwarded to the port.
+         Default is 22 (as per services database).
+         Name: None
+
+    - oid: "/agent/vm/rcf_port"
+      access: read_write
+      type: integer
+      d: |
+         RCF port of the local host forwarded to the virtual machine.
+         The TCP port should be passed to the Test Agent and used by the RCF
+         to connect to the Test Agent.
+         Default: automatically generated.
+         Name: None
+
+    - oid: "/agent/vm/kvm"
+      access: read_write
+      type: integer
+      d: |
+         Enable/disable KVM mode.
+         Name: None
+
+    - oid: "/agent/vm/machine"
+      access: read_write
+      type: string
+      d: |
+         QEMU emulated machine specification. accel=kvm is added automatically
+         if KVM is enabled.
+         Name: None
+
+    - oid: "/agent/vm/cpu"
+      access: read_only
+      type: none
+      d: |
+         CPU configuration subtree.
+         Name: None
+
+    - oid: "/agent/vm/cpu/model"
+      access: read_write
+      type: string
+      d: |
+         CPU model. Default is host.
+         Name: None
+
+    - oid: "/agent/vm/cpu/num"
+      access: read_write
+      type: integer
+      d: |
+         Number of CPUs. Default is 1.
+         Name: None
+
+    - oid: "/agent/vm/mem"
+      access: read_only
+      type: none
+      d: |
+         Virtual machine RAM settings.
+         Name: None
+
+    - oid: "/agent/vm/mem/size"
+      access: read_write
+      type: integer
+      d: |
+         RAM size in megabytes. Default is 256M.
+         Name: None
+
+    - oid: "/agent/vm/mem/path"
+      access: read_write
+      type: string
+      d: |
+         Path to memory backend filesystem, e.g. "/dev/hugepages"
+         Name: None
+
+    - oid: "/agent/vm/mem/prealloc"
+      access: read_write
+      type: integer
+      d: |
+         Does memory need to be pre-allocated? Default is 0.
+         Only meaningful if "/agent/vm/mem/path" is set.
+         Name: None
+
+    - oid: "/agent/vm/device"
+      access: read_create
+      type: string
+      d: |
+         Virtual machine raw devices configuration (-device option).
+         Name: arbitrary unique internal device name
+
+    - oid: "/agent/vm/drive"
+      access: read_create
+      type: none
+      d: |
+         Virtual machine drives configuration.
+         Name: drive ID
+
+    - oid: "/agent/vm/drive/file"
+      access: read_write
+      type: string
+      d: |
+         Disk image to use.
+         Name: None
+
+    - oid: "/agent/vm/drive/snapshot"
+      access: read_write
+      type: integer
+      d: |
+         Enable/disable snapshot mode.
+         Default is true which means that no changes are stored.
+         Name: None
+
+    - oid: "/agent/vm/drive/cdrom"
+      access: read_write
+      type: integer
+      d: |
+        Is drive a disk (0, default) or cdrom (1)?
+
+    - oid: "/agent/vm/virtfs"
+      access: read_create
+      type: none
+      d: |
+         Virtual machine virtfs configuration.
+         Name: virtfs ID
+
+    - oid: "/agent/vm/virtfs/path"
+      access: read_write
+      type: string
+      d: |
+         The path on the host that is identified by this fsdev.
+         Name: None
+
+    - oid: "/agent/vm/virtfs/fsdriver"
+      access: read_write
+      type: string
+      d: |
+         This option specifies the fs driver backend to use.
+         Currently only "local","handle" and "proxy" file system
+         drivers are supported.
+         Name: None
+
+    - oid: "/agent/vm/virtfs/security_model"
+      access: read_write
+      type: string
+      d: |
+         Valid options are mapped, passthrough & none.
+         No need to specify security_model with "proxy" file system drivers.
+         Name: None
+
+    - oid: "/agent/vm/virtfs/mount_tag"
+      access: read_write
+      type: string
+      d: |
+         A tag which acts as a hint to the guest OS and is
+         used to mount this exported path.
+         Name: None
+
+    - oid: "/agent/vm/kernel"
+      access: read_write
+      type: string
+      d: |
+        Virtual machine kernel image. No kernel image by default.
+        Either a Linux kernel or in multiboot format.
+          Name: None
+
+    - oid: "/agent/vm/kernel/cmdline"
+      access: read_write
+      type: string
+      d: |
+        Kernel command line.
+
+    - oid: "/agent/vm/kernel/initrd"
+      access: read_write
+      type: string
+      d: |
+        Initial RAM disk.
+
+    - oid: "/agent/vm/kernel/dtb"
+      access: read_write
+      type: string
+      d: |
+        Device tree binary (dtb) image to be passed to the kernel on boot.
+
+    - oid: "/agent/vm/chardev"
+      access: read_create
+      type: none
+      d: |
+         Virtual machine character devices configuration.
+         Only Unix socket backend is supported yet.
+         Name: character device name
+
+    - oid: "/agent/vm/chardev/path"
+      access: read_write
+      type: string
+      d: |
+         Path to Unix socket
+         Name: None
+
+    - oid: "/agent/vm/chardev/server"
+      access: read_write
+      type: integer
+      d: |
+         true - server mode, false - client mode, default is false
+         Name: None
+
+    - oid: "/agent/vm/mgmt_net_device"
+      access: read_write
+      type: string
+      d: |
+         Virtual machine network device driver used for management network.
+         Value: QEMU network device driver, e.g. virtio-net-pci (default),
+                e1000e.
+
+    - oid: "/agent/vm/net"
+      access: read_create
+      type: none
+      d: |
+         Virtual machine network interfaces configuration.
+         Name: network name
+
+    - oid: "/agent/vm/net/type"
+      access: read_write
+      type: string
+      d: |
+         Type of the network interface.
+         E.g. nic, tap, vhost-user
+         Name: None
+
+    - oid: "/agent/vm/net/type_spec"
+      access: read_write
+      type: string
+      d: |
+         Type specific configuration.
+          - nic: model
+          - tap: file descriptor (if a number) or TAP interface name
+          - vhost-user: name of character device with Unix domain socket backend
+         Name: None
+
+    - oid: "/agent/vm/net/bus_addr"
+      access: read_write
+      type: string
+      d: |
+         Bus address of the device inside the virtual machine. E.g. pci.00:02.0
+         Default is automatically generated.
+         Name: None
+
+    - oid: "/agent/vm/net/mac_addr"
+      access: read_write
+      type: string
+      d: |
+         MAC address assigned to the interface.
+         Default is random (52:54:00:<TA>:<TA>:<xx>).
+         Name: None
+
+    - oid: "/agent/vm/pci_pt"
+      access: read_create
+      type: string
+      d: |
+         Pass-through PCI function into the virtual machine.
+         The PCI function resource must be grabbed.
+         Name: human-readable name
+         Value: canonical instance OID of the host PCI function to pass-through, e.g.
+         /agent:Agt/hardware:/pci:/device:0000:01:00.0
+
+    - oid: "/agent/vm/pci_pt/vf_token"
+      access: read_write
+      type: string
+      d: |
+         VF token for the PCI passthrough function
+         Name: None
+         Value: alphanumerical VF token separated by hyphens
+
+    - oid: "/agent/vm/serial"
+      access: read_write
+      type: string
+      d: |
+         Redirect the virtual serial port to host character device dev.
+         Name: None
+         Value: Full list of supported value you can find in `man qemu`.
+                In short:
+                  stdio (by default) - standard input/output
+                  none  - disable all serial ports.
+                  pipe:<filename> - name pipe filename
+                  file:<filename> - Write output to filename. No character can be read.
+

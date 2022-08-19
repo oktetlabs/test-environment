@@ -1,0 +1,31 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Test Environment Builder
+#
+# Fix dangling links after relocation
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+BASEDIR="$1"
+DESTROOT="$2"
+
+shift 2
+
+if test "${BASEDIR:0:1}" != "/"; then
+    echo "${BASEDIR} is not an absolute path" >&2
+    exit 1
+fi
+
+for name; do
+    # Non-links and non-dangling links are skipped
+    test -e "$name" && continue
+
+    reltgt="$(readlink "$name")"
+    newtgt="$(realpath -m -s "${BASEDIR}/${name#${DESTROOT}/}/../${reltgt}")"
+    if test "${reltgt:0:1}" == "/" -o ! -e "${newtgt}"; then
+        echo "warning: cannot fix '$reltgt' using ${newtgt} pointed to by '$name'" >&2
+        continue
+    fi
+    ln -sf "${newtgt}" "$name" || exit 1
+done

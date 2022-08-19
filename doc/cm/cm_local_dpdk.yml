@@ -1,0 +1,288 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    DPDK supportive information.
+
+    Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/local/dpdk"
+      access: read_only
+      type: none
+      d: |
+        DPDK supportive information.
+
+        Name: none
+        Value: none
+
+    - oid: "/local/dpdk/app_prefix"
+      access: read_write
+      type: string
+      d: |
+        Shared data filename prefix. Going with different prefixes allows
+        for running multiple independent primary/secondary DPDK processes.
+
+        Name: none
+        Value: A reasonable identifier which, in example, can incorporate
+               a NIC board codename and relevant physical port identifier.
+
+    - oid: "/local/dpdk/dev_args"
+      access: read_create
+      type: string
+      d: |
+        A list of comma-separated key=value pairs specific to some device.
+
+        Name: PCI function for which the args are applied
+              Format - pci_fn:<vendor_id>:<device_id>:
+              if an ID in brackets is omitted, the dev_args should be applied
+              to devices with any ID
+        Value: A list of comma-separated key=value pairs
+
+    - oid: "/local/dpdk/max_rx_queues"
+      access: read_create
+      type: integer
+      d: |
+        Maximum number of Rx queues supported by PCI function
+
+        Name: PCI function for which Rx queues used.
+              Format - pci_fn:<vendor_id>:<device_id>:
+        Value: Maximum number of Rx queues
+
+    - oid: "/local/dpdk/max_tx_queues"
+      access: read_create
+      type: integer
+      d: |
+        Maximum number of Tx queues supported by PCI function
+
+        Name: PCI function for which Tx queues used.
+              Format - pci_fn:<vendor_id>:<device_id>:
+        Value: Maximum number of Tx queues
+
+    - oid: "/local/dpdk/min_mtu"
+      access: read_create
+      type: integer
+      d: |
+        Minimum MTU reported by PCI function.
+
+        Name: PCI function.
+              Format - pci_fn:<vendor_id>:<device_id>:
+        Value: Minimum MTU
+
+    - oid: "/local/dpdk/max_mtu"
+      access: read_create
+      type: integer
+      d: |
+        Maximum MTU reported by PCI function.
+
+        Name: PCI function.
+              Format - pci_fn:<vendor_id>:<device_id>:
+        Value: Maximum MTU
+
+    - oid: "/local/dpdk/required_service_cores"
+      access: read_create
+      type: integer
+      d: |
+        A number of required service cores specific to some to some PCI device.
+
+        Name: PCI function that requires that number of service cores.
+              Format - pci_fn:<vendor_id>:<device_id>:
+              if an ID in brackets is omitted, the number is relevant
+              to devices with any ID. When the specifier overlaps, the
+              greatest number is chosen.
+        Value: number of required service cores
+
+    - oid: "/local/dpdk/extra_eal_args"
+      access: read_write
+      type: string
+      d: |
+        A list of space-separated options which are correct EAL arguments.
+
+        Name: none
+        Value: A list of space-separated options
+
+    - oid: "/local/dpdk/iut_loopback_mode"
+      access: read_create
+      type: none
+      d: |
+        When present, points out that the hardware supports loopback mode.
+
+        Name: A loopback number
+        Value: none
+
+    - oid: "/local/dpdk/link_speeds"
+      access: read_write
+      type: string
+      d: |
+        A list of comma-separated identifiers indicating link speeds
+        to be set by default in device configuration
+
+        Name: none
+        Value: FIXED, 10M_HD, 10M, 100M_HD, 100M, 1G, 2_5G,
+               5G, 10G, 20G, 25G, 40G, 50G, 56G, 100G
+
+    - oid: "/local/dpdk/mem_amount"
+      access: read_write
+      type: integer
+      d: |
+        Amount of memory (in megabytes) to be preallocated during startup.
+
+        Name: none
+        Value: Amount of memory (in megabytes) to be granted to a process.
+
+    - oid: "/local/dpdk/offloads"
+      access: read_only
+      type: none
+      d: |
+        DPDK has a mechanism which poll mode drivers can use to advertise
+        supported offloads. However, it is not always possible to express
+        all limitations, and there is no means to indicate fixed offloads.
+        So, tests need to exercise a knowledge base to know which devices
+        support which offloads, and which offloads happen to be immutable.
+
+        Name: none
+        Value: none
+
+    - oid: "/local/dpdk/offloads/dev"
+      access: read_only
+      type: none
+      d: |
+        Supportive information which is specific to device-level offloads.
+
+        Name: none
+        Value: none
+
+    - oid: "/local/dpdk/offloads/dev/rx"
+      access: read_only
+      type: none
+      d: |
+        Supportive information regarding device-level Rx offloads.
+
+        Name: none
+        Value: none
+
+    - oid: "/local/dpdk/offloads/dev/rx/supported"
+      access: read_create
+      type: none
+      d: |
+        List of instances which depict supported device-level Rx offloads.
+
+        Name: All-caps alphanumeric offload ID
+        Value: none
+
+    - oid: "/local/dpdk/offloads/dev/tx"
+      access: read_only
+      type: none
+      d: |
+        Supportive information regarding device-level Tx offloads.
+
+        Name: none
+        Value: none
+
+    - oid: "/local/dpdk/offloads/dev/tx/fixed"
+      access: read_create
+      type: none
+      d: |
+        List of instances which depict immutable device-level Tx offloads.
+
+        Name: All-caps alphanumeric offload ID
+        Value: none
+
+    - oid: "/local/dpdk/offloads/dev/tx/supported"
+      access: read_create
+      type: none
+      d: |
+        List of instances which depict supported device-level Tx offloads.
+
+        Name: All-caps alphanumeric offload ID
+        Value: none
+
+    - oid: "/local/dpdk/peer_max_mtu"
+      access: read_write
+      type: integer
+      d: |
+        Maximum MTU supported by a regular network interface at peer side.
+
+        Name: none
+        Value: Valid MTU value
+
+    - oid: "/local/dpdk/reuse_rpcs"
+      access: read_write
+      type: string
+      d: |
+        A means to demand that RPC servers be retained between iterations.
+
+        Name: none
+        Value: yes, no
+
+    - oid: "/local/dpdk/vdev"
+      access: read_create
+      type: none
+      d: |
+        Information specific to DPDK virtual devices.
+
+        Name: DPDK vdev name, like net_bonding0 or net_failsafe0
+        Value: none
+
+    - oid: "/local/dpdk/vdev/mode"
+      access: read_write
+      type: string
+      d: |
+        DPDK virtual device operation mode.
+
+        Name: none
+        Value: An integer mode identifier (string representation)
+
+    - oid: "/local/dpdk/vdev/slave"
+      access: read_create
+      type: string
+      d: |
+        List of subordinate devices to be considered by the virtual device.
+
+        Name: Subordinate device numeric ID, like 0 or 1
+        Value: An object ID of the subordinate device instance,
+               /agent/hardware/pci/vendor/device/instance
+
+    - oid: "/local/dpdk/extra_tx_descs_per_packet"
+      access: read_write
+      type: integer
+      d: |
+        Number of extra Tx descriptors required per packet
+        (e.g. for virtio network header).
+
+        Name: none
+        Value: Number, 0 by default
+
+    - oid: "/local/dpdk/mac"
+      access: read_create
+      type: string
+      d: |
+        Cached value of MAC address of an interface
+
+        Name: Name of the interface (net interface or DPDK port) in
+              the environment
+        Value: MAC address - six groups of hex digits separated by colons
+
+    - oid: "/local/dpdk/tso_cutoff_barrier"
+      access: read_write
+      type: integer
+      d: |
+        Barrier inside super-frame payload including protocol headers
+        at which segment should end and next full segment should start.
+
+        Name: none
+        Value: Number, 0 by default
+
+    - oid: "/local/dpdk/tso_ip_id_inc_algo"
+      access: read_write
+      type: string
+      d: |
+        Increment algorothm used by the NIC/driver for TSO IP ID edits.
+        It's assumed that this applies both to outer and inner headers.
+        In default mode, ip_id_i = ip_id_superframe + i. In mod15 mode,
+        ip_id_i = (ip_id_superframe + i) % 0x8000 for i greater than 0.
+
+        Name: none
+        Value: default, mod15

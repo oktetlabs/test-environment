@@ -1,0 +1,110 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+#
+# Windows Test Agent
+# Build application using native compiler
+# Agruments:
+#     source directory
+#     cygwin platform name
+#     windows platform (windows or windows_64)
+#     application name
+#     list of libraries
+#     list of source files
+#
+# TE_INSTALL should be exported.
+#
+# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+SCRIPT=`which $0`
+BUILDER=`dirname $SCRIPT`
+SRCDIR=$1
+CYGWIN=$2
+PLATFORM=$3
+APPNAME=$4
+LIBS=$5
+LIBS=`eval "echo "$LIBS`
+shift 5
+
+. ${BUILDER}/te_build_win_platform
+
+WIN_DIR=${USER}_build/${APPNAME%%.exe}
+
+if test -z "$TE_WIN32_BUILD_HOST" -o ! -d ${TE_INSTALL}/${PLATFORM} ; then
+    touch ${APPNAME}
+    exit 0
+fi
+
+if ! ssh $KEY $TE_WIN32_BUILD_HOST \
+         "rm -rf $WIN_DIR; mkdir -p $WIN_DIR" >/dev/null; then
+    echo "Error: build host $TE_WIN32_BUILD_HOST is unreachable"
+    exit 1
+fi
+
+rm -f ${APPNAME}
+
+rm -rf tmpsrc
+mkdir tmpsrc
+
+# Apply pre-processor to application files
+
+FILES=
+for i in $* ; do
+    FILENAME=`basename ${i}`
+    if ! test "$FILENAME" = "${FILENAME%.a}" ; then break; fi
+    if ! test "$FILENAME" = "${FILENAME%.o}" ; then break; fi
+    FILES="${FILES} ${FILENAME}"
+    gcc -I${TE_INSTALL}/${CYGWIN}/include \
+        -I${TE_INSTALL}/${PLATFORM}/include \
+        -I${SRCDIR} -I. -DWINDOWS -D__CYGWIN__ \
+        -include ${TE_INSTALL}/${PLATFORM}/include/te_win.h \
+        -P -E -undef $i -o ${FILENAME}.tmp ;
+    cat ${FILENAME}.tmp | awk --posix '\
+    /^INCLUDE/ { printf("#include <%s>\n", \
+                 substr($1, 9, length($1) - 9)); next; } \
+    { print $0; }'  > tmpsrc/${FILENAME} ;
+    rm ${FILENAME}.tmp ;
+    indent tmpsrc/${FILENAME} ;
+done
+ln -s ${TE_INSTALL}/${PLATFORM} ${PLATFORM}
+
+# Generate the script
+cat >build.sh <<EOF
+MSSDK_CYGWIN=\$( cygpath -u "\$MSSDK" )
+export PATH="\${MSSDK_CYGWIN}/Bin$PATH_POSTFIX:\$PATH"
+export LIB="\${MSSDK}\Lib$LIB_POSTFIX;\$LIB"
+rm src.tgz
+cd tmpsrc
+# cl option /Zi is removed, since it breaks build
+cl /nologo -I../${PLATFORM}/include -DWINDOWS -D_CRT_SECURE_NO_DEPRECATE \
+   -D_WIN32_WINNT=0x0501 \
+   -DSOL_IP=IPPROTO_IP -DSOL_IPV6=IPPROTO_IPV6 \
+   -DSOL_TCP=IPPROTO_TCP -DSOL_UDP=IPPROTO_UDP \
+   /w /Od *.c \
+   /link /OUT:${APPNAME} /MAP /LIBPATH:../${PLATFORM}/lib \
+   ${LIBS} ${ADD_LIB}
+cd ../../
+rm app.tgz
+tar czf app.tgz *
+EOF
+chmod a+x build.sh
+
+tar czhf src.tgz tmpsrc ${PLATFORM} build.sh
+
+# Build the application
+
+scp $KEY src.tgz ${TE_WIN32_BUILD_HOST}:${WIN_DIR}
+rm -rf src.tgz tmpsrc ${PLATFORM} build.sh
+
+ssh $KEY ${TE_WIN32_BUILD_HOST} \
+"bash -l -c \"cd $WIN_DIR ; tar xzf src.tgz ; ./build.sh\""
+
+scp $KEY ${TE_WIN32_BUILD_HOST}:${WIN_DIR}/tmpsrc/${APPNAME} .
+
+if test -e ${APPNAME} ; then
+    if test -n "${TE_WIN_BUILD_COPY}" ; then
+        scp $KEY ${TE_WIN32_BUILD_HOST}:${USER}_build/app.tgz .
+    fi
+    exit 0
+fi
+
+exit 1

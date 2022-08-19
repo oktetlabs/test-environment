@@ -1,0 +1,25 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2012-2022 OKTET Labs Ltd. All rights reserved.
+
+# The script addes table of contents for HTML pages generated for all @groups.
+# doxygen names these html files as group__<name>.html. It goes through the
+# files and builds the table basing on <h{level}><a class="anchor">.... marks.
+# The script honors different headings and supports multi-level contents
+
+HTML_DIR=$TE_BASE/doc/generated/html
+
+pushd $HTML_DIR > /dev/null
+
+table_header='<div class="toc"><h3>Table of Contents</h3\><ul>'
+table_footer='</ul></div>'
+
+for group_file in group__*.html; do
+    table_content=`cat $group_file | grep -A1 '<h[0-9]*><a class="anchor"' | \
+        sed 's/^--$//' |
+        sed 's/^.*<h\([0-9]*\)>.*id="\(\S*\)">.*/<li class="level\1"><a href="#\2">/' | \
+        sed 's/^\(.*\)<\/h[0-9]*>$/\1<\/a><\/li>/'`
+    table=`echo -n "${table_header} ${table_content} ${table_footer}" | tr '\n' ' '`
+
+    sed -i "/<div class=\"contents\">/ i$table" $group_file
+done

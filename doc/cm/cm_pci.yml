@@ -1,0 +1,507 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Configuration information related to PCI devices.
+
+    Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/hardware/pci"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         The root of all PCI related information.
+
+         @note This subtree is not intended for low-level operations with
+         PCI devices, the configurator is not deterministic enough for it
+         to be safe. So most of the underlying nodes are read-only, even
+         if PCI technically allows read-write access.  The only exceptions
+         are driver binding (/agent/hardware/pci/device/driver) and
+         VF management (/agent/hardware/pci/device/sriov/vf).
+
+         Name: none
+         Value: none
+
+    - oid: "/agent/hardware/pci/device"
+      access: read_only
+      type: none
+      d: |
+         A node for a specific PCI device.
+
+         @todo Do we need any support for Virtual Channel capabilities?
+
+         Name: domain:bus.dev.fn
+         Value: none
+
+    - oid: "/agent/hardware/pci/device/domain"
+      access: read_only
+      type: string
+      d: |
+         PCI address components (domain, bus, slot, function
+         Name: none
+         Value: a given address component
+
+    - oid: "/agent/hardware/pci/device/bus"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/pci/device/slot"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/pci/device/fn"
+      access: read_only
+      type: integer
+
+    - oid: "/agent/hardware/pci/device/vendor_id"
+      access: read_only
+      type: string
+      d: |
+         PCI vendor and devices id. They are equal to what is specified in
+         /agent/hardware/pci:XXX instance name, provided for completeness,
+         so that it would be possible to query all device characteristics
+         without parsing its OID.
+
+    - oid: "/agent/hardware/pci/device/device_id"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/pci/device/revision_id"
+      access: read_only
+      type: integer
+      d: |
+         Remaining PCI device identification codes (revision ID, subsystem
+         vendor, subsystem id, device class), as defined by PCI spec.
+         All are provided as integers, mapping between names and numbers
+         should be done by the test if ever neeeded.
+
+    - oid: "/agent/hardware/pci/device/subsystem_vendor"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/pci/device/subsystem_device"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/pci/device/class"
+      access: read_only
+      type: string
+
+    - oid: "/agent/hardware/pci/device/vpd"
+      access: read_only
+      type: string
+      d: |
+         VPD tag. Since a set of VPD tags is open, we use a list of tags indexed
+         by their two character-name (e.g. 'PN' or 'SN'), not a subtree with
+         fixed set of nodes.
+
+         Name: VPD tag
+         Value: VPD value
+
+    - oid: "/agent/hardware/pci/device/interrupt"
+      access: read_only
+      type: string
+      d: |
+         Allocated device interrupts
+
+         Name: IRQ line suitable as a last part of instance name of
+               /agent/hardware/node/cpu/core/thread/interrupt
+         Value: type of an interrupt
+                - legacy
+                - msi
+                - msix
+
+    - oid: "/agent/hardware/pci/device/node"
+      access: read_only
+      type: string
+      d: |
+         OID (/agent/hardware/node) of a NUMA node where the device is local
+
+         Name: none
+         Value: OID of a node or empty string if unknonw
+
+    - oid: "/agent/hardware/pci/device/driver"
+      access: read_write
+      type: string
+      depends: "/agent/module"
+      d: |
+         Driver managing the device
+
+         Name: none
+         Value: kernel module name of a driver, empty if unmanaged
+
+    - oid: "/agent/hardware/pci/device/net"
+      access: read_only
+      type: string
+      depends:
+        - oid: "/agent/hardware/pci/device/driver"
+      d: |
+         Device's network interfaces
+
+         Name: If a PCI device has only one network interface, name is empty,
+               if it has more than one interface, name is a sequence number
+               of the interface
+         Value: Name of the network interface
+
+    - oid: "/agent/hardware/pci/device/dev"
+      access: read_only
+      type: none
+      volatile: true
+      depends:
+        - oid: "/agent/hardware/pci/device/driver"
+      d: |
+         Block/char device's
+         Name: device name
+         Value: none
+
+    - oid: "/agent/hardware/pci/device/sriov"
+      access: read_only
+      type: integer
+      d: |
+         Virtual function management
+
+         Name: none
+         Value: max number of allowed VFs for a device
+
+    - oid: "/agent/hardware/pci/device/sriov/num_vfs"
+      access: read_write
+      type: integer
+      d: |
+         Current number of VFs
+
+         Name: none
+         Value: current number of VFs allocated for a device
+
+    - oid: "/agent/hardware/pci/device/sriov/pf"
+      access: read_only
+      type: string
+      d: |
+         An OID of a parent physical function
+
+         Name: none
+         Value: an OID (/agent/hardware/pci/device) of a PF, or empty if PF itself
+
+    - oid: "/agent/hardware/pci/device/sriov/vf"
+      access: read_create
+      type: string
+      depends:
+        - oid: "/agent/hardware/pci/device/sriov/num_vfs"
+      d: |
+         An OID (/agent/hardware/pci/device) of a virtual function allocated
+         for a given PF.
+
+         Name: ordinal number of a VF
+         Value: an OID of a VF
+
+    - oid: "/agent/hardware/pci/device/param"
+      access: read_only
+      type: none
+      d: |
+         Device parameter
+
+         Name: parameter name
+         Value: none
+
+    - oid: "/agent/hardware/pci/device/param/driver_specific"
+      access: read_only
+      type: integer
+      d: |
+         Is parameter driver-specific or generic?
+
+         Name: name
+         Value: 0 - generic parameter
+                1 - driver-specific parameter
+
+    - oid: "/agent/hardware/pci/device/param/type"
+      access: read_only
+      type: string
+      d: |
+         Type of parameter
+
+         Name: none
+         Value: name of the type
+                - flag
+                - u8
+                - u16
+                - u32
+                - u64
+                - string
+
+    - oid: "/agent/hardware/pci/device/param/value"
+      access: read_write
+      type: string
+      d: |
+         Parameter value
+
+         Name: configuration mode (runtime, driverinit, permanent)
+         Value: value of the parameter set in given configuration mode
+
+    - oid: "/agent/hardware/pci/device/serialno"
+      access: read_only
+      type: string
+      d: |
+         PCIe device serial number. Note that this is not the same as
+         /agent/hardware/pci/device/vpd:SN,
+         it's a PCIe-specified capability which has IEEE EUI-64 format
+
+         Name: none
+         Value: PCIe device serial number as provided by corresponding
+                PCIe capability, or empty string if not defined
+
+    - oid: "/agent/hardware/pci/device/power"
+      d: |
+         @todo Power management
+
+    - oid: "/agent/hardware/pci/device/pcie"
+      access: read_only
+      type: integer
+      d: |
+         PCIe-specific subtree
+
+         Name: none
+         Value: 1 = the device is PCIe device, 0 = the device is legacy PCI
+
+    - oid: "/agent/hardware/pci/device/pcie/max_supported_payload_size"
+      access: read_only
+      type: integer
+      d: |
+         Maximum supported TLP payload size in bytes
+
+         Name: none
+         Value: payload size
+
+    - oid: "/agent/hardware/pci/device/pcie/max_payload_size"
+      access: read_only
+      type: integer
+      d: |
+         Maximum configured TLP payload size in bytes
+
+         Name: none
+         Value: payload size
+
+    - oid: "/agent/hardware/pci/device/pcie/max_read_req_size"
+      access: read_only
+      type: integer
+      d: |
+         Maximum read request size from the device, in bytes
+
+         Name: none
+         Value: request size
+
+    - oid: "/agent/hardware/pci/device/pcie/max_link_speed"
+      access: read_only
+      type: integer
+      d: |
+         Maximum link speed
+
+         Name: none
+         Value: speed in Mb/s
+
+    - oid: "/agent/hardware/pci/device/pcie/max_link_width"
+      access: read_only
+      type: integer
+      d: |
+         Maximum link width
+
+         Name: none
+         Value: number of lanes
+
+    - oid: "/agent/hardware/pci/device/pcie/link_speed"
+      access: read_only
+      type: integer
+      d: |
+         Actual link speed
+
+         Name: none
+         Value: speed in Mb/s
+
+    - oid: "/agent/hardware/pci/device/pcie/link_width"
+      access: read_only
+      type: integer
+      d: |
+         Actual link width
+
+         Name: none
+         Value: number of lanes
+
+    - oid: "/agent/hardware/pci/device/status"
+      access: read_only
+      type: none
+      volatile: true
+      d: |
+         Basic error reporting container
+         @todo Both plain error status report and ARE support various
+         configuration option, like changing
+         the severity of an error or enabling/disabling its reporting.
+         Corresponding nodes may be defined here read-write, but it needs
+         further investigation how it can interact with kernel/drivers.
+
+         Name: none
+         Value: none
+
+    - oid: "/agent/hardware/pci/device/status/correctable_error"
+      access: read_only
+      type: integer
+      d: |
+         Correctable error happened
+
+         Name: none
+         Value: 0 = no, 1 = yes
+
+    - oid: "/agent/hardware/pci/device/status/uncorrectable_error"
+      access: read_only
+      type: integer
+      d: |
+         Uncorrectable non-fatal error happened
+
+         Name: none
+         Value: 0 = no, 1 = yes
+
+    - oid: "/agent/hardware/pci/device/status/fatal_error"
+      access: read_only
+      type: integer
+      d: |
+         Fatal error happened
+
+         Name: none
+         Value: 0 = no, 1 = yes
+
+    - oid: "/agent/hardware/pci/device/status/unsupported_request"
+      access: read_only
+      type: integer
+      d: |
+         Unsupported TLP request detected
+
+         Name: none
+         Value: 0 = no, 1 = yes
+
+    - oid: "/agent/hardware/pci/device/aer"
+      access: read_only
+      type: integer
+      d: |
+         Advanced Error Reporting container
+
+         Name: none
+         Value: 1 = AER is present, 0 = no AER
+
+    - oid: "/agent/hardware/pci/device/aer/uncorrectable_error"
+      access: read_only
+      type: integer
+      d: |
+         A specific uncorrectable error happened. This is a list of values
+         indexed by an error name.
+         The following error names are defined as per PCIe spec:
+         - unsupported_request
+         - data_link_protocol_error
+         - poisoned_tlp
+         - flow_control_protocol_error
+         - completion_timeout
+         - completer_abort
+         - unexpected_completion
+         - receiver_overflow
+         - malformed_tlp
+         - ecrc_error
+         - unsupported_request_error
+
+         Name: error name
+         Value: 0 = no, 1 = yes
+
+    - oid: "/agent/hardware/pci/device/aer/correctable_error"
+      access: read_only
+      type: integer
+      d: |
+         A specific correctable error happened.  This is a list of values
+         indexed by an error name.
+         The following error names are defined as per PCIe spec:
+         - receiver_error
+         - bad_tlp
+         - bad_dllp
+         - replay_num_rollover
+         - replay_timer_timeout
+
+         Name: error name
+         Value: 0 = no, 1 = yes
+
+
+    - oid: "/agent/hardware/pci/vendor"
+      access: read_only
+      type: none
+      d: |
+         The list of PCI vendor IDs for installed devices.
+         We do not want the agent exposes the whole PCI tree to tests
+         because it's an unnecessary overhead for agents and configurator:
+         On a modern system, there are tons of PCI devices, most of which are
+         system support devices which should not be ever useful for testing
+         purposes; and trying to obtain information from all these devices
+         takes a lot of time.
+
+         The second consideration is that we want to reserve PCI devices
+         using the configurator /agent/rsrc. It is not convenient to specify
+         direct PCI address, because it makes configuration too fragile.
+         It would be preferrable to specify just "the first function of a
+         certain NIC" etc.
+
+         On the other hand, using vendor+device+ordinal as a sole identifier
+         for PCI devices is also not convenient, because in several places we
+         have a system-provided PCI address, and to map it to
+         vendor+device+ordinal requires scanning the whole PCI tree.
+
+         So the procedure is as follows: if a test is interested in some
+         devices, it makes a resource with
+         /agent/hardware/pci/vendor:VENDOR/device:DEVICE/instance:NTH as value.
+         The agent then will do PCI scanning and:
+         - create /agent/hardware/pci/vendor:VENDOR/device:DEVICE/instance:NTH
+           having the real OID of the PCI device
+         - create /agent/hardware/pci/device:ADDRESS node corresponding to
+           the real device
+
+         All levels of the hierarchy may be used for locking. That is,
+         assigning /agent/hardware/pci to /agent/rsrc would lock the whole
+         PCI tree (which is only possible if nobody else is helding any PCI
+         device locks), and the whole PCI tree will be made accessible
+         Locking /agent/hardware/pci/vendor and
+         /agent/hardware/pci/vendor/device will, in the same manner, result
+         in a set of devices being made accessible.
+
+         Locking /agent/hardware/pci/vendor is necessary for SRIOV support,
+         because normally one would like to access VFs just created.
+
+         Name: vendor ID
+         Value: none
+
+    - oid: "/agent/hardware/pci/vendor/device"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/hardware/pci/device/sriov/num_vfs"
+      d: |
+         List of PCI devices IDs for a given vendor for installed devices
+
+         Name: device ID
+         Value: none
+
+    - oid: "/agent/hardware/pci/vendor/device/instance"
+      access: read_only
+      type: string
+      d: |
+         Reference to PCI devices with given vendor/device ID
+
+         Name: ordinal number
+         Value: the OID pointing to /agent/hardware/pci/device
+
+    - oid: "/agent/interface/device"
+      access: read_only
+      type: string
+      d: |
+         An OID of a device (/agent/hardware/pci/device, non-PCI devices may
+         eventually be supported too) associated with a network interface.
+         Empty for virtual devices.
+
+         Name: none
+         Value: the OID (/agent/hardware/pci/device) of a corresponding
+                device, or empty

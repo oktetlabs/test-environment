@@ -1,0 +1,120 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
+
+option('cflags', type: 'string', value: '',
+       description: 'Extra TE project CFLAGS')
+option('ldflags', type: 'string', value: '',
+       description: 'Extra TE project LDFLAGS')
+option('install-dev', type: 'boolean', value: false,
+       description: 'Force install headers and libraries')
+
+option('engine', type: 'boolean', value: false,
+       description: 'Build TE engine')
+option('engine-apps', type: 'string',
+       value: 'builder rcf logger tester configurator',
+       description: 'List of TE engine applications to build')
+
+option('libs', type: 'string', value: '',
+       description: 'Libraries to build')
+option('custom-lib-opts', type: 'array', value: [],
+       description: 'Array of custom libraries options in format: <build-lib-name>:<real-te-lib-name>:<opt-name>:<value>')
+option('agents', type: 'string', value: '',
+       description: 'Test Agents to build')
+option('agent-apps', type: 'string', value: '',
+       description: 'Agent applications to build')
+option('tools', type: 'string', value: '',
+       description: 'Tools to build')
+
+option('large-logs', type: 'boolean', value: true,
+       description: 'Support large logs')
+option('trc', type: 'boolean', value: true,
+       description: 'Integrate with TRC')
+
+option('sniffers', type: 'boolean', value: true,
+       description: 'Enable the sniffer framework on agent (and rcfpch library)')
+
+option('rpcdefs', type: 'string', value: '',
+       description: 'List of extra RPC definitions')
+
+option('rpc-transport-local', type: 'boolean', value: true,
+       description: 'Disable local transport for RPC (Unix domain sockets or Windows pipes) (enabled by default)')
+option('rpc-transport-tcp', type: 'boolean', value: false,
+       description: 'Enable TCP transport for RPC (disabled by default)')
+
+option('rpcserver-agentlib', type: 'string', value: 'agentlib',
+       description: 'RPC server build with agentlib')
+option('rpcserver-idle-plugins', type: 'boolean', value: true,
+       description: 'RPC server supports idle plugins (enabled by default)')
+option('rpcserver-smart-mem', type: 'boolean', value: true,
+       description: 'RPC server smart memory management (enabled by default)')
+option('static-rpc-lookup', type: 'boolean', value: false,
+       description: 'Use compile-time symbol resolution by default')
+option('typesafe-rpc', type: 'boolean', value: true,
+       description: 'Type-safe RPC implementation (enabled by default)')
+
+option('agentlib-dlfcn-lookup', type: 'boolean', value: false,
+       description: 'Enable dlsym() symbol lookup in TA RPC helper library')
+option('agentlib-ftp', type: 'boolean', value: false,
+       description: 'Enable FTP support in TA RPC helper library')
+option('agentlib-power-sw', type: 'boolean', value: false,
+       description: 'Enable power switch support in TA RPC helper library')
+option('agentlib-upnp', type: 'boolean', value: false,
+       description: 'Enable UPnP support in TA RPC helper library')
+
+option('tad-cs', type: 'boolean', value: true,
+       description: 'TAD Configurator support (enabled by default)')
+option('tad-packet_mmap_rx_ring', type: 'boolean', value: false,
+       description: 'TAD: use packet_mmap_rx_ring to sniff')
+option('tad-protocols', type: 'string', value: '',
+       description: 'TAD protocols to support')
+
+option('agentsdir', type: 'string', value: '',
+       description: 'Directory to install agents to')
+
+option('agent-unix-name', type: 'string', value: '',
+       description: 'Unix Test Agent name')
+option('agent-unix-platform', type: 'string', value: '',
+       description: 'Unix Test Agent platform')
+option('agent-unix-conf', type: 'array', value: [],
+       choices: ['8021x', 'aggr', 'bpf', 'disable-networkmanager-check',
+                 'iptables', 'ntpd', 'ovs', 'pam', 'pci', 'serial',
+                 'serial-parser', 'sfptpd', 'tc', 'upnp_cp', 'vcm'],
+       description: 'Unix Test Agent configuration support')
+option('agent-unix-daemons', type: 'array', value: [],
+       choices: ['dhcp', 'dns', 'echo', 'ftp', 'isc-dhcp-server', 'l2tp', 'named', 'nginx', 'openvpn',
+                 'pppoe-client', 'pppoe-server', 'radius', 'radvd', 'rsh', 'smtp', 'socks', 'telnet',
+                 'tftp', 'todudp', 'vncserver', 'vtund', 'Xvfb'],
+       description: 'Unix Test Agent daemons configuration support')
+option('agent-unix-symtbl', type: 'boolean', value: true,
+       description: 'Generate and include symbol table in Unix agent')
+option('agent-unix-libs', type: 'array', value: [],
+       description: 'Extra libraries to be linked to Unix agent')
+
+option('agent-powerctl-name', type: 'string', value: '',
+       description: 'Power-ctl Test Agent name')
+option('agent-powerctl-platform', type: 'string', value: '',
+       description: 'Power-ctl Test Agent platform')
+option('agent-powerctl-symtbl', type: 'boolean', value: true,
+       description: 'Generate and include symbol table in Power-ctl agent')
+option('agent-powerctl-libs', type: 'array', value: [],
+       description: 'Extra libraries to be linked to Power-ctl agent')
+
+option('rgt-log-filter', type: 'boolean', value: true,
+       description: 'Embed log fitering stuff in RGT core')
+
+option('trc-spoilers', type: 'boolean', value: false,
+       description: 'Use spoilers to show/hide test parameters in TRC')
+option('trc-popups', type: 'boolean', value: false,
+       description: 'Enable statistics popups in TRC')
+option('trc-log-urls', type: 'boolean', value: false,
+       description: 'Enable links to test logs in detailed tables in TRC')
+option('trc-hidden-stats', type: 'boolean', value: false,
+       description: 'Enable hidden columns in statistics tables in TRC')
+option('trc-ext-scripts', type: 'array', value: [],
+       description: 'Install external scripts with TRC')
+
+option('cs-conf-yaml', type: 'boolean', value: true,
+       description: 'Enable support for YAML configuration file processing')
+
+option('workspace', type: 'string', value: '',
+       description: 'Build workspace')

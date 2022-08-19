@@ -1,0 +1,32 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    FTP server configuration model.
+
+    Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/ftpserver"
+      access: read_write
+      type: integer
+      d: |
+         FTP server enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/ftpserver/server"
+      access: read_write
+      type: string
+      d: |
+         FTP server standalone or via inetd
+         Name:  empty
+         Value: name of server we are testing:
+                vsftpd
+                xinetd_vsftpd
+                proftpd
+                wuftpd
+         Limit: 1

@@ -1,0 +1,17 @@
+-- SPDX-License-Identifier: Apache-2.0
+-- Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
+
+TE-NDN-RTE_mbuf
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+EXPORTS RTE_mbuf-CSAP;
+
+RTE_mbuf-CSAP ::= IMPLICIT SEQUENCE {
+    pkt-ring        [0] DATA-UNIT{UniversalString},
+    pkt-pool        [1] DATA-UNIT{UniversalString}
+}
+
+END
