@@ -543,9 +543,6 @@ tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
 {
     asn_value *tmp_pdu;
     int        type = IGMP_HOST_MEMBERSHIP_QUERY;
-    uint8_t   *data;
-    int        data_len;
-    int        offset = 0;
 
     CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,
                                           ndn_igmp_message, "#igmp",
@@ -567,6 +564,10 @@ tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
 
     if (src_list != NULL)
     {
+        uint8_t *data = NULL;
+        int      data_len = 0;
+        int      offset = 0;
+
         CHECK_RC(asn_write_int32(tmp_pdu, src_list->src_no,
                              "number-of-sources.#plain"));
 
@@ -576,6 +577,7 @@ tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
         CHECK_RC(tapi_igmp3_src_list_gen_bin(src_list, data, data_len, &offset));
         CHECK_RC(asn_write_value_field(tmp_pdu, data, data_len,
                                        "source-address-list.#plain"));
+        free(data);
     }
     else
     if (!is_pattern)
