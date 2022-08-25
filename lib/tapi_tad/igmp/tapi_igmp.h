@@ -769,14 +769,14 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
                                            (_src_mac)))
 
 
-#define IGMP3_SRC_LIST(_list...) \
-    tapi_igmp3_src_list_new(_list, 0)
+#define IGMP3_SRC_LIST(...) \
+    tapi_igmp3_src_list_new(NULL, __VA_ARGS__ __VA_OPT__(,) 0)
 
-#define IGMP3_GROUP_LIST(_group_list...) \
-    tapi_igmp3_group_list_new(_group_list, NULL)
+#define IGMP3_GROUP_LIST(...) \
+    tapi_igmp3_group_list_new(NULL, __VA_ARGS__ __VA_OPT__(,) NULL)
 
-#define IGMP3_GROUP_RECORD(_group_record, _group_type, _group_address, _aux_data, _aux_data_len...) \
-    tapi_igmp3_group_record_new(_group_record, _group_type, _group_address, \
+#define IGMP3_GROUP_RECORD(_group_type, _group_address, _aux_data, _aux_data_len...) \
+    tapi_igmp3_group_record_new(NULL, _group_type, _group_address, \
                                 _aux_data, _aux_data_len, 0)
 
 /**
@@ -806,24 +806,24 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
 #define IGMP3_SEND_SINGLE_REPORT(_pco, _csap, _group_type, _group_addr, \
                                  _src_addr, _src_mac, _addr1...)        \
     IGMP3_SEND_REPORT((_pco), (_csap),                                  \
-        IGMP3_GROUP_LIST(NULL,                                          \
-            IGMP3_GROUP_RECORD(NULL,                                    \
+        IGMP3_GROUP_LIST(                                               \
+            IGMP3_GROUP_RECORD(                                         \
                 (_group_type), (_group_addr),                           \
                 NULL, 0, _addr1)),                                      \
         (_src_addr), (_src_mac))
 
 #define IGMP3_SEND_JOIN(_pco, _csap, _group_addr, _src_addr, _src_mac) \
     IGMP3_SEND_REPORT((_pco), (_csap),          \
-        IGMP3_GROUP_LIST(NULL,                  \
-            IGMP3_GROUP_RECORD(NULL,            \
+        IGMP3_GROUP_LIST(                       \
+            IGMP3_GROUP_RECORD(                 \
                 IGMPV3_CHANGE_TO_EXCLUDE,       \
                 (_group_addr), NULL, 0)),       \
         (_src_addr), (_src_mac))
 
 #define IGMP3_SEND_LEAVE(_pco, _csap, _group_addr, _src_addr, _src_mac) \
     IGMP3_SEND_REPORT((_pco), (_csap),          \
-        IGMP3_GROUP_LIST(NULL,                  \
-            IGMP3_GROUP_RECORD(NULL,            \
+        IGMP3_GROUP_LIST(                       \
+            IGMP3_GROUP_RECORD(                 \
                 IGMPV3_CHANGE_TO_INCLUDE,       \
                 (_group_addr), NULL, 0)),       \
         (_src_addr), (_src_mac))
@@ -831,8 +831,8 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
 #define IGMP3_SEND_ALLOW(_pco, _csap, _group_addr, _src_addr, _src_mac, \
                          _addr1...)                                     \
     IGMP3_SEND_REPORT((_pco), (_csap),                                  \
-        IGMP3_GROUP_LIST(NULL,                                          \
-            IGMP3_GROUP_RECORD(NULL,                                    \
+        IGMP3_GROUP_LIST(                                               \
+            IGMP3_GROUP_RECORD(                                         \
                 IGMPV3_ALLOW_NEW_SOURCES,                               \
                 (_group_addr), NULL, 0, _addr1)),                       \
         (_src_addr), (_src_mac))
@@ -840,8 +840,8 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
 #define IGMP3_SEND_BLOCK(_pco, _csap, _group_addr, _src_addr, _src_mac, \
                          _addr1...)                                     \
     IGMP3_SEND_REPORT((_pco), (_csap),                                  \
-        IGMP3_GROUP_LIST(NULL,                                          \
-            IGMP3_GROUP_RECORD(NULL,                                    \
+        IGMP3_GROUP_LIST(                                               \
+            IGMP3_GROUP_RECORD(                                         \
                 IGMPV3_BLOCK_OLD_SOURCES,                               \
                 (_group_addr), NULL, 0, _addr1)),                       \
         (_src_addr), (_src_mac))
