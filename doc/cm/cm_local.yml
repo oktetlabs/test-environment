@@ -189,6 +189,21 @@
          Name: name of the behaviour/tunable
          Value: 0/1
 
+    - oid: "/local/test/testname"
+      access: read_create
+      type: none
+      d: |
+         Name of test the subsequent data belong.
+         Name: name of test.
+
+    - oid: "/local/test/testname/default"
+      access: read_create
+      type: string
+      d: |
+         Test parameter with preset default value.
+         Name: Name of the parameter.
+         Value: Default value of the parameter.
+
 - add:
     - oid: "/local:"
 
