@@ -15,6 +15,7 @@
             <notes/>
             <iter result="PASSED">
                 <arg name="env">{{{'pco_iut':IUT}}}</arg>
+                <arg name="length" />
                 <arg name="blockdev">loop0</arg>
                 <notes/>
             </iter>

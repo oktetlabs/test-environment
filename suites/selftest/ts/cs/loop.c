@@ -38,11 +38,17 @@ main(int argc, char **argv)
 {
     rcf_rpc_server *pco_iut = NULL;
     const char *blockdev;
+    char *filename = NULL;
+    char *chk_filename = NULL;
+    static const char filename_template[] = "te_loop_XXXXXX";
+    tarpc_off_t length = 0;
+    int fd = -1;
 
     TEST_START;
 
     TEST_GET_PCO(pco_iut);
     TEST_GET_STRING_PARAM(blockdev);
+    TEST_GET_VALUE_BIN_UNIT_PARAM(length);
 
     TEST_STEP("Initialize loop devices");
     CHECK_RC(tapi_cfg_block_initialize_loop(pco_iut->ta));
@@ -54,9 +60,64 @@ main(int argc, char **argv)
     if (!tapi_cfg_block_is_loop(pco_iut->ta, blockdev))
         TEST_VERDICT("%s is not a loop device on %s", blockdev, pco_iut->ta);
 
+    CHECK_RC(tapi_cfg_block_loop_get_backing_file(pco_iut->ta, blockdev,
+                                                  &chk_filename));
+    if (chk_filename != NULL)
+    {
+        ERROR("'%s' is attached to %s", chk_filename, blockdev);
+        TEST_VERDICT("%s on %s has an attached backing file",
+                     blockdev, pco_iut->ta);
+    }
+
+    fd = rpc_mkstemp(pco_iut, filename_template, &filename);
+    rpc_ftruncate(pco_iut, fd, length);
+
+    CHECK_RC(tapi_cfg_block_loop_set_backing_file(pco_iut->ta, blockdev,
+                                                  filename));
+
+    CHECK_RC(tapi_cfg_block_loop_get_backing_file(pco_iut->ta, blockdev,
+                                                  &chk_filename));
+    if (chk_filename == NULL)
+    {
+        TEST_VERDICT("No file is attached to %s on %s",
+                     blockdev, pco_iut->ta);
+    }
+    if (strcmp(filename, chk_filename) != 0)
+    {
+        ERROR("The attached file should be '%s', but it's '%s'",
+              filename, chk_filename);
+        TEST_VERDICT("Unexpected attached file for %s on %s",
+                     blockdev, pco_iut->ta);
+    }
+
+    free(chk_filename);
+    chk_filename = NULL;
+
+    CHECK_RC(tapi_cfg_block_loop_set_backing_file(pco_iut->ta, blockdev, NULL));
+    CHECK_RC(tapi_cfg_block_loop_get_backing_file(pco_iut->ta, blockdev,
+                                                  &chk_filename));
+    if (chk_filename != NULL)
+    {
+        ERROR("'%s' is still attached to %s", chk_filename, blockdev);
+        TEST_VERDICT("%s on %s has an attached backing file",
+                     blockdev, pco_iut->ta);
+    }
+
+
     TEST_SUCCESS;
 
 cleanup:
+
+    if (fd > 0)
+        rpc_close(pco_iut, fd);
+    if (filename != NULL)
+    {
+        CLEANUP_CHECK_RC(tapi_cfg_block_loop_set_backing_file(pco_iut->ta,
+                                                              blockdev, NULL));
+        rpc_unlink(pco_iut, filename);
+        free(filename);
+    }
+    free(chk_filename);
 
     TEST_END;
 }

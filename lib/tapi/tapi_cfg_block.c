@@ -57,3 +57,36 @@ tapi_cfg_block_is_loop(const char *ta, const char *block_dev)
 
     return rc == 0 && is_loop != 0;
 }
+
+te_errno
+tapi_cfg_block_loop_get_backing_file(const char *ta, const char *block_dev,
+                                     char **filename)
+{
+    te_errno rc;
+
+    rc = cfg_get_instance_string_fmt(filename,
+                                     CFG_BLOCK_DEVICE_LOOP_FMT "/backing_file:",
+                                     ta, block_dev);
+    if (rc != 0)
+        return rc;
+
+    if (**filename == '\0')
+    {
+        free(*filename);
+        *filename = NULL;
+    }
+
+    return 0;
+}
+
+te_errno
+tapi_cfg_block_loop_set_backing_file(const char *ta, const char *block_dev,
+                                     const char *filename)
+{
+    if (filename == NULL)
+        filename = "";
+
+    return cfg_set_instance_fmt(CFG_VAL(STRING, filename),
+                                CFG_BLOCK_DEVICE_LOOP_FMT "/backing_file:",
+                                ta, block_dev);
+}

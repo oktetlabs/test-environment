@@ -19,6 +19,9 @@
             <arg name="blockdev">
                 <value>loop0</value>
             </arg>
+            <arg name="length">
+                <value>10M</value>
+            </arg>
         </run>
 
         <run>
