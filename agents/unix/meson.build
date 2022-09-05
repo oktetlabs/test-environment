@@ -58,6 +58,8 @@ check_headers = [
     'search.h',
     'sys/klog.h',
     'linux/major.h',
+    'sys/ioctl.h',
+    'linux/loop.h',
 ]
 
 foreach h : check_headers

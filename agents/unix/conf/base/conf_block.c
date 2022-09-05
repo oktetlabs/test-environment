@@ -18,9 +18,18 @@
 #endif
 
 #include <unistd.h>
+#include <fcntl.h>
 
 #if HAVE_LINUX_MAJOR_H
 #include <linux/major.h>
+#endif
+
+#if HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+
+#if HAVE_LINUX_LOOP_H
+#include <linux/loop.h>
 #endif
 
 #include<string.h>
@@ -135,7 +144,146 @@ block_dev_loop_get(unsigned int gid, const char *oid, char *value,
     return rc;
 }
 
-RCF_PCH_CFG_NODE_RO(node_block_dev_loop, "loop", NULL, NULL,
+static te_errno
+block_dev_loop_backing_file_get(unsigned int gid, const char *oid, char *value,
+                                const char *block_name)
+{
+    char filename[RCF_MAX_VAL];
+    te_errno rc;
+
+    if (!ta_block_is_mine(block_name, NULL))
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
+
+    /*
+     * We don't check explicitly for loop device, as in set accessor,
+     * because a non-loop device won't have a corresponding sysfs file
+     * anyway.
+     */
+    rc = read_sys_value(filename, sizeof(filename),
+                        FALSE, "/sys/block/%s/loop/backing_file",
+                        block_name);
+    if (rc != 0)
+    {
+        /*
+         * Missing backing_file in sysfs is not an error:
+         * it means there is no backing file configured
+         */
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+        {
+            *value = '\0';
+            return 0;
+        }
+        return rc;
+    }
+
+    strcpy(value, filename);
+    return 0;
+}
+
+#if HAVE_LINUX_LOOP_H
+static te_errno
+attach_loop_device(const char *devname, const char *filename)
+{
+    int devfd = open(devname, O_RDWR, 0);
+    int filefd;
+    te_errno rc = 0;
+
+    if (devfd < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Cannot open block device %s: %r", devname, rc);
+        return rc;
+    }
+
+    filefd = open(filename, O_RDWR, 0);
+    if (filefd < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        close(devfd);
+        ERROR("Cannot open backing file %s: %r", filename, rc);
+        return rc;
+    }
+
+    if (ioctl(devfd, LOOP_SET_FD, filefd) != 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Attaching %s to %s failed: %r", filename, devname, rc);
+    }
+    close(devfd);
+    close(filefd);
+
+    return rc;
+}
+
+static te_errno
+detach_loop_device(const char *devname)
+{
+    int devfd = open(devname, O_RDWR, 0);
+    te_errno rc = 0;
+
+    if (devfd < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Cannot open block device %s: %r", devname, rc);
+        return rc;
+    }
+
+    if (ioctl(devfd, LOOP_CLR_FD) != 0)
+    {
+        /* Detaching an already detached loop is not an error */
+        if (errno != ENXIO)
+        {
+            rc = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("Detaching %s failed: %r", devname, rc);
+        }
+    }
+    close(devfd);
+
+    return rc;
+
+}
+#endif
+
+static te_errno
+block_dev_loop_backing_file_set(unsigned int gid, const char *oid,
+                                const char *value, const char *block_name)
+{
+    te_errno rc;
+    char devname[RCF_MAX_VAL];
+
+    if (!ta_block_is_mine(block_name, NULL))
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
+
+#if HAVE_LINUX_MAJOR_H
+    rc = check_block_loop(block_name);
+    if (rc != 0)
+        return *value == '\0' ? 0 : rc;
+#endif
+
+#if HAVE_LINUX_LOOP_H
+    /* FIXME: we will need to discover a real device file name */
+    TE_SPRINTF(devname, "/dev/%s", block_name);
+    if (*value == '\0')
+        rc = detach_loop_device(devname);
+    else
+        rc = attach_loop_device(devname, value);
+
+    return rc;
+#else
+    UNUSED(devname);
+    UNUSED(rc);
+
+    return *value == '\0' ? 0 : TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+RCF_PCH_CFG_NODE_RW(node_block_dev_loop_backing_file,
+                    "backing_file", NULL, NULL,
+                    block_dev_loop_backing_file_get,
+                    block_dev_loop_backing_file_set);
+
+RCF_PCH_CFG_NODE_RO(node_block_dev_loop, "loop",
+                    &node_block_dev_loop_backing_file, NULL,
                     block_dev_loop_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_block_dev, "block",
