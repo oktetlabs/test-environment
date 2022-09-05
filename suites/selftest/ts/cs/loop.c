@@ -37,13 +37,19 @@ int
 main(int argc, char **argv)
 {
     rcf_rpc_server *pco_iut = NULL;
+    const char *blockdev;
 
     TEST_START;
 
     TEST_GET_PCO(pco_iut);
+    TEST_GET_STRING_PARAM(blockdev);
 
     TEST_STEP("Initialize loop devices");
     CHECK_RC(tapi_cfg_block_initialize_loop(pco_iut->ta));
+
+    CHECK_RC(tapi_cfg_block_grab(pco_iut->ta, blockdev));
+
+    CHECK_RC(cfg_tree_print(NULL, TE_LL_RING, "/agent:%s", pco_iut->ta));
 
     TEST_SUCCESS;
 

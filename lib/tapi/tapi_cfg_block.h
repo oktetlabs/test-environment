@@ -26,6 +26,16 @@ extern "C" {
  */
 extern te_errno tapi_cfg_block_initialize_loop(const char *ta);
 
+/**
+ * Grab a block device as a resource.
+ *
+ * @param ta         agent name
+ * @param block_dev  block device name
+ *
+ * @return status code
+ */
+extern te_errno tapi_cfg_block_grab(const char *ta, const char *block_dev);
+
 /**@} <!-- END tapi_conf_block --> */
 
 #ifdef __cplusplus

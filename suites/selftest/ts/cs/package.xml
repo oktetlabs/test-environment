@@ -16,6 +16,9 @@
             <arg name="env">
                 <value>{{{'pco_iut':IUT}}}</value>
             </arg>
+            <arg name="blockdev">
+                <value>loop0</value>
+            </arg>
         </run>
 
         <run>
