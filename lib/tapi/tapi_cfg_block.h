@@ -11,6 +11,7 @@
 #define __TE_TAPI_CFG_BLOCK_H__
 
 #include "te_errno.h"
+#include "te_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,6 +36,16 @@ extern te_errno tapi_cfg_block_initialize_loop(const char *ta);
  * @return status code
  */
 extern te_errno tapi_cfg_block_grab(const char *ta, const char *block_dev);
+
+/**
+ * Check whether a block device is a loop device.
+ *
+ * @param ta         Agent name
+ * @param block_dev  Block device name
+ *
+ * @return TRUE iff @p block_dev refers to a loop block device on @p ta
+ */
+extern te_bool tapi_cfg_block_is_loop(const char *ta, const char *block_dev);
 
 /**@} <!-- END tapi_conf_block --> */
 

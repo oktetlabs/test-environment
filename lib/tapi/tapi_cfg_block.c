@@ -20,6 +20,7 @@
 #include "tapi_cfg_block.h"
 
 #define CFG_BLOCK_DEVICE_FMT "/agent:%s/block:%s"
+#define CFG_BLOCK_DEVICE_LOOP_FMT CFG_BLOCK_DEVICE_FMT "/loop:"
 #define CFG_BLOCK_RSRC_NAME "/agent:%s/rsrc:block:%s"
 
 #define LOOP_BLOCK_KMOD "loop"
@@ -44,4 +45,15 @@ tapi_cfg_block_grab(const char *ta, const char *block_dev)
         ERROR("Failed to reserve resource '%s': %r", block_oid, rc);
 
     return rc;
+}
+
+te_bool
+tapi_cfg_block_is_loop(const char *ta, const char *block_dev)
+{
+    int is_loop = 0;
+    te_errno rc = cfg_get_instance_int_fmt(&is_loop,
+                                           CFG_BLOCK_DEVICE_LOOP_FMT,
+                                           ta, block_dev);
+
+    return rc == 0 && is_loop != 0;
 }

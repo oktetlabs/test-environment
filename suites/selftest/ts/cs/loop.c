@@ -51,6 +51,9 @@ main(int argc, char **argv)
 
     CHECK_RC(cfg_tree_print(NULL, TE_LL_RING, "/agent:%s", pco_iut->ta));
 
+    if (!tapi_cfg_block_is_loop(pco_iut->ta, blockdev))
+        TEST_VERDICT("%s is not a loop device on %s", blockdev, pco_iut->ta);
+
     TEST_SUCCESS;
 
 cleanup:
