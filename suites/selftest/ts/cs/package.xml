@@ -12,6 +12,13 @@
         </run>
 
         <run>
+            <script name="loop" />
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="dir" />
             <arg name="env">
                 <value>{{{'pco_iut':IUT}}}</value>

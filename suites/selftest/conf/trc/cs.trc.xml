@@ -10,6 +10,14 @@
                 <notes/>
             </iter>
         </test>
+        <test name="loop" type="script">
+            <objective>Check that Loop Block Device Configuration TAPI works properly.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env">{{{'pco_iut':IUT}}}</arg>
+                <notes/>
+            </iter>
+        </test>
         <test name="dir" type="script">
             <objective> Check that TA reports its directories sanely</objective>
             <notes/>
