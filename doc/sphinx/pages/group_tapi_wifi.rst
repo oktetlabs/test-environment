@@ -17,3 +17,4 @@ Test API to control Wi-Fi client
 
 |	:ref:`Wi-Fi security<doxid-group__tapi__wifi__security>`
 |	:ref:`Control WPA supplicant<doxid-group__tapi__wifi__wpa__supplicant>`
+|	:ref:`Control WPA client<doxid-group__tapi__wifi__wpa__cli>`
