@@ -16,6 +16,14 @@
          Root object of wpa_supplicant configuration for the interface.
          Name: empty
 
+    - oid: "/agent/interface/supplicant/status"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         WiFi client status
+         Name: empty
+
     - oid: "/agent/interface/supplicant/network"
       access: read_write
       type: string

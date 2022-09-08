@@ -304,6 +304,49 @@ const supplicant_impl xsupplicant = {
     xsupplicant_write_config
 };
 
+static te_errno
+wpa_supp_get_status(const char *ifname, char **status)
+{
+    FILE *f;
+    pid_t cmd_pid;
+    char *line = NULL;
+    char *value = NULL;
+    size_t len = 0;
+    te_errno rc;
+
+    assert(status != NULL);
+
+    rc = ta_popen_r_fmt(&cmd_pid, &f,
+                        "/sbin/wpa_cli -i %s status 2>/dev/null", ifname);
+    if (rc != 0)
+        return TE_RC_UPSTREAM(TE_TA_UNIX, rc);
+
+    while (getline(&line, &len, f) != -1)
+    {
+        if (strstr(line, "wpa_state=") != NULL)
+        {
+            value = te_str_strip_spaces(strstr(line, "=") + 1);
+            break;
+        }
+    }
+
+    free(line);
+
+    rc = ta_pclose_r(cmd_pid, f);
+    if (rc != 0)
+    {
+        free(value);
+        return TE_RC_UPSTREAM(TE_TA_UNIX, rc);
+    }
+
+    if (value == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    *status = value;
+
+    return 0;
+}
+
 static te_bool
 wpa_supp_get(const char *ifname)
 {
@@ -840,6 +883,31 @@ ds_supplicant_set(unsigned int gid, const char *oid,
     return 0;
 }
 
+static te_errno
+ds_supplicant_status_get(unsigned int gid, const char *oid,
+                         char *value, const char *instance, ...)
+{
+    char *status;
+    te_errno rc;
+    supplicant *supp;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    supp = supp_find(instance);
+    if (supp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    rc = wpa_supp_get_status(supp->ifname, &status);
+    if (rc != 0)
+        return rc;
+
+    strcpy(value, status);
+    free(status);
+
+    return 0;
+}
+
 #define DS_SUPP_PARAM_GET(_func_name, _param_name) \
     static te_errno                                                     \
     _func_name(unsigned int gid, const char *oid,                       \
@@ -1091,8 +1159,12 @@ RCF_PCH_CFG_NODE_RW(node_ds_supp_scan_ssid, "scan_ssid",
                     ds_supp_scan_ssid_get,
                     ds_supp_scan_ssid_set);
 
+RCF_PCH_CFG_NODE_RO(node_ds_supp_status, "status",
+                    NULL, &node_ds_supp_scan_ssid,
+                    ds_supplicant_status_get);
+
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_ds_supplicant, "supplicant",
-                               &node_ds_supp_scan_ssid, NULL,
+                               &node_ds_supp_status, NULL,
                                ds_supplicant_get, ds_supplicant_set,
                                NULL, NULL, NULL, ds_supplicant_commit);
 
