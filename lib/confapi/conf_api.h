@@ -214,9 +214,19 @@ extern te_errno cfg_get_inst_name(cfg_handle handle, char **name);
  *
  * @param handle    Handle of object instance
  * @param type      Type instance name
- * @param val       type == CVT_INT32 -> (int32_t *)
+ * @param val       Value of the corresponding type
+ * @code
+ *                  type == CVT_BOOL -> (te_bool *)
+ *                  type == CVT_INT8 -> (int8_t *)
+ *                  type == CVT_UINT8 -> (uint8_t *)
+ *                  type == CVT_INT16 -> (int16_t *)
+ *                  type == CVT_UINT16 -> (uint16_t *)
+ *                  type == CVT_INT32 -> (int32_t *)
+ *                  type == CVT_UINT32 -> (uint32_t *)
+ *                  type == CVT_INT64 -> (int64_t *)
  *                  type == CVT_UINT64 -> (uint64_t *)
  *                  type == CVT_ADDRESS -> (struct sockaddr **)
+ * @endcode
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */

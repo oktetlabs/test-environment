@@ -173,17 +173,13 @@ register_objects(xmlNodePtr *node, te_bool reg)
 
         if ((attr = xmlGetProp(cur, (const xmlChar *)"type")) != NULL)
         {
-            if (strcmp((char *)attr, "integer") == 0)
-                msg->val_type = CVT_INT32;
-            else if (strcmp((char *)attr, "int32") == 0)
-                msg->val_type = CVT_INT32;
-            else if (strcmp((char *)attr, "uint64") == 0)
-                msg->val_type = CVT_UINT64;
-            else if (strcmp((char *)attr, "address") == 0)
-                msg->val_type = CVT_ADDRESS;
-            else if (strcmp((char *)attr, "string") == 0)
-                msg->val_type = CVT_STRING;
-            else if (strcmp((char *)attr, "none") != 0)
+            int mapped = te_enum_map_from_str(cfg_cvt_mapping,
+                                              (const char *)attr,
+                                              CVT_UNSPECIFIED);
+
+            if (mapped != CVT_UNSPECIFIED)
+                msg->val_type = (cfg_val_type)mapped;
+            else
                 RETERR(TE_EINVAL, "Unsupported object type %s", attr);
             xmlFree(attr);
         }
@@ -573,17 +569,13 @@ add_or_set(cfg_instance *inst, te_bool local, te_bool *has_deps,
 
         if (CFG_GET_INST(inst->handle) == 0)
             return TE_EINVAL;
-
-        if ((inst->obj->type != CVT_INT32 &&
-             inst->obj->type != CVT_UINT64 &&
-             inst->obj->type != CVT_STRING &&
-             inst->obj->type != CVT_ADDRESS) ||
-             cfg_types[inst->obj->type].is_equal(
+        if (inst->obj->type == CVT_NONE ||
+            inst->obj->type == CVT_UNSPECIFIED ||
+            cfg_types[inst->obj->type].is_equal(
                  inst->val, CFG_GET_INST(inst->handle)->val))
         {
             return 0;
         }
-
         if (inst->obj->dependants != NULL)
             *has_deps = TRUE;
 

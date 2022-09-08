@@ -7,9 +7,10 @@
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
-#include "te_config.h"
-
 #include <stdio.h>
+
+#include "te_config.h"
+#include "te_str.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -36,13 +37,13 @@
 #include <stdlib.h>
 #endif
 
-
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
 #include "conf_api.h"
 #include "conf_messages.h"
 #include "conf_types.h"
+#include "logger_api.h"
 
 #define MAC_ADDR_LEN          6
 
@@ -53,7 +54,38 @@
                 (_msg->type == CFG_SET) ? sizeof(cfg_set_msg) : \
                                           sizeof(cfg_get_msg)
 
+const te_enum_map cfg_cvt_mapping[] = {
+    {.name = "bool",     .value = CVT_BOOL},
+    {.name = "int8",     .value = CVT_INT8},
+    {.name = "uint8",    .value = CVT_UINT8},
+    {.name = "int16",    .value = CVT_INT16},
+    {.name = "uint16",   .value = CVT_UINT16},
+    {.name = "int32",    .value = CVT_INT32},
+    {.name = "integer",  .value = CVT_INT32},
+    {.name = "uint32",   .value = CVT_UINT32},
+    {.name = "int64",    .value = CVT_INT64},
+    {.name = "uint64",   .value = CVT_UINT64},
+    {.name = "string",   .value = CVT_STRING},
+    {.name = "address",  .value = CVT_ADDRESS},
+    {.name = "none",     .value = CVT_NONE},
+    TE_ENUM_MAP_END
+};
+
 /* Locals */
+
+static uintmax_t max_int_val[CFG_PRIMARY_TYPES_NUM + 1] = { [CVT_BOOL] = 1,
+    [CVT_INT8] = INT8_MAX, [CVT_UINT8] = UINT8_MAX,
+    [CVT_INT16] = INT16_MAX, [CVT_UINT16] = UINT16_MAX,
+    [CVT_INT32] = INT32_MAX, [CVT_UINT32] = UINT32_MAX,
+    [CVT_INT64] = INT64_MAX, [CVT_UINT64] = UINT64_MAX,
+    [CVT_STRING] = 0, [CVT_ADDRESS] = 0, [CVT_NONE] = 0, [CVT_UNSPECIFIED] = 0};
+
+static intmax_t min_int_val[CFG_PRIMARY_TYPES_NUM + 1] = { [CVT_BOOL] = 0,
+    [CVT_INT8] = INT8_MIN, [CVT_UINT8] = 0,
+    [CVT_INT16] = INT16_MIN, [CVT_UINT16] = 0,
+    [CVT_INT32] = INT32_MIN, [CVT_UINT32] = 0,
+    [CVT_INT64] = INT64_MIN, [CVT_UINT64] = 0,
+    [CVT_STRING] = 0, [CVT_ADDRESS] = 0, [CVT_NONE] = 0, [CVT_UNSPECIFIED] = 0};
 
 /* Check if given address family value is valid */
 static te_bool
@@ -89,293 +121,415 @@ addr_size(unsigned short af)
     }
 }
 
-/* Convertion functions for type 'uint32_t' */
-static te_errno str_to_int32(char *val_str, cfg_inst_val *val);
-static te_errno int32_to_str(cfg_inst_val val, char **val_str);
-static te_errno int32_def_val(cfg_inst_val *val);
-static void int32_free(cfg_inst_val val);
-static te_errno int32_copy(cfg_inst_val src, cfg_inst_val *dst);
-static te_errno int32_get(cfg_msg *msg, cfg_inst_val *val);
-static void int32_put(cfg_inst_val val, cfg_msg *msg);
-static te_bool int32_equal(cfg_inst_val first, cfg_inst_val second);
-static size_t int32_value_size(cfg_inst_val val);
+#define DECLARE_CFG_TYPE_METHODS(variant_) \
+static te_errno str_to_ ## variant_(char *val_str, cfg_inst_val *val);       \
+static te_errno variant_ ## _to_str(cfg_inst_val val, char **val_str);       \
+static te_errno variant_ ## _def_val(cfg_inst_val *val);                     \
+static void variant_ ## _free(cfg_inst_val val);                             \
+static te_errno variant_ ## _copy(cfg_inst_val src, cfg_inst_val *dst);      \
+static te_errno variant_ ## _get(cfg_msg *msg, cfg_inst_val *val);           \
+static void variant_ ## _put(cfg_inst_val val, cfg_msg *msg);                \
+static te_bool variant_ ## _equal(cfg_inst_val first, cfg_inst_val second);  \
+static size_t variant_ ## _value_size(cfg_inst_val val)
 
-/* Conversion functions for type 'uint64_t' */
-static te_errno str_to_uint64(char *val_str, cfg_inst_val *val);
-static te_errno uint64_to_str(cfg_inst_val val, char **val_str);
-static te_errno uint64_def_val(cfg_inst_val *val);
-static void uint64_free(cfg_inst_val val);
-static te_errno uint64_copy(cfg_inst_val src, cfg_inst_val *dst);
-static te_errno uint64_get(cfg_msg *msg, cfg_inst_val *val);
-static void uint64_put(cfg_inst_val val, cfg_msg *msg);
-static te_bool uint64_equal(cfg_inst_val first, cfg_inst_val second);
-static size_t uint64_value_size(cfg_inst_val val);
+DECLARE_CFG_TYPE_METHODS(bool);
+DECLARE_CFG_TYPE_METHODS(int8);
+DECLARE_CFG_TYPE_METHODS(uint8);
+DECLARE_CFG_TYPE_METHODS(int16);
+DECLARE_CFG_TYPE_METHODS(uint16);
+DECLARE_CFG_TYPE_METHODS(int32);
+DECLARE_CFG_TYPE_METHODS(uint32);
+DECLARE_CFG_TYPE_METHODS(int64);
+DECLARE_CFG_TYPE_METHODS(uint64);
+DECLARE_CFG_TYPE_METHODS(string);
+DECLARE_CFG_TYPE_METHODS(addr);
+DECLARE_CFG_TYPE_METHODS(none);
 
-/* Convertion functions for type 'char *' */
-static te_errno str_to_string(char *val_str, cfg_inst_val *val);
-static te_errno string_to_str(cfg_inst_val val, char **val_str);
-static te_errno string_def_val(cfg_inst_val *val);
-static void string_free(cfg_inst_val val);
-static te_errno string_copy(cfg_inst_val src, cfg_inst_val *dst);
-static te_errno string_get(cfg_msg *msg, cfg_inst_val *val);
-static void string_put(cfg_inst_val val, cfg_msg *msg);
-static te_bool string_equal(cfg_inst_val first, cfg_inst_val second);
-static size_t string_value_size(cfg_inst_val val);
+#undef DECLARE_CFG_TYPE_METHODS
 
-/* Convertion functions for type 'sockaddr *' */
-static te_errno str_to_addr(char *val_str, cfg_inst_val *val);
-static te_errno addr_to_str(cfg_inst_val val, char **val_str);
-static te_errno addr_def_val(cfg_inst_val *val);
-static void addr_free(cfg_inst_val val);
-static te_errno addr_copy(cfg_inst_val src, cfg_inst_val *dst);
-static te_errno addr_get(cfg_msg *msg, cfg_inst_val *val);
-static void addr_put(cfg_inst_val val, cfg_msg *msg);
-static te_bool addr_equal(cfg_inst_val first, cfg_inst_val second);
-static size_t addr_value_size(cfg_inst_val val);
+/* Primary types' conversion functions */
 
-/* Convertion dummy functions for type 'none' */
-static te_errno str_to_none(char *val_str, cfg_inst_val *val);
-static te_errno none_to_str(cfg_inst_val val, char **val_str);
-static te_errno none_def_val(cfg_inst_val *val);
-static void none_free(cfg_inst_val val);
-static te_errno none_copy(cfg_inst_val src, cfg_inst_val *dst);
-static te_errno none_get(cfg_msg *msg, cfg_inst_val *val);
-static void none_put(cfg_inst_val val, cfg_msg *msg);
-static te_bool none_equal(cfg_inst_val first, cfg_inst_val second);
-static size_t none_value_size(cfg_inst_val val);
+#define CFG_TYPE_METHODS(variant_, cvt_type_) \
+    [cvt_type_] =                                                            \
+    { str_to_ ## variant_, variant_ ## _to_str, variant_ ## _def_val,        \
+      variant_ ## _free, variant_ ## _copy, variant_ ## _get,                \
+      variant_ ## _put, variant_ ## _equal, variant_ ## _value_size }
 
-/* Primary types' convertion functions */
 cfg_primary_type cfg_types[CFG_PRIMARY_TYPES_NUM] = {
-/* CVT_INT32 */
-    { str_to_int32, int32_to_str, int32_def_val,
-      int32_free, int32_copy, int32_get, int32_put, int32_equal,
-      int32_value_size },
-/* CVT_UINT64 */
-    { str_to_uint64, uint64_to_str, uint64_def_val,
-      uint64_free, uint64_copy, uint64_get, uint64_put, uint64_equal,
-      uint64_value_size },
-/* CVT_STRING */
-    { str_to_string, string_to_str, string_def_val,
-      string_free, string_copy, string_get, string_put,
-      string_equal, string_value_size },
-/* CVT_ADDRESS */
-    { str_to_addr, addr_to_str, addr_def_val,
-      addr_free, addr_copy, addr_get, addr_put, addr_equal, addr_value_size },
-/* CVT_NONE */
-    { str_to_none, none_to_str, none_def_val,
-      none_free, none_copy, none_get, none_put, none_equal, none_value_size }
- };
+    CFG_TYPE_METHODS(bool, CVT_BOOL),
+    CFG_TYPE_METHODS(int8, CVT_INT8),
+    CFG_TYPE_METHODS(uint8, CVT_UINT8),
+    CFG_TYPE_METHODS(int16, CVT_INT16),
+    CFG_TYPE_METHODS(uint16, CVT_UINT16),
+    CFG_TYPE_METHODS(int32, CVT_INT32),
+    CFG_TYPE_METHODS(uint32, CVT_UINT32),
+    CFG_TYPE_METHODS(int64, CVT_INT64),
+    CFG_TYPE_METHODS(uint64, CVT_UINT64),
+    CFG_TYPE_METHODS(string, CVT_STRING),
+    CFG_TYPE_METHODS(addr, CVT_ADDRESS),
+    CFG_TYPE_METHODS(none, CVT_NONE),
+};
 
-/*----------------------- Int32 type handlers -------------------------*/
+#undef CFG_TYPE_METHODS
 
+/*-------------------------- integer types handlers ------------------------*/
+
+/* Definitions of conversion-from-string methods for integral types */
 static te_errno
-str_to_int32(char *val_str, cfg_inst_val *val)
+str_to_u_integer(cfg_val_type cvt_type, char *val_str, uintmax_t *val)
 {
-    char *invalid;
-    int32_t ret_val = 0;
+    uintmax_t ret_val = 0;
+    te_errno rc;
 
-    ret_val = strtol(val_str, &invalid, 0);
-    if (*invalid != '\0')
+    if (*val_str == '\0')
     {
-        return TE_EINVAL;
+        *val = 0;
+        return 0;
     }
-    val->val_int32 = ret_val;
+
+    rc = te_strtoumax(val_str, 0, &ret_val);
+
+    if (rc != 0)
+        return rc;
+
+    if (max_int_val[cvt_type] == 0)
+        return TE_EINVAL;
+    if (ret_val > max_int_val[cvt_type])
+        return TE_EINVAL;
+
+    *val = ret_val;
     return 0;
 }
 
 static te_errno
-int32_to_str(cfg_inst_val val, char **val_str)
+str_to_s_integer(cfg_val_type cvt_type, char *val_str, intmax_t *val)
+{
+    intmax_t ret_val = 0;
+    te_errno rc;
+
+    if (*val_str == '\0')
+    {
+        *val = 0;
+        return 0;
+    }
+
+    rc = te_strtoimax(val_str, 0, &ret_val);
+
+    if (rc != 0)
+        return rc;
+
+    if (min_int_val[cvt_type] == 0)
+        return TE_EINVAL;
+    if (ret_val < min_int_val[cvt_type] ||
+        ret_val > (intmax_t) max_int_val[cvt_type])
+        return TE_EINVAL;
+
+    *val = ret_val;
+    return 0;
+}
+
+#define DEFINE_STR_TO_INTEGER(variant_, cvt_type_, max_type_, \
+                              convert_function_, type_)                     \
+static te_errno                                                             \
+str_to_ ## variant_(char *val_str, cfg_inst_val *val)                       \
+{                                                                           \
+    max_type_ val_tmp;                                                      \
+    te_errno rc;                                                            \
+                                                                            \
+    rc = convert_function_(cvt_type_, val_str, &val_tmp);                   \
+    if (rc == 0)                                                            \
+        val->val_ ## variant_ = (type_)val_tmp;                             \
+    return rc;                                                              \
+}                                                                           \
+struct noop
+
+DEFINE_STR_TO_INTEGER(bool, CVT_BOOL, uintmax_t, str_to_u_integer, te_bool);
+DEFINE_STR_TO_INTEGER(int8, CVT_INT8, intmax_t, str_to_s_integer, int8_t);
+DEFINE_STR_TO_INTEGER(uint8, CVT_UINT8, uintmax_t, str_to_u_integer, uint8_t);
+DEFINE_STR_TO_INTEGER(int16, CVT_INT16, intmax_t, str_to_s_integer, int16_t);
+DEFINE_STR_TO_INTEGER(uint16, CVT_UINT16, uintmax_t, str_to_u_integer, uint16_t);
+DEFINE_STR_TO_INTEGER(int32, CVT_INT32, intmax_t, str_to_s_integer, int32_t);
+DEFINE_STR_TO_INTEGER(uint32, CVT_UINT32, uintmax_t, str_to_u_integer, uint32_t);
+DEFINE_STR_TO_INTEGER(int64, CVT_INT64, intmax_t, str_to_s_integer, int64_t);
+DEFINE_STR_TO_INTEGER(uint64, CVT_UINT64, uintmax_t, str_to_u_integer, uint64_t);
+
+#undef DEFINE_STR_TO_INTEGER
+
+/* Definitions of conversion-to-string methods for unsigned integral types */
+static te_errno
+u_integer_to_str(cfg_val_type cvt_type, uintmax_t val,
+               char **val_str)
 {
     char str[CFG_TP_MAX_BUF];
-    int32_t ret_val;
+    te_errno ret_val;
 
-    ret_val = snprintf(str, CFG_TP_MAX_BUF, "%d", val.val_int32);
-    if (ret_val < 1)
-    {
+    if (max_int_val[cvt_type] == 0)
         return TE_EINVAL;
-    }
-
-    *val_str = (char *)calloc(strlen(str) + 1, 1);
-    if (*val_str == NULL)
-    {
-        return TE_EINVAL;
-    }
-    memcpy((void *)(*val_str), str, strlen(str) + 1);
-    return 0;
-}
-
-static te_errno
-int32_def_val(cfg_inst_val *val)
-{
-    val->val_int32 = 0;
-    return 0;
-}
-
-static void
-int32_free(cfg_inst_val val)
-{
-    UNUSED(val);
-    return;
-}
-
-static te_errno
-int32_copy(cfg_inst_val src, cfg_inst_val *dst)
-{
-    dst->val_int32 = src.val_int32;
-    return 0;
-}
-
-static te_errno
-int32_get(cfg_msg *msg, cfg_inst_val *val)
-{
-    val->val_int32 = msg->type == CFG_GET ?
-                     ((cfg_get_msg *)msg)->val.val_int32 :
-                     msg->type == CFG_SET ?
-                     ((cfg_set_msg *)msg)->val.val_int32 :
-                     ((cfg_add_msg *)msg)->val.val_int32;
-    return 0;
-}
-
-static void
-int32_put(cfg_inst_val val, cfg_msg *msg)
-{
-    int32_t *msg_val;
-
-    if (msg == NULL)
-        return;
-
-    msg_val = (msg->type == CFG_ADD) ? &(((cfg_add_msg *)msg)->val.val_int32) :
-              (msg->type == CFG_SET) ? &(((cfg_set_msg *)msg)->val.val_int32) :
-              &(((cfg_get_msg *)msg)->val.val_int32);
-    *msg_val = val.val_int32;
-
-    SET_MSG_LEN(msg);
-}
-
-static te_bool
-int32_equal(cfg_inst_val first, cfg_inst_val second)
-{
-    return ((first.val_int32 - second.val_int32) == 0) ? TRUE : FALSE;
-}
-
-static size_t
-int32_value_size(cfg_inst_val val)
-{
-    UNUSED(val);
-    return sizeof(int32_t);
-}
-
-/*----------------------- uint64_t type handlers -------------------------*/
-
-static te_errno
-str_to_uint64(char *val_str, cfg_inst_val *val)
-{
-    char *invalid;
-    uint64_t ret_val = 0;
-    int saved_errno;
-
-    saved_errno = errno;
-    errno = 0;
-
-    ret_val = strtoull(val_str, &invalid, 0);
-    if (*invalid != '\0')
-        return TE_EINVAL;
-
-    if (ret_val == ULLONG_MAX && errno == ERANGE)
-        return TE_ERANGE;
-
-    errno = saved_errno;
-
-    val->val_uint64 = ret_val;
-    return 0;
-}
-
-static te_errno
-uint64_to_str(cfg_inst_val val, char **val_str)
-{
-    char str[CFG_TP_MAX_BUF];
-    int ret_val;
-
-    ret_val = snprintf(str, CFG_TP_MAX_BUF, "%llu",
-                       (long long unsigned int)(val.val_uint64));
+    ret_val = snprintf(str, CFG_TP_MAX_BUF - 1, "%ju", val);
     if (ret_val < 1)
         return TE_EINVAL;
     else if (ret_val >= CFG_TP_MAX_BUF)
-        return TE_ERANGE;
+        return TE_ENOBUFS;
 
     *val_str = strdup(str);
     if (*val_str == NULL)
-        return TE_ENOMEM;
-
+        TE_FATAL_ERROR("Not enough memory");
     return 0;
 }
 
+#define DEFINE_U_INTEGER_TO_STR(variant_, cvt_type_) \
+static te_errno                                                           \
+variant_ ## _to_str(cfg_inst_val val, char **val_str)                     \
+{                                                                         \
+    return u_integer_to_str(cvt_type_, (intmax_t)val.val_ ## variant_,    \
+                            val_str);                                     \
+}                                                                         \
+struct noop
+
+DEFINE_U_INTEGER_TO_STR(bool, CVT_BOOL);
+DEFINE_U_INTEGER_TO_STR(uint8, CVT_UINT8);
+DEFINE_U_INTEGER_TO_STR(uint16, CVT_UINT16);
+DEFINE_U_INTEGER_TO_STR(uint32, CVT_UINT32);
+DEFINE_U_INTEGER_TO_STR(uint64, CVT_UINT64);
+
+#undef DEFINE_U_INTEGER_TO_STR
+
+/* Definitions of conversion-to-string methods for signed integral types */
 static te_errno
-uint64_def_val(cfg_inst_val *val)
+s_integer_to_str(cfg_val_type cvt_type, intmax_t val, char **val_str)
 {
-    val->val_uint64 = 0;
+    char str[CFG_TP_MAX_BUF];
+    te_errno ret_val;
+
+    if (min_int_val[cvt_type] == 0)
+        return TE_EINVAL;
+    ret_val = snprintf(str, CFG_TP_MAX_BUF - 1, "%jd", val);
+    if (ret_val < 1)
+        return TE_EINVAL;
+    else if (ret_val >= CFG_TP_MAX_BUF)
+        return TE_ENOBUFS;
+
+    *val_str = strdup(str);
+    if (*val_str == NULL)
+        TE_FATAL_ERROR("Not enough memory");
     return 0;
 }
 
-static void
-uint64_free(cfg_inst_val val)
-{
-    UNUSED(val);
-    return;
-}
 
-static te_errno
-uint64_copy(cfg_inst_val src, cfg_inst_val *dst)
-{
-    dst->val_uint64 = src.val_uint64;
-    return 0;
-}
+#define DEFINE_S_INTEGER_TO_STR(variant_, cvt_type_) \
+static te_errno                                                         \
+variant_ ## _to_str(cfg_inst_val val, char **val_str)                   \
+{                                                                       \
+    return s_integer_to_str(cvt_type_, (intmax_t)val.val_ ## variant_,  \
+                            val_str);                                   \
+}                                                                       \
+struct noop
 
-static te_errno
-uint64_get(cfg_msg *msg, cfg_inst_val *val)
-{
-    if (msg->type == CFG_GET)
-        val->val_uint64 = ((cfg_get_msg *)msg)->val.val_uint64;
-    else if (msg->type == CFG_SET)
-        val->val_uint64 = ((cfg_set_msg *)msg)->val.val_uint64;
-    else
-        val->val_uint64 = ((cfg_add_msg *)msg)->val.val_uint64;
+DEFINE_S_INTEGER_TO_STR(int8, CVT_INT8);
+DEFINE_S_INTEGER_TO_STR(int16, CVT_INT16);
+DEFINE_S_INTEGER_TO_STR(int32, CVT_INT32);
+DEFINE_S_INTEGER_TO_STR(int64, CVT_INT64);
 
-    return 0;
-}
+#undef DEFINE_S_INTEGER_TO_STR
 
-static void
-uint64_put(cfg_inst_val val, cfg_msg *msg)
-{
-    uint64_t *msg_val;
+/* Definitions of default-value methods for integral types */
 
-    if (msg == NULL)
-        return;
+#define DEFINE_INTEGER_DEF_VAL(variant_) \
+static te_errno                                       \
+variant_ ## _def_val(cfg_inst_val *val)               \
+{                                                     \
+    val->val_ ## variant_ = 0;                        \
+    return 0;                                         \
+}                                                     \
+struct noop
 
-    if (msg->type == CFG_GET)
-        msg_val = &((cfg_get_msg *)msg)->val.val_uint64;
-    else if (msg->type == CFG_SET)
-        msg_val = &((cfg_set_msg *)msg)->val.val_uint64;
-    else
-        msg_val = &((cfg_add_msg *)msg)->val.val_uint64;
+DEFINE_INTEGER_DEF_VAL(bool);
+DEFINE_INTEGER_DEF_VAL(int8);
+DEFINE_INTEGER_DEF_VAL(uint8);
+DEFINE_INTEGER_DEF_VAL(int16);
+DEFINE_INTEGER_DEF_VAL(uint16);
+DEFINE_INTEGER_DEF_VAL(int32);
+DEFINE_INTEGER_DEF_VAL(uint32);
+DEFINE_INTEGER_DEF_VAL(int64);
+DEFINE_INTEGER_DEF_VAL(uint64);
 
-    *msg_val = val.val_uint64;
+#undef DEFINE_STR_TO_INTEGER
 
-    SET_MSG_LEN(msg);
-}
+/* Definitions of free methods for integral types (they are dummy) */
 
-static te_bool
-uint64_equal(cfg_inst_val first, cfg_inst_val second)
-{
-    return (first.val_uint64 == second.val_uint64) ? TRUE : FALSE;
-}
+#define DEFINE_INTEGER_FREE(variant_) \
+static void                                  \
+variant_ ## _free(cfg_inst_val val)          \
+{                                            \
+    UNUSED(val);                             \
+    return;                                  \
+}                                            \
+struct noop
 
-static size_t
-uint64_value_size(cfg_inst_val val)
-{
-    UNUSED(val);
-    return sizeof(uint64_t);
-}
+DEFINE_INTEGER_FREE(bool);
+DEFINE_INTEGER_FREE(int8);
+DEFINE_INTEGER_FREE(uint8);
+DEFINE_INTEGER_FREE(int16);
+DEFINE_INTEGER_FREE(uint16);
+DEFINE_INTEGER_FREE(int32);
+DEFINE_INTEGER_FREE(uint32);
+DEFINE_INTEGER_FREE(int64);
+DEFINE_INTEGER_FREE(uint64);
+
+#undef DEFINE_INTEGER_FREE
+
+/* Definitions of copy methods for integral types */
+
+#define DEFINE_INTEGER_COPY(variant_) \
+static te_errno                                          \
+variant_ ## _copy(cfg_inst_val src, cfg_inst_val *dst)   \
+{                                                        \
+    dst->val_ ## variant_ = src.val_ ## variant_;        \
+    return 0;                                            \
+}                                                        \
+struct noop
+
+DEFINE_INTEGER_COPY(bool);
+DEFINE_INTEGER_COPY(int8);
+DEFINE_INTEGER_COPY(uint8);
+DEFINE_INTEGER_COPY(int16);
+DEFINE_INTEGER_COPY(uint16);
+DEFINE_INTEGER_COPY(int32);
+DEFINE_INTEGER_COPY(uint32);
+DEFINE_INTEGER_COPY(int64);
+DEFINE_INTEGER_COPY(uint64);
+
+#undef DEFINE_INTEGER_COPY
+
+/* Definitions of get-value methods for integral types */
+
+#define DEFINE_INTEGER_GET(variant_) \
+static te_errno                                                                  \
+variant_ ## _get(cfg_msg *msg, cfg_inst_val *val)                                \
+{                                                                                \
+    switch (msg->type)                                                           \
+    {                                                                            \
+        case CFG_GET:                                                            \
+            val->val_ ## variant_ = ((cfg_get_msg *)msg)->val.val_ ## variant_;  \
+            break;                                                               \
+                                                                                 \
+        case CFG_SET:                                                            \
+            val->val_ ## variant_ = ((cfg_set_msg *)msg)->val.val_ ## variant_;  \
+            break;                                                               \
+                                                                                 \
+        case CFG_ADD:                                                            \
+            val->val_ ## variant_ = ((cfg_add_msg *)msg)->val.val_ ## variant_;  \
+            break;                                                               \
+                                                                                 \
+        default:                                                                 \
+            assert(0);                                                           \
+    }                                                                            \
+    return 0;                                                                    \
+}                                                                                \
+struct noop
+
+DEFINE_INTEGER_GET(bool);
+DEFINE_INTEGER_GET(int8);
+DEFINE_INTEGER_GET(uint8);
+DEFINE_INTEGER_GET(int16);
+DEFINE_INTEGER_GET(uint16);
+DEFINE_INTEGER_GET(int32);
+DEFINE_INTEGER_GET(uint32);
+DEFINE_INTEGER_GET(int64);
+DEFINE_INTEGER_GET(uint64);
+
+#undef DEFINE_INTEGER_GET
+
+/* Definitions of put-value methods for integral types */
+
+#define DEFINE_INTEGER_PUT(variant_, type_) \
+static void                                                          \
+variant_ ## _put(cfg_inst_val val, cfg_msg *msg)                     \
+{                                                                    \
+    type_ *msg_val;                                                  \
+                                                                     \
+    if (msg == NULL)                                                 \
+        return;                                                      \
+                                                                     \
+    switch (msg->type)                                               \
+    {                                                                \
+        case CFG_ADD:                                                \
+            msg_val = &(((cfg_add_msg *)msg)->val.val_ ## variant_); \
+            break;                                                   \
+                                                                     \
+        case CFG_SET:                                                \
+            msg_val = &(((cfg_set_msg *)msg)->val.val_ ## variant_); \
+            break;                                                   \
+                                                                     \
+        case CFG_GET:                                                \
+            msg_val = &(((cfg_get_msg *)msg)->val.val_ ## variant_); \
+            break;                                                   \
+                                                                     \
+        default:                                                     \
+            assert(0);                                               \
+    }                                                                \
+    *msg_val = val.val_ ## variant_;                                 \
+                                                                     \
+    SET_MSG_LEN(msg);                                                \
+}                                                                    \
+struct noop
+
+DEFINE_INTEGER_PUT(bool, te_bool);
+DEFINE_INTEGER_PUT(int8, int8_t);
+DEFINE_INTEGER_PUT(uint8, uint8_t);
+DEFINE_INTEGER_PUT(int16, int16_t);
+DEFINE_INTEGER_PUT(uint16, uint16_t);
+DEFINE_INTEGER_PUT(int32, int32_t);
+DEFINE_INTEGER_PUT(uint32, uint32_t);
+DEFINE_INTEGER_PUT(int64, int64_t);
+DEFINE_INTEGER_PUT(uint64, uint64_t);
+
+#undef DEFINE_INTEGER_PUT
+
+/* Definitions of equality methods for integral types */
+
+#define DEFINE_INTEGER_EQUAL(variant_) \
+static te_bool                                                                 \
+variant_ ## _equal(cfg_inst_val first, cfg_inst_val second)                    \
+{                                                                              \
+    return first.val_ ## variant_ == second.val_ ## variant_;                  \
+}                                                                              \
+struct noop
+
+DEFINE_INTEGER_EQUAL(bool);
+DEFINE_INTEGER_EQUAL(int8);
+DEFINE_INTEGER_EQUAL(uint8);
+DEFINE_INTEGER_EQUAL(int16);
+DEFINE_INTEGER_EQUAL(uint16);
+DEFINE_INTEGER_EQUAL(int32);
+DEFINE_INTEGER_EQUAL(uint32);
+DEFINE_INTEGER_EQUAL(int64);
+DEFINE_INTEGER_EQUAL(uint64);
+
+#undef DEFINE_INTEGER_EQUAL
+
+/* Definitions of get-value-size methods for integral types */
+
+#define DEFINE_INTEGER_VALUE_SIZE(variant_, type_) \
+static size_t                                                    \
+variant_ ## _value_size(cfg_inst_val val)                        \
+{                                                                \
+    UNUSED(val);                                                 \
+    return sizeof(type_);                                        \
+}                                                                \
+struct noop
+
+DEFINE_INTEGER_VALUE_SIZE(bool, te_bool);
+DEFINE_INTEGER_VALUE_SIZE(int8, int8_t);
+DEFINE_INTEGER_VALUE_SIZE(uint8, uint8_t);
+DEFINE_INTEGER_VALUE_SIZE(int16, int16_t);
+DEFINE_INTEGER_VALUE_SIZE(uint16, uint16_t);
+DEFINE_INTEGER_VALUE_SIZE(int32, int32_t);
+DEFINE_INTEGER_VALUE_SIZE(uint32, uint32_t);
+DEFINE_INTEGER_VALUE_SIZE(int64, int64_t);
+DEFINE_INTEGER_VALUE_SIZE(uint64, uint64_t);
+
+#undef DEFINE_INTEGER_VALUE_SIZE
 
 /*----------------------- String type handlers --------------------------*/
 

@@ -171,6 +171,8 @@ obj_tree_bufprint(cfg_object *obj, const int indent)
     int             i;
     char           *tmp;
     cfg_dependency *dep;
+    const char *obj_type_name = te_enum_map_from_any_value(cfg_cvt_mapping,
+                                                             obj->type, "");
 
     for (i = 0; i < indent; i++)
         CHECK(bufprintf(&buf, &offset, &sz, " ") != NULL);
@@ -180,10 +182,7 @@ obj_tree_bufprint(cfg_object *obj, const int indent)
                     obj->access == CFG_READ_CREATE ? "RC" :
                     obj->access == CFG_READ_WRITE ? "RW" :
                     "R",
-                    obj->type == CVT_NONE ? "none" :
-                    obj->type == CVT_INT32 ? "int32" :
-                    obj->type == CVT_UINT64 ? "uint64" :
-                    obj->type == CVT_ADDRESS ? "addr" : "str",
+                    obj_type_name,
                     obj->vol == TRUE ? "V" : "")
           != NULL);
     for (dep = obj->depends_on; dep != NULL; dep = dep->next)

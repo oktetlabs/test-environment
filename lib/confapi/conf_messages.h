@@ -166,7 +166,14 @@ typedef struct cfg_add_msg {
     union {
         struct sockaddr val_addr[0];    /**< start of sockaddr value */
         char            val_str[0];     /**< start of string value*/
+        te_bool         val_bool;       /**< te_bool value */
+        int8_t          val_int8;       /**< int8_t value */
+        uint8_t         val_uint8;      /**< uint8_t value */
+        int16_t         val_int16;      /**< int16_t value */
+        uint16_t        val_uint16;     /**< uint16_t value */
         int32_t         val_int32;      /**< int32_t value */
+        uint32_t        val_uint32;     /**< uint32_t value */
+        int64_t         val_int64;      /**< int64_t value */
         uint64_t        val_uint64;     /**< uint64_t value */
     } val;
 } cfg_add_msg;
@@ -188,7 +195,14 @@ typedef struct cfg_set_msg {
     union {
         struct sockaddr val_addr[0]; /**< start of sockaddr value */
         char            val_str[0];  /**< start of string value */
+        te_bool         val_bool;    /**< te_bool value */
+        int8_t          val_int8;    /**< int8_t value */
+        uint8_t         val_uint8;   /**< uint8_t value */
+        int16_t         val_int16;   /**< int16_t value */
+        uint16_t        val_uint16;  /**< uint16_t value */
         int32_t         val_int32;   /**< int32_t value */
+        uint32_t        val_uint32;  /**< uint32_t value */
+        int64_t         val_int64;   /**< int64_t value */
         uint64_t        val_uint64;  /**< uint64_t value */
     } val;
 } cfg_set_msg;
@@ -208,7 +222,14 @@ typedef struct cfg_get_msg {
     union {
         struct sockaddr val_addr[0]; /**< start of sockaddr value */
         char            val_str[0];  /**< start of string value */
+        te_bool         val_bool;    /**< te_bool value */
+        int8_t          val_int8;    /**< int8_t value */
+        uint8_t         val_uint8;   /**< uint8_t value */
+        int16_t         val_int16;   /**< int16_t value */
+        uint16_t        val_uint16;  /**< uint16_t value */
         int32_t         val_int32;   /**< int32_t value */
+        uint32_t        val_uint32;  /**< uint32_t value */
+        int64_t         val_int64;   /**< int64_t value */
         uint64_t        val_uint64;  /**< uint64_t value */
     } val;
 } cfg_get_msg;

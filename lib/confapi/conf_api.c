@@ -1013,15 +1013,22 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
     msg->local = local;
     msg->val_type = type;
 
-    switch (type)
-    {
-        case CVT_INT32:
-            value.val_int32 = (int32_t)va_arg(list, int);
+#define CASE_INTEGER_TYPE(variant_, cvt_type_, type_, type_for_varg_) \
+        case cvt_type_:                                                        \
+            value.val_ ## variant_ = (type_)va_arg(list, type_for_varg_);      \
             break;
 
-        case CVT_UINT64:
-            value.val_uint64 = va_arg(list, uint64_t);
-            break;
+    switch (type)
+    {
+        CASE_INTEGER_TYPE(bool, CVT_BOOL, te_bool, unsigned int);
+        CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t, int);
+        CASE_INTEGER_TYPE(uint8, CVT_UINT8, uint8_t, unsigned int);
+        CASE_INTEGER_TYPE(int16, CVT_INT16, int16_t, int);
+        CASE_INTEGER_TYPE(uint16, CVT_UINT16, uint16_t, unsigned int);
+        CASE_INTEGER_TYPE(int32, CVT_INT32, int32_t, int);
+        CASE_INTEGER_TYPE(uint32, CVT_UINT32, uint32_t, unsigned int);
+        CASE_INTEGER_TYPE(int64, CVT_INT64, int64_t, int64_t);
+        CASE_INTEGER_TYPE(uint64, CVT_UINT64, uint64_t, uint64_t);
 
         case CVT_STRING:
             value.val_str = va_arg(list, char *);
@@ -1037,6 +1044,7 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
         case CVT_UNSPECIFIED:
             assert(FALSE);
     }
+#undef CASE_INTEGER_TYPE
 
     cfg_types[type].put_to_msg(value, (cfg_msg *)msg);
 
@@ -1465,15 +1473,22 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
 
+#define CASE_INTEGER_TYPE(variant_, cvt_type_, type_, type_for_varg_) \
+        case cvt_type_:                                                        \
+            value.val_ ## variant_ = (type_)va_arg(list, type_for_varg_);      \
+            break
+
     switch (type)
     {
-        case CVT_INT32:
-            value.val_int32 = (int32_t)va_arg(list, int);
-            break;
-
-        case CVT_UINT64:
-            value.val_uint64 = va_arg(list, uint64_t);
-            break;
+        CASE_INTEGER_TYPE(bool, CVT_BOOL, te_bool, unsigned int);
+        CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t, int);
+        CASE_INTEGER_TYPE(uint8, CVT_UINT8, uint8_t, unsigned int);
+        CASE_INTEGER_TYPE(int16, CVT_INT16, int16_t, int);
+        CASE_INTEGER_TYPE(uint16, CVT_UINT16, uint16_t, unsigned int);
+        CASE_INTEGER_TYPE(int32, CVT_INT32, int32_t, int);
+        CASE_INTEGER_TYPE(uint32, CVT_UINT32, uint32_t, unsigned int);
+        CASE_INTEGER_TYPE(int64, CVT_INT64, int64_t, int64_t);
+        CASE_INTEGER_TYPE(uint64, CVT_UINT64, uint64_t, uint64_t);
 
         case CVT_STRING:
             value.val_str = va_arg(list, char *);
@@ -1489,6 +1504,7 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
         case CVT_UNSPECIFIED:
              assert(0);
     }
+#undef CASE_INTEGER_TYPE
 
     memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_set_msg *)cfgl_msg_buf;
@@ -1696,24 +1712,28 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
     }
 
     va_start(list, type);
+
+#define CASE_INTEGER_TYPE(variant_, cvt_type_, type_) \
+         case cvt_type_:                                                    \
+         {                                                                  \
+             type_ *val_ ## variant_ = va_arg(list, type_ *);               \
+                                                                            \
+             if (val_ ## variant_ != NULL)                                  \
+                 *val_ ## variant_ = value.val_ ## variant_;                \
+             break;                                                         \
+         }
+
     switch (msg->val_type)
     {
-         case CVT_INT32:
-         {
-             int32_t *val_int32 = va_arg(list, int32_t *);
-
-             if (val_int32 != NULL)
-                 *val_int32 = value.val_int32;
-             break;
-         }
-         case CVT_UINT64:
-         {
-             uint64_t *val_uint64 = va_arg(list, uint64_t *);
-
-             if (val_uint64 != NULL)
-                 *val_uint64 = value.val_uint64;
-             break;
-         }
+         CASE_INTEGER_TYPE(bool, CVT_BOOL, te_bool);
+         CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t);
+         CASE_INTEGER_TYPE(uint8, CVT_UINT8, uint8_t);
+         CASE_INTEGER_TYPE(int16, CVT_INT16, int16_t);
+         CASE_INTEGER_TYPE(uint16, CVT_UINT16, uint16_t);
+         CASE_INTEGER_TYPE(int32, CVT_INT32, int32_t);
+         CASE_INTEGER_TYPE(uint32, CVT_UINT32, uint32_t);
+         CASE_INTEGER_TYPE(int64, CVT_INT64, int64_t);
+         CASE_INTEGER_TYPE(uint64, CVT_UINT64, uint64_t);
          case CVT_STRING:
          {
              char **val_str  = va_arg(list, char **);
@@ -1746,6 +1766,7 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
              break;
          }
     }
+#undef CASE_INTEGER_TYPE
     va_end(list);
 
     if ((type != NULL) && (*type == CVT_UNSPECIFIED))
@@ -1877,22 +1898,27 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
     }
 
     va_start(list, type);
+
+#define CASE_INTEGER_TYPE(variant_, cvt_type_, type_) \
+        case cvt_type_:                                                     \
+        {                                                                   \
+            type_ *val_ ## variant_ = va_arg(list, type_ *);                \
+                                                                            \
+            *val_ ## variant_ = value.val_ ## variant_;                     \
+            break;                                                          \
+        }
+
     switch (msg->val_type)
     {
-         case CVT_INT32:
-         {
-             int32_t *val_int32 = va_arg(list, int32_t *);
-
-             *val_int32 = value.val_int32;
-             break;
-         }
-         case CVT_UINT64:
-         {
-             uint64_t *val_uint64 = va_arg(list, uint64_t *);
-
-             *val_uint64 = value.val_uint64;
-             break;
-         }
+         CASE_INTEGER_TYPE(bool, CVT_BOOL, te_bool);
+         CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t);
+         CASE_INTEGER_TYPE(uint8, CVT_UINT8, uint8_t);
+         CASE_INTEGER_TYPE(int16, CVT_INT16, int16_t);
+         CASE_INTEGER_TYPE(uint16, CVT_UINT16, uint16_t);
+         CASE_INTEGER_TYPE(int32, CVT_INT32, int32_t);
+         CASE_INTEGER_TYPE(uint32, CVT_UINT32, uint32_t);
+         CASE_INTEGER_TYPE(int64, CVT_INT64, int64_t);
+         CASE_INTEGER_TYPE(uint64, CVT_UINT64, uint64_t);
          case CVT_STRING:
          {
              char **val_str  = va_arg(list, char **);
@@ -1917,6 +1943,7 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
              break;
          }
     }
+#undef CASE_INTEGER_TYPE
     va_end(list);
 
     if (type != NULL)

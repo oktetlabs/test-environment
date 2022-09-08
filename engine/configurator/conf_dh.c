@@ -693,19 +693,15 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 attr = (char *)xmlGetProp(tmp, (const xmlChar *)"type");
                 if (attr != NULL)
                 {
-                    if (strcmp(attr, "integer") == 0)
-                        msg->val_type = CVT_INT32;
-                    else if (strcmp(attr, "int32") == 0)
-                        msg->val_type = CVT_INT32;
-                    else if (strcmp(attr, "uint64") == 0)
-                        msg->val_type = CVT_UINT64;
-                    else if (strcmp(attr, "address") == 0)
-                        msg->val_type = CVT_ADDRESS;
-                    else if (strcmp(attr, "string") == 0)
-                        msg->val_type = CVT_STRING;
-                    else if (strcmp(attr, "none") != 0)
-                        RETERR(TE_EINVAL, "Unsupported object type %s",
-                               attr);
+                    int mapped;
+
+                    mapped = te_enum_map_from_str(cfg_cvt_mapping,
+                                                  (const char *)attr,
+                                                  CVT_UNSPECIFIED);
+                    if (mapped == CVT_UNSPECIFIED)
+                        RETERR(TE_EINVAL, "Unsupported object type %s", attr);
+                    else
+                        msg->val_type = (cfg_val_type)mapped;
                     xmlFree((xmlChar *)attr);
                     attr = NULL;
                 }

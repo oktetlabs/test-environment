@@ -1682,16 +1682,15 @@ log_msg(cfg_msg *msg, te_bool before)
         case CFG_REGISTER:
         {
             cfg_register_msg *m = (cfg_register_msg *)msg;
+            const char *m_type_name =
+                                te_enum_map_from_any_value(cfg_cvt_mapping,
+                                                           m->val_type,
+                                                           "unknown type");
 
             LOG_MSG(level,
                     "Register object %s (%s, %s, %s)%s",
                     m->oid,
-                    m->val_type == CVT_NONE ? "void" :
-                    m->val_type == CVT_STRING ? "string" :
-                    m->val_type == CVT_INT32 ? "int32" :
-                    m->val_type == CVT_UINT64 ? "uint64" :
-                    m->val_type == CVT_ADDRESS ? "address" :
-                    "unknown type",
+                    m_type_name,
                     m->access == CFG_READ_WRITE ? "read/write" :
                     m->access == CFG_READ_ONLY ? "read/only" :
                     m->access == CFG_READ_CREATE ? "read/create" :
