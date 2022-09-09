@@ -2,7 +2,7 @@
 /** @file
  * @brief Control WPA supplicant
  *
- * Test API to control WPA supplicant tool
+ * Test API to control WPA supplicant tool.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
@@ -460,4 +460,49 @@ tapi_wpa_supplicant_stop(const char *ta, const char *ifname)
 {
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, 0), CFG_SUPPLICANT_PATH_FMT,
                                 ta, ifname);
+}
+
+/* See description in tapi_wpa_supplicant.h */
+te_errno
+tapi_wpa_supplicant_get_status(const char *ta, const char *ifname,
+                               tapi_wpa_supplicant_status *status)
+{
+#define UNKNOWN_STATUS (-1)
+
+    static const te_enum_map mapping[] = {
+        {.name = "DISCONNECTED", .value = TAPI_WPA_SUPP_DISCONNECTED},
+        {.name = "INTERFACE DISABLED", .value = TAPI_WPA_SUPP_INTERFACE_DISABLED},
+        {.name = "INACTIVE", .value = TAPI_WPA_SUPP_INACTIVE},
+        {.name = "SCANNING", .value = TAPI_WPA_SUPP_SCANNING},
+        {.name = "AUTHENTICATING", .value = TAPI_WPA_SUPP_AUTHENTICATING},
+        {.name = "ASSOCIATING", .value = TAPI_WPA_SUPP_ASSOCIATING},
+        {.name = "ASSOCIATED", .value = TAPI_WPA_SUPP_ASSOCIATED},
+        {.name = "4WAY HANDSHAKE", .value = TAPI_WPA_SUPP_4WAY_HANDSHAKE},
+        {.name = "GROUP HANDSHAKE", .value = TAPI_WPA_SUPP_GROUP_HANDSHAKE},
+        {.name = "COMPLETED", .value = TAPI_WPA_SUPP_COMPLETED},
+        TE_ENUM_MAP_END
+    };
+    char *strval = NULL;
+    int mapped;
+
+    CHECK_NZ_RETURN(cfg_get_instance_string_fmt(&strval,
+                            CFG_SUPPLICANT_PATH_FMT "/status:",
+                            ta, ifname));
+
+    mapped = te_enum_map_from_str(mapping, strval, UNKNOWN_STATUS);
+    if (mapped == UNKNOWN_STATUS)
+    {
+        ERROR("%s(): unknown status '%s', this function requires an update",
+              __func__, strval);
+        free(strval);
+        return TE_RC(TE_TAPI, TE_EUNKNOWN);
+    }
+
+    *status = (tapi_wpa_supplicant_status)mapped;
+
+    free(strval);
+
+    return 0;
+
+#undef UNKNOWN_STATUS
 }

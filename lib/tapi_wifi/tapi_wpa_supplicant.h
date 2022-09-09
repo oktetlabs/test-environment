@@ -6,7 +6,7 @@
  * @ingroup tapi_wifi
  * @{
  *
- * Test API to control WPA supplicant tool
+ * Test API to control WPA supplicant tool.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
@@ -21,6 +21,27 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * WPA supplicant states.
+ * Based on https://w1.fi/wpa_supplicant/devel/defs_8h.html (wpa_states).
+ */
+typedef enum tapi_wpa_supplicant_status {
+    TAPI_WPA_SUPP_DISCONNECTED,     /**< Disconnected state. */
+    TAPI_WPA_SUPP_INTERFACE_DISABLED,   /**< Interface disabled,
+                                         * e.g., due to rfkill. */
+    TAPI_WPA_SUPP_INACTIVE,         /**< Inactive state (wpa_supplicant
+                                     * disabled). */
+    TAPI_WPA_SUPP_SCANNING,         /**< Scanning for a network. */
+    TAPI_WPA_SUPP_AUTHENTICATING,   /**< Trying to authenticate with
+                                     * BSS/SSID. */
+    TAPI_WPA_SUPP_ASSOCIATING,      /**< Trying to associate with BSS/SSID. */
+    TAPI_WPA_SUPP_ASSOCIATED,       /**< Association completed but
+                                     * authentication is not yet. */
+    TAPI_WPA_SUPP_4WAY_HANDSHAKE,   /**< WPA 4-Way Key Handshake in progress. */
+    TAPI_WPA_SUPP_GROUP_HANDSHAKE,  /**< WPA Group Key Handshake in progress. */
+    TAPI_WPA_SUPP_COMPLETED,        /**< All authentication completed. */
+} tapi_wpa_supplicant_status;
 
 /**
  * WPA supplicant security settings.
@@ -188,6 +209,21 @@ extern te_errno tapi_wpa_supplicant_start(
  */
 extern te_errno tapi_wpa_supplicant_stop(
                         const char *ta, const char *ifname);
+
+/**
+ * Get WPA supplicant status.
+ *
+ * @param[in]  ta           Test agent name the supplicant is running on.
+ * @param[in]  ifname       Wi-Fi network interface the supplicant uses.
+ * @param[out] status       WPA supplicant status.
+ *
+ * @return Status code.
+ * @retval TE_ENOENT        If the supplicant is not running.
+ * @retval TE_EUNKNOWN      Unknown status, this function requires an update.
+ */
+extern te_errno tapi_wpa_supplicant_get_status(
+                        const char *ta, const char *ifname,
+                        tapi_wpa_supplicant_status *status);
 
 #ifdef __cplusplus
 } /* extern "C" */
