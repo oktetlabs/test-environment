@@ -16,14 +16,8 @@ TCE_LIST="$1"
 tce_clean_workspace \
     || tce_die "failed to create workspace"
 
-declare -A platform_ws
-
-for platform in $TE_BS_PLATFORMS ; do
-    ws_file="${TE_BUILD}/platforms/${platform}/${platform}.ws"
-    ws_dir="$(cat "$ws_file" 2> /dev/null)" \
-        || tce_die "failed to locate base directories for builds"
-    platform_ws[${platform}]="${ws_dir}"
-done
+tce_set_build_base \
+    || tce_die "failed to locate base directories for builds"
 
 declare -A platform_tce
 declare -A platform_tce_build
@@ -72,7 +66,7 @@ for platform in $TE_BS_PLATFORMS; do
             test -d "${!buildvar}/../src" || ln -s "${!srcvar}" "${!buildvar}/../src"
         fi
         if test -f "${!buildvar}/build.ninja"; then
-            wsdir="${platform_ws[${platform}]}"
+            wsdir="${tce_build_base[${platform}]}"
             build="${!buildvar#${TE_BUILD}/platforms/${platform}/}"
 
             platform_tce[${platform}]+=" ${tce}"
@@ -217,7 +211,7 @@ function fetch_host_tce
     local platform=$1
     local host=$2
     local tce=$3
-    local hostdir="${platform_ws[${platform}]}"
+    local hostdir="${tce_build_base[${platform}]}"
     local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
     local build="${platform_tce_build["${platform}_${tce}"]}"
 
@@ -239,7 +233,7 @@ function clean_platform_tce
 {
     local platform=$1
     local tce=$2
-    local hostdir="${platform_ws[${platform}]}"
+    local hostdir="${tce_build_base[${platform}]}"
     local hostdest="${hostdir}/destdir/${TE_INSTALL}/${platform}"
     local build="${platform_tce_build["${platform}_${tce}"]}"
 
@@ -257,7 +251,7 @@ function process_host_tce
     local host=$2
     local tce=$3
     local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local hostdir="${platform_ws[${platform}]}"
+    local hostdir="${tce_build_base[${platform}]}"
     local hostdest="${hostdir}/destdir/${TE_INSTALL}/${platform}"
     local build="${platform_tce_build["${platform}_${tce}"]}"
 
@@ -304,7 +298,7 @@ function resolve_platform_host_tce
     local platform=$1
     local host=$2
     local tce=$3
-    local hostdir="${platform_ws[${platform}]}"
+    local hostdir="${tce_build_base[${platform}]}"
     local pbuild="${TE_BUILD}/platforms/${platform}"
     local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
     local build="${platform_tce_build["${platform}_${tce}"]}"

@@ -39,3 +39,27 @@ function tce_clean_workspace() {
         && rm --interactive=never -r "${TCE_WS}" 2> /dev/null
     mkdir "${TCE_WS}" 2> /dev/null
 }
+
+#######################################
+# Locate base directories for TA builds.
+# Globals:
+#   TE_BS_PLATFORMS
+#   TE_BUILD
+#   tce_build_base
+# Arguments:
+#   None
+# Returns:
+#   0 if succeeds, non-zero on error.
+#######################################
+function tce_set_build_base() {
+    local type=
+    local ws_file=
+    local base=
+    declare -gA tce_build_base
+
+    for type in ${TE_BS_PLATFORMS} ; do
+        ws_file="${TE_BUILD}/platforms/${type}/${type}.ws"
+        base="$(cat "${ws_file}" 2> /dev/null)" || return 1
+        tce_build_base["${type}"]="${base}"
+    done
+}
