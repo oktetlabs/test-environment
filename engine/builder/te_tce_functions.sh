@@ -63,3 +63,25 @@ function tce_set_build_base() {
         tce_build_base["${type}"]="${base}"
     done
 }
+
+#######################################
+# List TA components TCE should be processed.
+# Globals:
+#   TE_BS_TCE_${type}
+#   TCE_LIST
+# Arguments:
+#   The TA type to list components for.
+# Outputs:
+#   TA components if any.
+#######################################
+function tce_list_components() {
+    local type="$1"
+    local list="${TCE_LIST}"
+    local _list=
+
+    if [[ "${list}" == "all" ]] ; then
+        _list="TE_BS_TCE_${type}"
+        list="${!_list}"
+    fi
+    echo "${list}"
+}

@@ -23,11 +23,7 @@ declare -A platform_tce
 declare -A platform_tce_build
 
 for platform in $TE_BS_PLATFORMS; do
-    tce_list="$*"
-    if test "$tce_list" = all; then
-        alltce="TE_BS_TCE_$platform"
-        tce_list="${!alltce}"
-    fi
+    tce_list="$(tce_list_components "${platform}")"
     fake_sbd=
     if test -n "$tce_list" -a -f "${TE_BUILD}/${platform}.sbd"; then
         # When shadow build directory is used, GCOV data files will be
