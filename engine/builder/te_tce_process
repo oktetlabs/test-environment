@@ -7,16 +7,13 @@
 #
 # Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
 
-. "${TE_BUILD}/builder.conf.processed"
-
 SCRIPT_DIR=`dirname $0`
-. ${SCRIPT_DIR}/te_functions
 
-TCE_WS="${TE_BUILD}/tce_workspace"
+. "${SCRIPT_DIR}/te_tce_functions.sh"
 
-[[ -d "${TCE_WS}" ]] \
-    && rm --interactive=never -r "${TCE_WS}" 2> /dev/null
-mkdir "${TCE_WS}" 2> /dev/null \
+TCE_LIST="$1"
+
+tce_clean_workspace \
     || tce_die "failed to create workspace"
 
 declare -A platform_ws
