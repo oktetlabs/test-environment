@@ -25,11 +25,11 @@ typedef uint8_t     tarpc_uchar;
 typedef uint16_t    tarpc_usint;
 
 /** RPC size_t analog */
-typedef uint32_t    tarpc_size_t;
+typedef uint64_t    tarpc_size_t;
 /** RPC pid_t analog */
 typedef int32_t     tarpc_pid_t;
 /** RPC ssize_t analog */
-typedef int32_t     tarpc_ssize_t;
+typedef int64_t     tarpc_ssize_t;
 /** RPC socklen_t analog */
 typedef uint32_t    tarpc_socklen_t;
 /** Handle of the 'sigset_t' or 0 */
