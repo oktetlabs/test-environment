@@ -4,7 +4,8 @@
 tests = [
     'readlink',
     'enum_map',
-    'units'
+    'units',
+    'vector'
 ]
 
 foreach test : tests

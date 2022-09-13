@@ -1,0 +1,6 @@
+<test name="vector" type="script">
+    <objective>Testing vector manipulating routines</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>

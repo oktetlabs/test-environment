@@ -17,5 +17,9 @@
         <run>
             <script name="units"/>
         </run>
+
+        <run>
+            <script name="vector"/>
+        </run>
     </session>
 </package>
