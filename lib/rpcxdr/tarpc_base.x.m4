@@ -5524,6 +5524,7 @@ program tarpc
         RPC_DEF(preadv)
         RPC_DEF(writev)
         RPC_DEF(pwritev)
+        RPC_DEF(pwritev2)
 
         RPC_DEF(lseek)
 
