@@ -112,6 +112,10 @@ typedef struct cfg_instance {
     struct cfg_instance *brother;   /**< Link to the next brother */
     /*@}*/
 
+    struct cfg_instance *bkp_next;  /**< Pointer to the next instance
+                                         in a list of instances to
+                                         be restored from backup */
+
     union  cfg_inst_val  val;
 } cfg_instance;
 

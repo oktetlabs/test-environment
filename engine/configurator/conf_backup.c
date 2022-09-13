@@ -262,7 +262,7 @@ free_instances(cfg_instance *list)
 
     for (; list != NULL; list = next)
     {
-        next = list->brother;
+        next = list->bkp_next;
         if (list->obj->type != CVT_NONE)
             cfg_types[list->obj->type].free(list->val);
         free(list->oid);
@@ -357,7 +357,7 @@ parse_instances(xmlNodePtr node, cfg_instance **list)
 #undef RETERR
 
         if (prev != NULL)
-            prev->brother = tmp;
+            prev->bkp_next = tmp;
         else
             *list = tmp;
 
@@ -509,7 +509,7 @@ remove_excessive(cfg_instance *list, te_bool *has_deps, const te_vec *subtrees)
         if (cfg_all_inst[sorted[i]] == NULL)
             continue;
 
-        for (tmp = list; tmp != NULL; tmp = tmp->brother)
+        for (tmp = list; tmp != NULL; tmp = tmp->bkp_next)
         {
             if (strcmp(tmp->oid, cfg_all_inst[sorted[i]]->oid) == 0)
                 break;
@@ -635,9 +635,9 @@ topo_sort_instances_rec(cfg_instance *list, unsigned length)
 
     first = list;
     for (i = 1; i < length / 2; i++)
-        list = list->brother;
-    second = list->brother;
-    list->brother = NULL;
+        list = list->bkp_next;
+    second = list->bkp_next;
+    list->bkp_next = NULL;
 
     first = topo_sort_instances_rec(first, length / 2);
     second = topo_sort_instances_rec(second, length - (length / 2));
@@ -648,19 +648,19 @@ topo_sort_instances_rec(cfg_instance *list, unsigned length)
                   first : second);
 
         if (chosen == first)
-            first = first->brother;
+            first = first->bkp_next;
         else
-            second = second->brother;
+            second = second->bkp_next;
 
         if (prev != NULL)
-            prev->brother = chosen;
+            prev->bkp_next = chosen;
         else
             result        = chosen;
         prev              = chosen;
     }
     chosen = (first != NULL ? first : second);
     if (prev != NULL)
-        prev->brother = chosen;
+        prev->bkp_next = chosen;
     else
         result        = chosen;
     return result;
@@ -673,12 +673,12 @@ topo_sort_instances(cfg_instance *list)
     cfg_instance *tmp;
     int           seq    = -1;
 
-    for (tmp = list; tmp != NULL; tmp = tmp->brother)
+    for (tmp = list; tmp != NULL; tmp = tmp->bkp_next)
         length++;
 
     list = topo_sort_instances_rec(list, length);
 
-    for (tmp = list; tmp != NULL; tmp = tmp->brother)
+    for (tmp = list; tmp != NULL; tmp = tmp->bkp_next)
     {
         if ((int)tmp->obj->ordinal_number < seq)
         {
@@ -726,7 +726,7 @@ restore_entries(cfg_instance *list, const te_vec *subtrees)
         {
             n_processed = 0;
             need_retry  = FALSE;
-            for (iter = list; iter != NULL; iter = iter->brother)
+            for (iter = list; iter != NULL; iter = iter->bkp_next)
             {
                 if (iter->added)
                     continue;
@@ -872,7 +872,7 @@ cfg_backup_restore_ta(char *ta)
         if (prev ==  NULL)
             list = tmp;
         else
-            prev->brother = tmp;
+            prev->bkp_next = tmp;
 
         prev = tmp;
     }
