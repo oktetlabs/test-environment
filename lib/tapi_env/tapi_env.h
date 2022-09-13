@@ -532,6 +532,17 @@ extern te_errno tapi_env_init(tapi_env *env);
  */
 extern te_errno tapi_env_get(const char *cfg, tapi_env *env);
 
+/**
+ * Get only RPC servers for the test suite environment.
+ * Unlike the @ref tapi_env_get(), the function does not bind interfaces,
+ * addresses and sniffers.
+ *
+ * @param cfg       Environment configuration string
+ * @param env       Location for environment
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_env_get_rpcs_only(const char *cfg, tapi_env *env);
 
 /**
  * Allocate new address from specified net.

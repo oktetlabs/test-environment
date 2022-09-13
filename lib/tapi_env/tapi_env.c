@@ -204,6 +204,51 @@ tapi_env_init(tapi_env *env)
 
 /* See description in tapi_env.h */
 te_errno
+tapi_env_get_rpcs_only(const char *cfg, tapi_env *env)
+{
+    te_errno rc;
+
+    assert(cfg != NULL);
+    assert(env != NULL);
+
+    rc = tapi_env_init(env);
+    if (rc != 0)
+        return rc;
+
+    rc = env_cfg_parse(env, cfg);
+    if (rc != 0)
+    {
+        ERROR("env_cfg_parse() failed to parse configuration string '%s'", cfg);
+        return rc;
+    }
+
+    rc = tapi_cfg_net_get_nets(&env->cfg_nets);
+    if (rc != 0)
+    {
+        ERROR("tapi_cfg_net_get_nets() failed with error: %r", rc);
+        return rc;
+    }
+
+    rc = bind_env_to_cfg_nets(&env->ifs, &env->cfg_nets);
+    if (rc != 0)
+        return rc;
+
+    rc = prepare_hosts(env);
+    if (rc != 0)
+    {
+        ERROR("prepare_hosts() failed with error: %r", rc);
+        return rc;
+    }
+
+    rc = prepare_pcos(&env->hosts);
+    if (rc != 0)
+        ERROR("prepare_pcos() failed with error: %r", rc);
+
+    return rc;
+}
+
+/* See description in tapi_env.h */
+te_errno
 tapi_env_get(const char *cfg, tapi_env *env)
 {
     te_errno    rc;
