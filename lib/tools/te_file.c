@@ -354,65 +354,8 @@ te_file_resolve_pathname(const char *filename, const char *path,
 te_errno
 te_file_check_executable(const char *path)
 {
-    te_errno rc = 0;
-    char *env_path;
-    char *env_path_tmp = NULL;
-    const char *env_path_delim = ":";
-    te_string full_path = TE_STRING_INIT;
-    te_bool found = FALSE;
-    char *tmp;
-    char *saveptr;
-
-    if (strchr(path, '/') != NULL)
-    {
-        found = access(path, X_OK) == 0;
-    }
-    else
-    {
-        env_path = getenv("PATH");
-        if (env_path == NULL)
-        {
-            ERROR("PATH is unset");
-            rc = TE_ENOENT;
-            goto out;
-        }
-
-        env_path_tmp = strdup(env_path);
-        if (env_path_tmp == NULL)
-        {
-            rc = ENOMEM;
-            goto out;
-        }
-
-        for (tmp = strtok_r(env_path_tmp, env_path_delim, &saveptr);
-             tmp != NULL;
-             tmp = strtok_r(NULL, env_path_delim, &saveptr))
-        {
-            rc = te_string_append(&full_path, "%s/%s", tmp, path);
-            if (rc != 0)
-                goto out;
-
-            found = access(full_path.ptr, X_OK) == 0;
-
-            if (found)
-                break;
-
-            te_string_reset(&full_path);
-        }
-    }
-
-out:
-    if (rc != 0)
-    {
-         ERROR("The check file '%s' was unsuccessful rc=%r",
-                path, rc);
-    }
-    if (!found)
-        rc = TE_ENOENT;
-
-    te_string_free(&full_path);
-    free(env_path_tmp);
-    return rc;
+    return te_file_resolve_pathname(path, getenv("PATH"),
+                                    X_OK, NULL, NULL);
 }
 
 te_errno

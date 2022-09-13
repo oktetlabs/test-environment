@@ -82,9 +82,11 @@ main(int argc, char **argv)
     TEST_START;
 
     TEST_STEP("Testing absolute executable filename resolving");
+    CHECK_RC(te_file_check_executable("/bin/sh"));
     check_file("/bin/sh", path_env, X_OK, NULL, "/bin/sh");
 
     TEST_STEP("Testing relative executable filename resolving");
+    CHECK_RC(te_file_check_executable("sh"));
     check_file("sh", path_env, X_OK, NULL, "/bin/sh");
 
     CHECK_NOT_NULL(tmpfile = te_file_create_unique("/tmp/te_resolve_XXXXXX",
