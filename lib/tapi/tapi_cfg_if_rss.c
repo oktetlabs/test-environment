@@ -17,6 +17,7 @@
 #include "tapi_cfg_if_rss.h"
 #include "te_alloc.h"
 #include "te_str.h"
+#include "logger_api.h"
 
 /* See description in tapi_cfg_if_rss.h */
 te_errno
@@ -187,6 +188,55 @@ tapi_cfg_if_rss_fill_indir_table(const char *ta,
     }
 
     return 0;
+}
+
+/* See description in tapi_cfg_if_rss.h */
+te_errno
+tapi_cfg_if_rss_print_indir_table(const char *ta,
+                                  const char *if_name,
+                                  unsigned int rss_context)
+{
+    te_errno rc = 0;
+    unsigned int size;
+    unsigned int i;
+    te_string str = TE_STRING_INIT;
+    int val;
+
+    rc = tapi_cfg_if_rss_indir_table_size(ta, if_name, rss_context, &size);
+    if (rc != 0)
+        return rc;
+
+    rc = te_string_append(&str, "RSS indirection table for interface "
+                          "%s on agent %s, RSS context %u\ncontains %u "
+                          "entries.", if_name, ta, rss_context, size);
+    if (rc != 0)
+        goto finish;
+
+    if (size > 0)
+    {
+        rc = te_string_append(&str, "\n\nEntry ---> Rx queue\n");
+        if (rc != 0)
+            goto finish;
+
+        for (i = 0; i < size; i++)
+        {
+            rc = tapi_cfg_if_rss_indir_get(ta, if_name, rss_context,
+                                           i, &val);
+            if (rc != 0)
+                goto finish;
+
+            rc = te_string_append(&str, "%5u ---> %d\n", i, val);
+            if (rc != 0)
+                goto finish;
+        }
+    }
+
+    RING("%s", te_string_value(&str));
+
+finish:
+
+    te_string_free(&str);
+    return rc;
 }
 
 /* See description in tapi_cfg_if_rss.h */

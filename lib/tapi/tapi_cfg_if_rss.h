@@ -161,6 +161,20 @@ extern te_errno tapi_cfg_if_rss_fill_indir_table(
                                           unsigned int queue_from,
                                           unsigned int queue_to);
 
+/**
+ * Print to log RSS hash indirection table.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Network interface name
+ * @param rss_context   RSS context
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_rss_print_indir_table(
+                                          const char *ta,
+                                          const char *if_name,
+                                          unsigned int rss_context);
+
 /** Maximum length of RSS hash function name */
 #define TAPI_CFG_IF_RSS_HFUNC_NAME_LEN 128
 
