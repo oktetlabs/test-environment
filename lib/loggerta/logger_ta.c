@@ -33,7 +33,7 @@
  * Following macros are auxiliary for routine providing slow logging.
  */
 
-#define LGR_PUT_MD_LIST(_mdl, _narg, _addr, _len) \
+#define LGR_PUT_MD_LIST(_mdl, _narg, _addr, _len, _add_zero) \
     do {                                                          \
             md_list *tmp_list =                                   \
                 (struct md_list *)malloc(sizeof(struct md_list)); \
@@ -43,6 +43,7 @@
             tmp_list->addr = (_addr);                             \
             tmp_list->length = (_len);                            \
             tmp_list->next = &(_mdl);                             \
+            tmp_list->add_zero = (_add_zero);                     \
     } while (0)
 
 #define LGR_FREE_MD_LIST(_mdl) \
@@ -63,6 +64,7 @@ typedef struct md_list {
     uint32_t        narg;
     void           *addr;
     uint32_t        length;
+    te_bool         add_zero;
 } md_list;
 
 
@@ -88,13 +90,15 @@ static const char  *skip_width = "*0123456789";
 static te_errno
 ta_log_add_ptr_argument(struct lgr_rb *ring_buffer, uint32_t position,
                         const void *start, uint32_t length,
-                        ta_log_arg *arg_location)
+                        ta_log_arg *arg_location, te_bool add_zero)
 {
     uint32_t val;
     uint8_t *arg_addr;
     int res;
 
-    res = lgr_rb_allocate_and_copy(ring_buffer, start, length, &arg_addr);
+    res = lgr_rb_allocate_and_copy(ring_buffer, start, length, &arg_addr,
+                                   add_zero);
+
     if (res == 0)
     {
         return TE_ENOBUFS;
@@ -143,7 +147,7 @@ ta_log_dynamic_user_ts(te_log_ts_sec sec, te_log_ts_usec usec,
     {
         if (ta_log_add_ptr_argument(&log_buffer, position,
                                     args[i], strlen(args[i]) + 1,
-                                    hdr_addr->args + i) != 0)
+                                    hdr_addr->args + i, FALSE) != 0)
         {
             log_buffer = lgr_rb_old;
             (void)ta_log_unlock(&key);
@@ -259,10 +263,19 @@ ta_log_message(const char *file, unsigned int line,
 
                 if (addr == NULL)
                     addr = null_str;
-                length = strlen(addr) + 1;
 
-                cp_list.length += length;
-                LGR_PUT_MD_LIST(cp_list, narg, addr, length);
+                if (precision >= 0)
+                {
+                    length = precision + 1;
+                    cp_list.length += length;
+                    LGR_PUT_MD_LIST(cp_list, narg, addr, length, TRUE);
+                }
+                else
+                {
+                    length = strlen(addr) + 1;
+                    cp_list.length += length;
+                    LGR_PUT_MD_LIST(cp_list, narg, addr, length, FALSE);
+                }
                 break;
             }
 
@@ -276,7 +289,7 @@ ta_log_message(const char *file, unsigned int line,
                     length = va_arg(ap, size_t);
 
                     cp_list.length += length;
-                    LGR_PUT_MD_LIST(cp_list, narg, addr, length);
+                    LGR_PUT_MD_LIST(cp_list, narg, addr, length, FALSE);
                     if ((++narg) > TA_LOG_ARGS_MAX)
                         goto resume;
                     LGR_SET_ARG(header, narg, length);
@@ -314,7 +327,8 @@ ta_log_message(const char *file, unsigned int line,
     {
         if (ta_log_add_ptr_argument(&log_buffer, position,
                                     tmp_list->addr, tmp_list->length,
-                                    hdr_addr->args + tmp_list->narg) != 0)
+                                    hdr_addr->args + tmp_list->narg,
+                                    tmp_list->add_zero) != 0)
         {
             log_buffer = lgr_rb_old;
             (void)ta_log_unlock(&key);

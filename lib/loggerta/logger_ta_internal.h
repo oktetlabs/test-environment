@@ -381,16 +381,21 @@ lgr_rb_fill_allocated_header(lgr_mess_header *allocated,
  *
  * @param ring_buffer    Ring buffer location.
  * @param start          Byte array start address.
- * @param length         The length of copied space.
+ * @param length         The length of the output
+ *                       (may be one byte longer than
+ *                       the input).
  * @param arg_addr       Argument address (memory dump
  *                       address or string address).
+ * @param add_zero       If @c TRUE, a terminating zero
+ *                       byte is appended to the output
+ *                       buffer.
  *
  * @retval  Number of allocated elements.
  */
 static inline uint32_t
 lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
                          const void *start, uint32_t length,
-                         uint8_t **arg_addr)
+                         uint8_t **arg_addr, te_bool add_zero)
 {
     uint32_t start_pos = 0;
     uint32_t need_elements;
@@ -412,7 +417,15 @@ lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
 
     if ((start_pos + need_elements) <= LGR_TOTAL_RB_EL)
     {
-        memcpy(*arg_addr, start, length);
+        if (add_zero)
+        {
+            memcpy(*arg_addr, start, length - 1);
+            *(*arg_addr + length - 1) = '\0';
+        }
+        else
+        {
+            memcpy(*arg_addr, start, length);
+        }
     }
     else
     {
