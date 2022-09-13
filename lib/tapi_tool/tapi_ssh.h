@@ -111,7 +111,7 @@ typedef struct tapi_ssh_client_opt {
      * host to connect is unknown, the user is
      * required to explicitly confirm connection to
      * the host by answering the question:
-     * Are you sure you want to continue connecting
+     * "Are you sure you want to continue connecting
      * (yes/no/[fingerprint])?"
      *
      * ssh -o StrictHostKeyChecking=<strict_host_key_checking>
@@ -179,21 +179,22 @@ typedef struct tapi_ssh_server_opt {
      * May be @c yes , @c no , @c forced-commands-only or @c prohibit-password
      */
     tapi_ssh_permit_root_login_t permit_root_login;
+
     /**
      * File to store SSHD process ID
      *
      * sshd -o PidFile=<pid_file>
      */
-
     char *pid_file;
+
     /**
      * Specifies whether public key authentication is allowed
      *
      * sshd -o PubkeyAuthentication=<pub_key_authentication>
      * May be @c yes or @c no
      */
-
     te_bool pub_key_authentication;
+
     /**
      * Sets checking ownership of user's files and home directory
      * before allowing the login.
@@ -206,7 +207,6 @@ typedef struct tapi_ssh_server_opt {
      * sshd -o StrictModes=<strict_modes>
      * May be @c yes or @c no
      */
-
     te_bool strict_modes;
 
     /**
