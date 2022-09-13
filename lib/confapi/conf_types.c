@@ -89,16 +89,16 @@ addr_size(unsigned short af)
     }
 }
 
-/* Convertion functions for type 'int' */
-static int str2int(char *val_str, cfg_inst_val *val);
-static int int2str(cfg_inst_val val, char **val_str);
-static int int_def_val(cfg_inst_val *val);
-static void int_free(cfg_inst_val val);
-static int int_copy(cfg_inst_val src, cfg_inst_val *dst);
-static int int_get(cfg_msg *msg, cfg_inst_val *val);
-static void int_put(cfg_inst_val val, cfg_msg *msg);
-static te_bool int_equal(cfg_inst_val first, cfg_inst_val second);
-static size_t int_value_size(cfg_inst_val val);
+/* Convertion functions for type 'uint32_t' */
+static int str2int32(char *val_str, cfg_inst_val *val);
+static int int32_2str(cfg_inst_val val, char **val_str);
+static int int32_def_val(cfg_inst_val *val);
+static void int32_free(cfg_inst_val val);
+static int int32_copy(cfg_inst_val src, cfg_inst_val *dst);
+static int int32_get(cfg_msg *msg, cfg_inst_val *val);
+static void int32_put(cfg_inst_val val, cfg_msg *msg);
+static te_bool int32_equal(cfg_inst_val first, cfg_inst_val second);
+static size_t int32_value_size(cfg_inst_val val);
 
 /* Conversion functions for type 'uint64_t' */
 static int str_to_uint64(char *val_str, cfg_inst_val *val);
@@ -146,26 +146,32 @@ static size_t none_value_size(cfg_inst_val val);
 
 /* Primary types' convertion functions */
 cfg_primary_type cfg_types[CFG_PRIMARY_TYPES_NUM] = {
-    { str2int, int2str, int_def_val,
-      int_free, int_copy, int_get, int_put, int_equal, int_value_size },
+/* CVT_INT32 */
+    { str2int32, int32_2str, int32_def_val,
+      int32_free, int32_copy, int32_get, int32_put, int32_equal,
+      int32_value_size },
+/* CVT_UINT64 */
     { str_to_uint64, uint64_to_str, uint64_def_val,
       uint64_free, uint64_copy, uint64_get, uint64_put, uint64_equal,
       uint64_value_size },
+/* CVT_STRING */
     { str2char, char2str, str_def_val,
       str_free, str_copy, str_get, str_put, str_equal, str_value_size },
+/* CVT_ADDRESS */
     { str2addr, addr2str, addr_def_val,
       addr_free, addr_copy, addr_get, addr_put, addr_equal, addr_value_size },
+/* CVT_NONE */
     { str2none, none2str, none_def_val,
       none_free, none_copy, none_get, none_put, none_equal, none_value_size }
  };
 
-/*----------------------- Integer type handlers -------------------------*/
+/*----------------------- Int32 type handlers -------------------------*/
 
 static int
-str2int(char *val_str, cfg_inst_val *val)
+str2int32(char *val_str, cfg_inst_val *val)
 {
     char *invalid;
-    int ret_val = 0;
+    int32_t ret_val = 0;
 
     ret_val = strtol(val_str, &invalid, 0);
     if (*invalid != '\0')
@@ -177,10 +183,10 @@ str2int(char *val_str, cfg_inst_val *val)
 }
 
 static int
-int2str(cfg_inst_val val, char **val_str)
+int32_2str(cfg_inst_val val, char **val_str)
 {
     char str[CFG_TP_MAX_BUF];
-    int ret_val;
+    int32_t ret_val;
 
     ret_val = snprintf(str, CFG_TP_MAX_BUF, "%d", val.val_int32);
     if (ret_val < 1)
@@ -198,39 +204,41 @@ int2str(cfg_inst_val val, char **val_str)
 }
 
 static int
-int_def_val(cfg_inst_val *val)
+int32_def_val(cfg_inst_val *val)
 {
     val->val_int32 = 0;
     return 0;
 }
 
 static void
-int_free(cfg_inst_val val)
+int32_free(cfg_inst_val val)
 {
     UNUSED(val);
     return;
 }
 
 static int
-int_copy(cfg_inst_val src, cfg_inst_val *dst)
+int32_copy(cfg_inst_val src, cfg_inst_val *dst)
 {
     dst->val_int32 = src.val_int32;
     return 0;
 }
 
 static int
-int_get(cfg_msg *msg, cfg_inst_val *val)
+int32_get(cfg_msg *msg, cfg_inst_val *val)
 {
-    val->val_int32 = msg->type == CFG_GET ? ((cfg_get_msg *)msg)->val.val_int32 :
-                   msg->type == CFG_SET ? ((cfg_set_msg *)msg)->val.val_int32 :
-                   ((cfg_add_msg *)msg)->val.val_int32;
+    val->val_int32 = msg->type == CFG_GET ?
+                     ((cfg_get_msg *)msg)->val.val_int32 :
+                     msg->type == CFG_SET ?
+                     ((cfg_set_msg *)msg)->val.val_int32 :
+                     ((cfg_add_msg *)msg)->val.val_int32;
     return 0;
 }
 
 static void
-int_put(cfg_inst_val val, cfg_msg *msg)
+int32_put(cfg_inst_val val, cfg_msg *msg)
 {
-    int *msg_val;
+    int32_t *msg_val;
 
     if (msg == NULL)
         return;
@@ -244,13 +252,13 @@ int_put(cfg_inst_val val, cfg_msg *msg)
 }
 
 static te_bool
-int_equal(cfg_inst_val first, cfg_inst_val second)
+int32_equal(cfg_inst_val first, cfg_inst_val second)
 {
     return ((first.val_int32 - second.val_int32) == 0) ? TRUE : FALSE;
 }
 
 static size_t
-int_value_size(cfg_inst_val val)
+int32_value_size(cfg_inst_val val)
 {
     UNUSED(val);
     return sizeof(int32_t);
