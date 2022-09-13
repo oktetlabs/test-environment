@@ -119,6 +119,8 @@ typedef struct tapi_memcached_opt {
     tapi_mamcached_verbose_t            verbose;
     /** Number of threads to use to process incoming requests. */
     tapi_job_opt_uint_t                 threads;
+    /** Number of NAPI ids (see napi_ids.txt in memcached docs for details) */
+    tapi_job_opt_uint_t                 napi_ids;
     /**
      * One char delimiter between key prefixes and IDs.
      * This is used for per-prefix stats reporting.
