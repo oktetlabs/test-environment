@@ -273,17 +273,21 @@ free_instances(cfg_instance *list)
 /**
  * Parse instance nodes of the configuration file to list of instances.
  *
- * @param node      first instance node
- * @param list      location for instance list pointer
+ * @param node        First instance node
+ * @param list        Location for instance list pointer
+ * @param list_size   Where to save number of instances in the list
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h).
  */
 static int
-parse_instances(xmlNodePtr node, cfg_instance **list)
+parse_instances(xmlNodePtr node, cfg_instance **list,
+                unsigned int *list_size)
 {
     cfg_instance *prev = NULL;
     xmlNodePtr    cur = node;
     int           rc;
+
+    unsigned int num = 0;
 
     *list = NULL;
 
@@ -362,8 +366,10 @@ parse_instances(xmlNodePtr node, cfg_instance **list)
             *list = tmp;
 
         prev = tmp;
+        num++;
     }
 
+    *list_size = num;
     return 0;
 }
 
@@ -667,16 +673,12 @@ topo_sort_instances_rec(cfg_instance *list, unsigned length)
 }
 
 static cfg_instance *
-topo_sort_instances(cfg_instance *list)
+topo_sort_instances(cfg_instance *list, unsigned int list_size)
 {
-    unsigned      length = 0;
     cfg_instance *tmp;
     int           seq    = -1;
 
-    for (tmp = list; tmp != NULL; tmp = tmp->bkp_next)
-        length++;
-
-    list = topo_sort_instances_rec(list, length);
+    list = topo_sort_instances_rec(list, list_size);
 
     for (tmp = list; tmp != NULL; tmp = tmp->bkp_next)
     {
@@ -692,16 +694,183 @@ topo_sort_instances(cfg_instance *list)
 }
 
 /**
- * Add/update entries, mentioned in the configuration file.
+ * Comparator used for sorting array of instance pointers
+ * according to instance OIDs in alphabetical order.
  *
- * @param list     list of instances mentioned in the configuration file
- * @param subtrees Vector of the subtrees to restore. May be @c NULL for
- *                 the root subtree.
+ * @param arg1      Pointer to the first instance pointer
+ * @param arg2      Pointer to the second instance pointer
  *
- * @return status code (see te_errno.h)
+ * @return Comparison result.
  */
 static int
-restore_entries(cfg_instance *list, const te_vec *subtrees)
+alpha_qsort_predicate(const void *arg1, const void *arg2)
+{
+    const char *oid1 = (*(cfg_instance **)arg1)->oid;
+    const char *oid2 = (*(cfg_instance **)arg2)->oid;
+    unsigned int i;
+
+    for (i = 0; ; i++)
+    {
+        /*
+         * '/' must be the first symbol after null byte in our alphabet to
+         * ensure that any instance is followed by its children, not by
+         * some unrelated nodes.
+         * In ASCII '-' precedes '/' for instance, so without this code
+         * it can order instances like
+         *
+         * a/b/c
+         * a/b/c-d
+         * a/b/c/y
+         *
+         * instead of
+         *
+         * a/b/c
+         * a/b/c/y
+         * a/b/c-d
+         *
+         * and code in fill_children() will work incorrectly.
+         */
+
+        if (oid1[i] == '/' && oid2[i] != '/' && oid2[i] != '\0')
+            return -1;
+        else if (oid1[i] != '/' && oid1[i] != '\0' && oid2[i] == '/')
+            return 1;
+        else if (oid1[i] < oid2[i])
+            return -1;
+        else if (oid1[i] > oid2[i])
+            return 1;
+
+        if (oid1[i] == '\0' || oid2[i] == '\0')
+            break;
+    }
+
+    return 0;
+}
+
+/**
+ * Fill children lists in list of instances passed to
+ * restore_entries().
+ *
+ * @param list         List of instances
+ * @param list_size    Number of instances in the list
+ *
+ * @return Status code.
+ */
+static te_errno
+fill_children(cfg_instance *list, unsigned int list_size)
+{
+    cfg_instance **refs = NULL;
+    cfg_instance *ref = NULL;
+    unsigned int i;
+    unsigned int j;
+    te_errno rc = 0;
+
+    int level;
+    int prev_level = -1;
+    cfg_instance *parent = NULL;
+
+    refs = calloc(list_size, sizeof(cfg_instance *));
+    if (refs == NULL)
+    {
+        ERROR("%s(): failed to allocate memory for instance pointers array",
+              __FUNCTION__);
+        return TE_ENOMEM;
+    }
+
+    for (ref = list, i = 0; ref != NULL; ref = ref->bkp_next, i++)
+    {
+        if (i >= list_size)
+        {
+            ERROR("%s(): list is longer than expected", __FUNCTION__);
+            rc = TE_EINVAL;
+            goto finish;
+        }
+        refs[i] = ref;
+    }
+
+    /*
+     * Sort list of instances by OID to make it easy to determine
+     * children for every instance. Any instance is followed by
+     * its direct children after such sorting.
+     */
+    qsort(refs, list_size, sizeof(*refs), alpha_qsort_predicate);
+
+    for (i = 0; i < list_size; i++)
+    {
+        /*
+         * Compute current level at hierarchy of instances
+         * by counting "/" in OID.
+         */
+        level = 0;
+        for (j = 0; refs[i]->oid[j] != '\0'; j++)
+        {
+            if (refs[i]->oid[j] == '/')
+                level++;
+        }
+
+        /*
+         * Based on current level in hierarchy and the level of the
+         * previous instance, find out what instance is a father
+         * of the current one.
+         */
+        parent = (i == 0 ? NULL : refs[i - 1]->father);
+        if (prev_level >= 0 && prev_level < level)
+        {
+            if (prev_level < level - 1)
+            {
+                ERROR("%s(): an instance %s has no immediate parent",
+                      __FUNCTION__, refs[i]->oid);
+                rc = TE_EINVAL;
+                goto finish;
+            }
+            parent = refs[i - 1];
+        }
+        else if (prev_level > level)
+        {
+            while (parent != NULL && prev_level > level)
+            {
+                parent = parent->father;
+                prev_level--;
+            }
+        }
+
+        if (parent != NULL)
+        {
+            if (strcmp_start(parent->oid, refs[i]->oid) != 0)
+            {
+                ERROR("%s(): %s does not seem to be parent of %s",
+                      __FUNCTION__, parent->oid, refs[i]->oid);
+                rc = TE_EINVAL;
+                goto finish;
+            }
+
+            refs[i]->brother = parent->son;
+            parent->son = refs[i];
+            refs[i]->father = parent;
+        }
+
+        prev_level = level;
+    }
+
+finish:
+
+    free(refs);
+    return rc;
+}
+
+/**
+ * Add/update entries, mentioned in the configuration file.
+ *
+ * @param list        List of instances mentioned in the configuration file
+ * @param list_size   Number of instances in the list
+ * @param subtrees    Vector of the subtrees to restore. May be @c NULL for
+ *                    the root subtree
+ *
+ * @return Status code (see te_errno.h).
+ */
+static int
+restore_entries(cfg_instance *list, unsigned int list_size,
+                const te_vec *subtrees)
 {
     int           rc;
     int           n_processed     = 0;
@@ -710,7 +879,18 @@ restore_entries(cfg_instance *list, const te_vec *subtrees)
     cfg_instance *iter;
     te_bool       deps_might_fire = TRUE;
 
-    list = topo_sort_instances(list);
+    /*
+     * Lists of children are not filled for instances read from a backup
+     * file. Fill these lists here.
+     * This will be helpful for instances of "unit" objects, which
+     * should be restored in a single requests group (commit) together
+     * with its children.
+     */
+    rc = fill_children(list, list_size);
+    if (rc != 0)
+        return rc;
+
+    list = topo_sort_instances(list, list_size);
 
     while (deps_might_fire)
     {
@@ -787,6 +967,8 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore,
                         const te_vec *subtrees)
 {
     cfg_instance *list;
+    unsigned int list_size;
+
     xmlNodePtr    cur         = node->xmlChildrenNode;
     int           rc;
 
@@ -798,7 +980,7 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore,
     if ((rc = register_objects(&cur, !restore)) != 0)
         return rc;
 
-    if ((rc = parse_instances(cur, &list)) != 0)
+    if ((rc = parse_instances(cur, &list, &list_size)) != 0)
         return rc;
 
     if (!restore)
@@ -810,7 +992,7 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore,
         }
     }
 
-    return restore_entries(list, subtrees);
+    return restore_entries(list, list_size, subtrees);
 }
 
 /**
@@ -825,6 +1007,8 @@ int
 cfg_backup_restore_ta(char *ta)
 {
     cfg_instance  *list   = NULL;
+    unsigned int list_size = 0;
+
     cfg_instance  *prev   = NULL;
     cfg_instance  *tmp;
     char           buf[CFG_SUBID_MAX + CFG_INST_NAME_MAX + 1];
@@ -874,10 +1058,11 @@ cfg_backup_restore_ta(char *ta)
         else
             prev->bkp_next = tmp;
 
+        list_size++;
         prev = tmp;
     }
 
-    return restore_entries(list, NULL);
+    return restore_entries(list, list_size, NULL);
 }
 
 /**
