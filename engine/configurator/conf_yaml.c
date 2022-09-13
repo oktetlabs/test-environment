@@ -675,46 +675,33 @@ parse_config_yaml_include_doc(parse_config_yaml_ctx *ctx, yaml_node_t *n)
 {
     char *file_name;
     te_errno rc = 0;
-    char *saved_current_yaml_file_path = NULL;
-    xmlNodePtr xn_history = ctx->xn_history;
-    te_kvpair_h *expand_vars = ctx->expand_vars;
-    const char *current_yaml_file_path = ctx->file_path;
+    te_errno rc_resolve_pathname = 0;
     char *resolved_file_name = NULL;
-    int rc_file_resolve;
 
     if (n->data.scalar.length == 0)
     {
         ERROR(CS_YAML_ERR_PREFIX "found include node to be badly formatted");
-        rc = TE_EINVAL;
-        goto out;
+        return TE_EINVAL;
     }
 
     file_name = (char *)n->data.scalar.value;
-    saved_current_yaml_file_path = strdup(current_yaml_file_path);
-    if (saved_current_yaml_file_path == NULL)
+    rc_resolve_pathname = te_file_resolve_pathname(file_name, ctx->conf_dirs,
+                                                   F_OK, ctx->file_path,
+                                                   &resolved_file_name);
+    if (rc_resolve_pathname == 0)
     {
-        rc = TE_ENOMEM;
-        goto out;
-    }
-    rc_file_resolve = te_file_resolve_pathname(file_name, ctx->conf_dirs,
-                                               F_OK,
-                                               saved_current_yaml_file_path,
-                                               &resolved_file_name);
-
-    if (rc_file_resolve == 0)
-    {
-        rc = parse_config_yaml(resolved_file_name, expand_vars,
-                               xn_history, ctx->conf_dirs);
+        rc = parse_config_yaml(resolved_file_name, ctx->expand_vars,
+                               ctx->xn_history, ctx->conf_dirs);
     }
     else
     {
         ERROR(CS_YAML_ERR_PREFIX "document %s specified in "
-              "include node is not found", file_name);
+              "include node is not found. "
+              "te_file_resolve_pathname() produce error %d",
+              file_name, rc_resolve_pathname);
         rc = TE_EINVAL;
     }
     free(resolved_file_name);
-out:
-    free(saved_current_yaml_file_path);
     return rc;
 }
 
