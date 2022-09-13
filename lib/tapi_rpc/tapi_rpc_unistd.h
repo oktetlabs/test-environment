@@ -502,6 +502,25 @@ extern int rpc_preadv(rcf_rpc_server *rpcs, int fd, const struct rpc_iovec *iov,
                       size_t iovcnt, tarpc_off_t offset);
 
 /**
+ * Read data with @b flags from specified file with descriptor @b fd
+ * at @b offset into a vector of buffer @b iov.
+ *
+ * @param rpcs     RPC server handle
+ * @param fd       file descriptorfrom which data is read
+ * @param iov      vector of buffer where data is stored
+ * @param iovcnt   number of buffer to read
+ * @param offset   offset from the start of the @b fd
+ * @param flags    specifies bits for per-call operation
+ *
+ * @return Number of bytes read,otherwise -1 is returned when an
+ *         error occured.
+ * @note See @b preadv manual page for more information
+ */
+extern int rpc_preadv2(rcf_rpc_server *rpcs, int fd,
+                       const struct rpc_iovec *iov, size_t iovcnt,
+                       tarpc_off_t offset, rpc_preadv2_pwritev2_flags flags);
+
+/**
  * Allocate a set of file descriptors on RPC server side.
  *
  * @param rpcs   RPC server handle
