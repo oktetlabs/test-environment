@@ -47,12 +47,6 @@ extern "C" {
 #include <regex.h>
 #endif
 
-#include <libxml/globals.h>
-#include <libxml/xmlerror.h>
-#include <libxml/parser.h>
-#include <libxml/tree.h>
-#include <libxml/xmlmemory.h>
-
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "ipc_server.h"

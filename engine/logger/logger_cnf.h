@@ -20,7 +20,6 @@ extern "C" {
 typedef enum cfg_file_type {
     CFG_TYPE_ERROR,
     CFG_TYPE_EMPTY,
-    CFG_TYPE_XML,
     CFG_TYPE_YAML,
     CFG_TYPE_OTHER,
 } cfg_file_type;

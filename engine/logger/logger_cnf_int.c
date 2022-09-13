@@ -17,7 +17,6 @@ cfg_file_type
 get_cfg_file_type(const char *filename)
 {
 #define PREREAD_SIZE 8
-    static const char xml_head[]  = "<?xml";
     static const char yaml_head[] = "---";
 
     int      res = 0;
@@ -41,8 +40,6 @@ get_cfg_file_type(const char *filename)
     buf[res] = '\0';
     if (strncmp(buf, yaml_head, sizeof(yaml_head) - 1) == 0)
         return CFG_TYPE_YAML;
-    else if (strncmp(buf, xml_head, sizeof(xml_head) - 1) == 0)
-        return CFG_TYPE_XML;
     else
         return CFG_TYPE_OTHER;
 }

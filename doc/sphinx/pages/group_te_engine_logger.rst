@@ -82,30 +82,29 @@ Configuration File
 
 For example the simplest :ref:`Logger <doxid-group__te__engine__logger>` configuration file would look like the following:
 
-.. ref-code-block:: xml
+.. ref-code-block:: yaml
 
-	<?xml version="1.0"?>
-	<loggerConf>
-	   <!-- polling value unit is milli seconds. -->
-	   <polling default="100"/>
-	</loggerConf>
+	loggerConf:
+	# polling value unit is milli seconds.
+		polling:
+			_default: 100
 
 If you need to specify polling intervals on per Test Agent basis or on per Agent type value you need to write something like:
 
-.. ref-code-block:: xml
+.. ref-code-block:: yaml
 
-	<?xml version="1.0"?>
-	<loggerConf>
-	   <!-- polling value unit is milli seconds. -->
-	   <polling default="100">
-	     <!-- Specify polling interval on per Test Agent name basis -->
-	     <agent agent="Agt_A" value="200"/>
-	     <!-- Specify polling interval on per Test Agent type basis -->
-	     <type type="unix" value="300"/>
-	   </polling>
-	</loggerConf>
-
-XML schema for Logger configuration file can be found at ${TE_BASE}/doc/xsd/logger_config.xsd.
+	loggerConf:
+	# polling value unit is milli seconds.
+		polling:
+	# specify polling interval on per Test Agent name basis
+			agent:
+				_agent: Agt_A
+				_value: 200
+	# specify polling interval on per Test Agent type basis
+			type:
+				_type: unix
+				_value: 300
+		_default: 100
 
 
 
