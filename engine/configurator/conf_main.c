@@ -51,6 +51,11 @@ static struct ipc_server *server = NULL; /**< IPC Server handle */
 static const char *cs_cfg_file[16] =  {NULL, };
 static const char *cs_sniff_cfg_file = NULL;  /**< Configuration file name
                                                    for sniffer framework */
+/**
+ * Directories in which Configurator should search files via include
+ * directive
+ */
+static const char *cs_dirs_cfg = NULL;
 
 /** @name Configurator global options */
 #define CS_PRINT_TREES  0x1     /**< Print objects and object instances
@@ -2835,6 +2840,10 @@ process_cmd_line_opts(int argc, char **argv)
         { "sniff-conf", '\0', POPT_ARG_STRING, &cs_sniff_cfg_file, 0,
           "Auxiliary conf file for the sniffer framework.", NULL },
 
+        { "conf-dirs", '\0', POPT_ARG_STRING, &cs_dirs_cfg, 0,
+          "Auxiliary path where Configurator should search "
+          "for included directories in the provided path.", NULL },
+
         POPT_AUTOHELP
         POPT_TABLEEND
     };
@@ -2945,7 +2954,7 @@ parse_config(const char *fname, te_kvpair_h *expand_vars)
         return parse_config_xml(fname, expand_vars, TRUE, NULL);
 #if WITH_CONF_YAML
     else if (strcmp(str, "---") == 0)
-        return parse_config_yaml(fname, expand_vars, NULL);
+        return parse_config_yaml(fname, expand_vars, NULL, cs_dirs_cfg);
 #endif /* !WITH_CONF_YAML */
 
     ERROR("Failed to recognise the format of configuration file '%s'", fname);

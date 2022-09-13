@@ -940,6 +940,9 @@ if test -z "${TE_PATH}" ; then
     TE_PATH="${TE_INSTALL}/default"
 fi
 
+# Add --conf-dirs options
+CS_OPTS="${CS_OPTS} --conf-dirs=${CONF_DIRS}:${TE_INSTALL}/default/share/cm/"
+
 # Export PATH
 if test -z "${QUIET}" ; then
     echo "Exporting path to host executables:"

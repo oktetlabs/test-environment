@@ -30,11 +30,15 @@
  *                          substitutions
  * @param xn_history_root   XML node containing translated yaml file content,
  *                          @c NULL if yaml file is not being included
+ * @param conf_dir          Directories where additionally Configurator should
+ *                          search files via include directive
+ *                          @c NULL if there are no configuration directories.
  *
  * @return Status code.
  */
 extern te_errno parse_config_yaml(const char *filename,
                                   te_kvpair_h *expand_vars,
-                                  xmlNodePtr xn_history_root);
+                                  xmlNodePtr xn_history_root,
+                                  const char *conf_dirs);
 
 #endif /* __TE_CONF_YAML_H__ */

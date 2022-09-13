@@ -15,6 +15,7 @@
 #include "logic_expr.h"
 #include "te_alloc.h"
 #include "te_expand.h"
+#include "te_file.h"
 
 #include <ctype.h>
 #include <libxml/xinclude.h>
@@ -35,6 +36,7 @@ typedef struct parse_config_yaml_ctx {
     yaml_document_t *doc;
     xmlNodePtr       xn_history;
     te_kvpair_h     *expand_vars;
+    const char      *conf_dirs;
 } parse_config_yaml_ctx;
 
 typedef struct config_yaml_target_s {
@@ -672,13 +674,13 @@ static te_errno
 parse_config_yaml_include_doc(parse_config_yaml_ctx *ctx, yaml_node_t *n)
 {
     char *file_name;
-    char *dir_name;
-    te_string file_path = TE_STRING_INIT;
     te_errno rc = 0;
     char *saved_current_yaml_file_path = NULL;
     xmlNodePtr xn_history = ctx->xn_history;
     te_kvpair_h *expand_vars = ctx->expand_vars;
     const char *current_yaml_file_path = ctx->file_path;
+    char *resolved_file_name = NULL;
+    int rc_file_resolve;
 
     if (n->data.scalar.length == 0)
     {
@@ -694,53 +696,25 @@ parse_config_yaml_include_doc(parse_config_yaml_ctx *ctx, yaml_node_t *n)
         rc = TE_ENOMEM;
         goto out;
     }
+    rc_file_resolve = te_file_resolve_pathname(file_name, ctx->conf_dirs,
+                                               F_OK,
+                                               saved_current_yaml_file_path,
+                                               &resolved_file_name);
 
-    dir_name = dirname(saved_current_yaml_file_path);
-    rc = te_string_append(&file_path, "%s/%s", dir_name, file_name);
-    if (rc != 0)
-        goto out;
-
-    if (access(file_path.ptr, F_OK) == 0)
+    if (rc_file_resolve == 0)
     {
-        rc = parse_config_yaml(file_path.ptr, expand_vars, xn_history);
-        if (rc != 0)
-            goto out;
+        rc = parse_config_yaml(resolved_file_name, expand_vars,
+                               xn_history, ctx->conf_dirs);
     }
     else
     {
-        te_string_free(&file_path);
-
-        dir_name = getenv("TE_INSTALL");
-        if (dir_name == NULL)
-        {
-            rc = TE_EINVAL;
-            goto out;
-        }
-
-        rc = te_string_append(&file_path, "%s/default/share/cm/%s",
-                              dir_name, file_name);
-        if (rc != 0)
-            goto out;
-
-        if (access(file_path.ptr, F_OK) == 0)
-        {
-            rc = parse_config_yaml(file_path.ptr, expand_vars, xn_history);
-            if (rc != 0)
-                goto out;
-        }
-        else
-        {
-            ERROR(CS_YAML_ERR_PREFIX "document %s specified in include node is not found",
-                  file_name);
-            rc = TE_EINVAL;
-            goto out;
-        }
+        ERROR(CS_YAML_ERR_PREFIX "document %s specified in "
+              "include node is not found", file_name);
+        rc = TE_EINVAL;
     }
-
+    free(resolved_file_name);
 out:
-    te_string_free(&file_path);
     free(saved_current_yaml_file_path);
-
     return rc;
 }
 
@@ -1140,7 +1114,7 @@ parse_config_yaml_cmd(parse_config_yaml_ctx *ctx,
 /* See description in 'conf_yaml.h' */
 te_errno
 parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
-                  xmlNodePtr xn_history_root)
+                  xmlNodePtr xn_history_root, const char *conf_dirs)
 {
     FILE                   *f = NULL;
     yaml_parser_t           parser;
@@ -1209,6 +1183,7 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
     ctx.doc = &dy;
     ctx.xn_history = xn_history;
     ctx.expand_vars = expand_vars;
+    ctx.conf_dirs = conf_dirs;
     rc = parse_config_yaml_cmd(&ctx, root);
     if (rc != 0)
     {
