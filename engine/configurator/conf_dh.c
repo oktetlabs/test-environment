@@ -681,6 +681,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                                         (const xmlChar *)"no") == 0);
                 msg->val_type = CVT_NONE;
                 msg->substitution = FALSE;
+                msg->unit = FALSE;
 
                 strcpy(msg->oid, (char *)oid);
                 if (val_s != NULL)
@@ -758,6 +759,23 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                         RETERR(TE_EINVAL, "substitution should be specified "
                                           "using \"true\" or \"false\"");
                     }
+                    xmlFree((xmlChar *)attr);
+                    attr = NULL;
+                }
+
+                attr = (char *)xmlGetProp(tmp, (const xmlChar *)"unit");
+                if (attr != NULL)
+                {
+                    if (strcmp(attr, "true") == 0)
+                    {
+                        msg->unit = TRUE;
+                    }
+                    else if (strcmp(attr, "false") != 0)
+                    {
+                        RETERR(TE_EINVAL, "unit property can be either "
+                              "\"true\" or \"false\"");
+                    }
+
                     xmlFree((xmlChar *)attr);
                     attr = NULL;
                 }

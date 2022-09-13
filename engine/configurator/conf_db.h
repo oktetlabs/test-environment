@@ -61,6 +61,15 @@ typedef struct cfg_object {
                                           order */
 
     te_bool substitution;   /**< The object uses substitution */
+
+    te_bool unit; /**< If @c TRUE, object should be considered as a logical
+                       unit, not simply as a loose collection of child
+                       objects. Configurator will take this into account when
+                       managing dependencies and restoring configuration
+                       from backup */
+    te_bool unit_part; /**< @c TRUE means the object is a descendant of an
+                            object having unit=TRUE */
+
 } cfg_object;
 
 #define CFG_DEP_INITIALIZER  0, NULL, NULL, NULL, NULL

@@ -91,6 +91,8 @@ typedef struct cfg_register_msg {
     te_bool       vol;      /**< Object is volatile */
     te_bool       no_parent_dep; /**< Object should not depend on parent */
     te_bool       substitution;  /**< The object uses substitution */
+    te_bool       unit;     /**< The object is a single logical unit, its
+                                 descendants are properties of that unit */
     uint8_t       access;   /**< Access rights */
     uint16_t      def_val;  /**< Default value offset from start of OID
                                  or 0 if no default value is provided */

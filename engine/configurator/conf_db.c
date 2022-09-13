@@ -346,6 +346,46 @@ cfg_create_dep(cfg_object *master, cfg_object *obj, te_bool object_wide)
 {
     cfg_dependency *newdep;
 
+    /*
+     * Dependency of a direct child on its parent should be
+     * processed as usual for objects with unit_part=TRUE.
+     */
+    if (obj->unit_part && obj->father != master)
+    {
+        cfg_object *master_unit = master;
+        cfg_object *obj_unit = obj;
+
+        /*
+         * If an object is part of a logical unit, make sure that main
+         * object in this unit has this dependency. It will ensure
+         * that the main object will be in the right position in topological
+         * order so that all changes to its children may be applied at
+         * once.
+         */
+
+        while (obj_unit != NULL && !obj_unit->unit)
+            obj_unit = obj_unit->father;
+
+        if (master->unit_part)
+        {
+            while (master_unit != NULL && !master_unit->unit)
+                master_unit = master_unit->father;
+        }
+
+        /*
+         * Do not touch dependencies between properties of a
+         * single "logical unit" object, only external dependencies
+         * should be fixed here.
+         */
+        if (obj_unit != master_unit)
+        {
+            if (obj_unit == NULL || obj_unit == master)
+                return;
+
+            obj = obj_unit;
+        }
+    }
+
     VERB("Creating a dependency %s to %s", obj->oid, master->oid);
 
     newdep = calloc(1, sizeof(*newdep));
@@ -587,6 +627,15 @@ cfg_process_msg_register(cfg_register_msg *msg)
         return;
     }
 
+    if ((father->unit || father->unit_part) && msg->unit)
+    {
+        ERROR("%s: attempt to register a descendant with unit=true in "
+              "a subtree of another object with unit=true", msg->oid);
+        cfg_free_oid(oid);
+        msg->rc = TE_EINVAL;
+        return;
+    }
+
     /* Check for an obj with the same name */
     for (obj = father->son;
          obj != NULL && \
@@ -668,6 +717,10 @@ cfg_process_msg_register(cfg_register_msg *msg)
     father->son = cfg_all_obj[i];
 
     cfg_all_obj[i]->substitution = msg->substitution;
+
+    cfg_all_obj[i]->unit = msg->unit;
+    if (father != NULL && (father->unit || father->unit_part))
+        cfg_all_obj[i]->unit_part = TRUE;
 
     cfg_all_obj[i]->ordinal_number = 0;
     cfg_all_obj[i]->depends_on = NULL;

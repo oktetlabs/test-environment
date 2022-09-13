@@ -196,6 +196,21 @@ register_objects(xmlNodePtr *node, te_bool reg)
             xmlFree(attr);
         }
 
+        if ((attr = xmlGetProp(cur, (const xmlChar *)"unit")) != NULL)
+        {
+            if (strcmp((char *)attr, "true") == 0)
+            {
+                msg->unit = TRUE;
+            }
+            else if (strcmp((char *)attr, "false") != 0)
+            {
+                RETERR(TE_EINVAL,
+                       "unit property can be either \"true\" or \"false\"");
+            }
+            xmlFree(attr);
+        }
+
+
         if (def_val != NULL)
         {
             cfg_inst_val val;
@@ -900,6 +915,10 @@ put_object(FILE *f, cfg_object *obj)
             fprintf(f, " default=\"%s\"", xml_str);
             xmlFree(xml_str);
         }
+
+        if (obj->unit)
+            fprintf(f, " unit=\"true\"");
+
         if (obj->depends_on == NULL)
             fprintf(f, "/>\n");
         else
