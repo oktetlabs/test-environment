@@ -539,12 +539,18 @@ remove_excessive(cfg_instance *list, te_bool *has_deps, const te_vec *subtrees)
 /**
  * Add instance or change its value.
  *
- * @param inst  object instance to be added or changed
+ * @param inst          Object instance to be added or changed
+ * @param local         If @c TRUE, make local changes to be committed later
+ * @param has_deps      Will be set to @c TRUE if changes in other instances
+ *                      may happen due to dependencies
+ * @param change_made   Will be set to @c TRUE if any change was made
+ *                      to configuration
  *
- * @return status code (see errno.h)
+ * @return Status code (see errno.h)
  */
 static int
-add_or_set(cfg_instance *inst, te_bool *has_deps)
+add_or_set(cfg_instance *inst, te_bool local, te_bool *has_deps,
+           te_bool *change_made)
 {
     if (cfg_inst_agent(inst))
         return 0;
@@ -591,9 +597,14 @@ add_or_set(cfg_instance *inst, te_bool *has_deps)
         msg->handle = inst->handle;
         t = msg->val_type = inst->obj->type;
         cfg_types[t].put_to_msg(inst->val, (cfg_msg *)msg);
+        msg->local = local;
         cfg_process_msg(&p_msg, TRUE);
         rc = msg->rc;
         free(msg);
+
+        if (rc == 0)
+            *change_made = TRUE;
+
         return rc;
     }
     else
@@ -617,10 +628,15 @@ add_or_set(cfg_instance *inst, te_bool *has_deps)
         msg->oid_offset = msg->len;
         msg->len += strlen(inst->oid) + 1;
         strcpy((char *)msg + msg->oid_offset, inst->oid);
+        msg->local = local;
         cfg_process_msg((cfg_msg **)&msg, TRUE);
 
         rc = msg->rc;
         free(msg);
+
+        if (rc == 0)
+            *change_made = TRUE;
+
         return rc;
     }
 }
@@ -691,6 +707,120 @@ topo_sort_instances(cfg_instance *list, unsigned int list_size)
     }
 
     return list;
+}
+
+/**
+ * Helper function used in restore_entry().
+ *
+ * @param inst          Instance to restore
+ * @param local         Whether to make only local changes to be
+ *                      committed later
+ * @param need_retry    Will be set to @c TRUE if another attempt
+ *                      to restore from backup is needed because
+ *                      some instances are missing
+ * @param change_made   Will be set to @c TRUE if any change was made
+ *                      to configuration
+ * @param has_deps      Will be set to @c TRUE if made changes could
+ *                      have produced changes in other instances due to
+ *                      dependencies
+ *
+ * @return Status code.
+ */
+static te_errno
+restore_entry_aux(cfg_instance *inst, te_bool local,
+                  te_bool *need_retry, te_bool *change_made,
+                  te_bool *has_deps)
+{
+    int rc;
+    cfg_instance *child;
+
+    switch (rc = add_or_set(inst, local, has_deps, change_made))
+    {
+        case 0:
+            inst->added = TRUE;
+            break;
+
+        case TE_ENOENT:
+            /* do nothing */
+            *need_retry = TRUE;
+            break;
+
+        default:
+            ERROR("Failed to add/set instance %s (%r)", inst->oid, rc);
+            return rc;
+    }
+
+    if (!local)
+        return 0;
+
+    /*
+     * local=TRUE is used for instances of "unit" objects; all their
+     * children should be updated and then all the changes should be
+     * committed at once.
+     */
+    for (child = inst->son; child != NULL; child = child->brother)
+    {
+        rc = restore_entry_aux(child, local, need_retry,
+                               change_made, has_deps);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
+}
+
+/**
+ * Restore the single instance from backup.
+ *
+ * @param inst          Instance to restore
+ * @param need_retry    Will be set to @c TRUE if another attempt
+ *                      to restore from backup is needed because
+ *                      some instances are missing
+ * @param change_made   Will be set to @c TRUE if any change was made
+ *                      to configuration
+ * @param has_deps      Will be set to @c TRUE if made changes could
+ *                      have produced changes in other instances due to
+ *                      dependencies
+ *
+ * @return Status code.
+ */
+static te_errno
+restore_entry(cfg_instance *inst, te_bool *need_retry,
+              te_bool *change_made, te_bool *has_deps)
+{
+    te_errno rc;
+    cfg_commit_msg *msg = NULL;
+    size_t size;
+    te_bool change_made_aux = FALSE;
+
+    rc = restore_entry_aux(inst, inst->obj->unit,
+                           need_retry, &change_made_aux, has_deps);
+    if (rc != 0)
+        return rc;
+
+    if (change_made_aux)
+        *change_made = TRUE;
+
+    if (!inst->obj->unit || !change_made_aux)
+        return 0;
+
+    size = sizeof(*msg) + strlen(inst->oid) + 1;
+    msg = calloc(size, 1);
+    if (msg == NULL)
+    {
+        ERROR("%s(): failed to allocate commit message", __FUNCTION__);
+        return TE_ENOMEM;
+    }
+
+    msg->type = CFG_COMMIT;
+    msg->len = size;
+    strcpy(msg->oid, inst->oid);
+
+    cfg_process_msg((cfg_msg **)&msg, TRUE);
+    rc = msg->rc;
+    free(msg);
+
+    return rc;
 }
 
 /**
@@ -873,7 +1003,7 @@ restore_entries(cfg_instance *list, unsigned int list_size,
                 const te_vec *subtrees)
 {
     int           rc;
-    int           n_processed     = 0;
+    te_bool       change_made = FALSE;
     int           n_iterations    = 0;
     te_bool       need_retry      = FALSE;
     cfg_instance *iter;
@@ -904,32 +1034,25 @@ restore_entries(cfg_instance *list, unsigned int list_size,
 
         do
         {
-            n_processed = 0;
+            change_made = FALSE;
             need_retry  = FALSE;
             for (iter = list; iter != NULL; iter = iter->bkp_next)
             {
-                if (iter->added)
+                if (iter->added || iter->obj->unit_part)
                     continue;
 
                 VERB("Restoring instance %s", iter->oid);
 
-                switch (rc = add_or_set(iter, &deps_might_fire))
+                rc = restore_entry(iter, &need_retry, &change_made,
+                                   &deps_might_fire);
+                if (rc != 0)
                 {
-                    case 0:
-                        iter->added = TRUE;
-                        n_processed++;
-                        break;
-                    case TE_ENOENT:
-                        /* do nothing */
-                        need_retry = TRUE;
-                        break;
-                    default:
-                        ERROR("Failed to add/set instance %s (%r)", iter->oid, rc);
-                        free_instances(list);
-                        return rc;
+                    free_instances(list);
+                    return rc;
                 }
             }
-        } while(n_processed != 0 && need_retry);
+
+        } while (change_made && need_retry);
 
         if (need_retry)
         {
