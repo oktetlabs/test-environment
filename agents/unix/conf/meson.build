@@ -22,6 +22,7 @@ sources += files(
     'base/conf_cpu.c',
     'base/conf_eth.c',
     'base/conf_ethtool.c',
+    'base/conf_flow_ctrl.c',
     'base/conf_iommu.c',
     'base/conf_ipvlan.c',
     'base/conf_key.c',

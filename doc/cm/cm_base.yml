@@ -433,6 +433,42 @@
          Name: Name of a field from ethtool_coalesce structure
          Value: See documentation of ethtool_coalesce structure
 
+    - oid: "/agent/interface/flow_control"
+      access: read_only
+      type: none
+      unit: true
+      d: |
+         Network interface flow control parameters
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/flow_control/autoneg"
+      access: read_write
+      type: int32
+      d: |
+         Flow control autonegotiation state
+         Name: none
+         Value: 0 - disabled
+                1 - enabled
+
+    - oid: "/agent/interface/flow_control/rx"
+      access: read_write
+      type: int32
+      d: |
+         Rx flow control state
+         Name: none
+         Value: 0 - disabled
+                1 - enabled
+
+    - oid: "/agent/interface/flow_control/tx"
+      access: read_write
+      type: int32
+      d: |
+         Tx flow control state
+         Name: none
+         Value: 0 - disabled
+                1 - enabled
+
     - oid: "/agent/interface/phy"
       access: read_only
       type: none
