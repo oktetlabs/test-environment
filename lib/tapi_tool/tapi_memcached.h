@@ -46,6 +46,14 @@ typedef enum tapi_mamcached_proto {
     TAPI_MEMCACHED_PROTO_BINARY,
 } tapi_mamcached_proto_t;
 
+/** Representation of possible values for memcached::verbose option. */
+typedef enum tapi_mamcached_verbose {
+    TAPI_MEMCACHED_NONE_VERBOSE,
+    TAPI_MEMCACHED_VERBOSE,
+    TAPI_MEMCACHED_MORE_VERBOSE,
+    TAPI_MEMCACHED_EXTRA_VERBOSE,
+} tapi_mamcached_verbose_t;
+
 /** Specific memcached options. */
 typedef struct tapi_memcached_opt {
     /** Unix socket path to listen on (disables network support). */
@@ -104,8 +112,11 @@ typedef struct tapi_memcached_opt {
     tapi_job_opt_uint_t                 slab_min_size;
     /** Disable the use of CAS (and reduce the per-item size by 8 bytes). */
     te_bool                             disable_cas;
-    /** Be verbose during the event loop, print out errors and warnings. */
-    te_bool                             verbose;
+    /**
+     * Be verbose during the event loop.
+     * Print out errors and warnings (none by default).
+     */
+    tapi_mamcached_verbose_t            verbose;
     /** Number of threads to use to process incoming requests. */
     tapi_job_opt_uint_t                 threads;
     /**

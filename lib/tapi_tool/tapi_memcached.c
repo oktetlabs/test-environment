@@ -41,6 +41,15 @@ static const te_enum_map tapi_mamcached_proto_mapping[] = {
     TE_ENUM_MAP_END
 };
 
+/** Mapping of possible values for memcached::verbose option. */
+static const te_enum_map tapi_mamcached_verbose_mapping[] = {
+    {.name = "",        .value = TAPI_MEMCACHED_NONE_VERBOSE},
+    {.name = "-v",      .value = TAPI_MEMCACHED_VERBOSE},
+    {.name = "-vv",     .value = TAPI_MEMCACHED_MORE_VERBOSE},
+    {.name = "-vvv",    .value = TAPI_MEMCACHED_EXTRA_VERBOSE},
+    TE_ENUM_MAP_END
+};
+
 /* Possible memcached command line arguments. */
 static const tapi_job_opt_bind memcached_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_STRING("--unix-socket=", TRUE, tapi_memcached_opt,
@@ -71,7 +80,8 @@ static const tapi_job_opt_bind memcached_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_UINT_T("--slab-min-size=", TRUE, NULL, tapi_memcached_opt,
                         slab_min_size),
     TAPI_JOB_OPT_BOOL("--disable-cas", tapi_memcached_opt, disable_cas),
-    TAPI_JOB_OPT_BOOL("-v", tapi_memcached_opt, verbose),
+    TAPI_JOB_OPT_ENUM(NULL, FALSE, tapi_memcached_opt, verbose,
+                      tapi_mamcached_verbose_mapping),
     TAPI_JOB_OPT_UINT_T("--threads=", TRUE, NULL, tapi_memcached_opt,
                         threads),
     TAPI_JOB_OPT_STRING("-D", FALSE, tapi_memcached_opt, delimiter),
@@ -144,7 +154,7 @@ const tapi_memcached_opt tapi_memcached_default_opt = {
     .slab_growth_factor         = TAPI_JOB_OPT_DOUBLE_UNDEF,
     .slab_min_size              = TAPI_JOB_OPT_UINT_UNDEF,
     .disable_cas                = FALSE,
-    .verbose                    = FALSE,
+    .verbose                    = TAPI_MEMCACHED_NONE_VERBOSE,
     .threads                    = TAPI_JOB_OPT_UINT_UNDEF,
     .delimiter                  = NULL,
     .enable_largepages          = FALSE,
