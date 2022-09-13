@@ -2,8 +2,9 @@
 # Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
 
 tests = [
-    'readlink',
     'enum_map',
+    'readlink',
+    'resolvepath',
     'units',
     'vector'
 ]

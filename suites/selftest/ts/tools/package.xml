@@ -11,6 +11,10 @@
         </run>
 
         <run>
+            <script name="resolvepath"/>
+        </run>
+
+        <run>
             <script name="enum_map"/>
         </run>
 

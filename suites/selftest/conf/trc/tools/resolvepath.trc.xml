@@ -1,0 +1,6 @@
+<test name="resolvepath" type="script">
+    <objective>Test for te_file_resolve_pathname correctness</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>
