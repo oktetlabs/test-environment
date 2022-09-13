@@ -8,7 +8,7 @@
 
 build=$1
 
-test -n "${build}" || \
+test \( -d "${build}" \) -a \( -O ${build} \) || \
     exit 1
 
 cd "${build}" 2> /dev/null || \
@@ -18,10 +18,8 @@ files=$(find . -name \*.gcda -o -name \*.gcov 2> /dev/null) || \
     exit 1
 
 echo "${files}" | \
-    sudo bash -c "
-        cd \"${build}\" || exit 1 ;
-        while read f ; do
-            test -z \"\$f\" && continue ;
-            rm \"\$f\" 2> /dev/null || exit 1 ;
-        done ;
-        :"
+    while read f ; do
+        test -z "$f" && continue ;
+        rm -f "${build}/$f" 2> /dev/null || exit 1 ;
+    done
+:
