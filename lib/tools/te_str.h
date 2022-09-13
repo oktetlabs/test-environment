@@ -338,6 +338,22 @@ extern te_errno te_strtol(const char *input, int base, long int *result);
 extern te_errno te_strtol_bool(const char *input, te_bool *bresult);
 
 /**
+ * Convert a string to an integer which must fit into a given range.
+ *
+ * @param[in]  input        String to convert
+ * @param[in]  minval       Minimum allowed value
+ * @param[in]  maxval       Maximum allowed value
+ * @param[out] endptr       Pointer to the tail of the string
+ * @param[in]  base         Conversion base as per strtol()
+ * @param[out] result       Result value (may be @c NULL)
+ *
+ * @return Status code
+ * @retval TE_ERANGE  The value is not within @p minval .. @p maxval
+ */
+extern te_errno te_strtoi_range_raw(const char *input, int minval, int maxval,
+                                    char **endptr, int base, int *result);
+
+/**
  * Convert string to double. Following characters are allowed.
  *
  * @param str          String to convert

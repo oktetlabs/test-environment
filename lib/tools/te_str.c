@@ -452,6 +452,29 @@ te_strtol_bool(const char *input, te_bool *bresult)
 }
 
 te_errno
+te_strtoi_range_raw(const char *input, int minval, int maxval,
+                    char **endptr, int base, int *result)
+{
+    long int parsed;
+    te_errno rc = te_strtol_raw(input, endptr, base, &parsed);
+
+    if (rc != 0)
+        return rc;
+
+    if (parsed < minval || parsed > maxval)
+    {
+        ERROR("%s(): %ld is not in range %d..%d", __func__,
+              parsed, minval, maxval);
+        return TE_ERANGE;
+    }
+
+    if (result != NULL)
+        *result = (int)parsed;
+
+    return 0;
+}
+
+te_errno
 te_strtod_raw(const char *str, char **endptr, double *result)
 {
     int saved_errno = errno;
