@@ -147,6 +147,12 @@
 /* Define to 1 if you have the `pwritev' function. */
 #mesondefine HAVE_PWRITEV
 
+/* Define to 1 if you have the `preadv2' function. */
+#mesondefine HAVE_PREADV2
+
+/* Define to 1 if you have the `pwritev2' function. */
+#mesondefine HAVE_PWRITEV2
+#
 /* Define to 1 if the system has the type `SVCXPRT'. */
 #mesondefine HAVE_SVCXPRT
 

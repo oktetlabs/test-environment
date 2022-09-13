@@ -331,7 +331,7 @@ if have_aio_read
     conf.set('HAVE_' + f.to_upper().underscorify(), 1)
 endif
 
-unistd_funcs = [ 'pwritev', 'preadv' ]
+unistd_funcs = [ 'pwritev', 'preadv', 'pwritev2', 'preadv2' ]
 foreach f : unistd_funcs
     if cc.has_function(f, args: te_cflags)
         conf.set('HAVE_' + f.to_upper().underscorify(), 1)
