@@ -11,7 +11,7 @@
 
     - oid: "/agent/tftpserver"
       access: read_write
-      type: integer
+      type: int32
       d: |
          TFTP server enabling/disabling.
          Name:  empty

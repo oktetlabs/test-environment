@@ -11,7 +11,7 @@
 
     - oid: "/agent/dnsserver"
       access: read_write
-      type: integer
+      type: int32
       d: |
          DNS server enabling/disabling.
          Name:  empty
@@ -38,7 +38,7 @@
 
     - oid: "/agent/dnsserver/recursive"
       access: read_write
-      type: integer
+      type: int32
       d: |
          DNS server recursive queries
          Name: empty

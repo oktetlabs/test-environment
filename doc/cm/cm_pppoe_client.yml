@@ -17,7 +17,7 @@
 
     - oid: "/agent/interface/pppoe"
       access: read_create
-      type: integer
+      type: int32
       d: |
          Collection of PPPoE clients on the specific interface.
          Name: An arbitrary string that identifies

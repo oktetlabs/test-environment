@@ -18,7 +18,7 @@
 
     - oid: "/crypt/entry/status"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Entry status.
          On read "1" means that files
@@ -155,7 +155,7 @@
 
     - oid: "/crypt/entry/x509/bitsize"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Generated key size in bits.
          Changes of parameter is prohibited after the entry is generated

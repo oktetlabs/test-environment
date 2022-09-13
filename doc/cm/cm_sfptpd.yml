@@ -42,7 +42,7 @@
 
     - oid: "/agent/sfptpd/enable"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Enable state for sfptpd
          Name: empty

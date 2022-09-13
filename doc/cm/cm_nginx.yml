@@ -18,7 +18,7 @@
 
     - oid: "/agent/nginx/status"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Status of the nginx server. Is it running or not?
          Name: empty
@@ -40,7 +40,7 @@
 
     - oid: "/agent/nginx/error_log"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Nginx server error logging.
          Name: empty
@@ -62,7 +62,7 @@
 
     - oid: "/agent/nginx/worker/processes"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Number of worker processes.
          Name: empty
@@ -78,7 +78,7 @@
 
     - oid: "/agent/nginx/worker/cpu_affinity/mode"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Worker processes cpu affinity mode.
          Name: empty
@@ -110,7 +110,7 @@
 
     - oid: "/agent/nginx/worker/rlimit_nofile"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Limit on the maximum number of open files for worker processes.
          Name: empty
@@ -124,7 +124,7 @@
 
     - oid: "/agent/nginx/events/worker_connections"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Number of worker connections.
          Name: empty
@@ -142,7 +142,7 @@
 
     - oid: "/agent/nginx/events/multi_accept"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Whether one worker can accept multiple connections at a time.
          Name: empty
@@ -151,7 +151,7 @@
 
     - oid: "/agent/nginx/events/accept_mutex"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Whether worker processes will accept new connections by turn.
          Otherwise, all worker processes will be notified about new connections.
@@ -175,7 +175,7 @@
 
     - oid: "/agent/nginx/http/server/access_log"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Nginx HTTP server access logging.
          Name: empty
@@ -204,7 +204,7 @@
 
     - oid: "/agent/nginx/http/server/listen/reuseport"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Create an individual listening socket for each worker.
          Name: empty
@@ -213,7 +213,7 @@
 
     - oid: "/agent/nginx/http/server/listen/ssl"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Use SSL.
          Name: empty
@@ -252,7 +252,7 @@
 
     - oid: "/agent/nginx/http/server/proxy/connect_timeout"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Timeout in seconds for establishing a connection with a proxied
          server.
@@ -261,7 +261,7 @@
 
     - oid: "/agent/nginx/http/server/proxy/buffering"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Proxy buffering.
          Name: empty
@@ -270,28 +270,28 @@
 
     - oid: "/agent/nginx/http/server/proxy/buffering/num"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Proxy buffers number.
          Name: empty
 
     - oid: "/agent/nginx/http/server/proxy/buffering/def_size"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Default proxy buffers size in kilobytes.
          Name: empty
 
     - oid: "/agent/nginx/http/server/proxy/buffering/init_size"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Proxy buffer size in kilobytes used for the first part of response.
          Name: empty
 
     - oid: "/agent/nginx/http/server/open_file_cache"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Cache for files information. Cache stores open file descriptors,
          their sizes and modification times; information on existence of
@@ -302,14 +302,14 @@
 
     - oid: "/agent/nginx/http/server/open_file_cache/max"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Maximum number of elements in the cache.
          Name: empty
 
     - oid: "/agent/nginx/http/server/open_file_cache/inactive"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Time in seconds after which element will be removed from the cache
          if it has not been accessed during this time.
@@ -318,7 +318,7 @@
 
     - oid: "/agent/nginx/http/server/open_file_cache/valid"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Time in seconds after which cache elements should be validated.
          Name: empty
@@ -326,7 +326,7 @@
 
     - oid: "/agent/nginx/http/server/open_file_cache/errors"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Do caching of file lookup errors.
          Name: empty
@@ -342,7 +342,7 @@
 
     - oid: "/agent/nginx/http/server/client/body_timeout"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Timeout in seconds for reading client request body.
          Name: empty
@@ -350,7 +350,7 @@
 
     - oid: "/agent/nginx/http/server/client/max_body_size"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Maximum allowed size in kilobytes of the client request body.
          Name: empty
@@ -358,7 +358,7 @@
 
     - oid: "/agent/nginx/http/server/client/header_timeout"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Timeout for reading client request header.
          Name: empty
@@ -366,7 +366,7 @@
 
     - oid: "/agent/nginx/http/server/client/header_buffer_size"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Buffer size for reading client request header.
          Name: empty
@@ -381,7 +381,7 @@
 
     - oid: "/agent/nginx/http/server/client/large_header_buffer/num"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Maximum number of buffers.
          Name: empty
@@ -389,7 +389,7 @@
 
     - oid: "/agent/nginx/http/server/client/large_header_buffer/size"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Maximum allowed size of buffers in kilobytes.
          Name: empty
@@ -397,7 +397,7 @@
 
     - oid: "/agent/nginx/http/server/client/proxy_request_buffering"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Whether the entire request body should be read from the client before
          sending the request to a proxied server.
@@ -407,7 +407,7 @@
 
     - oid: "/agent/nginx/http/server/sendfile"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Whether sendfile() should be used.
          Name: empty
@@ -416,7 +416,7 @@
 
     - oid: "/agent/nginx/http/server/tcp_nopush"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Whether TCP_NOPUSH/TCP_CORK socket option should be used.
          Name: empty
@@ -425,7 +425,7 @@
 
     - oid: "/agent/nginx/http/server/tcp_nodelay"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Whether TCP_NODELAY socket option should be used.
          Name: empty
@@ -434,14 +434,14 @@
 
     - oid: "/agent/nginx/http/server/send_timeout"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Timeout for transmitting a response to the client.
          Name: empty
 
     - oid: "/agent/nginx/http/server/reset_timedout_connection"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Whether timed out connections should be reset.
          Name: empty
@@ -450,7 +450,7 @@
 
     - oid: "/agent/nginx/http/server/keepalive_timeout"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Timeout in seconds during which a keep-alive client connection
          will stay open on the server side.
@@ -458,7 +458,7 @@
 
     - oid: "/agent/nginx/http/server/keepalive_requests"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Maximum number of requests that can be served through one keep-alive
          connection.
@@ -466,7 +466,7 @@
 
     - oid: "/agent/nginx/http/server/tokens"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Server presentation on error pages and in the "Server" response
          header field.
@@ -595,7 +595,7 @@
 
     - oid: "/agent/nginx/http/upstream/server/weight"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Upstream server weight.
          Name: empty
@@ -603,7 +603,7 @@
 
     - oid: "/agent/nginx/http/upstream/keepalive"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Maximum number of idle keepalive connections that are preserved
          in the cache of each worker process.
@@ -664,7 +664,7 @@
 
     - oid: "/agent/nginx/ssl/session/timeout"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Timeout in seconds during which a client may reuse the session
          parameters.

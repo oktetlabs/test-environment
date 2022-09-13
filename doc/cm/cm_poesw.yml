@@ -11,21 +11,21 @@
 
     - oid: "/agent/n_ports"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Number of ports available on the Switch
          Name: empty
 
     - oid: "/agent/ageing_time"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Ageing Time value
          Name: empty
 
     - oid: "/agent/cos"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Number of CoS queues
          Name: empty
@@ -40,7 +40,7 @@
 
     - oid: "/agent/port/type"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Port Type
          Name: empty
@@ -59,7 +59,7 @@
 
     - oid: "/agent/port/state/status"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Status of the link for the port
          Name: empty
@@ -69,7 +69,7 @@
 
     - oid: "/agent/port/state/speed"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Port speed
          Name: empty
@@ -78,7 +78,7 @@
 
     - oid: "/agent/port/state/duplexity"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Port duplexity
          Name: empty
@@ -88,7 +88,7 @@
 
     - oid: "/agent/port/state/role"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Role of the port while it synchronize clocks with a peer
          Name: empty
@@ -99,7 +99,7 @@
 
     - oid: "/agent/port/state/hol_blocking"
       access: read_only
-      type: integer
+      type: int32
       d: |
          State of Head of Line Blocking
          Name: empty
@@ -109,7 +109,7 @@
 
     - oid: "/agent/port/state/bps"
       access: read_only
-      type: integer
+      type: int32
       d: |
          The attribute shows which actions are taken on detecting
          back pressure on the port (Back Pressure State)
@@ -130,7 +130,7 @@
 
     - oid: "/agent/port/admin/status"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Attribute to control the operational status of the port.
          Name: empty
@@ -140,7 +140,7 @@
 
     - oid: "/agent/port/admin/auto"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Attribute to enable/disable autonegotiation on the port:
          - Duplexity;
@@ -152,7 +152,7 @@
 
     - oid: "/agent/port/admin/speed"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Attribute to control port speed value.
          Name: empty
@@ -161,7 +161,7 @@
 
     - oid: "/agent/port/admin/duplexity"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Attribute to control port duplexity
          Name: empty
@@ -171,7 +171,7 @@
 
     - oid: "/agent/port/admin/role"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Attribute to control the role of the port while it synchronize
          clocks with a peer.
@@ -183,7 +183,7 @@
 
     - oid: "/agent/port/admin/bpdu"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Attribute to enable/disable flow of BPDU frames.
          Name: empty
@@ -193,7 +193,7 @@
 
     - oid: "/agent/port/admin/mtu"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Attribute to control the value of MTU on the port.
          Name: empty
@@ -202,7 +202,7 @@
 
     - oid: "/agent/port/admin/default_vlan"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Attribute to configure default VLAN - VLAN that is used for
          untagged frames.
@@ -212,7 +212,7 @@
 
     - oid: "/agent/port/admin/ingress_filtering"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Attribute to enable/disable Ingress Filtering on the port.
          If VLAN ID of received tagged frame is not from the set of VLANs
@@ -227,14 +227,14 @@
 
     - oid: "/agent/port/admin/untagged_priority"
       access: read_write
-      type: integer
+      type: int32
       d: |
          CoS priority for untagged frames received via port
          Name: empty
 
     - oid: "/agent/vlan"
       access: read_create
-      type: integer
+      type: int32
       d: |
          Switch VLAN group
          Name: integer in the range 1..X
@@ -288,7 +288,7 @@
 
     - oid: "/agent/arl/entry/port"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Port identifier of the ARL entry
          Name: empty
@@ -306,7 +306,7 @@
 
     - oid: "/agent/arl/entry/type"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Type of the ARL entry
          Name: empty
@@ -316,7 +316,7 @@
 
     - oid: "/agent/stp"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Bridge Spanning Tree Protocol (STP) information group.
          It consists of a set of read-write objects that provide a way to
@@ -331,7 +331,7 @@
 
     - oid: "/agent/stp/prio"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Bridge Priority value used as a part of Bridge Identifier.
          Name: empty
@@ -340,7 +340,7 @@
 
     - oid: "/agent/stp/bridge_max_age"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Bridge Max Age value set up in the Bridge.
          Name: empty
@@ -349,7 +349,7 @@
 
     - oid: "/agent/stp/bridge_hello_time"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Bridge Hello Time value set up in the Bridge.
          Name: empty
@@ -358,7 +358,7 @@
 
     - oid: "/agent/stp/bridge_forward_delay"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Bridge Forward Delay value set up in the Bridge.
          Name: empty
@@ -386,7 +386,7 @@
 
     - oid: "/agent/stp/root_path_cost"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Current Root Path Cost value set up in the Bridge.
          Name: empty
@@ -395,7 +395,7 @@
 
     - oid: "/agent/stp/root_port"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Current Root Port set up in the Bridge.
          Name: empty
@@ -404,7 +404,7 @@
 
     - oid: "/agent/stp/max_age"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Max Age value currently used on the Bridge.
          Name: empty
@@ -413,7 +413,7 @@
 
     - oid: "/agent/stp/hello_time"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Bridge Hello Time value currently used on the Bridge.
          Name: empty
@@ -422,7 +422,7 @@
 
     - oid: "/agent/stp/forward_delay"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Forward Delay value currently used on the Bridge.
          Name: empty
@@ -431,7 +431,7 @@
 
     - oid: "/agent/stp/hold_time"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Hold Time value currently used on the Bridge.
          Name: empty
@@ -440,7 +440,7 @@
 
     - oid: "/agent/stp/time_since_tp_change"
       access: read_only
-      type: integer
+      type: int32
       d: |
          The time (in hundredths of a second) since the last time
          a topology change was detected by the bridge entity.
@@ -448,7 +448,7 @@
 
     - oid: "/agent/stp/tot_changes"
       access: read_only
-      type: integer
+      type: int32
       d: |
          The total number of topology changes detected by the bridge
          since the management entity was last reset or initialized.
@@ -465,7 +465,7 @@
 
     - oid: "/agent/stp/port/prio"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Port Priority value used as a part of Port Identifier, which
          consists of two components:
@@ -477,14 +477,14 @@
 
     - oid: "/agent/stp/port/path_cost"
       access: read_write
-      type: integer
+      type: int32
       d: |
          The contribution of the path through this port.
          Name: empty
 
     - oid: "/agent/stp/port/state"
       access: read_only
-      type: integer
+      type: int32
       d: |
          The current state of the port.
          Name: empty
@@ -507,7 +507,7 @@
 
     - oid: "/agent/stp/port/designated_cost"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Designated Cost value of the port.
          Name: empty
@@ -524,14 +524,14 @@
 
     - oid: "/agent/stp/port/designated_port"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Designated Port value of the port.
          Name: empty
 
     - oid: "/agent/stp/port/forward_transitions"
       access: read_only
-      type: integer
+      type: int32
       d: |
          The number of times this port has transitioned from the Learning
          state to the Forwarding state.

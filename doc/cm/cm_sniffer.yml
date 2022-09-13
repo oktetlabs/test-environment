@@ -18,7 +18,7 @@
 
     - oid: "/agent/sniffer_settings/enable"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Enable lock on the common settings for the sniffers on the Agent
          Name:  empty
@@ -42,7 +42,7 @@
 
     - oid: "/agent/sniffer_settings/snaplen"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Default length of packet capture for the sniffers on the Agent
          Name: empty
@@ -65,7 +65,7 @@
 
     - oid: "/agent/sniffer_settings/tmp_logs/file_size"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Default max size of a one temporary file for the sniffers on the Agent
          Name:  empty
@@ -73,7 +73,7 @@
 
     - oid: "/agent/sniffer_settings/tmp_logs/total_size"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Max total temporary files size for all agent sniffers
          (it is not active now).
@@ -82,7 +82,7 @@
 
     - oid: "/agent/sniffer_settings/tmp_logs/rotation"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Default value to rotate agent side temporary logs for one sniffer
          Name: empty
@@ -90,7 +90,7 @@
 
     - oid: "/agent/sniffer_settings/tmp_logs/overfill_meth"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Default overfill handle methode for the sniffers on the Agent
          Name: empty
@@ -99,7 +99,7 @@
 
     - oid: "/agent/interface/sniffer"
       access: read_create
-      type: integer
+      type: int32
       d: |
          A sniffer
          Name:  A human-readable sniffer name
@@ -107,7 +107,7 @@
 
     - oid: "/agent/interface/sniffer/enable"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Enable the sniffer
          Name:  empty
@@ -131,7 +131,7 @@
 
     - oid: "/agent/interface/sniffer/snaplen"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Length of packet capture for the sniffer
          Name:  empty
@@ -146,7 +146,7 @@
 
     - oid: "/agent/interface/sniffer/tmp_logs/sniffer_space"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Space on the disk for the capture logs of the sniffer
          Name:  empty
@@ -154,7 +154,7 @@
 
     - oid: "/agent/interface/sniffer/tmp_logs/file_size"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Max size of one temporary file for the sniffer
          Name:  empty
@@ -162,7 +162,7 @@
 
     - oid: "/agent/interface/sniffer/tmp_logs/rotation"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Number of temporary files to rotation on the sniffer
          Name:  empty
@@ -170,7 +170,7 @@
 
     - oid: "/agent/interface/sniffer/tmp_logs/overfill_meth"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Overfill handle method
          Name:  empty

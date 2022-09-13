@@ -10,7 +10,7 @@
 
     - oid: "/agent/l2tp/"
       access: read_write
-      type: integer
+      type: int32
       d: |
          A root object for the L2TP server
          Name: none
@@ -25,7 +25,7 @@
 
     - oid: "/agent/l2tp/port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          The UDP port xl2tpd should use.
          Name: empty
@@ -168,21 +168,21 @@
 
     - oid: "/agent/l2tp/lns/pppopt/mtu"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Specifying the MTU
          Name: empty
 
     - oid: "/agent/l2tp/lns/pppopt/mru"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Specifying the MRU
          Name: empty
 
     - oid: "/agent/l2tp/lns/pppopt/lcp-echo-failure"
       access: read_write
-      type: integer
+      type: int32
       d: |
          pppd will presume
          the peer to be dead if n LCP echo-requests are
@@ -191,7 +191,7 @@
 
     - oid: "/agent/l2tp/lns/pppopt/lcp-echo-interval"
       access: read_write
-      type: integer
+      type: int32
       d: |
          pppd will send an LCP
          echo-request frame to the peer every n seconds

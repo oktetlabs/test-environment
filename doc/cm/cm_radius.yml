@@ -11,7 +11,7 @@
 
     - oid: "/agent/radiusserver"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Root object of RADIUS Server configuration.
          Name: empty
@@ -19,7 +19,7 @@
 
     - oid: "/agent/radiusserver/auth_port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          RADIUS Authentication port number.
          Name: empty
@@ -27,7 +27,7 @@
 
     - oid: "/agent/radiusserver/acct_port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          RADIUS Accounting port number.
          Name: empty
@@ -61,7 +61,7 @@
 
     - oid: "/agent/radiusserver/user"
       access: read_create
-      type: integer
+      type: int32
       d: |
          RADIUS users configuration.
          Name: user name
@@ -140,7 +140,7 @@
 
     - oid: "/agent/interface/supplicant"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Root object of the IEEE 802.1x supplicant daemon.
          Name: interface name where this supplicant works

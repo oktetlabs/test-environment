@@ -30,7 +30,7 @@
 
     - oid: "/agent/key/bitsize"
       access: read_write
-      type: integer
+      type: int32
       d: |
         The length of the key in bits
 

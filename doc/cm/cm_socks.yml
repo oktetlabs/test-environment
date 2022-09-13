@@ -11,7 +11,7 @@
 
     - oid: "/agent/socks"
       access: read_create
-      type: integer
+      type: int32
       d: |
          A root object for the socks server
          Name: any
@@ -19,7 +19,7 @@
 
     - oid: "/agent/socks/status"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Server's actual status
          Name: empty
@@ -35,7 +35,7 @@
 
     - oid: "/agent/socks/proto"
       access: read_create
-      type: integer
+      type: int32
       d: |
          The set of protocols to use for that server. Note that support of this
          parameter is implementation dependent
@@ -52,7 +52,7 @@
 
     - oid: "/agent/socks/interface/port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Port to be used for selected interface.
          Name: empty
@@ -60,7 +60,7 @@
 
     - oid: "/agent/socks/interface/addr_family"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Address family to be used for selected interface.
          Name: empty
@@ -125,7 +125,7 @@
 
     - oid: "/agent/socks/process_id"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Process ID of the running SOCKS daemon

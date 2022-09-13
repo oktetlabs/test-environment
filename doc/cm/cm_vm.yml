@@ -25,7 +25,7 @@
 
     - oid: "/agent/vm/status"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Status of the virtual machine. Is it running or not?
          Name: None
@@ -39,7 +39,7 @@
 
     - oid: "/agent/vm/ssh_port/host"
       access: read_only
-      type: integer
+      type: int32
       d: |
          SSH port of the local host forwarded to the virtual machine.
          The TCP port should be used by the rcfunix to start test agent.
@@ -47,7 +47,7 @@
 
     - oid: "/agent/vm/ssh_port/guest"
       access: read_write
-      type: integer
+      type: int32
       d: |
          SSH port in the virtual machine SSH daemon is listening to.
          Host SSH port is forwarded to the port.
@@ -56,7 +56,7 @@
 
     - oid: "/agent/vm/rcf_port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          RCF port of the local host forwarded to the virtual machine.
          The TCP port should be passed to the Test Agent and used by the RCF
@@ -66,7 +66,7 @@
 
     - oid: "/agent/vm/kvm"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Enable/disable KVM mode.
          Name: None
@@ -95,7 +95,7 @@
 
     - oid: "/agent/vm/cpu/num"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Number of CPUs. Default is 1.
          Name: None
@@ -109,7 +109,7 @@
 
     - oid: "/agent/vm/mem/size"
       access: read_write
-      type: integer
+      type: int32
       d: |
          RAM size in megabytes. Default is 256M.
          Name: None
@@ -123,7 +123,7 @@
 
     - oid: "/agent/vm/mem/prealloc"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Does memory need to be pre-allocated? Default is 0.
          Only meaningful if "/agent/vm/mem/path" is set.
@@ -152,7 +152,7 @@
 
     - oid: "/agent/vm/drive/snapshot"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Enable/disable snapshot mode.
          Default is true which means that no changes are stored.
@@ -160,7 +160,7 @@
 
     - oid: "/agent/vm/drive/cdrom"
       access: read_write
-      type: integer
+      type: int32
       d: |
         Is drive a disk (0, default) or cdrom (1)?
 
@@ -246,7 +246,7 @@
 
     - oid: "/agent/vm/chardev/server"
       access: read_write
-      type: integer
+      type: int32
       d: |
          true - server mode, false - client mode, default is false
          Name: None

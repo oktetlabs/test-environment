@@ -28,7 +28,7 @@
 
     - oid: "/agent/process/status"
       access: read_write
-      type: integer
+      type: int32
       d: |
         Either 1 (start/running) or 0 (stop/stopped/crashed) for
         non-autorestart processes.
@@ -46,7 +46,7 @@
 
     - oid: "/agent/process/status/exit_status/type"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
         Cause of last process termination.
@@ -58,7 +58,7 @@
 
     - oid: "/agent/process/status/exit_status/value"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
         Either a last exit status of the process or a number of a signal which
@@ -67,7 +67,7 @@
 
     - oid: "/agent/process/autorestart"
       access: read_write
-      type: integer
+      type: int32
       d: |
         Time period in seconds to check if the process stopped working and
         restart it if this is the case. 0 means that the process should not be

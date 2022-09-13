@@ -23,7 +23,7 @@
 
     - oid: "/conf_delay/ta"
       access: read_create
-      type: integer
+      type: int32
       d: |
          Delay for particular object and particular Test Agent.
 

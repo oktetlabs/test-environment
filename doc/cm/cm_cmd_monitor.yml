@@ -18,7 +18,7 @@
 
     - oid: "/agent/command_monitor/time_to_wait"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Time to wait before running a shell command again
          Name: empty
@@ -34,7 +34,7 @@
 
     - oid: "/agent/command_monitor/enable"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Enable state for command monitor
          Name: empty

@@ -18,7 +18,7 @@
 
     - oid: "/agent/upnp_cp/enable"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Enable the UPnP Control Point
          Name:  empty

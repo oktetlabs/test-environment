@@ -11,7 +11,7 @@
 
     - oid: "/agent/smtp"
       access: read_create
-      type: integer
+      type: int32
       d: |
          SMTP daemon.
          Name: empty

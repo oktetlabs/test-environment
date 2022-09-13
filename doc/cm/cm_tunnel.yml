@@ -18,7 +18,7 @@
 
     - oid: "/agent/tunnel/vxlan"
       access: read_create
-      type: integer
+      type: int32
       depends:
         - oid: "/agent/rsrc"
       d: |
@@ -28,7 +28,7 @@
 
     - oid: "/agent/tunnel/vxlan/vni"
       access: read_write
-      type: integer
+      type: int32
       d: |
          VXLAN network identifier to use.
          Name: none
@@ -54,7 +54,7 @@
 
     - oid: "/agent/tunnel/vxlan/port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          UDP destination port used to communicate with the remove endpoint.
          Name: none
@@ -71,7 +71,7 @@
 
     - oid: "/agent/tunnel/geneve"
       access: read_create
-      type: integer
+      type: int32
       depends:
         - oid: "/agent/rsrc"
       d: |
@@ -81,7 +81,7 @@
 
     - oid: "/agent/tunnel/geneve/vni"
       access: read_write
-      type: integer
+      type: int32
       d: |
          GENEVE virtual network identifier to use.
          Name: none
@@ -99,7 +99,7 @@
 
     - oid: "/agent/tunnel/geneve/port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          UDP destination port used to communicate with the remove endpoint.
          Name: none

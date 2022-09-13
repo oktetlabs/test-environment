@@ -66,7 +66,7 @@
 
     - oid: "/agent/bpf/map/key_size"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Size of map key
          Name:  empty
@@ -74,7 +74,7 @@
 
     - oid: "/agent/bpf/map/value_size"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Size of map value
          Name:  empty
@@ -82,7 +82,7 @@
 
     - oid: "/agent/bpf/map/max_entries"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Max entries of key/map values
          Name:  empty
@@ -116,7 +116,7 @@
 
     - oid: "/agent/bpf/map/writable"
       access: read_write
-      type: integer
+      type: int32
       d: |
          The writable view of the map enabling/disabling
          Name: none
@@ -142,7 +142,7 @@
 
     - oid: "/agent/bpf/perf_map/event_size"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Size of user data that is passed via an event. This value
          must be set before events monitoring is enabled.
@@ -151,7 +151,7 @@
 
     - oid: "/agent/bpf/perf_map/events_enable"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Enable/disable events monitoring.
          Name: empty
@@ -160,7 +160,7 @@
 
     - oid: "/agent/bpf/perf_map/num_events"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Number of pending events with data. Reading this field causes events

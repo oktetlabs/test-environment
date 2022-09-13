@@ -43,7 +43,7 @@
 
     - oid: "/local/dpdk/max_rx_queues"
       access: read_create
-      type: integer
+      type: int32
       d: |
         Maximum number of Rx queues supported by PCI function
 
@@ -53,7 +53,7 @@
 
     - oid: "/local/dpdk/max_tx_queues"
       access: read_create
-      type: integer
+      type: int32
       d: |
         Maximum number of Tx queues supported by PCI function
 
@@ -63,7 +63,7 @@
 
     - oid: "/local/dpdk/min_mtu"
       access: read_create
-      type: integer
+      type: int32
       d: |
         Minimum MTU reported by PCI function.
 
@@ -73,7 +73,7 @@
 
     - oid: "/local/dpdk/max_mtu"
       access: read_create
-      type: integer
+      type: int32
       d: |
         Maximum MTU reported by PCI function.
 
@@ -83,7 +83,7 @@
 
     - oid: "/local/dpdk/required_service_cores"
       access: read_create
-      type: integer
+      type: int32
       d: |
         A number of required service cores specific to some to some PCI device.
 
@@ -125,7 +125,7 @@
 
     - oid: "/local/dpdk/mem_amount"
       access: read_write
-      type: integer
+      type: int32
       d: |
         Amount of memory (in megabytes) to be preallocated during startup.
 
@@ -201,7 +201,7 @@
 
     - oid: "/local/dpdk/peer_max_mtu"
       access: read_write
-      type: integer
+      type: int32
       d: |
         Maximum MTU supported by a regular network interface at peer side.
 
@@ -247,7 +247,7 @@
 
     - oid: "/local/dpdk/extra_tx_descs_per_packet"
       access: read_write
-      type: integer
+      type: int32
       d: |
         Number of extra Tx descriptors required per packet
         (e.g. for virtio network header).
@@ -267,7 +267,7 @@
 
     - oid: "/local/dpdk/tso_cutoff_barrier"
       access: read_write
-      type: integer
+      type: int32
       d: |
         Barrier inside super-frame payload including protocol headers
         at which segment should end and next full segment should start.

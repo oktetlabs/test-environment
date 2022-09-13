@@ -11,7 +11,7 @@
 
     - oid: "/agent/dhcpserver"
       access: read_write
-      type: integer
+      type: int32
       d: |
          DHCP server enabling/disabling.
 
@@ -37,7 +37,7 @@
 
     - oid: "/agent/dhcpserver/allow_unknown_clients"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Should DHCP server allow unknown clients?
          Name: empty
@@ -66,7 +66,7 @@
 
     - oid: "/agent/dhcpserver/lease/state"
       access: read_only
-      type: integer
+      type: int32
       d: |
          State of DHCP server lease.
          Name:  empty
@@ -118,7 +118,7 @@
 
     - oid: "/agent/dhcpserver/lease/ends"
       access: read_only
-      type: integer
+      type: int32
       d: |
          The time when the lease's current state ends, as understood by the
           client (GMT in seconds from Epoch).
@@ -127,7 +127,7 @@
 
     - oid: "/agent/dhcpserver/lease/tstp"
       access: read_only
-      type: integer
+      type: int32
       d: |
          The time when the lease's current state ends, as understood by the
           server (GMT in seconds from Epoch).
@@ -136,7 +136,7 @@
 
     - oid: "/agent/dhcpserver/lease/cltt"
       access: read_only
-      type: integer
+      type: int32
       d: |
          The time of the last transaction with the client on this lease
           (GMT in seconds from Epoch).
@@ -145,7 +145,7 @@
 
     - oid: "/agent/dhcpserver/subnet"
       access: read_create
-      type: integer
+      type: int32
       d: |
          Subnet declaration for the DHCP server.
          Name: IPv4 subnet

@@ -54,7 +54,7 @@
 
     - oid: "/net/node/type"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Type of the network node.
          Name: none
@@ -84,7 +84,7 @@
 
     - oid: "/net_pool/entry"
       access: read_create
-      type: integer
+      type: int32
       d: |
          Network pool entry (subnetwork information)
          Name: Network address
@@ -97,7 +97,7 @@
 
     - oid: "/net_pool/entry/prefix"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Prefix length for this pool entry
          Name: Empty
@@ -105,7 +105,7 @@
 
     - oid: "/net_pool/entry/n_entries"
       access: read_write
-      type: integer
+      type: int32
       d: |
          The number of entries allocated from this network address pool
          Name: Empty
@@ -121,7 +121,7 @@
 
     - oid: "/net_pool/entry/pool/entry"
       access: read_create
-      type: integer
+      type: int32
       d: |
          A node to keep the exact instance of allocated network address
          Name: Allocated network address

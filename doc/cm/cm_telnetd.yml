@@ -11,7 +11,7 @@
 
     - oid: "/agent/telnetd"
       access: read_write
-      type: integer
+      type: int32
       d: |
          TELNET daemon enabling/disabling.
          Name:  empty

@@ -23,7 +23,7 @@
 
     - oid: "/agent/rsrc/shared"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Resource grabbing mode
          Name: None
@@ -34,7 +34,7 @@
 
     - oid: "/agent/rsrc/fallback_shared"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Fallback to shared resource if grabbing in exclusive mode is not
          possible
@@ -43,7 +43,7 @@
 
     - oid: "/agent/rsrc/acquire_attempts_timeout"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Timeout for attempts to acquire a resource
          Name: None

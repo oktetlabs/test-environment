@@ -68,7 +68,7 @@
 
     - oid: "/agent/ip4_fw"
       access: read_write
-      type: integer
+      type: int32
       d: |
          IP forwarding enabling/disabling.
          Name:  empty
@@ -91,7 +91,7 @@
 
     - oid: "/agent/interface/index"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Network interface index.
@@ -100,7 +100,7 @@
 
     - oid: "/agent/interface/net_addr"
       access: read_create
-      type: integer
+      type: int32
       depends:
         - oid: "/agent/interface/link_addr"
         - oid: "/agent/interface/mtu"
@@ -149,7 +149,7 @@
 
     - oid: "/agent/interface/mtu"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Maximum Transfer Unit for the interface.
          Name:  empty
@@ -157,7 +157,7 @@
 
     - oid: "/agent/interface/ip4_ttl"
       access: read_write
-      type: integer
+      type: int32
       d: |
          IPv4 TTL for the interface. Note: for some agents may be the same
          for all interfaces.
@@ -166,7 +166,7 @@
 
     - oid: "/agent/interface/status"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Administrative/operative status of the interface.
          Name:  empty
@@ -175,7 +175,7 @@
 
     - oid: "/agent/interface/oper_status"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Link status of the interface.
@@ -185,7 +185,7 @@
 
     - oid: "/agent/interface/promisc"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Check whether the interface is in promiscuous mode
          Name:  empty
@@ -194,7 +194,7 @@
 
     - oid: "/agent/interface/arp"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Enable/disable use of ARP protocol on the interface.
          Name:  empty
@@ -224,7 +224,7 @@
 
     - oid: "/agent/interface/neigh_dynamic/state"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Dynamic neighbour entry state.
@@ -443,7 +443,7 @@
 
     - oid: "/agent/interface/phy/autoneg_admin"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Network interface autonegotiation state control
          Name: none
@@ -453,7 +453,7 @@
 
     - oid: "/agent/interface/phy/autoneg_oper"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Network interface autonegotiation state oper value
@@ -464,7 +464,7 @@
 
     - oid: "/agent/interface/phy/autoneg_lp_adv"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Network interface link partner advertised autonegotiation state value
@@ -475,7 +475,7 @@
 
     - oid: "/agent/interface/phy/pause_lp_adv"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Network interface link partner advertised pause frame use value
@@ -510,7 +510,7 @@
 
     - oid: "/agent/interface/phy/speed_admin"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Network interface speed control; set value denied when autonegotiation
          state on
@@ -520,7 +520,7 @@
 
     - oid: "/agent/interface/phy/speed_oper"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Network interface speed oper value
@@ -544,7 +544,7 @@
 
     - oid: "/agent/interface/phy/modes/speed/duplex"
       access: read_write
-      type: integer
+      type: int32
       d: |
          PHY supported mode duplex state
          Name: half/full
@@ -553,7 +553,7 @@
 
     - oid: "/agent/interface/phy/state"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Link state control
@@ -564,7 +564,7 @@
 
     - oid: "/agent/interface/phy/reset"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Link reset
          Name: none
@@ -572,7 +572,7 @@
 
     - oid: "/agent/interface/feature"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Network interface features
          Name:  Feature name
@@ -581,7 +581,7 @@
 
     - oid: "/agent/interface/feature/readonly"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Is network interface feature read-only?
          Name: none
@@ -608,7 +608,7 @@
 
     - oid: "/agent/interface/channels/combined/current"
       access: read_write
-      type: integer
+      type: int32
       volatile: true
       d: |
          NIC combined channel count (current)
@@ -618,7 +618,7 @@
 
     - oid: "/agent/interface/channels/combined/maximum"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          NIC combined channel count (maximum)
@@ -637,7 +637,7 @@
 
     - oid: "/agent/interface/channels/other/current"
       access: read_write
-      type: integer
+      type: int32
       volatile: true
       d: |
          NIC other channel count (current)
@@ -647,7 +647,7 @@
 
     - oid: "/agent/interface/channels/other/maximum"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          NIC other channel count (maximum)
@@ -666,7 +666,7 @@
 
     - oid: "/agent/interface/channels/rx/current"
       access: read_write
-      type: integer
+      type: int32
       volatile: true
       d: |
          NIC Rx channel count (current)
@@ -676,7 +676,7 @@
 
     - oid: "/agent/interface/channels/rx/maximum"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          NIC Rx channel count (maximum)
@@ -695,7 +695,7 @@
 
     - oid: "/agent/interface/channels/tx/current"
       access: read_write
-      type: integer
+      type: int32
       volatile: true
       d: |
          NIC Tx channel count (current)
@@ -705,7 +705,7 @@
 
     - oid: "/agent/interface/channels/tx/maximum"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          NIC Tx channel count (maximum)
@@ -733,7 +733,7 @@
 
     - oid: "/agent/interface/ring/rx/max"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Advertised maximum for Rx ring size.
 
@@ -742,7 +742,7 @@
 
     - oid: "/agent/interface/ring/rx/current"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Effective Rx ring size.
 
@@ -769,7 +769,7 @@
 
     - oid: "/agent/interface/ring/tx/max"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Advertised maximum for Tx ring size.
 
@@ -778,7 +778,7 @@
 
     - oid: "/agent/interface/ring/tx/current"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Effective Tx ring size.
 
@@ -819,7 +819,7 @@
 
     - oid: "/agent/interface/reset"
       access: read_write
-      type: integer
+      type: int32
       volatile: true
       d: |
          Reset an ethernet interface.
@@ -1233,7 +1233,7 @@
 
     - oid: "/agent/route/mtu"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Route MTU.
          Name:  empty
@@ -1241,7 +1241,7 @@
 
     - oid: "/agent/route/win"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Route Window Size value (TCP window size).
          Name:  empty
@@ -1249,7 +1249,7 @@
 
     - oid: "/agent/route/irtt"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Route IRTT value (Initial Round Trip Time).
          Name:  empty
@@ -1257,7 +1257,7 @@
 
     - oid: "/agent/route/hoplimit"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Route Hop Limit value. It influences both IPv4 TTL and IPv6 Hop
          Limit header fields.
@@ -1289,7 +1289,7 @@
 
     - oid: "/agent/route/nexthop/weight"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Weight of a multipath route's nexthop.
          Name:  empty
@@ -1345,7 +1345,7 @@
 
     - oid: "/agent/rpc_default_timeout"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Default RPC timeout for all RPC servers on a TA.
          Name: empty
@@ -1361,7 +1361,7 @@
 
     - oid: "/agent/rpcserver/dead"
       access: read_write
-      type: integer
+      type: int32
       d: |
          RPC server state. If it is set to "dead", TA shouldn't try to
          interact with it.
@@ -1370,7 +1370,7 @@
 
     - oid: "/agent/rpcserver/finished"
       access: read_write
-      type: integer
+      type: int32
       d: |
          RPC server termination state. If it is set to 1,
          then RPC server process (or thread) was already terminated,
@@ -1391,7 +1391,7 @@
 
     - oid: "/agent/rpcserver/sid"
       access: read_write
-      type: integer
+      type: int32
       volatile: true
       d: |
          RPC server session identifier storage to keep SID for interacting
@@ -1447,7 +1447,7 @@
 
     - oid: "/agent/rpcserver_plugin/enable"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Switch RPC server plug-in
          Name: empty
@@ -1463,7 +1463,7 @@
 
     - oid: "/agent/rp_filter_all"
       access: read_write
-      type: integer
+      type: int32
       d: |
          The kernel variable which is responsible for source validation.
          (/proc/sys/net/ipv4/conf/all/rp_filter)
@@ -1536,7 +1536,7 @@
 
     - oid: "/agent/rlimits/nofile/cur"
       access: read_write
-      type: integer
+      type: int32
       depends:
         - oid: "/agent/rlimits/nofile/max"
       d: |
@@ -1546,7 +1546,7 @@
 
     - oid: "/agent/rlimits/nofile/max"
       access: read_write
-      type: integer
+      type: int32
       depends:
         - oid: "/agent/rlimits/nofile/cur"
       d: |
@@ -1562,7 +1562,7 @@
 
     - oid: "/agent/rlimits/memlock/cur"
       access: read_write
-      type: integer
+      type: int32
       depends:
         - oid: "/agent/rlimits/memlock/max"
       d: |
@@ -1572,7 +1572,7 @@
 
     - oid: "/agent/rlimits/memlock/max"
       access: read_write
-      type: integer
+      type: int32
       depends:
         - oid: "/agent/rlimits/memlock/cur"
       d: |

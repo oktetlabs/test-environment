@@ -11,7 +11,7 @@
 
     - oid: "/agent/interface/supplicant"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Root object of wpa_supplicant configuration for the interface.
          Name: empty
@@ -66,7 +66,7 @@
 
     - oid: "/agent/interface/tc/qdisc/enabled"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Queuing Disciplines disable/enable
          Name: empty

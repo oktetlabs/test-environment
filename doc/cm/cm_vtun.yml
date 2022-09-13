@@ -19,7 +19,7 @@
 
     - oid: "/agent/vtund/server"
       access: read_create
-      type: integer
+      type: int32
       d: |
          VTund server
          Name: listening port
@@ -36,7 +36,7 @@
 
     - oid: "/agent/vtund/server/timeout"
       access: read_write
-      type: integer
+      type: int32
       d: |
          General timeout
          Name: empty
@@ -133,7 +133,7 @@
 
     - oid: "/agent/vtund/server/session/compress_level"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Compression level to use for VTund connection (server only)
          Name: empty
@@ -141,7 +141,7 @@
 
     - oid: "/agent/vtund/server/session/encrypt"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Encryption method to use for VTund connection
          Name: empty
@@ -149,7 +149,7 @@
 
     - oid: "/agent/vtund/server/session/keepalive"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Enable/disable connection keep-alive for VTund connection
          Name: empty
@@ -157,7 +157,7 @@
 
     - oid: "/agent/vtund/server/session/stats"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Enable/disable connection statistics for VTund connection
          Name: empty
@@ -165,7 +165,7 @@
 
     - oid: "/agent/vtund/server/session/speed_to_client"
       access: read_write
-      type: integer
+      type: int32
       d: |
          VTund connection speed to client
          Name: empty
@@ -175,7 +175,7 @@
 
     - oid: "/agent/vtund/server/session/speed_from_client"
       access: read_write
-      type: integer
+      type: int32
       d: |
          VTund connection speed from client
          Name: empty
@@ -202,7 +202,7 @@
 
     - oid: "/agent/vtund/client"
       access: read_create
-      type: integer
+      type: int32
       d: |
          VTund connection client side
          Name: session name (arbitrary string)
@@ -219,7 +219,7 @@
 
     - oid: "/agent/vtund/client/port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          VTund connection server port
          Name: empty
@@ -243,7 +243,7 @@
 
     - oid: "/agent/vtund/client/timeout"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Connect timeout
          Name: empty
@@ -264,7 +264,7 @@
 
     - oid: "/agent/vtund/client/stats"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Enable/disable connection statistics for VTund connection
          Name: empty

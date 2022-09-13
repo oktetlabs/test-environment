@@ -30,7 +30,7 @@
 
     - oid: "/agent/iscsi/initial_r2t"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Initiator InitialR2T parameter (per target)
           Name: empty
@@ -62,7 +62,7 @@
 
     - oid: "/agent/iscsi/max_recv_data_segment_length"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Initiator MaxRecvDataSegmentLength parameter (per target)
           Name: empty
@@ -70,7 +70,7 @@
 
     - oid: "/agent/iscsi/first_burst_length"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Initiator FirstBurstLength parameter (per target)
           Name: empty
@@ -78,7 +78,7 @@
 
     - oid: "/agent/iscsi/max_burst_length"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Initiator MaxBurstLength parameter (per target)
           Name: empty
@@ -86,7 +86,7 @@
 
     - oid: "/agent/iscsi/default_time2wait"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Initiator DefaultTime2Wait parameter (per target)
           Name: empty
@@ -94,7 +94,7 @@
 
     - oid: "/agent/iscsi/default_time2retain"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Initiator DefaultTime2Retain parameter (per target)
           Name: empty
@@ -102,7 +102,7 @@
 
     - oid: "/agent/iscsi/max_outstanding_r2t"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Initiator MaxOutstandingR2T parameter (per target)
           Name: empty
@@ -126,7 +126,7 @@
 
     - oid: "/agent/iscsi/error_recovery_level"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Initiator Error Recovery Level parameter (per target)
           Name: empty
@@ -182,7 +182,7 @@
 
     - oid: "/agent/iscsi/target_port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Target port
           Name: empty
@@ -198,7 +198,7 @@
 
     - oid: "/agent/iscsi_target/chap"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Target CHAP stuff
           Name: empty
@@ -223,7 +223,7 @@
 
     - oid: "/agent/iscsi_target/chap/cl"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Target length of bytes in the CHAP challenge
           Name: none
@@ -231,7 +231,7 @@
 
     - oid: "/agent/iscsi_target/chap/b"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Target format encoding
           Name: none
@@ -240,7 +240,7 @@
 
     - oid: "/agent/iscsi_target/chap/t"
       access: read_write
-      type: integer
+      type: int32
       d: |
          iSCSI Target authentication forced
           Name: none

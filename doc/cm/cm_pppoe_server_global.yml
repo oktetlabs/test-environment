@@ -13,7 +13,7 @@
 
     - oid: "/agent/pppoeserver"
       access: read_write
-      type: integer
+      type: int32
       d: |
          PPPoE server enabling/disabling
          Name:  empty

@@ -37,7 +37,7 @@ a---
 
     - oid: "/agent/openvpn/status"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Current OpenVPN state. Setting the status triggers the start/stop of
          a daemon, whilst getting of the status tries to get actual status.
@@ -48,7 +48,7 @@ a---
 
     - oid: "/agent/openvpn/is_server"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Is this instance a server?
          Name: empty
@@ -134,7 +134,7 @@ a---
 
     - oid: "/agent/openvpn/lzo"
       access: read_write
-      type: integer
+      type: int32
       d: |
          The use of LZO compression
          Name: empty
@@ -168,7 +168,7 @@ a---
 
     - oid: "/agent/openvpn/port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Port to bind to
          Name: empty
@@ -224,7 +224,7 @@ a---
 
     - oid: "/agent/openvpn/server/dh/size"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Diffie-Hellman parameter size (server only)
          Name: empty
@@ -260,7 +260,7 @@ a---
 
     - oid: "/agent/openvpn/server/require_certs"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Requirement of certificates (server only)
          Name: empty
@@ -328,7 +328,7 @@ a---
 
     - oid: "/agent/openvpn/client/peer/port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Peer's port (client only)
          Name: empty

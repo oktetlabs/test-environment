@@ -11,7 +11,7 @@
 
     - oid: "/agent/rshd"
       access: read_write
-      type: integer
+      type: int32
       d: |
          RSH daemon enabling/disabling.
          Name:  empty

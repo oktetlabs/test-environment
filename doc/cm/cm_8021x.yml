@@ -11,7 +11,7 @@
 
     - oid: "/agent/interface/supplicant"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Root object of wpa_supplicant configuration for the interface.
          Name: empty
@@ -59,7 +59,7 @@
 
     - oid: "/agent/interface/supplicant/pmf"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Protected Management Frames (global): "0" - disabled (default),
          "1" - enabled, "2" - required
@@ -68,7 +68,7 @@
 
     - oid: "/agent/interface/supplicant/ieee80211w"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Protected Management Frames (per-network): "0" - disabled (default),
          "1" - optional, "2" - required

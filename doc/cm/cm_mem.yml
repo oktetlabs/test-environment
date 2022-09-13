@@ -19,7 +19,7 @@
 
   - oid: "/agent/mem/hugepages"
     access: read_write
-    type: integer
+    type: int32
     depends:
         - oid: "/agent/rsrc"
     d: |

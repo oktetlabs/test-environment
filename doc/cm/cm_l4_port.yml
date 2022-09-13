@@ -28,7 +28,7 @@
 
     - oid: "/agent/l4_port/alloc/next"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          The next available port. A new port is allocated when the
@@ -40,7 +40,7 @@
 
     - oid: "/agent/l4_port/alloc/next/family"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Socket family of the next allocated port. Setting this field might
          change "/agent/l4_port/alloc/next".
@@ -50,7 +50,7 @@
 
     - oid: "/agent/l4_port/alloc/next/type"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Socket type of the next allocated port. Setting this field might
          change "/agent/l4_port/alloc/next".

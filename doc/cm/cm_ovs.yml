@@ -35,7 +35,7 @@
 
     - oid: "/agent/ovs/dpdk_init"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Open vSwitch DPDK initialization toggle.
          Must be set before "/agent/ovs/status".
@@ -45,7 +45,7 @@
 
     - oid: "/agent/ovs/status"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Open vSwitch toggle (presence status for "ovsdb-server + ovs-vswitchd" process pair).
 
@@ -107,7 +107,7 @@
 
     - oid: "/agent/ovs/interface/ofport"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Open vSwitch interface OpenFlow port number.
 
@@ -120,7 +120,7 @@
 
     - oid: "/agent/ovs/interface/mtu"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Open vSwitch interface MTU.
 
@@ -133,7 +133,7 @@
 
     - oid: "/agent/ovs/interface/link_state"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Open vSwitch interface physical network link observed state.
@@ -234,7 +234,7 @@
 
     - oid: "/agent/ovs/bridge/port/vlan/tag"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Open vSwitch bridge port implicit (access) or native VLAN tag.
 
@@ -263,7 +263,7 @@
 
     - oid: "/agent/ovs/bridge/port/vlan/qinq-ethertype"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Open vSwitch bridge port dot1q-tunnel VLAN QinQ TPID for the service tag.
 
@@ -275,7 +275,7 @@
 
     - oid: "/agent/ovs/bridge/port/vlan/priority-tags"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Open vSwitch bridge port VLAN priority (zero VLAN ID) tag insertion toggle.
 
@@ -297,7 +297,7 @@
 
     - oid: "/agent/ovs/bridge/flow/packets"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Open vSwitch bridge flow rule packet counter.
@@ -307,7 +307,7 @@
 
     - oid: "/agent/ovs/bridge/flow/bytes"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Open vSwitch bridge flow rule byte counter.
@@ -317,7 +317,7 @@
 
     - oid: "/agent/ovs/bridge/flow/reset_counters"
       access: read_write
-      type: integer
+      type: int32
       volatile: true
       d: |
          Open vSwitch bridge flow rule method to reset counters.

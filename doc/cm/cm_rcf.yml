@@ -29,7 +29,7 @@
 
     - oid: "/rcf/agent/status"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Test agent status.
          Name: none
@@ -45,7 +45,7 @@
 
     - oid: "/rcf/agent/synch_time"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Control time synchronization using RCF protocol.
          Name: none
@@ -53,7 +53,7 @@
 
     - oid: "/rcf/agent/rebootable"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Is it allows to reboot the host where the test agent is running?
          Name: none

@@ -11,7 +11,7 @@
 
     - oid: "/agent/echoserver"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Echo server enabling/disabling.
          Name:  empty

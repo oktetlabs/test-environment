@@ -20,7 +20,7 @@
 
     - oid: "/agent/module/loaded"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Control module state. Set to 1 to load the module.
          Set to 0 to unload it.
@@ -30,7 +30,7 @@
     - oid: "/agent/module/loaded_oper"
       access: read_only
       volatile: true
-      type: integer
+      type: int32
       d: |
         Is the module loaded in the system from the human
         point of view.
@@ -39,7 +39,7 @@
 
     - oid: "/agent/module/unload_holders"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Toggle indicating whether an attempt to unload module holders
          is made before the module itself is unloaded
@@ -64,7 +64,7 @@
 
     - oid: "/agent/module/filename/load_dependencies"
       access: read_write
-      type: integer
+      type: int32
       d: |
          A means to demand that dependencies be queried and
          resolved for the given module prior calling insmod.
@@ -79,7 +79,7 @@
 
     - oid: "/agent/module/filename/fallback"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Boolean node indicating whether to load module shipped with the
          currently running kernel if path specified in /agent/filename doesn't

@@ -56,7 +56,7 @@
 
     - oid: "/agent/hardware/pci/device/fn"
       access: read_only
-      type: integer
+      type: int32
 
     - oid: "/agent/hardware/pci/device/vendor_id"
       access: read_only
@@ -73,7 +73,7 @@
 
     - oid: "/agent/hardware/pci/device/revision_id"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Remaining PCI device identification codes (revision ID, subsystem
          vendor, subsystem id, device class), as defined by PCI spec.
@@ -161,7 +161,7 @@
 
     - oid: "/agent/hardware/pci/device/sriov"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Virtual function management
 
@@ -170,7 +170,7 @@
 
     - oid: "/agent/hardware/pci/device/sriov/num_vfs"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Current number of VFs
 
@@ -209,7 +209,7 @@
 
     - oid: "/agent/hardware/pci/device/param/driver_specific"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Is parameter driver-specific or generic?
 
@@ -259,7 +259,7 @@
 
     - oid: "/agent/hardware/pci/device/pcie"
       access: read_only
-      type: integer
+      type: int32
       d: |
          PCIe-specific subtree
 
@@ -268,7 +268,7 @@
 
     - oid: "/agent/hardware/pci/device/pcie/max_supported_payload_size"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Maximum supported TLP payload size in bytes
 
@@ -277,7 +277,7 @@
 
     - oid: "/agent/hardware/pci/device/pcie/max_payload_size"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Maximum configured TLP payload size in bytes
 
@@ -286,7 +286,7 @@
 
     - oid: "/agent/hardware/pci/device/pcie/max_read_req_size"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Maximum read request size from the device, in bytes
 
@@ -295,7 +295,7 @@
 
     - oid: "/agent/hardware/pci/device/pcie/max_link_speed"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Maximum link speed
 
@@ -304,7 +304,7 @@
 
     - oid: "/agent/hardware/pci/device/pcie/max_link_width"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Maximum link width
 
@@ -313,7 +313,7 @@
 
     - oid: "/agent/hardware/pci/device/pcie/link_speed"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Actual link speed
 
@@ -322,7 +322,7 @@
 
     - oid: "/agent/hardware/pci/device/pcie/link_width"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Actual link width
 
@@ -346,7 +346,7 @@
 
     - oid: "/agent/hardware/pci/device/status/correctable_error"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Correctable error happened
 
@@ -355,7 +355,7 @@
 
     - oid: "/agent/hardware/pci/device/status/uncorrectable_error"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Uncorrectable non-fatal error happened
 
@@ -364,7 +364,7 @@
 
     - oid: "/agent/hardware/pci/device/status/fatal_error"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Fatal error happened
 
@@ -373,7 +373,7 @@
 
     - oid: "/agent/hardware/pci/device/status/unsupported_request"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Unsupported TLP request detected
 
@@ -382,7 +382,7 @@
 
     - oid: "/agent/hardware/pci/device/aer"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Advanced Error Reporting container
 
@@ -391,7 +391,7 @@
 
     - oid: "/agent/hardware/pci/device/aer/uncorrectable_error"
       access: read_only
-      type: integer
+      type: int32
       d: |
          A specific uncorrectable error happened. This is a list of values
          indexed by an error name.
@@ -413,7 +413,7 @@
 
     - oid: "/agent/hardware/pci/device/aer/correctable_error"
       access: read_only
-      type: integer
+      type: int32
       d: |
          A specific correctable error happened.  This is a list of values
          indexed by an error name.

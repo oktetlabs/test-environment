@@ -66,7 +66,7 @@
 
     - oid: "/agent/xen/rcf_port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          RCF port (needed for starting TA inside domU).
          Name: none
@@ -112,7 +112,7 @@
 
     - oid: "/agent/xen/accel"
       access: read_write
-      type: integer
+      type: int32
       volatile: true
       d: |
          The dom0 acceleration status.
@@ -121,7 +121,7 @@
 
     - oid: "/agent/xen/init"
       access: read_write
-      type: integer
+      type: int32
       volatile: true
       d: |
          The dom0 initialization/clean up "method".
@@ -135,7 +135,7 @@
 
     - oid: "/agent/xen/dom_u"
       access: read_create
-      type: integer
+      type: int32
       d: |
          XEN domU.
          Name: XEN domain name
@@ -186,7 +186,7 @@
 
     - oid: "/agent/xen/dom_u/memory"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Memory size used for domU
          Name: none
@@ -268,7 +268,7 @@
 
     - oid: "/agent/xen/dom_u/bridge/accel"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Acceleration sign of the domU interface that is added
          to the bridge.
@@ -286,7 +286,7 @@
 
     - oid: "/agent/xen/dom_u/migrate/kind"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Kind of migration.
          Name: none

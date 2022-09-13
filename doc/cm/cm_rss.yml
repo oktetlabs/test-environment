@@ -21,7 +21,7 @@
 
     - oid: "/agent/interface/rss/rx_queues"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Number of available RX rings/queues
          Name: none
@@ -62,7 +62,7 @@
 
     - oid: "/agent/interface/rss/context/hash_indir/hash_func"
       access: read_write
-      type: integer
+      type: int32
       d: |
          RSS hash function
          Name: Hash function name
@@ -71,7 +71,7 @@
 
     - oid: "/agent/interface/rss/context/hash_indir/indir"
       access: read_write
-      type: integer
+      type: int32
       depends:
         - oid: "/agent/interface/channels"
       d: |

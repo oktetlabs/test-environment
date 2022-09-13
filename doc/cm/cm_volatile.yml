@@ -40,7 +40,7 @@
 
     - oid: "/volatile/sockaddr_port"
       access: read_write
-      type: integer
+      type: int32
       volatile: true
       d: |
         Cache used for unique port allocation.

@@ -19,7 +19,7 @@
 
     - oid: "/agent/console/port"
       access: read_write
-      type: integer
+      type: int32
       d: |
          The port number for connection to the conserver
          Name:  empty

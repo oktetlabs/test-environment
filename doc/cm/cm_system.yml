@@ -181,7 +181,7 @@
 
     - oid: "/agent/hardware/node/cpu/fpu"
       access: read_only
-      type: integer
+      type: int32
       d: |
          FPU is present.
          On embedded architectures, this is a crucial feature, so it
@@ -219,7 +219,7 @@
 
     - oid: "/agent/hardware/node/cpu/cache/level"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Cache level (L1, L2, L3)
 
@@ -228,7 +228,7 @@
 
     - oid: "/agent/hardware/node/cpu/cache/linesize"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Cache coherence line size in bytes
 
@@ -237,7 +237,7 @@
 
     - oid: "/agent/hardware/node/cpu/cache/size"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Cache size in bytes
 
@@ -246,7 +246,7 @@
 
     - oid: "/agent/hardware/node/cpu/cache/assoc"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Cache associativity
 
@@ -264,7 +264,7 @@
 
     - oid: "/agent/hardware/node/cpu/core/thread"
       access: read_only
-      type: integer
+      type: int32
       d: |
          CPU thread (as in hyper-threading)
          @todo Performance counters
@@ -277,7 +277,7 @@
 
     - oid: "/agent/hardware/node/cpu/core/thread/isolated"
       access: read_only
-      type: integer
+      type: int32
       d: |
          CPU isolation
 
@@ -286,7 +286,7 @@
 
     - oid: "/agent/hardware/node/cpu/core/thread/interrupt"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Interrupt affinity to a CPU
 
@@ -295,7 +295,7 @@
 
     - oid: "/agent/hardware/node/cpu/core/thread/interrupt/count"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Number of interrupts for a given IRQ to a given thread.
@@ -312,24 +312,24 @@
 
     - oid: "/agent/hardware/node/cpu/core/cache/level"
       access: read_only
-      type: integer
+      type: int32
 
     - oid: "/agent/hardware/node/cpu/core/cache/linesize"
       access: read_only
-      type: integer
+      type: int32
 
     - oid: "/agent/hardware/node/cpu/core/cache/size"
       access: read_only
-      type: integer
+      type: int32
 
     - oid: "/agent/hardware/node/cpu/core/cache/assoc"
       access: read_only
-      type: integer
+      type: int32
 
 
     - oid: "/agent/hardware/node/memory"
       access: read_only
-      type: integer
+      type: int32
       d: |
          Amount of physical memory on a given node
          Name: none
@@ -345,7 +345,7 @@
 
     - oid: "/agent/hardware/node/memory/free"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Free physical memory
@@ -362,7 +362,7 @@
 
     - oid: "/agent/hardware/node/distance"
       access: read_only
-      type: integer
+      type: int32
       d: |
          NUMA memory access distance. In NUMA systems for every two nodes
          there is a metric showing how expensive is the access to memory

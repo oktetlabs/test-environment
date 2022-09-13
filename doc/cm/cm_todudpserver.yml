@@ -10,7 +10,7 @@
 
     - oid: "/agent/todudpserver"
       access: read_write
-      type: integer
+      type: int32
       d: |
          TOD server over UDP enabling/disabling.
          Name:  empty

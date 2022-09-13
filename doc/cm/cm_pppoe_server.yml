@@ -17,21 +17,21 @@
 
     - oid: "/agent/interface/pppoe_server"
       access: read_write
-      type: integer
+      type: int32
       d: |
          Root object for the pppoe_server daemon on the specific interface
          Name: empty
 
     - oid: "/agent/interface/pppoe_server/local_addr"
       access: read_write
-      type: integer
+      type: int32
       d: |
          PPPoE server local address start
          Name: empty
 
     - oid: "/agent/interface/pppoe_server/remote_addr"
       access: read_write
-      type: integer
+      type: int32
       d: |
          PPPoE server remote address start
          Name: empty
@@ -45,7 +45,7 @@
 
     - oid: "/agent/interface/pppd"
       access: read_only
-      type: integer
+      type: int32
       volatile: true
       d: |
          Status of working pppd process for the specified interface.
