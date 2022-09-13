@@ -2421,8 +2421,13 @@ tapi_iscsi_target_file_read(const char *ta, const char *fname,
     if (localfname == NULL)
         return TE_RC(TE_TAPI, TE_EBADF);
     rc = rcf_ta_get_file(ta, 0, source, localfname);
+
     if (rc != 0)
+    {
+        ERROR("Cannot get file %s from TA %s: %r", source, ta, rc);
         return rc;
+    }
+
     fd = open(localfname, O_RDONLY, 0);
     if (fd < 0)
         return TE_OS_RC(TE_TAPI, errno);
@@ -2537,8 +2542,13 @@ tapi_iscsi_target_raw_read(const char *ta, off_t offset,
 
    rc = rcf_ta_get_file(ta, 0, remotefname, localfname);
    rcf_ta_del_file(ta, 0, remotefname);
+
    if (rc != 0)
-       return rc;
+    {
+        ERROR("Cannot get file %s from TA %s: %r", remotefname, ta, rc);
+        return rc;
+    }
+
    fd = open(localfname, O_RDONLY);
    remove(localfname);
    if (fd < 0)
