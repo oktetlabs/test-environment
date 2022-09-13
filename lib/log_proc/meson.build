@@ -6,4 +6,17 @@ headers += files('log_msg_view.h', 'log_msg_filter.h', 'log_flow_filters.h',
 sources += files('log_msg_view.c', 'log_msg_filter.c', 'log_flow_filters.c',
                  'log_filters_xml.c', 'log_filters_yaml.c')
 te_libs += [ 'tools' ]
-deps += [dependency('libpcre'), dep_libxml2, dependency('yaml-0.1')]
+
+dep_pcre = dependency('libpcre', required: false)
+required_deps += 'libpcre'
+if not dep_pcre.found()
+    missed_deps += 'libpcre'
+endif
+
+dep_yaml = dependency('yaml-0.1', required: false)
+required_deps += 'yaml-0.1'
+if not dep_yaml.found()
+    missed_deps += 'yaml-0.1'
+endif
+
+deps += [dep_pcre, dep_libxml2, dep_yaml]

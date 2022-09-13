@@ -11,7 +11,16 @@ inc = include_directories(
 )
 
 # Common dependencies for trc
-dep_openssl = dependency('openssl')
+
+trc_has_missed_deps = false
+
+dep_openssl = dependency('openssl', required: false)
+required_deps += 'openssl'
+if not dep_openssl.found()
+    missed_deps += 'openssl'
+    trc_has_missed_deps = true
+endif
+
 dep_common = declare_dependency(
     dependencies: [
         dep_libxml2,
@@ -100,10 +109,13 @@ _xmlSAXHandler_members = [
     'startElementNs',
 ]
 
+required_deps += 'libxml-2.0'
 foreach member: _xmlSAXHandler_members
     if not cc.has_member('struct _xmlSAXHandler', member,
             prefix: '#include <libxml/parser.h>', dependencies: [dep_libxml2])
-        error('Member ' + member + ' of struct _xmlSAXHandler not found')
+        warning('Member ' + member + ' of struct _xmlSAXHandler not found')
+        missed_deps += 'libxml-2.0'
+        trc_has_missed_deps = true
     endif
 endforeach
 
@@ -125,13 +137,15 @@ foreach option: with_options
     endif
 endforeach
 
-# Process subdirectories
-subdir('lib')
-subdir('trc-diff')
-subdir('trc-log')
-subdir('trc-report')
-subdir('trc-key')
-subdir('trc-update')
+if not trc_has_missed_deps
+    # Process subdirectories
+    subdir('lib')
+    subdir('trc-diff')
+    subdir('trc-log')
+    subdir('trc-report')
+    subdir('trc-key')
+    subdir('trc-update')
+endif
 
 # Install scripts
 install_data(

@@ -37,9 +37,15 @@ te_cs_deps = [
 ]
 
 if get_option('cs-conf-yaml')
-    te_cs_deps += dependency('yaml-0.1')
-    c_args += [ '-DWITH_CONF_YAML' ]
-    sources += [ 'conf_yaml.c' ]
+    dep_yaml = dependency('yaml-0.1', required: false)
+    required_deps += 'yaml-0.1'
+    if dep_yaml.found()
+        te_cs_deps += dep_yaml
+        c_args += [ '-DWITH_CONF_YAML' ]
+        sources += [ 'conf_yaml.c' ]
+    else
+        missed_deps += 'yaml-0.1'
+    endif
 endif
 
 executable('te_cs', sources, install: true,

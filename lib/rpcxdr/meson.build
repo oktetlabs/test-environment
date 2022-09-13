@@ -26,22 +26,23 @@ deps += [ dep_rpcs ]
 # - Modern Linux distros, such as Fedora 28, do not have RPC support
 #   in glibc; libtirpc can be used instead.
 #
+rpc_lib_found = false
 if not cc.has_function('xdr_bytes', args: te_cflags, dependencies: deps)
     dep_rpc = cc.find_library('rpc', required: false)
     if dep_rpc.found() and cc.has_function('xdr_bytes', args: te_cflags,
                                            dependencies: dep_rpc)
         deps += [ dep_rpc ]
+        rpc_lib_found = true
     else
         dep_nsl = cc.find_library('nsl', required: false)
-        if dep_nsl.found() and
-           cc.has_function('xdr_bytes', dependencies: dep_nsl)
+        if dep_nsl.found() and cc.has_function('xdr_bytes', dependencies: dep_nsl)
             deps += [ dep_nsl ]
+            rpc_lib_found = true
         else
-            warning('Modern linux distros do not support RPC in glibc,')
-            warning('libtirpc can be used instead. Install package:')
-            warning('- libtirpc-devel in case of RHEL/Fedora,')
-            warning('- libtirpc-dev in case of Debian/Ubuntu.')
-            error('No RPC library found')
+            # Modern linux distros do not support RPC in glibc,
+            # libtirpc can be used instead.
+            required_deps += 'libtirpc'
+            missed_deps += 'libtirpc'
         endif
     endif
 endif
@@ -76,66 +77,67 @@ else
     conf.set('x_int32_arg_t', 'long')
 endif
 
-
-if not cc.has_function('xdr_int8_t', args: te_cflags, dependencies: deps)
-    if cc.has_function('xdr_char', args: te_cflags, dependencies: deps)
-        conf.set('xdr_int8_t', 'xdr_char')
-    else
-        error('There is no xdr_uint8_t or xdr_char!')
+if rpc_lib_found
+    if not cc.has_function('xdr_int8_t', args: te_cflags, dependencies: deps)
+        if cc.has_function('xdr_char', args: te_cflags, dependencies: deps)
+            conf.set('xdr_int8_t', 'xdr_char')
+        else
+            error('There is no xdr_uint8_t or xdr_char!')
+        endif
     endif
-endif
 
-if not cc.has_function('xdr_uint8_t', args: te_cflags, dependencies: deps)
-    if cc.has_function('xdr_u_char', args: te_cflags, dependencies: deps)
-        conf.set('xdr_uint8_t', 'xdr_u_char')
-    elif cc.has_function('xdr_u_int8_t', args: te_cflags, dependencies: deps)
-        conf.set('xdr_uint8_t', 'xdr_u_int8_t')
-    else
-        error('There is no xdr_uint8_t or xdr_u_char!')
+    if not cc.has_function('xdr_uint8_t', args: te_cflags, dependencies: deps)
+        if cc.has_function('xdr_u_char', args: te_cflags, dependencies: deps)
+            conf.set('xdr_uint8_t', 'xdr_u_char')
+        elif cc.has_function('xdr_u_int8_t', args: te_cflags, dependencies: deps)
+            conf.set('xdr_uint8_t', 'xdr_u_int8_t')
+        else
+            error('There is no xdr_uint8_t or xdr_u_char!')
+        endif
     endif
-endif
 
-if not cc.has_function('xdr_int16_t', args: te_cflags, dependencies: deps)
-    if cc.has_function('xdr_short', args: te_cflags, dependencies: deps)
-        conf.set('xdr_int16_t', 'xdr_short')
-    else
-        error('There is no xdr_int16_t or xdr_short!')
+    if not cc.has_function('xdr_int16_t', args: te_cflags, dependencies: deps)
+        if cc.has_function('xdr_short', args: te_cflags, dependencies: deps)
+            conf.set('xdr_int16_t', 'xdr_short')
+        else
+            error('There is no xdr_int16_t or xdr_short!')
+        endif
     endif
-endif
 
-if not cc.has_function('xdr_uint16_t', args: te_cflags, dependencies: deps)
-    if cc.has_function('xdr_u_int16_t', args: te_cflags, dependencies: deps)
-        conf.set('xdr_uint16_t', 'xdr_u_int16_t')
-    elif cc.has_function('xdr_u_short', args: te_cflags, dependencies: deps)
-        conf.set('xdr_uint16_t', 'xdr_u_short')
-    else
-        error('There is no xdr_uint16_t, xdr_u_int16_t or xdr_u_short!')
+    if not cc.has_function('xdr_uint16_t', args: te_cflags, dependencies: deps)
+        if cc.has_function('xdr_u_int16_t', args: te_cflags, dependencies: deps)
+            conf.set('xdr_uint16_t', 'xdr_u_int16_t')
+        elif cc.has_function('xdr_u_short', args: te_cflags, dependencies: deps)
+            conf.set('xdr_uint16_t', 'xdr_u_short')
+        else
+            error('There is no xdr_uint16_t, xdr_u_int16_t or xdr_u_short!')
+        endif
     endif
-endif
 
-if not cc.has_function('xdr_int32_t', args: te_cflags, dependencies: deps)
-    if cc.has_function('xdr_int', args: te_cflags, dependencies: deps)
-        conf.set('xdr_int32_t', 'xdr_int')
-    else
-        error('There is no xdr_int32_t or xdr_int!')
+    if not cc.has_function('xdr_int32_t', args: te_cflags, dependencies: deps)
+        if cc.has_function('xdr_int', args: te_cflags, dependencies: deps)
+            conf.set('xdr_int32_t', 'xdr_int')
+        else
+            error('There is no xdr_int32_t or xdr_int!')
+        endif
     endif
-endif
 
-if not cc.has_function('xdr_uint32_t', args: te_cflags, dependencies: deps)
-    if cc.has_function('xdr_u_int32_t', args: te_cflags, dependencies: deps)
-        conf.set('xdr_uint32_t', 'xdr_u_int32_t')
-    elif cc.has_function('xdr_u_int', args: te_cflags, dependencies: deps)
-        conf.set('xdr_uint32_t', 'xdr_u_int')
-    else
-        error('There is no xdr_uint32_t, xdr_u_int32_t or xdr_u_int!')
+    if not cc.has_function('xdr_uint32_t', args: te_cflags, dependencies: deps)
+        if cc.has_function('xdr_u_int32_t', args: te_cflags, dependencies: deps)
+            conf.set('xdr_uint32_t', 'xdr_u_int32_t')
+        elif cc.has_function('xdr_u_int', args: te_cflags, dependencies: deps)
+            conf.set('xdr_uint32_t', 'xdr_u_int')
+        else
+            error('There is no xdr_uint32_t, xdr_u_int32_t or xdr_u_int!')
+        endif
     endif
-endif
 
-if not cc.has_function('xdr_uint64_t', args: te_cflags, dependencies: deps)
-    if cc.has_function('xdr_u_int64_t', args: te_cflags, dependencies: deps)
-        conf.set('xdr_uint64_t', 'xdr_u_int64_t')
-    else
-        error('There is no xdr_uint64_t or xdr_u_int64_t!')
+    if not cc.has_function('xdr_uint64_t', args: te_cflags, dependencies: deps)
+        if cc.has_function('xdr_u_int64_t', args: te_cflags, dependencies: deps)
+            conf.set('xdr_uint64_t', 'xdr_u_int64_t')
+        else
+            error('There is no xdr_uint64_t or xdr_u_int64_t!')
+        endif
     endif
 endif
 

@@ -79,15 +79,16 @@ if conf.contains('iptables')
 endif
 if get_option('sniffers')
     dep_pcap = cc.find_library('pcap', required: false)
+    required_deps += 'pcap'
     if dep_pcap.found() and cc.has_function('pcap_open_live', args: te_cflags,
                                             dependencies: dep_pcap)
         deps += [ dep_pcap ]
+        c_args += [ '-DWITH_SNIFFERS' ]
+        sources += files('util/conf_sniffer.c')
+        sources += files('util/te_sniffer_proc.c')
     else
-        error('Cannot find pcap library')
+        missed_deps += 'pcap'
     endif
-    c_args += [ '-DWITH_SNIFFERS' ]
-    sources += files('util/conf_sniffer.c')
-    sources += files('util/te_sniffer_proc.c')
 endif
 if conf.contains('serial-parser')
     c_args += [ '-DWITH_SERIALPARSE' ]
@@ -137,7 +138,13 @@ if conf.contains('tc')
     # In theory we need partial dependecy here to add CFLAGS and
     # include directories, but partial_dependency() method is supported
     # since 0.46.0 version only.
-    deps += dependency('libnl-3.0')
+    dep_libnl = dependency('libnl-3.0', required: false)
+    required_deps += 'libnl-3.0'
+    if dep_libnl.found()
+        deps += dep_libnl
+    else
+        missed_deps += 'libnl-3.0'
+    endif
 endif
 
 if conf.contains('ovs')
@@ -225,9 +232,15 @@ if unix_daemons.length() != 0
         sources += files('daemons/radvd/radvd.c')
     endif
     if unix_daemons.contains('openvpn')
-        deps += dependency('openssl')
-        c_args += [ '-DWITH_OPENVPN' ]
-        sources += files('daemons/openvpn/openvpn.c')
+        dep_openssl = dependency('openssl', required: false)
+        required_deps += 'openssl'
+        if dep_openssl.found()
+            deps += dep_openssl
+            c_args += [ '-DWITH_OPENVPN' ]
+            sources += files('daemons/openvpn/openvpn.c')
+        else
+            missed_deps += 'openssl'
+        endif
     endif
     if unix_daemons.contains('pppoe-server')
         c_args += [ '-DWITH_PPPOE_SERVER' ]

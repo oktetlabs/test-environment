@@ -12,6 +12,13 @@ te_libs += [
     'tapi_rpc',
     'tapi_job',
 ]
+
+dep_jansson = dependency('jansson', required: false)
+    required_deps += 'jansson'
+if not dep_jansson.found()
+    missed_deps += 'jansson'
+endif
+
 deps += [
-    dependency('jansson'),
+    dep_jansson,
 ]

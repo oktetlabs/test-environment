@@ -15,7 +15,11 @@ te_libs += [
     'tools',
 ]
 
-dep_pcre = dependency('libpcre')
+dep_pcre = dependency('libpcre', required: false)
+required_deps += 'libpcre'
+if not dep_pcre.found()
+    missed_deps += 'libpcre'
+endif
 
 deps += [
     dep_pcre,

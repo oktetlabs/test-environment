@@ -19,4 +19,11 @@ sources += files(
 te_libs += [ 'tools' ]
 te_libs += [ 'logic_expr' ]
 deps += [ dep_libxml2 ]
-deps += [ dependency('libcrypto') ]
+
+dep_libcrypto = dependency('libcrypto', required: false)
+required_deps += 'openssl'
+if not dep_libcrypto.found()
+    missed_deps += 'openssl'
+endif
+
+deps += [ dep_libcrypto ]

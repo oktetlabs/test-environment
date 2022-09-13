@@ -26,7 +26,11 @@ configure_file(output: 'config.h', configuration: cdata)
 
 # Add dependencies
 
-dep_glib = dependency('glib-2.0', version: '>= 2.4.8')
+dep_glib = dependency('glib-2.0', version: '>= 2.4.8', required: false)
+required_deps += 'glib-2.0'
+if not dep_glib.found()
+    missed_deps += 'glib-2.0'
+endif
 
 # Check for obstack feature
 
@@ -74,10 +78,12 @@ _xmlSAXHandler_members = [
     'startElementNs',
 ]
 
+required_deps += 'libxml-2.0'
 foreach member: _xmlSAXHandler_members
     if not cc.has_member('struct _xmlSAXHandler', member,
             prefix: '#include <libxml/parser.h>', dependencies: [dep_libxml2])
-        error('Member ' + member + ' of struct _xmlSAXHandler not found')
+        warning('Member ' + member + ' of struct _xmlSAXHandler not found')
+        missed_deps += 'libxml-2.0'
     endif
 endforeach
 

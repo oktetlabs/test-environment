@@ -31,7 +31,14 @@ if build_subdirs.contains('cli')
     # FIXME In practice expect is sufficient for me, but it is tested
     # on a couple of OS versions only. So, keep below deps commented
     # out just as a reminder
-    deps += [ cc.find_library('expect') ]
+    dep_expect = cc.find_library('expect', required: false)
+    required_deps += 'expect'
+    if dep_expect.found()
+        deps += [ dep_expect ]
+    else
+        missed_deps += 'expect'
+    endif
+
     #deps += [ cc.find_library('util') ]
     #deps += [ cc.find_library('tcl') ]
     #deps += [ cc.find_library('m') ]
@@ -92,7 +99,13 @@ foreach build_subdir : build_subdirs
 endforeach
 
 if build_subdirs.contains('eth') or build_subdirs.contains('pcap')
-    deps += [ cc.find_library('pcap') ]
+    dep_pcap = cc.find_library('pcap', required: false)
+    required_deps += 'pcap'
+    if dep_pcap.found()
+        deps += dep_pcap
+    else
+        missed_deps += 'pcap'
+    endif
 endif
 
 if get_variable('opt-tad-cs'.underscorify())
