@@ -1018,6 +1018,56 @@ rpc_fd_set_new(rcf_rpc_server *rpcs)
     RETVAL_RPC_PTR(fd_set_new, out.retval);
 }
 
+int
+rpc_pwritev2(rcf_rpc_server *rpcs, int fd, const struct rpc_iovec *iov,
+             size_t iovcnt, tarpc_off_t offset,
+             rpc_preadv2_pwritev2_flags flags)
+{
+    te_string str = TE_STRING_INIT_STATIC(1024);
+
+    tarpc_pwritev2_in  in;
+    tarpc_pwritev2_out out;
+
+    struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    memset(iovec_arr, 0, sizeof(iovec_arr));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(pwritev2, -1);
+    }
+
+    if (iovcnt > RCF_RPC_MAX_IOVEC)
+    {
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
+        RETVAL_INT(pwritev2, -1);
+    }
+
+    if (iov != NULL)
+    {
+        in.vector.vector_val = iovec_arr;
+        in.vector.vector_len = iovcnt;
+
+        te_iovec_rpc2tarpc(iov, iovec_arr, iovcnt);
+    }
+    te_iovec_rpc2str_append(&str, iov, iovcnt);
+
+    in.fd = fd;
+    in.count = iovcnt;
+    in.offset = offset;
+    in.flags = flags;
+
+    rcf_rpc_call(rpcs, "pwritev2", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(pwritev2, out.retval);
+    TAPI_RPC_LOG(rpcs, pwritev2, "%d, %s, %zu, %jd %s", "%d",
+                 fd, str.ptr, iovcnt, (intmax_t)offset,
+                 preadv2_pwritev2_flags_rpc2str(flags), out.retval);
+    RETVAL_INT(pwritev2, out.retval);
+}
 
 void
 rpc_fd_set_delete(rcf_rpc_server *rpcs, rpc_fd_set_p set)

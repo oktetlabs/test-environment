@@ -1119,6 +1119,8 @@ typedef struct tarpc_readv_in tarpc_writev_in;
 
 typedef struct tarpc_preadv_in tarpc_pwritev_in;
 
+typedef struct tarpc_preadv2_in tarpc_pwritev2_in;
+
 typedef struct tarpc_readv_out tarpc_preadv_out;
 
 typedef struct tarpc_readv_out tarpc_preadv2_out;
@@ -1126,6 +1128,8 @@ typedef struct tarpc_readv_out tarpc_preadv2_out;
 typedef struct tarpc_ssize_t_retval_out tarpc_writev_out;
 
 typedef tarpc_writev_out tarpc_pwritev_out;
+
+typedef tarpc_pwritev_out tarpc_pwritev2_out;
 
 /* readbuf() / writebuf() */
 

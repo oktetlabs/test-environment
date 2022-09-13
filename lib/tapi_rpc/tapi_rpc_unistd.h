@@ -446,6 +446,25 @@ extern int rpc_pwritev(rcf_rpc_server *rpcs, int fd,
                        tarpc_off_t offset);
 
 /**
+ * Write data to file with descriptor @b fd at @b offset from the
+ * specified vector of buffer.
+ *
+ * @param rpcs     RPC server handle
+ * @param fd       file descriptor
+ * @param iov      vector of buffers to be written.
+ * @param iovcnt   number of buffers
+ * @param offset   offset from the start of the @b fd
+ * @param flags    specifies bits for per-call operation
+ *
+ * @return Number of bytes really written, otherwise -1 is returned
+ *         on error
+ * @note See pwritev2 manual page for more information
+ */
+extern int rpc_pwritev2(rcf_rpc_server *rpcs, int fd,
+                        const struct rpc_iovec *iov, size_t iovcnt,
+                        tarpc_off_t offset, rpc_preadv2_pwritev2_flags flags);
+
+/**
  * Attempt to read data from specified file with descriptor @b fd
  * into a vector of buffer @b iov.
  *
