@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #endif
@@ -251,6 +253,102 @@ te_fopen_fmt(const char *mode, const char *path_fmt, ...)
     te_string_free(&path);
 
     return f;
+}
+
+te_errno
+te_file_resolve_pathname_vec(const char *filename, const te_vec *pathvec,
+                             int mode, char **resolved)
+{
+    te_errno rc = 0;
+
+    if (filename == NULL || pathvec == NULL)
+        return TE_EFAULT;
+
+    assert(pathvec->element_size == sizeof(const char *));
+
+    if (*filename == '/' || te_vec_size(pathvec) == 0)
+    {
+        if (access(filename, mode))
+            rc = TE_OS_RC(TE_MODULE_NONE, errno);
+        else if (resolved != NULL)
+            *resolved = strdup(filename);
+    }
+    else
+    {
+        const char * const *dir;
+        te_string fullpath = TE_STRING_INIT;
+
+        TE_VEC_FOREACH(pathvec, dir)
+        {
+            rc = te_string_append(&fullpath, "%s/%s", *dir, filename);
+            if (rc != 0)
+            {
+                te_string_free(&fullpath);
+                return rc;
+            }
+            if (!access(fullpath.ptr, mode))
+            {
+                if (resolved != NULL)
+                    *resolved = fullpath.ptr;
+                else
+                    te_string_free(&fullpath);
+                return 0;
+            }
+            rc = TE_OS_RC(TE_MODULE_NONE, errno);
+            te_string_reset(&fullpath);
+        }
+        te_string_free(&fullpath);
+    }
+
+    return rc;
+}
+
+te_errno
+te_file_resolve_pathname(const char *filename, const char *path,
+                         int mode, const char *basename, char **resolved)
+{
+    te_errno rc;
+    te_vec pathvec = TE_VEC_INIT(char *);
+
+    if (basename != NULL)
+    {
+        char *basedir;
+        struct stat st;
+
+        if (stat(basename, &st))
+        {
+            WARN("Cannot stat '%s': %r", basename,
+                 TE_OS_RC(TE_MODULE_NONE, errno));
+        }
+        else
+        {
+            if (S_ISDIR(st.st_mode))
+                basedir = strdup(basename);
+            else
+                basedir = te_dirname(basename);
+
+            if (basedir == NULL)
+            {
+                rc = TE_OS_RC(TE_MODULE_NONE, errno);
+                ERROR("Cannot determine dirname for '%s'", basename);
+                te_vec_free(&pathvec);
+                return rc;
+            }
+            TE_VEC_APPEND(&pathvec, basedir);
+        }
+    }
+
+    rc = te_vec_split_string(path, &pathvec, ':', TRUE);
+    if (rc != 0)
+    {
+        te_vec_deep_free(&pathvec);
+        return rc;
+    }
+
+    rc = te_file_resolve_pathname_vec(filename, &pathvec, mode, resolved);
+    te_vec_deep_free(&pathvec);
+
+    return rc;
 }
 
 te_errno

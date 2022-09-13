@@ -21,6 +21,8 @@
 #include <sys/types.h>
 #endif
 
+#include "te_vector.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -135,6 +137,52 @@ extern FILE *te_fopen_fmt(const char *mode, const char *path_fmt, ...)
  * @return Process ID or @c -1 in case of error
  */
 extern pid_t te_file_read_pid(const char *pid_path);
+
+/**
+ * Search a relative filename in a vector of directories.
+ *
+ * If the filename is absolute (i.e. starts with @c /), it is checked
+ * and no search is performed.
+ *
+ * @param[in]  filename    Filename to check
+ * @param[in]  pathvec     Vector of directories
+ * @param[in]  mode        Access mode to check (as used by system access())
+ * @param[out] resolved    A location for a resolved pathname
+ *                         (which must be free()'d. If @c NULL,
+ *                         the function just checks the presence
+ *                         of @p filename somewhere in the @p path.
+ * @return Status code (possible values match those reported by access())
+ */
+extern te_errno te_file_resolve_pathname_vec(const char *filename,
+                                             const te_vec *pathvec,
+                                             int mode,
+                                             char **resolved);
+
+/**
+ * Search a relative filename in a colon-separated list of directories.
+ *
+ * The function is like te_file_resolve_pathname_vec(), only it takes
+ * a colon-separated string for a path instead of a prepared vector.
+ *
+ * @param[in]  filename    Filename to check
+ * @param[in]  path        Colon-separated list of directories
+ * @param[in]  mode        Access mode to check (as used by system access())
+ * @param[in]  basename    If not @c NULL, @p filename is first
+ *                         looked up in a directory part of @p basename
+ *                         (i.e. if @p basename points to a directory,
+ *                         it is used, otherwise the result of dirname() is
+ *                         used).
+ * @param[out] resolved    A location for a resolved pathname
+ *                         (which must be free()'d. If @c NULL,
+ *                         the function just checks the presence
+ *                         of @p filename somewhere in the @p path.
+ * @return Status code (possible values match those reported by access())
+ */
+extern te_errno te_file_resolve_pathname(const char *filename,
+                                         const char *path,
+                                         int mode,
+                                         const char *basename,
+                                         char **resolved);
 
 /**
  * Check that the file is executable
