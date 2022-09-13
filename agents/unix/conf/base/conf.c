@@ -254,7 +254,7 @@ extern te_errno ta_unix_conf_netconsole_init(void);
 extern te_errno ta_unix_conf_sys_init(void);
 extern te_errno ta_unix_conf_sys_tree_init(void);
 extern te_errno ta_unix_conf_sys_tree_fini(void);
-extern te_errno ta_unix_conf_phy_init(void);
+extern te_errno ta_unix_conf_if_phy_init(void);
 extern te_errno ta_unix_conf_if_coalesce_init(void);
 extern te_errno ta_unix_conf_if_flow_ctrl_init(void);
 extern te_errno ta_unix_conf_if_rss_init(void);
@@ -1357,7 +1357,7 @@ rcf_ch_conf_init(void)
             goto fail;
 
         /* Initialize configurator PHY support */
-        if (ta_unix_conf_phy_init() != 0)
+        if (ta_unix_conf_if_phy_init() != 0)
             goto fail;
 
         if (ta_unix_conf_if_coalesce_init() != 0)

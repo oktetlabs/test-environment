@@ -47,14 +47,25 @@
 /* PHY duplex states */
 #define TE_PHY_DUPLEX_HALF            (0)       /* Half duplex */
 #define TE_PHY_DUPLEX_FULL            (1)       /* Full duplex */
-#define TE_PHY_DUPLEX_UNKNOWN         (2)       /* Unknown duplex state */
+#define TE_PHY_DUPLEX_UNKNOWN         (0xff)    /* Unknown duplex state */
 
 /* PHY speed values */
-#define TE_PHY_SPEED_UNKNOWN          (0)       /* Unknown speed value */
+#define TE_PHY_SPEED_UNKNOWN          (-1)      /* Unknown speed value */
 #define TE_PHY_SPEED_10               (10)      /* 10 Mb/sec */
 #define TE_PHY_SPEED_100              (100)     /* 100 Mb/sec */
 #define TE_PHY_SPEED_1000             (1000)    /* 1000 Mb/sec */
+#define TE_PHY_SPEED_2500             (2500)    /* 2500 Mb/sec */
+#define TE_PHY_SPEED_5000             (5000)    /* 5000 Mb/sec */
 #define TE_PHY_SPEED_10000            (10000)   /* 10000 Mb/sec */
+#define TE_PHY_SPEED_14000            (14000)   /* 14000 Mb/sec */
+#define TE_PHY_SPEED_20000            (20000)   /* 20000 Mb/sec */
+#define TE_PHY_SPEED_25000            (25000)   /* 25000 Mb/sec */
+#define TE_PHY_SPEED_40000            (40000)   /* 40000 Mb/sec */
+#define TE_PHY_SPEED_50000            (50000)   /* 50000 Mb/sec */
+#define TE_PHY_SPEED_56000            (56000)   /* 56000 Mb/sec */
+#define TE_PHY_SPEED_100000           (100000)  /* 100000 Mb/sec */
+#define TE_PHY_SPEED_200000           (200000)  /* 200000 Mb/sec */
+#define TE_PHY_SPEED_400000           (400000)  /* 400000 Mb/sec */
 
 /* PHY pause frame use */
 #define TE_PHY_PAUSE_NONE                   (0)     /* No pause frame use */

@@ -472,81 +472,54 @@
     - oid: "/agent/interface/phy"
       access: read_only
       type: none
+      unit: true
+      depends:
+        - oid: "/agent/interface/status"
       d: |
          Network interface PHY parameters
          Name: none
          Value: none
 
-    - oid: "/agent/interface/phy/autoneg_admin"
+    - oid: "/agent/interface/phy/autoneg"
       access: read_write
       type: int32
       d: |
          Network interface autonegotiation state control
          Name: none
-         Value: -1 - Not supported
-                 0 - ON
-                 1 - OFF
-
-    - oid: "/agent/interface/phy/autoneg_oper"
-      access: read_only
-      type: int32
-      volatile: true
-      d: |
-         Network interface autonegotiation state oper value
-         Name: none
-         Value: -1 - Not supported
-                 0 - ON
-                 1 - OFF
-
-    - oid: "/agent/interface/phy/autoneg_lp_adv"
-      access: read_only
-      type: int32
-      volatile: true
-      d: |
-         Network interface link partner advertised autonegotiation state value
-         Name: none
-         Value:  off (0)
-                 on (1)
-                 unknown (2)
-
-    - oid: "/agent/interface/phy/pause_lp_adv"
-      access: read_only
-      type: int32
-      volatile: true
-      d: |
-         Network interface link partner advertised pause frame use value
-         Name: none
-         Value: none (0)              - no pause frame use
-                Tx only (1)           - transmit only
-                symmetric (2)         - transmit and receive
-                symmetric Rx only (3) - transmit and receive OR receive only
-                unknown (4)           - not supported
+         Value: 0 - OFF
+                1 - ON
 
     - oid: "/agent/interface/phy/duplex_admin"
       access: read_write
       type: string
+      depends:
+        - oid: "/agent/interface/phy/autoneg"
       d: |
          Network interface duplex control; set value denied when autonegotiation
          state on
          Name: none
          Value: half          - half duplex
                 full          - full duplex
-                not supported - not supported
+                unknown       - unknown
 
     - oid: "/agent/interface/phy/duplex_oper"
       access: read_only
       type: string
       volatile: true
+      depends:
+        - oid: "/agent/interface/phy/autoneg"
       d: |
          Network interface duplex oper value
          Name: none
          Value: half          - half duplex
                 full          - full duplex
-                not supported - not supported
+                unknown       - unknown
 
     - oid: "/agent/interface/phy/speed_admin"
       access: read_write
       type: int32
+      depends:
+        - oid: "/agent/interface/phy/autoneg"
       d: |
          Network interface speed control; set value denied when autonegotiation
          state on
@@ -558,34 +531,30 @@
       access: read_only
       type: int32
       volatile: true
+      depends:
+        - oid: "/agent/interface/phy/autoneg"
       d: |
          Network interface speed oper value
          Name: none
          Value: integer equal PHY speed in Mbit/sec or -1
                 if not supported
 
-    - oid: "/agent/interface/phy/modes"
-      access: read_only
-      type: none
-      d: |
-         PHY supported mode list
-         Name: none
-
-    - oid: "/agent/interface/phy/modes/speed"
-      access: read_only
-      type: none
-      d: |
-         PHY supported mode speed
-         Name: integer equal PHY speed in Mbit/sec
-
-    - oid: "/agent/interface/phy/modes/speed/duplex"
+    - oid: "/agent/interface/phy/mode"
       access: read_write
       type: int32
       d: |
-         PHY supported mode duplex state
-         Name: half/full
+         Supported link mode
+         Name: Link mode name
          Value: 0 - mode not advertised
                 1 - mode advertised
+
+    - oid: "/agent/interface/phy/lp_advertised"
+      access: read_only
+      type: none
+      volatile: true
+      d: |
+         Link mode advertised by link partner
+         Name: Link mode name
 
     - oid: "/agent/interface/phy/state"
       access: read_only
@@ -597,14 +566,6 @@
          Value: -1 - not supported
                  0 - link down
                  1 - link up
-
-    - oid: "/agent/interface/phy/reset"
-      access: read_write
-      type: int32
-      d: |
-         Link reset
-         Name: none
-         Value: any value means that link should be reseted
 
     - oid: "/agent/interface/feature"
       access: read_write
