@@ -10,6 +10,7 @@
 
 #include "te_config.h"
 
+#include <ctype.h>
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -176,6 +177,7 @@ ta_log_message(const char *file, unsigned int line,
     md_list            *tmp_list = NULL;
     uint32_t            narg = 0;
     struct lgr_rb       lgr_rb_old;
+    int                 precision;
 
     lgr_mess_header header;
     lgr_mess_header *hdr_addr = NULL;
@@ -193,16 +195,34 @@ ta_log_message(const char *file, unsigned int line,
         if (*p_str != '%')
             continue;
 
+        precision = -1;
+
         if (*++p_str == '%')
             continue;
 
         /* skip the flags field  */
         for (; index(skip_flags, *p_str); ++p_str);
 
+        /* get width from argument */
+        if (*p_str == '*')
+        {
+            va_arg(ap, int);
+            ++p_str;
+        }
+
         /* skip to possible '.', get following precision */
         for (; index(skip_width, *p_str); ++p_str);
         if (*p_str == '.')
+        {
             ++p_str;
+
+            /* get precision from argument */
+            if (*p_str == '*')
+            {
+                precision = va_arg(ap, int);
+                ++p_str;
+            }
+        }
 
         /* skip to conversion char */
         for (; index(skip_width, *p_str); ++p_str);
@@ -271,6 +291,8 @@ ta_log_message(const char *file, unsigned int line,
             goto resume;
     }
 
+    UNUSED(precision);
+
     if (ta_log_lock(&key) != 0)
         return;
 
@@ -323,6 +345,49 @@ log_nfl_hton(te_log_nfl val)
 #else
 #error Such SIZEOF_TE_LOG_NFL is not supported
 #endif
+}
+
+/**
+ * Delete width and precision symbols from format string.
+ *
+ * @param  fmt          Initial format string.
+ * @param  clean_fmt    Output format string with deleted '*'
+ *                      symbols for width and precision.
+ *
+ * @return Length of the output format string.
+ */
+static size_t
+clear_fmt(const char *fmt, uint8_t *clean_fmt)
+{
+    int                 i;
+    size_t              outlen = 0;
+    te_bool             in_fmt = FALSE;
+
+    for (i = 0; fmt[i] != '\0'; i++)
+    {
+        if (!in_fmt)
+        {
+            in_fmt = (fmt[i] == '%');
+        }
+        else if (isalpha(fmt[i]) || fmt[i] == '%')
+        {
+            in_fmt = FALSE;
+        }
+        else if (fmt[i] == '*')
+        {
+            continue;
+        }
+        else if (fmt[i] == '.' && fmt[i + 1] == '*')
+        {
+            i++;
+            continue;
+        }
+        clean_fmt[outlen++] = fmt[i];
+    }
+
+    clean_fmt[outlen] = '\0';
+
+    return outlen;
 }
 
 /**
@@ -426,9 +491,9 @@ log_get_message(uint32_t length, uint8_t *buffer)
     fs = header.fmt;
     tmp_length = strlen(fs);
     LGR_CHECK_LENGTH(sizeof(te_log_nfl) + tmp_length);
-    *((te_log_nfl *)tmp_buf) = log_nfl_hton(tmp_length);
     tmp_buf += sizeof(te_log_nfl);
-    memcpy(tmp_buf, fs, tmp_length);
+    tmp_length = clear_fmt(fs, tmp_buf);
+    ((te_log_nfl *)tmp_buf)[-1] = log_nfl_hton(tmp_length);
     tmp_buf += tmp_length;
 
     /* Parse format string */
