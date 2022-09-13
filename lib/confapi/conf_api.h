@@ -66,18 +66,6 @@ extern "C" {
  */
 #define CFG_VAL(_t, _v)     CVT_##_t, ((const void *)(long)(_v))
 
-
-/** Constants for primary types */
-typedef enum {
-    CVT_INTEGER,     /**< Value of the type 'int' */
-    CVT_UINT64,      /**< Value of the type 'uint64_t' */
-    CVT_STRING,      /**< Value of the type 'char *' */
-    CVT_ADDRESS,     /**< Value of the type 'sockaddr *' */
-    CVT_NONE,        /**< The object instance has no value */
-    CVT_UNSPECIFIED  /**< The type is unknown */
-} cfg_val_type;
-
-
 /**
  * Object and object instances handle.
  *

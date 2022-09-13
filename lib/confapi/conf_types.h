@@ -19,8 +19,18 @@ extern "C" {
 /** Maximum length of the instance in the message */
 #define CFG_MAX_INST_VALUE      RCF_MAX_VAL
 
+/** Constants for primary types */
+typedef enum {
+    CVT_INTEGER = 0, /**< Value of the type 'int' */
+    CVT_UINT64,      /**< Value of the type 'uint64_t' */
+    CVT_STRING,      /**< Value of the type 'char *' */
+    CVT_ADDRESS,     /**< Value of the type 'sockaddr *' */
+    CVT_NONE,        /**< The object instance has no value */
+    CVT_UNSPECIFIED  /**< The type is unknown. It'd be the last enum member */
+} cfg_val_type;
+
 /** Number of configurator primary types */
-#define CFG_PRIMARY_TYPES_NUM   5
+#define CFG_PRIMARY_TYPES_NUM   CVT_UNSPECIFIED
 
 /* Forward */
 struct cfg_msg;
