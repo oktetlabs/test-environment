@@ -158,6 +158,12 @@ typedef struct tapi_ssh_server_opt {
     /** Path to sshd binary */
     char *path;
 
+    /** File to configure sshd
+     *
+     * sshd -f <config_file>
+     */
+    char *config_file;
+
     /**
      * File to read a host key from
      *

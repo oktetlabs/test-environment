@@ -45,6 +45,7 @@ const tapi_ssh_client_opt tapi_ssh_client_opt_default_opt = {
 const tapi_ssh_server_opt tapi_ssh_server_opt_default_opt = {
     .path = TAPI_SSH_SSHD_DEFAULT_PATH,
     .host_key_file = NULL,
+    .config_file = NULL,
     .authorized_keys_file = NULL,
     .permit_root_login = TAPI_SSH_PERMIT_ROOT_LOGIN_YES,
     .pid_file = NULL,
@@ -176,6 +177,8 @@ tapi_ssh_create_server(tapi_job_factory_t *factory,
     const tapi_job_opt_bind server_binds[] = TAPI_JOB_OPT_SET(
         TAPI_JOB_OPT_STRING("-h", FALSE, tapi_ssh_server_opt,
                             host_key_file),
+        TAPI_JOB_OPT_STRING("-f", FALSE, tapi_ssh_server_opt,
+                            config_file),
         TAPI_JOB_OPT_STRING("-o AuthorizedKeysFile=", TRUE, tapi_ssh_server_opt,
                             authorized_keys_file),
         TAPI_JOB_OPT_ENUM("-o PermitRootLogin=", TRUE, tapi_ssh_server_opt,
