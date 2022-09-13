@@ -633,6 +633,7 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
         {
             ERROR(CS_YAML_ERR_PREFIX "failed to set OID for the dependency "
                   "node in XML output");
+            xmlFreeNode(dependency_node);
             return TE_ENOMEM;
         }
 
@@ -642,6 +643,7 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
         {
             ERROR(CS_YAML_ERR_PREFIX "failed to embed the target scope "
                   "attribute in XML output");
+            xmlFreeNode(dependency_node);
             return TE_ENOMEM;
         }
 
@@ -649,6 +651,7 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
         {
             ERROR(CS_YAML_ERR_PREFIX "failed to embed dependency node in "
                   "XML output");
+            xmlFreeNode(dependency_node);
             return TE_EINVAL;
         }
     }
