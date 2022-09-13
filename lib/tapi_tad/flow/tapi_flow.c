@@ -617,7 +617,7 @@ static inline char *tapi_cfg_link_dereference(char *link)
 
     VERB("Get '%s' of type %d", cur, val_type);
 
-    if (val_type == CVT_INTEGER)
+    if (val_type == CVT_INT32)
     {
         int int_val = 0;
         if ((rc = cfg_get_instance_str(&val_type, &int_val, cur)) != 0)

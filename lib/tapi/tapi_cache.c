@@ -817,7 +817,7 @@ tapi_cache_add_string(const char *value, const char *area_inst, ...)
 te_errno
 tapi_cache_add_int(int value, const char *area_inst, ...)
 {
-    cfg_val_type type = CVT_INTEGER;
+    cfg_val_type type = CVT_INT32;
     te_errno rc;
     va_list  ap;
 
@@ -972,7 +972,7 @@ tapi_cache_get_string(char **value, const char *area_inst, ...)
 te_errno
 tapi_cache_get_int(int *value, const char *area_inst, ...)
 {
-    cfg_val_type type = CVT_INTEGER;
+    cfg_val_type type = CVT_INT32;
     te_errno rc;
     va_list  ap;
 

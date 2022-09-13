@@ -163,7 +163,7 @@ if (_rc != 0) \
         SERIAL_WAIT_LOCAL_SEQ(cfg_get_father(handles[i], &h->handle));
         SERIAL_CHECK_RC(rc, "Couldn't get the handler instance handle");
 
-        type = CVT_INTEGER;
+        type = CVT_INT32;
         SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance(handles[i], &type,
                                                &h->priority));
         SERIAL_CHECK_RC(rc, "Couldn't get the handler instance priority");
@@ -468,7 +468,7 @@ tester_serial_thread(void)
     char           *event_name      = NULL;
     char           *ag_event        = NULL;
     int             i;
-    int             status;
+    int32_t         status;
 
     SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_int_fmt(&period,
                                                    "/local:/tester:/period:"));
@@ -507,7 +507,7 @@ tester_serial_thread(void)
             }
             free(ag_event);
 
-            type = CVT_INTEGER;
+            type = CVT_INT32;
             SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance(status_handle,
                                                    &type, &status));
             if (rc != 0)
@@ -541,7 +541,7 @@ tester_serial_thread(void)
                     continue;
                 }
 
-                type = CVT_INTEGER;
+                type = CVT_INT32;
                 SERIAL_WAIT_LOCAL_SEQ(cfg_set_instance(status_handle, type,
                                                        FALSE));
                 if (rc != 0)

@@ -14,7 +14,7 @@
 #include "tapi_cache.h"
 
 #define VALUE_TYPE_MAPPING_LIST             \
-    { "integer",        CVT_INTEGER },      \
+    { "integer",        CVT_INT32 },      \
     { "string",         CVT_STRING },       \
     { "address",        CVT_ADDRESS },      \
     { "none",           CVT_NONE },         \
@@ -41,7 +41,7 @@ main(int argc, char **argv)
     TEST_SUBSTEP("Check if added value does not match to read one");
     switch (type)
     {
-        case CVT_INTEGER:
+        case CVT_INT32:
         {
             int value;
             int got_value;

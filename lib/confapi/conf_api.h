@@ -214,7 +214,7 @@ extern te_errno cfg_get_inst_name(cfg_handle handle, char **name);
  *
  * @param handle    Handle of object instance
  * @param type      Type instance name
- * @param val       type == CVT_INTEGER -> (int *)
+ * @param val       type == CVT_INT32 -> (int32_t *)
  *                  type == CVT_UINT64 -> (uint64_t *)
  *                  type == CVT_ADDRESS -> (struct sockaddr **)
  *

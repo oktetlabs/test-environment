@@ -224,7 +224,7 @@ tapi_cfg_sys_get_int(const char *ta, int *val, const char *fmt, ...)
     te_errno rc;
 
     va_start(ap, fmt);
-    rc = tapi_cfg_sys_get_va(ta, CVT_INTEGER, val, fmt, ap);
+    rc = tapi_cfg_sys_get_va(ta, CVT_INT32, val, fmt, ap);
     va_end(ap);
 
     return rc;
@@ -382,7 +382,7 @@ tapi_cfg_sys_ns_get_int(const char *ta, int *val, const char *fmt, ...)
     te_errno    rc;
 
     va_start(ap, fmt);
-    rc = tapi_cfg_sys_ns_get_va(ta, CVT_INTEGER, val, fmt, ap);
+    rc = tapi_cfg_sys_ns_get_va(ta, CVT_INT32, val, fmt, ap);
     va_end(ap);
 
     return rc;

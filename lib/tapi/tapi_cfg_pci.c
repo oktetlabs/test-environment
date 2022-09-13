@@ -68,7 +68,7 @@ te_errno
 tapi_cfg_pci_get_max_vfs_of_pf(const char *pf_oid, unsigned int *n_vfs)
 {
     te_errno rc;
-    cfg_val_type type = CVT_INTEGER;
+    cfg_val_type type = CVT_INT32;
 
     rc = cfg_get_instance_fmt(&type, n_vfs, "%s/sriov:", pf_oid);
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)

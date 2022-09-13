@@ -19,9 +19,12 @@ extern "C" {
 /** Maximum length of the instance in the message */
 #define CFG_MAX_INST_VALUE      RCF_MAX_VAL
 
+/** CVT_INTEGER = CVT_INT32 fallback for test suites */
+#define CVT_INTEGER CVT_INT32
+
 /** Constants for primary types */
 typedef enum {
-    CVT_INTEGER = 0, /**< Value of the type 'int' */
+    CVT_INT32 = 0,       /**< Value of the type 'int32_t' */
     CVT_UINT64,      /**< Value of the type 'uint64_t' */
     CVT_STRING,      /**< Value of the type 'char *' */
     CVT_ADDRESS,     /**< Value of the type 'sockaddr *' */
@@ -38,7 +41,7 @@ struct cfg_msg;
 /** Object instance value */
 typedef union cfg_inst_val {
         struct sockaddr *val_addr;    /**< sockaddr value */
-        int              val_int;     /**< int value */
+        int32_t          val_int32;   /**< int32_t value */
         uint64_t         val_uint64;  /**< uint64_t value */
         char            *val_str;     /**< string value */
 } cfg_inst_val;

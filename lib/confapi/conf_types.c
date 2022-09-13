@@ -172,7 +172,7 @@ str2int(char *val_str, cfg_inst_val *val)
     {
         return TE_EINVAL;
     }
-    val->val_int = ret_val;
+    val->val_int32 = ret_val;
     return 0;
 }
 
@@ -182,7 +182,7 @@ int2str(cfg_inst_val val, char **val_str)
     char str[CFG_TP_MAX_BUF];
     int ret_val;
 
-    ret_val = snprintf(str, CFG_TP_MAX_BUF, "%d", val.val_int);
+    ret_val = snprintf(str, CFG_TP_MAX_BUF, "%d", val.val_int32);
     if (ret_val < 1)
     {
         return TE_EINVAL;
@@ -200,7 +200,7 @@ int2str(cfg_inst_val val, char **val_str)
 static int
 int_def_val(cfg_inst_val *val)
 {
-    val->val_int = 0;
+    val->val_int32 = 0;
     return 0;
 }
 
@@ -214,16 +214,16 @@ int_free(cfg_inst_val val)
 static int
 int_copy(cfg_inst_val src, cfg_inst_val *dst)
 {
-    dst->val_int = src.val_int;
+    dst->val_int32 = src.val_int32;
     return 0;
 }
 
 static int
 int_get(cfg_msg *msg, cfg_inst_val *val)
 {
-    val->val_int = msg->type == CFG_GET ? ((cfg_get_msg *)msg)->val.val_int :
-                   msg->type == CFG_SET ? ((cfg_set_msg *)msg)->val.val_int :
-                   ((cfg_add_msg *)msg)->val.val_int;
+    val->val_int32 = msg->type == CFG_GET ? ((cfg_get_msg *)msg)->val.val_int32 :
+                   msg->type == CFG_SET ? ((cfg_set_msg *)msg)->val.val_int32 :
+                   ((cfg_add_msg *)msg)->val.val_int32;
     return 0;
 }
 
@@ -235,10 +235,10 @@ int_put(cfg_inst_val val, cfg_msg *msg)
     if (msg == NULL)
         return;
 
-    msg_val = (msg->type == CFG_ADD) ? &(((cfg_add_msg *)msg)->val.val_int) :
-              (msg->type == CFG_SET) ? &(((cfg_set_msg *)msg)->val.val_int) :
-              &(((cfg_get_msg *)msg)->val.val_int);
-    *msg_val = val.val_int;
+    msg_val = (msg->type == CFG_ADD) ? &(((cfg_add_msg *)msg)->val.val_int32) :
+              (msg->type == CFG_SET) ? &(((cfg_set_msg *)msg)->val.val_int32) :
+              &(((cfg_get_msg *)msg)->val.val_int32);
+    *msg_val = val.val_int32;
 
     SET_MSG_LEN(msg);
 }
@@ -246,14 +246,14 @@ int_put(cfg_inst_val val, cfg_msg *msg)
 static te_bool
 int_equal(cfg_inst_val first, cfg_inst_val second)
 {
-    return ((first.val_int - second.val_int) == 0) ? TRUE : FALSE;
+    return ((first.val_int32 - second.val_int32) == 0) ? TRUE : FALSE;
 }
 
 static size_t
 int_value_size(cfg_inst_val val)
 {
     UNUSED(val);
-    return sizeof(int);
+    return sizeof(int32_t);
 }
 
 /*----------------------- uint64_t type handlers -------------------------*/

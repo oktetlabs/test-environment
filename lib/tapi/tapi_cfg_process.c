@@ -227,7 +227,7 @@ tapi_cfg_ps_get_autorestart(const char *ta, const char *ps_name,
                             unsigned int *value)
 {
     te_errno rc;
-    cfg_val_type type = CVT_INTEGER;
+    cfg_val_type type = CVT_INT32;
 
     if (ta == NULL)
     {

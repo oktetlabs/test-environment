@@ -276,7 +276,7 @@ tapi_cfg_if_rss_hfuncs_get(const char *ta,
 
     for (i = 0; i < funcs_num; i++)
     {
-        type = CVT_INTEGER;
+        type = CVT_INT32;
         rc = cfg_get_instance(funcs_nodes[i], &type, &enabled);
         if (rc != 0)
             goto cleanup;

@@ -29,7 +29,7 @@ extern "C" {
 static inline void
 tapi_ntpd_enable(rcf_rpc_server *rpcs)
 {
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1,
+    CHECK_RC(cfg_set_instance_fmt(CVT_INT32, (void *)1,
                                   "/agent:%s/ntpd:/enable:",
                                   rpcs->ta));
     TAPI_WAIT_NETWORK;
@@ -43,7 +43,7 @@ tapi_ntpd_enable(rcf_rpc_server *rpcs)
 static inline void
 tapi_ntpd_disable(rcf_rpc_server *rpcs)
 {
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0,
+    CHECK_RC(cfg_set_instance_fmt(CVT_INT32, (void *)0,
                                   "/agent:%s/ntpd:/enable:",
                                   rpcs->ta));
 }

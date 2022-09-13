@@ -29,7 +29,7 @@ extern "C" {
 static inline void
 tapi_sfptpd_enable(const char *ta)
 {
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1,
+    CHECK_RC(cfg_set_instance_fmt(CVT_INT32, (void *)1,
                                   "/agent:%s/sfptpd:/enable:", ta));
     TAPI_WAIT_NETWORK;
 }
@@ -42,7 +42,7 @@ tapi_sfptpd_enable(const char *ta)
 static inline void
 tapi_sfptpd_disable(const char *ta)
 {
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0,
+    CHECK_RC(cfg_set_instance_fmt(CVT_INT32, (void *)0,
                                   "/agent:%s/sfptpd:/enable:", ta));
 }
 

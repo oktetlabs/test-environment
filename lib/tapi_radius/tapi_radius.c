@@ -683,7 +683,7 @@ tapi_radius_serv_enable(const char *ta_name)
 {
     assert(ta_name != NULL);
 
-    return cfg_set_instance_fmt(CVT_INTEGER, (void *)TRUE,
+    return cfg_set_instance_fmt(CVT_INT32, (void *)TRUE,
                                 "/agent:%s/radiusserver:", ta_name);
 }
 
@@ -693,7 +693,7 @@ tapi_radius_serv_disable(const char *ta_name)
 {
     assert(ta_name != NULL);
 
-    return cfg_set_instance_fmt(CVT_INTEGER, (void *)FALSE,
+    return cfg_set_instance_fmt(CVT_INT32, (void *)FALSE,
                                 "/agent:%s/radiusserver:", ta_name);
 }
 

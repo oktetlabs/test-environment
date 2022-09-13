@@ -904,7 +904,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         }
 
         /* Get IPv4 subnet handle */
-        rc = cfg_get_inst_name_type(ip_nets[0], CVT_INTEGER,
+        rc = cfg_get_inst_name_type(ip_nets[0], CVT_INT32,
                                     CFG_IVP(&env_net->ip4net));
         if (rc != 0)
         {
@@ -925,7 +925,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         free(ip_nets); ip_nets = NULL;
 
         /* Get IPv4 subnet for the network */
-        val_type = CVT_INTEGER;
+        val_type = CVT_INT32;
         rc = cfg_get_instance_fmt(&val_type, &env_net->ip4pfx,
                                   "%s/prefix:", ip_net_oid);
         if (rc != 0)
@@ -987,7 +987,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         }
 
         /* Get IPv6 subnet handle */
-        rc = cfg_get_inst_name_type(ip_nets[0], CVT_INTEGER,
+        rc = cfg_get_inst_name_type(ip_nets[0], CVT_INT32,
                                     CFG_IVP(&env_net->ip6net));
         if (rc != 0)
         {
@@ -1008,7 +1008,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         free(ip_nets);
 
         /* Get IPv6 subnet for the network */
-        val_type = CVT_INTEGER;
+        val_type = CVT_INT32;
         rc = cfg_get_instance_fmt(&val_type, &env_net->ip6pfx,
                                   "%s/prefix:", ip_net_oid);
         if (rc != 0)
@@ -1628,7 +1628,7 @@ static te_errno
 get_interface_index(const char *oid, unsigned int *if_index)
 {
     te_errno        rc;
-    cfg_val_type    val_type = CVT_INTEGER;
+    cfg_val_type    val_type = CVT_INT32;
 
     rc = cfg_get_instance_fmt(&val_type, if_index, "%s/index:", oid);
     if (rc != 0)

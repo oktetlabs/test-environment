@@ -269,7 +269,7 @@ tapi_cfg_nginx_http_upstream_keepalive_num_get(const char *ta,
                                                const char *us_name,
                                                unsigned int *keepalive_num)
 {
-    cfg_val_type val_type = CVT_INTEGER;
+    cfg_val_type val_type = CVT_INT32;
 
     return cfg_get_instance_fmt(&val_type, keepalive_num,
                 TE_CFG_TA_NGINX_US_FMT,
@@ -318,7 +318,7 @@ tapi_cfg_nginx_http_us_server_weight_get(const char *ta,
                                          const char *srv_name,
                                          unsigned int *weight)
 {
-    cfg_val_type val_type = CVT_INTEGER;
+    cfg_val_type val_type = CVT_INT32;
 
     return cfg_get_instance_fmt(&val_type, weight,
                 TE_CFG_TA_NGINX_US_SRV_FMT,

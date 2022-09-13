@@ -398,7 +398,7 @@ tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu)
     int                 rc;
     char                buf[strlen(oid) + strlen("/mtu:") + 1];
     cfg_handle          handle;
-    cfg_val_type        type = CVT_INTEGER;
+    cfg_val_type        type = CVT_INT32;
     int                 mtu;
 
     TE_SPRINTF(buf, "%s/mtu:", oid);
@@ -710,7 +710,7 @@ tapi_cfg_save_del_if_addresses(const char *ta,
             }
         }
 
-        if ((rc = cfg_get_instance(addrs[i], CVT_INTEGER, &prefix)) != 0)
+        if ((rc = cfg_get_instance(addrs[i], CVT_INT32, &prefix)) != 0)
         {
             ERROR("%s(): Failed to get prefix of address with handle %#x: %r",
                   __FUNCTION__, addrs[i], rc);

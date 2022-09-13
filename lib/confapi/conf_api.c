@@ -1015,8 +1015,8 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
 
     switch (type)
     {
-        case CVT_INTEGER:
-            value.val_int = va_arg(list, int);
+        case CVT_INT32:
+            value.val_int32 = va_arg(list, int32_t);
             break;
 
         case CVT_UINT64:
@@ -1467,8 +1467,8 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
 
     switch (type)
     {
-        case CVT_INTEGER:
-            value.val_int = va_arg(list, int);
+        case CVT_INT32:
+            value.val_int32 = va_arg(list, int32_t);
             break;
 
         case CVT_UINT64:
@@ -1698,12 +1698,12 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
     va_start(list, type);
     switch (msg->val_type)
     {
-         case CVT_INTEGER:
+         case CVT_INT32:
          {
-             int *val_int = va_arg(list, int *);
+             int32_t *val_int32 = va_arg(list, int32_t *);
 
-             if (val_int != NULL)
-                 *val_int = value.val_int;
+             if (val_int32 != NULL)
+                 *val_int32 = value.val_int32;
              break;
          }
          case CVT_UINT64:
@@ -1773,7 +1773,7 @@ cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
 te_errno
 cfg_get_instance_int_fmt(int *val, const char *oid_fmt, ...)
 {
-    cfg_val_type type = CVT_INTEGER;
+    cfg_val_type type = CVT_INT32;
 
     _CFG_HANDLE_BY_FMT;
     return cfg_get_instance(handle, &type, val);
@@ -1879,11 +1879,11 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
     va_start(list, type);
     switch (msg->val_type)
     {
-         case CVT_INTEGER:
+         case CVT_INT32:
          {
-             int *val_int = va_arg(list, int *);
+             int32_t *val_int32 = va_arg(list, int32_t *);
 
-             *val_int = value.val_int;
+             *val_int32 = value.val_int32;
              break;
          }
          case CVT_UINT64:
@@ -1941,7 +1941,7 @@ cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
 te_errno
 cfg_get_instance_int_sync_fmt(int *val, const char *oid_fmt, ...)
 {
-    cfg_val_type type = CVT_INTEGER;
+    cfg_val_type type = CVT_INT32;
 
     _CFG_HANDLE_BY_FMT;
     return cfg_get_instance_sync(handle, &type, val);

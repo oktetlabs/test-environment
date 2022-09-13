@@ -94,7 +94,7 @@ tapi_cfg_xen_set_path(char const *ta, char const *path)
 te_errno
 tapi_cfg_xen_get_rcf_port(char const *ta, unsigned int *port)
 {
-    cfg_val_type  type  = CVT_INTEGER;
+    cfg_val_type  type  = CVT_INT32;
     te_errno      rc;
 
     if (ta == NULL)
@@ -556,7 +556,7 @@ te_errno
 tapi_cfg_xen_dom_u_get_memory_size(char const *ta, char const *dom_u,
                                    unsigned int *size)
 {
-    cfg_val_type  type  = CVT_INTEGER;
+    cfg_val_type  type  = CVT_INT32;
     te_errno      rc;
 
     if (ta == NULL || dom_u == NULL || size == NULL)

@@ -514,7 +514,7 @@ cfg_job_get_autorestart(const tapi_job_t *job, unsigned int *value)
     te_errno rc;
     const char *ta = tapi_job_get_ta(job);
     const char *ps_name = tapi_job_get_name(job);
-    cfg_val_type type = CVT_INTEGER;
+    cfg_val_type type = CVT_INT32;
 
     rc = cfg_get_instance_fmt(&type, value,
                               TE_CFG_TA_PS "/autorestart:", ta, ps_name);

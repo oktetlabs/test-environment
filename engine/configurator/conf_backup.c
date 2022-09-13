@@ -174,7 +174,9 @@ register_objects(xmlNodePtr *node, te_bool reg)
         if ((attr = xmlGetProp(cur, (const xmlChar *)"type")) != NULL)
         {
             if (strcmp((char *)attr, "integer") == 0)
-                msg->val_type = CVT_INTEGER;
+                msg->val_type = CVT_INT32;
+            else if (strcmp((char *)attr, "int32") == 0)
+                msg->val_type = CVT_INT32;
             else if (strcmp((char *)attr, "uint64") == 0)
                 msg->val_type = CVT_UINT64;
             else if (strcmp((char *)attr, "address") == 0)
@@ -572,7 +574,7 @@ add_or_set(cfg_instance *inst, te_bool local, te_bool *has_deps,
         if (CFG_GET_INST(inst->handle) == 0)
             return TE_EINVAL;
 
-        if ((inst->obj->type != CVT_INTEGER &&
+        if ((inst->obj->type != CVT_INT32 &&
              inst->obj->type != CVT_UINT64 &&
              inst->obj->type != CVT_STRING &&
              inst->obj->type != CVT_ADDRESS) ||
@@ -1206,7 +1208,7 @@ put_object(FILE *f, cfg_object *obj)
                 obj->access == CFG_READ_CREATE ? "read_create" :
                 obj->access == CFG_READ_WRITE ? "read_write" : "read_only",
                 obj->type == CVT_NONE ? "none" :
-                obj->type == CVT_INTEGER ? "integer" :
+                obj->type == CVT_INT32 ? "int32" :
                 obj->type == CVT_UINT64 ? "uint64" :
                 obj->type == CVT_ADDRESS ? "address" : "string");
 

@@ -282,8 +282,8 @@ tapi_rte_get_nb_required_service_cores(const char *ta, const char *vendor,
 
     TE_VEC_FOREACH(specifiers, spec)
     {
-        cfg_val_type type = CVT_INTEGER;
-        unsigned int count;
+        cfg_val_type type = CVT_INT32;
+        int32_t count;
 
         rc = cfg_get_instance_str(&type, &count, *spec);
         if (rc != 0)

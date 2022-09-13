@@ -164,10 +164,10 @@ cfg_rcf_add_ta(cfg_instance *ta)
         return rc;
 
     if ((synch_time = cfg_db_find_son(ta, "synch_time", "")) != NULL &&
-        synch_time->val.val_int != 0)
+        synch_time->val.val_int32 != 0)
         flags &= ~RCF_TA_NO_SYNC_TIME;
     if ((rebootable = cfg_db_find_son(ta, "rebootable", "")) != NULL &&
-        rebootable->val.val_int != 0)
+        rebootable->val.val_int32 != 0)
         flags |= RCF_TA_REBOOTABLE;
 
     rc = rcf_add_ta(ta->name, ta->val.val_str, rcflib->val.val_str,
@@ -261,7 +261,7 @@ cfg_rcf_agent(cfg_instance * const inst, cfg_instance **inst_agent,
 
     /* Deny any changes if its not a status leaf and the agent is running */
     if (*inst_agent_status != NULL && inst != *inst_agent_status &&
-        (*inst_agent_status)->val.val_int != 0)
+        (*inst_agent_status)->val.val_int32 != 0)
     {
         ERROR("Cannot reconfigure running RCF agent '%s'", inst->oid);
         return TE_RC(TE_CS, TE_EPERM);
@@ -281,7 +281,7 @@ cfg_rcf_add(cfg_instance *inst)
     if (rc != 0 || inst_agent == NULL || inst == inst_agent)
         return rc;
 
-    if (inst == inst_agent_status && inst->val.val_int != 0)
+    if (inst == inst_agent_status && inst->val.val_int32 != 0)
         rc = cfg_rcf_add_ta(inst_agent);
 
     return rc;
@@ -316,7 +316,7 @@ cfg_rcf_set(cfg_instance *inst)
         return rc;
 
     if (inst == inst_agent_status) {
-        if (inst->val.val_int != 0)
+        if (inst->val.val_int32 != 0)
             rc = cfg_rcf_add_ta(inst_agent);
         else
             rc = cfg_rcf_del_ta(inst_agent);

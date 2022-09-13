@@ -105,7 +105,7 @@ tapi_serial_parser_add(tapi_parser_id *id)
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)(long)id->interval,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *)(long)id->interval,
                               TE_SERIAL_PARSER "/interval:", id->ta,
                               id->name);
     if (rc != 0)
@@ -114,7 +114,7 @@ tapi_serial_parser_add(tapi_parser_id *id)
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)(long)id->port,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *)(long)id->port,
                               TE_SERIAL_PARSER "/port:", id->ta,
                               id->name);
     if (rc != 0)
@@ -123,7 +123,7 @@ tapi_serial_parser_add(tapi_parser_id *id)
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)TRUE,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *)TRUE,
                               TE_SERIAL_PARSER "/enable:", id->ta,
                               id->name);
     if (rc != 0)
@@ -149,7 +149,7 @@ tapi_serial_parser_enable(tapi_parser_id *id)
 {
     te_errno rc;
 
-    if ((rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)TRUE,
+    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *)TRUE,
                                    TE_SERIAL_PARSER "/enable:", id->ta,
                                    id->name)) != 0)
     {
@@ -167,7 +167,7 @@ tapi_serial_parser_disable(tapi_parser_id *id)
 {
     te_errno rc;
 
-    if ((rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)FALSE,
+    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *)FALSE,
                                    TE_SERIAL_PARSER "/enable:", id->ta,
                                    id->name)) != 0)
     {
@@ -197,7 +197,7 @@ tapi_serial_logging_enable(tapi_parser_id *id, const char *level)
         }
     }
 
-    rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)TRUE,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *)TRUE,
                               TE_SERIAL_LOG, id->ta, id->name);
     if (rc != 0)
     {
@@ -214,7 +214,7 @@ tapi_serial_logging_disable(tapi_parser_id *id)
 {
     te_errno rc;
 
-    if ((rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)FALSE,
+    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *)FALSE,
                                    TE_SERIAL_LOG, id->ta, id->name)) != 0)
     {
         ERROR("Couldn't disable logging of the serial parser %s", id->name);
@@ -320,7 +320,7 @@ tapi_serial_parser_reset(tapi_parser_id *id)
 {
     te_errno rc;
 
-    if ((rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)TRUE,
+    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *)TRUE,
                                    TE_SERIAL_PARSER "/reset:", id->ta,
                                    id->name)) != 0)
     {
@@ -368,7 +368,7 @@ tapi_serial_handler_ext_add(const char *ev_name, const char *h_name,
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)(long)priority,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *)(long)priority,
                              TE_TESTER_HANDL "/priority:", ev_name, h_name);
     if (rc != 0)
     {
@@ -376,7 +376,7 @@ tapi_serial_handler_ext_add(const char *ev_name, const char *h_name,
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)FALSE,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *)FALSE,
                              TE_TESTER_HANDL "/internal:", ev_name, h_name);
     if (rc != 0)
     {
@@ -403,7 +403,7 @@ tapi_serial_handler_int_add(const char *ev_name, const char *h_name,
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)(long)priority,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *)(long)priority,
                              TE_TESTER_HANDL "/priority:", ev_name, h_name);
     if (rc != 0)
     {
@@ -411,7 +411,7 @@ tapi_serial_handler_int_add(const char *ev_name, const char *h_name,
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)TRUE,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *)TRUE,
                              TE_TESTER_HANDL "/internal:", ev_name, h_name);
     if (rc != 0)
     {

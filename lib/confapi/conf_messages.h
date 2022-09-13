@@ -166,7 +166,7 @@ typedef struct cfg_add_msg {
     union {
         struct sockaddr val_addr[0];    /**< start of sockaddr value */
         char            val_str[0];     /**< start of string value*/
-        int             val_int;        /**< int value */
+        int32_t         val_int32;      /**< int32_t value */
         uint64_t        val_uint64;     /**< uint64_t value */
     } val;
 } cfg_add_msg;
@@ -188,7 +188,7 @@ typedef struct cfg_set_msg {
     union {
         struct sockaddr val_addr[0]; /**< start of sockaddr value */
         char            val_str[0];  /**< start of string value */
-        int             val_int;     /**< int value */
+        int32_t         val_int32;   /**< int32_t value */
         uint64_t        val_uint64;  /**< uint64_t value */
     } val;
 } cfg_set_msg;
@@ -208,7 +208,7 @@ typedef struct cfg_get_msg {
     union {
         struct sockaddr val_addr[0]; /**< start of sockaddr value */
         char            val_str[0];  /**< start of string value */
-        int             val_int;     /**< int value */
+        int32_t         val_int32;   /**< int32_t value */
         uint64_t        val_uint64;  /**< uint64_t value */
     } val;
 } cfg_get_msg;

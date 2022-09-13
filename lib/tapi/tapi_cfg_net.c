@@ -1843,7 +1843,7 @@ tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
             break;
         }
         /* Get prefix length */
-        type = CVT_INTEGER;
+        type = CVT_INT32;
         rc = cfg_get_instance_fmt(&type, &net_pfx, "%s/prefix:", net_oid);
         if (rc != 0)
         {
@@ -2092,7 +2092,7 @@ tapi_cfg_net_assigned_get_subnet_ip(tapi_cfg_net_assigned *assigned,
     }
 
     /* Get prefix length */
-    type = CVT_INTEGER;
+    type = CVT_INT32;
     rc = cfg_get_instance_fmt(&type, prefix_len, "%s/prefix:", net_oid);
     if (rc != 0)
     {
@@ -2276,7 +2276,7 @@ tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
             break;
         }
         /* Get prefix length */
-        type = CVT_INTEGER;
+        type = CVT_INT32;
         rc = cfg_get_instance_fmt(&type, &net_pfx, "%s/prefix:", net_oid);
         if (rc != 0)
         {

@@ -694,7 +694,9 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 if (attr != NULL)
                 {
                     if (strcmp(attr, "integer") == 0)
-                        msg->val_type = CVT_INTEGER;
+                        msg->val_type = CVT_INT32;
+                    else if (strcmp(attr, "int32") == 0)
+                        msg->val_type = CVT_INT32;
                     else if (strcmp(attr, "uint64") == 0)
                         msg->val_type = CVT_UINT64;
                     else if (strcmp(attr, "address") == 0)
@@ -1038,7 +1040,7 @@ cfg_dh_create_file(char *filename)
                         msg->access == CFG_READ_WRITE ?
                             "read_write" : "read_only",
                         msg->val_type == CVT_NONE ?    "none" :
-                        msg->val_type == CVT_INTEGER ? "integer" :
+                        msg->val_type == CVT_INT32 ? "int32" :
                         msg->val_type == CVT_UINT64 ? "uint64" :
                         msg->val_type == CVT_ADDRESS ? "address" :
                                                        "string",

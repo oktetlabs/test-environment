@@ -1111,7 +1111,7 @@ te_errno
 tapi_bpf_perf_get_events(const char *ta, unsigned int bpf_id, const char *map,
                          unsigned int *num, uint8_t **data)
 {
-    cfg_val_type    val_type = CVT_INTEGER;
+    cfg_val_type    val_type = CVT_INT32;
     te_errno        rc = 0;
     unsigned int    num_events = 0;
     unsigned int    event_data_size = 0;

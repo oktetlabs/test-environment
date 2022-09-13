@@ -203,7 +203,7 @@ tapi_cfg_switch_add_vlan(const char *ta_name, uint16_t vid)
         cfg_val_type    type;
 
         VERB("VLAN %u already exists on TA %s", vid, ta_name);
-        type = CVT_INTEGER;
+        type = CVT_INT32;
         rc = cfg_get_instance(handle, &type, &state);
         if (rc != 0)
         {
@@ -223,7 +223,7 @@ tapi_cfg_switch_add_vlan(const char *ta_name, uint16_t vid)
     else
     {
         VERB("Add instance '%s'", oid);
-        rc = cfg_add_instance_str(oid, &handle, CVT_INTEGER, 1);
+        rc = cfg_add_instance_str(oid, &handle, CVT_INT32, 1);
         if (rc != 0)
         {
             ERROR("Addition of VLAN %u on TA %s failed(%r)",
@@ -561,7 +561,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
             name = ((cfg_inst_subid *)
                             (oid->ids))[oid->len - 1].subid;
 
-            type = CVT_INTEGER;
+            type = CVT_INT32;
             if (strcmp(name, "dev") == 0)
             {
                 val_p = &dev_name;
@@ -2052,7 +2052,7 @@ tapi_cfg_alloc_entry_by_handle(cfg_handle parent, cfg_handle *entry)
 {
     int             rc;
     cfg_handle      handle;
-    cfg_val_type    type = CVT_INTEGER;
+    cfg_val_type    type = CVT_INT32;
     int             value;
 
     if (entry == NULL)
@@ -2148,7 +2148,7 @@ tapi_cfg_free_entry(cfg_handle *entry)
         return 0;
     }
 
-    rc = cfg_set_instance(*entry, CVT_INTEGER, 0);
+    rc = cfg_set_instance(*entry, CVT_INT32, 0);
     if (rc != 0)
     {
     ERROR("Failed to free entry by handle 0x%x: %r", *entry, rc);
@@ -2248,7 +2248,7 @@ tapi_cfg_add_net(const char *net_pool, const struct sockaddr *net_addr,
             free(net_sa);
             return rc;
         }
-        val_type = CVT_INTEGER;
+        val_type = CVT_INT32;
         rc = cfg_get_instance_fmt(&val_type, &net_prefix,
                                   "%s/prefix:", net_oid);
         if (rc != 0)
@@ -2611,7 +2611,7 @@ te_errno
 tapi_cfg_get_int_str(int *value, const char *oid)
 {
     te_errno      rc = 0;
-    cfg_val_type  val_type = CVT_INTEGER;
+    cfg_val_type  val_type = CVT_INT32;
 
     rc = cfg_get_instance_str(&val_type, value,
                               oid);

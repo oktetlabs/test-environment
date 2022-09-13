@@ -58,21 +58,21 @@ static cfg_object cfg_obj_agent_rsrc =
 /** "/agent/rsrc/shared" object */
 static cfg_object cfg_obj_agent_rsrc_shared =
     { CFG_OBJ_HANDLE_RSRC_SHARED, "/agent/rsrc/shared", "shared",
-      CVT_INTEGER, CFG_READ_WRITE, NULL, TRUE, &cfg_obj_agent_rsrc,
+      CVT_INT32, CFG_READ_WRITE, NULL, TRUE, &cfg_obj_agent_rsrc,
       NULL, &cfg_obj_agent_rsrc_timeout, CFG_DEP_INITIALIZER, FALSE };
 
 /** "/agent/rsrc/acquire_timeout" object */
 static cfg_object cfg_obj_agent_rsrc_timeout =
     { CFG_OBJ_HANDLE_RSRC_ACQUIRE_TIMEOUT,
       "/agent/rsrc/acquire_attempts_timeout", "acquire_attempts_timeout",
-      CVT_INTEGER, CFG_READ_WRITE, NULL, FALSE, &cfg_obj_agent_rsrc,
+      CVT_INT32, CFG_READ_WRITE, NULL, FALSE, &cfg_obj_agent_rsrc,
       NULL, &cfg_obj_agent_rsrc_fallback_shared, CFG_DEP_INITIALIZER, FALSE };
 
 /** "/agent/rsrc/fallback_shared" object */
 static cfg_object cfg_obj_agent_rsrc_fallback_shared =
     { CFG_OBJ_HANDLE_RSRC_FALLBACK_SHARED, "/agent/rsrc/fallback_shared",
       "fallback_shared",
-      CVT_INTEGER, CFG_READ_WRITE, NULL, FALSE, &cfg_obj_agent_rsrc,
+      CVT_INT32, CFG_READ_WRITE, NULL, FALSE, &cfg_obj_agent_rsrc,
       NULL, NULL, CFG_DEP_INITIALIZER, FALSE };
 
 /** "/conf_delay" object */
@@ -84,7 +84,7 @@ static cfg_object cfg_obj_conf_delay =
 /** "/conf_delay/ta" object */
 static cfg_object cfg_obj_conf_delay_ta =
     { CFG_OBJ_HANDLE_CONF_DELAY_TA, "/conf_delay/ta", "ta",
-      CVT_INTEGER, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_conf_delay,
+      CVT_INT32, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_conf_delay,
       NULL, NULL, CFG_DEP_INITIALIZER, FALSE };
 
 /** Pool with configuration objects */
@@ -1537,7 +1537,7 @@ cfg_db_add_children(cfg_instance *inst)
 }
 
 /** Get delay corresponding to instance OID */
-static int
+static int32_t
 get_delay_by_oid(const char *oid)
 {
     char ta[RCF_MAX_NAME];
@@ -1561,7 +1561,7 @@ get_delay_by_oid(const char *oid)
         {
             for (tmp = tmp->son; tmp != NULL; tmp = tmp->brother)
                 if (*tmp->name == 0 || strcmp(tmp->name, ta) == 0)
-                    return tmp->val.val_int;
+                    return tmp->val.val_int32;
 
             return 0;
         }
@@ -1657,7 +1657,7 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
         ERROR("cfg_db_add: type (%d) expected - bad type (%d)"
               "of object (%s)", type, obj->type, obj->oid);
         ERROR("types: Integer (%d), uint64 (%d), string (%d), address (%d)",
-              CVT_INTEGER, CVT_UINT64, CVT_STRING, CVT_ADDRESS);
+              CVT_INT32, CVT_UINT64, CVT_STRING, CVT_ADDRESS);
         RET(TE_EBADTYPE);
     }
 

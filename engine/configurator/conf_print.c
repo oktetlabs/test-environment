@@ -181,7 +181,7 @@ obj_tree_bufprint(cfg_object *obj, const int indent)
                     obj->access == CFG_READ_WRITE ? "RW" :
                     "R",
                     obj->type == CVT_NONE ? "none" :
-                    obj->type == CVT_INTEGER ? "int" :
+                    obj->type == CVT_INT32 ? "int32" :
                     obj->type == CVT_UINT64 ? "uint64" :
                     obj->type == CVT_ADDRESS ? "addr" : "str",
                     obj->vol == TRUE ? "V" : "")
