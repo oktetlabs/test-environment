@@ -1075,6 +1075,80 @@ test_get_double_param(int argc, char **argv, const char *name)
     return value;
 }
 
+/**
+ * Replace slash symbols on underscore ones in a test name.
+ *
+ * @note Configurator uses symbol '/' as a service one
+ *       during config files parsing, so we should avoid slashes
+ *       in tests names. As an alternative for replacement
+ *       we choose underscore '_'.
+ *
+ * @param test_name           Test name with slashes.
+ * @param modified_test_name  Modified test name with underscores.
+ *
+ * @return Status code.
+ */
+static te_errno
+modify_test_name_for_configurator(const char *test_name,
+                                  te_string *modified_test_name)
+{
+    te_errno rc;
+
+    rc = te_string_append(modified_test_name, "%s", test_name);
+    if (rc != 0)
+        return rc;
+
+    rc = te_string_replace_all_substrings(modified_test_name, "_", "/");
+
+    return rc;
+}
+
+/* See description in tapi_test.h */
+uint64_t
+test_get_default_uint64_param(const char *test_name,
+                              const char *param_name)
+{
+    te_errno rc;
+    uint64_t value = 0;
+    char *str_value = NULL;
+    te_string modified_test_name = TE_STRING_INIT;
+
+    rc = modify_test_name_for_configurator(test_name,
+                                           &modified_test_name);
+    if (rc != 0)
+    {
+        te_string_free(&modified_test_name);
+
+        TEST_FAIL("Cannot modify test name '%s' for configurator sake",
+                  test_name);
+    }
+
+    rc = cfg_get_instance_string_fmt(&str_value,
+                                     "/local:/test:/testname:%s/default:%s",
+                                     modified_test_name.ptr,
+                                     param_name);
+    if (rc != 0)
+    {
+        free(str_value);
+        te_string_free(&modified_test_name);
+
+        TEST_FAIL("Cannot get default value of parameter '%s' as string",
+                  param_name);
+    }
+
+    rc = te_str_to_uint64(str_value, 0, &value);
+    if (rc != 0)
+    {
+        free(str_value);
+        te_string_free(&modified_test_name);
+
+        TEST_FAIL("Cannot convert string value '%s' to uint64 one",
+                  str_value);
+    }
+
+    return value;
+}
+
 /* See description in tapi_test.h */
 double
 test_get_value_unit_param(int argc, char **argv, const char *name)
