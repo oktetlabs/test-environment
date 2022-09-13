@@ -34,6 +34,7 @@
 #ifndef __TE_VEC_H__
 #define __TE_VEC_H__
 
+#include "te_defs.h"
 #include "te_dbuf.h"
 
 #if HAVE_ASSERT_H
@@ -366,6 +367,37 @@ te_vec_get_index(const te_vec *vec, const void *ptr)
 
     return offset / vec->element_size;
 }
+
+
+/**
+ * Split a string into chunks separated by @p sep.
+ *
+ * The copies of the chunks are pushed into the @p strvec.
+ * (the memory is owned by the vector, i.e. it must be later
+ * freed by e.g. te_vec_deep_free()).
+ *
+ * @note The element size of @p strvec must be `sizeof(char *)`.
+ *
+ * @note Adjacent separators are never skipped, so e.g.
+ *       @c ':::' would be split into four chunks using colon as
+ *       a separator. The only special case is an empty string
+ *       which may be treated as no chunks depending on @p empty_is_none.
+ *
+ * @param[in]     str            String to split
+ * @param[in,out] strvec         Target vector for string chunks.
+ *                               The original contents is **not** destroyed,
+ *                               new items are added to the end.
+ * @param[in]     sep            Separator character
+ * @param[in]     empty_is_none  If @c TRUE, empty string is treated
+ *                               as having no chunks (so @p strvec is
+ *                               not changed). Otherwise, an empty string
+ *                               is treated as having a single empty chunk.
+ *
+ * @return Status code
+ */
+extern te_errno te_vec_split_string(const char *str, te_vec *strvec, char sep,
+                                    te_bool empty_is_none);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

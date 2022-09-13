@@ -8,6 +8,8 @@
  */
 
 #include "te_config.h"
+#include "te_defs.h"
+#include "te_alloc.h"
 
 #include "te_vector.h"
 #include "te_string.h"
@@ -122,4 +124,44 @@ te_vec_append_strarray(te_vec *vec, const char **elements)
         }
     }
     return rc;
+}
+
+te_errno
+te_vec_split_string(const char *str, te_vec *strvec, char sep,
+                    te_bool empty_is_none)
+{
+    const char *next = str;
+
+    assert(strvec != NULL);
+    assert(strvec->element_size == sizeof(char *));
+
+    if (str == NULL || (*str == '\0' && empty_is_none))
+        return 0;
+
+    while (next != NULL)
+    {
+        te_errno rc;
+        char *dup;
+
+        next = strchr(str, sep);
+        if (next == NULL)
+        {
+            dup = strdup(str);
+        }
+        else
+        {
+            dup = TE_ALLOC(next - str + 1);
+            memcpy(dup, str, next - str);
+            dup[next - str] = '\0';
+            str = next + 1;
+        }
+        rc = TE_VEC_APPEND(strvec, dup);
+        if (rc != 0)
+        {
+            free(dup);
+            return rc;
+        }
+    }
+
+    return 0;
 }
