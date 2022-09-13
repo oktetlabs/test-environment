@@ -23,6 +23,7 @@
 
 #include "te_defs.h"
 #include "logger_api.h"
+#include "te_alloc.h"
 
 /* See description in te_bufs.h */
 void
@@ -45,34 +46,23 @@ te_fill_buf(void *buf, size_t len)
 void *
 te_make_buf(size_t min, size_t max, size_t *p_len)
 {
+    void *buf;
+
     assert(min <= max);
     *p_len = rand_range(min, max);
-    if (*p_len > 0)
-    {
-        void   *buf;
 
-        buf = malloc(*p_len);
-        if (buf == NULL)
-        {
-            ERROR("Memory allocation failure - EXIT");
-            /* we can do nothing in case we have no memory */
-            exit(1);
-        }
-        te_fill_buf(buf, *p_len);
-        return buf;
-    }
-    else
+    /*
+     * There is nothing wrong with asking for a zero-length buffer.
+     * However, ISO C and POSIX allow NULL or non-NULL to be returned
+     * in this case, so we allocate a single-byte buffer instead.
+     */
+    buf = TE_ALLOC(*p_len == 0 ? 1 : *p_len);
+    if (buf == NULL)
     {
-        ERROR("%s: min > max given for allocation length",
-              __FUNCTION__);
-        /* why it's good to call exit at this place:
-         * all current users of the function think that NULL which
-         * is returned is in fact a ENOMEM case, not EINVAL. And they
-         * either think that it can't happen or think that they can
-         * do nothing. In any case - proper error handling is not
-         * implemented. exit(1) will signal that somthing bad happened
-         * and print corresponding error message.
-         * */
+        /* FIXME: see issue #12079 for a consisent solution */
+        ERROR("Memory allocation failure - EXIT");
         exit(1);
     }
+    te_fill_buf(buf, *p_len);
+    return buf;
 }
