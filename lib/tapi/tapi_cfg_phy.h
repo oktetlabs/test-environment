@@ -31,10 +31,7 @@ extern "C" {
 #define TE_PHY_SLEEP_TIME   (10)
 
 /**
- * Get PHY autonegotiation oper state.
- *
- * NOTE: Output parameters are valid if function returns
- * positive result only.
+ * Get PHY autonegotiation state.
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
@@ -42,28 +39,11 @@ extern "C" {
  *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
  *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
  *
- * @return Status code
+ * @return Status code.
  */
-extern te_errno tapi_cfg_phy_autoneg_oper_get(const char *ta,
-                                              const char *if_name,
-                                              int *state);
-/**
- * Get PHY autonegotiation admin state.
- *
- * NOTE: Output parameters are valid if function returns
- * positive result only.
- *
- * @param ta            Test Agent name
- * @param if_name       Interface name
- * @param state         Pointer to the returned autonegotiation state value:
- *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
- *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
- *
- * @return Status code
- */
-extern te_errno tapi_cfg_phy_autoneg_admin_get(const char *ta,
-                                               const char *if_name,
-                                               int *state);
+extern te_errno tapi_cfg_phy_autoneg_get(const char *ta,
+                                         const char *if_name,
+                                         int *state);
 
 /**
  * Set PHY autonegotiation state.
@@ -76,9 +56,9 @@ extern te_errno tapi_cfg_phy_autoneg_admin_get(const char *ta,
  *
  * @return Status code
  */
-extern te_errno tapi_cfg_phy_autoneg_admin_set(const char *ta,
-                                               const char *if_name,
-                                               int state);
+extern te_errno tapi_cfg_phy_autoneg_set(const char *ta,
+                                         const char *if_name,
+                                         int state);
 
 /**
  * Get PHY duplex oper state.
@@ -137,10 +117,7 @@ extern te_errno tapi_cfg_phy_duplex_admin_set(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param speed         Pointer to the returned speed value
- *                      TE_PHY_SPEED_10    - 10 Mbit/sec
- *                      TE_PHY_SPEED_100   - 100 Mbit/sec
- *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
- *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ *                      (in Mbit/sec)
  *
  * @return Status code
  */
@@ -153,10 +130,7 @@ extern te_errno tapi_cfg_phy_speed_oper_get(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param speed         Pointer to the returned speed value
- *                      TE_PHY_SPEED_10    - 10 Mbit/sec
- *                      TE_PHY_SPEED_100   - 100 Mbit/sec
- *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
- *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ *                      (in Mbit/sec)
  *
  * @return Status code
  */
@@ -169,11 +143,7 @@ extern te_errno tapi_cfg_phy_speed_admin_get(const char *ta,
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
- * @param speed         Speed value
- *                      TE_PHY_SPEED_10    - 10 Mbit/sec
- *                      TE_PHY_SPEED_100   - 100 Mbit/sec
- *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
- *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ * @param speed         Speed value (Mbit/sec)
  *
  * @return Status code
  */
@@ -186,11 +156,7 @@ extern te_errno tapi_cfg_phy_speed_admin_set(const char *ta,
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
- * @param speed         Speed value
- *                      TE_PHY_SPEED_10    - 10 Mbit/sec
- *                      TE_PHY_SPEED_100   - 100 Mbit/sec
- *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
- *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ * @param speed         Speed value (Mbit/sec)
  * @param duplex        Duplex state value
  *                      TE_PHY_DUPLEX_HALF - half duplex
  *                      TE_PHY_DUPLEX_FULL - full duplex
@@ -205,11 +171,7 @@ extern te_errno tapi_cfg_phy_mode_oper_get(const char *ta,
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
- * @param speed         Speed value
- *                      TE_PHY_SPEED_10    - 10 Mbit/sec
- *                      TE_PHY_SPEED_100   - 100 Mbit/sec
- *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
- *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ * @param speed         Speed value (Mbit/sec)
  * @param duplex        Duplex state value
  *                      TE_PHY_DUPLEX_HALF - half duplex
  *                      TE_PHY_DUPLEX_FULL - full duplex
@@ -225,11 +187,7 @@ extern te_errno tapi_cfg_phy_mode_admin_get(const char *ta,
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
- * @param speed         Speed value
- *                      TE_PHY_SPEED_10    - 10 Mbit/sec
- *                      TE_PHY_SPEED_100   - 100 Mbit/sec
- *                      TE_PHY_SPEED_1000  - 1000 Mbit/sec
- *                      TE_PHY_SPEED_10000 - 10000 Mbit/sec
+ * @param speed         Speed value (Mbit/sec)
  * @param duplex        Duplex state value
  *                      TE_PHY_DUPLEX_HALF - half duplex
  *                      TE_PHY_DUPLEX_FULL - full duplex
@@ -273,15 +231,23 @@ extern te_errno tapi_cfg_phy_state_wait_up(const char *ta,
 /**
  * Check that PHY mode is advertised.
  *
+ * @note This function only checks link modes defining link speed
+ *       and duplex. If any of the link modes with matching
+ *       speed and duplex is enabled, this function reports
+ *       advertised state.
+ *       To check specific link mode or link mode not related to
+ *       speed/duplex use tapi_cfg_phy_mode_get().
+ *
  * @param ta            Test Agent name
  * @param if_name       Interface name
- * @param speed         Speed value (see linux/ethtool.h for more details)
+ * @param speed         Speed value (Mbit/sec, see linux/ethtool.h for
+ *                      more details)
  * @param duplex        Duplex state value:
  *                      TE_PHY_DUPLEX_HALF - half duplex
  *                      TE_PHY_DUPLEX_FULL - full duplex
  * @param state         Pointer to mode state:
- *                      1 - the mode is advertised
- *                      0 - the mode is not advertised
+ *                      @c TRUE - the mode is advertised
+ *                      @c FALSE - the mode is not advertised
  *
  * @return Status code
  */
@@ -293,15 +259,20 @@ extern te_errno tapi_cfg_phy_is_mode_advertised(const char *ta,
 /**
  * Set PHY mode to advertising state.
  *
+ * @note This function will change advertising state for all
+ *       link modes with matching speed and duplex.
+ *       For more detailed control use tapi_cfg_phy_mode_set().
+ *
  * @param ta            Test Agent name
  * @param if_name       Interface name
- * @param speed         Speed value (see linux/ethtool.h for more details)
+ * @param speed         Speed value (Mbit/sec, see linux/ethtool.h for
+ *                      more details)
  * @param duplex        Duplex state value:
  *                      TE_PHY_DUPLEX_HALF - half duplex
  *                      TE_PHY_DUPLEX_FULL - full duplex
  * @param state         Mode state:
- *                      0 - the mode is not advertised
- *                      1 - the mode is advertised
+ *                      @c FALSE - the mode is not advertised
+ *                      @c TRUE - the mode is advertised
  *
  * @return Status code
  */
@@ -309,6 +280,70 @@ extern te_errno tapi_cfg_phy_advertise_mode(const char *ta,
                                             const char *if_name,
                                             int speed, int duplex,
                                             te_bool state);
+
+/**
+ * Check whether a specific link mode is supported.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param mode_name     Link mode name
+ * @param supported     Will be set to @c TRUE if the requested link
+ *                      mode is supported, to @c FALSE otherwise
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_phy_mode_supported(const char *ta,
+                                            const char *if_name,
+                                            const char *mode_name,
+                                            te_bool *supported);
+
+/**
+ * Check whether a specific link mode is advertised.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param mode_name     Link mode name
+ * @param state         Will be set to @c TRUE if the requested link
+ *                      mode is advertised, to @c FALSE otherwise
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_phy_mode_adv_get(const char *ta,
+                                          const char *if_name,
+                                          const char *mode_name,
+                                          te_bool *state);
+
+/**
+ * Set advertising state for a link mode.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param mode_name     Link mode name
+ * @param state         If @c TRUE, link mode should be advertised,
+ *                      if @c FALSE - it should not be advertised
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_phy_mode_adv_set(const char *ta,
+                                          const char *if_name,
+                                          const char *mode_name,
+                                          te_bool state);
+
+/**
+ * Check whether link partner advertises a given link mode.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param mode_name     Link mode name
+ * @param advertised    Will be set to @c TRUE if link partner advertises
+ *                      the link mode and to @c FALSE otherwise
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_phy_lp_advertised(const char *ta,
+                                           const char *if_name,
+                                           const char *mode_name,
+                                           te_bool *advertised);
 
 /**
  * Commit PHY interface changes to TAs.
@@ -345,9 +380,12 @@ extern char *tapi_cfg_phy_duplex_id2str(int duplex);
 /**
  * Turn off all advertised modes and advertise only one.
  *
+ * FIXME: this function calls tapi_cfg_phy_commit(), it may
+ * be not convenient.
+ *
  * @param ta            Test agent
  * @param ifname        Interface name
- * @param advert_speed  Speed to advertise
+ * @param advert_speed  Speed to advertise (Mbit/sec)
  * @param advert_duplex Duplex to advertise
  *
  * @return Operation status code.
@@ -394,6 +432,61 @@ extern te_errno tapi_cfg_phy_pause_lp_adv_get(const char *ta,
 extern te_errno tapi_cfg_phy_autoneg_lp_adv_get(const char *ta,
                                                 const char *if_name,
                                                 int *state);
+
+
+/*
+ * Deprecated functions which should no longer be used
+ */
+
+/**
+ * Get PHY autonegotiation oper state.
+ *
+ * @note This function is outdated, use tapi_cfg_phy_autoneg_get().
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Pointer to the returned autonegotiation state value:
+ *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
+ *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_phy_autoneg_oper_get(const char *ta,
+                                              const char *if_name,
+                                              int *state);
+/**
+ * Get PHY autonegotiation admin state.
+ *
+ * @note This function is outdated, use tapi_cfg_phy_autoneg_get().
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Pointer to the returned autonegotiation state value:
+ *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
+ *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_phy_autoneg_admin_get(const char *ta,
+                                               const char *if_name,
+                                               int *state);
+
+/**
+ * Set PHY autonegotiation state.
+ *
+ * @note This function is outdated, use tapi_cfg_phy_autoneg_set().
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Autonegotiation state value:
+ *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
+ *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_phy_autoneg_admin_set(const char *ta,
+                                               const char *if_name,
+                                               int state);
 
 /**@} <!-- END tapi_conf_phy --> */
 
