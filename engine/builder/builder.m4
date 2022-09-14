@@ -383,6 +383,7 @@ dnl           Listing a library here won't per se create a build dependency and
 dnl           won't cause the library to be built
 dnl       build script (may be run on the engine or agent side)
 dnl           The script is run in the build directory, as specified above.
+dnl           If empty, build.sh in sources directory is assumed.
 dnl           The following env variables are exported:
 dnl           - TE_PREFIX: the installation prefix of TE build
 dnl                        for the current platform
@@ -434,6 +435,10 @@ BUILDDIR="$6"
 if test -z "$BUILDDIR"; then
     BUILDDIR="${TE_BUILD}/platforms/${PLATFORM}/apps/${APPNAME}"
 fi
+BUILD_SCRIPT="$8"
+if test -z "$BUILD_SCRIPT" ; then
+    BUILD_SCRIPT="${SOURCES}/build.sh"
+fi
 TA_APPS="TE_BS_TA_APPS_${PLATFORM}"
 declare "$TA_APPS"="${!TA_APPS} ${APPNAME}"
 declare "${TA_APPS}_${APPNAME}_TATYPES"="$TATYPES"
@@ -441,7 +446,7 @@ declare "${TA_APPS}_${APPNAME}_SOURCES"="$SOURCES"
 declare "${TA_APPS}_${APPNAME}_PREPARE"="$5"
 declare "${TA_APPS}_${APPNAME}_BUILDDIR"="$BUILDDIR"
 declare "${TA_APPS}_${APPNAME}_LIBS"="$7"
-declare "${TA_APPS}_${APPNAME}_BUILD"="$8"
+declare "${TA_APPS}_${APPNAME}_BUILD"="$BUILD_SCRIPT"
 declare "${TA_APPS}_${APPNAME}_INSTALL_BIN"="$9"
 declare "${TA_APPS}_${APPNAME}_ENV_VARS"="$10"
 declare "${TA_APPS}_${APPNAME}_PARMS"="$11"
