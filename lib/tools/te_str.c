@@ -264,6 +264,56 @@ te_strtoumax(const char *str, int base, uintmax_t *value)
 
 /* See description in te_str.h */
 te_errno
+te_strtoimax(const char *str, int base, intmax_t *value)
+{
+    char     *endptr = NULL;
+    te_errno  rc = 0;
+    int       saved_errno = errno;
+    int       new_errno = 0;
+    intmax_t  value_temp;
+
+
+    if (str == NULL || value == NULL)
+    {
+        ERROR("%s(): invalid arguments", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+/*
+ * Man says that strtoimax() can legitimately return 0, INTMAX_MAX, or
+ * INTMAX_MIN on both success and failure. And therefore the calling program
+ * should set errno to 0 before the call. And then determine if an error
+ * occurred by checking whether errno has a nonzero value after the call.
+ *
+ * As we explicitly set errno to 0, it would be easier to restore errno here
+ * than to handle it somehow in all the callers.
+ */
+    errno = 0;
+    value_temp = strtoimax(str, &endptr, base);
+    new_errno = errno;
+    errno = saved_errno;
+
+    if (((value_temp == INTMAX_MAX || value_temp == INTMAX_MIN)
+        && new_errno == ERANGE)
+        || (new_errno != 0 && value_temp == 0))
+    {
+        rc = te_rc_os2te(new_errno);
+        ERROR("%s(): strtoimax() failed with errno %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    if (endptr == NULL || *endptr != '\0' || endptr == str)
+    {
+        ERROR("%s(): failed to parse '%s'", __FUNCTION__, str);
+        return TE_EINVAL;
+    }
+
+    *value = value_temp;
+    return 0;
+}
+
+/* See description in te_str.h */
+te_errno
 te_strtoul(const char *str, int base, unsigned long int *value)
 {
     uintmax_t value_um;

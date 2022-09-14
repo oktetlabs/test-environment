@@ -239,6 +239,17 @@ extern char *te_str_strip_spaces(const char *str);
  */
 extern te_errno te_strtoumax(const char *str, int base,
                              uintmax_t *value);
+/**
+ * Wrapper over strtoimax().
+ *
+ * @param str       String to convert.
+ * @param base      Base of a numeral system.
+ * @param value     Where to save conversion result.
+ *
+ * @return Status code.
+ */
+extern te_errno te_strtoimax(const char *str, int base,
+                             intmax_t *value);
 
 /**
  * Wrapper over te_strtoumax() with overflow check.
