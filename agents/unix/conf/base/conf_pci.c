@@ -2717,7 +2717,7 @@ pci_serialno_get(unsigned int gid, const char *oid, char *value,
     rc = netconf_devlink_get_info(nh_genl, "pci", addr_str, &list);
     if (rc != 0)
     {
-        if (rc == TE_ENODEV || rc == TE_ENOENT)
+        if (rc == TE_ENODEV || rc == TE_ENOENT || rc == TE_EOPNOTSUPP)
         {
             *value = '\0';
             return 0;
