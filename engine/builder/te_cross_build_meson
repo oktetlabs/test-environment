@@ -16,13 +16,14 @@ SCRIPT_DIR="$(dirname "$0")"
 declare -a RSYNC
 RSYNC+=(rsync)
 RSYNC+=(-a)
+RSYNC+=(--delete-during)
+
 if test -n "$BUILDER_DEBUG" ; then
      RSYNC+=("-vv")
      RSYNC+=("-stat")
 fi
 
 declare -a RSYNC_TO_ARGS
-RSYNC_TO_ARGS+=(--delete-during)
 RSYNC_TO_ARGS+=(--delete-excluded)
 # External libraries may contain symlinks outside of build
 # root and may be unavailable on the target build host.
@@ -427,11 +428,20 @@ build_platform() {
                 error "Sync install from remote failed"
 
             # Get installed agents
-            te_eval_or_ssh "${p}" \
-                "test ! -d \"${ws}/destdir/${te_agents}\"" ||
-            rsync_from "${p}" "${ws}/destdir/${te_agents}"/ \
-                "${te_agents}" ||
-                error "Sync agents from remote failed"
+            declare -a agents
+            agents+=($(te_eval_or_ssh "${p}" \
+                       "ls \"${ws}/destdir/${te_agents}\" 2>/dev/null")) \
+              || true
+
+            # rsync_from should be called for every agent subdirectory
+            # instead of calling it once for parent directory because
+            # otherwise it can remove agents of other platforms due to
+            # --delete-during option.
+            for agt in "${agents[@]}" ; do
+                rsync_from "${p}" "${ws}/destdir/${te_agents}/${agt}"/ \
+                    "${te_agents}/${agt}" ||
+                    error "Sync $agt from remote failed"
+            done
         fi
     fi
 
