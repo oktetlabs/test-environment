@@ -88,7 +88,7 @@ tarpc_rte_eth_rx_offloads2str(te_log_buf *tlbp, uint64_t rx_offloads)
     }
 
     rx_offloads2str[rpc_dpdk_rx_offloads_num].bit =
-            TARPC_RTE_DEV_RX_OFFLOAD__UNSUPPORTED_BIT;
+            TARPC_RTE_ETH_RX_OFFLOAD__UNSUPPORTED_BIT;
     rx_offloads2str[rpc_dpdk_rx_offloads_num].str = "_UNSUPPORTED";
 
     result = te_bit_mask2log_buf(tlbp, rx_offloads, rx_offloads2str);
@@ -116,7 +116,7 @@ tarpc_rte_eth_tx_offloads2str(te_log_buf *tlbp, uint64_t tx_offloads)
     }
 
     tx_offloads2str[rpc_dpdk_tx_offloads_num].bit =
-            TARPC_RTE_DEV_TX_OFFLOAD__UNSUPPORTED_BIT;
+            TARPC_RTE_ETH_TX_OFFLOAD__UNSUPPORTED_BIT;
     tx_offloads2str[rpc_dpdk_tx_offloads_num].str = "_UNSUPPORTED";
 
     result = te_bit_mask2log_buf(tlbp, tx_offloads, tx_offloads2str);
@@ -484,21 +484,21 @@ static const char *
 tarpc_rte_eth_rxmode_flags2str(te_log_buf *tlbp, uint16_t flags)
 {
     const struct te_log_buf_bit2str rxmode_flags2str[] = {
-#define TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(_bit) \
+#define TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(_bit) \
         { TARPC_RTE_ETH_RXMODE_##_bit##_BIT, #_bit }
-        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HEADER_SPLIT),
-        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_IP_CHECKSUM),
-        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_VLAN_FILTER),
-        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_VLAN_STRIP),
-        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_VLAN_EXTEND),
-        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(JUMBO_FRAME),
-        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_STRIP_CRC),
-        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(ENABLE_SCATTER),
-        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(ENABLE_LRO),
-        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_TIMESTAMP),
-        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(SECURITY),
-        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(IGNORE_OFFLOAD_BITFIELD),
-#undef TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR
+        TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(HEADER_SPLIT),
+        TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(HW_IP_CHECKSUM),
+        TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(HW_VLAN_FILTER),
+        TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(HW_VLAN_STRIP),
+        TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(HW_VLAN_EXTEND),
+        TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(JUMBO_FRAME),
+        TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(HW_STRIP_CRC),
+        TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(ENABLE_SCATTER),
+        TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(ENABLE_LRO),
+        TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(HW_TIMESTAMP),
+        TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(SECURITY),
+        TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR(IGNORE_OFFLOAD_BITFIELD),
+#undef TARPC_RTE_ETH_RXMODE_FLAG_BIT2STR
         { 0, NULL }
     };
 
@@ -556,12 +556,12 @@ static const char *
 tarpc_rte_eth_txmode_flags2str(te_log_buf *tlbp, uint16_t flags)
 {
     const struct te_log_buf_bit2str txmode_flags2str[] = {
-#define TARPC_RTE_DEV_TXMODE_FLAG_BIT2STR(_bit) \
+#define TARPC_RTE_ETH_TXMODE_FLAG_BIT2STR(_bit) \
         { TARPC_RTE_ETH_TXMODE_##_bit##_BIT, #_bit }
-        TARPC_RTE_DEV_TXMODE_FLAG_BIT2STR(HW_VLAN_REJECT_TAGGED),
-        TARPC_RTE_DEV_TXMODE_FLAG_BIT2STR(HW_VLAN_REJECT_UNTAGGED),
-        TARPC_RTE_DEV_TXMODE_FLAG_BIT2STR(HW_VLAN_INSERT_PVID),
-#undef TARPC_RTE_DEV_TXMODE_FLAG_BIT2STR
+        TARPC_RTE_ETH_TXMODE_FLAG_BIT2STR(HW_VLAN_REJECT_TAGGED),
+        TARPC_RTE_ETH_TXMODE_FLAG_BIT2STR(HW_VLAN_REJECT_UNTAGGED),
+        TARPC_RTE_ETH_TXMODE_FLAG_BIT2STR(HW_VLAN_INSERT_PVID),
+#undef TARPC_RTE_ETH_TXMODE_FLAG_BIT2STR
         { 0, NULL }
     };
 
