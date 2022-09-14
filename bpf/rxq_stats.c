@@ -17,20 +17,12 @@
 #define MAX_QUEUES 128
 
 /* Map to store per-queue numbers of received packets */
-struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, MAX_QUEUES);
-    __type(key, __u32);
-    __type(value, __u64);
-} queue_stats SEC(".maps");
+TE_BPF_MAP_DEF(queue_stats, BPF_MAP_TYPE_HASH, MAX_QUEUES,
+               __u32, __u64);
 
 /* Map to store parameters of packets which should be counted */
-struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, 1);
-    __type(key, __u32);
-    __type(value, te_bpf_rxq_stats_params);
-} params SEC(".maps");
+TE_BPF_MAP_DEF(params, BPF_MAP_TYPE_HASH, 1,
+               __u32, te_bpf_rxq_stats_params);
 
 SEC("prog")
 int

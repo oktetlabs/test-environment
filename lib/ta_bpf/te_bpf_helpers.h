@@ -30,6 +30,45 @@
 #endif
 
 /**
+ * Define BPF map using either legacy bpf_map_def definition
+ * or a new BTF-defined one. The former one is going to be
+ * dropped in libbpf, however the new one may be not supported
+ * properly on older distributions. For example, on Debian 10
+ * with clang 7.0.1 compiled BPF program with new map definitions
+ * cannot be loaded with libbpf which complains that "BTF is
+ * required, but is missing or corrupted".
+ *
+ * @param _name         Map name
+ * @param _type         Map type (see bpf_map_type enum in
+ *                      linux/bpf.h)
+ * @param _max_entries  Maximum number of entries
+ * @param _key_type     Type of key
+ * @param _value_type   Type of value
+ */
+#ifdef TE_LEGACY_BPF_MAPS
+
+#define TE_BPF_MAP_DEF(_name, _type, _max_entries, _key_type, _value_type) \
+    struct bpf_map_def SEC("maps") _name = {  \
+        .type = _type,                        \
+        .max_entries = _max_entries,          \
+        .key_size = sizeof(_key_type),        \
+        .value_size = sizeof(_value_type),    \
+    };
+
+#else
+
+#define TE_BPF_MAP_DEF(_name, _type, _max_entries, _key_type, _value_type) \
+struct {                                      \
+    __uint(type, _type);                      \
+    __uint(max_entries, _max_entries);        \
+    __type(key, _key_type);                   \
+    __type(value, _value_type);               \
+} _name SEC(".maps");
+
+#endif
+
+
+/**
  * Maximum number of IPv6 extension headers.
  * There are 4 known extension headers which may be encountered in TCP or
  * UDP packets, one of them (Destination Options) can appear twice.

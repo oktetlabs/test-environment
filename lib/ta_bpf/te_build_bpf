@@ -10,8 +10,32 @@ set -e
 
 declare -a sources
 declare -a compiler_opts
+declare -a tmp_files
 inst_dir=
 def_inst_subdir="bpf_programs"
+
+test_log="${PWD}/bpf_test.log"
+
+# Create temporary file, add it to list of temporary
+# files to be removed at exit
+function create_tmp_file() {
+    local var_name="$1"
+    local suffix="$2"
+    local tmp_file=
+
+    tmp_file=$(mktemp --suffix="${suffix}" tmp.XXXXX)
+    tmp_files+=("${tmp_file}")
+    eval "${var_name}='${tmp_file}'"
+}
+
+# Cleanup at exit
+function cleanup() {
+    if [[ "${#tmp_files[@]}" -gt 0 ]] ; then
+        rm -f "${tmp_files[@]}"
+    fi
+}
+
+trap cleanup EXIT
 
 # This will help to find the problem if the script terminates due
 # to unhandled error (as "set -e" is specified).
@@ -57,9 +81,41 @@ function process_opts() {
     done
 }
 
+# Print command to stdout and execute it
+function echo_run() {
+    echo "$@"
+    eval "$@"
+}
+
+# Compile a test BPF program
+function compile_test_bpf() {
+    local source_fn="$1"
+    local result_var_name="$2"
+
+    create_tmp_file ll_fn .ll
+    create_tmp_file ${result_var_name} .o
+
+    echo_run clang -S -target bpf -O2 -emit-llvm -c -g ${TE_CPPFLAGS} \
+         -o "${ll_fn}" "${source_fn}" || return 1
+
+    echo_run llc -march=bpf -filetype=obj -o "${!result_var_name}" \
+        "${ll_fn}" || return 1
+}
+
+# Print contents of a file
+function print_file() {
+    local file="$1"
+
+    echo "${file}:"
+    echo "==============================================="
+    cat "${file}"
+    echo "==============================================="
+    echo ""
+}
+
+# Check whether dummy BPF program can be compiled
 function test_compiler() {
-    test_file=$(mktemp --suffix=.c test_bpf.XXXXX)
-    test_file_compiled=$(mktemp --suffix=.ll test_compiled.XXXXX)
+    create_tmp_file test_file .c
 
     cat >"${test_file}" << END
 #include <linux/bpf.h>
@@ -73,46 +129,164 @@ dummy_xdp_callback(struct xdp_md *ctx)
 }
 END
 
-    test_log="${PWD}/bpf_test.log"
+    echo "Try to compile dummy BPF program"
+    print_file "${test_file}"
+
     success=0
-    clang -S -target bpf -O2 -emit-llvm -c -g ${TE_CPPFLAGS} \
-         -o "${test_file_compiled}" "${test_file}" \
-         >"${test_log}" 2>&1 && success=1
-    rm -f "${test_file}" "${test_file_compiled}"
+    compile_test_bpf "${test_file}" test_file_compiled && success=1
     if [[ "${success}" -eq 0 ]] ; then
-        echo "Cannot compile sample BPF program,"\
-             "see ${test_log} on $(hostname)"
-        echo "Not building ${EXT_SOURCES} in ${TE_PREFIX}."
-        exit 0
+        echo "Failed to compile."
+        return 1
     fi
+
+    echo "Compiled successfully"
+}
+
+# Check whether BTF-defined map definitions are supported
+function test_bpf_maps() {
+    create_tmp_file bpf_prog .c
+
+    cat >"${bpf_prog}" << END
+#include <linux/bpf.h>
+#include <bpf/bpf_helpers.h>
+
+#define NULL (void *)0
+
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1);
+    __type(key, __u32);
+    __type(value, __u64);
+} test_map SEC(".maps");
+
+SEC("prog")
+int
+dummy_xdp_callback(struct xdp_md *ctx)
+{
+    __u32 key;
+    __u64 *value;
+
+    key = 0;
+    value = bpf_map_lookup_elem(&test_map, &key);
+    if (value != NULL)
+        return XDP_PASS;
+
+    return XDP_DROP;
+}
+END
+
+    echo "Try to compile BPF program with a map"
+    print_file "${bpf_prog}"
+
+    if ! compile_test_bpf "${bpf_prog}" bpf_prog_obj ; then
+        echo "BPF program with new map definition format" \
+             "cannot be compiled"
+        return 1
+    fi
+
+    echo "Compiled successfully"
+    echo ""
+
+    create_tmp_file c_prog_src .c
+    create_tmp_file c_prog ""
+
+    cat >"${c_prog_src}" << END
+#include <stdlib.h>
+#include <stdio.h>
+#include <bpf/bpf.h>
+#include <bpf/libbpf.h>
+
+int
+main(int argc, const char **argv)
+{
+    struct bpf_object_open_attr attr;
+    struct bpf_object *obj = NULL;
+    long err;
+    char err_str[1024] = "";
+
+    if (argc < 2)
+        return EXIT_FAILURE;
+
+    attr.file = argv[1];
+    attr.prog_type = BPF_PROG_TYPE_XDP;
+
+    obj = bpf_object__open_xattr(&attr);
+    err = libbpf_get_error(obj);
+    if (err != 0)
+    {
+        libbpf_strerror(err, err_str, sizeof(err_str));
+        fprintf(stderr, "Failed to open BPF program %s: '%s'\n",
+                argv[1], err_str);
+        return EXIT_FAILURE;
+    }
+
+    bpf_object__close(obj);
+    return EXIT_SUCCESS;
+}
+END
+
+    echo "Try to compile C program to open compiled BPF program"
+    print_file "${c_prog_src}"
+
+    if ! echo_run gcc "${c_prog_src}" ${TE_CPPFLAGS} ${TE_LDFLAGS} \
+         -lbpf -o "${c_prog}" ; then
+        echo "Cannot compile C program to check new map definitions," \
+             "legacy map definitions will be used"
+        return 1
+    fi
+
+    echo "Compiled successfully"
+    echo ""
+
+    echo "Checking whether the BPF program with a map can be opened" \
+         "from the C program"
+    echo_run LD_LIBRARY_PATH="${TE_PREFIX}/lib" \
+        ./${c_prog} "${bpf_prog_obj}" ||
+        return 1
+
+    echo "Was run successfully"
 }
 
 function main() {
+    truncate -s 0 "${test_log}"
+
     process_opts "$@"
+
+    echo "Checking whether BPF programs can be used on $(hostname)."
+    echo "Log of made checks is written to ${test_log}."
 
     #
     # Check whether a sample BPF program can be compiled for a given
     # platform. Do not try to build requested programs and avoid
     # breaking platform build if it is not supported.
     #
-    test_compiler
+    if ! test_compiler >>"${test_log}" 2>&1 ; then
+        echo "Cannot compile sample BPF program."
+        echo "Not building ${EXT_SOURCES} in ${TE_PREFIX}."
+        exit 0
+    fi
+
+    echo "" >>"${test_log}"
+
+    if ! test_bpf_maps >>"${test_log}" 2>&1 ; then
+        echo "BTF-defined map definitions are not supported," \
+             "legacy map definitions will be used"
+        compiler_opts+=(-DTE_LEGACY_BPF_MAPS=1)
+    else
+        echo "BTF-defined map definitions will be used"
+    fi
 
     for file_c in "${sources[@]}" ; do
         file_ll="${file_c%.c}.ll"
         file_o="${file_c%.c}.o"
 
-        set -x
-
-        clang -S -target bpf -Wall -Wno-unused-value \
+        echo_run clang -S -target bpf -Wall -Wno-unused-value \
             -Wno-pointer-sign -Wno-compare-distinct-pointer-types \
             -O2 -emit-llvm -c -g ${TE_CPPFLAGS} \
             "${compiler_opts[@]}" -o "${file_ll}" \
             "${EXT_SOURCES}/${file_c}"
 
-        llc -march=bpf -filetype=obj -o "${file_o}" "${file_ll}"
-
-        # This way "set +x" itself is not logged
-        { set +x; } 2>/dev/null
+        echo_run llc -march=bpf -filetype=obj -o "${file_o}" "${file_ll}"
 
         for ta_type in "${TE_TA_TYPES}" ; do
             dst="${TE_AGENTS_INST}/${ta_type}/"
