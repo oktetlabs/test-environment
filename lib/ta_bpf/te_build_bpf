@@ -75,7 +75,7 @@ END
 
     test_log="${PWD}/bpf_test.log"
     success=0
-    clang -S -target bpf -O2 -emit-llvm -c -g \
+    clang -S -target bpf -O2 -emit-llvm -c -g ${TE_CPPFLAGS} \
          -o "${test_file_compiled}" "${test_file}" \
          >"${test_log}" 2>&1 && success=1
     rm -f "${test_file}" "${test_file_compiled}"
@@ -105,7 +105,7 @@ function main() {
 
         clang -S -target bpf -Wall -Wno-unused-value \
             -Wno-pointer-sign -Wno-compare-distinct-pointer-types \
-            -O2 -emit-llvm -c -g -I"${TE_PREFIX}/include" \
+            -O2 -emit-llvm -c -g ${TE_CPPFLAGS} \
             "${compiler_opts[@]}" -o "${file_ll}" \
             "${EXT_SOURCES}/${file_c}"
 
