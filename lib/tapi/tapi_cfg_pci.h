@@ -428,6 +428,25 @@ extern te_errno tapi_cfg_pci_set_param_uint(const char *pci_oid,
                                             tapi_cfg_pci_param_cmode cmode,
                                             uint64_t value);
 
+/**
+ * Get vendor/device IDs of PCI device.
+ *
+ * @param pci_oid               PCI device OID
+ * @param vendor_id             Where to save vendor ID (may be @c NULL)
+ * @param device_id             Where to save device ID (may be @c NULL)
+ * @param subsystem_vendor_id   Where to save subsystem vendor ID
+ *                              (may be @c NULL)
+ * @param subsystem_device_id   Where to save subsystem device ID
+ *                              (may be @c NULL)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_pci_get_vendor_dev_ids(const char *pci_oid,
+                                                unsigned int *vendor_id,
+                                                unsigned int *device_id,
+                                                unsigned int *subsystem_vendor_id,
+                                                unsigned int *subsystem_device_id);
+
 /**@} <!-- END tapi_conf_pci --> */
 
 #ifdef __cplusplus

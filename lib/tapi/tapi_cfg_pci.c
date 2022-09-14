@@ -865,3 +865,55 @@ tapi_cfg_pci_set_param_uint(const char *pci_oid,
 
     return tapi_cfg_pci_set_param_str(pci_oid, param_name, cmode, val_str);
 }
+
+/*
+ * Get value of a hexadecimal property (like vendor ID or device ID).
+ */
+static te_errno
+get_hex_prop(const char *pci_oid, const char *name,
+             unsigned int *value)
+{
+    te_errno rc;
+    char *id = NULL;
+
+    if (value == NULL)
+        return 0;
+
+    rc = cfg_get_instance_string_fmt(&id, "%s/%s:", pci_oid, name);
+    if (rc != 0)
+        return rc;
+
+    rc = te_strtoui(id, 16, value);
+    if (rc != 0)
+        ERROR("Cannot convert PCI %s '%s' to number", name, id);
+
+    free(id);
+    return rc;
+}
+
+/* See description in tapi_cfg_pci.h */
+te_errno
+tapi_cfg_pci_get_vendor_dev_ids(const char *pci_oid,
+                                unsigned int *vendor_id,
+                                unsigned int *device_id,
+                                unsigned int *subsystem_vendor_id,
+                                unsigned int *subsystem_device_id)
+{
+    te_errno rc = 0;
+
+    rc = get_hex_prop(pci_oid, "vendor_id", vendor_id);
+    if (rc != 0)
+        return rc;
+
+    rc = get_hex_prop(pci_oid, "device_id", device_id);
+    if (rc != 0)
+        return rc;
+
+    rc = get_hex_prop(pci_oid, "subsystem_vendor",
+                      subsystem_vendor_id);
+    if (rc != 0)
+        return rc;
+
+    return get_hex_prop(pci_oid, "subsystem_device",
+                        subsystem_device_id);
+}
