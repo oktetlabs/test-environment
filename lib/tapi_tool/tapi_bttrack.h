@@ -47,6 +47,8 @@ typedef struct tapi_bttrack_opt {
     char *dfile;
     /** TCP port to listen on (default is 80) */
     unsigned int port;
+    /** Path to bttrack exec (if @c NULL then "bttrack"). */
+    const char *bttrack_path;
 } tapi_bttrack_opt;
 
 /** Default bttrack options initializer */

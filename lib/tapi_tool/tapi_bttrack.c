@@ -15,10 +15,11 @@
 #include "tapi_job_opt.h"
 #include "te_alloc.h"
 
+#define TAPI_BTTRACK_DEFAULT_PATH     "bttrack"
 #define TAPI_BTTRACK_DEFAULT_PORT     80
 #define TAPI_BTTRACK_TERM_TIMEOUT_MS  1000
 
-static const char *bttrack_binary = "bttrack";
+static const char bttrack_path[] = TAPI_BTTRACK_DEFAULT_PATH;
 
 static const tapi_job_opt_bind bttrack_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_STRING("--dfile", FALSE, tapi_bttrack_opt, dfile),
@@ -28,7 +29,8 @@ static const tapi_job_opt_bind bttrack_binds[] = TAPI_JOB_OPT_SET(
 
 const tapi_bttrack_opt tapi_bttrack_default_opt = {
     .dfile = NULL,
-    .port  = TAPI_JOB_OPT_OMIT_UINT
+    .port  = TAPI_JOB_OPT_OMIT_UINT,
+    .bttrack_path = NULL
 };
 
 te_errno
@@ -40,6 +42,7 @@ tapi_bttrack_create(tapi_job_factory_t *factory,
     te_errno           rc;
     te_vec             args = TE_VEC_INIT(char *);
     tapi_bttrack_app  *result;
+    const char        *exec_path = bttrack_path;
 
     result = TE_ALLOC(sizeof(*result));
     if (result == NULL)
@@ -66,7 +69,10 @@ tapi_bttrack_create(tapi_job_factory_t *factory,
     result->port = (opt->port == TAPI_JOB_OPT_OMIT_UINT) ?
                     TAPI_BTTRACK_DEFAULT_PORT : opt->port;
 
-    rc = tapi_job_opt_build_args(bttrack_binary, bttrack_binds, opt, &args);
+    if (opt->bttrack_path != NULL)
+        exec_path = opt->bttrack_path;
+
+    rc = tapi_job_opt_build_args(exec_path, bttrack_binds, opt, &args);
     if (rc != 0)
     {
         ERROR("Failed to build job arguments for bttrack");
@@ -75,7 +81,7 @@ tapi_bttrack_create(tapi_job_factory_t *factory,
 
     rc = tapi_job_simple_create(factory,
                                 &(tapi_job_simple_desc_t){
-                                    .program    = bttrack_binary,
+                                    .program    = exec_path,
                                     .argv       = (const char **)args.data.ptr,
                                     .job_loc    = &result->job,
                                     .stdout_loc = &result->out_chs[0],
