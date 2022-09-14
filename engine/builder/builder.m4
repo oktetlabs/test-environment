@@ -368,6 +368,7 @@ dnl       extension name
 dnl       platform (should be empty for host platform)
 dnl       list of TA types (as defined by TE_TA_TYPE macro)
 dnl       extension sources (absolute pathname or relative to TE_BASE/apps)
+dnl           If empty, TE_BASE/apps/<extension name> is assumed.
 dnl       source preparation script (always run on the engine side)
 dnl           The script is run in the sources directory as specified above.
 dnl           The following env variables are exported:
