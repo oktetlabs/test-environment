@@ -1031,8 +1031,17 @@ new_lmode_op(ta_ethtool_lsets *lsets,
     nword = native_mode / 32;
     if (nword >= masks_nwords)
     {
-        ERROR("%s(): link mode %s cannot fit into mask",
-              __FUNCTION__, ta_ethtool_lmode_name(mode));
+        if (do_set)
+        {
+            ERROR("%s(): link mode %s cannot fit into mask",
+                  __FUNCTION__, ta_ethtool_lmode_name(mode));
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+        else
+        {
+            *value = FALSE;
+            return 0;
+        }
     }
 
     flag = native_mode % 32;
