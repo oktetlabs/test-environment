@@ -460,6 +460,30 @@ ta_popen_r(const char *cmd, pid_t *cmd_pid, FILE **f)
 }
 
 te_errno
+ta_popen_r_fmt(pid_t *cmd_pid, FILE **f, const char *fmt, ...)
+{
+    va_list ap;
+    te_string cmd = TE_STRING_INIT;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = te_string_append_va(&cmd, fmt, ap);
+    va_end(ap);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to process format string");
+        goto out;
+    }
+
+    rc = ta_popen_r(cmd.ptr, cmd_pid, f);
+
+out:
+    te_string_free(&cmd);
+    return rc;
+}
+
+te_errno
 ta_pclose_r(pid_t cmd_pid, FILE *f)
 {
     int rc = 0;

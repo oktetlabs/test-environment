@@ -115,8 +115,28 @@ extern int ta_system_fmt(const char *fmt, ...);
 
 /**
  * popen('r') analogue, with slightly modified parameters.
+ *
+ * @sa ta_popen_r_fmt
  */
 extern te_errno ta_popen_r(const char *cmd, pid_t *cmd_pid, FILE **f);
+
+/**
+ * Build a command line with a printf-like format string and call ta_popen_r().
+ *
+ * @param[out] cmd_pid          PID of the executed command.
+ * @param[out] f                Desctiptor of the executed command's stdout.
+ * @param[in]  fmt              Command format string.
+ * @param[in]  ...              Format string arguments.
+ *
+ * @return Status code.
+ *
+ * @sa ta_popen_r, ta_pclose_r
+ */
+#ifdef __GNUC__
+__attribute__((format(printf, 3, 4)))
+#endif
+extern te_errno ta_popen_r_fmt(pid_t *cmd_pid, FILE **f,
+                               const char *fmt, ...);
 
 /**
  * Perform cleanup actions for ta_popen_r() function.
