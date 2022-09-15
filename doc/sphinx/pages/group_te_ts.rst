@@ -554,6 +554,7 @@ Then in your test scenario you can write the following:
 |			:ref:`Test API to perform the generic operations over the storage<doxid-group__tapi__storage__wrapper>`
 |		:ref:`Test API to use memory-related functions conveniently<doxid-group__tapi__mem>`
 |		:ref:`Test API to use packetdrill test tool<doxid-group__tapi__packetdrill>`
+|		:ref:`Test API to control Wi-Fi client<doxid-group__tapi__wifi>`
 |		:ref:`Tools to work with "struct sockaddr"<doxid-group__ts__tapi__sockaddr>`
 |		:ref:`Traffic Application Domain<doxid-group__tapi__tad__main>`
 |			:ref:`ARP<doxid-group__tapi__tad__arp>`

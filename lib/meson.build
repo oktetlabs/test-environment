@@ -73,6 +73,7 @@ te_engine_libs = [
     'tapi_gtest',
     'tapi_upnp',
     'tapi_media',
+    'tapi_wifi',
 ]
 
 # Test Agent libraries
