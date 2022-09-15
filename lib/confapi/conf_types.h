@@ -15,6 +15,7 @@ extern "C" {
 
 #include "te_stdint.h"
 #include "te_defs.h"
+#include "te_errno.h"
 
 /** Maximum length of the instance in the message */
 #define CFG_MAX_INST_VALUE      RCF_MAX_VAL
@@ -57,23 +58,23 @@ typedef struct cfg_primary_type {
      */
 
     /** Convert value from string representation to cfg_inst_val */
-    int (* str2val)(char *val_str, cfg_inst_val *val);
+    te_errno (* str2val)(char *val_str, cfg_inst_val *val);
 
 
     /** Convert value from cfg_inst_val to string representation */
-    int (* val2str)(cfg_inst_val val, char **val_str);
+    te_errno (* val2str)(cfg_inst_val val, char **val_str);
 
     /** Put default value of the type to cfg_inst_val */
-    int (* def_val)(cfg_inst_val *val);
+    te_errno (* def_val)(cfg_inst_val *val);
 
     /** Free memory allocated for the value (dummy for int type) */
     void (* free)(cfg_inst_val val);
 
     /** Copy the value (allocating memory, if necessary). */
-    int (* copy)(cfg_inst_val val, cfg_inst_val *var);
+    te_errno (* copy)(cfg_inst_val val, cfg_inst_val *var);
 
     /** Obtain value from the message */
-    int (* get_from_msg)(struct cfg_msg *msg, cfg_inst_val *val);
+    te_errno (* get_from_msg)(struct cfg_msg *msg, cfg_inst_val *val);
 
     /**
      * Put the value to the message; the message length should be
