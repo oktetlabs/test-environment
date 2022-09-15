@@ -11,9 +11,124 @@
 #include "conf_api.h"
 #include "logger_api.h"
 #include "te_enum.h"
+#include "tapi_mem.h"
 
 /* Path to supplicant instance in the Configurator (format string) */
 #define CFG_SUPPLICANT_PATH_FMT "/agent:%s/interface:%s/supplicant:"
+
+/* See description in tapi_wpa_supplicant.h */
+void
+tapi_wpa_supplicant_security_init_simple(
+                    tapi_wifi_policy policy,
+                    const char *passphrase,
+                    tapi_wpa_supplicant_security *security)
+{
+    tapi_wifi_key_mgmt key_mgmt = TAPI_WIFI_KEY_MGMT_UNDEF;
+    tapi_wifi_cipher pairwise_cipher = TAPI_WIFI_CIPHER_UNDEF;
+    tapi_wifi_cipher group_cipher = TAPI_WIFI_CIPHER_UNDEF;
+    tapi_wifi_pmf pmf = TAPI_WIFI_PMF_UNDEF;
+    tapi_wifi_pmf ieee80211w = TAPI_WIFI_PMF_UNDEF;
+
+    switch (policy)
+    {
+        case TAPI_WIFI_POLICY_UNDEF:
+            /* All settings are default */
+            break;
+
+        case TAPI_WIFI_POLICY_NONE:
+            key_mgmt = TAPI_WIFI_KEY_MGMT_NONE;
+            break;
+
+        case TAPI_WIFI_POLICY_WEP:
+            ERROR("%s(): WEP security protocol is not supported", __func__);
+            assert(policy != TAPI_WIFI_POLICY_WEP);
+            break;
+
+        case TAPI_WIFI_POLICY_WPA:
+            key_mgmt = TAPI_WIFI_KEY_MGMT_WPA_PSK;
+            pmf = TAPI_WIFI_PMF_DISABLED;
+            ieee80211w = TAPI_WIFI_PMF_DISABLED;
+            break;
+
+        case TAPI_WIFI_POLICY_WPA2:
+            key_mgmt = TAPI_WIFI_KEY_MGMT_WPA_PSK;
+            pmf = TAPI_WIFI_PMF_DISABLED;
+            ieee80211w = TAPI_WIFI_PMF_DISABLED;
+            break;
+
+        case TAPI_WIFI_POLICY_WPA3:
+            key_mgmt = TAPI_WIFI_KEY_MGMT_SAE;
+            pmf = TAPI_WIFI_PMF_REQUIRED;
+            ieee80211w = TAPI_WIFI_PMF_REQUIRED;
+            break;
+
+        case TAPI_WIFI_POLICY_WPA_WPA2:
+            key_mgmt = TAPI_WIFI_KEY_MGMT_WPA_PSK;
+            pmf = TAPI_WIFI_PMF_DISABLED;
+            ieee80211w = TAPI_WIFI_PMF_DISABLED;
+            break;
+
+        case TAPI_WIFI_POLICY_WPA2_WPA3:
+            key_mgmt = TAPI_WIFI_KEY_MGMT_WPA_PSK_SAE;
+            pmf = TAPI_WIFI_PMF_ENABLED;
+            ieee80211w = TAPI_WIFI_PMF_ENABLED;
+            break;
+    }
+
+    tapi_wpa_supplicant_security_init(policy, key_mgmt,
+                                      pairwise_cipher, group_cipher,
+                                      pmf, ieee80211w,
+                                      passphrase, security);
+}
+
+/* See description in tapi_wpa_supplicant.h */
+void
+tapi_wpa_supplicant_security_init(
+                    tapi_wifi_policy policy,
+                    tapi_wifi_key_mgmt key_mgmt,
+                    tapi_wifi_cipher pairwise_cipher,
+                    tapi_wifi_cipher group_cipher,
+                    tapi_wifi_pmf pmf,
+                    tapi_wifi_pmf ieee80211w,
+                    const char *passphrase,
+                    tapi_wpa_supplicant_security *security)
+{
+    assert(security != NULL);
+
+    security->policy = policy;
+    security->key_mgmt = key_mgmt;
+    security->pairwise_cipher = pairwise_cipher;
+    security->group_cipher = group_cipher;
+    security->pmf = pmf;
+    security->ieee80211w = ieee80211w;
+    if (passphrase == NULL)
+        security->passphrase = NULL;
+    else
+        security->passphrase = tapi_strdup(passphrase);
+}
+
+/* See description in tapi_wpa_supplicant.h */
+void
+tapi_wpa_supplicant_security_clone(
+                    tapi_wpa_supplicant_security *to,
+                    const tapi_wpa_supplicant_security *from)
+{
+    assert(from != NULL);
+    tapi_wpa_supplicant_security_init(from->policy, from->key_mgmt,
+            from->pairwise_cipher, from->group_cipher,
+            from->pmf, from->ieee80211w, from->passphrase, to);
+}
+
+/* See description in tapi_wpa_supplicant.h */
+void
+tapi_wpa_supplicant_security_free(
+                    tapi_wpa_supplicant_security *security)
+{
+    if (security == NULL)
+        return;
+
+    free(security->passphrase);
+}
 
 static const char *
 security_policy2val(tapi_wifi_policy policy)

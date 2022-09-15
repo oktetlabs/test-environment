@@ -53,6 +53,65 @@ typedef struct tapi_wpa_supplicant_security {
 } tapi_wpa_supplicant_security;
 
 /**
+ * Initialize Wi-Fi client security settings container in a simple way.
+ * Refering on @p policy it guesses the value of PMF and key_mgmt, sets
+ * cipher to UNDEF value (to use default wpa_supplicant settings)
+ * and in the final it calls tapi_wpa_supplicant_security_init().
+ *
+ * @param[in]   policy      Security protocol.
+ * @param[in]   passphrase  SSID passphrase, may be @c NULL for open SSID.
+ * @param[out]  security    Security container.
+ *
+ * @sa tapi_wpa_supplicant_security_free
+ */
+extern void tapi_wpa_supplicant_security_init_simple(
+                    tapi_wifi_policy policy,
+                    const char *passphrase,
+                    tapi_wpa_supplicant_security *security);
+
+/**
+ * Initialize Wi-Fi client security settings container.
+ *
+ * @param[in]   policy          Security protocol.
+ * @param[in]   key_mgmt        Authenticated key management protocol.
+ * @param[in]   pairwise_cipher Pairwise (unicast) encryption protocol.
+ * @param[in]   group_cipher    Group (broadcast/multicast) encryption protocol.
+ * @param[in]   pmf             Protected Management Frame (global).
+ * @param[in]   ieee80211w      Protected Management Frame (per-network).
+ * @param[in]   passphrase      SSID passphrase, may be @c NULL for open SSID.
+ * @param[out]  security        Security container.
+ *
+ * @sa tapi_wpa_supplicant_security_free
+ */
+extern void tapi_wpa_supplicant_security_init(
+                    tapi_wifi_policy policy,
+                    tapi_wifi_key_mgmt key_mgmt,
+                    tapi_wifi_cipher pairwise_cipher,
+                    tapi_wifi_cipher group_cipher,
+                    tapi_wifi_pmf pmf,
+                    tapi_wifi_pmf ieee80211w,
+                    const char *passphrase,
+                    tapi_wpa_supplicant_security *security);
+
+/**
+ * Copy security settings from one container to another deeply.
+ *
+ * @param[out] to               Destination security container.
+ * @param[in]  from             Source security container.
+ */
+extern void tapi_wpa_supplicant_security_clone(
+                    tapi_wpa_supplicant_security *to,
+                    const tapi_wpa_supplicant_security *from);
+
+/**
+ * Free memory allocated for security settings container.
+ *
+ * @param security      Security container.
+ */
+extern void tapi_wpa_supplicant_security_free(
+                    tapi_wpa_supplicant_security *security);
+
+/**
  * Configure WPA supplicant settings. It does not care if the supplicant is
  * already running or not, a user should ensure themselves that the supplicant
  * is inactive before reconfiguring.
