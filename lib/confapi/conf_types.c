@@ -90,8 +90,8 @@ addr_size(unsigned short af)
 }
 
 /* Convertion functions for type 'uint32_t' */
-static te_errno str2int32(char *val_str, cfg_inst_val *val);
-static te_errno int32_2str(cfg_inst_val val, char **val_str);
+static te_errno str_to_int32(char *val_str, cfg_inst_val *val);
+static te_errno int32_to_str(cfg_inst_val val, char **val_str);
 static te_errno int32_def_val(cfg_inst_val *val);
 static void int32_free(cfg_inst_val val);
 static te_errno int32_copy(cfg_inst_val src, cfg_inst_val *dst);
@@ -112,19 +112,19 @@ static te_bool uint64_equal(cfg_inst_val first, cfg_inst_val second);
 static size_t uint64_value_size(cfg_inst_val val);
 
 /* Convertion functions for type 'char *' */
-static te_errno str2char(char *val_str, cfg_inst_val *val);
-static te_errno char2str(cfg_inst_val val, char **val_str);
-static te_errno str_def_val(cfg_inst_val *val);
-static void str_free(cfg_inst_val val);
-static te_errno str_copy(cfg_inst_val src, cfg_inst_val *dst);
-static te_errno str_get(cfg_msg *msg, cfg_inst_val *val);
-static void str_put(cfg_inst_val val, cfg_msg *msg);
-static te_bool str_equal(cfg_inst_val first, cfg_inst_val second);
-static size_t str_value_size(cfg_inst_val val);
+static te_errno str_to_string(char *val_str, cfg_inst_val *val);
+static te_errno string_to_str(cfg_inst_val val, char **val_str);
+static te_errno string_def_val(cfg_inst_val *val);
+static void string_free(cfg_inst_val val);
+static te_errno string_copy(cfg_inst_val src, cfg_inst_val *dst);
+static te_errno string_get(cfg_msg *msg, cfg_inst_val *val);
+static void string_put(cfg_inst_val val, cfg_msg *msg);
+static te_bool string_equal(cfg_inst_val first, cfg_inst_val second);
+static size_t string_value_size(cfg_inst_val val);
 
 /* Convertion functions for type 'sockaddr *' */
-static te_errno str2addr(char *val_str, cfg_inst_val *val);
-static te_errno addr2str(cfg_inst_val val, char **val_str);
+static te_errno str_to_addr(char *val_str, cfg_inst_val *val);
+static te_errno addr_to_str(cfg_inst_val val, char **val_str);
 static te_errno addr_def_val(cfg_inst_val *val);
 static void addr_free(cfg_inst_val val);
 static te_errno addr_copy(cfg_inst_val src, cfg_inst_val *dst);
@@ -134,8 +134,8 @@ static te_bool addr_equal(cfg_inst_val first, cfg_inst_val second);
 static size_t addr_value_size(cfg_inst_val val);
 
 /* Convertion dummy functions for type 'none' */
-static te_errno str2none(char *val_str, cfg_inst_val *val);
-static te_errno none2str(cfg_inst_val val, char **val_str);
+static te_errno str_to_none(char *val_str, cfg_inst_val *val);
+static te_errno none_to_str(cfg_inst_val val, char **val_str);
 static te_errno none_def_val(cfg_inst_val *val);
 static void none_free(cfg_inst_val val);
 static te_errno none_copy(cfg_inst_val src, cfg_inst_val *dst);
@@ -147,7 +147,7 @@ static size_t none_value_size(cfg_inst_val val);
 /* Primary types' convertion functions */
 cfg_primary_type cfg_types[CFG_PRIMARY_TYPES_NUM] = {
 /* CVT_INT32 */
-    { str2int32, int32_2str, int32_def_val,
+    { str_to_int32, int32_to_str, int32_def_val,
       int32_free, int32_copy, int32_get, int32_put, int32_equal,
       int32_value_size },
 /* CVT_UINT64 */
@@ -155,20 +155,21 @@ cfg_primary_type cfg_types[CFG_PRIMARY_TYPES_NUM] = {
       uint64_free, uint64_copy, uint64_get, uint64_put, uint64_equal,
       uint64_value_size },
 /* CVT_STRING */
-    { str2char, char2str, str_def_val,
-      str_free, str_copy, str_get, str_put, str_equal, str_value_size },
+    { str_to_string, string_to_str, string_def_val,
+      string_free, string_copy, string_get, string_put,
+      string_equal, string_value_size },
 /* CVT_ADDRESS */
-    { str2addr, addr2str, addr_def_val,
+    { str_to_addr, addr_to_str, addr_def_val,
       addr_free, addr_copy, addr_get, addr_put, addr_equal, addr_value_size },
 /* CVT_NONE */
-    { str2none, none2str, none_def_val,
+    { str_to_none, none_to_str, none_def_val,
       none_free, none_copy, none_get, none_put, none_equal, none_value_size }
  };
 
 /*----------------------- Int32 type handlers -------------------------*/
 
 static te_errno
-str2int32(char *val_str, cfg_inst_val *val)
+str_to_int32(char *val_str, cfg_inst_val *val)
 {
     char *invalid;
     int32_t ret_val = 0;
@@ -183,7 +184,7 @@ str2int32(char *val_str, cfg_inst_val *val)
 }
 
 static te_errno
-int32_2str(cfg_inst_val val, char **val_str)
+int32_to_str(cfg_inst_val val, char **val_str)
 {
     char str[CFG_TP_MAX_BUF];
     int32_t ret_val;
@@ -379,7 +380,7 @@ uint64_value_size(cfg_inst_val val)
 /*----------------------- String type handlers --------------------------*/
 
 static te_errno
-str2char(char *val_str, cfg_inst_val *val)
+str_to_string(char *val_str, cfg_inst_val *val)
 {
     if (val_str == NULL)
         return TE_EINVAL;
@@ -388,7 +389,7 @@ str2char(char *val_str, cfg_inst_val *val)
 }
 
 static te_errno
-char2str(cfg_inst_val val, char **val_str)
+string_to_str(cfg_inst_val val, char **val_str)
 {
     if (val.val_str == NULL)
         return TE_EINVAL;
@@ -397,13 +398,13 @@ char2str(cfg_inst_val val, char **val_str)
 }
 
 static te_errno
-str_def_val(cfg_inst_val *val)
+string_def_val(cfg_inst_val *val)
 {
     return (*(char **)val = strdup("")) == NULL ? TE_ENOMEM : 0;
 }
 
 static void
-str_free(cfg_inst_val val)
+string_free(cfg_inst_val val)
 {
     char *str = val.val_str;
 
@@ -413,7 +414,7 @@ str_free(cfg_inst_val val)
 }
 
 static te_errno
-str_copy(cfg_inst_val src, cfg_inst_val *dst)
+string_copy(cfg_inst_val src, cfg_inst_val *dst)
 {
     if (src.val_str == NULL)
         return TE_EINVAL;
@@ -422,7 +423,7 @@ str_copy(cfg_inst_val src, cfg_inst_val *dst)
 }
 
 static te_errno
-str_get(cfg_msg *msg, cfg_inst_val *val)
+string_get(cfg_msg *msg, cfg_inst_val *val)
 {
     char *msg_str;
 
@@ -437,7 +438,7 @@ str_get(cfg_msg *msg, cfg_inst_val *val)
 }
 
 static void
-str_put(cfg_inst_val val, cfg_msg *msg)
+string_put(cfg_inst_val val, cfg_msg *msg)
 {
     char *msg_str;
 
@@ -465,13 +466,13 @@ str_put(cfg_inst_val val, cfg_msg *msg)
 
 
 static te_bool
-str_equal(cfg_inst_val first, cfg_inst_val second)
+string_equal(cfg_inst_val first, cfg_inst_val second)
 {
     return (strcmp(first.val_str, second.val_str) == 0) ? TRUE : FALSE;
 }
 
 static size_t
-str_value_size(cfg_inst_val val)
+string_value_size(cfg_inst_val val)
 {
     return strlen(val.val_str) + 1;
 }
@@ -480,7 +481,7 @@ str_value_size(cfg_inst_val val)
 
 
 static te_errno
-str2addr(char *val_str, cfg_inst_val *val)
+str_to_addr(char *val_str, cfg_inst_val *val)
 {
     if (val_str == NULL)
     {
@@ -578,7 +579,7 @@ str2addr(char *val_str, cfg_inst_val *val)
 }
 
 static te_errno
-addr2str(cfg_inst_val val, char **val_str)
+addr_to_str(cfg_inst_val val, char **val_str)
 {
     char val_buf[CFG_TP_MAX_BUF];
     const char *ret_val;
@@ -652,7 +653,7 @@ addr2str(cfg_inst_val val, char **val_str)
 static te_errno
 addr_def_val(cfg_inst_val *val)
 {
-    return str2addr("", val);
+    return str_to_addr("", val);
 }
 
 static void
@@ -767,7 +768,7 @@ addr_value_size(cfg_inst_val val)
 /*----------------------- None type handlers -------------------------*/
 
 static te_errno
-str2none(char *val_str, cfg_inst_val *val)
+str_to_none(char *val_str, cfg_inst_val *val)
 {
     UNUSED(val_str);
     UNUSED(val);
@@ -775,7 +776,7 @@ str2none(char *val_str, cfg_inst_val *val)
 }
 
 static te_errno
-none2str(cfg_inst_val val, char **val_str)
+none_to_str(cfg_inst_val val, char **val_str)
 {
     UNUSED(val);
     UNUSED(val_str);
