@@ -3,7 +3,7 @@
 
 rcf_consistency_checks = custom_target('get-rcf-consistency-check',
     output: 'rcf_consistency_checks.c',
-    capture: true, build_always: true,
+    capture: true, build_always_stale: true, build_by_default: true,
     command: [ te_rcf_consistency_checks, '--generate-c' ])
 
 deps = [ dep_threads, dep_libxml2, dep_popt ]

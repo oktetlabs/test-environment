@@ -3,7 +3,7 @@
 
 project('sefltest', 'c',
     version : '1.0.0',
-    meson_version: '>= 0.44.1',
+    meson_version: '>= 0.49.0',
     default_options: 'werror=true',
 )
 

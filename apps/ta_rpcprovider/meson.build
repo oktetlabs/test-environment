@@ -5,8 +5,7 @@
 #
 # Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
 
-# The restriction on the meson version is due to the use of arrays in options.
-project('ta_rpcprovider', 'c', meson_version: '>= 0.44.0')
+project('ta_rpcprovider', 'c', meson_version: '>= 0.49.0')
 
 cc = meson.get_compiler('c')
 
