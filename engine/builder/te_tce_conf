@@ -1,0 +1,59 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+#
+# Test Coverage Estimation
+# Generate TCE configuration for RCF
+#
+# The TCE information is generated on TA agents within the same directories
+# the TA agents have been built. The configuration provides paths to this
+# directories and to the directory to save the TCE information fetched.
+
+SCRIPT_DIR="$(dirname "$0")"
+
+. "${SCRIPT_DIR}/te_tce_functions.sh"
+
+TCE_LIST="$1" ; shift
+conf_file="$1" ; shift
+
+tce_clean_workspace \
+    || tce_die "failed to provide workspace"
+
+tce_set_build_base \
+    || tce_die "failed to locate base directories for builds"
+tce_set_type_comp_build
+
+cat 2> /dev/null > "${conf_file}" << EOF
+---
+
+te_local:
+    tebin: "${TE_PATH}"
+    tcews: "${TCE_WS}"
+EOF
+(( $? == 0 )) || \
+    tce_die "failed to write RCF configuration"
+
+for type in ${!tce_type_comp[@]} ; do
+    base="${tce_build_base[${type}]}"
+
+    cat 2> /dev/null >> "${conf_file}" << EOF
+
+ta_type:
+    name: "${type}"
+    base: "${base}"
+EOF
+    (( $? == 0 )) \
+        || tce_die "failed to write RCF configuration for ${type}"
+
+    for comp in ${tce_type_comp[$type]} ; do
+        build="${tce_type_comp_build[${type}_${comp}]}"
+        cat 2> /dev/null >> "${conf_file}" << EOF
+
+    ta_comp:
+        name:  "${comp}"
+        build: "${build}"
+EOF
+        (( $? == 0 )) \
+            || tce_die "failed to write RCF configuration for ${type}/${comp}"
+    done
+done

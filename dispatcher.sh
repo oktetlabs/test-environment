@@ -1107,6 +1107,15 @@ if test -n "${LIVE_LOG}" ; then
     LIVE_LOG_PID=$!
 fi
 
+# Provide TCE paths for RCF
+if test -n "${TE_DO_TCE}" ; then
+    tce_conf="${TE_TMP}/tce_conf.yaml"
+    te_tce_conf "${TE_DO_TCE}" "${tce_conf}" || exit 1
+
+    # TODO(Boleslav Stankevich): The configuration will be provided to RCF on
+    #                            the following commit.
+fi
+
 te_log_message Dispatcher Start "Starting TEN applications"
 START_OK=0
 

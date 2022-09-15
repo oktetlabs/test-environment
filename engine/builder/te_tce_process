@@ -13,9 +13,6 @@ SCRIPT_DIR=`dirname $0`
 
 TCE_LIST="$1"
 
-tce_clean_workspace \
-    || tce_die "failed to create workspace"
-
 tce_set_build_base \
     || tce_die "failed to locate base directories for builds"
 
