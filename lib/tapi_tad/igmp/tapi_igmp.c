@@ -689,7 +689,10 @@ tapi_igmp3_src_list_add(tapi_igmp3_src_list_t *src_list, in_addr_t addr)
     in_addr_t *tmp_list;
     int        tmp_size;
 
-    if ((src_list == NULL) || (src_list->src_no_max <= 0))
+    if ((src_list == NULL) ||
+        (src_list->src_addr == NULL) ||
+        (src_list->src_no_max <= 0) ||
+        (src_list->src_no >= TAPI_IGMP3_SRC_LIST_SIZE_MAX))
     {
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
@@ -697,6 +700,8 @@ tapi_igmp3_src_list_add(tapi_igmp3_src_list_t *src_list, in_addr_t addr)
     if (src_list->src_no >= src_list->src_no_max)
     {
         tmp_size = src_list->src_no_max * 2;
+        assert(src_list->src_no < tmp_size);
+
         tmp_list = (in_addr_t *)realloc(src_list->src_addr,
                                         sizeof(in_addr_t *) * tmp_size);
         if (tmp_list == NULL)
@@ -942,7 +947,8 @@ tapi_igmp3_group_list_add(tapi_igmp3_group_list_t *group_list,
 
     if ((group_list == NULL) ||
         (group_list->groups == NULL) ||
-        (group_list->groups_no_max <= 0))
+        (group_list->groups_no_max <= 0) ||
+        (group_list->groups_no >= TAPI_IGMP3_GROUP_LIST_SIZE_MAX))
     {
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
@@ -950,6 +956,8 @@ tapi_igmp3_group_list_add(tapi_igmp3_group_list_t *group_list,
     if (group_list->groups_no >= group_list->groups_no_max)
     {
         tmp_size = group_list->groups_no_max * 2;
+        assert(group_list->groups_no < tmp_size);
+
         tmp_records = realloc(group_list->groups,
                               tmp_size * sizeof(tapi_igmp3_group_record_t *));
         if (tmp_records == NULL)

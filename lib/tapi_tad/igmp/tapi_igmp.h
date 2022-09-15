@@ -95,6 +95,12 @@ typedef enum {
 
 #define TAPI_IGMP3_GROUP_RECORD_HDR_LEN 8
 
+/** Maximum number of Source Addresses in list (see RFC 3376) */
+#define TAPI_IGMP3_SRC_LIST_SIZE_MAX    65535
+
+/** Maximum number of Group Records in list (see RFC 3376) */
+#define TAPI_IGMP3_GROUP_LIST_SIZE_MAX  65535
+
 
 /**
  * IGMPv3 Source Address List (simple array) storage
