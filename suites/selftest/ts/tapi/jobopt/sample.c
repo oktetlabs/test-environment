@@ -33,6 +33,39 @@
 #include "tapi_test.h"
 
 
+static void
+check_vector(const te_vec *args, size_t exp_len, const char ***exp_strs)
+{
+    size_t i;
+    const char **exp_block;
+
+    if (te_vec_size(args) != exp_len)
+    {
+        TEST_VERDICT("Number of constructed arguments is not as expected: "
+                     "got %zu, expected %zu",
+                     te_vec_size(args), exp_len);
+    }
+
+    for (i = 0, exp_block = exp_strs[0]; i < exp_len - 1; i++)
+    {
+        const char *val = TE_VEC_GET(const char *, args, i);
+
+        if (val == NULL)
+            TEST_VERDICT("%zu'th argument is NULL", i);
+
+        if (strcmp(val, *exp_block) != 0)
+        {
+            TEST_VERDICT("%zu'th argument differs: got '%s', expected '%s'",
+                         i, val, *exp_block);
+        }
+        if (*++exp_block == NULL)
+            exp_block = *++exp_strs;
+    }
+
+    if (TE_VEC_GET(const char *, args, i) != NULL)
+        TEST_VERDICT("The arguments vector is not properly terminated");
+}
+
 int
 main(int argc, char **argv)
 {
@@ -81,7 +114,8 @@ main(int argc, char **argv)
             TAPI_JOB_OPT_UINT_T("--uint=", TRUE, NULL, data_sample, opt_uint1),
             TAPI_JOB_OPT_UINT_T("--uint=", TRUE, NULL, data_sample, opt_uint2),
             TAPI_JOB_OPT_UINT_T_HEX("-h", FALSE, "h", data_sample, opt_uint3),
-            TAPI_JOB_OPT_UINT_T_OCTAL("-o", FALSE, NULL, data_sample, opt_uint4),
+            TAPI_JOB_OPT_UINT_T_OCTAL("-o", FALSE, NULL, data_sample,
+                                      opt_uint4),
             TAPI_JOB_OPT_DOUBLE("-d", FALSE, NULL, data_sample, dbl1),
             TAPI_JOB_OPT_DOUBLE("-d", FALSE, NULL, data_sample, dbl2),
             TAPI_JOB_OPT_STRING("-s", FALSE, data_sample, str),
@@ -157,9 +191,14 @@ main(int argc, char **argv)
         "--addr_port", "127.0.0.1:8888",
 #endif
         "--enum", "E2",
-        "--yes", "--no"
+        "--yes", "--no",
+        NULL
     };
-    unsigned i;
+    static const char *extra_strings[] = {
+        "string1",
+        "string2",
+        NULL
+    };
 
     TEST_START;
 
@@ -168,33 +207,21 @@ main(int argc, char **argv)
                                      option_descs, &option_data,
                                      &result_args));
     TEST_STEP("Checking the vector contains expected items");
+    check_vector(&result_args, TE_ARRAY_LEN(expected_strs),
+                 (const char **[]){expected_strs});
 
-    if (te_vec_size(&result_args) != TE_ARRAY_LEN(expected_strs) + 1)
-    {
-        for (i = 0; i < te_vec_size(&result_args); i++)
-            RING("---- %s", TE_VEC_GET(const char *, &result_args, i));
+    TEST_STEP("Extending the vector");
+    CHECK_RC(tapi_job_opt_append_strings(extra_strings, &result_args));
+    CHECK_RC(tapi_job_opt_append_args(option_descs, &option_data,
+                                      &result_args));
 
-        TEST_VERDICT("Number of constructed arguments is not as expected: "
-                     "got %zu, expected %zu",
-                     te_vec_size(&result_args),
-                     TE_ARRAY_LEN(expected_strs) + 1);
-    }
-
-    for (i = 0; i < TE_ARRAY_LEN(expected_strs); i++)
-    {
-        const char *val = TE_VEC_GET(const char *, &result_args, i);
-
-        if (val == NULL)
-            TEST_VERDICT("%u'th argument is NULL", i);
-
-        if (strcmp(val, expected_strs[i]) != 0)
-        {
-            TEST_VERDICT("%u'th argument differs: got '%s', expected '%s'",
-                         i, val, expected_strs[i]);
-        }
-    }
-    if (TE_VEC_GET(const char *, &result_args, i) != NULL)
-        TEST_VERDICT("The arguments vector is not properly terminated");
+    TEST_STEP("Checking the extended vector");
+    check_vector(&result_args,
+                 TE_ARRAY_LEN(expected_strs) +
+                 (TE_ARRAY_LEN(extra_strings) - 1) +
+                 (TE_ARRAY_LEN(expected_strs) - 2),
+                 (const char **[]){expected_strs, extra_strings,
+                     expected_strs + 1});
 
     TEST_SUCCESS;
 

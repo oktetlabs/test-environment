@@ -262,13 +262,28 @@ tapi_job_opt_bind2str(const tapi_job_opt_bind *bind, const void *opt,
     return 0;
 }
 
+static te_errno
+tapi_job_opt_bind_args(const tapi_job_opt_bind *binds,
+                       const void *opt, te_vec *tool_args)
+{
+    te_errno rc;
+    const tapi_job_opt_bind *bind;
+
+    for (bind = binds; bind->fmt_func != NULL; bind++)
+    {
+        rc = tapi_job_opt_bind2str(bind, opt, tool_args);
+        if (rc != 0)
+            return rc;
+    }
+
+    return TE_VEC_APPEND_RVALUE(tool_args, const char *, NULL);
+}
+
 te_errno
 tapi_job_opt_build_args(const char *path, const tapi_job_opt_bind *binds,
                          const void *opt, te_vec *tool_args)
 {
     te_vec args = TE_VEC_INIT(char *);
-    const char *end_arg = NULL;
-    const tapi_job_opt_bind *bind;
     te_errno rc;
 
     rc = te_vec_append_str_fmt(&args, "%s", path);
@@ -277,15 +292,10 @@ tapi_job_opt_build_args(const char *path, const tapi_job_opt_bind *binds,
 
     if (binds != NULL)
     {
-        for (bind = binds; bind->fmt_func != NULL; bind++)
-        {
-            rc = tapi_job_opt_bind2str(bind, opt, &args);
-            if (rc != 0)
-                goto out;
-        }
+        rc = tapi_job_opt_bind_args(binds, opt, &args);
+        if (rc != 0)
+            goto out;
     }
-
-    rc = TE_VEC_APPEND(&args, end_arg);
 
 out:
     if (rc != 0)
@@ -294,6 +304,37 @@ out:
     *tool_args = args;
 
     return rc;
+}
+
+static void
+tapi_job_opt_maybe_remove_trail(te_vec *tool_args)
+{
+    size_t len = te_vec_size(tool_args);
+
+    if (len > 0 && TE_VEC_GET(const char *, tool_args, len - 1) == NULL)
+        te_vec_remove_index(tool_args, len - 1);
+}
+
+te_errno
+tapi_job_opt_append_strings(const char **items, te_vec *tool_args)
+{
+    te_errno rc;
+
+    tapi_job_opt_maybe_remove_trail(tool_args);
+    rc = te_vec_append_strarray(tool_args, items);
+    if (rc == 0)
+        rc = TE_VEC_APPEND_RVALUE(tool_args, const char *, NULL);
+
+    return rc;
+}
+
+te_errno
+tapi_job_opt_append_args(const tapi_job_opt_bind *binds, const void *opt,
+                         te_vec *tool_args)
+{
+    tapi_job_opt_maybe_remove_trail(tool_args);
+
+    return tapi_job_opt_bind_args(binds, opt, tool_args);
 }
 
 te_errno

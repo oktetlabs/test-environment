@@ -97,10 +97,50 @@ typedef struct tapi_job_opt_array {
  * @note @p tool_args contents is overwritten by this function, so
  *       it should have no elements prior to the call, or a memory
  *       leak would ensue.
+ *
+ * @sa tapi_job_opt_append_strings()
+ * @sa tapi_job_opt_append_args()
  */
 extern te_errno tapi_job_opt_build_args(const char *path,
                                         const tapi_job_opt_bind *binds,
                                         const void *opt, te_vec *tool_args);
+
+/**
+ * Append a list of strings to an already built argument vector.
+ *
+ * The terminating @c NULL is moved accordingly.
+ *
+ * @param[in]      items      @c NULL-terminated array of strings
+ *                            (they are strdup'ed in the vector).
+ * @param[in,out]  tool_args  Argument vector (must be initialized).
+ *
+ * @return Status code
+ *
+ * @sa tapi_job_opt_build_args()
+ */
+extern te_errno tapi_job_opt_append_strings(const char **items,
+                                            te_vec *tool_args);
+
+/**
+ * Append options to an already built argument vector.
+ *
+ * The terminating @c NULL is moved accordingly.
+ *
+ *
+ * @param[in]     binds        Binds between @p opt and produced arguments,
+ *                             or @c NULL.
+ * @param[in]     opt          Tool's custom option struct which is forwarded
+ *                             to argument formatting callback, or @c NULL
+ *                             if the previous argument is @c NULL.
+ * @param[in,out] tool_args    Argument vector (must be initialized).
+ *
+ * @return Status code.
+ *
+ * @sa tapi_job_opt_build_args()
+ */
+extern te_errno tapi_job_opt_append_args(const tapi_job_opt_bind *binds,
+                                         const void *opt, te_vec *tool_args);
+
 
 /** Unsigned integer which can be left undefined */
 typedef struct tapi_job_opt_uint_t {
