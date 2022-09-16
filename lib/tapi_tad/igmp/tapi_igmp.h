@@ -935,6 +935,82 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
                              (_group_addr), (_src_addr), (_src_mac), _addr1)
 
 /**
+ * Send IGMPv3 report with one Group Record of MODE_IS_INCLUDE type.
+ *
+ * @param _pco         RPC server.
+ * @param _csap        igmp.ip4.eth CSAP handle to send IGMP message through.
+ * @param _group_addr  Multicast Group Address.
+ * @param _src_addr    IPv4 layer Source Address field or @c INADDR_ANY to
+ *                     keep unspecified.
+ * @param _src_mac     Ethernet layer Source Address field or @c NULL to keep
+ *                     unspecified.
+ * @param ...          List of source addresses to be added to the record.
+ *                     May be omitted.
+ */
+#define IGMP3_SEND_IS_INCLUDE(_pco, _csap, _group_addr,               \
+                              _src_addr, _src_mac, ...)               \
+    IGMP3_SEND_SINGLE_REPORT((_pco), (_csap), IGMPV3_MODE_IS_INCLUDE, \
+                             (_group_addr), (_src_addr), (_src_mac)   \
+                             __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * Send IGMPv3 report with one Group Record of MODE_IS_EXCLUDE type.
+ *
+ * @param _pco         RPC server.
+ * @param _csap        igmp.ip4.eth CSAP handle to send IGMP message through.
+ * @param _group_addr  Multicast Group Address.
+ * @param _src_addr    IPv4 layer Source Address field or @c INADDR_ANY to
+ *                     keep unspecified.
+ * @param _src_mac     Ethernet layer Source Address field or @c NULL to keep
+ *                     unspecified.
+ * @param ...          List of source addresses to be added to the record.
+ *                     May be omitted.
+ */
+#define IGMP3_SEND_IS_EXCLUDE(_pco, _csap, _group_addr,               \
+                              _src_addr, _src_mac, ...)               \
+    IGMP3_SEND_SINGLE_REPORT((_pco), (_csap), IGMPV3_MODE_IS_EXCLUDE, \
+                             (_group_addr), (_src_addr), (_src_mac)   \
+                             __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * Send IGMPv3 report with one Group Record of CHANGE_TO_INCLUDE type.
+ *
+ * @param _pco         RPC server.
+ * @param _csap        igmp.ip4.eth CSAP handle to send IGMP message through.
+ * @param _group_addr  Multicast Group Address.
+ * @param _src_addr    IPv4 layer Source Address field or @c INADDR_ANY to
+ *                     keep unspecified.
+ * @param _src_mac     Ethernet layer Source Address field or @c NULL to keep
+ *                     unspecified.
+ * @param ...          List of source addresses to be added to the record.
+ *                     May be omitted.
+ */
+#define IGMP3_SEND_TO_INCLUDE(_pco, _csap, _group_addr,                 \
+                              _src_addr, _src_mac, ...)                 \
+    IGMP3_SEND_SINGLE_REPORT((_pco), (_csap), IGMPV3_CHANGE_TO_INCLUDE, \
+                             (_group_addr), (_src_addr), (_src_mac)     \
+                             __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * Send IGMPv3 report with one Group Record of CHANGE_TO_EXCLUDE type.
+ *
+ * @param _pco         RPC server.
+ * @param _csap        igmp.ip4.eth CSAP handle to send IGMP message through.
+ * @param _group_addr  Multicast Group Address.
+ * @param _src_addr    IPv4 layer Source Address field or @c INADDR_ANY to
+ *                     keep unspecified.
+ * @param _src_mac     Ethernet layer Source Address field or @c NULL to keep
+ *                     unspecified.
+ * @param ...          List of source addresses to be added to the record.
+ *                     May be omitted.
+ */
+#define IGMP3_SEND_TO_EXCLUDE(_pco, _csap, _group_addr,                 \
+                              _src_addr, _src_mac, ...)                 \
+    IGMP3_SEND_SINGLE_REPORT((_pco), (_csap), IGMPV3_CHANGE_TO_EXCLUDE, \
+                             (_group_addr), (_src_addr), (_src_mac)     \
+                             __VA_OPT__(,) __VA_ARGS__)
+
+/**
  * Send IGMPv3 query.
  *
  * @param _pco         RPC server.
