@@ -453,18 +453,6 @@ tapi_igmp3_add_report_pdu(asn_value               **tmpl_or_ptrn,
 {
     asn_value *tmp_pdu;
     int        type = TAPI_IGMP3_TYPE_REPORT;
-    uint8_t   *data;
-    int        data_len;
-    int        offset = 0;
-
-    assert(group_list != NULL);
-
-    data_len = tapi_igmp3_group_list_length(group_list);
-    if ((data = (uint8_t *)calloc(data_len, 1)) == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-
-    CHECK_RC(tapi_igmp3_group_list_gen_bin(group_list, data,
-                                           data_len, &offset));
 
     CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,
                                           ndn_igmp_message, "#igmp",
@@ -474,11 +462,21 @@ tapi_igmp3_add_report_pdu(asn_value               **tmpl_or_ptrn,
 
     if (group_list != NULL)
     {
+        uint8_t *data = NULL;
+        int      data_len = 0;
+        int      offset = 0;
+
         CHECK_RC(asn_write_int32(tmp_pdu, group_list->groups_no,
                                  "number-of-groups.#plain"));
 
+        data_len = tapi_igmp3_group_list_length(group_list);
+        if ((data = (uint8_t *)calloc(data_len, 1)) == NULL)
+            TE_FATAL_ERROR("Memory allocation failure");
+        CHECK_RC(tapi_igmp3_group_list_gen_bin(group_list, data,
+                                               data_len, &offset));
         CHECK_RC(asn_write_value_field(tmp_pdu, data, data_len,
                                        "group-record-list.#plain"));
+        free(data);
     }
     else if (!is_pattern)
     {
@@ -492,8 +490,6 @@ tapi_igmp3_add_report_pdu(asn_value               **tmpl_or_ptrn,
 
     if (pdu != NULL)
         *pdu = tmp_pdu;
-
-    free(data);
 
     return 0;
 }
