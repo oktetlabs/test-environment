@@ -93,6 +93,10 @@ typedef struct tapi_job_opt_array {
  * @param[out] tool_args    Vector with command line arguments.
  *
  * @return Status code.
+ *
+ * @note @p tool_args contents is overwritten by this function, so
+ *       it should have no elements prior to the call, or a memory
+ *       leak would ensue.
  */
 extern te_errno tapi_job_opt_build_args(const char *path,
                                         const tapi_job_opt_bind *binds,
