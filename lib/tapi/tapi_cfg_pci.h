@@ -25,7 +25,8 @@ extern "C" {
 
 /** Driver type */
 enum tapi_cfg_driver_type {
-    NET_DRIVER_TYPE_NET = 0, /**< Kernel network interface driver */
+    NET_DRIVER_TYPE_NONE = 0, /**< No driver */
+    NET_DRIVER_TYPE_NET, /**< Kernel network interface driver */
     NET_DRIVER_TYPE_DPDK, /**< DPDK-compatible driver */
 };
 

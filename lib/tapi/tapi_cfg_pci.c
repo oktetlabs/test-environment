@@ -390,6 +390,12 @@ tapi_cfg_pci_get_ta_driver(const char *ta,
 
     switch (type)
     {
+        case NET_DRIVER_TYPE_NONE:
+            *driver = strdup("");
+            if (*driver == 0)
+                return TE_RC(TE_TAPI, TE_ENOMEM);
+            return 0;
+
         case NET_DRIVER_TYPE_NET:
             driver_prefix = "net";
             break;
