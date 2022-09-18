@@ -192,6 +192,7 @@
 #include "te_kvpair.h"
 #include "rcf_api.h"
 #include "rcf_methods.h"
+#include "rcf_tce_conf.h"
 
 #include "comm_net_engine.h"
 
@@ -282,6 +283,11 @@ typedef struct unix_ta {
                                      started the agent */
 
     struct rcf_net_connection  *conn;   /**< Connection handle */
+
+    /** The TE engine part of the TCE configuration. */
+    const rcf_tce_local_conf_t *tce_local;
+    /** The TA agent part of the TCE configuration. */
+    const rcf_tce_type_conf_t  *tce_type;
 } unix_ta;
 
 /** Free resources allocated for TA control structure */
@@ -475,6 +481,36 @@ rcfunix_connect_to(const unix_ta *ta, te_bool ignore_proxy)
 }
 
 /**
+ * Load the TCE configuration on a TA agent started.
+ *
+ * The RCF/unix controller can be re-started when:
+ * - the soft reboot does not allowed,
+ * - the TA agent has been rebooted.
+ * In the such case the finish operation has not been called and the TCE
+ * configuration is already loaded.
+ *
+ * @param ta    The TA configuration.
+ * @param param RCF parameters.
+ *
+ * @return The status code.
+ */
+static void
+ta_conf_tce(unix_ta *ta, const rcf_talib_param *param)
+{
+    const rcf_tce_conf_t *conf = param->tce_conf;
+    const rcf_tce_type_conf_t *type;
+
+    if (ta->tce_local != NULL)
+        return;
+
+    if ((type = rcf_tce_get_type_conf(conf, ta->ta_type)) == NULL)
+        return;
+
+    ta->tce_local = &conf->local;
+    ta->tce_type = type;
+}
+
+/**
  * Start the Test Agent. Note that it's not necessary
  * to restart the proxy Test Agents after rebooting of
  * the NUT, which it serves.
@@ -512,8 +548,6 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     te_bool     shell_is_bash = TRUE;
 
     unsigned int timestamp;
-
-    UNUSED(param);
 
     if (ta_name == NULL || ta_type == NULL ||
         ta_name[0] == '\0' || strlen(ta_name) >= RCF_MAX_NAME ||
@@ -555,6 +589,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     strcpy(ta->ta_name, ta_name);
     strcpy(ta->ta_type, ta_type);
+
+    ta_conf_tce(ta, param);
 
     /* Set default timeouts */
     ta->copy_timeout = RCFUNIX_COPY_TIMEOUT;
