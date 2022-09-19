@@ -56,7 +56,7 @@ extern te_errno tad_igmp_destroy_cb(csap_p       csap,
                                     unsigned int layer);
 
 /**
- * Callback for confirm template PDU with IGMPv2 CSAP
+ * Callback for confirm template PDU with IGMP CSAP
  * parameters and possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
@@ -67,7 +67,7 @@ extern te_errno tad_igmp_confirm_tmpl_cb(csap_p         csap,
                                          void         **p_opaque);
 
 /**
- * Callback for confirm pattern PDU with IGMPv2 CSAP
+ * Callback for confirm pattern PDU with IGMP CSAP
  * parameters and possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
@@ -94,7 +94,7 @@ extern te_errno tad_igmp_gen_bin_cb(csap_p                csap,
 /**
  * Callback for parse received packet and match it with pattern.
  *
- * The function complies with csap_layer_match_bin_cb_t prototype.
+ * The function complies with csap_layer_match_do_cb_t prototype.
  */
 extern te_errno tad_igmp_match_do_cb(csap_p           csap,
                                      unsigned int     layer,
@@ -104,10 +104,20 @@ extern te_errno tad_igmp_match_do_cb(csap_p           csap,
                                      tad_pkt         *pdu,
                                      tad_pkt         *sdu);
 
+/**
+ * Callback to allocate and prepare per received packet layer IGMP data.
+ *
+ * The function complies with csap_layer_match_pre_cb_t prototype.
+ */
 extern te_errno tad_igmp_match_pre_cb(csap_p              csap,
                                       unsigned int        layer,
                                       tad_recv_pkt_layer *meta_pkt_layer);
 
+/**
+ * Callback to convert IGMP data to ASN.1 representation for matched packet.
+ *
+ * The function complies with csap_layer_match_post_cb_t prototype.
+ */
 extern te_errno tad_igmp_match_post_cb(csap_p              csap,
                                        unsigned int        layer,
                                        tad_recv_pkt_layer *meta_pkt_layer);
