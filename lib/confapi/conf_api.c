@@ -1016,7 +1016,7 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
     switch (type)
     {
         case CVT_INT32:
-            value.val_int32 = va_arg(list, int32_t);
+            value.val_int32 = (int32_t)va_arg(list, int);
             break;
 
         case CVT_UINT64:
@@ -1468,7 +1468,7 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
     switch (type)
     {
         case CVT_INT32:
-            value.val_int32 = va_arg(list, int32_t);
+            value.val_int32 = (int32_t)va_arg(list, int);
             break;
 
         case CVT_UINT64:
