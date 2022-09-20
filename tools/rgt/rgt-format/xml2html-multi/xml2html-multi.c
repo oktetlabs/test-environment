@@ -168,7 +168,7 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
         if (len > 0 && docs_url[len - 1] != '/')
         {
             fprintf(stderr, "Warning: URL for test descriptions is not "
-                    "a directory (or trailing '/' is missing)");
+                    "a directory (or trailing '/' is missing)\n");
         }
         else if (len == 0)
         {
