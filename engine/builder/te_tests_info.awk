@@ -42,7 +42,7 @@ function dump() {
     }
 }
 
-/@page/ {
+/@page|@defgroup/ {
     dump()
 
     in_test = 1;
@@ -74,7 +74,7 @@ function dump() {
     }
 }
 
-/@page/ {
+/@page|@defgroup/ {
     if ($1 == "*" || $1 == "**" || $1 == "/**")
         page = $3
     else
@@ -83,7 +83,7 @@ function dump() {
     has_page = 1;
 }
 
-/@endpage/ {
+/@endpage|@endgroup/ {
     in_test = 0;
     has_page = 0;
 }
