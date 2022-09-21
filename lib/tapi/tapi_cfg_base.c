@@ -1388,4 +1388,39 @@ tapi_cfg_base_if_down_up(const char *ta, const char *ifname)
                             "wait before bringing the interface up");
 
     return tapi_cfg_base_if_up(ta, ifname);
+
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_await_link_up(const char *ta, const char *iface,
+                               unsigned int nb_attempts,
+                               unsigned int wait_int_ms,
+                               unsigned int after_up_ms)
+{
+    unsigned int i = 0;
+    int oper_status;
+    te_errno rc;
+
+    if (ta == NULL || iface == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    do {
+        if (i != 0)
+            usleep(wait_int_ms * 1000);
+
+        rc = cfg_get_instance_int_sync_fmt(&oper_status,
+                                           "/agent:%s/interface:%s/oper_status:",
+                                           ta, iface);
+    } while (rc == 0 && oper_status == 0 && i++ < nb_attempts);
+
+    if (rc == 0)
+    {
+        if (oper_status == 1)
+            usleep(after_up_ms * 1000);
+        else
+            rc = TE_RC(TE_TAPI, TE_ETIMEDOUT);
+    }
+
+    return rc;
 }

@@ -594,6 +594,24 @@ tapi_cfg_base_if_down(const char *ta, const char *iface)
 
 }
 
+/**
+ * Await for interface to become up.
+ *
+ * @param ta            Test Agent name
+ * @param iface         Interface name
+ * @param nb_attempts   The number of attempts to check link status
+ * @param wait_int_ms   The amount of time which shall elapse prior attempt (ms)
+ * @param after_up_ms   The amount of time which shall elapse after link UP
+ *                      has been detected in order to wait for the other
+ *                      resources to become ready (ms)
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_await_link_up(const char *ta, const char *iface,
+                                               unsigned int nb_attempts,
+                                               unsigned int wait_int_ms,
+                                               unsigned int after_up_ms);
+
 static inline te_errno
 tapi_cfg_base_if_arp_enable(const char *ta, const char * iface)
 {
