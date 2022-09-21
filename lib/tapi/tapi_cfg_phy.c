@@ -378,6 +378,7 @@ speed_duplex_advertise_op(const char *ta, const char *if_name,
     cfg_handle *modes = NULL;
     char *mode_name = NULL;
     unsigned int i;
+    cfg_val_type val_type;
 
     char *endptr;
     long unsigned int parsed_speed;
@@ -446,7 +447,8 @@ speed_duplex_advertise_op(const char *ta, const char *if_name,
         }
         else
         {
-            rc = cfg_get_instance(modes[i], CVT_INTEGER, &state_int);
+            val_type = CVT_INT32;
+            rc = cfg_get_instance(modes[i], &val_type, &state_int);
             if (rc == 0)
             {
                 *state = (state_int == 0 ? FALSE : TRUE);

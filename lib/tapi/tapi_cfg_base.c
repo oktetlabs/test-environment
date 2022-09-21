@@ -575,6 +575,8 @@ tapi_cfg_save_del_if_addresses(const char *ta,
     struct sockaddr_storage     addr;
     te_errno                    rc = 0;
 
+    cfg_val_type val_type;
+
     if ((addr_fam != AF_INET) && (addr_fam != AF_INET6))
     {
         ERROR("%s(): Invalid addr_fam parameter value %d",
@@ -710,7 +712,8 @@ tapi_cfg_save_del_if_addresses(const char *ta,
             }
         }
 
-        if ((rc = cfg_get_instance(addrs[i], CVT_INT32, &prefix)) != 0)
+        val_type = CVT_INT32;
+        if ((rc = cfg_get_instance(addrs[i], &val_type, &prefix)) != 0)
         {
             ERROR("%s(): Failed to get prefix of address with handle %#x: %r",
                   __FUNCTION__, addrs[i], rc);
