@@ -515,7 +515,7 @@ read_test(void *arg)
         if (ret < 0)
         {
             ERROR("FTP get select() error errno=%d", errno);
-            return (void *)(long)errno;
+            return (void *)(intptr_t)errno;
         }
         if (ret == 0)
         {
@@ -529,7 +529,7 @@ read_test(void *arg)
             if (l < 0)
             {
                 ERROR("FTP get read() error errno=%d", errno);
-                return (void *)(long)errno;
+                return (void *)(intptr_t)errno;
             }
             if (l == 0)
             {
@@ -581,7 +581,7 @@ write_test(void *arg_void)
             if (errno != EAGAIN)
             {
                 ERROR("FTP put write() error errno=%d", errno);
-                return (void *)(long)errno;
+                return (void *)(intptr_t)errno;
             }
 
             gettimeofday(&now, NULL);
@@ -603,7 +603,7 @@ write_test(void *arg_void)
                 if (ret < 0)
                 {
                     ERROR("select() errno=%d", errno);
-                    return (void *)(long)errno;
+                    return (void *)(intptr_t)errno;
                 }
             }
             else
@@ -668,7 +668,7 @@ ftp_test(char *uri_get, char *uri_put, int size)
     VERB("Open OK\n");
 
     if (si >= 0 && pthread_create(&ti, NULL, read_test,
-                                  (void *)(long)si) < 0)
+                                  (void *)(intptr_t)si) < 0)
     {
         int rc = errno;
 

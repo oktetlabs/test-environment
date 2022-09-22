@@ -62,9 +62,9 @@ extern "C" {
 
 /**
  * Macro definition to be used in cfg_{add,set}_instance_fmp() calls.
- * Here it is assumed that 'long' type has the same size as 'void *'.
+ * Here it is assumed that 'intptr_t' type has the same size as 'void *'.
  */
-#define CFG_VAL(_t, _v)     CVT_##_t, ((const void *)(long)(_v))
+#define CFG_VAL(_t, _v)     CVT_##_t, ((const void *)(intptr_t)(_v))
 
 /**
  * Object and object instances handle.

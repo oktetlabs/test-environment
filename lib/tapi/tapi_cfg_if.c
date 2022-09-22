@@ -296,7 +296,7 @@ tapi_cfg_if_common_set(const char *ta, const char *ifname,
 {
     te_errno rc;
 
-    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *)(long)val,
+    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *)(intptr_t)val,
                                    TE_CFG_TA_IF_FMT "/%s:", ta,
                                    ifname, field)) != 0)
         ERROR("Failed to set %s value: %r", field, rc);

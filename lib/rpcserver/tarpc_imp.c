@@ -9822,7 +9822,7 @@ fill_sigev_thread(struct sigevent *sig, char *function)
         {
             if (strcmp(function, AIO_WRONG_CALLBACK) == 0)
                 sig->sigev_notify_function =
-                    (void *)(long)rand_range(1, 0xFFFFFFFF);
+                    (void *)(intptr_t)rand_range(1, 0xFFFFFFFF);
             else
                 WARN("Failed to find address of AIO callback %s - "
                      "use NULL callback", function);

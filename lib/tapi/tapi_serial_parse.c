@@ -105,7 +105,7 @@ tapi_serial_parser_add(tapi_parser_id *id)
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INT32, (void *)(long)id->interval,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *)(intptr_t)id->interval,
                               TE_SERIAL_PARSER "/interval:", id->ta,
                               id->name);
     if (rc != 0)
@@ -114,7 +114,7 @@ tapi_serial_parser_add(tapi_parser_id *id)
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INT32, (void *)(long)id->port,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *)(intptr_t)id->port,
                               TE_SERIAL_PARSER "/port:", id->ta,
                               id->name);
     if (rc != 0)
@@ -368,7 +368,7 @@ tapi_serial_handler_ext_add(const char *ev_name, const char *h_name,
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INT32, (void *)(long)priority,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *)(intptr_t)priority,
                              TE_TESTER_HANDL "/priority:", ev_name, h_name);
     if (rc != 0)
     {
@@ -403,7 +403,7 @@ tapi_serial_handler_int_add(const char *ev_name, const char *h_name,
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INT32, (void *)(long)priority,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *)(intptr_t)priority,
                              TE_TESTER_HANDL "/priority:", ev_name, h_name);
     if (rc != 0)
     {
