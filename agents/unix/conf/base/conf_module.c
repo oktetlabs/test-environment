@@ -1561,7 +1561,14 @@ module_loaded_set(unsigned int gid, const char *oid, char *value,
     }
     else
     {
-        rc = mod_unload(module);
+        if (loaded)
+        {
+            rc = mod_unload(module);
+        }
+        else
+        {
+            RING("Module %s is not loaded, ignoring unload command", mod_name);
+        }
     }
 
     if (rc == 0)
