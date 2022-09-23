@@ -5422,6 +5422,20 @@ struct tarpc_copy_fd2fd_out {
                                      or @c -1 on error. */
 };
 
+/* te_file_check_executable() */
+struct tarpc_te_file_check_executable_in {
+    struct tarpc_in_arg common;
+
+    string path<>;
+};
+
+struct tarpc_te_file_check_executable_out
+{
+    struct tarpc_out_arg common;
+
+    tarpc_int retval; /**< @c 0 on success, otherwise - fail. */
+};
+
 /* remove_dir_with_files() */
 struct tarpc_remove_dir_with_files_in {
     struct tarpc_in_arg common;
@@ -5847,6 +5861,8 @@ program tarpc
         RPC_DEF(send_flooder_iomux)
 
         RPC_DEF(copy_fd2fd)
+
+        RPC_DEF(te_file_check_executable)
 
         RPC_DEF(remove_dir_with_files)
         RPC_DEF(malloc_misaligned)

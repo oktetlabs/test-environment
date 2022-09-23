@@ -84,6 +84,7 @@
 #include "te_hex_diff_dump.h"
 #include "te_time.h"
 #include "te_intset.h"
+#include "te_file.h"
 
 #include "agentlib.h"
 #include "iomux.h"
@@ -11850,6 +11851,12 @@ copy_fd2fd(tarpc_copy_fd2fd_in *in)
 TARPC_FUNC_STATIC(copy_fd2fd, {},
 {
    MAKE_CALL(out->retval = func_ptr(in));
+})
+
+/*-------------- te_file_check_executable() --------------*/
+TARPC_FUNC(te_file_check_executable, {},
+{
+    MAKE_CALL(out->retval = func(in->path));
 })
 
 /**

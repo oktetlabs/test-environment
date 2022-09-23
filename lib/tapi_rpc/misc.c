@@ -3391,3 +3391,39 @@ rpc_remove_dir_with_files(rcf_rpc_server *rpcs, const char *path)
     TAPI_RPC_LOG(rpcs, remove_dir_with_files, "%s", "%d", path, out.retval);
     RETVAL_ZERO_INT(remove_dir_with_files, out.retval);
 }
+
+/* See the description in tapi_rpc_misc.h */
+te_errno
+rpc_te_file_check_executable(rcf_rpc_server *rpcs,
+                             const char *path)
+{
+    struct tarpc_te_file_check_executable_in in;
+    struct tarpc_te_file_check_executable_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __func__);
+        RETVAL_TE_ERRNO(te_file_check_executable, TE_EINVAL);
+    }
+
+    if (path == NULL)
+    {
+        ERROR("%s(): Invalid 'path'", __func__);
+        RETVAL_TE_ERRNO(te_file_check_executable, TE_EINVAL);
+    }
+
+    in.path = strdup(path);
+
+    rcf_rpc_call(rpcs, "te_file_check_executable", &in, &out);
+    out.common.errno_changed = FALSE;
+
+    free(in.path);
+
+    TAPI_RPC_LOG(rpcs, te_file_check_executable, "\"%s\"", "%d",
+                 path, out.retval);
+
+    RETVAL_TE_ERRNO(te_file_check_executable, out.retval);
+}

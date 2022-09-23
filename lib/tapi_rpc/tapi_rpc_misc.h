@@ -1434,6 +1434,23 @@ extern void rpc_release_rpc_ptr(
  */
 extern int rpc_remove_dir_with_files(rcf_rpc_server *rpcs, const char *path);
 
+/**
+ * Check that the file is executable.
+ *
+ * @param rpcs      RPC server handle
+ * @param path      path to the file
+ *
+ * @return Status code.
+ *
+ * @note If @p path doesn't start with @c / or @c ./ or @c ../
+ *       then @p path is searched in directories from the remote @c PATH.
+ *       Otherwise, only the path itself is checked.
+ *
+ * @sa te_file_check_executable()
+ */
+extern te_errno rpc_te_file_check_executable(rcf_rpc_server *rpcs,
+                                             const char *path);
+
 /**@} <!-- END te_lib_rpc_misc --> */
 
 #ifdef __cplusplus
