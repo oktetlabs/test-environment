@@ -40,6 +40,13 @@ main(int argc, char **argv)
     TEST_SUBSTEP("Initialize memcahed params on iut");
 
     opt_iut.tcp_port = (const struct sockaddr *)iut_addr;
+    /*
+     * Memcached requires to specify the user when it is stared by root.
+     * At the same time, memcached ignores this parameter when started
+     * as non-root. We always want to run memcached under the current user,
+     * and -u root does this.
+     */
+    opt_iut.username = "root";
 
     CHECK_RC(tapi_job_factory_rpc_create(iut_rpcs, &factory_iut));
 

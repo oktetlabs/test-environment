@@ -53,6 +53,13 @@ main(int argc, char **argv)
     TEST_SUBSTEP("Initialize memcached params on iut");
 
     memcached_opts.tcp_port = (const struct sockaddr *)iut_addr;
+    /*
+     * Memcached requires to specify the user when it is stared by root.
+     * At the same time, memcached ignores this parameter when started
+     * as non-root. We always want to run memcached under the current user,
+     * and -u root does this.
+     */
+    memcached_opts.username = "root";
 
     TEST_SUBSTEP("Check if memaslap is on iut");
     if (rpc_te_file_check_executable(iut_rpcs, memaslap_path) != 0)
