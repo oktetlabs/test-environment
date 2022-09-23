@@ -1654,10 +1654,20 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
 
     if (obj->type != type && type != CVT_NONE)
     {
-        ERROR("cfg_db_add: type (%d) expected - bad type (%d)"
-              "of object (%s)", type, obj->type, obj->oid);
-        ERROR("types: Integer (%d), uint64 (%d), string (%d), address (%d)",
-              CVT_INT32, CVT_UINT64, CVT_STRING, CVT_ADDRESS);
+        int i;
+
+        ERROR("cfg_db_add: type (%d) expected - bad type (%d) of object (%s).\n"
+              "Types: ",
+              type, obj->type, obj->oid);
+        /**
+         * Print via ERROR() all types (except CVT_UNSPECIFIED) with their
+         * value in cfg_val_type enum. The type CVT_INT32 will be printed
+         * twice as "integer" and as "int32".
+         */
+        for (i = 0; i <= CFG_PRIMARY_TYPES_NUM; i++)
+            ERROR("%s (%d), ", cfg_cvt_mapping[i].name,
+                  cfg_cvt_mapping[i].value);
+        ERROR("and that's all.");
         RET(TE_EBADTYPE);
     }
 
