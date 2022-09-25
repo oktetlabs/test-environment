@@ -190,6 +190,7 @@
 #include "te_string.h"
 #include "te_str.h"
 #include "te_kvpair.h"
+#include "te_proto.h"
 #include "rcf_api.h"
 #include "rcf_methods.h"
 #include "rcf_tce_conf.h"
@@ -245,6 +246,7 @@
 typedef enum {
     RCFUNIX_TCE_S_NA = 0,  /**< is in an undefined state */
     RCFUNIX_TCE_S_CLEARED, /**< has been cleared */
+    RCFUNIX_TCE_S_SAVED,   /**< has been saved */
 } rcfunix_tce_state_t;
 
 /** UNIX Test Agent descriptor */
@@ -589,6 +591,52 @@ out:
     te_string_free(&cmd);
 
     return rc;
+}
+
+/**
+ * Fetch and save the TCE information provided by a TA agent.
+ *
+ * There are two points to save the TCE information:
+ * - An RCF/ controller is destroyed on the finish operation.
+ * - A TA agent is requested to reboot the TA host when no soft reboot is
+ *   allowed.
+ * The former is considered to be usual. In this case the TA agent is terminated
+ * and then the TCE information is fetched. In the later the TA agent is still
+ * running. Thus mark the TCE information is saved and left the second case as
+ * a fallback.
+ *
+ * @param ta The TA configuration.
+ *
+ * @return The status code.
+ */
+static te_errno
+ta_save_tce(unix_ta *ta)
+{
+    const rcf_tce_type_conf_t *type = ta->tce_type;
+
+    if (type == NULL)
+        return 0;
+
+    switch (ta->tce_state)
+    {
+        case RCFUNIX_TCE_S_SAVED:
+            return 0;
+        case RCFUNIX_TCE_S_CLEARED:
+            break;
+        default:
+            WARN("TCE: Save not cleared TCE information");
+            break;
+    }
+
+    /*
+     * TODO(Boleslav Stankevich): The command to save .gcda files will be added
+     *                            just after scripts to implement it will be
+     *                            provided on a few following commits.
+     */
+
+    ta->tce_state = RCFUNIX_TCE_S_SAVED;
+
+    return 0;
 }
 
 /**
@@ -1164,6 +1212,8 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
 
     RING("Finish method is called for TA %s", ta->ta_name);
 
+    ta_save_tce(ta);
+
     if (*(ta->flags) & TA_FAKE)
     {
         rc = 0;
@@ -1391,6 +1441,23 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
 }
 
 /**
+ * Determine a TA command is the reboot command.
+ *
+ * @param cmd The command.
+ *
+ * @return TRUE on the reboot command or FALSE otherwise.
+ */
+static te_bool
+cmd_is_reboot(const char *cmd)
+{
+    int pos = 0;
+
+    sscanf(cmd, "SID %*d " TE_PROTO_REBOOT "%n", &pos);
+
+    return pos > 0 && cmd[pos] == '\0';
+}
+
+/**
  * Transmit data to the Test Agent.
  *
  * @param handle        TA handle
@@ -1402,6 +1469,19 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
 static te_errno
 rcfunix_transmit(rcf_talib_handle handle, const void *data, size_t len)
 {
+    unix_ta *ta = (unix_ta *) handle;
+
+    /*
+     * There are two points to save the TCE information:
+     * - An RCF/ controller is destroyed on the finish operation.
+     * - A TA agent is requested to reboot the TA host when no soft reboot is
+     *   allowed and so that no finish operation has been called.
+     * In the former case save the TCE information before the reboot command is
+     * transmitted.
+     */
+    if (ta->tce_type != NULL && cmd_is_reboot(data))
+        ta_save_tce(ta);
+
     return rcf_net_engine_transmit(((unix_ta *)handle)->conn, data, len);
 }
 
