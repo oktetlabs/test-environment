@@ -18,6 +18,7 @@
 #include "rte_config.h"
 #include "rte_version.h"
 #include "rte_eal.h"
+#include "rte_dev.h"
 #include "rte_interrupts.h"
 
 #include "logger_api.h"
