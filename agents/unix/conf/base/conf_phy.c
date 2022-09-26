@@ -147,7 +147,13 @@ phy_speed_get_common(unsigned int gid, const char *oid, char *value,
     if (rc != 0)
         return rc;
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "%u", speed);
+    /*
+     * Currently maximum known speed value is 400000 (SPEED_400000).
+     * It fits into signed int32 (INT32_MAX=2147483647).
+     */
+    rc = te_snprintf(value, RCF_MAX_VAL, "%d",
+                     (speed == (unsigned int)SPEED_UNKNOWN ?
+                                                      -1 : (int)speed));
     if (rc != 0)
     {
         ERROR("%s(): te_snprintf() failed", __FUNCTION__);
