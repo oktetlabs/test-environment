@@ -3364,7 +3364,7 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
 
             wilds_entry = TE_ALLOC(sizeof(*wilds_entry));
             wilds_entry->args = TE_ALLOC(sizeof(*(wilds_entry->args)));
-            TAILQ_INIT(&wilds_entry->args->head);
+            trc_test_iter_args_init(wilds_entry->args);
             get_test_args(&first_child_node, wilds_entry->args);
 
             value = XML2CHAR(xmlGetProp(rule_section_node,
