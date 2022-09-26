@@ -594,6 +594,71 @@ out:
 }
 
 /**
+ * Form options for the SSH command to be used to fetch the TCE information
+ * from a TA host.
+ *
+ * @param      ta  The TA configuration.
+ * @param[out] cmd The command formed.
+ */
+static void
+ta_form_fetch_tce_ssh_opts(unix_ta *ta, te_string *cmd)
+{
+    te_string ops = TE_STRING_INIT;
+
+    te_string_reset(cmd);
+
+    if (ta->is_local)
+        return;
+
+    if (ta->ssh_port != 0)
+        te_string_append(&ops, "-p %u ", ta->ssh_port);;
+
+    if (ta->key[0] != '\0')
+        te_string_append(&ops, "%s ", ta->key);
+
+    if (strstr(te_string_value(&ta->ssh_opts), NO_HKEY_CHK) != NULL)
+        te_string_append(&ops, "%s ", NO_HKEY_CHK);
+
+    if (strlen(te_string_value(&ops)) != 0)
+        te_string_append(cmd, "--ssh-ops=\"%s\" ", te_string_value(&ops));
+
+    if (ta->ssh_proxy[0] != '\0')
+        te_string_append(cmd, "--ssh-proxy=\"-W %%h:%%p %s\" ", ta->ssh_proxy);
+
+    te_string_append(cmd, "--ssh=\"%s%s\" ", ta->user, ta->host);
+
+    te_string_free(&ops);
+}
+
+/**
+ * Form the command to fetch the TCE information provided by a TA component.
+ *
+ * @param      ta      The TA configuration.
+ * @param      ssh_ops The SSH options.
+ * @param      comp    The TCE configuration of the TA component.
+ * @param[out] cmd     The command formed.
+ */
+static void
+ta_form_fetch_tce_comp_cmd(unix_ta *ta, const te_string *ssh_ops,
+                           const rcf_tce_comp_conf_t *comp, te_string *cmd)
+{
+    const rcf_tce_local_conf_t *local = ta->tce_local;
+    const rcf_tce_type_conf_t *type = ta->tce_type;
+
+    te_string_reset(cmd);
+
+    te_string_append(cmd,
+                     "\"%s/te_fetch_tce\" %s "
+                     "--run=\"%s\" --build=\"%s/%s\" --tcews=\"%s\" "
+                     "--type=\"%s\" --comp=\"%s\" --name=\"%s\" 2>&1 "
+                     "| te_tee %s %s 10 " RCFUNIX_REDIRECT,
+                     local->tebin, te_string_value(ssh_ops),
+                     ta->run_dir, type->base, comp->build, local->tcews,
+                     ta->ta_type, comp->name, ta->ta_name,
+                     TE_LGR_ENTITY, ta->ta_name);
+}
+
+/**
  * Fetch and save the TCE information provided by a TA agent.
  *
  * There are two points to save the TCE information:
@@ -613,6 +678,10 @@ static te_errno
 ta_save_tce(unix_ta *ta)
 {
     const rcf_tce_type_conf_t *type = ta->tce_type;
+    const rcf_tce_comp_conf_t *comp = NULL;
+    te_string ssh = TE_STRING_INIT;
+    te_string cmd = TE_STRING_INIT;
+    te_errno rc;
 
     if (type == NULL)
         return 0;
@@ -628,15 +697,28 @@ ta_save_tce(unix_ta *ta)
             break;
     }
 
-    /*
-     * TODO(Boleslav Stankevich): The command to save .gcda files will be added
-     *                            just after scripts to implement it will be
-     *                            provided on a few following commits.
-     */
-
     ta->tce_state = RCFUNIX_TCE_S_SAVED;
 
-    return 0;
+    ta_form_fetch_tce_ssh_opts(ta, &ssh);
+
+    while ((comp = rcf_tce_get_next_comp_conf(type, comp)) != NULL)
+    {
+        ta_form_fetch_tce_comp_cmd(ta, &ssh, comp, &cmd);
+
+        INFO("CMD to save TCE '%s': %s", comp->name, te_string_value(&cmd));
+
+        if ((rc = system_with_timeout(ta->copy_timeout, NULL, "%s",
+                                      te_string_value(&cmd))) != 0)
+        {
+            ERROR("Failed to fetch TCE '%s'", comp->name);
+            break;
+        }
+    }
+
+    te_string_free(&cmd);
+    te_string_free(&ssh);
+
+    return rc;
 }
 
 /**
