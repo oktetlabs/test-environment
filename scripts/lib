@@ -26,3 +26,19 @@ enter () {
 leave () {
     popd >/dev/null
 }
+
+##############################################################
+# Call bash function if it is defined.
+# Arguments:
+#   Function name
+#   All the following arguments are passed to the function
+##############################################################
+function call_if_defined() {
+    local fname="$1"
+
+    shift
+
+    if declare -p -F -f "${fname}" >/dev/null 2>&1 ; then
+        "${fname}" "$@"
+    fi
+}

@@ -1,0 +1,138 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+#
+# Generic interface for reserving and releasing configurations for
+# testing.
+#
+# grab_cfg_* functions should be called via call_if_defined (see
+# scripts/lib), so that absence of this optional API does not break
+# testing.
+#
+
+###########################################################################
+# Initialize internal state for this API.
+# Globals:
+#   grab_cfg_state_grab_func
+#   grab_cfg_state_release_func
+#   grab_cfg_state_enabled
+# Arguments:
+#   Name of the function to grab configuration.
+#     It should take configuration name as the first parameter,
+#     and print to stdout a string which then can be passed to
+#     releasing function. It can also support the second
+#     parameter which is either true or false. If it is true,
+#     configuration should be reserved for the current user
+#     even if another user still owns it.
+#   Name of the function to release configuration.
+#     It should take string printed by grabbing function as its
+#     only parameter.
+###########################################################################
+grab_cfg_init() {
+    grab_cfg_state_grab_func=$1
+    grab_cfg_state_release_func=$2
+    grab_cfg_state_enabled=true
+}
+
+###########################################################################
+# Print help for options configuring this API.
+# Outputs:
+#   Description of command line options related to this API.
+###########################################################################
+grab_cfg_print_help() {
+    cat <<EOF
+  --no-grab-cfg             Do not try to reserve requested configuration
+                            for your user.
+  --steal-cfg               Steal the configuration even if it is owned by
+                            someone else.
+  --release-cfg             Release configuration at the end of testing.
+                            It is intended for use in night testing, when
+                            the configuration is taken and released
+                            automatically.
+EOF
+}
+
+###########################################################################
+# Check whether a given command line option is for this API.
+# Globals:
+#   grab_cfg_state_enabled
+#   grab_cfg_state_steal
+#   grab_cfg_state_release
+# Arguments:
+#   Command line option.
+# Returns:
+#   0 if the option was recognized and processed
+#   1 if the option is not for this API
+###########################################################################
+grab_cfg_check_opt() {
+    local opt=$1
+
+    case "${opt}" in
+        --no-grab-cfg) grab_cfg_state_enabled=false ;;
+
+        --steal-cfg) grab_cfg_state_steal=true ;;
+
+        --release-cfg) grab_cfg_state_release=true ;;
+
+        *) return 1 ;;
+
+    esac
+}
+
+###########################################################################
+# Grab (reserve) testing configuration if required.
+# Globals:
+#   grab_cfg_state_enabled
+#   grab_cfg_state_target
+#   grab_cfg_state_grab_func
+#   grab_cfg_state_steal
+#   grab_cfg_state_taken
+# Arguments:
+#   Configuration name
+# Returns:
+#   0 on success, nonzero otherwise
+###########################################################################
+grab_cfg_process() {
+    local target=$1
+
+    $grab_cfg_state_enabled || return 0
+
+    grab_cfg_state_target="$(call_if_defined \
+                             "${grab_cfg_state_grab_func}" "${target}" \
+                             "${grab_cfg_state_steal}")"
+
+    if [[ $? -eq 0 && -n "${grab_cfg_state_target}" ]] ; then
+        grab_cfg_state_taken=true
+    else
+        echo "Configuration ${target} was not taken" >&2
+        return 1
+    fi
+}
+
+###########################################################################
+# Release previously grabbed testing configuration if it was requested
+# with --cfg-release command line option.
+# Globals:
+#   grab_cfg_state_taken
+#   grab_cfg_state_release
+#   grab_cfg_state_release_func
+#   grab_cfg_state_target
+# Returns:
+#   0 on success, nonzero otherwise
+###########################################################################
+grab_cfg_release() {
+    if ${grab_cfg_state_taken} && ${grab_cfg_state_release} ; then
+        call_if_defined "${grab_cfg_state_release_func}" \
+            "${grab_cfg_state_target}"
+
+        grab_cfg_state_taken=false
+    fi
+}
+
+# Global variables for storing API state
+grab_cfg_state_grab_func=
+grab_cfg_state_release_func=
+grab_cfg_state_target=
+grab_cfg_state_enabled=false
+grab_cfg_state_steal=false
+grab_cfg_state_release=false
+grab_cfg_state_taken=false
