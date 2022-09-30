@@ -3,6 +3,7 @@
 
 engine_scripts = [
     'te_build_suite',
+    'te_fetch_tce',
     'te_functions',
     'te_ta_ssh_helper',
     'te_tce_conf',

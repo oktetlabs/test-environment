@@ -1,0 +1,252 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+#
+# Test Coverage Estimation
+# Fetch TCE from a TA agent host.
+#
+# This script is run by RCF/unix controller.
+# Do not run it directly!
+#
+# This script uses the TA agent ta_fetch_tce utility:
+# - to check the presence of gcda files
+# - to receive them within a cpio file
+# The cpio file is saved on the path TYPE/NAME/COMP/XXXX, where:
+#   TYPE, NAME - TA type and name of TA agent
+#   COMP - TA component the gcda files belong for
+#   XXXX - unique identifier for this save
+#
+# Command line options:
+#   ssh-* - SSH options to connect to the TA host
+#   run - path to the the TA agent executables
+#   build - directory to locate gcda files
+#   tcews - directory to save cpio file into
+#   type, name - TA type and name of TA agent
+#   comp - TA component
+
+ssh_ops=
+ssh_proxy=
+ssh_dest=
+run=
+build=
+tcews=
+type=
+name=
+comp=
+
+#######################################
+# Die with a message.
+# Globals:
+#   type
+#   name
+#   comp
+# Arguments:
+#   Arguments to message.
+# Outputs:
+#   Outputs arguments into STDERR.
+# Returns:
+#   This function never returns.
+#######################################
+function die() {
+    echo "ERROR: TCE: TA '${type}' '${name}' '${comp}': $*" >&2
+    exit 1
+}
+
+#######################################
+# Output an informational message.
+# Globals:
+#   type
+#   name
+#   comp
+# Arguments:
+#   Arguments to message.
+# Outputs:
+#   Outputs arguments into STDERR.
+#######################################
+function info() {
+    echo "INFO: TCE: TA '${type}' '${name}' '${comp}': $*" >&2
+}
+
+#######################################
+# Form the SSH command to access a target.
+# Arguments:
+#   Common SSH options.
+#   The SSH proxy command.
+#   The SSH target.
+# Outputs:
+#   Outputs the SSH command formed.
+#######################################
+function form_ssh_cmd() {
+    local pref="ssh -qxT -o BatchMode=yes"
+    local ops="$1"
+    local proxy="$2"
+    local dest="$3"
+    local cmd=
+
+    [[ -z "${dest}" ]] && return 0
+
+    [[ -n "${proxy}" ]] && \
+        proxy="-o ProxyCommand=\"${pref} ${proxy}\""
+
+    echo "${pref} ${ops} ${proxy} ${dest}"
+}
+
+#######################################
+# Evaluate a command over SSH or locally.
+# Arguments:
+#   The SSH command if required.
+#   The command to evaluate.
+# Outputs:
+#   Provides the output of the evaluated command.
+# Returns:
+#   Provides the result of the evaluated command.
+#######################################
+function eval_cmd() {
+    local ssh="$1"
+    local cmd="$2"
+
+    if [[ -n "${ssh}" ]] ; then
+        eval "${ssh} \"/bin/bash -c '\${cmd}'\""
+    else
+        eval "${cmd}"
+    fi
+}
+
+#######################################
+# Check gcda files are provided.
+# Arguments:
+#   The SSH command if required.
+#   The remote directory where a TA agent is located.
+#   The remote directory to check gcda files into.
+# Outputs:
+#   Outputs a message into STDERR on an error.
+# Returns:
+#   0 if gcda files is provided, non-zero otherwise.
+#   This function never returns on an error.
+#######################################
+function check_tce() {
+    local ssh="$1"
+    local run="$2"
+    local src="$3"
+    local cmd="${run}/ta_fetch_tce check \"${src}\""
+    local answ=
+
+    answ=$(eval_cmd "${ssh}" "${cmd}") \
+        || die "failed to check TCE"
+
+    [[ "$answ" == "Y" ]]
+}
+
+#######################################
+# Fetch gcda files from a TA agent.
+# Arguments:
+#   The SSH command if required.
+#   The remote directory where a TA agent is located.
+#   The remote directory to fetch gcda files from.
+#   The directory to save fetched files info.
+# Outputs:
+#   Provides the STDERR of the TA script used to gather gcda files.
+# Returns:
+#   0 if gcda files is saved, non-zero otherwise.
+#######################################
+function fetch_tce() {
+    local ssh="$1"
+    local run="$2"
+    local src="$3"
+    local dst="$4"
+    local cmd="${run}/ta_fetch_tce fetch \"${src}\""
+
+    eval_cmd "${ssh}" "${cmd}" > "${dst}"
+}
+
+#######################################
+# Form path to a directory to save gcda files info.
+# Arguments:
+#   The TA type.
+#   The TA component.
+#   The name of a TA agent.
+# Outputs:
+#   Outputs the path into STDOUT.
+#######################################
+function tce_wsname() {
+    local type="$1"
+    local comp="$2"
+    local name="$3"
+
+    echo "saves/${type}/${comp}/${name}"
+}
+
+#######################################
+# Create an unique file to store gcda files into.
+# Arguments:
+#   The directory to create the file.
+# Outputs:
+#   Outputs the path to the file.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_mkdest() {
+    local base="$1"
+    local dest=
+
+    mkdir -p "${base}" &> /dev/null \
+        || die "failed to create base directory to save TCE"
+
+    dest="$(mktemp -p "${base}" "XXXX.cpio" 2> /dev/null)" \
+        || die "failed to create directory to save TCE"
+
+    echo "${dest}"
+}
+
+for arg ; do
+    case "$arg" in
+        --ssh-ops=*)
+            ssh_ops="${arg#--ssh-ops=}"
+            ;;
+        --ssh-proxy=*)
+            ssh_proxy="${arg#--ssh-proxy=}"
+            ;;
+        --ssh=*)
+            ssh_dest="${arg#--ssh=}"
+            ;;
+        --run=*)
+            run="${arg#--run=}"
+            ;;
+        --build=*)
+            build="${arg#--build=}"
+            ;;
+        --tcews=*)
+            tcews="${arg#--tcews=}"
+            ;;
+        --type=*)
+            type="${arg#--type=}"
+            ;;
+        --comp=*)
+            comp="${arg#--comp=}"
+            ;;
+        --name=*)
+            name="${arg#--name=}"
+            ;;
+    esac
+    shift
+done
+
+for arg in build tcews type comp name ; do
+    [[ -n "${!arg}" ]] \
+        || die "${arg} is not provided"
+done
+
+ssh_cmd="$(form_ssh_cmd "${ssh_ops}" "${ssh_proxy}" "${ssh_dest}")"
+
+if ! check_tce "${ssh_cmd}" "${run}" "${build}" ; then
+    info "TCE does not provided"
+    exit 0
+fi
+
+wsname="$(tce_wsname "${type}" "${comp}" "${name}")"
+dest="$(tce_mkdest "${tcews}/${wsname}")"
+
+if ! fetch_tce "${ssh_cmd}" "${run}" "${build}" "${dest}" ; then
+    rm -f "${dest}"
+    die "failed to fetch TCE"
+fi
