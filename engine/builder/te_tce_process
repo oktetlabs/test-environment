@@ -165,6 +165,33 @@ function tce_locate_saves() {
 
 tce_locate_saves
 
+#######################################
+# Extract gcda files from a save.
+# Globals:
+#   TCE_WS
+# Arguments:
+#   The name of the save.
+#   The location of the save.
+#   The location to extract the save.
+# Outputs:
+#   Outputs a message on error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_extract_save() {
+    local save="$1"
+    local sbase="$2"
+    local dbase="$3"
+    local dest="${dbase}/${save}/build"
+
+    mkdir -p "${TCE_WS}/${dest}" 2> /dev/null \
+        || tce_die "failed to create "${dest}" for TCE save ${sbase}/${save}"
+
+    cat "${TCE_WS}/${sbase}/${save}.cpio" 2> /dev/null \
+        | cpio -i -D "${TCE_WS}/${dest}" -d 2> /dev/null \
+        || tce_die "failed to extract TCE save ${sbase}/${save}"
+}
+
 function parse_ta_list_line
 {
     local _map=$1
@@ -779,4 +806,51 @@ for tce in $all_tce ; do
     tce_summarise "${mplatform}" "${tce}" \
                   "$(tce_ws_name "${mplatform}" "" "${tce}")" \
                   "${repname}"
+done
+
+#######################################
+# Process the TCE information for a specific TA agent.
+#
+# It is an auxiliary function provided to group some TCE processing operations:
+# - extract saves,
+# - process gcda files on the build host,
+# - resolve the sources of gcov files,
+# - generate the TCE report.
+#
+# Globals:
+#   TCE_WS
+#   TE_BUILD
+#   TE_INSTALL
+#   tce_build_base
+#   tce_saves
+#   tce_type_comp_build
+# Arguments:
+#   The TA type of build.
+#   The name of a TA component.
+#   The name of a TA agent.
+#   The auxiliary directory.
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_process_ta() {
+    local type="$1"
+    local comp="$2"
+    local name="$3"
+    local dbase="$4"
+    local sbase="saves/${type}/${comp}/${name}"
+
+    for save in ${tce_saves["${type}_${comp}_${name}"]} ; do
+        tce_extract_save "${save}" "${sbase}" "${dbase}"
+    done
+}
+
+for comp in "${!tce_types[@]}" ; do
+    for type in ${tce_types["${comp}"]} ; do
+        for name in ${tce_names["${type}_${comp}"]} ; do
+            tce_process_ta "${type}" "${comp}" "${name}" \
+                           "${comp}/${type}/${name}"
+        done
+    done
 done
