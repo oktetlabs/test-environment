@@ -843,6 +843,7 @@ function tce_process_ta() {
 
     for save in ${tce_saves["${type}_${comp}_${name}"]} ; do
         tce_extract_save "${save}" "${sbase}" "${dbase}"
+        tce_process_gcda_on_host "${type}" "${comp}" "${dbase}/${save}"
     done
 }
 
@@ -852,5 +853,7 @@ for comp in "${!tce_types[@]}" ; do
             tce_process_ta "${type}" "${comp}" "${name}" \
                            "${comp}/${type}/${name}"
         done
+
+        tce_clean_on_host "${type}" "${comp}"
     done
 done
