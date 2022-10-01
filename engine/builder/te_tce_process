@@ -72,6 +72,99 @@ done
 
 tce_set_type_comp_build
 
+#######################################
+# List cpio files.
+# Arguments:
+#   The directory to list the files within.
+# Outputs:
+#   The names of cpio files.
+# Returns:
+#   0 if succeeds, non-zero on error.
+#######################################
+function tce_list_cpios() {
+    local base="$1"
+    local cpios=
+
+    pushd "${base}" &> /dev/null || return 1
+
+    cpios="$(find . -type f -name \*.cpio 2> /dev/null)" || return 1
+
+    popd > /dev/null
+
+    echo "${cpios}" | sed "s/\.\///;s/\.cpio//" | sort
+}
+
+#######################################
+# Locate TCE saves
+#
+# RCF/ contollers store cpio with gcda files for components within the saves
+# directory. Let a component COMP is built on the host TYPE. Then for TA agent
+# NAME the gcda files could be saved on the path TYPE/COMP/NAME/XXXX.cpio.
+# Where # XXXX is unique for each save.
+#
+# The operation sets the following dependencies:
+# - tce_types: COMP -> TYPEs
+# - tce_name: TYPE, COMP -> NAMEs
+# - tce_saves: TYPE, COMP, NAME -> saves
+#
+# Globals:
+#   IFS
+#   TCE_WS
+#   tce_types
+#   tce_names
+#   tce_saves
+# Arguments:
+#   None
+# Outputs:
+#   Outputs a message on error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_locate_saves() {
+    local base="${TCE_WS}/saves"
+    local ifs="$IFS"
+    local cpios=
+    local sp=
+    local se=
+    local t=
+    local c=
+    local n=
+    local s=
+    declare -gA tce_types
+    declare -gA tce_names
+    declare -gA tce_saves
+
+    [[ -d "${base}" ]] || return 0
+
+    cpios=$(tce_list_cpios "${base}") \
+        || tce_die "fail to list TCE saves"
+
+    while read sp ; do
+        [[ -z "${sp}" ]] && continue
+
+        grep -q -F " " <<< "${sp}" \
+            && tce_die "invalid TCE save '${sp}', no spaces are expected"
+
+        IFS="/" ; se=( ${sp} ); IFS="${ifs}"
+        [[ "${#se[@]}" -eq 4 ]] \
+            || tce_die "invalid TCE save '${sp}', type, comp, name, save " \
+                       "are expected"
+
+        t="${se[0]}" ; c="${se[1]}"; n="${se[2]}"; s="${se[3]}"
+
+        if ! grep -q -F " ${n}" <<< "${tce_names[${t}_${c}]}" ; then
+            grep -a -F " ${t}" <<< "${tce_types[${c}]}" \
+                || tce_types["${c}"]+=" ${t}"
+
+            tce_names["${t}_${c}"]+=" ${n}"
+        fi
+
+        tce_saves["${t}_${c}_${n}"]+=" ${s}"
+    done < <(echo "${cpios}")
+}
+
+tce_locate_saves
+
 function parse_ta_list_line
 {
     local _map=$1
