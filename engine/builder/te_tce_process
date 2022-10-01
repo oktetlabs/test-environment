@@ -844,6 +844,10 @@ function tce_process_ta() {
     for save in ${tce_saves["${type}_${comp}_${name}"]} ; do
         tce_extract_save "${save}" "${sbase}" "${dbase}"
         tce_process_gcda_on_host "${type}" "${comp}" "${dbase}/${save}"
+
+        tce_link_src_on_build "${type}" "${comp}"
+        tce_link_inst_on_build "${type}" "${comp}"
+        tce_resolve_gcov_on_build "${type}" "${comp}" "${dbase}/${save}"
     done
 }
 
