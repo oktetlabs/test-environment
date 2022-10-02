@@ -871,3 +871,18 @@ for comp in "${!tce_types[@]}" ; do
         tce_clean_on_build "${type}" "${comp}"
     done
 done
+
+for comp in "${!tce_types[@]}" ; do
+    mtype=
+
+    for type in ${tce_types["${comp}"]} ; do
+        [[ -z "${mtype}" ]] && mtype="${type}"
+
+        for name in ${tce_names["${type}_${comp}"]} ; do
+            tce_summarise "${type}" "${comp}" "${comp}/${type}/${name}" \
+                          "tce_log_${type}_${comp}_${name}"
+        done
+    done
+
+    tce_summarise "${mtype}" "${comp}" "${comp}" "tce_log_${comp}"
+done
