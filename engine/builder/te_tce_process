@@ -848,6 +848,9 @@ function tce_process_ta() {
         tce_link_src_on_build "${type}" "${comp}"
         tce_link_inst_on_build "${type}" "${comp}"
         tce_resolve_gcov_on_build "${type}" "${comp}" "${dbase}/${save}"
+
+        tce_copy_gcov_to_build "${type}" "${comp}" "${dbase}/${save}"
+        tce_create_report "${type}" "${comp}" "${dbase}/${save}"
     done
 }
 
@@ -859,5 +862,6 @@ for comp in "${!tce_types[@]}" ; do
         done
 
         tce_clean_on_host "${type}" "${comp}"
+        tce_clean_on_build "${type}" "${comp}"
     done
 done
