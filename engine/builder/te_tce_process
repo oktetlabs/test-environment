@@ -851,6 +851,8 @@ function tce_process_ta() {
 
         tce_copy_gcov_to_build "${type}" "${comp}" "${dbase}/${save}"
         tce_create_report "${type}" "${comp}" "${dbase}/${save}"
+
+        tce_merge_report "${dbase}/${save}" "${dbase}"
     done
 }
 
@@ -859,7 +861,11 @@ for comp in "${!tce_types[@]}" ; do
         for name in ${tce_names["${type}_${comp}"]} ; do
             tce_process_ta "${type}" "${comp}" "${name}" \
                            "${comp}/${type}/${name}"
+
+            tce_merge_report "${comp}/${type}/${name}" "${comp}/${type}"
         done
+
+        tce_merge_report "${comp}/${type}" "${comp}"
 
         tce_clean_on_host "${type}" "${comp}"
         tce_clean_on_build "${type}" "${comp}"
