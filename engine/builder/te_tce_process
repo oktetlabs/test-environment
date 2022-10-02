@@ -192,80 +192,6 @@ function tce_extract_save() {
         || tce_die "failed to extract TCE save ${sbase}/${save}"
 }
 
-function parse_ta_list_line
-{
-    local _map=$1
-    shift
-    local line=( $@ )
-    local platform="${line[2]}"
-    local host="${line[1]}"
-    local hosts=
-
-    test \( -n "${platform}" \) -a \( -n "${host}" \) || \
-        return 1
-
-    hosts="$(eval echo "\${${_map}[${platform}]}")"
-    hosts="${hosts}${hosts:+ }${host}"
-
-    eval "${_map}[${platform}]=\"${hosts}\""
-}
-
-function map_platform_to_hosts
-{
-    local ta_file="${TE_TA_LIST_FILE}"
-    local line=
-    declare -gA platform_hosts
-
-    while read line ; do
-        test -n "$line" || \
-            continue
-        parse_ta_list_line platform_hosts "$line" || \
-            tce_die "fail to parse the list of TA hosts"
-    done < "${ta_file}" || \
-        tce_die "fail to read the list of TA hosts"
-}
-
-map_platform_to_hosts
-
-function set_platform_host_ssh
-{
-    local platform=$1
-    local host=$2
-    local p_host_ssh="${platform}_${host}_SSH"
-    local host_ssh="${!p_host_ssh}"
-    local p_ssh="${platform}_SSH"
-    local ssh="${!p_ssh}"
-
-    test -n "$host_ssh" && \
-        return 0
-
-    host_ssh=$(echo "${ssh}" | sed "s/ [^ ]\+$/ ${host}/")
-
-    export ${p_host_ssh}="${host_ssh}"
-}
-
-function check_host_dir
-{
-    local platform="$1"
-    local host="$2"
-    local dir="$3"
-    local rc=
-
-    te_eval_or_ssh "${platform}_${host}" \
-                   "test -d \"$dir\""
-    rc=$?
-
-    case $rc in
-    0|1)
-        return $rc
-        ;;
-    *)
-        tce_die "fail to check directory: " \
-                "platform ${platform} host {$host}"
-        ;;
-    esac
-}
-
 function rsync_fnmatch_from
 {
     local fnm="$1"
@@ -298,60 +224,6 @@ function rsync_fnmatch_to
     else
         ${rsync} "${src}/" "${dst}/"
     fi
-}
-
-#######################################
-# Form the name of directory to process a TA component.
-#
-# This function is added to update a legacy text. And will be removed after the
-# TCE processing will use the TCE information saved by the RCF controller.
-# Does not use it in a new text!
-#
-# Arguments:
-#   The TA type of the component.
-#   The TA host the component has been fetced.
-#   The name of a TA component.
-# Outputs:
-#   Outputs the name of the directory.
-#######################################
-function tce_ws_name() {
-    local type=$1
-    local host=$2
-    local comp=$3
-
-    echo "${type}_${host}_${comp}"
-}
-
-function tce_ws_dir
-{
-    local platform=$1
-    local host=$2
-    local tce=$3
-
-    echo "${TCE_WS}/$(tce_ws_name "${platform}" "${host}" "${tce}")"
-}
-
-function fetch_host_tce
-{
-    local platform=$1
-    local host=$2
-    local tce=$3
-    local hostdir="${tce_build_base[${platform}]}"
-    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local build="${tce_type_comp_build["${platform}_${tce}"]}"
-
-    mkdir -p "${tcedir}/build" || \
-        tce_die "fail to create directory to save TCE: " \
-                "platform ${platform} host ${host} tce ${tce}"
-
-    # Check TCE provided by a host
-    check_host_dir ${platform} ${host} "${hostdir}/${build}" || \
-        return 0
-
-    rsync_fnmatch_from "*.gcda" "${platform}_${host}" "${hostdir}/${build}" \
-                       "${tcedir}/build" || \
-        tce_die "fail to fetch TCE: " \
-                "platform ${platform} host ${host} tce ${tce}"
 }
 
 #######################################
@@ -526,52 +398,6 @@ EOF
 
 tce_py="${TE_INSTALL}/${TE_HOST}/lib"
 export PYTHONPATH="${tce_py}:${PYTHONPATH}"
-
-for platform in "${!tce_type_comp[@]}" ; do
-    tce_list="${tce_type_comp[${platform}]}"
-    hosts="${platform_hosts[${platform}]}"
-
-    for host in ${hosts} ; do
-        set_platform_host_ssh ${platform} ${host}
-
-        for tce in ${tce_list} ; do
-            fetch_host_tce ${platform} ${host} ${tce}
-        done
-    done
-
-    for host in ${hosts} ; do
-        for tce in ${tce_list} ; do
-            tce_process_gcda_on_host "${platform}" "${tce}" \
-                    "$(tce_ws_name "${platform}" "${host}" "${tce}")"
-        done
-    done
-
-    for tce in ${tce_list} ; do
-        tce_link_src_on_build "${platform}" "${tce}"
-        tce_link_inst_on_build "${platform}" "${tce}"
-
-        for host in ${hosts} ; do
-            tce_resolve_gcov_on_build "${platform}" "${tce}" \
-                    "$(tce_ws_name "${platform}" "${host}" "${tce}")"
-        done
-    done
-done
-
-function get_tce_platforms
-{
-    local tce=$1
-    local platform=
-    local tce_list=
-    local platforms=
-
-    for platform in "${!tce_type_comp[@]}" ; do
-        tce_list="${tce_type_comp[${platform}]}"
-        test "${tce_list/${tce}/ }" != "$tce_list" && \
-            platforms+="${platform} "
-    done
-
-    echo "${platforms}"
-}
 
 #######################################
 # Clean gcda and gcov files on the build.
@@ -765,48 +591,6 @@ function tce_merge_report() {
     tce_merge_report.py "${mconf}" "${mrep}" "${conf}" "${rep}" \
         || tce_die "failed to merge TCE report from ${src}"
 }
-
-all_tce="$(echo "${tce_type_comp[@]}" | sed 's/ \+/\n/g' | sort -u)"
-
-for tce in $all_tce ; do
-    platforms="$(get_tce_platforms ${tce})"
-    platform=
-    hosts=
-    host=
-    mplatform=
-
-    for platform in ${platforms} ; do
-        hosts="${platform_hosts[${platform}]}"
-
-        for host in ${hosts} ; do
-            repname="tce_log_${platform}_${host}_${tce}"
-
-            tce_copy_gcov_to_build "${platform}" "${tce}" \
-                    "$(tce_ws_name "${platform}" "${host}" "${tce}")"
-            tce_create_report "${platform}" "${tce}" \
-                    "$(tce_ws_name "${platform}" "${host}" "${tce}")"
-            tce_summarise "${platform}" "${tce}" \
-                          "$(tce_ws_name "${platform}" "${host}" "${tce}")" \
-                          "${repname}"
-        done
-    done
-
-    for platform in ${platforms} ; do
-        hosts="${platform_hosts[${platform}]}"
-
-        for host in ${hosts} ; do
-            [[ -z "${mplatform}" ]] && mplatform="${platform}"
-
-            tce_merge_report "$(tce_ws_name "${platform}" "${host}" "${tce}")" \
-                             "$(tce_ws_name "${mplatform}" "" "${tce}")"
-        done
-    done
-
-    repname="tce_log_${tce}"
-    tce_summarise "${mplatform}" "${tce}" \
-                  "$(tce_ws_name "${mplatform}" "" "${tce}")" \
-                  "${repname}"
-done
 
 #######################################
 # Process the TCE information for a specific TA agent.
