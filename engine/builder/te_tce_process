@@ -640,6 +640,69 @@ function tce_process_ta() {
     done
 }
 
+#######################################
+# Add a TCE summary into the list of TCE summaries.
+# Globals:
+#   tce_sums
+# Arguments:
+#   The name of the TCE summary.
+#   The TCE summary file.
+#######################################
+function tce_susum_add() {
+    local name="$1"
+    local file="$2"
+    declare -gA tce_sums
+
+    tce_sums["${name}"]="${file}"
+}
+
+#######################################
+# Generate the TCE super summary document.
+# Globals:
+#   TCE_WS
+#   TE_LOG_DIR
+#   tce_sums
+# Arguments:
+#   None
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_susum_gen() {
+    local conf="${TCE_WS}/susum.conf"
+    local name=
+    local file=
+    local sp=
+
+    cat > "${conf}" << EOF
+{
+    "base" : "${TE_LOG_DIR}",
+    "sums" : [
+EOF
+
+    for name in "${!tce_sums[@]}" ; do
+        file="${tce_sums["${name}"]}"
+        cat >> "${conf}" << EOF
+        ${sp}{
+           "name" : "${name}",
+           "file" : "${file}.html"
+        }
+EOF
+
+        sp=", "
+    done
+
+    cat >> "${conf}" << EOF
+    ]
+}
+EOF
+
+    # TODO(Boleslav Stankevich): A command to generate the Supper Summary
+    #                            document will be provided on the following
+    #                            commit.
+}
+
 for comp in "${!tce_types[@]}" ; do
     for type in ${tce_types["${comp}"]} ; do
         for name in ${tce_names["${type}_${comp}"]} ; do
@@ -665,8 +728,13 @@ for comp in "${!tce_types[@]}" ; do
         for name in ${tce_names["${type}_${comp}"]} ; do
             tce_summarise "${type}" "${comp}" "${comp}/${type}/${name}" \
                           "tce_log_${type}_${comp}_${name}"
+            tce_susum_add "${comp}/${type}/${name}" \
+                          "tce_log_${type}_${comp}_${name}"
         done
     done
 
     tce_summarise "${mtype}" "${comp}" "${comp}" "tce_log_${comp}"
+    tce_susum_add "${comp}" "tce_log_${comp}"
 done
+
+tce_susum_gen
