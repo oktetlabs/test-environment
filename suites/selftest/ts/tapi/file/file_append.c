@@ -40,20 +40,20 @@ main(int argc, char **argv)
     TEST_STEP("Create a file with content on TA");
     rfile = tapi_file_generate_name();
     fd = rpc_open(pco_iut, rfile, RPC_O_WRONLY | RPC_O_CREAT, 0);
-    WRITE_WHOLE_BUF(pco_iut, fd, data1, BUFSIZE);
+    CHECK_LENGTH(rpc_write(pco_iut, fd, data1, BUFSIZE), BUFSIZE);
     rpc_close(pco_iut, fd);
 
 
     TEST_STEP("Append data to the file on TA");
     fd = rpc_open(pco_iut, rfile, RPC_O_WRONLY | RPC_O_APPEND, 0);
-    WRITE_WHOLE_BUF(pco_iut, fd, data2, BUFSIZE);
+    CHECK_LENGTH(rpc_write(pco_iut, fd, data2, BUFSIZE), BUFSIZE);
     rpc_close(pco_iut, fd);
 
     TEST_STEP("Read content from the file on TA");
     buf = (uint8_t *)tapi_calloc(1, data_size);
     fd = rpc_open(pco_iut, rfile, RPC_O_RDONLY, 0);
 
-    READ_WHOLE_BUF(pco_iut, fd, buf, data_size);
+    CHECK_LENGTH(rpc_read(pco_iut, fd, buf, data_size), data_size);
     rpc_close(pco_iut, fd);
 
     TEST_STEP("Print data");

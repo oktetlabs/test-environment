@@ -314,6 +314,26 @@ cleanup_specific:                                                   \
         }                                                               \
     } while (0)
 
+/*
+ * Check that @p _expr evaluates to an expected @p _exp_length
+ * (e.g. check than an I/O function returned an expected number of bytes)
+ *
+ * @param expr_        Expression to check
+ * @param exp_length_  Expected length
+ */
+#define CHECK_LENGTH(expr_, exp_length_) \
+    do {                                                               \
+        ssize_t length_;                                               \
+                                                                       \
+        te_log_stack_reset();                                          \
+        if ((length_ = (expr_)) != (ssize_t)(exp_length_))             \
+        {                                                              \
+            TEST_FAIL("line %d: %s returns %zd, but expected %zd",     \
+                      __LINE__, # expr_, length_, exp_length_);        \
+        }                                                              \
+        te_log_stack_reset();                                          \
+    } while (0)
+
 /**
  * Same as CHECK_RC, but verdict in case RC expression result is not ZERO.
  * The macro will terminate(fail) the test after logging the verdict.
