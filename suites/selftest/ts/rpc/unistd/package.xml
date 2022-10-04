@@ -9,6 +9,10 @@
             <value>{{{'pco_iut':IUT}}}</value>
         </var>
         <run>
+            <script name="append"/>
+            <arg name="env" ref="env" />
+        </run>
+        <run>
             <script name="pread_pwrite"/>
             <arg name="env" ref="env" />
         </run>

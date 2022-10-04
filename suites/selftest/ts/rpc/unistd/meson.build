@@ -2,6 +2,7 @@
 # Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
 
 tests = [
+    'append',
     'pread_pwrite'
 ]
 

@@ -7,7 +7,7 @@
  * Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
  */
 
-/** @page file_append Test for append data to file
+/** @page append Test for append data to file
  *
  * @objective Demo of TAPI/RPC file append test
  *
@@ -15,9 +15,11 @@
  *
  */
 
-#define TE_TEST_NAME    "file_append"
+#define TE_TEST_NAME    "append"
 
-#include "file_suite.h"
+#include "unistd_suite.h"
+
+#define BUFSIZE 64
 
 int
 main(int argc, char **argv)

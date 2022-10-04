@@ -47,14 +47,6 @@
                 <notes/>
             </iter>
         </test>
-        <test name="file_append" type="script">
-            <objective/>
-            <notes/>
-            <iter result="PASSED">
-                <arg name="env"/>
-                <notes/>
-            </iter>
-        </test>
         <test name="file_copy" type="script">
             <objective/>
             <notes/>

@@ -32,10 +32,6 @@
             <arg name="env" ref="env" />
         </run>
         <run>
-            <script name="file_append"/>
-            <arg name="env" ref="env" />
-        </run>
-        <run>
             <script name="file_copy"/>
             <arg name="env">
                 <value>{{{'pco_iut':IUT}},{{'pco_tst':tester}}}</value>

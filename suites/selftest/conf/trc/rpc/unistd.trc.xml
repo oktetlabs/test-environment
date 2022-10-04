@@ -4,6 +4,15 @@
 <test name="unistd" type="package">
     <objective> To test POSIX unistd functions </objective>
     <iter result="PASSED">
+        <test name="append" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <notes/>
+            </iter>
+        </test>
+
         <test name="pread_pwrite">
             <objective/>
             <iter result="PASSED">

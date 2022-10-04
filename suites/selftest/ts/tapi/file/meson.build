@@ -2,7 +2,6 @@
 # Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
 
 tests = [
-    'file_append',
     'file_copy',
     'file_create_delete',
     'file_directory',
