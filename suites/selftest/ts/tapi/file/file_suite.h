@@ -40,8 +40,6 @@
 #include "tapi_rpc_dirent.h"
 #include "tapi_rpc_unistd.h"
 
-#define TMP_DIR    "/tmp"
-
 #define BUFSIZE 64
 
 static inline void

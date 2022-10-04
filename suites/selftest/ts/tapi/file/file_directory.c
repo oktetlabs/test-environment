@@ -68,7 +68,6 @@ int
 main(int argc, char **argv)
 {
     char           *rdir = NULL;
-    te_string       rpath = TE_STRING_INIT;
     rcf_rpc_server *pco_iut = NULL;
     size_t          nfiles = 0;
 
@@ -77,32 +76,25 @@ main(int argc, char **argv)
     TEST_GET_UINT_PARAM(nfiles);
 
     TEST_STEP("Create a directory on TA");
-    rdir = tapi_file_generate_name();
-    CHECK_RC(te_string_append(&rpath, "%s/%s", TMP_DIR, rdir));
-    rpc_mkdir(pco_iut, rpath.ptr, 0);
+    rdir = strdup(tapi_file_generate_name());
+    rpc_mkdir(pco_iut, rdir, 0);
 
     TEST_STEP("Create files in the directory");
-    if (create_files(nfiles, pco_iut, rpath.ptr) != nfiles)
-    {
+    if (create_files(nfiles, pco_iut, rdir) != nfiles)
         TEST_VERDICT("Files aren't created");
-    }
 
     TEST_SUCCESS;
 
 cleanup:
 
     TEST_STEP("Remove the directory");
-    if (remove_files(pco_iut, rpath.ptr) != 0)
-    {
+    if (remove_files(pco_iut, rdir) != 0)
         TEST_VERDICT("Directory isn't removed");
-    }
 
-    rpc_rmdir(pco_iut, rpath.ptr);
+    rpc_rmdir(pco_iut, rdir);
 
     TEST_STEP("Check if the directory is deleted");
-    file_check_not_exist(pco_iut, rpath.ptr);
-
-    te_string_free(&rpath);
+    file_check_not_exist(pco_iut, rdir);
 
     TEST_END;
 }

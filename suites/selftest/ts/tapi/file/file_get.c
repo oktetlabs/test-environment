@@ -23,7 +23,6 @@ int
 main(int argc, char **argv)
 {
     char           *rfile = NULL;
-    te_string       rpath = TE_STRING_INIT;
     rcf_rpc_server *pco_iut = NULL;
     char           *contents = NULL;
     static char     expected[] = "First Second";
@@ -33,14 +32,13 @@ main(int argc, char **argv)
 
     TEST_STEP("Create a file on TA");
 
-    rfile = tapi_file_generate_name();
-    CHECK_RC(te_string_append(&rpath, "%s/%s", TMP_DIR, rfile));
-    CHECK_RC(tapi_file_append_ta(pco_iut->ta, rpath.ptr, "NULL"));
-    CHECK_RC(tapi_file_create_ta(pco_iut->ta, rpath.ptr, "First"));
-    CHECK_RC(tapi_file_append_ta(pco_iut->ta, rpath.ptr, " Second"));
+    rfile = strdup(tapi_file_generate_name());
+    CHECK_RC(tapi_file_append_ta(pco_iut->ta, rfile, "NULL"));
+    CHECK_RC(tapi_file_create_ta(pco_iut->ta, rfile, "First"));
+    CHECK_RC(tapi_file_append_ta(pco_iut->ta, rfile, " Second"));
 
     TEST_STEP("Get the file from TA");
-    CHECK_RC(tapi_file_read_ta(pco_iut->ta, rpath.ptr, &contents));
+    CHECK_RC(tapi_file_read_ta(pco_iut->ta, rfile, &contents));
 
     TEST_STEP("Check the expected contents");
     if (strcmp(contents, expected) != 0)
@@ -54,8 +52,8 @@ main(int argc, char **argv)
 cleanup:
 
     free(contents);
-    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", rpath.ptr));
-    te_string_free(&rpath);
+    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", rfile));
+    free(rfile);
 
     TEST_END;
 }

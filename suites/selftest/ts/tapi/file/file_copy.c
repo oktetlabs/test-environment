@@ -24,10 +24,8 @@ main(int argc, char **argv)
 {
     rcf_rpc_server *pco_iut = NULL;
     rcf_rpc_server *pco_tst = NULL;
-    const char     *src = NULL;
-    const char     *dst = NULL;
-    te_string       src_path = TE_STRING_INIT;
-    te_string       dst_path = TE_STRING_INIT;
+    char     *src = NULL;
+    char     *dst = NULL;
     int             fd = -1;
     uint8_t        *data = NULL;
     size_t          data_size = BUFSIZE;
@@ -38,33 +36,30 @@ main(int argc, char **argv)
 
     TEST_STEP("Generate a file on TA");
     data = te_make_buf_by_len(BUFSIZE);
-    src = tapi_file_generate_name();
-    CHECK_RC(te_string_append(&src_path, "%s/%s", TMP_DIR, src));
-    fd = rpc_open(pco_iut, src_path.ptr, RPC_O_WRONLY | RPC_O_CREAT, 0);
+    src = strdup(tapi_file_generate_name());
+    fd = rpc_open(pco_iut, src, RPC_O_WRONLY | RPC_O_CREAT, 0);
     CHECK_LENGTH(rpc_write_and_close(pco_iut, fd, data, data_size), data_size);
 
     TEST_STEP("Copy the file from TA to TA");
-    dst = tapi_file_generate_name();
-    CHECK_RC(te_string_append(&dst_path, "%s/%s", TMP_DIR, dst));
-    if (tapi_file_copy_ta(pco_iut->ta, src_path.ptr,
-                          pco_tst->ta, dst_path.ptr) != 0)
+    dst = strdup(tapi_file_generate_name());
+    if (tapi_file_copy_ta(pco_iut->ta, src, pco_tst->ta, dst) != 0)
     {
         TEST_VERDICT("tapi_file_copy_ta() failed");
     }
 
     TEST_STEP("Check if the file exists on TA");
-    file_check_exist(pco_tst, dst_path.ptr);
+    file_check_exist(pco_tst, dst);
 
     TEST_SUCCESS;
 
 cleanup:
 
-    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", src_path.ptr));
-    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_tst->ta, "%s", dst_path.ptr));
+    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", src));
+    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_tst->ta, "%s", dst));
 
     free(data);
-    te_string_free(&src_path);
-    te_string_free(&dst_path);
+    free(src);
+    free(dst);
 
     TEST_END;
 }
