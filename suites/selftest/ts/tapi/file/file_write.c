@@ -36,7 +36,7 @@ main(int argc, char **argv)
     TEST_STEP("Write data to a file on TA");
     data = te_make_buf_by_len(BUFSIZE);
     rfile = tapi_file_generate_name();
-    if (tapi_file_create_ta(pco_iut->ta, rfile, "") != 0)
+    if (tapi_file_create_ta(pco_iut->ta, rfile, "%s", "") != 0)
     {
         TEST_VERDICT("tapi_file_create_ta() failed");
     }

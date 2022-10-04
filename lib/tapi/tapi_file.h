@@ -113,7 +113,8 @@ extern char *tapi_file_create(size_t len, char *buf, te_bool random);
  * @note the function is not thread-safe
  */
 extern te_errno tapi_file_create_ta(const char *ta, const char *filename,
-                                    const char *fmt, ...);
+                                    const char *fmt, ...)
+    __attribute__((format(printf, 3, 4)));
 
 /**
  * Create local file, copy it to TA, remove local file.
@@ -132,7 +133,8 @@ extern te_errno tapi_file_create_ta(const char *ta, const char *filename,
 extern te_errno tapi_file_create_ta_r(const char *ta,
                                       const char *lfile,
                                       const char *rfile,
-                                      const char *fmt, ...);
+                                      const char *fmt, ...)
+    __attribute__((format(printf, 4, 5)));;
 
 /**
  * Read file content from the TA.
@@ -163,7 +165,8 @@ extern te_errno tapi_file_read_ta(const char *ta, const char *filename,
  * @note the function is not thread-safe
  */
 extern te_errno tapi_file_append_ta(const char *ta, const char *filename,
-                                    const char *fmt, ...);
+                                    const char *fmt, ...)
+    __attribute__((format(printf, 3, 4)));
 
 
 
@@ -189,7 +192,8 @@ extern te_errno tapi_file_copy_ta(const char *ta_src, const char *src,
  * @return Status code.
  */
 extern te_errno tapi_file_ta_unlink_fmt(const char *ta,
-                                        const char *path_fmt, ...);
+                                        const char *path_fmt, ...)
+    __attribute__((format(printf, 2, 3)));
 
 #ifdef __cplusplus
 } /* extern "C" */

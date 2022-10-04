@@ -30,7 +30,7 @@ main(int argc, char **argv)
 
     TEST_STEP("Create a file on TA");
     filename = tapi_file_generate_name();
-    if (tapi_file_create_ta(pco_iut->ta, filename, "") != 0)
+    if (tapi_file_create_ta(pco_iut->ta, filename, "%s", "") != 0)
     {
         TEST_VERDICT("tapi_file_create_ta() failed");
     }
