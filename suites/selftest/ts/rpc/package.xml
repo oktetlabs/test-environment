@@ -10,9 +10,6 @@
             <package name="server"/>
         </run>
         <run>
-            <package name="file"/>
-        </run>
-        <run>
             <package name="unistd"/>
         </run>
     </session>

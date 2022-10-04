@@ -4,6 +4,7 @@
 packages = [
     'cache',
     'cfg_key',
+    'file',
     'job',
     'jobopt',
     'tool',
