@@ -99,12 +99,8 @@ cleanup:
 
     rpc_rmdir(pco_iut, rpath.ptr);
 
-    TEST_STEP("Check if the directory doesn't exist");
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_access(pco_iut, rpath.ptr, RPC_F_OK) == 0)
-    {
-        TEST_VERDICT("Directory still exists on TA");
-    }
+    TEST_STEP("Check if the directory is deleted");
+    file_check_not_exist(pco_iut, rpath.ptr);
 
     te_string_free(&rpath);
 

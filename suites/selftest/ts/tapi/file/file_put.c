@@ -47,11 +47,7 @@ main(int argc, char **argv)
     }
 
     TEST_STEP("Check if the file exists on TA");
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_access(pco_iut, rfile, RPC_F_OK) != 0)
-    {
-        TEST_VERDICT("File doesn't exist on TA");
-    }
+    file_check_exist(pco_iut, rfile);
 
     TEST_SUCCESS;
 

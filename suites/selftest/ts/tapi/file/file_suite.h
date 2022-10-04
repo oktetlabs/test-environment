@@ -44,4 +44,32 @@
 
 #define BUFSIZE 64
 
+static inline void
+file_check_exist(rcf_rpc_server *pco, const char *filename)
+{
+    RPC_AWAIT_ERROR(pco);
+    if (rpc_access(pco, filename, RPC_F_OK) != 0)
+    {
+        if (RPC_ERRNO(pco) != RPC_ENOENT)
+            TEST_VERDICT("%s(): Unexpected error %r", __func__, RPC_ERRNO(pco));
+
+        ERROR_VERDICT("The expected file does not exist");
+        TEST_FAIL("File '%s' does not exist on %s", filename, pco->ta);
+    }
+}
+
+static inline void
+file_check_not_exist(rcf_rpc_server *pco, const char *filename)
+{
+    RPC_AWAIT_ERROR(pco);
+    if (rpc_access(pco, filename, RPC_F_OK) == 0)
+    {
+        ERROR_VERDICT("The file still exists");
+        TEST_FAIL("File '%s' exists on %s", filename, pco->ta);
+    }
+
+    if (RPC_ERRNO(pco) != RPC_ENOENT)
+        TEST_VERDICT("%s(): Unexpected error %r", __func__, RPC_ERRNO(pco));
+}
+
 #endif /* __FILE_SUITE_H__ */

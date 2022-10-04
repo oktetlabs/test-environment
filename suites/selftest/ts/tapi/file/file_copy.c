@@ -54,11 +54,7 @@ main(int argc, char **argv)
     }
 
     TEST_STEP("Check if the file exists on TA");
-    RPC_AWAIT_ERROR(pco_tst);
-    if (rpc_access(pco_tst, dst_path.ptr, RPC_F_OK) != 0)
-    {
-        TEST_VERDICT("File doesn't exist on TA");
-    }
+    file_check_exist(pco_tst, dst_path.ptr);
 
     TEST_SUCCESS;
 

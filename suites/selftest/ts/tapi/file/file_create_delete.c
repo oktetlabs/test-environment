@@ -36,11 +36,7 @@ main(int argc, char **argv)
     }
 
     TEST_STEP("Check if the file exists");
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_access(pco_iut, filename, RPC_F_OK) != 0)
-    {
-        TEST_VERDICT("File doesn't exist");
-    }
+    file_check_exist(pco_iut, filename);
 
     TEST_STEP("Delete the file from TA");
     if (tapi_file_ta_unlink_fmt(pco_iut->ta, filename) != 0)
@@ -48,12 +44,8 @@ main(int argc, char **argv)
         TEST_VERDICT("tapi_file_ta_unlink_fmt() failed");
     }
 
-    TEST_STEP("Check if the file doesn't exist");
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_access(pco_iut, filename, RPC_F_OK) == 0)
-    {
-        TEST_VERDICT("File exists");
-    }
+    TEST_STEP("Check if the file is really deleted");
+    file_check_not_exist(pco_iut, filename);
 
     TEST_SUCCESS;
 
