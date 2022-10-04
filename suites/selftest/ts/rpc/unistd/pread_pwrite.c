@@ -7,18 +7,7 @@
  * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
  */
 
-#include <limits.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-
-#include "pread_pwrite.h"
-#include "te_config.h"
-#include "tapi_test.h"
-#include "te_file.h"
-#include "rcf_rpc.h"
-#include "tapi_rpc_unistd.h"
-#include "tapi_env.h"
+#include "unistd_suite.h"
 
 #define TE_TEST_NAME "pread_pwrite"
 

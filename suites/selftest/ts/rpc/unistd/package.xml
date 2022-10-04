@@ -5,11 +5,12 @@
     <description>Package for self-tests of unistd functions</description>
     <author mailto="tej@oktetlabs.ru"/>
     <session>
+        <var name="env">
+            <value>{{{'pco_iut':IUT}}}</value>
+        </var>
         <run>
             <script name="pread_pwrite"/>
-            <arg name="env">
-                <value>{{{'pco_iut':IUT}}}</value>
-            </arg>
+            <arg name="env" ref="env" />
         </run>
     </session>
 </package>
