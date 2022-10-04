@@ -40,33 +40,16 @@ main(int argc, char **argv)
     {
         TEST_VERDICT("tapi_file_create_ta() failed");
     }
-    RPC_AWAIT_ERROR(pco_iut);
     fd = rpc_open(pco_iut, rfile, RPC_O_WRONLY | RPC_O_CREAT, 0);
-    if (fd == -1)
-    {
-        TEST_VERDICT("rpc_open() for writing data failed");
-    }
+
     WRITE_WHOLE_BUF(pco_iut, fd, data, data_size);
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_close(pco_iut, fd) != 0)
-    {
-        TEST_VERDICT("rpc_close() failed");
-    }
+    rpc_close(pco_iut, fd);
 
     TEST_STEP("Read content from the file on TA");
     buf = (uint8_t *)tapi_calloc(1, data_size);
-    RPC_AWAIT_ERROR(pco_iut);
     fd = rpc_open(pco_iut, rfile, RPC_O_RDONLY | RPC_O_CREAT, 0);
-    if (fd == -1)
-    {
-        TEST_VERDICT("rpc_open() for reading data failed");
-    }
     READ_WHOLE_BUF(pco_iut, fd, buf, data_size);
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_close(pco_iut, fd) != 0)
-    {
-        TEST_VERDICT("rpc_close() failed");
-    }
+    rpc_close(pco_iut, fd);
 
     TEST_STEP("Print data");
     TEST_SUBSTEP("Print expected data");

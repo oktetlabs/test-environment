@@ -39,47 +39,22 @@ main(int argc, char **argv)
 
     TEST_STEP("Create a file with content on TA");
     rfile = tapi_file_generate_name();
-    RPC_AWAIT_ERROR(pco_iut);
     fd = rpc_open(pco_iut, rfile, RPC_O_WRONLY | RPC_O_CREAT, 0);
-    if (fd == -1)
-    {
-        TEST_VERDICT("rpc_open() for writing data failed");
-    }
     WRITE_WHOLE_BUF(pco_iut, fd, data1, BUFSIZE);
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_close(pco_iut, fd) != 0)
-    {
-        TEST_VERDICT("rpc_close() failed");
-    }
+    rpc_close(pco_iut, fd);
+
 
     TEST_STEP("Append data to the file on TA");
-    RPC_AWAIT_ERROR(pco_iut);
     fd = rpc_open(pco_iut, rfile, RPC_O_WRONLY | RPC_O_APPEND, 0);
-    if (fd == -1)
-    {
-        TEST_VERDICT("rpc_open() for appending data failed");
-    }
     WRITE_WHOLE_BUF(pco_iut, fd, data2, BUFSIZE);
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_close(pco_iut, fd) != 0)
-    {
-        TEST_VERDICT("rpc_close() failed");
-    }
+    rpc_close(pco_iut, fd);
 
     TEST_STEP("Read content from the file on TA");
     buf = (uint8_t *)tapi_calloc(1, data_size);
-    RPC_AWAIT_ERROR(pco_iut);
     fd = rpc_open(pco_iut, rfile, RPC_O_RDONLY, 0);
-    if (fd == -1)
-    {
-        TEST_VERDICT("rpc_open() for reading data failed");
-    }
+
     READ_WHOLE_BUF(pco_iut, fd, buf, data_size);
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_close(pco_iut, fd) != 0)
-    {
-        TEST_VERDICT("rpc_close() failed");
-    }
+    rpc_close(pco_iut, fd);
 
     TEST_STEP("Print data");
     TEST_SUBSTEP("Print expected data");

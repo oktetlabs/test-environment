@@ -45,13 +45,11 @@ create_files(size_t nfiles, rcf_rpc_server *rpcs, const char *path)
 static inline int
 remove_files(rcf_rpc_server *rpcs, const char *path)
 {
-    RPC_AWAIT_ERROR(rpcs);
     rpc_dir_p   dirp = rpc_opendir(rpcs, path);
     rpc_dirent *dent = NULL;
 
     while (TRUE)
     {
-        RPC_AWAIT_ERROR(rpcs);
         dent = rpc_readdir(rpcs, dirp);
         if (dent == NULL)
             break;
@@ -63,7 +61,6 @@ remove_files(rcf_rpc_server *rpcs, const char *path)
         free(dent);
     }
 
-    RPC_AWAIT_ERROR(rpcs);
     return rpc_closedir(rpcs, dirp);
 }
 
@@ -82,11 +79,7 @@ main(int argc, char **argv)
     TEST_STEP("Create a directory on TA");
     rdir = tapi_file_generate_name();
     CHECK_RC(te_string_append(&rpath, "%s/%s", TMP_DIR, rdir));
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_mkdir(pco_iut, rpath.ptr, 0) != 0)
-    {
-        TEST_VERDICT("rpc_mkdir() failed", rpath.ptr);
-    }
+    rpc_mkdir(pco_iut, rpath.ptr, 0);
 
     TEST_STEP("Create files in the directory");
     if (create_files(nfiles, pco_iut, rpath.ptr) != nfiles)
@@ -103,11 +96,8 @@ cleanup:
     {
         TEST_VERDICT("Directory isn't removed");
     }
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_rmdir(pco_iut, rpath.ptr) != 0)
-    {
-        TEST_VERDICT("rpc_rmdir() failed");
-    }
+
+    rpc_rmdir(pco_iut, rpath.ptr);
 
     TEST_STEP("Check if the directory doesn't exist");
     RPC_AWAIT_ERROR(pco_iut);

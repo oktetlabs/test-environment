@@ -42,11 +42,7 @@ main(int argc, char **argv)
     CHECK_RC(te_string_append(&src_path, "%s/%s", TMP_DIR, src));
     fd = rpc_open(pco_iut, src_path.ptr, RPC_O_WRONLY | RPC_O_CREAT, 0);
     WRITE_WHOLE_BUF(pco_iut, fd, data, data_size);
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_close(pco_iut, fd) != 0)
-    {
-        TEST_VERDICT("rpc_close() failed");
-    }
+    rpc_close(pco_iut, fd);
 
     TEST_STEP("Copy the file from TA to TA");
     dst = tapi_file_generate_name();

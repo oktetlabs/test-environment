@@ -36,18 +36,10 @@ main(int argc, char **argv)
     TEST_STEP("Create file with content on TA");
     data = te_make_buf_by_len(BUFSIZE);
     rfile = tapi_file_generate_name();
-    RPC_AWAIT_ERROR(pco_iut);
     fd = rpc_open(pco_iut, rfile, RPC_O_WRONLY | RPC_O_CREAT, 0);
-    if (fd == -1)
-    {
-        TEST_VERDICT("rpc_open() for writing data failed");
-    }
+
     WRITE_WHOLE_BUF(pco_iut, fd, data, data_size);
-    RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_close(pco_iut, fd) != 0)
-    {
-        TEST_VERDICT("rpc_close() failed");
-    }
+    rpc_close(pco_iut, fd);
 
     TEST_STEP("Read content from the file on TA");
     if (tapi_file_read_ta(pco_iut->ta, rfile, (void *)&buf) != 0)
