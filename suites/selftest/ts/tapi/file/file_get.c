@@ -54,7 +54,7 @@ main(int argc, char **argv)
 cleanup:
 
     free(contents);
-    CLEANUP_CHECK_RC(rcf_ta_del_file(pco_iut->ta, 0, rpath.ptr));
+    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", rpath.ptr));
     te_string_free(&rpath);
 
     TEST_END;

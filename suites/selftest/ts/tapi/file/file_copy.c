@@ -64,8 +64,8 @@ main(int argc, char **argv)
 
 cleanup:
 
-    CLEANUP_CHECK_RC(rcf_ta_del_file(pco_iut->ta, 0, src_path.ptr));
-    CLEANUP_CHECK_RC(rcf_ta_del_file(pco_tst->ta, 0, dst_path.ptr));
+    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", src_path.ptr));
+    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_tst->ta, "%s", dst_path.ptr));
 
     free(data);
     te_string_free(&src_path);

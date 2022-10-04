@@ -81,7 +81,7 @@ main(int argc, char **argv)
 
 cleanup:
 
-    CLEANUP_CHECK_RC(rcf_ta_del_file(pco_iut->ta, 0, rfile));
+    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", rfile));
 
     free(buf);
     free(data1);
