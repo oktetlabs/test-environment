@@ -378,7 +378,6 @@ tapi_file_ta_unlink_fmt(const char *ta, const char *path_fmt, ...)
     va_list ap;
     char    path[RCF_MAX_PATH];
     te_errno rc;
-    te_errno ta_rc;
 
     va_start(ap, path_fmt);
     rc = te_vsnprintf(path, sizeof(path), path_fmt, ap);
@@ -386,18 +385,11 @@ tapi_file_ta_unlink_fmt(const char *ta, const char *path_fmt, ...)
     if (rc != 0)
         return TE_RC_UPSTREAM(TE_TAPI, rc);
 
-    rc = rcf_ta_call(ta, 0, "ta_rtn_unlink", &ta_rc, 1, FALSE,
-                     RCF_STRING, path);
+    rc = rcf_ta_del_file(ta, 0, path);
     if (rc != 0)
     {
-        ERROR("%s(): rcf_ta_call() failed: %r", __FUNCTION__, rc);
+        ERROR("%s(): rcf_ta_del_file() failed: %r", __FUNCTION__, rc);
         return rc;
-    }
-    if (ta_rc != 0)
-    {
-        ERROR("%s(): ta_rtn_unlink(%s, %s) failed: %r", __FUNCTION__,
-              ta, path, ta_rc);
-        return ta_rc;
     }
 
     return 0;
