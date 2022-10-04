@@ -23,34 +23,34 @@ int
 main(int argc, char **argv)
 {
     char           *filename = NULL;
-    rcf_rpc_server *rpcs = NULL;
+    rcf_rpc_server *pco_iut = NULL;
 
     TEST_START;
-    TEST_GET_RPCS(AGT_A, "rpcs", rpcs);
+    TEST_GET_PCO(pco_iut);
 
     TEST_STEP("Create a file on TA");
     filename = tapi_file_generate_name();
-    if (tapi_file_create_ta(rpcs->ta, filename, "") != 0)
+    if (tapi_file_create_ta(pco_iut->ta, filename, "") != 0)
     {
         TEST_VERDICT("tapi_file_create_ta() failed");
     }
 
     TEST_STEP("Check if the file exists");
-    RPC_AWAIT_ERROR(rpcs);
-    if (rpc_access(rpcs, filename, RPC_F_OK) != 0)
+    RPC_AWAIT_ERROR(pco_iut);
+    if (rpc_access(pco_iut, filename, RPC_F_OK) != 0)
     {
         TEST_VERDICT("File doesn't exist");
     }
 
     TEST_STEP("Delete the file from TA");
-    if (tapi_file_ta_unlink_fmt(rpcs->ta, filename) != 0)
+    if (tapi_file_ta_unlink_fmt(pco_iut->ta, filename) != 0)
     {
         TEST_VERDICT("tapi_file_ta_unlink_fmt() failed");
     }
 
     TEST_STEP("Check if the file doesn't exist");
-    RPC_AWAIT_ERROR(rpcs);
-    if (rpc_access(rpcs, filename, RPC_F_OK) == 0)
+    RPC_AWAIT_ERROR(pco_iut);
+    if (rpc_access(pco_iut, filename, RPC_F_OK) == 0)
     {
         TEST_VERDICT("File exists");
     }

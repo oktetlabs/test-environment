@@ -24,33 +24,33 @@ main(int argc, char **argv)
 {
     char           *rfile = NULL;
     uint8_t        *buf = NULL;
-    rcf_rpc_server *rpcs = NULL;
+    rcf_rpc_server *pco_iut = NULL;
     int             fd = -1;
     uint8_t        *data = NULL;
     char           *data_str = NULL;
     const size_t    data_size = BUFSIZE;
 
     TEST_START;
-    TEST_GET_RPCS(AGT_A, "rpcs", rpcs);
+    TEST_GET_PCO(pco_iut);
 
     TEST_STEP("Create file with content on TA");
     data = te_make_buf_by_len(BUFSIZE);
     rfile = tapi_file_generate_name();
-    RPC_AWAIT_ERROR(rpcs);
-    fd = rpc_open(rpcs, rfile, RPC_O_WRONLY | RPC_O_CREAT, 0);
+    RPC_AWAIT_ERROR(pco_iut);
+    fd = rpc_open(pco_iut, rfile, RPC_O_WRONLY | RPC_O_CREAT, 0);
     if (fd == -1)
     {
         TEST_VERDICT("rpc_open() for writing data failed");
     }
-    WRITE_WHOLE_BUF(rpcs, fd, data, data_size);
-    RPC_AWAIT_ERROR(rpcs);
-    if (rpc_close(rpcs, fd) != 0)
+    WRITE_WHOLE_BUF(pco_iut, fd, data, data_size);
+    RPC_AWAIT_ERROR(pco_iut);
+    if (rpc_close(pco_iut, fd) != 0)
     {
         TEST_VERDICT("rpc_close() failed");
     }
 
     TEST_STEP("Read content from the file on TA");
-    if (tapi_file_read_ta(rpcs->ta, rfile, (void *)&buf) != 0)
+    if (tapi_file_read_ta(pco_iut->ta, rfile, (void *)&buf) != 0)
     {
         TEST_VERDICT("tapi_file_read_ta() failed");
     }
@@ -77,7 +77,7 @@ main(int argc, char **argv)
 cleanup:
 
     RING("Delete the file from TA");
-    CLEANUP_CHECK_RC(rcf_ta_del_file(rpcs->ta, 0, rfile));
+    CLEANUP_CHECK_RC(rcf_ta_del_file(pco_iut->ta, 0, rfile));
 
     free(buf);
     free(data);

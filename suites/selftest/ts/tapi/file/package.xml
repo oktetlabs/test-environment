@@ -5,32 +5,45 @@
     <description>Package for demonstrating TAPI/RPC file tests</description>
     <author mailto="te-maint@oktetlabs.ru"/>
     <session track_conf="silent">
+        <var name="env">
+            <value>{{{'pco_iut':IUT}}}</value>
+        </var>
         <run>
             <script name="file_create_delete"/>
+            <arg name="env" ref="env" />
         </run>
         <run>
             <script name="file_put"/>
+            <arg name="env" ref="env" />
             <arg name="len">
                 <value>42</value>
             </arg>
         </run>
         <run>
             <script name="file_get"/>
+            <arg name="env" ref="env" />
         </run>
         <run>
             <script name="file_read"/>
+            <arg name="env" ref="env" />
         </run>
         <run>
             <script name="file_write"/>
+            <arg name="env" ref="env" />
         </run>
         <run>
             <script name="file_append"/>
+            <arg name="env" ref="env" />
         </run>
         <run>
             <script name="file_copy"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}},{{'pco_tst':tester}}}</value>
+            </arg>
         </run>
         <run>
             <script name="file_directory"/>
+            <arg name="env" ref="env" />
             <arg name="nfiles">
                 <value>42</value>
             </arg>

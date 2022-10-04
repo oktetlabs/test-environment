@@ -26,13 +26,13 @@ main(int argc, char **argv)
 {
     char           *lfile = NULL;
     char           *rfile = NULL;
-    rcf_rpc_server *rpcs = NULL;
+    rcf_rpc_server *pco_iut = NULL;
     size_t          len = 0;
     void           *buf = NULL;
 
     TEST_START;
     TEST_GET_UINT_PARAM(len);
-    TEST_GET_RPCS(AGT_A, "rpcs", rpcs);
+    TEST_GET_PCO(pco_iut);
 
     TEST_STEP("Generate a file on TEN");
     buf = te_make_buf_by_len(len);
@@ -41,14 +41,14 @@ main(int argc, char **argv)
 
     TEST_STEP("Put the file on TA");
     rfile = tapi_file_generate_name();
-    if ((rc = rcf_ta_put_file(rpcs->ta, 0, lfile, rfile)) != 0)
+    if ((rc = rcf_ta_put_file(pco_iut->ta, 0, lfile, rfile)) != 0)
     {
         TEST_VERDICT("rcf_ta_put_file() failed; errno=%r", rc);
     }
 
     TEST_STEP("Check if the file exists on TA");
-    RPC_AWAIT_ERROR(rpcs);
-    if (rpc_access(rpcs, rfile, RPC_F_OK) != 0)
+    RPC_AWAIT_ERROR(pco_iut);
+    if (rpc_access(pco_iut, rfile, RPC_F_OK) != 0)
     {
         TEST_VERDICT("File doesn't exist on TA");
     }
@@ -57,7 +57,7 @@ main(int argc, char **argv)
 
 cleanup:
 
-    CLEANUP_CHECK_RC(rcf_ta_del_file(rpcs->ta, 0, rfile));
+    CLEANUP_CHECK_RC(rcf_ta_del_file(pco_iut->ta, 0, rfile));
 
     if (unlink(lfile) != 0)
     {

@@ -24,23 +24,23 @@ main(int argc, char **argv)
 {
     char           *rfile = NULL;
     te_string       rpath = TE_STRING_INIT;
-    rcf_rpc_server *rpcs = NULL;
+    rcf_rpc_server *pco_iut = NULL;
     char           *contents = NULL;
     static char     expected[] = "First Second";
 
     TEST_START;
-    TEST_GET_RPCS(AGT_A, "rpcs", rpcs);
+    TEST_GET_PCO(pco_iut);
 
     TEST_STEP("Create a file on TA");
 
     rfile = tapi_file_generate_name();
     CHECK_RC(te_string_append(&rpath, "%s/%s", TMP_DIR, rfile));
-    CHECK_RC(tapi_file_append_ta(rpcs->ta, rpath.ptr, "NULL"));
-    CHECK_RC(tapi_file_create_ta(rpcs->ta, rpath.ptr, "First"));
-    CHECK_RC(tapi_file_append_ta(rpcs->ta, rpath.ptr, " Second"));
+    CHECK_RC(tapi_file_append_ta(pco_iut->ta, rpath.ptr, "NULL"));
+    CHECK_RC(tapi_file_create_ta(pco_iut->ta, rpath.ptr, "First"));
+    CHECK_RC(tapi_file_append_ta(pco_iut->ta, rpath.ptr, " Second"));
 
     TEST_STEP("Get the file from TA");
-    CHECK_RC(tapi_file_read_ta(rpcs->ta, rpath.ptr, &contents));
+    CHECK_RC(tapi_file_read_ta(pco_iut->ta, rpath.ptr, &contents));
 
     TEST_STEP("Check the expected contents");
     if (strcmp(contents, expected) != 0)
@@ -54,7 +54,7 @@ main(int argc, char **argv)
 cleanup:
 
     free(contents);
-    CLEANUP_CHECK_RC(rcf_ta_del_file(rpcs->ta, 0, rpath.ptr));
+    CLEANUP_CHECK_RC(rcf_ta_del_file(pco_iut->ta, 0, rpath.ptr));
     te_string_free(&rpath);
 
     TEST_END;

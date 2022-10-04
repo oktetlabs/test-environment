@@ -72,24 +72,24 @@ main(int argc, char **argv)
 {
     char           *rdir = NULL;
     te_string       rpath = TE_STRING_INIT;
-    rcf_rpc_server *rpcs = NULL;
+    rcf_rpc_server *pco_iut = NULL;
     size_t          nfiles = 0;
 
     TEST_START;
-    TEST_GET_RPCS(AGT_A, "rpcs", rpcs);
+    TEST_GET_PCO(pco_iut);
     TEST_GET_UINT_PARAM(nfiles);
 
     TEST_STEP("Create a directory on TA");
     rdir = tapi_file_generate_name();
     CHECK_RC(te_string_append(&rpath, "%s/%s", TMP_DIR, rdir));
-    RPC_AWAIT_ERROR(rpcs);
-    if (rpc_mkdir(rpcs, rpath.ptr, 0) != 0)
+    RPC_AWAIT_ERROR(pco_iut);
+    if (rpc_mkdir(pco_iut, rpath.ptr, 0) != 0)
     {
         TEST_VERDICT("rpc_mkdir() failed", rpath.ptr);
     }
 
     TEST_STEP("Create files in the directory");
-    if (create_files(nfiles, rpcs, rpath.ptr) != nfiles)
+    if (create_files(nfiles, pco_iut, rpath.ptr) != nfiles)
     {
         TEST_VERDICT("Files aren't created");
     }
@@ -99,19 +99,19 @@ main(int argc, char **argv)
 cleanup:
 
     TEST_STEP("Remove the directory");
-    if (remove_files(rpcs, rpath.ptr) != 0)
+    if (remove_files(pco_iut, rpath.ptr) != 0)
     {
         TEST_VERDICT("Directory isn't removed");
     }
-    RPC_AWAIT_ERROR(rpcs);
-    if (rpc_rmdir(rpcs, rpath.ptr) != 0)
+    RPC_AWAIT_ERROR(pco_iut);
+    if (rpc_rmdir(pco_iut, rpath.ptr) != 0)
     {
         TEST_VERDICT("rpc_rmdir() failed");
     }
 
     TEST_STEP("Check if the directory doesn't exist");
-    RPC_AWAIT_ERROR(rpcs);
-    if (rpc_access(rpcs, rpath.ptr, RPC_F_OK) == 0)
+    RPC_AWAIT_ERROR(pco_iut);
+    if (rpc_access(pco_iut, rpath.ptr, RPC_F_OK) == 0)
     {
         TEST_VERDICT("Directory still exists on TA");
     }
