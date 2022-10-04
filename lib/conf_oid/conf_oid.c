@@ -112,6 +112,13 @@ cfg_convert_oid_str(const char *str)
          token != NULL;
          token = strtok(NULL, "/"))
     {
+        if (depth >= CFG_OID_LEN_MAX)
+        {
+            ERROR("%s(): '%s' has too many elements, consider increasing "
+                  "CFG_OID_LEN_MAX", __FUNCTION__, str);
+            return NULL;
+        }
+
         if (inst)
         {
             char *name = strchr(token, ':');

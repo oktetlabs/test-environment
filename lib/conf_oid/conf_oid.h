@@ -17,7 +17,11 @@ extern "C" {
                                       including trailing 0 */
 #define CFG_INST_NAME_MAX   256  /**< Instance name, including trailing 0 */
 
-#define CFG_OID_LEN_MAX     8    /**< Maximum number of subids */
+#define CFG_OID_LEN_MAX     10   /**< Maximum number of subids.
+                                      Note: this includes subid of root
+                                      object, so your OID can contain
+                                      one subid less than this number
+                                      after leading '/' */
 
 #define CFG_OID_MAX \
     ((CFG_SUBID_MAX + CFG_INST_NAME_MAX + 2) * CFG_OID_LEN_MAX)
