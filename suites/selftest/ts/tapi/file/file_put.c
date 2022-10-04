@@ -41,7 +41,7 @@ main(int argc, char **argv)
 
     TEST_STEP("Put the file on TA");
     rfile = tapi_file_generate_name();
-    if ((rc = rcf_ta_put_file(pco_iut->ta, 0, lfile, rfile)) != 0)
+    if ((rc = tapi_file_copy_ta(NULL, lfile, pco_iut->ta, rfile)) != 0)
     {
         TEST_VERDICT("rcf_ta_put_file() failed; errno=%r", rc);
     }

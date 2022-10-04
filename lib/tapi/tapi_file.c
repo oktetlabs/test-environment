@@ -226,37 +226,64 @@ te_errno
 tapi_file_copy_ta(const char *ta_src, const char *src,
                   const char *ta_dst, const char *dst)
 {
-    char *pathname = tapi_file_generate_pathname();
-    te_errno rc;
+    const char *pathname;
+    te_errno rc = 0;
     struct stat st;
+    te_bool need_unlink = FALSE;
 
-    if ((rc = rcf_ta_get_file(ta_src, 0, src, pathname)) != 0)
+    if (ta_src == NULL)
     {
-        ERROR("Cannot get file %s from TA %s: %r", src, ta_src, rc);
-        return rc;
+        if (ta_dst == NULL)
+        {
+            ERROR("%s(): copying between local files is not supported",
+                  __func__);
+            return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+        }
+        pathname = src;
+    }
+    else if (ta_dst == NULL)
+    {
+        pathname = dst;
+    }
+    else
+    {
+        pathname = tapi_file_generate_pathname();
+        need_unlink = TRUE;
     }
 
-    if ((rc = rcf_ta_put_file(ta_dst, 0, pathname, dst)) != 0)
+    if (ta_src != NULL)
     {
-        ERROR("Cannot put file %s to TA %s: %r", dst, ta_dst, rc);
-        unlink(pathname);
-        return rc;
+        if ((rc = rcf_ta_get_file(ta_src, 0, src, pathname)) != 0)
+        {
+            ERROR("Cannot get file %s from TA %s: %r", src, ta_src, rc);
+            return rc;
+        }
+    }
+
+    if (ta_dst != NULL)
+    {
+        if ((rc = rcf_ta_put_file(ta_dst, 0, pathname, dst)) != 0)
+        {
+            ERROR("Cannot put file %s to TA %s: %r", dst, ta_dst, rc);
+            goto cleanup;
+        }
     }
 
     if (stat(pathname, &st) != 0)
     {
         rc = TE_OS_RC(TE_TAPI, errno);
         ERROR("Cannot stat local file %s: %r", pathname, rc);
-        unlink(pathname);
-        return rc;
+        goto cleanup;
     }
 
     RING("Copy file %s:%s to %s:%s using local %s size %lld",
          ta_src, src, ta_dst, dst, pathname,
          (long long)st.st_size);
 
-    unlink(pathname);
-    return 0;
+cleanup:
+    if (need_unlink)
+        unlink(pathname);
+    return rc;
 }
 
 static te_errno

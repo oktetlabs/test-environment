@@ -171,14 +171,20 @@ extern te_errno tapi_file_append_ta(const char *ta, const char *filename,
 
 
 /**
- * Copy file from the one TA to other.
+ * Copy file from the one TA to other or between the Engine and an agent.
  *
  * @param ta_src        source Test Agent
+ *                      (@c NULL if the source is the Engine)
  * @param src           source file name
  * @param ta_dst        destination Test Agent
+ *                      (@c NULL if the source is the Engine)
  * @param dst           destination file name
  *
  * @return Status code
+ *
+ * @todo Currently the function does not support copying files on the Engine
+ *       locally, so both @p ta_src and @p ta_dst cannot be @c NULL at the
+ *       same time.
  */
 extern te_errno tapi_file_copy_ta(const char *ta_src, const char *src,
                                   const char *ta_dst, const char *dst);

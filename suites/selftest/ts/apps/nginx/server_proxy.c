@@ -118,8 +118,8 @@ share_put_file(rcf_rpc_server *rpcs, const char *filepath)
     if (rpc_access(rpcs, SRV_LOC_ROOT_PATH, RPC_F_OK) == -1)
         rpc_mkdir(rpcs, SRV_LOC_ROOT_PATH, RPC_S_IRWXU | RPC_S_IRWXO);
 
-    CHECK_RC(rcf_ta_put_file(rpcs->ta, 0, filepath,
-                             SRV_LOC_ROOT_PATH "/" SRV_LOC_ROOT_FILENAME));
+    CHECK_RC(tapi_file_copy_ta(NULL, filepath, rpcs->ta,
+                               SRV_LOC_ROOT_PATH "/" SRV_LOC_ROOT_FILENAME));
 
     CHECK_RC(te_string_append(&cmd, "chmod go+r %s",
                               SRV_LOC_ROOT_PATH "/" SRV_LOC_ROOT_FILENAME));
