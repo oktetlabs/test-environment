@@ -42,8 +42,7 @@ main(int argc, char **argv)
     }
     fd = rpc_open(pco_iut, rfile, RPC_O_WRONLY | RPC_O_CREAT, 0);
 
-    CHECK_LENGTH(rpc_write(pco_iut, fd, data, data_size), data_size);
-    rpc_close(pco_iut, fd);
+    CHECK_LENGTH(rpc_write_and_close(pco_iut, fd, data, data_size), data_size);
 
     TEST_STEP("Read content from the file on TA");
     buf = (uint8_t *)tapi_calloc(1, data_size);

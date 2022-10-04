@@ -41,8 +41,7 @@ main(int argc, char **argv)
     src = tapi_file_generate_name();
     CHECK_RC(te_string_append(&src_path, "%s/%s", TMP_DIR, src));
     fd = rpc_open(pco_iut, src_path.ptr, RPC_O_WRONLY | RPC_O_CREAT, 0);
-    CHECK_LENGTH(rpc_write(pco_iut, fd, data, data_size), data_size);
-    rpc_close(pco_iut, fd);
+    CHECK_LENGTH(rpc_write_and_close(pco_iut, fd, data, data_size), data_size);
 
     TEST_STEP("Copy the file from TA to TA");
     dst = tapi_file_generate_name();
