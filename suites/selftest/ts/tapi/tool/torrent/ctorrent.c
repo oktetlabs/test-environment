@@ -133,7 +133,7 @@ main(int argc, char **argv)
         TEST_FAIL("Torrent tracker is not running");
 
     TEST_STEP("Create a file to be transferred");
-    if (tapi_file_create_ta(pco_iut->ta, source_file, content) != 0)
+    if (tapi_file_create_ta(pco_iut->ta, source_file, "%s", content) != 0)
         TEST_FAIL("Failed to create a file to be transferred");
 
     TEST_STEP("Create metainfo file on iut");
