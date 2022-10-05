@@ -32,6 +32,8 @@
 #define TEST_END_SPECIFIC TEST_END_ENV
 #endif
 
+#include <string.h>
+
 #include "te_defs.h"
 #include "te_bufs.h"
 #include "tapi_test.h"
@@ -72,10 +74,10 @@ file_check_not_exist(rcf_rpc_server *pco, const char *filename)
 }
 
 static inline void
-file_compare_and_fail(const void *exp_buf, size_t exp_len,
-                      const void *actual_buf, size_t actual_len)
+file_compare_and_fail(const char *exp_buf, const char *actual_buf)
 {
-    if (!te_compare_bufs(exp_buf, exp_len, 1, actual_buf, actual_len,
+    if (!te_compare_bufs(exp_buf, strlen(exp_buf) + 1, 1,
+                         actual_buf, strlen(actual_buf) + 1,
                          TE_LL_ERROR))
     {
         TEST_VERDICT("Buffers do not match");

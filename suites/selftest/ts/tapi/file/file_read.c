@@ -26,28 +26,27 @@ main(int argc, char **argv)
     char           *buf = NULL;
     rcf_rpc_server *pco_iut = NULL;
     int             fd = -1;
-    uint8_t        *data = NULL;
-    const size_t    data_size = BUFSIZE;
+    char           *data = NULL;
 
     TEST_START;
     TEST_GET_PCO(pco_iut);
 
     TEST_STEP("Create file with content on TA");
-    data = te_make_buf_by_len(BUFSIZE);
+    data = te_make_printable_buf_by_len(BUFSIZE);
     rfile = tapi_strdup(tapi_file_generate_name());
     fd = rpc_open(pco_iut, rfile, RPC_O_WRONLY | RPC_O_CREAT, 0);
 
-    CHECK_LENGTH(rpc_write_and_close(pco_iut, fd, data, data_size), data_size);
+    CHECK_LENGTH(rpc_write_and_close(pco_iut, fd, data, BUFSIZE - 1),
+                 BUFSIZE - 1);
 
     TEST_STEP("Read content from the file on TA");
-    /* FIXME: there is no length check */
     if (tapi_file_read_ta(pco_iut->ta, rfile, &buf) != 0)
     {
         TEST_VERDICT("tapi_file_read_ta() failed");
     }
 
     TEST_STEP("Check data");
-    file_compare_and_fail(data, data_size, buf, data_size);
+    file_compare_and_fail(data, buf);
 
     TEST_SUCCESS;
 
