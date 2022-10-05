@@ -64,7 +64,7 @@ check_dest_content(const char *dest_ta, const char *dest_file,
 void
 cleanup_unlink_file(const char *ta, const char *file)
 {
-    if (tapi_file_ta_unlink_fmt(ta, file) != 0)
+    if (tapi_file_ta_unlink_fmt(ta, "%s", file) != 0)
         ERROR("Failed to remove file '%s' from TA '%s'", file, ta);
 }
 
@@ -154,7 +154,7 @@ main(int argc, char **argv)
     {
         WARN("The file already exists");
         TEST_SUBSTEP("Remove the file");
-        if (tapi_file_ta_unlink_fmt(pco_iut->ta, metainfo_iut) != 0)
+        if (tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", metainfo_iut) != 0)
             TEST_FAIL("Failed to remove the file");
 
         TEST_SUBSTEP("Create the metainfo file again");

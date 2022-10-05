@@ -39,7 +39,7 @@ main(int argc, char **argv)
     file_check_exist(pco_iut, filename);
 
     TEST_STEP("Delete the file from TA");
-    if (tapi_file_ta_unlink_fmt(pco_iut->ta, filename) != 0)
+    if (tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", filename) != 0)
     {
         TEST_VERDICT("tapi_file_ta_unlink_fmt() failed");
     }
