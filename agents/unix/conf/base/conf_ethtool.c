@@ -33,6 +33,7 @@
 
 #include "unix_internal.h"
 #include "conf_ethtool.h"
+#include "conf_common.h"
 
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
 
@@ -290,6 +291,105 @@ call_ethtool_ioctl(const char *if_name, int cmd, void *value)
     return call_ioctl(&ifr, if_name, cmd);
 }
 
+#ifdef ETHTOOL_SLINKSETTINGS
+/*
+ * Check whether ETHTOOL_SLINKSETTINGS is supported for
+ * an interface.
+ */
+static void
+check_slinksettings_support(const char *if_name,
+                            ta_ethtool_lsets *lsets)
+{
+    struct ifreq ifr;
+    struct ethtool_link_settings native_lsets;
+    int rc;
+    te_errno te_rc;
+
+    /*
+     * This produces incorrectly filled settings which
+     * will be rejected by Linux kernel. Interface should
+     * not be affected in any way. If driver does not
+     * provide set_link_ksettings() callback, EOPNOTSUPP
+     * is obtained; otherwise - EINVAL.
+     */
+    memset(&native_lsets, 0, sizeof(native_lsets));
+    native_lsets.cmd = ETHTOOL_SLINKSETTINGS;
+
+    te_rc = prepare_ifr(&ifr, if_name);
+    if (te_rc != 0)
+        return;
+
+    ifr.ifr_data = (caddr_t)&native_lsets;
+
+    rc = ioctl(cfg_socket, SIOCETHTOOL, &ifr);
+    if (rc < 0 && errno == EOPNOTSUPP)
+    {
+        lsets->set_supported = FALSE;
+    }
+    else if (rc >= 0)
+    {
+        ERROR("%s(if_name=%s): ioctl() succeeded with incorrect "
+              "request", __FUNCTION__, if_name);
+    }
+}
+#endif
+
+/*
+ * Check whether ETHTOOL_SSET is supported for an interface.
+ */
+static void
+check_sset_support(const char *if_name, ta_ethtool_lsets *lsets)
+{
+    te_errno rc;
+    char value[RCF_MAX_VAL] = "";
+    static const char *known_kinds[] = { "vlan", "bond", "team",
+                                         "ipvlan", "macvlan" };
+    unsigned int i;
+
+    /*
+     * There is no good way to check whether deprecated ETHTOOL_SSET
+     * works without potentially affecting network interface.
+     * So just check for known interface kinds here.
+     */
+
+    rc = get_interface_kind(if_name, value);
+    if (rc == 0)
+    {
+        for (i = 0; i < TE_ARRAY_LEN(known_kinds); i++)
+        {
+            if (strcmp(value, known_kinds[i]) == 0)
+            {
+                lsets->set_supported = FALSE;
+                break;
+            }
+        }
+    }
+}
+
+/*
+ * Check whether changing link settings is supported by the driver.
+ */
+static void
+lsets_check_set_support(const char *if_name,
+                        ta_ethtool_lsets *lsets)
+{
+    lsets->set_supported = TRUE;
+
+    if (lsets->use_xlinksettings)
+    {
+#ifdef ETHTOOL_SLINKSETTINGS
+        check_slinksettings_support(if_name, lsets);
+#else
+        ERROR("%s(if_name=%s): ETHTOOL_SLINKSETTINGS should be used but "
+              "it is not defined", __FUNCTION__, if_name);
+#endif
+    }
+    else
+    {
+        check_sset_support(if_name, lsets);
+    }
+}
+
 /*
  * Try to fill link settings structure with ETHTOOL_GLINKSETTINGS.
  * If that command is not defined or fails, use ETHTOOL_GSET instead.
@@ -440,7 +540,11 @@ get_ethtool_value(const char *if_name, unsigned int gid,
         }
 
         if (cmd == TA_ETHTOOL_LINKSETTINGS)
+        {
             rc = get_ethtool_lsets(if_name, *ptr_out);
+            if (rc == 0)
+                lsets_check_set_support(if_name, *ptr_out);
+        }
         else
             rc = call_ethtool_ioctl(if_name, native_cmd, *ptr_out);
 

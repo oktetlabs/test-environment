@@ -116,6 +116,17 @@ extern te_errno string_replace(char **dst, const char *src);
  */
 extern te_errno string_empty_list(char **list);
 
+/**
+ * Get kind of interface ("bond", "vlan", "team", etc).
+ *
+ * @param ifname      Interface name
+ * @param value       Where to save interface kind
+ *                    (should be of @c RCF_MAX_VAL length).
+ *
+ * @return Status code.
+ */
+extern te_errno get_interface_kind(const char *ifname, char *value);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

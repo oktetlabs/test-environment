@@ -74,6 +74,10 @@ phy_field_get(unsigned int gid, const char *if_name,
          * to unknown value so that Configurator will not try to set
          * specific speed/duplex when trying to restore configuration
          * from backup.
+         *
+         * When driver does not support changing link settings,
+         * administrative speed/duplex should be set to unknown values
+         * for the same reason.
          */
 
         rc = ta_ethtool_lsets_field_get(lsets_ptr,
@@ -82,7 +86,7 @@ phy_field_get(unsigned int gid, const char *if_name,
         if (rc != 0)
             return rc;
 
-        if (autoneg != 0)
+        if (autoneg != 0 || !lsets_ptr->set_supported)
         {
             if (field == TA_ETHTOOL_LSETS_SPEED)
             {
@@ -236,6 +240,40 @@ phy_duplex_admin_get(unsigned int gid, const char *oid, char *value,
                      const char *if_name)
 {
     return phy_duplex_get_common(gid, oid, value, if_name, TRUE);
+}
+
+/*
+ * Check whether changing link settings is supported for the interface.
+ */
+static te_errno
+phy_set_supported_get(unsigned int gid, const char *oid, char *value,
+                      const char *if_name)
+{
+    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
+    ta_ethtool_lsets *lsets_ptr = NULL;
+    te_errno rc;
+
+    UNUSED(oid);
+
+    rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_LINKSETTINGS,
+                           (void **)&lsets_ptr);
+    if (rc != 0)
+    {
+        if (rc == TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP))
+        {
+            /*
+             * This will cause Configurator to ignore absence of
+             * value silently; it simply will not show not supported
+             * node in the tree.
+             */
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        return rc;
+    }
+
+    return te_string_append(&str_val, "%d",
+                            lsets_ptr->set_supported ? 1 : 0);
 }
 
 /* Common function to set link settings structure field */
@@ -628,7 +666,10 @@ RCF_PCH_CFG_NODE_RWC(node_phy_duplex_admin, "duplex_admin", NULL,
 RCF_PCH_CFG_NODE_RO(node_phy_duplex_oper, "duplex_oper", NULL,
                     &node_phy_duplex_admin, phy_duplex_oper_get);
 
-RCF_PCH_CFG_NODE_NA_COMMIT(node_phy, "phy", &node_phy_duplex_oper, NULL,
+RCF_PCH_CFG_NODE_RO(node_phy_set_supported, "set_supported", NULL,
+                    &node_phy_duplex_oper, phy_set_supported_get);
+
+RCF_PCH_CFG_NODE_NA_COMMIT(node_phy, "phy", &node_phy_set_supported, NULL,
                            phy_commit);
 
 /**

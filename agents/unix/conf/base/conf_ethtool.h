@@ -79,6 +79,8 @@ typedef struct ta_ethtool_lsets {
     te_bool use_xlinksettings;  /**< If @c TRUE, link settings were obtained
                                      via ETHTOOL_GLINKSETTINGS, otherwise
                                      ETHTOOL_GSET was used */
+    te_bool set_supported;      /**< If @c TRUE, changing link settings is
+                                     supported */
 } ta_ethtool_lsets;
 
 /** Link settings field IDs */

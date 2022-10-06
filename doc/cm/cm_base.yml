@@ -567,6 +567,16 @@
                  0 - link down
                  1 - link up
 
+    - oid: "/agent/interface/phy/set_supported"
+      access: read_only
+      type: int32
+      volatile: true
+      d: |
+         Can link settings be changed?
+         Name: none
+         Value: 0 - Changing is not supported
+                1 - Changing is supported
+
     - oid: "/agent/interface/feature"
       access: read_write
       type: int32

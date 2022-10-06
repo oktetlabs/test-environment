@@ -3504,6 +3504,19 @@ iface_parent_get(unsigned int gid, const char *oid, char *value,
 #endif
 }
 
+/* See description in conf_common.h */
+te_errno
+get_interface_kind(const char *ifname, char *value)
+{
+    *value = '\0';
+
+#ifdef USE_LIBNETCONF
+    return iface_get_property_netconf(ifname, value, IF_PROP_KIND);
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
 /**
  * Get kind of an interface (whether it is vlan, macvlan, ipvlan, etc).
  *
@@ -3526,11 +3539,7 @@ iface_kind_get(unsigned int gid, const char *oid, char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-#ifdef USE_LIBNETCONF
-    return iface_get_property_netconf(ifname, value, IF_PROP_KIND);
-#else
-    return TE_RC(TE_TA_UNIX, TE_ENOENT);
-#endif
+    return get_interface_kind(ifname, value);
 }
 
 static te_errno
