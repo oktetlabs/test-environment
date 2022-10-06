@@ -9,6 +9,7 @@ import sys
 import os
 import json
 import tce_py.susum as reader
+import tce_py.susum_html as writer
 
 def main(argv):
     if len(argv) != 3:
@@ -18,6 +19,8 @@ def main(argv):
         conf = json.load(fp)
 
     susum = reader.read(conf)
+
+    writer.write(conf, susum, argv[2])
 
     return 0
 
