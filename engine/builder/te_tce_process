@@ -453,80 +453,116 @@ function get_tce_platforms
     echo "${platforms}"
 }
 
-function clean_tce_on_build
-{
-    local platform=$1
-    local tce=$2
-    local build=""${tce_type_comp_build["${platform}_${tce}"]}""
-    local wsdir="${TE_BUILD}/platforms/${platform}"
+#######################################
+# Clean gcda and gcov files on the build.
+# Globals:
+#   TE_BUILD
+#   tce_type_comp_build
+# Arguments:
+#   The TA type of build.
+#   The name of a TA component.
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_clean_on_build() {
+    local type="$1"
+    local comp="$2"
+    local pbase="${TE_BUILD}/platforms/${type}"
+    local build="${tce_type_comp_build[${type}_${comp}]}"
     local files=
     local f=
 
-    pushd "${wsdir}/${build}" > /dev/null || \
-        tce_die "fail to locate build: " \
-                "platform ${platform} tce ${tce}"
+    pushd "${pbase}/${build}" &> /dev/null \
+        || tce_die "failed to locate ${type}/${comp} build"
 
-    files=$(find . -name \*.gcda -o -name \*.gcov) || \
-        tce_die "fail to list TCE files into build: " \
-                "platform ${platform} tce ${tce}"
+    files="$(find . -name \*.gcda -o -name \*.gcov 2> /dev/null)" \
+        || tce_die "failed to locate gcda/gcov files on ${type}/${comp} build"
 
-    for f in ${files} ; do
-        rm "$f" || \
-            tce_die "fail to remove $f from build: " \
-                    "platform ${platform} tce ${tce}"
-    done
+    while read f ; do
+        [[ -z "$f" ]] && continue
+
+        rm --interactive=never "$f" 2> /dev/null \
+            || tce_die "failed to remove $f on ${type}/${comp} build"
+    done < <(echo "${files}")
 
     popd > /dev/null
 }
 
-function copy_tce_to_build
-{
-    local platform=$1
-    local host=$2
-    local tce=$3
-    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local build="${tce_type_comp_build["${platform}_${tce}"]}"
-    local wsdir="${TE_BUILD}/platforms/${platform}"
+#######################################
+# Copy gcov files to the build.
+# Globals:
+#   TE_BUILD
+#   TCE_WS
+#   tce_type_comp_build
+# Arguments:
+#   The TA type of build.
+#   The name of a TA component.
+#   The destination of gcov files.
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_copy_gcov_to_build() {
+    local type="$1"
+    local comp="$2"
+    local dest="$3"
+    local pbase="${TE_BUILD}/platforms/${type}"
+    local build="${tce_type_comp_build[${type}_${comp}]}"
 
-    test -d "${tcedir}/build" || \
-        tce_die "fail to locate TCE files: " \
-                "platform ${platform} host ${host} tce ${tce}"
+    tce_clean_on_build "${type}" "${comp}"
+
+    [[ -d "${TCE_WS}/${dest}/build" ]] \
+        || tce_die "failed to locate ${dest} gcov files for ${type}/${comp} " \
+                   "build"
 
     rsync -a --include=\*.gcov --include=\*/ --exclude=\* \
-          "${tcedir}/build/" "${wsdir}/${build}/" || \
-        tce_die "fail to place TCE into build: " \
-                "platform ${platform} host ${host} tce ${tce}"
+          "${TCE_WS}/${dest}/build/" "${pbase}/${build}/" 2> /dev/null \
+        || tce_die "failed to place ${dest} gcov files on ${type}/${comp} build"
 }
 
-function report_host_tce
-{
-    local platform=$1
-    local host=$2
-    local tce=$3
-    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local build="${tce_type_comp_build["${platform}_${tce}"]}"
-    local wsdir="${TE_BUILD}/platforms/${platform}"
-    local report="${tcedir}/report.tce"
+#######################################
+# Generate the TCE report.
+# Globals:
+#   TE_BUILD
+#   TCE_WS
+#   tce_type_comp_build
+# Arguments:
+#   The TA type of build.
+#   The name of a TA component.
+#   The destination of gcov files.
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_create_report() {
+    local type="$1"
+    local comp="$2"
+    local dest="$3"
+    local pbase="${TE_BUILD}/platforms/${type}"
+    local build="${tce_type_comp_build[${type}_${comp}]}"
+    local report="${TCE_WS}/${dest}/report.tce"
     local files=
     local f=
 
-    > "${report}" || \
-        tce_die "fail to clean TCE report: " \
-                "platform ${platform} host ${host} tce ${tce}"
+    > "${report}" \
+        || tce_die "failed to clean TCE report for ${type}/${comp}"
 
-    pushd "${wsdir}/${build}" > /dev/null || \
-        tce_die "fail to locate build: " \
-                "platform ${platform} host ${host} tce ${tce}"
+    pushd "${pbase}/${build}" &> /dev/null \
+        || tce_die "failed to locate build for ${type}/${comp}"
 
-    files=$(find . -name \*.gcov | sort) || \
-        tce_die "fail to list TCE files into build: " \
-                "platform ${platform} host ${host} tce ${tce}"
+    files="$(find . -name \*.gcov 2> /dev/null)" \
+        || tce_die "failed to list gcov files for ${type}/${comp}"
 
-    for f in ${files} ; do
-        cat "$f" | tce_report >> "${report}" || \
-            tce_die "fail to process report for TCE file $f: " \
-                    "platform ${platform} host ${host} tce ${tce}"
-    done
+    while read f ; do
+        [[ -z "$f" ]] && continue
+
+        cat "$f" | tce_report >> "${report}" \
+            || tce_die "failed to report TCE file $f for ${type}/${comp}"
+    done < <(echo "${files}" | sort)
 
     popd > /dev/null
 }
@@ -619,9 +655,10 @@ for tce in $all_tce ; do
         for host in ${hosts} ; do
             repname="tce_log_${platform}_${host}_${tce}"
 
-            clean_tce_on_build ${platform} ${tce}
-            copy_tce_to_build ${platform} ${host} ${tce}
-            report_host_tce ${platform} ${host} ${tce}
+            tce_copy_gcov_to_build "${platform}" "${tce}" \
+                    "$(tce_ws_name "${platform}" "${host}" "${tce}")"
+            tce_create_report "${platform}" "${tce}" \
+                    "$(tce_ws_name "${platform}" "${host}" "${tce}")"
             summarise_tce ${platform} ${host} ${tce} "${repname}"
         done
     done
