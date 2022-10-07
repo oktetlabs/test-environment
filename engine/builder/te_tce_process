@@ -600,44 +600,35 @@ function summarise_tce
     popd > /dev/null
 }
 
-function copy_host_report
-{
-    local platform=$1
-    local host=$2
-    local tce=$3
-    local mtcedir="$(tce_ws_dir "${platform}" "" "${tce}")"
-    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local conf="${tcedir}/tce.conf"
-    local report="${tcedir}/report.tce"
+#######################################
+# Merge a TCE report.
+# Globals:
+#   TCE_WS
+# Arguments:
+#   The directory with the report to be merged.
+#   The directory to merge into.
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_merge_report() {
+    local src="$1"
+    local dest="$2"
+    local conf="${TCE_WS}/${src}/tce.conf"
+    local rep="${TCE_WS}/${src}/report.tce"
+    local mconf="${TCE_WS}/${dest}/tce.conf"
+    local mrep="${TCE_WS}/${dest}/report.tce"
 
-    test -d "${mtcedir}" && \
-        rm -r "${mtcedir}"
+    if [[ ! -f "${mrep}" ]] ; then
+        mkdir -p "${TCE_WS}/${dest}" 2> /dev/null
+        touch "${mrep}" 2> /dev/null
+        cp "${conf}" "${mconf}" \
+            || tce_die "failed to copy TCE conf from ${src}"
+    fi
 
-    mkdir -p "${mtcedir}"
-
-    cp -t "${mtcedir}" "${conf}" "${report}" || \
-        tce_die "fail to copy TCE into merge workspace: " \
-                "platform ${platform} host ${host} tce ${tce}"
-}
-
-function merge_host_report
-{
-    local mplatform=$1
-    local platform=$2
-    local host=$3
-    local tce=$4
-    local mtcedir="$(tce_ws_dir "${mplatform}" "" "${tce}")"
-    local mconf="${mtcedir}/tce.conf"
-    local mreport="${mtcedir}/report.tce"
-    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local conf="${tcedir}/tce.conf"
-    local report="${tcedir}/report.tce"
-
-    tce_merge_report.py "${mconf}" "${mreport}" \
-                         "${conf}" "${report}" || \
-        tce_die "fail to merge reports: " \
-                "merge platform ${mplatform} " \
-                "platform ${platform} host ${host} tce ${tce}"
+    tce_merge_report.py "${mconf}" "${mrep}" "${conf}" "${rep}" \
+        || tce_die "failed to merge TCE report from ${src}"
 }
 
 all_tce="$(echo "${tce_type_comp[@]}" | sed 's/ \+/\n/g' | sort -u)"
@@ -667,13 +658,10 @@ for tce in $all_tce ; do
         hosts="${platform_hosts[${platform}]}"
 
         for host in ${hosts} ; do
-            if test -z "${mplatform}" ; then
-                copy_host_report ${platform} ${host} ${tce}
-                mplatform="${platform}"
-                continue
-            fi
+            [[ -z "${mplatform}" ]] && mplatform="${platform}"
 
-            merge_host_report ${mplatform} ${platform} ${host} ${tce}
+            tce_merge_report "$(tce_ws_name "${platform}" "${host}" "${tce}")" \
+                             "$(tce_ws_name "${mplatform}" "" "${tce}")"
         done
     done
 
