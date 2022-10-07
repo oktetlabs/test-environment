@@ -241,6 +241,11 @@
  * All other agents are not proxy.
  */
 
+/** The state of the TCE information. */
+typedef enum {
+    RCFUNIX_TCE_S_NA = 0,  /**< is in an undefined state */
+    RCFUNIX_TCE_S_CLEARED, /**< has been cleared */
+} rcfunix_tce_state_t;
 
 /** UNIX Test Agent descriptor */
 typedef struct unix_ta {
@@ -288,6 +293,8 @@ typedef struct unix_ta {
     const rcf_tce_local_conf_t *tce_local;
     /** The TA agent part of the TCE configuration. */
     const rcf_tce_type_conf_t  *tce_type;
+    /** The state of the TCE information. */
+    rcfunix_tce_state_t         tce_state;
 } unix_ta;
 
 /** Free resources allocated for TA control structure */
@@ -481,6 +488,110 @@ rcfunix_connect_to(const unix_ta *ta, te_bool ignore_proxy)
 }
 
 /**
+ * Form the shell command to remove the TCE information for a specific
+ * TA component.
+ *
+ * @param      ta   The TA configuration.
+ * @param      comp The TCE configuration of a TA component.
+ * @param[out] cmd  The command formed.
+ */
+static void
+ta_form_clean_tce_comp_cmd(unix_ta *ta, const rcf_tce_comp_conf_t *comp,
+                           te_string *cmd)
+{
+    const rcf_tce_type_conf_t *type = ta->tce_type;
+
+    te_string_reset(cmd);
+
+    te_string_append(cmd,
+                     "%s%s \"%s/ta_clean_tce\" component \"%s/%s\" %s 2>&1 "
+                     "| te_tee \"%s\" \"%s\" 10 " RCFUNIX_REDIRECT,
+                     te_string_value(&ta->start_prefix), rcfunix_ta_sudo(ta),
+                     ta->run_dir, type->base, comp->build, ta->cmd_suffix,
+                     TE_LGR_ENTITY, ta->ta_name);
+}
+
+/**
+ * Form the shell command to remove the base directory of TA builds.
+ *
+ * @param      ta  The TA configuration.
+ * @param[out] cmd The command formed.
+ */
+static void
+ta_form_clean_tce_ws_cmd(unix_ta *ta, te_string *cmd)
+{
+    const rcf_tce_type_conf_t *type = ta->tce_type;
+
+    te_string_reset(cmd);
+
+    te_string_append(cmd,
+                     "%s%s \"%s/ta_clean_tce\" workspace \"%s\" %s 2>&1 "
+                     "| te_tee \"%s\" \"%s\" 10 " RCFUNIX_REDIRECT,
+                     te_string_value(&ta->start_prefix), rcfunix_ta_sudo(ta),
+                     ta->run_dir, type->base, ta->cmd_suffix,
+                     TE_LGR_ENTITY, ta->ta_name);
+}
+
+/**
+ * Clean the TCE information on a TA agent.
+ *
+ * The sequences of the cleaning:
+ * - the TCE information is not interfered by the previous runs,
+ * - it does not hold a space after the TA agent have been terminated.
+ *
+ * @param ta    The TA configuration.
+ * @param rm_ws If TRUE remove the base directory of component builds also.
+ *
+ * @return The status code.
+ */
+static te_errno
+ta_clean_tce(unix_ta *ta, te_bool rm_ws)
+{
+    const rcf_tce_type_conf_t *type = ta->tce_type;
+    const rcf_tce_comp_conf_t *comp = NULL;
+    te_string cmd = TE_STRING_INIT;
+    te_errno rc = 0;
+
+    if (type == NULL)
+        return 0;
+
+    while ((comp = rcf_tce_get_next_comp_conf(type, comp)) != NULL)
+    {
+        ta_form_clean_tce_comp_cmd(ta, comp, &cmd);
+
+        INFO("CMD to clean TCE '%s': %s", comp->name, te_string_value(&cmd));
+
+        if ((rc = system_with_timeout(ta->copy_timeout, NULL, "%s",
+                                      te_string_value(&cmd))) != 0)
+        {
+            ERROR("Failed to clean TCE '%s'", comp->name);
+            goto out;
+        }
+    }
+
+    if (rm_ws)
+    {
+        ta_form_clean_tce_ws_cmd(ta, &cmd);
+
+        INFO("CMD to clean TCE workspace: %s", te_string_value(&cmd));
+
+        if ((rc = system_with_timeout(ta->copy_timeout, NULL, "%s",
+                                      te_string_value(&cmd))) != 0)
+        {
+            ERROR("Failed to clean TCE workspace");
+            goto out;
+        }
+    }
+
+    ta->tce_state = RCFUNIX_TCE_S_CLEARED;
+
+out:
+    te_string_free(&cmd);
+
+    return rc;
+}
+
+/**
  * Load the TCE configuration on a TA agent started.
  *
  * The RCF/unix controller can be re-started when:
@@ -502,6 +613,8 @@ ta_conf_tce(unix_ta *ta, const rcf_talib_param *param)
 
     if (ta->tce_local != NULL)
         return;
+
+    ta->tce_state = RCFUNIX_TCE_S_NA;
 
     if ((type = rcf_tce_get_type_conf(conf, ta->ta_type)) == NULL)
         return;
@@ -894,6 +1007,14 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         }
     }
 
+    if ((rc = ta_clean_tce(ta, FALSE)) != 0)
+    {
+        te_string_free(&cfg_str);
+        te_string_free(&cmd);
+        rcfunix_ta_free(ta);
+        return rc;
+    }
+
     /* Clean up command string */
     te_string_reset(&cmd);
 
@@ -1090,6 +1211,8 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             goto done;
     }
+
+    ta_clean_tce(ta, TRUE);
 
     rc = te_string_append(&cmd, "%srm -rf %s%s",
                        ta->cmd_prefix.ptr, ta->run_dir, ta->cmd_suffix);
