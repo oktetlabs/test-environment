@@ -180,13 +180,35 @@ function rsync_fnmatch_to
     fi
 }
 
+#######################################
+# Form the name of directory to process a TA component.
+#
+# This function is added to update a legacy text. And will be removed after the
+# TCE processing will use the TCE information saved by the RCF controller.
+# Does not use it in a new text!
+#
+# Arguments:
+#   The TA type of the component.
+#   The TA host the component has been fetced.
+#   The name of a TA component.
+# Outputs:
+#   Outputs the name of the directory.
+#######################################
+function tce_ws_name() {
+    local type=$1
+    local host=$2
+    local comp=$3
+
+    echo "${type}_${host}_${comp}"
+}
+
 function tce_ws_dir
 {
     local platform=$1
     local host=$2
     local tce=$3
 
-    echo "${TCE_WS}/${platform}_${host}_${tce}"
+    echo "${TCE_WS}/$(tce_ws_name "${platform}" "${host}" "${tce}")"
 }
 
 function fetch_host_tce
@@ -212,48 +234,71 @@ function fetch_host_tce
                 "platform ${platform} host ${host} tce ${tce}"
 }
 
-function clean_platform_tce
-{
-    local platform=$1
-    local tce=$2
-    local hostdir="${tce_build_base[${platform}]}"
-    local hostdest="${hostdir}/destdir/${TE_INSTALL}/${platform}"
-    local build="${tce_type_comp_build["${platform}_${tce}"]}"
+#######################################
+# Clean TCE files on the build host.
+# Globals:
+#   tce_build_base
+#   tce_type_comp_build
+# Arguments:
+#   The TA type.
+#   The name of a TA component.
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_clean_on_host() {
+    local type="$1"
+    local comp="$2"
+    local hbase="${tce_build_base[${type}]}"
+    local hdest="${hbase}/destdir/${TE_INSTALL}/${type}"
+    local build="${tce_type_comp_build["${type}_${comp}"]}"
 
-    te_eval_or_ssh "${platform}" "
-                   export PATH=\"${hostdest}/bin:\${PATH}\" ;
-                   te_clean_gcov.sh \"${hostdir}/${build}\"
-                   " || \
-        tce_die "fail to clean platform TCE: " \
-                "platform ${platform} tce ${tce}"
+    te_eval_or_ssh "${type}" "
+                   export PATH=\"${hdest}/bin:\${PATH}\" ;
+                   te_clean_gcov.sh \"${hbase}/${build}\"
+                   " \
+        || tce_die "failed to clean ${type}/${comp} on build host"
 }
 
-function process_host_tce
-{
-    local platform=$1
-    local host=$2
-    local tce=$3
-    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local hostdir="${tce_build_base[${platform}]}"
-    local hostdest="${hostdir}/destdir/${TE_INSTALL}/${platform}"
-    local build="${tce_type_comp_build["${platform}_${tce}"]}"
+#######################################
+# Process gcda files on the build host
+# Globals:
+#   TE_INSTALL
+#   TCE_WS
+#   tce_build_base
+#   tce_type_comp_build
+# Arguments:
+#   The TA type.
+#   The name of a TA component.
+#   The destination of gcda files.
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_process_gcda_on_host() {
+    local type="$1"
+    local comp="$2"
+    local dest="$3"
+    local hbase="${tce_build_base[${type}]}"
+    local hdest="${hbase}/destdir/${TE_INSTALL}/${type}"
+    local build="${tce_type_comp_build[${type}_${comp}]}"
 
-    rsync_fnmatch_to "*.gcda" ${platform} "${tcedir}/build" \
-                     "${hostdir}/${build}" || \
-        tce_die "fail to place TCE onto platform: " \
-                "platform ${platform} host ${host} tce ${tce}"
+    tce_clean_on_host "${type}" "${comp}"
 
-    te_eval_or_ssh ${platform} "
-                   export PATH=\"${hostdest}/bin:\${PATH}\" ;
-                   te_process_gcov.sh \"${hostdir}/${build}\"
-                   " || \
-        tce_die "fail to process TCE on platform: " \
-                "platform ${platform} host ${host} tce ${tce}"
+    rsync_fnmatch_to "*.gcda" "${type}" "${TCE_WS}/${dest}/build" \
+                     "${hbase}/${build}" \
+        || tce_die "failed to place ${dest} on ${type}/${comp} build host"
 
-    rsync_fnmatch_from "*.gcov" ${platform} "${hostdir}/${build}" \
-                       "${tcedir}/build" || \
-        tce_die "fail to fetch TCE from platform: " \
-                "platform ${platform} host ${host} tce ${tce}"
+    te_eval_or_ssh "${type}" "
+                   export PATH=\"${hdest}/bin:\${PATH}\" ;
+                   te_process_gcov.sh \"${hbase}/${build}\" " \
+        || tce_die "failed to process ${dest} on ${type}/${comp} build host"
+
+    rsync_fnmatch_from "*.gcov" "${type}" "${hbase}/${build}" \
+                       "${TCE_WS}/${dest}/build" \
+        || tce_die "failed to fetch ${dest} from ${type}/${comp} build host"
 }
 
 #######################################
@@ -350,8 +395,8 @@ for platform in "${!tce_type_comp[@]}" ; do
 
     for host in ${hosts} ; do
         for tce in ${tce_list} ; do
-            clean_platform_tce ${platform} ${tce}
-            process_host_tce ${platform} ${host} ${tce}
+            tce_process_gcda_on_host "${platform}" "${tce}" \
+                    "$(tce_ws_name "${platform}" "${host}" "${tce}")"
         done
     done
 
