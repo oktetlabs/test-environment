@@ -331,51 +331,77 @@ function tce_link_src_on_build() {
         || tce_die "failed to link src for ${type}/${comp}"
 }
 
-function link_platform_tce_install
-{
-    local platform=$1
-    local tce=$2
-    local build="${tce_type_comp_build["${platform}_${tce}"]}"
-    local pbuild="${TE_BUILD}/platforms/${platform}"
-    local inst="$(realpath ${pbuild}/${build}/../inst)"
+#######################################
+# Link the inst directory to be relative to the build.
+# Globals:
+#   TE_BUILD
+#   TE_INSTALL
+#   tce_type_comp_build
+# Arguments:
+#   The TA type of build.
+#   The name of a TA component.
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_link_inst_on_build() {
+    local type="$1"
+    local comp="$2"
+    local build="${tce_type_comp_build[${type}_${comp}]}"
+    local pbase="${TE_BUILD}/platforms/${type}"
+    local inst="$(realpath "${pbase}/${build}/../inst")"
 
-    test -d "${inst}" && \
-        return 0
+    [[ -d "${inst}" ]] && return 0
 
-    test -d "${TE_INSTALL}/${platform}" || \
-        tce_die "fail to locate install directory: " \
-                "platform ${platform} tce ${tce}"
+    [[ -d "${TE_INSTALL}/${type}" ]] \
+        || tce_die "failed to locate inst for ${type}/${comp}"
 
-    ln -s "${TE_INSTALL}/${platform}" "${inst}" || \
-        tce_die "fail to link install directory: " \
-                "platform ${platform} tce ${tce}"
+    ln -s "${TE_INSTALL}/${type}" "${inst}" \
+        || tce_die "failed to link inst for ${type}/${comp}"
 }
 
-function resolve_platform_host_tce
-{
-    local platform=$1
-    local host=$2
-    local tce=$3
-    local hostdir="${tce_build_base[${platform}]}"
-    local pbuild="${TE_BUILD}/platforms/${platform}"
-    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local build="${tce_type_comp_build["${platform}_${tce}"]}"
-    local conf="${tcedir}/tce.conf"
+#######################################
+# Resolve gcov sources to be relative to the build
+# Globals:
+#   TE_BUILD
+#   TE_INSTALL
+#   TCE_WS
+#   tce_build_base
+#   tce_type_comp_build
+# Arguments:
+#   The TA type of build.
+#   The name of a TA component.
+#   The destination of gcov files.
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_resolve_gcov_on_build() {
+    local type="$1"
+    local comp="$2"
+    local dest="$3"
+    local hbase="${tce_build_base[${type}]}"
+    local build="${tce_type_comp_build[${type}_${comp}]}"
+    local pbase="${TE_BUILD}/platforms/${type}"
+    local conf="${TCE_WS}/${dest}/tce.conf"
 
-    cat > "${conf}" << EOF
+    cat 2> /dev/null > "${conf}" << EOF
 {
     "build" : "${build}",
     "inst" : "../inst",
-    "plat_build" : "${pbuild}/${build}",
-    "host_build" : "${hostdir}/${build}",
-    "host_inst" : "${hostdir}/destdir/${TE_INSTALL}/${platform}",
+    "plat_build" : "${pbase}/${build}",
+    "host_build" : "${hbase}/${build}",
+    "host_inst" : "${hbase}/destdir/${TE_INSTALL}/${type}",
     "unres" : "unres.txt"
 }
 EOF
+    (( $? == 0 )) \
+        || tce_die "failed to write ${dest} configuration for ${type}/${comp}"
 
-    tce_resolve_gcov.py "${conf}" || \
-        tce_die "fail to resolve gcovs: " \
-                "platform ${platform} host ${host} tce ${tce}"
+    tce_resolve_gcov.py "${conf}" \
+        || tce_die "failed to resolve ${dest} gcov files for ${type}/${comp}"
 }
 
 tce_py="${TE_INSTALL}/${TE_HOST}/lib"
@@ -402,10 +428,11 @@ for platform in "${!tce_type_comp[@]}" ; do
 
     for tce in ${tce_list} ; do
         tce_link_src_on_build "${platform}" "${tce}"
-        link_platform_tce_install ${platform} ${tce}
+        tce_link_inst_on_build "${platform}" "${tce}"
 
         for host in ${hosts} ; do
-            resolve_platform_host_tce ${platform} ${host} ${tce}
+            tce_resolve_gcov_on_build "${platform}" "${tce}" \
+                    "$(tce_ws_name "${platform}" "${host}" "${tce}")"
         done
     done
 done
