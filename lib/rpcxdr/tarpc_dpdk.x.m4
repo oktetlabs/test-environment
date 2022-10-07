@@ -1022,7 +1022,6 @@ enum tarpc_rte_eth_rxmode_flags {
 struct tarpc_rte_eth_rxmode {
     enum tarpc_rte_eth_rx_mq_mode       mq_mode;
     uint32_t                            mtu;
-    uint16_t                            split_hdr_size;
     uint64_t                            offloads;
     uint16_t                            flags;
 };

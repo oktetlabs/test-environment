@@ -513,7 +513,6 @@ tarpc_rte_eth_rxmode2str(te_log_buf *tlbp,
 
     tarpc_rte_eth_rx_mq_mode2str(tlbp, rxconf->mq_mode);
     te_log_buf_append(tlbp, ", mtu=%u", rxconf->mtu);
-    te_log_buf_append(tlbp, ", split_hdr_size=%u", rxconf->split_hdr_size);
     te_log_buf_append(tlbp, ", offloads=");
     tarpc_rte_eth_rx_offloads2str(tlbp, rxconf->offloads);
     te_log_buf_append(tlbp, ", flags=");
