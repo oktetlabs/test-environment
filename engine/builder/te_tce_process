@@ -567,35 +567,50 @@ function tce_create_report() {
     popd > /dev/null
 }
 
-function summarise_tce
-{
-    local platform=$1
-    local host=$2
-    local tce=$3
-    local repname="$4"
-    local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local report="${tcedir}/report.tce"
-    local build="${tce_type_comp_build["${platform}_${tce}"]}"
-    local wsdir="${TE_BUILD}/platforms/${platform}"
-    local p_excl="TE_BS_TCE_${platform}_${tce}_EXCLUDESRC"
+#######################################
+# Generate a TCE summary.
+# Globals:
+#   TCE_WS
+#   TE_BS_TCE_${type}_${comp}_EXCLUDESRC
+#   TE_BUILD
+#   TE_LOG_DIR
+#   tce_type_comp_build
+# Arguments:
+#   The TA type of build.
+#   The name of a TA component.
+#   The directory with a TCE report.
+#   The base name for the summary.
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_summarise() {
+    local type="$1"
+    local comp="$2"
+    local src="$3"
+    local dest="$4"
+    local pbase="${TE_BUILD}/platforms/${type}"
+    local build="${tce_type_comp_build[${type}_${comp}]}"
+    local p_excl="TE_BS_TCE_${type}_${comp}_EXCLUDESRC"
     local excl="${!p_excl}"
-    local resbase="${TE_LOG_DIR}/${repname}"
+    local report="${TCE_WS}/${src}/report.tce"
+    local resbase="${TE_LOG_DIR}/${dest}"
 
-    test -d "${resbase}_files" && \
-        rm -r "${resbase}_files"
-
+    [[ -d "${resbase}_files" ]] && rm -r "${resbase}_files"
     mkdir -p "${resbase}_files"
 
-    pushd "${wsdir}/${build}" > /dev/null || \
-        tce_die "fail to locate platform to summarise TCE: " \
-                "platform ${platform} host ${host} tce ${tce}"
+    [[ -f "${report}" ]] \
+        || tce_die "failed to locate TCE report for ${src}"
+
+    pushd "${pbase}/${build}" > /dev/null \
+        || tce_die "failed to locate build to summarise TCE for ${src}"
 
     tce_summary -vEXCLUDE="${excl}" -vSORTMODE=coverage \
                 -vDATADIR="${resbase}_files" \
                 "${report}" > \
-                "${resbase}.html" || \
-        tce_die "fail to create summary for TCE report" \
-                "platform ${platform} host ${host} tce ${tce}"
+                "${resbase}.html" \
+        || tce_die "failed to create TCE summary for ${src}"
 
     popd > /dev/null
 }
@@ -650,7 +665,9 @@ for tce in $all_tce ; do
                     "$(tce_ws_name "${platform}" "${host}" "${tce}")"
             tce_create_report "${platform}" "${tce}" \
                     "$(tce_ws_name "${platform}" "${host}" "${tce}")"
-            summarise_tce ${platform} ${host} ${tce} "${repname}"
+            tce_summarise "${platform}" "${tce}" \
+                          "$(tce_ws_name "${platform}" "${host}" "${tce}")" \
+                          "${repname}"
         done
     done
 
@@ -666,5 +683,7 @@ for tce in $all_tce ; do
     done
 
     repname="tce_log_${tce}"
-    summarise_tce ${mplatform} "" ${tce} "${repname}"
+    tce_summarise "${mplatform}" "${tce}" \
+                  "$(tce_ws_name "${mplatform}" "" "${tce}")" \
+                  "${repname}"
 done
