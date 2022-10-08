@@ -479,3 +479,13 @@ executable('ta_rcf_listener', rcf_listener_sources,
            c_args: c_args,
            link_args: link_args,
            dependencies: deps)
+
+ta_scripts = files(
+    'ta_clean_tce',
+    )
+
+install_data(
+    ta_scripts,
+    install_dir: tadir,
+    install_mode: 'r-xr-xr-x',
+    )

@@ -1,0 +1,105 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+#
+# Helper script to clean .gcda directories.
+#
+# It is intended to be called by an RCF/unix agent.
+# Do not call it directly!
+#
+# There are two cases possible:
+# - a directory or a link to a directory are used to build components,
+# - a directory has been auto generated to store .gcda files.
+#
+# $1 command:
+#    component - clean component build directory
+#    workspace - remove the whole workspace
+# $2 directory to clean
+
+cmd="$1"
+dest="$2"
+
+#######################################
+# Die with a message.
+# Arguments:
+#   Arguments to message.
+# Outputs:
+#   Outputs arguments into STDERR.
+# Returns:
+#   This function never returns.
+#######################################
+function die() {
+    echo "ERROR: ta_clean_tce: $*" >&2
+    exit 1
+}
+
+#######################################
+# Clean gcda files.
+# Arguments:
+#   The directory to clean gcda files into.
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function clean_gcda() {
+    local dest="$1"
+    local files=
+
+    pushd "$dest" &> /dev/null \
+        || die "failed to change directory to '${dest}'"
+
+    files="$(find . -name \*.gcda 2> /dev/null)" \
+        || die "failed to locate .gcda files within '${dest}'"
+
+    while read f ; do
+        [[ -z "$f" ]] && continue
+
+        rm --interactive=never "${dest}/$f" &> /dev/null \
+            || die "failed to remove file '${dest}/$f'"
+    done < <(echo "${files}")
+
+    popd &> /dev/null
+}
+
+[[ "${dest##/}" != "${dest}" ]] \
+    || die "directory is '${dest}', but must start with '/'"
+
+# Check the directory exists - it has been created to build a TA type or has
+# been auto generated to store .gcda files.
+[[ -d "${dest}" ]] || exit 0
+
+case "${cmd}" in
+    workspace)
+        # Check the workspace directory does not contain any files.
+        # Remove it in the such case.
+
+        files="$(find -L "${dest}" ! -type d -print -quit 2> /dev/null)" \
+            || die "failied to locate files within '${dest}'"
+
+        if [[ -z "${files}" ]] ; then
+            rm --interactive=never -r ${dest} &> /dev/null \
+                || die "failed to remove '${dest}'"
+        fi
+        ;;
+
+    component)
+        # Check the build directory does not contain any files except .gcda files.
+        # Remove it in the such case or remove .gcda files otherwise.
+
+        files="$(find -L "${dest}" ! \( -type d -o -name \*.gcda \) -print -quit \
+               2> /dev/null)" \
+            || die "failied to locate non .gcda files within '${dest}'"
+
+        if [[ -z "${files}" ]] ; then
+            rm --interactive=never -r ${dest} &> /dev/null \
+                || die "failed to remove '${dest}'"
+        else
+            clean_gcda "${dest}"
+        fi
+        ;;
+
+    *)
+        die "invalid command, 'component' or 'workspace' expected"
+        ;;
+esac
