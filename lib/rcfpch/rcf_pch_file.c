@@ -76,7 +76,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
     if (fd < 0)
     {
         /* Caller should print an error message if it is a problem */
-        rc = TE_RC(TE_RCF_PCH, TE_ENOENT);
+        rc = TE_OS_RC(TE_RCF_PCH, errno);
         goto reject;
     }
 
