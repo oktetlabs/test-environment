@@ -374,7 +374,7 @@ typedef enum {
 
 /** Compose base error code and module identifier */
 #define TE_RC(_mod_id, _error) \
-    ((_error && (TE_RC_GET_MODULE(_error) == 0)) ? \
+    ((((_error) != 0) && (TE_RC_GET_MODULE(_error) == 0)) ? \
      ((int)(_mod_id) << TE_RC_MODULE_SHIFT) | (_error) : (_error))
 
 /**
