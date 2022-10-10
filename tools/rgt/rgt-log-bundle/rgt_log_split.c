@@ -389,7 +389,7 @@ append_to_frag(int node_id, fragment_type frag_type,
                FILE *f_recover,
                const char *output_path)
 {
-    FILE *f_frag;
+    FILE *f_frag = NULL;
     node_info *node_descr;
 
     RGT_ERROR_INIT;
@@ -822,7 +822,7 @@ process_pcap_files(const char *sniff_dir, const char *dst_path,
                    rgt_pcap_file **caps_out, int *caps_num_out,
                    rgt_pcap_file_list *caps_list)
 {
-    DIR *d;
+    DIR *d = NULL;
     struct dirent *ent;
     int len;
 

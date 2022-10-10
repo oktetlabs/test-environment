@@ -81,7 +81,7 @@ static int
 process_sniff_frag(const char *fpath, const char *sniff_path,
                    const char *split_log_path)
 {
-    FILE *f;
+    FILE *f = NULL;
     uint32_t file_id;
     uint64_t pkt_offset;
     uint32_t len;
