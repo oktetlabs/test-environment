@@ -54,6 +54,25 @@
     te_log_message(__FILE__, __LINE__, _level, _entity, _user, _fs)
 
 /**
+ * Expand variadic arguments only if @p _lvl is currently enabled.
+ *
+ * The macro is intended to wrap other logging functions, e.g.:
+ * @code{.c}
+ * TE_IF_LOG_LEVEL(TE_LL_VERB, log_pkt_contents(pkt))
+ * @endcode
+ *
+ * @param _lvl Log level
+ * @param ...  The code to be executed only if @p _lvl is enabled
+ */
+#define TE_DO_IF_LOG_LEVEL(_lvl, ...) \
+    do {                                                              \
+        if ((TE_LOG_LEVEL | TE_LOG_LEVELS_MANDATORY) & (_lvl))        \
+        {                                                             \
+            __VA_ARGS__;                                              \
+        }                                                             \
+    } while (0)
+
+/**
  * Log message of the specified level from the user.
  *
  * @note This macro is intended for internal purposes and should not
@@ -64,12 +83,7 @@
  * @param _fs       - format string and arguments
  */
 #define LGR_MESSAGE(_lvl, _lgruser, _fs...) \
-    do {                                                              \
-        if ((TE_LOG_LEVEL | TE_LOG_LEVELS_MANDATORY) & (_lvl))        \
-        {                                                             \
-            TE_LOG(_lvl, TE_LGR_ENTITY, _lgruser, _fs);               \
-        }                                                             \
-    } while (0)
+    TE_DO_IF_LOG_LEVEL(_lvl, TE_LOG(_lvl, TE_LGR_ENTITY, _lgruser, _fs))
 
 /**
  * Log message from default user with specified level.
