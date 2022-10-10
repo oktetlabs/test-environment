@@ -5,6 +5,7 @@ tests = [
     'enum_map',
     'readlink',
     'resolvepath',
+    'string',
     'units',
     'vector'
 ]

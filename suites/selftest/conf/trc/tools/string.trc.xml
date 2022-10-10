@@ -1,0 +1,6 @@
+<test name="string" type="script">
+    <objective>Testing string manipulating routines</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>
