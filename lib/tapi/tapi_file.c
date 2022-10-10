@@ -129,6 +129,7 @@ read_and_check(FILE *f, const char *filename, void *buf, size_t len)
             ERROR("Too few bytes read: %zu < %zu", actual_len, len);
         }
     }
+    ((char *)buf)[len] = '\0';
     return rc;
 }
 
