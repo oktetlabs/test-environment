@@ -33,6 +33,7 @@
 #include "te_file.h"
 #include "rcf_rpc.h"
 #include "tapi_rpc_unistd.h"
+#include "tapi_rpc_dirent.h"
 #include "tapi_env.h"
 #include "tapi_mem.h"
 #include "tapi_file.h"

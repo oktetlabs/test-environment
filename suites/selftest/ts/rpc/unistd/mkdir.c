@@ -7,7 +7,7 @@
  * Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
  */
 
-/** @page file_directory Test for directory creation and deletion
+/** @page mkdir Test for directory creation and deletion
  *
  * @objective Demo of TAPI/RPC directory creation and deletion test
  *
@@ -17,9 +17,9 @@
  *
  */
 
-#define TE_TEST_NAME    "file_directory"
+#define TE_TEST_NAME    "mkdir"
 
-#include "file_suite.h"
+#include "unistd_suite.h"
 
 static inline size_t
 create_files(size_t nfiles, rcf_rpc_server *rpcs, const char *path)
@@ -94,7 +94,16 @@ cleanup:
     rpc_rmdir(pco_iut, rdir);
 
     TEST_STEP("Check if the directory is deleted");
-    file_check_not_exist(pco_iut, rdir);
+    RPC_AWAIT_ERROR(pco_iut);
+    if (rpc_access(pco_iut, rdir, RPC_F_OK) == 0)
+    {
+        TEST_VERDICT("The removed directory still exists");
+    }
+    else if (RPC_ERRNO(pco_iut) != RPC_ENOENT)
+    {
+        TEST_VERDICT("access() failed with an unexpected error: %r",
+                     RPC_ERRNO(pco_iut));
+    }
 
     TEST_END;
 }

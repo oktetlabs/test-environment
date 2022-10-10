@@ -12,7 +12,15 @@
                 <notes/>
             </iter>
         </test>
-
+        <test name="mkdir" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="nfiles"/>
+                <arg name="env"/>
+                <notes/>
+            </iter>
+        </test>
         <test name="pread_pwrite">
             <objective/>
             <iter result="PASSED">

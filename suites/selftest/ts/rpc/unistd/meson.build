@@ -3,6 +3,7 @@
 
 tests = [
     'append',
+    'mkdir',
     'pread_pwrite'
 ]
 

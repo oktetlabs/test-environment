@@ -37,12 +37,5 @@
                 <value>{{{'pco_iut':IUT}},{{'pco_tst':tester}}}</value>
             </arg>
         </run>
-        <run>
-            <script name="file_directory"/>
-            <arg name="env" ref="env" />
-            <arg name="nfiles">
-                <value>42</value>
-            </arg>
-        </run>
     </session>
 </package>
