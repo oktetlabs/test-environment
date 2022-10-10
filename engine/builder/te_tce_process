@@ -73,20 +73,7 @@ for platform in $TE_BS_PLATFORMS; do
     test -n "$fake_sbd" && rm -f "$sbd"
 done
 
-declare -A platform_tce
-declare -A platform_tce_build
-
-for type in ${TE_BS_PLATFORMS} ; do
-    for comp in $(tce_list_components "${type}") ; do
-        ppath="TE_BS_TCE_${type}_${comp}_MESON_BUILDDIR"
-        [[ -d "${!ppath}" ]] || continue
-
-        build="${!ppath#${TE_BUILD}/platforms/${type}/}"
-
-        platform_tce[${type}]+=" ${comp}"
-        platform_tce_build["${type}_${comp}"]="${build}"
-    done
-done
+tce_set_type_comp_build
 
 function parse_ta_list_line
 {
@@ -212,7 +199,7 @@ function fetch_host_tce
     local tce=$3
     local hostdir="${tce_build_base[${platform}]}"
     local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local build="${tce_type_comp_build["${platform}_${tce}"]}"
 
     mkdir -p "${tcedir}/build" || \
         tce_die "fail to create directory to save TCE: " \
@@ -234,7 +221,7 @@ function clean_platform_tce
     local tce=$2
     local hostdir="${tce_build_base[${platform}]}"
     local hostdest="${hostdir}/destdir/${TE_INSTALL}/${platform}"
-    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local build="${tce_type_comp_build["${platform}_${tce}"]}"
 
     te_eval_or_ssh "${platform}" "
                    export PATH=\"${hostdest}/bin:\${PATH}\" ;
@@ -252,7 +239,7 @@ function process_host_tce
     local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
     local hostdir="${tce_build_base[${platform}]}"
     local hostdest="${hostdir}/destdir/${TE_INSTALL}/${platform}"
-    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local build="${tce_type_comp_build["${platform}_${tce}"]}"
 
     rsync_fnmatch_to "*.gcda" ${platform} "${tcedir}/build" \
                      "${hostdir}/${build}" || \
@@ -277,7 +264,7 @@ function process_host_tce
 # Globals:
 #   TE_BS_TCE_${type}_${comp}_SOURCES
 #   TE_BUILD
-#   platform_tce_build
+#   tce_type_comp_build
 # Arguments:
 #   The TA type of build.
 #   The name of a TA component.
@@ -289,7 +276,7 @@ function process_host_tce
 function tce_link_src_on_build() {
     local type="$1"
     local comp="$2"
-    local build="${platform_tce_build[${type}_${comp}]}"
+    local build="${tce_type_comp_build[${type}_${comp}]}"
     local pbase="${TE_BUILD}/platforms/${type}"
     local psrc="TE_BS_TCE_${type}_${comp}_SOURCES"
 
@@ -306,7 +293,7 @@ function link_platform_tce_install
 {
     local platform=$1
     local tce=$2
-    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local build="${tce_type_comp_build["${platform}_${tce}"]}"
     local pbuild="${TE_BUILD}/platforms/${platform}"
     local inst="$(realpath ${pbuild}/${build}/../inst)"
 
@@ -330,7 +317,7 @@ function resolve_platform_host_tce
     local hostdir="${tce_build_base[${platform}]}"
     local pbuild="${TE_BUILD}/platforms/${platform}"
     local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local build="${tce_type_comp_build["${platform}_${tce}"]}"
     local conf="${tcedir}/tce.conf"
 
     cat > "${conf}" << EOF
@@ -352,8 +339,8 @@ EOF
 tce_py="${TE_INSTALL}/${TE_HOST}/lib"
 export PYTHONPATH="${tce_py}:${PYTHONPATH}"
 
-for platform in "${!platform_tce[@]}" ; do
-    tce_list="${platform_tce[${platform}]}"
+for platform in "${!tce_type_comp[@]}" ; do
+    tce_list="${tce_type_comp[${platform}]}"
     hosts="${platform_hosts[${platform}]}"
 
     for host in ${hosts} ; do
@@ -388,8 +375,8 @@ function get_tce_platforms
     local tce_list=
     local platforms=
 
-    for platform in "${!platform_tce[@]}" ; do
-        tce_list="${platform_tce[${platform}]}"
+    for platform in "${!tce_type_comp[@]}" ; do
+        tce_list="${tce_type_comp[${platform}]}"
         test "${tce_list/${tce}/ }" != "$tce_list" && \
             platforms+="${platform} "
     done
@@ -401,7 +388,7 @@ function clean_tce_on_build
 {
     local platform=$1
     local tce=$2
-    local build=""${platform_tce_build["${platform}_${tce}"]}""
+    local build=""${tce_type_comp_build["${platform}_${tce}"]}""
     local wsdir="${TE_BUILD}/platforms/${platform}"
     local files=
     local f=
@@ -429,7 +416,7 @@ function copy_tce_to_build
     local host=$2
     local tce=$3
     local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local build="${tce_type_comp_build["${platform}_${tce}"]}"
     local wsdir="${TE_BUILD}/platforms/${platform}"
 
     test -d "${tcedir}/build" || \
@@ -448,7 +435,7 @@ function report_host_tce
     local host=$2
     local tce=$3
     local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
-    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local build="${tce_type_comp_build["${platform}_${tce}"]}"
     local wsdir="${TE_BUILD}/platforms/${platform}"
     local report="${tcedir}/report.tce"
     local files=
@@ -483,7 +470,7 @@ function summarise_tce
     local repname="$4"
     local tcedir="$(tce_ws_dir "${platform}" "${host}" "${tce}")"
     local report="${tcedir}/report.tce"
-    local build="${platform_tce_build["${platform}_${tce}"]}"
+    local build="${tce_type_comp_build["${platform}_${tce}"]}"
     local wsdir="${TE_BUILD}/platforms/${platform}"
     local p_excl="TE_BS_TCE_${platform}_${tce}_EXCLUDESRC"
     local excl="${!p_excl}"
@@ -548,7 +535,7 @@ function merge_host_report
                 "platform ${platform} host ${host} tce ${tce}"
 }
 
-all_tce="$(echo "${platform_tce[@]}" | sed 's/ \+/\n/g' | sort -u)"
+all_tce="$(echo "${tce_type_comp[@]}" | sed 's/ \+/\n/g' | sort -u)"
 
 for tce in $all_tce ; do
     platforms="$(get_tce_platforms ${tce})"

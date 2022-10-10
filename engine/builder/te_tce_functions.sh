@@ -85,3 +85,37 @@ function tce_list_components() {
     fi
     echo "${list}"
 }
+
+#######################################
+# Locate build directories of TA components.
+# Globals:
+#   TCE_LIST
+#   TE_BUILD
+#   TE_BS_PLATFORMS
+#   TE_BS_TCE_${type}
+#   TE_BS_TCE_${type}_${comp}_MESON_BUILDDIR
+#   tce_type_comp
+#   tce_type_comp_build
+# Arguments:
+#   None
+#######################################
+function tce_set_type_comp_build() {
+    local type=
+    local comp=
+    local ppath=
+    local build=
+    declare -gA tce_type_comp
+    declare -gA tce_type_comp_build
+
+    for type in ${TE_BS_PLATFORMS} ; do
+        for comp in $(tce_list_components "${type}") ; do
+            ppath="TE_BS_TCE_${type}_${comp}_MESON_BUILDDIR"
+            [[ -d "${!ppath}" ]] || continue
+
+            build="${!ppath#${TE_BUILD}/platforms/${type}/}"
+
+            tce_type_comp["${type}"]+=" ${comp}"
+            tce_type_comp_build["${type}_${comp}"]="${build}"
+        done
+    done
+}
