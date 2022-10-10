@@ -52,7 +52,8 @@ tapi_file_create_pattern(size_t len, char c)
 
     if ((f = fopen(pathname, "w")) == NULL)
     {
-        ERROR("Cannot open file %s errno %d\n", pathname, errno);
+        ERROR("Cannot open file %s: %r", pathname,
+              TE_OS_RC(TE_TAPI, errno));
         return NULL;
     }
 
@@ -65,15 +66,17 @@ tapi_file_create_pattern(size_t len, char c)
 
         if ((copy_len = fwrite((void *)buf, sizeof(char), copy_len, f)) < 0)
         {
+            ERROR("fwrite() failed: file %s: %r", pathname,
+                  TE_OS_RC(TE_TAPI, errno));
             fclose(f);
-            ERROR("fwrite() faled: file %s errno %d\n", pathname, errno);
             return NULL;
         }
         len -= copy_len;
     }
     if (fclose(f) < 0)
     {
-        ERROR("fclose() failed: file %s errno=%d", pathname, errno);
+        ERROR("fclose() failed: file %s: %r", pathname,
+              TE_OS_RC(TE_TAPI, errno));
         return NULL;
     }
     return pathname;
@@ -94,20 +97,23 @@ tapi_file_create(size_t len, char *buf, te_bool random)
 
     if ((f = fopen(pathname, "w")) == NULL)
     {
-        ERROR("Cannot open file %s errno %d\n", pathname, errno);
+        ERROR("Cannot open file %s: %r", pathname,
+              TE_OS_RC(TE_TAPI, errno));
         return NULL;
     }
 
     if (fwrite((void *)buf, sizeof(char), len, f) < len)
     {
+        ERROR("fwrite() failed: file %s: %r", pathname,
+              TE_OS_RC(TE_TAPI, errno));
         fclose(f);
-        ERROR("fwrite() faled: file %s errno %d\n", pathname, errno);
         return NULL;
     }
 
     if (fclose(f) < 0)
     {
-        ERROR("fclose() failed: file %s errno=%d", pathname, errno);
+        ERROR("fclose() failed: file %s: %r", pathname,
+              TE_OS_RC(TE_TAPI, errno));
         return NULL;
     }
     return pathname;
