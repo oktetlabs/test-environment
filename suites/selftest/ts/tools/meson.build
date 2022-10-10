@@ -5,6 +5,7 @@ tests = [
     'compare_bufs',
     'enum_map',
     'hexdump',
+    'make_bufs',
     'readlink',
     'resolvepath',
     'string',

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="make_bufs" type="script">
+    <objective>Testing buffer generation functions.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="n_iterations" />
+        <arg name="min_len" />
+        <arg name="max_len" />
+    </iter>
+</test>
