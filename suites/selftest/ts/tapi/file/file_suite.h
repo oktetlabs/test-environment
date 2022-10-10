@@ -33,6 +33,7 @@
 #endif
 
 #include "te_defs.h"
+#include "te_bufs.h"
 #include "tapi_test.h"
 #include "tapi_env.h"
 #include "tapi_file.h"
@@ -68,6 +69,17 @@ file_check_not_exist(rcf_rpc_server *pco, const char *filename)
 
     if (RPC_ERRNO(pco) != RPC_ENOENT)
         TEST_VERDICT("%s(): Unexpected error %r", __func__, RPC_ERRNO(pco));
+}
+
+static inline void
+file_compare_and_fail(const void *exp_buf, size_t exp_len,
+                      const void *actual_buf, size_t actual_len)
+{
+    if (!te_compare_bufs(exp_buf, exp_len, 1, actual_buf, actual_len,
+                         TE_LL_ERROR))
+    {
+        TEST_VERDICT("Buffers do not match");
+    }
 }
 
 #endif /* __FILE_SUITE_H__ */

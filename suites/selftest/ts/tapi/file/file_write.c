@@ -27,7 +27,6 @@ main(int argc, char **argv)
     rcf_rpc_server *pco_iut = NULL;
     int             fd = -1;
     uint8_t        *data = NULL;
-    char           *data_str = NULL;
     const size_t    data_size = BUFSIZE;
 
     TEST_START;
@@ -50,22 +49,8 @@ main(int argc, char **argv)
     CHECK_LENGTH(rpc_read(pco_iut, fd, buf, data_size), data_size);
     rpc_close(pco_iut, fd);
 
-    TEST_STEP("Print data");
-    TEST_SUBSTEP("Print expected data");
-    data_str = raw2string(buf, data_size);
-    RING("%s", data_str);
-    free(data_str);
-
-    TEST_SUBSTEP("Print received data");
-    data_str = raw2string(data, data_size);
-    RING("%s", data_str);
-    free(data_str);
-
-    TEST_STEP("Check if the buffer matches initial data");
-    if (memcmp(data, buf, data_size) != 0)
-    {
-        TEST_VERDICT("Received data doesn't match");
-    }
+    TEST_STEP("Check data");
+    file_compare_and_fail(data, data_size, buf, data_size);
 
     TEST_SUCCESS;
 

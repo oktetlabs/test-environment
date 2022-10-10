@@ -23,11 +23,10 @@ int
 main(int argc, char **argv)
 {
     char           *rfile = NULL;
-    uint8_t        *buf = NULL;
+    char           *buf = NULL;
     rcf_rpc_server *pco_iut = NULL;
     int             fd = -1;
     uint8_t        *data = NULL;
-    char           *data_str = NULL;
     const size_t    data_size = BUFSIZE;
 
     TEST_START;
@@ -41,27 +40,14 @@ main(int argc, char **argv)
     CHECK_LENGTH(rpc_write_and_close(pco_iut, fd, data, data_size), data_size);
 
     TEST_STEP("Read content from the file on TA");
-    if (tapi_file_read_ta(pco_iut->ta, rfile, (void *)&buf) != 0)
+    /* FIXME: there is no length check */
+    if (tapi_file_read_ta(pco_iut->ta, rfile, &buf) != 0)
     {
         TEST_VERDICT("tapi_file_read_ta() failed");
     }
 
-    TEST_STEP("Print data");
-    TEST_SUBSTEP("Print expected data");
-    data_str = raw2string(buf, BUFSIZE);
-    RING("%s", data_str);
-    free(data_str);
-
-    TEST_SUBSTEP("Print received data");
-    data_str = raw2string(data, data_size);
-    RING("%s", data_str);
-    free(data_str);
-
-    TEST_STEP("Check if the buffer matches initial data");
-    if (memcmp(data, buf, data_size) != 0)
-    {
-        TEST_VERDICT("Received data doesn't match");
-    }
+    TEST_STEP("Check data");
+    file_compare_and_fail(data, data_size, buf, data_size);
 
     TEST_SUCCESS;
 

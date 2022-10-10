@@ -31,11 +31,24 @@
 
 #include "tapi_test.h"
 #include "te_file.h"
+#include "te_bufs.h"
 #include "rcf_rpc.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_dirent.h"
 #include "tapi_env.h"
 #include "tapi_mem.h"
 #include "tapi_file.h"
+
+static inline void
+unistd_compare_and_fail(const void *exp_buf, size_t exp_len,
+                        unsigned int n_copies,
+                        const void *actual_buf, size_t actual_len)
+{
+    if (!te_compare_bufs(exp_buf, exp_len, n_copies, actual_buf, actual_len,
+                         TE_LL_ERROR))
+    {
+        TEST_VERDICT("Buffers do not match");
+    }
+}
 
 #endif /* !__UNISTD_SUITE_H__ */
