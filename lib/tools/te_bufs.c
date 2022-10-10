@@ -24,6 +24,7 @@
 #include "te_defs.h"
 #include "logger_api.h"
 #include "te_alloc.h"
+#include "te_hex_diff_dump.h"
 
 /* See description in te_bufs.h */
 void
@@ -65,4 +66,54 @@ te_make_buf(size_t min, size_t max, size_t *p_len)
     }
     te_fill_buf(buf, *p_len);
     return buf;
+}
+
+te_bool
+te_compare_bufs(const void *exp_buf, size_t exp_len,
+                unsigned int n_copies,
+                const void *actual_buf, size_t actual_len,
+                unsigned int log_level)
+{
+    te_bool result = TRUE;
+    size_t offset = 0;
+
+    if (n_copies * exp_len != actual_len)
+    {
+        /* If we don't log anything, there's no need to look for more diffs. */
+        if (log_level == 0)
+            return FALSE;
+
+        LOG_MSG(log_level, "Buffer lengths are not equal: "
+                "%zu * %u != %zu", exp_len, n_copies, actual_len);
+
+        result = FALSE;
+    }
+
+    while (n_copies != 0)
+    {
+        size_t chunk_len = MIN(exp_len, actual_len);
+
+        if (memcmp(exp_buf, actual_buf, chunk_len) != 0 ||
+            chunk_len < exp_len)
+        {
+            if (log_level == 0)
+                return FALSE;
+
+            result = FALSE;
+            LOG_HEX_DIFF_DUMP_AT(log_level, exp_buf, exp_len,
+                                 actual_buf, chunk_len, offset);
+        }
+        offset += chunk_len;
+        actual_buf = (const uint8_t *)actual_buf + chunk_len;
+        actual_len -= chunk_len;
+        n_copies--;
+    }
+
+    if (actual_len > 0 && log_level != 0)
+    {
+        LOG_HEX_DIFF_DUMP_AT(log_level, exp_buf, 0,
+                             actual_buf, actual_len, offset);
+    }
+
+    return result;
 }

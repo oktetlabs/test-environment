@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #endif
 
+#include "te_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -95,6 +96,30 @@ te_calloc_fill(size_t num, size_t size, int byte)
     memset(buf, byte, num * size);
     return buf;
 }
+
+/**
+ * Compare and probably log the difference of two buffers.
+ *
+ * It can compare buffers of unequal size.
+ *
+ * @note Unlike CHECK_BUFS_EQUAL(), it does not fail a test,
+ *       so it can be used both in the Engine and agents.
+ *
+ * @param exp_buf     Expected data.
+ * @param exp_len     Length of expected data.
+ * @param n_copies    Number of copies of the expected
+ *                    buffer that should be in the actual data.
+ * @param actual_buf  Actual data.
+ * @param actual_len  Length of actual data.
+ * @param log_level   Log level for diff dumps.
+ *                    If zero, no logging is done.
+ *
+ * @return @c TRUE if the lengths and the content of buffers are the same.
+ */
+extern te_bool te_compare_bufs(const void *exp_buf, size_t exp_len,
+                               unsigned int n_copies,
+                               const void *actual_buf, size_t actual_len,
+                               unsigned int log_level);
 
 #ifdef __cplusplus
 } /* extern "C" */
