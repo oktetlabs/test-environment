@@ -984,7 +984,7 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
                      cfg_val_type type, va_list list)
 {
     cfg_add_msg  *msg;
-    cfg_inst_val  value;
+    cfg_inst_val  value = {};
     char         *valstr = NULL;
 
     size_t  len;
@@ -1440,7 +1440,7 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
                      va_list list)
 {
     cfg_set_msg    *msg;
-    cfg_inst_val    value;
+    cfg_inst_val    value = {};
 
     char    *oidstr = NULL;
     char    *valstr = NULL;
