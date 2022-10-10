@@ -153,7 +153,7 @@
  */
 #define _LOG_ENTRY(_us, _fs, _args...) \
     TE_LOG(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,                \
-           "ENTRY to %s(): " _fs, __FUNCTION__, _args + 0)
+           "ENTRY to %s(): " _fs, __FUNCTION__, ##_args)
 
 /**
  * Logging of entry to a function
@@ -184,7 +184,7 @@
 #define _LOG_EXIT(_us, _fs, _args...) \
     TE_LOG(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,                \
            "EXIT in line %d from %s(): " _fs,                   \
-           __LINE__, __FUNCTION__, _args + 0)
+           __LINE__, __FUNCTION__, ##_args)
 
 /**
  * Logging of exit from a function
