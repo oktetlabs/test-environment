@@ -152,10 +152,13 @@ te_string_move(char **dest, te_string *src)
  * @param str           TE string.
  * @param size          Number of elements to to have a room for in a string
  *
- * @return Status code
+ * @return 0
  *
  * @remark If there is a room already for the number of elements specified
  *         by @p size, no action would be performed.
+ *
+ * @note The function never returns an error. Its return type is not void
+ *       for legacy reasons. New code should never check the return value.
  */
 extern te_errno te_string_reserve(te_string *str, size_t size);
 
@@ -177,28 +180,64 @@ static inline const char *te_string_value(const te_string *str)
 }
 
 /**
- * Append to the string results of the sprintf(fmt, ...);
+ * Format arguments according to @p fmt and append the result to the string.
  *
  * @param str           TE string
  * @param fmt           Format string
  * @param ...           Format string arguments
  *
- * @return Status code.
+ * @return 0
+ *
+ * @note The function never returns an error. Its return type is not void
+ *       for legacy reasons. New code should never check the return value.
  */
 extern te_errno te_string_append(te_string *str, const char *fmt, ...);
 
 /**
- * Append to the string results of the @b vsnprintf.
+ * Format the varargs according to @p fmt and append the result to the string.
  *
  * @param str           TE string
  * @param fmt           Format string
  * @param ap            List of arguments
  *
- * @return Status code.
+ * @return 0 (see te_string_append() for explanation)
  */
 extern te_errno te_string_append_va(te_string  *str,
                                     const char *fmt,
                                     va_list     ap);
+
+/**
+ * Format arguments according to @p fmt and append the result to the string.
+ *
+ * @param str           TE string
+ * @param fmt           Format string
+ * @param ...           Format string arguments
+ *
+ * @return Status code
+ * @retval TE_ENOBUFS   The string has an external buffer and
+ *                      it does not have enough space.
+ *
+ * @note This function is intended for special use cases, where
+ *       a caller is ready to deal with static buffers of insufficient
+ *       size in some sensible manner. Normally, te_string_append()
+ *       should be used instead. Other than the possible error code,
+ *       the two functions are identical.
+ */
+extern te_errno te_string_append_chk(te_string *str, const char *fmt, ...);
+
+/**
+ * Format the varargs according to @p fmt and append the result to the string.
+ *
+ * @param str           TE string
+ * @param fmt           Format string
+ * @param ap            List of arguments
+ *
+ * @return Status code
+ * @retval TE_ENOBUFS   See te_string_append_chk() for explanation.
+ */
+extern te_errno te_string_append_va_chk(te_string  *str,
+                                        const char *fmt,
+                                        va_list     ap);
 
 /**
  * Append contents of a buffer to TE string. Buffer may be not
@@ -208,7 +247,7 @@ extern te_errno te_string_append_va(te_string  *str,
  * @param buf     Buffer
  * @param len     Number of bytes in buffer
  *
- * @return Status code.
+ * @return 0 (see te_string_append() for explanation)
  */
 extern te_errno te_string_append_buf(te_string *str, const char *buf,
                                      size_t len);
@@ -220,7 +259,7 @@ extern te_errno te_string_append_buf(te_string *str, const char *buf,
  * @param str           TE string
  * @param ...           String arguments terminated by @c NULL
  *
- * @return Status code.
+ * @return 0 (see te_string_append() for explanation)
  */
 extern te_errno te_string_append_shell_args_as_is(te_string *str, ...)
                     __attribute__((sentinel));
@@ -232,7 +271,7 @@ extern te_errno te_string_append_shell_args_as_is(te_string *str, ...)
  * @param str           TE string
  * @param arg           String argument
  *
- * @return Status code
+ * @return 0 (see te_string_append() for explanation)
  */
 extern te_errno te_string_append_shell_arg_as_is(te_string *str,
                                                  const char *arg);
@@ -246,7 +285,10 @@ extern te_errno te_string_append_shell_arg_as_is(te_string *str,
  * @param strvec  Vector of C strings
  * @param sep     Separator
  *
- * @return Status code.
+ * @return 0
+ *
+ * @note The function never returns an error. Its return type is not void
+ *       for legacy reasons. New code should never check the return value.
  */
 extern te_errno te_string_join_vec(te_string *str, const te_vec *strvec,
                                    const char *sep);

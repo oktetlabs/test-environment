@@ -60,6 +60,19 @@ te_string_append(te_string *str, const char *fmt, ...)
     return rc;
 }
 
+te_errno
+te_string_append_chk(te_string *str, const char *fmt, ...)
+{
+    va_list  ap;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = te_string_append_va_chk(str, fmt, ap);
+    va_end(ap);
+    return rc;
+}
+
+
 /* See description in te_string.h */
 te_errno
 te_string_reserve(te_string *str, size_t size)
@@ -81,10 +94,7 @@ te_string_reserve(te_string *str, size_t size)
         return 0;
 
     if (str->ext_buf)
-    {
-        ERROR("%s(): cannot resize external buffer", __FUNCTION__);
-        return TE_EINVAL;
-    }
+        TE_FATAL_ERROR("cannot resize external buffer");
 
     /*
      * Apply grow factor ^ exp until predefined limit, and if size < newsize <
@@ -121,10 +131,7 @@ te_string_reserve(te_string *str, size_t size)
     /* Actually reallocate data */
     ptr = realloc(str->ptr, size);
     if (ptr == NULL)
-    {
-        ERROR("%s(): Memory allocation failure", __FUNCTION__);
-        return TE_ENOMEM;
-    }
+        TE_FATAL_ERROR("Memory allocation failure");
 
     str->ptr = ptr;
     str->size = size;
@@ -132,7 +139,7 @@ te_string_reserve(te_string *str, size_t size)
 }
 
 te_errno
-te_string_append_va(te_string *str, const char *fmt, va_list ap)
+te_string_append_va_chk(te_string *str, const char *fmt, va_list ap)
 {
     te_errno rc;
     char    *s;
@@ -150,10 +157,7 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
         new_size = str->size != 0 ? str->size : TE_STRING_INIT_LEN;
         str->ptr = malloc(new_size);
         if (str->ptr == NULL)
-        {
-            ERROR("%s(): Memory allocation failure", __FUNCTION__);
-            return TE_ENOMEM;
-        }
+            TE_FATAL_ERROR("Memory allocation failure");
 
         str->size = new_size;
         str->len = 0;
@@ -174,8 +178,6 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
             if (str->ext_buf)
             {
                 str->len = str->size - 1 /* '\0' */;
-                ERROR("%s(): Not enough space in supplied buffer",
-                      __FUNCTION__);
                 return TE_ENOBUFS;
             }
             else
@@ -195,6 +197,17 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
             again = FALSE;
         }
     } while (again);
+
+    return 0;
+}
+
+te_errno
+te_string_append_va(te_string *str, const char *fmt, va_list ap)
+{
+    te_errno rc = te_string_append_va_chk(str, fmt, ap);
+
+    if (rc != 0)
+        TE_FATAL_ERROR("Not enough space in supplied buffer");
 
     return 0;
 }
