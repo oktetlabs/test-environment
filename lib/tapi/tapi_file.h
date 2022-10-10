@@ -15,18 +15,7 @@
 #ifndef __TE_TAPI_FILE_H__
 #define __TE_TAPI_FILE_H__
 
-#include <stdio.h>
-#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#include "te_stdint.h"
-#include "te_str.h"
-#include "rcf_common.h"
-
+#include "te_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,18 +26,12 @@ extern "C" {
  *
  * @return generated name
  *
- * @note the function is not thread-safe
+ * @note The function returns a pointer to 
+ *       a static buffer, so the caller should
+ *       in most cases use strdup() on it or
+ *       something similiar.
  */
-static inline char *
-tapi_file_generate_name(void)
-{
-    static int  num = 0;
-    static char buf[RCF_MAX_PATH];
-
-    TE_SPRINTF(buf, "te_tmp_%u_%u_%u", (uint32_t)time(NULL), getpid(), num++);
-
-    return buf;
-}
+extern char *tapi_file_generate_name(void);
 
 /**
  * Generate unique pathname for file on the engine.
@@ -57,22 +40,7 @@ tapi_file_generate_name(void)
  *
  * @note the function is not thread-safe
  */
-static inline char *
-tapi_file_generate_pathname(void)
-{
-    static char  pathname[RCF_MAX_PATH];
-    static char *te_tmp;
-
-    if (te_tmp == NULL && (te_tmp = getenv("TE_TMP")) == NULL)
-    {
-        ERROR("TE_TMP is empty");
-        return NULL;
-    }
-
-    TE_SPRINTF(pathname, "%s/%s", te_tmp, tapi_file_generate_name());
-
-    return pathname;
-}
+extern char *tapi_file_generate_pathname(void);
 
 /**
  * Create file in the TE temporary directory.

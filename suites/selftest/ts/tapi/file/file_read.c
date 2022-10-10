@@ -35,7 +35,7 @@ main(int argc, char **argv)
 
     TEST_STEP("Create file with content on TA");
     data = te_make_buf_by_len(BUFSIZE);
-    rfile = tapi_file_generate_name();
+    rfile = tapi_strdup(tapi_file_generate_name());
     fd = rpc_open(pco_iut, rfile, RPC_O_WRONLY | RPC_O_CREAT, 0);
 
     CHECK_LENGTH(rpc_write_and_close(pco_iut, fd, data, data_size), data_size);
@@ -72,6 +72,7 @@ cleanup:
 
     free(buf);
     free(data);
+    free(rfile);
 
     TEST_END;
 }

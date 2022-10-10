@@ -34,10 +34,40 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
+#include "te_str.h"
 #include "te_bufs.h"
 #include "rcf_api.h"
+#include "rcf_common.h"
 #include "logger_api.h"
 #include "tapi_file.h"
+
+char *
+tapi_file_generate_name(void)
+{
+    static int  num = 0;
+    static char buf[RCF_MAX_PATH];
+
+    TE_SPRINTF(buf, "te_tmp_%u_%u_%u", (uint32_t)time(NULL), getpid(), num++);
+
+    return buf;
+}
+
+char *
+tapi_file_generate_pathname(void)
+{
+    static char  pathname[RCF_MAX_PATH];
+    static char *te_tmp;
+
+    if (te_tmp == NULL && (te_tmp = getenv("TE_TMP")) == NULL)
+    {
+        ERROR("TE_TMP is empty");
+        return NULL;
+    }
+
+    TE_SPRINTF(pathname, "%s/%s", te_tmp, tapi_file_generate_name());
+
+    return pathname;
+}
 
 static te_errno
 open_and_check(const char *filename, const char *mode, FILE **f)
