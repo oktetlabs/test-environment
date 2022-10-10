@@ -21,7 +21,7 @@
 #ifdef NDN_IGMP_STRUCTURED
 asn_type ndn_igmp_source_address_list_s = {
     "IGMP-Source-Address-List", {PRIVATE, NDN_TAG_IGMP3_SOURCE_ADDRESS_LIST},
-    SEQUENCE_OF, 0, {subtype: &ndn_data_unit_ip_address_s}}
+    SEQUENCE_OF, 0, {.subtype = &ndn_data_unit_ip_address_s}}
 };
 
 static asn_named_entry_t _ndn_igmp_group_record_ne_array [] = {
@@ -48,7 +48,7 @@ asn_type ndn_igmp_group_record_s = {
 
 asn_type ndn_igmp_group_record_list_s = {
     "IGMP-Group-Record-List", {PRIVATE, NDN_TAG_IGMP3_GROUP_RECORD_LIST},
-    SEQUENCE_OF, 0, {subtype: &ndn_igmp_group_record_s}}
+    SEQUENCE_OF, 0, {.subtype = &ndn_igmp_group_record_s}}
 };
 #endif /* NDN_IGMP_STRUCTURED */
 

@@ -70,7 +70,7 @@ Forwarder-Delay-Discrete ::= SEQUENCE OF Discret-Pair;
 
 asn_type ndn_forw_delay_discr_s = {
     "Forwarder-Delay-Discrete", {PRIVATE, 102}, SEQUENCE_OF,
-    0, {subtype: &ndn_forw_discr_pair_s}
+    0, {.subtype = &ndn_forw_discr_pair_s}
 };
 
 /*
@@ -114,7 +114,7 @@ static asn_enum_entry_t _ndn_reorder_type_enum_entries[] = {
 static asn_type ndn_forw_reorder_type_s = {
     "Forw-Delay-Type", {APPLICATION, 15}, ENUMERATED,
     TE_ARRAY_LEN(_ndn_reorder_type_enum_entries),
-    {enum_entries: _ndn_reorder_type_enum_entries}
+    {.enum_entries = _ndn_reorder_type_enum_entries}
 };
 
 

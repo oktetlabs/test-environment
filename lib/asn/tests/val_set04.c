@@ -14,7 +14,7 @@ asn_type my_sequence_of = {
     {APPLICATION, 7},
     SEQUENCE_OF,
     2,
-    {subtype:&asn_base_integer_s}
+    {.subtype = &asn_base_integer_s}
 };
 
 

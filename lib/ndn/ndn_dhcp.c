@@ -43,7 +43,7 @@ static asn_type ndn_dhcpv4_end_pad_option_s = {
 
 static asn_type ndn_dhcpv4_options_s = {
     "DHCPv4-Options", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE_OF,
-    0, {subtype: &ndn_dhcpv4_option_s}
+    0, {.subtype = &ndn_dhcpv4_option_s}
 };
 
 asn_type *ndn_dhcpv4_option  = &ndn_dhcpv4_option_s;
@@ -86,7 +86,7 @@ asn_type ndn_dhcp_mode_s = {
     {PRIVATE, NDN_DHCP_MODE},
     ENUMERATED,
     TE_ARRAY_LEN(_ndn_dhcp_mode_enum_entries),
-    {enum_entries: _ndn_dhcp_mode_enum_entries}
+    {.enum_entries = _ndn_dhcp_mode_enum_entries}
 };
 
 static asn_named_entry_t _ndn_dhcpv4_csap_ne_array[] = {
@@ -217,7 +217,7 @@ static asn_type ndn_dhcpv6_opcode_s = {
 
 static asn_type ndn_dhcpv6_oro_s = {
     "DHCPv6-ORO", {PRIVATE, NDN_DHCP6_ORO}, SEQUENCE_OF,
-    0, {subtype: &ndn_dhcpv6_opcode_s}
+    0, {.subtype = &ndn_dhcpv6_opcode_s}
 };
 
 asn_type *ndn_dhcpv6_opcode = &ndn_dhcpv6_opcode_s;
@@ -271,7 +271,7 @@ static asn_type ndn_dhcpv6_class_data_s = {
 
 static asn_type ndn_dhcpv6_class_data_list_s = {
     "DHCPv6-ClassDataList", {PRIVATE, NDN_DHCP6_CLASS_DATA},
-    SEQUENCE_OF, 0, {subtype: &ndn_dhcpv6_class_data_s}
+    SEQUENCE_OF, 0, {.subtype = &ndn_dhcpv6_class_data_s}
 };
 
 asn_type *ndn_dhcpv6_class_data = &ndn_dhcpv6_class_data_s;
@@ -344,7 +344,7 @@ static asn_type ndn_dhcpv6_option_s = {
 
 static asn_type ndn_dhcpv6_options_s = {
     "DHCPv6-Options", {PRIVATE, NDN_DHCP6_OPTIONS}, SEQUENCE_OF,
-    0, {subtype: &ndn_dhcpv6_option_s}
+    0, {.subtype = &ndn_dhcpv6_option_s}
 };
 
 asn_type *ndn_dhcpv6_option  = &ndn_dhcpv6_option_s;
@@ -377,7 +377,7 @@ asn_enum_entry_t _ndn_dhcp6_mode_enum_entries[] = {
 asn_type ndn_dhcp6_mode_s = {
     "DHCPv6-CSAP-Mode", {PRIVATE, NDN_DHCP6_MODE}, ENUMERATED,
     TE_ARRAY_LEN(_ndn_dhcp6_mode_enum_entries),
-    {enum_entries: _ndn_dhcp6_mode_enum_entries}
+    {.enum_entries = _ndn_dhcp6_mode_enum_entries}
 };
 
 static asn_named_entry_t _ndn_dhcpv6_csap_ne_array[] = {

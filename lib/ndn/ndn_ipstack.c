@@ -43,7 +43,7 @@ const asn_type * const ndn_ip4_frag_spec = &ndn_ip4_frag_spec_s;
 
 asn_type ndn_ip4_frag_seq_s = {
     "IPv4-Fragments", {PRIVATE, NDN_TAG_IP4_FRAGMENTS}, SEQUENCE_OF, 0,
-    {subtype: &ndn_ip4_frag_spec_s}
+    {.subtype = &ndn_ip4_frag_spec_s}
 };
 
 const asn_type * const ndn_ip4_frag_seq = &ndn_ip4_frag_seq_s;
@@ -229,7 +229,7 @@ const asn_type * const ndn_ip6_ext_header_option =
 asn_type ndn_ip6_ext_header_options_seq_s = {
     "SEQUENCE OF IPv6-Extention-Header-Option",
     {PRIVATE, NDN_TAG_IP6_EXT_HEADER_OPTIONS}, SEQUENCE_OF, 0,
-    {subtype: &ndn_ip6_ext_header_option_s}
+    {.subtype = &ndn_ip6_ext_header_option_s}
 };
 
 const asn_type * const ndn_ip6_ext_header_options_seq =
@@ -321,7 +321,7 @@ const asn_type * const ndn_ip6_ext_header = &ndn_ip6_ext_header_s;
 asn_type ndn_ip6_ext_headers_seq_s = {
     "SEQUENCE OF IPv6-Extention-Header",
     {PRIVATE, NDN_TAG_IP6_EXT_HEADERS}, SEQUENCE_OF, 0,
-    {subtype: &ndn_ip6_ext_header_s}
+    {.subtype = &ndn_ip6_ext_header_s}
 };
 
 const asn_type * const ndn_ip6_ext_headers_seq = &ndn_ip6_ext_headers_seq_s;
@@ -354,7 +354,7 @@ const asn_type * const ndn_ip6_frag_spec = &ndn_ip6_frag_spec_s;
 /** Specification of IPv6 fragmentation in packet template */
 asn_type ndn_ip6_frag_seq_s = {
     "IPv6-Fragments", {PRIVATE, NDN_TAG_IP6_FRAGMENTS}, SEQUENCE_OF, 0,
-    {subtype: &ndn_ip6_frag_spec_s}
+    {.subtype = &ndn_ip6_frag_spec_s}
 };
 
 const asn_type * const ndn_ip6_frag_seq = &ndn_ip6_frag_seq_s;
@@ -832,7 +832,7 @@ const asn_type * const ndn_icmp6_opt = &ndn_icmp6_opt_s;
 asn_type ndn_icmp6_opts_s = {
     "SEQUENCE OF ICMPv6-Options",
     {PRIVATE, NDN_TAG_ICMP6_OPTS}, SEQUENCE_OF, 0,
-    {subtype: &ndn_icmp6_opt_s}
+    {.subtype = &ndn_icmp6_opt_s}
 };
 
 const asn_type * const ndn_icmp6_opts = &ndn_icmp6_opts_s;
@@ -984,7 +984,7 @@ asn_type ndn_tcp_opt_sackblocks_seq_s = {
     "SEQUENCE OF TCP-Option-SackBlock",
     {PRIVATE, NDN_TAG_TCP_OPT_SACK_BLOCKS},
     SEQUENCE_OF, 0,
-    {subtype: &ndn_tcp_opt_sackblock_s}
+    {.subtype = &ndn_tcp_opt_sackblock_s}
 };
 
 /*
@@ -1065,7 +1065,7 @@ asn_type ndn_tcp_options_seq_s = {
     "SEQUENCE OF TCP-Option",
     {PRIVATE, NDN_TAG_TCP_OPTIONS},
     SEQUENCE_OF, 0,
-    {subtype: &ndn_tcp_option_s}
+    {.subtype = &ndn_tcp_option_s}
 };
 
 const asn_type * const ndn_tcp_options_seq = &ndn_tcp_options_seq_s;

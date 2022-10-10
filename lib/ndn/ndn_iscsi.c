@@ -47,7 +47,7 @@ static asn_type ndn_iscsi_digest_s = {
     { PRIVATE, 1 /* FIXME */ },
     ENUMERATED,
     TE_ARRAY_LEN(_ndn_iscsi_digest_enum_entries),
-    { enum_entries: _ndn_iscsi_digest_enum_entries }
+    { .enum_entries = _ndn_iscsi_digest_enum_entries }
 };
 
 /* ISCSI-CSAP definitions */
@@ -76,7 +76,7 @@ Key-Values ::= SEQUENCE OF 'charstring'
 
 asn_type ndn_iscsi_key_values_s = {
     "Key-Values", {PRIVATE, NDN_TAG_ISCSI_SD_KEY_VALUES}, SEQUENCE_OF,
-    0, {subtype: &asn_base_charstring_s}
+    0, {.subtype = &asn_base_charstring_s}
 };
 
 const asn_type * const ndn_iscsi_key_values = &ndn_iscsi_key_values_s;
@@ -109,7 +109,7 @@ asn_type ndn_iscsi_segment_data_s = {
     "ISCSI-Segment-Data",
     {PRIVATE, NDN_TAG_ISCSI_SD_SEGMENT_DATA}, SEQUENCE_OF,
     0,
-    {subtype: &ndn_iscsi_key_pair_s}
+    {.subtype = &ndn_iscsi_key_pair_s}
 };
 
 const asn_type * const ndn_iscsi_segment_data = &ndn_iscsi_segment_data_s;

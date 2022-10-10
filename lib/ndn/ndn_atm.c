@@ -56,7 +56,7 @@ asn_type ndn_atm_type_s = {
     { PRIVATE, NDN_TAG_ATM_TYPE_ENUM },
     ENUMERATED,
     TE_ARRAY_LEN(_ndn_atm_type_enum_entries),
-    { enum_entries: _ndn_atm_type_enum_entries }
+    { .enum_entries = _ndn_atm_type_enum_entries }
 };
 
 static asn_named_entry_t _ndn_atm_csap_ne_array[] = {

@@ -64,7 +64,7 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
 asn_type ndn_rte_flow_action_type_s = {
     "Action-Type", {PRIVATE, NDN_FLOW_ACTION_TYPES}, ENUMERATED,
     TE_ARRAY_LEN(_ndn_rte_flow_action_type_enum_entries),
-    {enum_entries: _ndn_rte_flow_action_type_enum_entries}
+    {.enum_entries = _ndn_rte_flow_action_type_enum_entries}
 };
 
 const asn_type * const ndn_rte_flow_action_type = &ndn_rte_flow_action_type_s;
@@ -151,7 +151,7 @@ const asn_type * const ndn_rte_flow_action_conf_rss_opt =
 asn_type ndn_rte_flow_action_conf_rss_queue_s = {
     "Action-Conf-RSS-Queue",
     { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_QUEUE }, SEQUENCE_OF,
-    0, {subtype: &asn_base_int16_s}
+    0, {.subtype = &asn_base_int16_s}
 };
 
 const asn_type * const ndn_rte_flow_action_conf_rss_queue =
@@ -233,7 +233,7 @@ const asn_type * const ndn_rte_flow_action = &ndn_rte_flow_action_s;
 
 asn_type ndn_rte_flow_actions_s = {
     "Actions", {PRIVATE, 0}, SEQUENCE_OF,
-    0, {subtype: &ndn_rte_flow_action_s}
+    0, {.subtype = &ndn_rte_flow_action_s}
 };
 
 const asn_type * const ndn_rte_flow_actions = &ndn_rte_flow_actions_s;
@@ -259,7 +259,7 @@ asn_enum_entry_t _ndn_rte_flow_item_type_enum_entries[] = {
 asn_type ndn_rte_flow_item_type_s = {
     "Item-Type", {PRIVATE, NDN_FLOW_ITEM_TYPES}, ENUMERATED,
     TE_ARRAY_LEN(_ndn_rte_flow_item_type_enum_entries),
-    {enum_entries: _ndn_rte_flow_item_type_enum_entries}
+    {.enum_entries = _ndn_rte_flow_item_type_enum_entries}
 };
 
 const asn_type * const ndn_rte_flow_item_type = &ndn_rte_flow_item_type_s;
@@ -281,7 +281,7 @@ const asn_type * const ndn_rte_flow_item = &ndn_rte_flow_item_s;
 
 asn_type ndn_rte_flow_items_s = {
     "Items", {PRIVATE, 0}, SEQUENCE_OF,
-    0, {subtype: &ndn_rte_flow_item_s}
+    0, {.subtype = &ndn_rte_flow_item_s}
 };
 
 const asn_type * const ndn_rte_flow_items = &ndn_rte_flow_items_s;

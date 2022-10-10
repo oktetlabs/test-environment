@@ -68,7 +68,7 @@ asn_type at_plain_int_array = {
     {APPLICATION, 3},
     SEQUENCE_OF,
     0,
-    {subtype:&asn_base_integer_s}
+    {.subtype = &asn_base_integer_s}
 };
 
 
@@ -114,7 +114,7 @@ asn_type at_our_names = {
     {UNIVERSAL, 10},
     ENUMERATED,
     sizeof(_at_our_names_enum_entries)/sizeof(asn_enum_entry_t),
-    {enum_entries:_at_our_names_enum_entries}
+    {.enum_entries = _at_our_names_enum_entries}
 };
 
 
@@ -137,7 +137,7 @@ asn_type my_tagged = {
     {APPLICATION, 5},
     TAGGED,
     1,
-    {subtype:&at_plain_seq1}
+    {.subtype = &at_plain_seq1}
 };
 
 

@@ -128,7 +128,7 @@ asn_type ndn_snmp_error_status_s = {
     {UNIVERSAL, 10},
     ENUMERATED,
     TE_ARRAY_LEN(_ndn_snmp_error_status_enum_entries),
-    {enum_entries: _ndn_snmp_error_status_enum_entries}
+    {.enum_entries = _ndn_snmp_error_status_enum_entries}
 };
 
 asn_type * ndn_snmp_error_status = &ndn_snmp_error_status_s;
@@ -152,7 +152,7 @@ asn_type ndn_snmp_message_type_s = {
     {UNIVERSAL, 10},
     ENUMERATED,
     TE_ARRAY_LEN(_ndn_snmp_message_type_enum_entries),
-    {enum_entries: _ndn_snmp_message_type_enum_entries}
+    {.enum_entries = _ndn_snmp_message_type_enum_entries}
 };
 
 const asn_type * const ndn_snmp_message_type = &ndn_snmp_message_type_s;
@@ -256,7 +256,7 @@ asn_type * ndn_snmp_var_bind = &ndn_snmp_var_bind_s;
 
 asn_type ndn_snmp_var_bind_seq_s = {
     "SEQUENCE OF VarBind", {APPLICATION, 200},
-    SEQUENCE_OF, 0, {subtype: &ndn_snmp_var_bind_s}
+    SEQUENCE_OF, 0, {.subtype = &ndn_snmp_var_bind_s}
 };
 
 asn_type * ndn_snmp_var_bind_seq = &ndn_snmp_var_bind_seq_s;
@@ -298,7 +298,7 @@ asn_type ndn_snmp_security_level_s = {
     {UNIVERSAL, 10},
     ENUMERATED,
     TE_ARRAY_LEN(_ndn_snmp_security_level_enum_entries),
-    {enum_entries: _ndn_snmp_security_level_enum_entries}
+    {.enum_entries = _ndn_snmp_security_level_enum_entries}
 };
 const asn_type * const ndn_snmp_security_level = &ndn_snmp_security_level_s;
 
@@ -314,7 +314,7 @@ asn_type ndn_snmp_auth_proto_s = {
     {UNIVERSAL, 10},
     ENUMERATED,
     TE_ARRAY_LEN(_ndn_snmp_auth_proto_enum_entries),
-    {enum_entries: _ndn_snmp_auth_proto_enum_entries}
+    {.enum_entries = _ndn_snmp_auth_proto_enum_entries}
 };
 
 const asn_type * const ndn_snmp_auth_proto = &ndn_snmp_auth_proto_s;
@@ -331,7 +331,7 @@ asn_type ndn_snmp_priv_proto_s = {
     {UNIVERSAL, 10},
     ENUMERATED,
     TE_ARRAY_LEN(_ndn_snmp_priv_proto_enum_entries),
-    {enum_entries: _ndn_snmp_priv_proto_enum_entries}
+    {.enum_entries = _ndn_snmp_priv_proto_enum_entries}
 };
 
 

@@ -67,7 +67,7 @@ const asn_type * const ndn_flow_ep = &ndn_flow_ep_s;
 /* Endpoints sequence */
 asn_type ndn_flow_ep_seq_s = {
     "QoS-Flow-Endpoints-Seq", {PRIVATE, NDN_FLOW_EP_SEQ}, SEQUENCE_OF, 0,
-    {subtype: &ndn_flow_ep_s}
+    {.subtype = &ndn_flow_ep_s}
 };
 
 const asn_type * const ndn_flow_ep_seq = &ndn_flow_ep_seq_s;
@@ -94,7 +94,7 @@ const asn_type * const ndn_flow_pdu = &ndn_flow_pdu_s;
 
 asn_type ndn_flow_pdu_sequence_s = {
     "QoS-Flow-PDU-Sequence", { PRIVATE, NDN_FLOW_PDU_SEQUENCE },
-    SEQUENCE_OF, 0, {subtype: &ndn_flow_pdu_s}
+    SEQUENCE_OF, 0, {.subtype = &ndn_flow_pdu_s}
 };
 
 const asn_type * const ndn_flow_pdu_sequence =

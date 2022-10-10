@@ -59,7 +59,7 @@ const asn_type * const ndn_kprobes_scenario_item = &ndn_kprobes_scenario_item_s;
 
 static asn_type ndn_kprobes_scenario_s = {
     "kprobes-scenario", {PRIVATE, NDN_KPROBES_SCENARIO},
-    SEQUENCE_OF, 0, {subtype: &ndn_kprobes_scenario_item_s}
+    SEQUENCE_OF, 0, {.subtype = &ndn_kprobes_scenario_item_s}
 };
 
 const asn_type * const ndn_kprobes_scenario =
@@ -67,7 +67,7 @@ const asn_type * const ndn_kprobes_scenario =
 
 static asn_type ndn_kprobes_scenarios_s = {
     "kprobes-scenarios", {PRIVATE, NDN_KPROBES_SCENARIOS},
-    SEQUENCE_OF, 0, {subtype: &ndn_kprobes_scenario_s}
+    SEQUENCE_OF, 0, {.subtype = &ndn_kprobes_scenario_s}
 };
 
 static asn_named_entry_t _ndn_kprobes_packet_ne_array[] = {

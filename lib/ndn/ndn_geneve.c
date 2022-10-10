@@ -39,7 +39,7 @@ const asn_type * const ndn_geneve_option = &ndn_geneve_option_s;
 asn_type ndn_geneve_options_s = {
     "Geneve-Options",
     { PRIVATE, NDN_TAG_GENEVE_OPTIONS }, SEQUENCE_OF, 0,
-    {subtype: &ndn_geneve_option_s}
+    {.subtype = &ndn_geneve_option_s}
 };
 
 const asn_type * const ndn_geneve_options = &ndn_geneve_options_s;

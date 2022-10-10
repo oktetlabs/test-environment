@@ -70,7 +70,7 @@ const asn_type *const ndn_interval = &ndn_interval_static;
 
 asn_type ndn_data_unit_ints_s = {
     "DATA-UNIT-intervals", {PRIVATE, NDN_DU_INTERVALS}, SEQUENCE_OF, 0,
-    {subtype: &ndn_interval_static}
+    {.subtype = &ndn_interval_static}
 };
 
 const asn_type * const  ndn_interval_sequence = &ndn_data_unit_ints_s;
@@ -80,7 +80,7 @@ const asn_type * const  ndn_interval_sequence = &ndn_data_unit_ints_s;
 
 asn_type ndn_data_unit_enum_s = {
     "DATA-UNIT-enum", {PRIVATE, NDN_DU_ENUM}, SET_OF, 0,
-    {subtype: &asn_base_integer_s}
+    {.subtype = &asn_base_integer_s}
 };
 
 
@@ -177,7 +177,7 @@ const asn_type * const ndn_payload = &ndn_payload_s;
 
 asn_type ndn_csap_layers_s = {
     "CSAP-layers", {PRIVATE, NDN_CSAP_LAYERS}, SEQUENCE_OF, 0,
-    {subtype: &ndn_generic_csap_layer_s}
+    {.subtype = &ndn_generic_csap_layer_s}
 };
 
 const asn_type * const ndn_csap_layers = &ndn_csap_layers_s;
@@ -213,18 +213,18 @@ const asn_type * const ndn_csap_spec = &ndn_csap_spec_s;
 
 static asn_type ndn_integer_seq_s = {
     "SEQENCE OF INTEGER", {PRIVATE, NDN_ITER_INTS}, SEQUENCE_OF, 0,
-    {subtype: &asn_base_integer_s}
+    {.subtype = &asn_base_integer_s}
 };
 
 static asn_type ndn_integer_seq_assoc_s = {
     "SEQENCE OF INTEGER", {PRIVATE, NDN_ITER_INTS_ASSOC}, SEQUENCE_OF, 0,
-    {subtype: &asn_base_integer_s}
+    {.subtype = &asn_base_integer_s}
 };
 
 static asn_type ndn_chstring_seq_s = {
     "SEQENCE OF UniversalString",
     {PRIVATE, NDN_ITER_STRINGS}, SEQUENCE_OF, 0,
-    {subtype: &asn_base_charstring_s}
+    {.subtype = &asn_base_charstring_s}
 };
 
 
@@ -264,14 +264,14 @@ const asn_type * const ndn_template_parameter = &ndn_template_parameter_s;
 
 asn_type ndn_template_parameter_sequence_s = {
     "SEQENCE OF Template-Parameter", {PRIVATE, NDN_TMPL_ARGS},
-    SEQUENCE_OF, 0, {subtype: &ndn_template_parameter_s}
+    SEQUENCE_OF, 0, {.subtype = &ndn_template_parameter_s}
 };
 const asn_type * const ndn_template_params_seq =
                             &ndn_template_parameter_sequence_s;
 
 asn_type ndn_generic_pdu_sequence_s = {
     "Generic-PDU-sequence", {PRIVATE, NDN_TMPL_PDUS},
-    SEQUENCE_OF, 0, {subtype: &ndn_generic_pdu_s}
+    SEQUENCE_OF, 0, {.subtype = &ndn_generic_pdu_s}
 };
 
 const asn_type * const ndn_generic_pdu_sequence =
@@ -340,7 +340,7 @@ Packet-Actions ::= SEQUENCE OF Packet-Action
 
 asn_type ndn_packet_actions_s = {
     "Packet-Actions", {PRIVATE, NDN_PU_ACTIONS}, SEQUENCE_OF, 0,
-    {subtype: &ndn_packet_action_s}
+    {.subtype = &ndn_packet_action_s}
 };
 
 const asn_type * const  ndn_packet_actions = &ndn_packet_actions_s;
@@ -380,7 +380,7 @@ Traffic-Pattern ::= SEQUENCE OF Traffic-Pattern-Unit
 
 asn_type ndn_traffic_pattern_s = {
     "Traffic-Pattern", {PRIVATE, NDN_TRAFFIC_PATTERN}, SEQUENCE_OF, 0,
-    {subtype: &ndn_traffic_pattern_unit_s}
+    {.subtype = &ndn_traffic_pattern_unit_s}
 };
 
 const asn_type * const  ndn_traffic_pattern = &ndn_traffic_pattern_s;
