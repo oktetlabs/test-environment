@@ -80,6 +80,49 @@ te_make_buf_min(size_t min, size_t *p_len)
 }
 
 /**
+ * Fill buffer by random printable characters.
+ *
+ * The last byte will be zero, so the result may be
+ * used as a C string.
+ *
+ * @param buf      buffer pointer
+ * @param len      buffer length (must be greater than @c 0)
+ */
+extern void te_fill_printable_buf(void *buf, size_t len);
+
+/**
+ * Allocate buffer of random size from @p min to @p max and preset
+ * it by random printable characters.
+ *
+ * The last byte will be zero, so the result is actually
+ * a valid C string.
+ *
+ * @param[in]  min     minimum size of buffer (must be greater than @c 0)
+ * @param[in]  max     maximum size of buffer (must not be less than @p min)
+ * @param[out] p_len   location for real size of allocated buffer
+ *                     (may be @c NULL, as the real length may always
+ *                     be determined by strlen())
+ *
+ * @return Pointer to an allocated buffer.
+ */
+extern char *te_make_printable_buf(size_t min, size_t max, size_t *p_len);
+
+
+/**
+ * Create a buffer of specified size filled with printable characters.
+ *
+ * @param len    Buffer length
+ *
+ * @return Pointer to allocated buffer (a valid C string).
+ */
+static inline char *
+te_make_printable_buf_by_len(size_t len)
+{
+    return te_make_printable_buf(len, len, NULL);
+}
+
+
+/**
  * Allocate memory and fill it with the @p byte
  *
  * @param num   Items number

@@ -68,6 +68,45 @@ te_make_buf(size_t min, size_t max, size_t *p_len)
     return buf;
 }
 
+/* See description in te_bufs.h */
+void
+te_fill_printable_buf(void *buf, size_t len)
+{
+    size_t i;
+
+    assert(len > 0);
+    for (i = 0; i < len - 1; i++)
+    {
+        /* the range of ASCII printable characters */
+        ((char *)buf)[i] = rand_range(' ', '~');
+    }
+    ((char *)buf)[len - 1] = '\0';
+}
+
+
+/* See description in te_bufs.h */
+char *
+te_make_printable_buf(size_t min, size_t max, size_t *p_len)
+{
+    size_t len;
+    void *buf;
+
+    assert(min > 0);
+    assert(min <= max);
+    len = rand_range(min, max);
+
+    buf = TE_ALLOC(len);
+    if (buf == NULL)
+        TE_FATAL_ERROR("Memory allocation failure");
+
+    te_fill_printable_buf(buf, len);
+    if (p_len != NULL)
+        *p_len = len;
+
+    return buf;
+}
+
+
 te_bool
 te_compare_bufs(const void *exp_buf, size_t exp_len,
                 unsigned int n_copies,
