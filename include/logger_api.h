@@ -289,4 +289,20 @@
     } while (0)
 
 
+/**
+ * Log an error and then immediately terminate the program.
+ *
+ * @note A log message may be lost in this case. A future version
+ *       may use a more sophisticated mechanism of exception handling.
+ *
+ * @param _fmt   format string
+ * @param ...    arguments as specified by @p _fmt
+ */
+#define TE_FATAL_ERROR(_fmt, ...) \
+    do {                                                        \
+        ERROR("%s() at %s:%d" _fmt, __func__, __FILE__, __LINE__,   \
+              ##__VA_ARGS__);                                       \
+        abort();                                                    \
+    } while (0)
+
 #endif /* !__TE_LOGGER_API_H__ */
