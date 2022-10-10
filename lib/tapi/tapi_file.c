@@ -39,17 +39,7 @@
 #include "logger_api.h"
 #include "tapi_file.h"
 
-/**
- * Create file in the TE temporary directory.
- *
- * @param len   file length
- * @param c     file content pattern
- *
- * @return name (memory is allocated) of the file or
- *         NULL in the case of failure
- *
- * @note the function is not thread-safe
- */
+/* See description in tapi_file.h */
 char *
 tapi_file_create_pattern(size_t len, char c)
 {
@@ -89,18 +79,7 @@ tapi_file_create_pattern(size_t len, char c)
     return pathname;
 }
 
-/**
- * Create file in the TE temporary directory with the specified content.
- *
- * @param len     file length
- * @param buf     buffer with the file content
- * @param random  if TRUE, fill buffer with random data
- *
- * @return name (memory is allocated) of the file or
- *         NULL in the case of failure
- *
- * @note The function is not thread-safe
- */
+/* See description in tapi_file.h */
 char *
 tapi_file_create(size_t len, char *buf, te_bool random)
 {
