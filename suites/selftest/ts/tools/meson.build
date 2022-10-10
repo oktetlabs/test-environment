@@ -3,6 +3,7 @@
 
 tests = [
     'enum_map',
+    'hexdump',
     'readlink',
     'resolvepath',
     'string',
