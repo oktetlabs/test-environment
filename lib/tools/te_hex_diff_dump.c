@@ -8,61 +8,114 @@
  * Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.
  */
 
-#include <stdio.h>
+#include "te_config.h"
 
+#include <inttypes.h>
+#include "te_defs.h"
 #include "te_hex_diff_dump.h"
-#include "te_str.h"
 
-/* Number of printed bytes per line. */
-#define DIFF_LINE_WIDTH 8
+#define BYTES_PER_LINE 8
+
+/* Left mark + 2 hex digits + right mark. */
+#define CHARS_PER_BYTE 4
+
+#define COLUMN_WIDTH (BYTES_PER_LINE * CHARS_PER_BYTE)
 
 static void
-diff_dump_line(const void *ex_frag, const void *rx_frag, size_t size,
-               char *ex_str, char *rx_str)
+hex_diff_half_line(te_string *dest,
+                   const uint8_t *this_side, size_t this_len,
+                   const uint8_t *other_side, size_t other_len,
+                   int indent)
 {
-    int len = 0;
-    const uint8_t *ex_frag_p = ex_frag;
-    const uint8_t *rx_frag_p = rx_frag;
+    size_t i;
 
-    while (size > 0)
+    te_string_append(dest, "|%*s", indent * CHARS_PER_BYTE, "");
+
+    for (i = 0; i < this_len; i++)
     {
-        te_bool equal = *ex_frag_p == *rx_frag_p;
-        char sep_left = equal ? ' ' : '>';
-        char sep_right = equal ? ' ' : '<';
+        te_bool equal = i < other_len && other_side[i] == this_side[i];
 
-        sprintf(ex_str + len, "%c%02x%c", sep_left, *ex_frag_p, sep_right);
-        len += sprintf(rx_str + len, "%c%02x%c", sep_left, *rx_frag_p, sep_right);
-        ++ex_frag_p;
-        ++rx_frag_p;
-        --size;
+        te_string_append(dest, "%c%02" PRIx8 "%c",
+                         equal ? ' ' : '>',
+                         this_side[i],
+                         equal ? ' ' : '<');
+    }
+
+    te_string_append(dest, "%*s", (BYTES_PER_LINE - indent - this_len) *
+                     CHARS_PER_BYTE, "");
+}
+
+void
+te_hex_diff_dump(const void *expected, size_t exp_len,
+                 const void *actual, size_t actual_len, size_t offset,
+                 te_string *dest)
+{
+
+    const uint8_t *exp_ptr = expected;
+    const uint8_t *act_ptr = actual;
+    te_bool skip = FALSE;
+    size_t max_len = MAX(exp_len, actual_len);
+
+    te_string_append(dest, "%8s|", "");
+    te_string_add_centered(dest, " Expected ", COLUMN_WIDTH, '=');
+    te_string_append(dest, "|");
+    te_string_add_centered(dest, " Actual ", COLUMN_WIDTH, '=');
+    te_string_append(dest, "\n");
+
+    while (max_len > 0)
+    {
+        int indent = (int)(offset % BYTES_PER_LINE);
+        size_t frag_len = MIN(max_len, BYTES_PER_LINE - indent);
+
+        if (exp_len > frag_len && actual_len > frag_len &&
+            memcmp(exp_ptr, act_ptr,
+                   MIN(frag_len, MIN(exp_len, actual_len))) == 0)
+        {
+            if (!skip)
+            {
+                te_string_append(dest, "%9s%*s\n", "...",
+                                 COLUMN_WIDTH + 1, "...");
+            }
+            skip = TRUE;
+        }
+        else
+        {
+            te_string_append(dest, "%08zx", offset / BYTES_PER_LINE *
+                             BYTES_PER_LINE);
+            hex_diff_half_line(dest, exp_ptr, MIN(exp_len, frag_len),
+                               act_ptr, MIN(actual_len, frag_len), indent);
+            hex_diff_half_line(dest, act_ptr, MIN(actual_len, frag_len),
+                               exp_ptr, MIN(exp_len, frag_len), indent);
+            te_string_append(dest, "\n");
+
+            skip = FALSE;
+        }
+
+        if (exp_len > 0)
+        {
+            exp_ptr += MIN(frag_len, exp_len);
+            exp_len -= MIN(frag_len, exp_len);
+        }
+        if (actual_len > 0)
+        {
+            act_ptr += MIN(frag_len, actual_len);
+            actual_len -= MIN(frag_len, actual_len);
+        }
+        offset += frag_len;
+        max_len -= frag_len;
     }
 }
 
 void
-te_hex_diff_dump(const void *ex_pkt, const void *rx_pkt, size_t size,
-                 int (*log_func)(const char *s))
+te_hex_diff_log(const void *expected, size_t exp_len,
+                const void *actual, size_t actual_len,
+                size_t offset,
+                const char *file, int line, unsigned int level,
+                const char *entity, const char *user)
 {
-    /* 2 symbols for a hexbyte, 2 symbols for separators, + terminating null. */
-    char exp_line_str[DIFF_LINE_WIDTH * 4 + 1];
-    char rx_line_str[DIFF_LINE_WIDTH * 4 + 1];
-    int offset = 0;
+    te_string str = TE_STRING_INIT;
 
-    log_func("======================Expected============="
-             "|=============Received=============");
-
-    while (size > 0)
-    {
-        char line[128];
-        size_t frag_len = (DIFF_LINE_WIDTH < size) ? DIFF_LINE_WIDTH : size;
-
-        diff_dump_line(ex_pkt, rx_pkt, frag_len, exp_line_str, rx_line_str);
-        te_snprintf(line, sizeof(line), "%08x %-32s  |  %-32s", offset,
-                    exp_line_str, rx_line_str);
-        log_func(line);
-
-        offset += DIFF_LINE_WIDTH;
-        ex_pkt = (const void *)((uintptr_t)ex_pkt + frag_len);
-        rx_pkt = (const void *)((uintptr_t)rx_pkt + frag_len);
-        size -= frag_len;
-    }
+    te_hex_diff_dump(expected, exp_len, actual, actual_len, offset, &str);
+    te_log_message(file, line, level, entity, user, "%s", str.ptr);
+    te_string_free(&str);
 }
