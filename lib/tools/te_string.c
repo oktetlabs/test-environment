@@ -374,6 +374,22 @@ te_string_cut(te_string *str, size_t len)
         str->ptr[str->len] = '\0';
 }
 
+char *
+raw2string(const uint8_t *data, size_t size)
+{
+    te_string  str = TE_STRING_INIT;
+    size_t i = 0;
+
+    te_string_append(&str, "[ ");
+
+    for (i = 0; i < size; i++)
+        te_string_append(&str, "%#02x ", data[i]);
+
+    te_string_append(&str, "]");
+
+    return str.ptr;
+}
+
 void
 te_substring_find(te_substring_t *substr, const char *str)
 {
