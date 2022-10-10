@@ -331,6 +331,19 @@ extern void te_string_cut(te_string *str, size_t len);
 extern void te_string_cut_beginning(te_string *str, size_t len);
 
 /**
+ * Center the string @p src padding it to @p padlen with @p padchar and
+ * append the result to @p str.
+ *
+ * @param str           TE string
+ * @param src           Source C string
+ * @param padlen        Desired length (if the original string is longer,
+ *                      it will be truncated)
+ * @param padchar       Padding character
+ */
+extern void te_string_add_centered(te_string *str, const char *src,
+                                   size_t padlen, char padchar);
+
+/**
  * Free TE string.
  *
  * @note It will not release buffer supplied by user with

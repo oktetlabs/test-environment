@@ -374,6 +374,29 @@ te_string_cut(te_string *str, size_t len)
         str->ptr[str->len] = '\0';
 }
 
+void
+te_string_add_centered(te_string *str, const char *src,
+                       size_t padlen, char padchar)
+{
+    char *dest;
+    size_t src_len = strlen(src);
+
+    te_string_reserve(str, str->len + padlen + 1);
+
+    if (src_len > padlen)
+        src_len = padlen;
+
+    dest = str->ptr + str->len;
+    /* If we cannot center exactly, prefer shifting to the right */
+    memset(dest, padchar, (padlen - src_len + 1) / 2);
+    dest += (padlen - src_len + 1) / 2;
+    memcpy(dest, src, src_len);
+    dest += src_len;
+    memset(dest, padchar, (padlen - src_len) / 2);
+    str->len += padlen;
+    str->ptr[str->len] = '\0';
+}
+
 char *
 raw2string(const uint8_t *data, size_t size)
 {
