@@ -9,7 +9,7 @@
  */
 
 #ifndef __TE_LOG_PARSE_H__
-#define __TE_LOG_PARSE_H_
+#define __TE_LOG_PARSE_H__
 
 #include "te_config.h"
 #include "trc_config.h"
