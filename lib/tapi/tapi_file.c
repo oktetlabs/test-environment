@@ -39,54 +39,121 @@
 #include "logger_api.h"
 #include "tapi_file.h"
 
+static te_errno
+open_and_check(const char *filename, const char *mode, FILE **f)
+{
+    te_errno rc = 0;
+
+    *f = fopen(filename, mode);
+    if (*f == NULL)
+    {
+        rc = TE_OS_RC(TE_TAPI, errno);
+        ERROR("Cannot open '%s': %r", filename, rc);
+    }
+
+    return rc;
+}
+
+static te_errno
+write_and_check(FILE *f, const char *filename, const void *buf, size_t len)
+{
+    te_errno rc = 0;
+    size_t actual_len;
+
+    actual_len = fwrite(buf, 1, len, f);
+
+    if (actual_len != len)
+    {
+        if (ferror(f))
+        {
+            rc = TE_OS_RC(TE_TAPI, errno);
+            ERROR("Cannot write to %s: %r", filename, rc);
+        }
+        else
+        {
+            rc = TE_RC(TE_TAPI, TE_ENOSPC);
+            ERROR("Too few bytes written: %zu < %zu", actual_len, len);
+        }
+    }
+    return rc;
+}
+
+static te_errno
+read_and_check(FILE *f, const char *filename, void *buf, size_t len)
+{
+    te_errno rc = 0;
+    size_t actual_len;
+
+    actual_len = fread(buf, 1, len, f);
+
+    if (actual_len != len)
+    {
+        if (ferror(f))
+        {
+            rc = TE_OS_RC(TE_TAPI, errno);
+            ERROR("Cannot read from %s: %r", filename, rc);
+        }
+        else
+        {
+            rc = TE_RC(TE_TAPI, TE_ENODATA);
+            ERROR("Too few bytes read: %zu < %zu", actual_len, len);
+        }
+    }
+    return rc;
+}
+
+static te_errno
+close_and_check(FILE *f, const char *filename)
+{
+    te_errno rc = 0;
+
+    if (fclose(f) != 0)
+    {
+        rc = TE_OS_RC(TE_TAPI, errno);
+        ERROR("Cannot close %s: %r", filename, rc);
+    }
+    return rc;
+}
+
 /* See description in tapi_file.h */
 char *
 tapi_file_create_pattern(size_t len, char c)
 {
-    char *pathname = strdup(tapi_file_generate_pathname());
+    char *pathname = tapi_file_generate_pathname();
     char  buf[1024];
     FILE *f;
 
     if (pathname == NULL)
         return NULL;
 
-    if ((f = fopen(pathname, "w")) == NULL)
-    {
-        ERROR("Cannot open file %s: %r", pathname,
-              TE_OS_RC(TE_TAPI, errno));
+    if (open_and_check(pathname, "w", &f) != 0)
         return NULL;
-    }
 
     memset(buf, c, sizeof(buf));
 
     while (len > 0)
     {
-        int copy_len = ((unsigned int)len  > sizeof(buf)) ?
-                           (int)sizeof(buf) : len;
+        size_t chunk = len > sizeof(buf) ? sizeof(buf) : len;
 
-        if ((copy_len = fwrite((void *)buf, sizeof(char), copy_len, f)) < 0)
+        if (write_and_check(f, pathname, buf, chunk) != 0)
         {
-            ERROR("fwrite() failed: file %s: %r", pathname,
-                  TE_OS_RC(TE_TAPI, errno));
             fclose(f);
             return NULL;
         }
-        len -= copy_len;
+        len -= chunk;
     }
-    if (fclose(f) < 0)
-    {
-        ERROR("fclose() failed: file %s: %r", pathname,
-              TE_OS_RC(TE_TAPI, errno));
+
+    if (close_and_check(f, pathname) != 0)
         return NULL;
-    }
-    return pathname;
+
+    return strdup(pathname);
 }
 
 /* See description in tapi_file.h */
 char *
 tapi_file_create(size_t len, char *buf, te_bool random)
 {
-    char *pathname = strdup(tapi_file_generate_pathname());
+    char *pathname = tapi_file_generate_pathname();
     FILE *f;
 
     if (pathname == NULL)
@@ -95,28 +162,19 @@ tapi_file_create(size_t len, char *buf, te_bool random)
     if (random)
         te_fill_buf(buf, len);
 
-    if ((f = fopen(pathname, "w")) == NULL)
-    {
-        ERROR("Cannot open file %s: %r", pathname,
-              TE_OS_RC(TE_TAPI, errno));
+    if (open_and_check(pathname, "w", &f) != 0)
         return NULL;
-    }
 
-    if (fwrite((void *)buf, sizeof(char), len, f) < len)
+    if (write_and_check(f, pathname, buf, len) != 0)
     {
-        ERROR("fwrite() failed: file %s: %r", pathname,
-              TE_OS_RC(TE_TAPI, errno));
         fclose(f);
         return NULL;
     }
 
-    if (fclose(f) < 0)
-    {
-        ERROR("fclose() failed: file %s: %r", pathname,
-              TE_OS_RC(TE_TAPI, errno));
+    if (close_and_check(f, pathname) != 0)
         return NULL;
-    }
-    return pathname;
+
+    return strdup(pathname);
 }
 
 /**
@@ -145,33 +203,23 @@ tapi_file_create_ta_gen(const char *ta,
     if (lfile == NULL)
         lfile = tapi_file_generate_pathname();
 
-    if ((f = fopen(lfile, "w")) == NULL)
-    {
-        rc = TE_OS_RC(TE_TAPI, errno);
-        ERROR("Cannot open file %s: %r", lfile, rc);
+    if ((rc = open_and_check(lfile, "w", &f)) != 0)
         return rc;
-    }
 
     if (header != NULL)
         fputs(header, f);
     vfprintf(f, fmt, ap);
 
-    if (fclose(f) < 0)
+    rc = close_and_check(f, lfile);
+    if (rc == 0)
     {
-        rc = TE_OS_RC(TE_TAPI, errno);
-        ERROR("fclose() failed: file %s: %r", lfile, rc);
-        unlink(lfile);
-        return rc;
+        rc = rcf_ta_put_file(ta, 0, lfile, rfile);
+        if (rc != 0)
+            ERROR("Cannot put file %s on TA %s: %r", rfile, ta, rc);
     }
-    if ((rc = rcf_ta_put_file(ta, 0, lfile, rfile)) != 0)
-    {
-        ERROR("Cannot put file %s on TA %s: %r", rfile, ta, rc);
-        unlink(lfile);
-        return rc;
-    }
-
     unlink(lfile);
-    return 0;
+
+    return rc;
 }
 
 /* See description in tapi_file.h */
@@ -276,11 +324,12 @@ tapi_file_read_ta_gen(const char *ta, const char *filename,
                       te_bool may_not_exist, char **pbuf)
 {
     char *pathname = tapi_file_generate_pathname();
-    te_errno rc;
-    char *buf;
-    FILE *f;
+    te_errno rc = 0;
+    char *buf = NULL;
+    FILE *f = NULL;
 
     struct stat st;
+    size_t to_read;
 
     if ((rc = rcf_ta_get_file(ta, 0, filename, pathname)) != 0)
     {
@@ -299,35 +348,30 @@ tapi_file_read_ta_gen(const char *ta, const char *filename,
         ERROR("Failed to stat file %s: %r", pathname, rc);
         return rc;
     }
+    to_read = st.st_size;
 
-    if ((buf = calloc(st.st_size + 1, 1)) == NULL)
-    {
-        ERROR("Out of memory");
-        unlink(pathname);
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
-
-    if ((f = fopen(pathname, "r")) == NULL)
+    if ((buf = malloc(to_read + 1)) == NULL)
     {
         rc = TE_OS_RC(TE_TAPI, errno);
-        ERROR("Failed to open file %s: %r", pathname, rc);
-        unlink(pathname);
-        return rc;
+        ERROR("Out of memory");
     }
-
-    if (fread(buf, 1, st.st_size, f) != (size_t)st.st_size)
+    else
     {
-        ERROR("Failed to read from file %s", pathname);
-        unlink(pathname);
-        return TE_RC(TE_TAPI, TE_EIO);
+        rc = open_and_check(pathname, "r", &f);
+        if (rc == 0)
+            rc = read_and_check(f, pathname, buf, to_read);
     }
 
-    fclose(f);
+    if (f != NULL)
+        fclose(f);
     unlink(pathname);
 
-    *pbuf = buf;
+    if (rc == 0)
+        *pbuf = buf;
+    else
+        free(buf);
 
-    return 0;
+    return rc;
 }
 
 /* See description in tapi_file.h */
