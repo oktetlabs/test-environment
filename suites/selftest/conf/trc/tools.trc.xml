@@ -9,6 +9,8 @@
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/resolvepath.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tools/compare_bufs.trc.xml" parse="xml"/>
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/enum_map.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/hexdump.trc.xml" parse="xml"/>

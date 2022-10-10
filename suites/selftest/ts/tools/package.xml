@@ -15,6 +15,10 @@
         </run>
 
         <run>
+            <script name="compare_bufs"/>
+        </run>
+
+        <run>
             <script name="enum_map"/>
         </run>
 
