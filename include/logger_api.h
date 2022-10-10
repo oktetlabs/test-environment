@@ -41,14 +41,15 @@
  * Auxiliary @ref logger_api macros that you are unlikely to use
  * directly from your tests or other TE components.
  */
+/**@{*/
 
 /**
  * Unconditional logging.
  *
- * @param _evel    - log level of the message
- * @param _entity  - log entity name
- * @param _user    - log user name
- * @param _fs      - format string and arguments
+ * @param _level   log level of the message
+ * @param _entity  log entity name
+ * @param _user    log user name
+ * @param _fs      format string and arguments
  */
 #define TE_LOG(_level, _entity, _user, _fs...) \
     te_log_message(__FILE__, __LINE__, _level, _entity, _user, _fs)
@@ -78,9 +79,9 @@
  * @note This macro is intended for internal purposes and should not
  *       be used directly outside of this file.
  *
- * @param _lvl      - log level of the message
- * @param _lgruser  - log user name
- * @param _fs       - format string and arguments
+ * @param _lvl      log level of the message
+ * @param _lgruser  log user name
+ * @param _fs       format string and arguments
  */
 #define LGR_MESSAGE(_lvl, _lgruser, _fs...) \
     TE_DO_IF_LOG_LEVEL(_lvl, TE_LOG(_lvl, TE_LGR_ENTITY, _lgruser, _fs))
@@ -88,8 +89,8 @@
 /**
  * Log message from default user with specified level.
  *
- * @param _lvl  - log level of the message
- * @param _fs   - format string and arguments
+ * @param _lvl  log level of the message
+ * @param _fs   format string and arguments
  */
 #define LOG_MSG(_lvl, _fs...)   LGR_MESSAGE(_lvl, TE_LGR_USER, _fs)
 
@@ -101,12 +102,13 @@
  * but you can use these interface if you need to log a message
  * with user name different from the default.
  */
+/**@{*/
 
 /**
  * Logging abnormal/unexpected situations
  *
- * @param _us - log user name
- * @param _fs - format string and arguments
+ * @param _us log user name
+ * @param _fs format string and arguments
  */
 #define TE_LOG_ERROR(_us, _fs...)   LGR_MESSAGE(TE_LL_ERROR, _us, _fs)
 
@@ -115,8 +117,8 @@
  * the optional feature or some unexpect events that
  * does not break operation
  *
- * @param _us - log user name
- * @param _fs - format string and arguments
+ * @param _us log user name
+ * @param _fs format string and arguments
  */
 #define TE_LOG_WARN(_us, _fs...)    LGR_MESSAGE(TE_LL_WARN, _us, _fs)
 
@@ -124,24 +126,24 @@
  * Logging very important events in TE and tests required to
  * undestand testing results
  *
- * @param _us - log user name
- * @param _fs - format string and arguments
+ * @param _us log user name
+ * @param _fs format string and arguments
  */
 #define TE_LOG_RING(_us, _fs...)    LGR_MESSAGE(TE_LL_RING, _us, _fs)
 
 /**
  * Logging important event for debugging of the test
  *
- * @param _us - log user name
- * @param _fs - format string and arguments
+ * @param _us log user name
+ * @param _fs format string and arguments
  */
 #define TE_LOG_INFO(_us, _fs...)    LGR_MESSAGE(TE_LL_INFO, _us, _fs)
 
 /**
  * Logging additional events for detalization of processing
  *
- * @param _us - log user name
- * @param _fs - format string and arguments
+ * @param _us log user name
+ * @param _fs format string and arguments
  */
 #define TE_LOG_VERB(_us, _fs...)    LGR_MESSAGE(TE_LL_VERB, _us, _fs)
 
@@ -156,8 +158,8 @@
 /**
  * Logging of entry to a function
  *
- * @param _us - log user name
- * @param _fs - format string and arguments
+ * @param _us log user name
+ * @param _fs format string and arguments
  */
 #define TE_LOG_ENTRY(_us, _fs...) \
     do {                                                        \
@@ -187,8 +189,8 @@
 /**
  * Logging of exit from a function
  *
- * @param _us - log user name
- * @param _fs - format string and arguments
+ * @param _us log user name
+ * @param _fs format string and arguments
  */
 #define TE_LOG_EXIT(_us, _fs...) \
     do {                                                        \
@@ -207,7 +209,7 @@
         }                                                       \
     } while (0)
 
-/*@}*/
+/**@}*/
 
 /**
  * @name Frontend Logger API
@@ -217,12 +219,13 @@
  * TE_LGR_USER is a character string that will be later available
  * in resulting log file to determine log origins.
  */
+/**@{*/
 
 /**
  * Logging abnormal/unexpected situations
  * with user-defined log user name TE_LGR_USER.
  *
- * @param _fs - format string and arguments
+ * @param _fs format string and arguments
  */
 #define ERROR(_fs...)               TE_LOG_ERROR(TE_LGR_USER, _fs)
 
@@ -230,7 +233,7 @@
  * Logging situations some failed initialization of
  * the optional feature
  *
- * @param _fs - format string and arguments
+ * @param _fs format string and arguments
  */
 #define WARN(_fs...)                TE_LOG_WARN(TE_LGR_USER, _fs)
 
@@ -238,39 +241,39 @@
  * Logging very important events in TE and tests required to
  * undestand testing results
  *
- * @param _fs - format string and arguments
+ * @param _fs format string and arguments
  */
 #define RING(_fs...)                TE_LOG_RING(TE_LGR_USER, _fs)
 
 /**
  * Logging important event for debugging of the test
  *
- * @param _fs - format string and arguments
+ * @param _fs format string and arguments
  */
 #define INFO(_fs...)                TE_LOG_INFO(TE_LGR_USER, _fs)
 
 /**
  * Logging additional events for detalization of processing
  *
- * @param _fs - format string and arguments
+ * @param _fs format string and arguments
  */
 #define VERB(_fs...)                TE_LOG_VERB(TE_LGR_USER, _fs)
 
 /**
  * Logging of entry to a function
  *
- * @param _fs - format string and arguments
+ * @param _fs format string and arguments
  */
 #define ENTRY(_fs...)  TE_LOG_ENTRY(TE_LGR_USER, _fs)
 
 /**
  * Logging of exit from a function
  *
- * @param _fs - format string and arguments
+ * @param _fs format string and arguments
  */
 #define EXIT(_fs...)  TE_LOG_EXIT(TE_LGR_USER, _fs)
 
-/*@}*/
+/**@}*/
 
 /**@} <!-- END logger_api --> */
 
