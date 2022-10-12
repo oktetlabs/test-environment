@@ -58,6 +58,8 @@
     - oid: "/agent/module/version"
       access: read_only
       type: string
+      depends:
+        - oid: "/agent/module/loaded"
       d: |
          Module version.
          Value: string describing version
