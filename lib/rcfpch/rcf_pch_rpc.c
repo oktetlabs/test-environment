@@ -1800,8 +1800,8 @@ rpcserver_list(unsigned int gid, const char *oid,
     if ((*value = strdup(buf)) == NULL)
     {
         pthread_mutex_unlock(&lock);
-        free(buf);
         ERROR("%s(): strdup(%s) failed", __FUNCTION__, buf);
+        free(buf);
         return TE_RC(TE_RCF_PCH, TE_ENOMEM);
     }
     pthread_mutex_unlock(&lock);
