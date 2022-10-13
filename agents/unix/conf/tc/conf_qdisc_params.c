@@ -250,8 +250,8 @@ static struct netem_param netem_params[] = {
         .name = "duplicate",
         .get = rtnl_netem_get_duplicate,
         .set = rtnl_netem_set_duplicate,
-        .val2str = default_val2str,
-        .str2val = default_str2val
+        .val2str = prob_val2str,
+        .str2val = prob_str2val
     },
     {
         .name = "duplicate_correlation",
