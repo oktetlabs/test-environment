@@ -482,6 +482,7 @@ executable('ta_rcf_listener', rcf_listener_sources,
 
 ta_scripts = files(
     'ta_clean_tce',
+    'ta_fetch_tce',
     )
 
 install_data(

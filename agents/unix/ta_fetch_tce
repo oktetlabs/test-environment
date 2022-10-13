@@ -1,0 +1,99 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+#
+# Helper script to fetch gcda files
+#
+# It is intended to be used by an RCF/unix controller.
+# Do not call it directly!
+#
+# $1 command:
+#   check - report the presence of gcda files,
+#   fetch - send gcda files within a cpio file.
+# $2 build directory of a TA component.
+
+cmd="$1"
+dest="$2"
+
+#######################################
+# Die with a message.
+# Arguments:
+#   Arguments to message.
+# Outputs:
+#   Outputs arguments into STDERR.
+# Returns:
+#   This function never returns.
+#######################################
+function die() {
+    echo "ERROR: ta_fetch_tce: $*" >&2
+    exit 1
+}
+
+#######################################
+# Check gcda files are provided.
+# Arguments:
+#   The directory to check gcda files into.
+# Outputs:
+#   Outputs a message into STDERR on an error.
+# Returns:
+#   0 if gcda files is provided, non-zero otherwise.
+#   This function never returns on an error.
+#######################################
+function check_gcda() {
+    local dest="$1"
+    local files=
+
+    [[ -d "${dest}" ]] || return 1
+
+    files="$(find "${dest}" -name \*.gcda -print -quit 2> /dev/null)" \
+        || die "failed to locate gcda files within '${dest}'"
+
+    [[ -n "${files}" ]]
+}
+
+#######################################
+# Collect gcda files.
+# Arguments:
+#   The directory to gather gcda files from.
+# Outputs:
+#   Outputs a cpio file with gcda files into STDOUT.
+#   Outputs a message into STDERR on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function collect_gcda() {
+    local dest="$1"
+    local files=
+
+    pushd "${dest}" &> /dev/null \
+        || die "failed to change directory to '${dest}'"
+
+    files="$(find . -name \*.gcda 2> /dev/null)" \
+        || die "failed to locate gcda files within '${dest}'"
+
+    [[ -n "$files" ]] \
+        || die "failed to find gcda files within '${dest}'"
+
+    echo "${files}" | cpio -o -L 2> /dev/null \
+        || die "failed to send gcda files from '${dest}'"
+
+    popd &> /dev/null
+}
+
+command -v cpio &> /dev/null \
+    || die "failed to locate cpio utility"
+
+[[ "${dest##/}" != "${dest}" ]] \
+    || die "dest is '${dest}', but must start with '/'"
+
+case "${cmd}" in
+    check)
+        check_gcda "${dest}" && echo "Y" || echo "N"
+        ;;
+    fetch)
+        collect_gcda "${dest}"
+        ;;
+    *)
+        die "invalid command '$cmd', but 'count' or 'fetch' expected"
+        ;;
+esac
