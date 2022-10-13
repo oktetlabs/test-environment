@@ -41,13 +41,44 @@
 #include "logger_api.h"
 #include "tapi_file.h"
 
+void
+tapi_file_make_name(te_string *dest)
+{
+    static unsigned int seq = 0;
+
+    te_string_append(dest, "te_tmp_%u_%u_%u", (unsigned)time(NULL), getpid(),
+                     seq++);
+}
+
+void
+tapi_file_make_custom_pathname(te_string *dest, const char *dirname,
+                               const char *suffix)
+{
+    if (dirname != NULL)
+        te_string_append(dest, "%s/", dirname);
+    tapi_file_make_name(dest);
+    if (suffix != NULL)
+        te_string_append(dest, "%s", suffix);
+}
+
+void
+tapi_file_make_pathname(te_string *dest)
+{
+    const char *te_tmp = getenv("TE_TMP");
+
+    if (te_tmp == NULL)
+        TE_FATAL_ERROR("TE_TMP is empty");
+
+    tapi_file_make_custom_pathname(dest, te_tmp, NULL);
+}
+
 char *
 tapi_file_generate_name(void)
 {
-    static int  num = 0;
     static char buf[RCF_MAX_PATH];
+    te_string str = TE_STRING_BUF_INIT(buf);
 
-    TE_SPRINTF(buf, "te_tmp_%u_%u_%u", (uint32_t)time(NULL), getpid(), num++);
+    tapi_file_make_name(&str);
 
     return buf;
 }
@@ -55,18 +86,12 @@ tapi_file_generate_name(void)
 char *
 tapi_file_generate_pathname(void)
 {
-    static char  pathname[RCF_MAX_PATH];
-    static char *te_tmp;
+    static char buf[RCF_MAX_PATH];
+    te_string str = TE_STRING_BUF_INIT(buf);
 
-    if (te_tmp == NULL && (te_tmp = getenv("TE_TMP")) == NULL)
-    {
-        ERROR("TE_TMP is empty");
-        return NULL;
-    }
+    tapi_file_make_pathname(&str);
 
-    TE_SPRINTF(pathname, "%s/%s", te_tmp, tapi_file_generate_name());
-
-    return pathname;
+    return buf;
 }
 
 static te_errno
@@ -150,15 +175,17 @@ close_and_check(FILE *f, const char *filename)
 char *
 tapi_file_create_pattern(size_t len, char c)
 {
-    char *pathname = tapi_file_generate_pathname();
+    te_string pathname = TE_STRING_INIT;
     char  buf[1024];
     FILE *f;
 
-    if (pathname == NULL)
-        return NULL;
+    tapi_file_make_pathname(&pathname);
 
-    if (open_and_check(pathname, "w", &f) != 0)
+    if (open_and_check(pathname.ptr, "w", &f) != 0)
+    {
+        te_string_free(&pathname);
         return NULL;
+    }
 
     memset(buf, c, sizeof(buf));
 
@@ -166,46 +193,56 @@ tapi_file_create_pattern(size_t len, char c)
     {
         size_t chunk = len > sizeof(buf) ? sizeof(buf) : len;
 
-        if (write_and_check(f, pathname, buf, chunk) != 0)
+        if (write_and_check(f, pathname.ptr, buf, chunk) != 0)
         {
             fclose(f);
+            te_string_free(&pathname);
             return NULL;
         }
         len -= chunk;
     }
 
-    if (close_and_check(f, pathname) != 0)
+    if (close_and_check(f, pathname.ptr) != 0)
+    {
+        te_string_free(&pathname);
         return NULL;
+    }
 
-    return strdup(pathname);
+    return pathname.ptr;
 }
 
 /* See description in tapi_file.h */
 char *
 tapi_file_create(size_t len, char *buf, te_bool random)
 {
-    char *pathname = tapi_file_generate_pathname();
+    te_string pathname = TE_STRING_INIT;
     FILE *f;
 
-    if (pathname == NULL)
-        return NULL;
+    tapi_file_make_pathname(&pathname);
 
     if (random)
         te_fill_buf(buf, len);
 
-    if (open_and_check(pathname, "w", &f) != 0)
-        return NULL;
-
-    if (write_and_check(f, pathname, buf, len) != 0)
+    if (open_and_check(pathname.ptr, "w", &f) != 0)
     {
-        fclose(f);
+        te_string_free(&pathname);
         return NULL;
     }
 
-    if (close_and_check(f, pathname) != 0)
+    if (write_and_check(f, pathname.ptr, buf, len) != 0)
+    {
+        fclose(f);
+        te_string_free(&pathname);
         return NULL;
+    }
 
-    return strdup(pathname);
+    if (close_and_check(f, pathname.ptr) != 0)
+    {
+        te_string_free(&pathname);
+        return NULL;
+    }
+
+    return pathname.ptr;
 }
 
 /**
@@ -228,27 +265,31 @@ tapi_file_create_ta_gen(const char *ta,
                         const char *header,
                         const char *fmt, va_list ap)
 {
+    te_string lfile_name = TE_STRING_INIT;
     FILE *f;
     te_errno rc;
 
     if (lfile == NULL)
-        lfile = tapi_file_generate_pathname();
+        tapi_file_make_pathname(&lfile_name);
+    else
+        te_string_append(&lfile_name, "%s", lfile);
 
-    if ((rc = open_and_check(lfile, "w", &f)) != 0)
+    if ((rc = open_and_check(lfile_name.ptr, "w", &f)) != 0)
         return rc;
 
     if (header != NULL)
         fputs(header, f);
     vfprintf(f, fmt, ap);
 
-    rc = close_and_check(f, lfile);
+    rc = close_and_check(f, lfile_name.ptr);
     if (rc == 0)
     {
-        rc = rcf_ta_put_file(ta, 0, lfile, rfile);
+        rc = rcf_ta_put_file(ta, 0, lfile_name.ptr, rfile);
         if (rc != 0)
             ERROR("Cannot put file %s on TA %s: %r", rfile, ta, rc);
     }
-    unlink(lfile);
+    unlink(lfile_name.ptr);
+    te_string_free(&lfile_name);
 
     return rc;
 }
@@ -290,7 +331,7 @@ te_errno
 tapi_file_copy_ta(const char *ta_src, const char *src,
                   const char *ta_dst, const char *dst)
 {
-    const char *pathname;
+    te_string pathname = TE_STRING_INIT;
     te_errno rc = 0;
     struct stat st;
     te_bool need_unlink = FALSE;
@@ -301,52 +342,58 @@ tapi_file_copy_ta(const char *ta_src, const char *src,
         {
             ERROR("%s(): copying between local files is not supported",
                   __func__);
+            te_string_free(&pathname);
+
             return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
         }
-        pathname = src;
+        te_string_append(&pathname, "%s", src);
     }
     else if (ta_dst == NULL)
     {
-        pathname = dst;
+        te_string_append(&pathname, "%s", dst);
     }
     else
     {
-        pathname = tapi_file_generate_pathname();
+        tapi_file_make_pathname(&pathname);
         need_unlink = TRUE;
     }
 
     if (ta_src != NULL)
     {
-        if ((rc = rcf_ta_get_file(ta_src, 0, src, pathname)) != 0)
+        if ((rc = rcf_ta_get_file(ta_src, 0, src, pathname.ptr)) != 0)
         {
             ERROR("Cannot get file %s from TA %s: %r", src, ta_src, rc);
+            te_string_free(&pathname);
+
             return rc;
         }
     }
 
     if (ta_dst != NULL)
     {
-        if ((rc = rcf_ta_put_file(ta_dst, 0, pathname, dst)) != 0)
+        if ((rc = rcf_ta_put_file(ta_dst, 0, pathname.ptr, dst)) != 0)
         {
             ERROR("Cannot put file %s to TA %s: %r", dst, ta_dst, rc);
             goto cleanup;
         }
     }
 
-    if (stat(pathname, &st) != 0)
+    if (stat(pathname.ptr, &st) != 0)
     {
         rc = TE_OS_RC(TE_TAPI, errno);
-        ERROR("Cannot stat local file %s: %r", pathname, rc);
+        ERROR("Cannot stat local file %s: %r", pathname.ptr, rc);
         goto cleanup;
     }
 
     RING("Copy file %s:%s to %s:%s using local %s size %lld",
-         ta_src, src, ta_dst, dst, pathname,
+         ta_src, src, ta_dst, dst, pathname.ptr,
          (long long)st.st_size);
 
 cleanup:
     if (need_unlink)
-        unlink(pathname);
+        unlink(pathname.ptr);
+    te_string_free(&pathname);
+
     return rc;
 }
 
@@ -354,7 +401,7 @@ static te_errno
 tapi_file_read_ta_gen(const char *ta, const char *filename,
                       te_bool may_not_exist, char **pbuf)
 {
-    char *pathname = tapi_file_generate_pathname();
+    te_string pathname = TE_STRING_INIT;
     te_errno rc = 0;
     char *buf = NULL;
     FILE *f = NULL;
@@ -362,8 +409,11 @@ tapi_file_read_ta_gen(const char *ta, const char *filename,
     struct stat st;
     size_t to_read;
 
-    if ((rc = rcf_ta_get_file(ta, 0, filename, pathname)) != 0)
+    tapi_file_make_pathname(&pathname);
+    if ((rc = rcf_ta_get_file(ta, 0, filename, pathname.ptr)) != 0)
     {
+        te_string_free(&pathname);
+
         if (may_not_exist && TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
             *pbuf = strdup("");
@@ -373,10 +423,12 @@ tapi_file_read_ta_gen(const char *ta, const char *filename,
         ERROR("Cannot get file %s from TA %s: %r", filename, ta, rc);
         return rc;
     }
-    if (stat(pathname, &st) != 0)
+    if (stat(pathname.ptr, &st) != 0)
     {
         rc = TE_OS_RC(TE_TAPI, errno);
-        ERROR("Failed to stat file %s: %r", pathname, rc);
+        ERROR("Failed to stat file %s: %r", pathname.ptr, rc);
+        te_string_free(&pathname);
+
         return rc;
     }
     to_read = st.st_size;
@@ -388,14 +440,15 @@ tapi_file_read_ta_gen(const char *ta, const char *filename,
     }
     else
     {
-        rc = open_and_check(pathname, "r", &f);
+        rc = open_and_check(pathname.ptr, "r", &f);
         if (rc == 0)
-            rc = read_and_check(f, pathname, buf, to_read);
+            rc = read_and_check(f, pathname.ptr, buf, to_read);
     }
 
     if (f != NULL)
         fclose(f);
-    unlink(pathname);
+    unlink(pathname.ptr);
+    te_string_free(&pathname);
 
     if (rc == 0)
         *pbuf = buf;

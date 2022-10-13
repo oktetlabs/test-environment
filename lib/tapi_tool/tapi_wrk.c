@@ -120,27 +120,22 @@ static te_errno
 generate_script_filename(const char *ta, char **file_name)
 {
     char *working_dir = NULL;
-    char *result;
+    te_string result = TE_STRING_INIT;
     te_errno rc;
 
     rc = cfg_get_instance_fmt(NULL, &working_dir, "/agent:%s/dir:", ta);
     if (rc != 0)
     {
         ERROR("Failed to get working directory");
+        te_string_free(&result);
         return rc;
     }
 
-    rc = te_asprintf(&result, "%s/%s_%s", working_dir,
-                     tapi_file_generate_name(),
-                     TAPI_WRK_SCRIPT_FILE_NAME_SUFFIX);
+    tapi_file_make_custom_pathname(&result, working_dir,
+                                   "_" TAPI_WRK_SCRIPT_FILE_NAME_SUFFIX);
     free(working_dir);
-    if (rc < 0)
-    {
-        ERROR("Failed to create wrk script file name");
-        return TE_RC(TE_TAPI, TE_EFAIL);
-    }
 
-    *file_name = result;
+    *file_name = result.ptr;
 
     return 0;
 }

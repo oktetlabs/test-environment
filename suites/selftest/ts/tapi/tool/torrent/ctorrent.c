@@ -28,17 +28,13 @@
 #define TMP_DIR "/tmp"
 
 void
-generate_file_names(char *metainfo_iut, char *metainfo_tst, char *source_file,
-                    char *dest_file)
+generate_file_names(te_string *metainfo_iut, te_string *metainfo_tst,
+                    te_string *source_file, te_string *dest_file)
 {
-    TE_SNPRINTF(metainfo_iut, RCF_MAX_PATH, "%s/%s_iut.torrent", TMP_DIR,
-               tapi_file_generate_name());
-    TE_SNPRINTF(metainfo_tst, RCF_MAX_PATH, "%s/%s_tst.torrent", TMP_DIR,
-                tapi_file_generate_name());
-    TE_SNPRINTF(source_file, RCF_MAX_PATH, "%s/%s_source", TMP_DIR,
-                tapi_file_generate_name());
-    TE_SNPRINTF(dest_file, RCF_MAX_PATH, "%s/%s_dest", TMP_DIR,
-                tapi_file_generate_name());
+    tapi_file_make_custom_pathname(metainfo_iut, TMP_DIR, "_iut.torrent");
+    tapi_file_make_custom_pathname(metainfo_tst, TMP_DIR, "_tst.torrent");
+    tapi_file_make_custom_pathname(source_file, TMP_DIR, "_source");
+    tapi_file_make_custom_pathname(dest_file, TMP_DIR, "_dest");
 }
 
 void
@@ -86,10 +82,11 @@ main(int argc, char **argv)
     tapi_ctorrent_opt  opt_iut = tapi_ctorrent_default_opt;
     tapi_ctorrent_opt  opt_tst = tapi_ctorrent_default_opt;
 
-    char metainfo_iut[RCF_MAX_PATH];
-    char metainfo_tst[RCF_MAX_PATH];
-    char source_file[RCF_MAX_PATH];
-    char dest_file[RCF_MAX_PATH];
+    te_string metainfo_iut = TE_STRING_INIT;
+    te_string metainfo_tst = TE_STRING_INIT;
+    te_string source_file = TE_STRING_INIT;
+    te_string dest_file = TE_STRING_INIT;
+    te_string dfile = TE_STRING_INIT;
 
     const char *content = "Source file content";
 
@@ -99,7 +96,7 @@ main(int argc, char **argv)
 
     TEST_START;
 
-    generate_file_names(metainfo_iut, metainfo_tst, source_file, dest_file);
+    generate_file_names(&metainfo_iut, &metainfo_tst, &source_file, &dest_file);
 
     TEST_GET_PCO(pco_iut);
     TEST_GET_PCO(pco_tst);
@@ -117,12 +114,9 @@ main(int argc, char **argv)
         TEST_FAIL("Failed to get pco_iut ip address");
 
     TEST_STEP("Create torrent tracker on pco_iut");
-    opt.dfile = te_string_fmt("%s/%s_dfile", TMP_DIR,
-                              tapi_file_generate_name());
-    if (opt.dfile == NULL)
-        TEST_FAIL("Failed to make a string with dfile name");
+    tapi_file_make_custom_pathname(&dfile, TMP_DIR, "_dfile");
+    opt.dfile = dfile.ptr;
     CHECK_RC(tapi_bttrack_create(factory_iut, iut_ip, &opt, &tracker));
-    free(opt.dfile);
 
     TEST_STEP("Start the torrent tracker");
     CHECK_RC(tapi_bttrack_start(tracker));
@@ -133,14 +127,14 @@ main(int argc, char **argv)
         TEST_FAIL("Torrent tracker is not running");
 
     TEST_STEP("Create a file to be transferred");
-    if (tapi_file_create_ta(pco_iut->ta, source_file, "%s", content) != 0)
+    if (tapi_file_create_ta(pco_iut->ta, source_file.ptr, "%s", content) != 0)
         TEST_FAIL("Failed to create a file to be transferred");
 
     TEST_STEP("Create metainfo file on iut");
     rc_create_metainfo = tapi_ctorrent_create_metainfo_file(factory_iut,
                                                             tracker,
-                                                            metainfo_iut,
-                                                            source_file,
+                                                            metainfo_iut.ptr,
+                                                            source_file.ptr,
                                                             -1);
     if (TE_RC_GET_ERROR(rc_create_metainfo) != TE_EEXIST)
     {
@@ -154,30 +148,31 @@ main(int argc, char **argv)
     {
         WARN("The file already exists");
         TEST_SUBSTEP("Remove the file");
-        if (tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", metainfo_iut) != 0)
+        if (tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", metainfo_iut.ptr) != 0)
             TEST_FAIL("Failed to remove the file");
 
         TEST_SUBSTEP("Create the metainfo file again");
         CHECK_RC(tapi_ctorrent_create_metainfo_file(factory_iut, tracker,
-                                            metainfo_iut, source_file, -1));
+                                                    metainfo_iut.ptr,
+                                                    source_file.ptr, -1));
     }
 
     TEST_STEP("Copy the file to tst");
-    if (tapi_file_copy_ta(pco_iut->ta, metainfo_iut,
-                          pco_tst->ta, metainfo_tst) != 0)
+    if (tapi_file_copy_ta(pco_iut->ta, metainfo_iut.ptr,
+                          pco_tst->ta, metainfo_tst.ptr) != 0)
         TEST_FAIL("Failed to copy the file");
 
     TEST_STEP("Create ctorrent app on iut");
-    opt_iut.metainfo_file = metainfo_iut;
-    opt_iut.save_to_file  = source_file;
+    opt_iut.metainfo_file = metainfo_iut.ptr;
+    opt_iut.save_to_file  = source_file.ptr;
     CHECK_RC(tapi_ctorrent_create_app(factory_iut, &opt_iut, &app_iut));
 
     TEST_STEP("Start seeding on iut");
     CHECK_RC(tapi_ctorrent_start(app_iut));
 
     TEST_STEP("Create ctorrent app on tst");
-    opt_tst.metainfo_file = metainfo_tst;
-    opt_tst.save_to_file  = dest_file;
+    opt_tst.metainfo_file = metainfo_tst.ptr;
+    opt_tst.save_to_file  = dest_file.ptr;
     CHECK_RC(tapi_ctorrent_create_app(factory_tst, &opt_tst, &app_tst));
 
     TEST_STEP("Start downloading on tst");
@@ -192,7 +187,7 @@ main(int argc, char **argv)
     {
         RING("The download is completed");
         TEST_STEP("Check that contents of source and destination files match");
-        check_dest_content(pco_tst->ta, dest_file, content);
+        check_dest_content(pco_tst->ta, dest_file.ptr, content);
 
         TEST_SUCCESS;
     }
@@ -213,7 +208,7 @@ main(int argc, char **argv)
     CHECK_RC(tapi_ctorrent_wait_completion(app_tst, TE_SEC2MS(60)));
 
     TEST_STEP("Check that contents of source and destination files match");
-    check_dest_content(pco_tst->ta, dest_file, content);
+    check_dest_content(pco_tst->ta, dest_file.ptr, content);
 
     TEST_SUCCESS;
 
@@ -225,10 +220,15 @@ cleanup:
     tapi_job_factory_destroy(factory_iut);
     tapi_job_factory_destroy(factory_tst);
 
-    cleanup_unlink_file(pco_iut->ta, metainfo_iut);
-    cleanup_unlink_file(pco_tst->ta, metainfo_tst);
-    cleanup_unlink_file(pco_iut->ta, source_file);
-    cleanup_unlink_file(pco_tst->ta, dest_file);
+    cleanup_unlink_file(pco_iut->ta, metainfo_iut.ptr);
+    cleanup_unlink_file(pco_tst->ta, metainfo_tst.ptr);
+    cleanup_unlink_file(pco_iut->ta, source_file.ptr);
+    cleanup_unlink_file(pco_tst->ta, dest_file.ptr);
+
+    te_string_free(&metainfo_iut);
+    te_string_free(&metainfo_tst);
+    te_string_free(&source_file);
+    te_string_free(&dest_file);
 
     TEST_END;
 }

@@ -16,31 +16,74 @@
 #define __TE_TAPI_FILE_H__
 
 #include "te_defs.h"
+#include "te_string.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
+ * Generate a unique basename for a file.
+ *
+ * @param[out] dest  The string to hold the name.
+ *
+ * @note The name is appended to the string contents.
+ *       That way it is easier to construct derived pathnames
+ *       and similiar stuff.
+ */
+extern void tapi_file_make_name(te_string *dest);
+
+/**
+ * Generate a unique pathname for a file on the Engine side.
+ *
+ * @param[out] dest    The string to hold the name.
+ * @param[in]  dirname Directory component (may be @c NULL,
+ *                     in which case a relative name is generated)
+ * @param[in]  suffix  A custom suffix to add to a generated
+ *                     pathname (may be @c NULL).
+ *
+ * @note The name is appended to the string contents.
+ */
+extern void tapi_file_make_custom_pathname(te_string *dest,
+                                           const char *dirname,
+                                           const char *suffix);
+
+
+/**
+ * Generate a unique pathname for a file on the Engine side.
+ *
+ * @param[out] dest  The string to hold the name.
+ *
+ * @note The name is appended to the string contents.
+ * @note @c TE_TMP env variable must be set.
+ */
+extern void tapi_file_make_pathname(te_string *dest);
+
+/**
  * Generate unique basename for file.
  *
  * @return generated name
  *
- * @note The function returns a pointer to 
- *       a static buffer, so the caller should
- *       in most cases use strdup() on it or
- *       something similiar.
+ * @deprecated
+ * The function returns a pointer to
+ * a static buffer, so it is inherently unreliable.
+ * Use tapi_file_make_name() instead.
  */
-extern char *tapi_file_generate_name(void);
+extern char *tapi_file_generate_name(void)
+    __attribute__((deprecated));
 
 /**
  * Generate unique pathname for file on the engine.
  *
  * @return generated name
  *
- * @note the function is not thread-safe
+ * @deprecated
+ * The function returns a pointer to
+ * a static buffer, so it is inherently unreliable.
+ * Use tapi_file_make_pathname() instead.
  */
-extern char *tapi_file_generate_pathname(void);
+extern char *tapi_file_generate_pathname(void)
+    __attribute__((deprecated));
 
 /**
  * Create file in the TE temporary directory.
@@ -49,9 +92,7 @@ extern char *tapi_file_generate_pathname(void);
  * @param c     file content pattern
  *
  * @return name (memory is allocated) of the file or
- *         NULL in the case of failure
- *
- * @note The function is not thread-safe
+ *         @c NULL in the case of failure
  */
 extern char *tapi_file_create_pattern(size_t len, char c);
 
@@ -63,9 +104,7 @@ extern char *tapi_file_create_pattern(size_t len, char c);
  * @param random  if TRUE, fill buffer with random data
  *
  * @return name (memory is allocated) of the file or
- *         NULL in the case of failure
- *
- * @note The function is not thread-safe
+ *         @c NULL in the case of failure
  */
 extern char *tapi_file_create(size_t len, char *buf, te_bool random);
 
@@ -77,8 +116,6 @@ extern char *tapi_file_create(size_t len, char *buf, te_bool random);
  * @param fmt           format string for the file content
  *
  * @return Status code
- *
- * @note the function is not thread-safe
  */
 extern te_errno tapi_file_create_ta(const char *ta, const char *filename,
                                     const char *fmt, ...)
@@ -88,8 +125,7 @@ extern te_errno tapi_file_create_ta(const char *ta, const char *filename,
  * Create local file, copy it to TA, remove local file.
  * The function does the same thing as tapi_file_create_ta(),
  * but it creates local file with specified name instead of
- * using automatically generated name. This is useful when
- * you need to create files in a thread safe manner.
+ * using automatically generated name.
  *
  * @param ta            Test Agent name
  * @param lfile         pathname of the local file
@@ -112,8 +148,6 @@ extern te_errno tapi_file_create_ta_r(const char *ta,
  * @param pbuf          location for buffer allocated by the routine
  *
  * @return Status code
- *
- * @note the function is not thread-safe
  */
 extern te_errno tapi_file_read_ta(const char *ta, const char *filename,
                                   char **pbuf);
@@ -129,8 +163,6 @@ extern te_errno tapi_file_read_ta(const char *ta, const char *filename,
  * @param fmt           format string for the file content
  *
  * @return Status code
- *
- * @note the function is not thread-safe
  */
 extern te_errno tapi_file_append_ta(const char *ta, const char *filename,
                                     const char *fmt, ...)

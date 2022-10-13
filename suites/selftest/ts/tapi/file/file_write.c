@@ -22,7 +22,7 @@
 int
 main(int argc, char **argv)
 {
-    char           *rfile = NULL;
+    te_string rfile = TE_STRING_INIT;
     char           *buf = NULL;
     rcf_rpc_server *pco_iut = NULL;
     int             fd = -1;
@@ -33,15 +33,15 @@ main(int argc, char **argv)
 
     TEST_STEP("Write data to a file on TA");
     data = te_make_printable_buf_by_len(BUFSIZE);
-    rfile = tapi_file_generate_name();
-    if (tapi_file_create_ta(pco_iut->ta, rfile, "%s", data) != 0)
+    tapi_file_make_name(&rfile);
+    if (tapi_file_create_ta(pco_iut->ta, rfile.ptr, "%s", data) != 0)
     {
         TEST_VERDICT("tapi_file_create_ta() failed");
     }
 
     TEST_STEP("Read content from the file on TA");
     buf = tapi_calloc(1, BUFSIZE);
-    fd = rpc_open(pco_iut, rfile, RPC_O_RDONLY, 0);
+    fd = rpc_open(pco_iut, rfile.ptr, RPC_O_RDONLY, 0);
     /* terminating zero is provided by tapi_calloc */
     CHECK_LENGTH(rpc_read(pco_iut, fd, buf, BUFSIZE - 1), BUFSIZE - 1);
     rpc_close(pco_iut, fd);
@@ -53,10 +53,11 @@ main(int argc, char **argv)
 
 cleanup:
 
-    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", rfile));
+    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", rfile.ptr));
 
     free(buf);
     free(data);
+    te_string_free(&rfile);
 
     TEST_END;
 }

@@ -25,7 +25,7 @@ int
 main(int argc, char **argv)
 {
     char           *lfile = NULL;
-    char           *rfile = NULL;
+    te_string rfile = TE_STRING_INIT;
     rcf_rpc_server *pco_iut = NULL;
     size_t          len = 0;
     void           *buf = NULL;
@@ -40,20 +40,20 @@ main(int argc, char **argv)
     RING("File '%s' is generated", lfile);
 
     TEST_STEP("Put the file on TA");
-    rfile = tapi_file_generate_name();
-    if ((rc = tapi_file_copy_ta(NULL, lfile, pco_iut->ta, rfile)) != 0)
+    tapi_file_make_name(&rfile);
+    if ((rc = tapi_file_copy_ta(NULL, lfile, pco_iut->ta, rfile.ptr)) != 0)
     {
         TEST_VERDICT("rcf_ta_put_file() failed; errno=%r", rc);
     }
 
     TEST_STEP("Check if the file exists on TA");
-    file_check_exist(pco_iut, rfile);
+    file_check_exist(pco_iut, rfile.ptr);
 
     TEST_SUCCESS;
 
 cleanup:
 
-    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", rfile));
+    CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", rfile.ptr));
 
     if (unlink(lfile) != 0)
     {
@@ -61,6 +61,7 @@ cleanup:
     }
 
     free(lfile);
+    te_string_free(&rfile);
     free(buf);
 
     TEST_END;
