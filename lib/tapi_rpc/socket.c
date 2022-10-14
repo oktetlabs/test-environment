@@ -988,7 +988,7 @@ ssize_t
 rpc_sendmsg(rcf_rpc_server *rpcs,
             int s, const struct rpc_msghdr *msg, rpc_send_recv_flags flags)
 {
-    te_string str_msg = TE_STRING_INIT_STATIC(1024);
+    te_string str_msg = TE_STRING_INIT;
 
     tarpc_sendmsg_in  in;
     tarpc_sendmsg_out out;
@@ -1032,6 +1032,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
          s, msg, msghdr_rpc2str(msg, &str_msg),
          send_recv_flags_rpc2str(flags),
          out.retval);
+    te_string_free(&str_msg);
     RETVAL_INT(sendmsg, out.retval);
 }
 
@@ -1039,7 +1040,7 @@ ssize_t
 rpc_recvmsg(rcf_rpc_server *rpcs,
             int s, struct rpc_msghdr *msg, rpc_send_recv_flags flags)
 {
-    te_string str_msg = TE_STRING_INIT_STATIC(1024);
+    te_string str_msg = TE_STRING_INIT;
 
     tarpc_recvmsg_in  in;
     tarpc_recvmsg_out out;
@@ -1097,6 +1098,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
                  s, msg, msghdr_rpc2str(msg, &str_msg),
                  send_recv_flags_rpc2str(flags),
                  (long)out.retval);
+    te_string_free(&str_msg);
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
         msghdr_check_msg_flags(msg, out.retval >= 0);
@@ -2148,7 +2150,7 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
                  unsigned int vlen, rpc_send_recv_flags flags,
                  struct tarpc_timespec *timeout)
 {
-    te_string str_msg = TE_STRING_INIT_STATIC(4096);
+    te_string str_msg = TE_STRING_INIT;
 
     char                   str_buf[256] = {0};
     tarpc_recvmmsg_alt_in  in;
@@ -2223,6 +2225,7 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
     TAPI_RPC_LOG(rpcs, recvmmsg_alt, "%d, %p (%s), %u, %s, %s", "%d",
                  fd, mmsg, mmsghdrs_rpc2str(mmsg, vlen, &str_msg),
                  vlen, send_recv_flags_rpc2str(flags), str_buf, out.retval);
+    te_string_free(&str_msg);
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT &&
         mmsg != NULL && out.mmsg.mmsg_val != NULL && out.retval >= 0)
@@ -2238,7 +2241,7 @@ int
 rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
                  unsigned int vlen, rpc_send_recv_flags flags)
 {
-    te_string str_msg = TE_STRING_INIT_STATIC(4096);
+    te_string str_msg = TE_STRING_INIT;
 
     tarpc_sendmmsg_alt_in  in;
     tarpc_sendmmsg_alt_out out;
@@ -2300,6 +2303,7 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
     TAPI_RPC_LOG(rpcs, sendmmsg_alt, "%d, %p (%s), %u, %s", "%d",
                  fd, mmsg, mmsghdrs_rpc2str(mmsg, vlen, &str_msg),
                  vlen, send_recv_flags_rpc2str(flags), out.retval);
+    te_string_free(&str_msg);
     RETVAL_INT(sendmmsg_alt, out.retval);
 }
 
