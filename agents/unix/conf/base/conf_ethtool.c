@@ -260,9 +260,10 @@ call_ioctl(struct ifreq *ifr, const char *if_name, int cmd)
 
         /*
          * Avoid extra logs if this command is simply not supported
-         * for a given interface.
+         * for a given interface or requested entity is not
+         * present.
          */
-        if (errno != EOPNOTSUPP)
+        if (errno != EOPNOTSUPP && errno != ENOENT)
         {
             ERROR("%s(if_name=%s, cmd=%s): ioctl() failed, errno=%r",
                   __FUNCTION__, if_name, ethtool_cmd2str(cmd), te_err);
