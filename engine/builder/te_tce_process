@@ -19,9 +19,6 @@ tce_clean_workspace \
 tce_set_build_base \
     || tce_die "failed to locate base directories for builds"
 
-declare -A platform_tce
-declare -A platform_tce_build
-
 for platform in $TE_BS_PLATFORMS; do
     tce_list="$(tce_list_components "${platform}")"
     fake_sbd=
@@ -59,15 +56,6 @@ for platform in $TE_BS_PLATFORMS; do
                 continue
             fi
         else
-            test -d "${!buildvar}/../src" || ln -s "${!srcvar}" "${!buildvar}/../src"
-        fi
-        if test -f "${!buildvar}/build.ninja"; then
-            wsdir="${tce_build_base[${platform}]}"
-            build="${!buildvar#${TE_BUILD}/platforms/${platform}/}"
-
-            platform_tce[${platform}]+=" ${tce}"
-            platform_tce_build["${platform}_${tce}"]="${build}"
-
             continue
         fi
         find "${!buildvar}" -name '*.da' -o -name '.*.da' -o -name '*.gcda' -o -name '.*.gcda' | \
@@ -83,6 +71,21 @@ for platform in $TE_BS_PLATFORMS; do
                      ${TE_LOG_DIR}/tce_log_${platform}_${tce}.html)
     done
     test -n "$fake_sbd" && rm -f "$sbd"
+done
+
+declare -A platform_tce
+declare -A platform_tce_build
+
+for type in ${TE_BS_PLATFORMS} ; do
+    for comp in $(tce_list_components "${type}") ; do
+        ppath="TE_BS_TCE_${type}_${comp}_MESON_BUILDDIR"
+        [[ -d "${!ppath}" ]] || continue
+
+        build="${!ppath#${TE_BUILD}/platforms/${type}/}"
+
+        platform_tce[${type}]+=" ${comp}"
+        platform_tce_build["${type}_${comp}"]="${build}"
+    done
 done
 
 function parse_ta_list_line
@@ -269,6 +272,36 @@ function process_host_tce
                 "platform ${platform} host ${host} tce ${tce}"
 }
 
+#######################################
+# Link the source directory to be relative to the build.
+# Globals:
+#   TE_BS_TCE_${type}_${comp}_SOURCES
+#   TE_BUILD
+#   platform_tce_build
+# Arguments:
+#   The TA type of build.
+#   The name of a TA component.
+# Outputs:
+#   Outputs a message on an error.
+# Returns:
+#   This function never returns on an error.
+#######################################
+function tce_link_src_on_build() {
+    local type="$1"
+    local comp="$2"
+    local build="${platform_tce_build[${type}_${comp}]}"
+    local pbase="${TE_BUILD}/platforms/${type}"
+    local psrc="TE_BS_TCE_${type}_${comp}_SOURCES"
+
+    [[ -d "${pbase}/${build}/../src" ]] && return 0
+
+    [[ -d "${!psrc}" ]] \
+        || tce_die "failed to locate src for ${type}/${comp}"
+
+    ln -s "${!psrc}" "${pbase}/${build}/../src" \
+        || tce_die "failed to link src for ${type}/${comp}"
+}
+
 function link_platform_tce_install
 {
     local platform=$1
@@ -339,6 +372,7 @@ for platform in "${!platform_tce[@]}" ; do
     done
 
     for tce in ${tce_list} ; do
+        tce_link_src_on_build "${platform}" "${tce}"
         link_platform_tce_install ${platform} ${tce}
 
         for host in ${hosts} ; do
