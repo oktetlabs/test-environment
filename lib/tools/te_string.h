@@ -69,6 +69,9 @@ extern te_string_free_func te_string_free_heap;
 
 /**
  * On-stack te_string initializer with a defined reserve
+ *
+ * @note: You should probably not use it unless you really
+ *        need to. Please use simple TE_STRING_INIT.
  */
 #define TE_STRING_INIT_RESERVE(reserved_size_) \
     { .ptr = NULL, .size = (reserved_size_), .len = 0, .ext_buf = FALSE, \
