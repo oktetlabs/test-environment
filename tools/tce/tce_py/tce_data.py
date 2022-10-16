@@ -102,9 +102,17 @@ class tce_data(object):
             l = l.rstrip()
             self.lines.append(l)
 
+    def _merge_obj(self, tce):
+        if self.hdr.obj <= tce.hdr.obj:
+            tce.hdr.obj = self.hdr.obj
+        else:
+            self.hdr.obj = tce.hdr.obj
+
     def merge(self, tce):
         if self.cksum != tce.cksum:
             raise ValueError()
+
+        self._merge_obj(tce)
 
         p1 = self._write_temp()
         p2 = tce._write_temp()
