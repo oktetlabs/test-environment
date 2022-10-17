@@ -34,6 +34,8 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_queue.h"
+#include "te_string.h"
+#include "te_alloc.h"
 #include "logger_api.h"
 
 #include "re_subst.h"
@@ -49,6 +51,9 @@ trc_re_subst_free(trc_re_subst *subst)
 {
     trc_re_match_subst *m;
 
+    if (subst == NULL)
+        return;
+
     regfree(&subst->re);
     free(subst->str);
 
@@ -59,6 +64,7 @@ trc_re_subst_free(trc_re_subst *subst)
     }
 
     free(subst->matches);
+    free(subst);
 }
 
 /* See the description in re_subst.h */
@@ -120,7 +126,7 @@ trc_re_key_namespace_create(trc_re_namespaces *namespaces, const char *name)
 
     if ((namespace = trc_re_key_namespace_find(namespaces, name)) != NULL)
     {
-        WARN("Namespace '%s' already exist", name);
+        /* If namespace exists already, it is not a problem here */
         return namespace;
     }
 
@@ -180,6 +186,137 @@ trc_re_subst_parse(trc_re_subst *p)
     return 0;
 }
 
+/* Add substitution for a given regular expression */
+static te_errno
+add_subst(trc_re_namespace *namespace,
+          const char *match_str,
+          const char *replace_str)
+{
+    trc_re_subst *subst = NULL;
+    te_errno rc = 0;
+
+    subst = TE_ALLOC(sizeof(*subst));
+    subst->max_match = 0;
+    TAILQ_INIT(&subst->with);
+    subst->matches = NULL;
+
+    subst->str = strdup(replace_str);
+    if (subst->str == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto cleanup;
+    }
+
+    if (regcomp(&subst->re, match_str, REG_EXTENDED) != 0)
+    {
+        ERROR("%s(): failed to compile regular expression '%s'",
+              __FUNCTION__, match_str);
+        rc = TE_EFAIL;
+        goto cleanup;
+    }
+
+    rc = trc_re_subst_parse(subst);
+    if (rc != 0)
+        goto cleanup;
+
+    subst->max_match++;
+    subst->matches = TE_ALLOC(subst->max_match * sizeof(*subst->matches));
+    if (subst->matches == NULL)
+        rc = TE_ENOMEM;
+
+cleanup:
+
+    if (rc == 0)
+        TAILQ_INSERT_TAIL(&namespace->substs, subst, links);
+    else
+        trc_re_subst_free(subst);
+
+    return rc;
+}
+
+/* Read records matching key domains to URL prefixes */
+static te_errno
+key_domains_read(FILE *f)
+{
+    te_errno rc;
+    te_string match_str = TE_STRING_INIT_STATIC(1024);
+    te_string replace_str = TE_STRING_INIT_STATIC(1024);
+    char buf[256];
+    char *s = NULL;
+
+    char *domain = NULL;
+    char *url = NULL;
+    trc_re_namespace *url_namespace = NULL;
+
+    url_namespace = trc_re_key_namespace_create(&key_namespaces,
+                                                TRC_RE_KEY_URL);
+    if (url_namespace == NULL)
+    {
+        ERROR("%s(): failed to create namespace %s", __FUNCTION__,
+              TRC_RE_KEY_URL);
+        return TE_EFAIL;
+    }
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        s = strchr(buf, '\n');
+        if (s != NULL)
+            *s = '\0';
+
+        /* Empty string terminates KEY_DOMAINS section */
+        if (buf[0] == '\0')
+            break;
+
+        s = buf;
+        strsep(&s, " \t");
+        if (s == NULL)
+        {
+            ERROR("%s(): space or TAB is missing: %s", __FUNCTION__, buf);
+            continue;
+        }
+
+        for ( ; *s == ' ' || *s == '\t'; s++);
+
+        url = s;
+        domain = buf;
+
+        for (s = domain; *s != '\0'; s++)
+        {
+            if (!isalnum(*s) && *s != '-')
+            {
+                ERROR("%s(): key domain '%s' contains not allowed "
+                      "character '%c'", __FUNCTION__, domain, *s);
+                break;
+            }
+        }
+        if (*s != '\0')
+            continue;
+
+        rc = te_string_append(&match_str, "^ref://%s/(.*)", domain);
+
+        if (rc == 0)
+        {
+            rc = te_string_append(&replace_str,
+                                  "<a href=\"%s\\1\">%s:\\1</a>",
+                                  url, domain);
+        }
+
+        if (rc == 0)
+        {
+            rc = add_subst(url_namespace, te_string_value(&match_str),
+                           te_string_value(&replace_str));
+        }
+
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to add URL substitution for domain %s",
+                  __FUNCTION__, domain);
+        }
+    }
+
+    return 0;
+}
+
 /* See the description in re_subst.h */
 te_errno
 trc_re_namespaces_read(const char *file, trc_re_namespaces *namespaces)
@@ -187,7 +324,6 @@ trc_re_namespaces_read(const char *file, trc_re_namespaces *namespaces)
     char            buf[256];
     FILE             *f = NULL;
     char             *s = NULL;
-    trc_re_subst     *p = NULL;
     trc_re_namespace *namespace = NULL;
     te_errno          rc = 0;
 
@@ -225,6 +361,19 @@ trc_re_namespaces_read(const char *file, trc_re_namespaces *namespaces)
             if (*s == '\0')
                 continue;
 
+            if (strcmp(s, "KEY_DOMAINS") == 0)
+            {
+                rc = key_domains_read(f);
+                if (rc != 0)
+                {
+                    ERROR("%s(): failed to read KEY_DOMAINS section",
+                          __FUNCTION__);
+                    break;
+                }
+
+                continue;
+            }
+
             namespace = trc_re_key_namespace_create(namespaces, s);
 
             continue;
@@ -241,44 +390,9 @@ trc_re_namespaces_read(const char *file, trc_re_namespaces *namespaces)
             *s++ = '\0';
         } while (*s == '\t');
 
-        p = malloc(sizeof(*p));
-        if (p == NULL)
-        {
-            rc = TE_ENOMEM;
-            break;
-        }
-
-        if (regcomp(&p->re, buf, REG_EXTENDED) != 0)
-        {
-            ERROR("Failed to compile regular expression '%s'\n", buf);
-            rc = TE_EFAULT;
-            free(p);
-            break;
-        }
-
-        p->max_match = 0;
-        p->str = strdup(s);
-        TAILQ_INIT(&p->with);
-        p->matches = NULL;
-        TAILQ_INSERT_TAIL(&namespace->substs, p, links);
-
-        if (p->str == NULL)
-        {
-            rc = TE_ENOMEM;
-            break;
-        }
-
-        rc = trc_re_subst_parse(p);
+        rc = add_subst(namespace, buf, s);
         if (rc != 0)
             break;
-
-        p->max_match++;
-        p->matches = malloc(p->max_match * sizeof(*p->matches));
-        if (p->matches == NULL)
-        {
-            rc = TE_ENOMEM;
-            break;
-        }
     }
 
     (void)fclose(f);
