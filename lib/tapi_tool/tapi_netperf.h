@@ -128,6 +128,8 @@ typedef struct tapi_netperf_opt {
 typedef struct tapi_netperf_report {
     /** Test type */
     tapi_netperf_test_type tst_type;
+    /** Test name */
+    tapi_netperf_test_name tst_name;
     union {
         struct {
             /** Transactions per second */

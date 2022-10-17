@@ -656,6 +656,7 @@ tapi_netperf_get_report(tapi_netperf_app_client_t *app,
     te_string buf = TE_STRING_INIT;
 
     report->tst_type = test_name2test_type(app->tst_name);
+    report->tst_name = app->tst_name;
 
     switch (app->tst_name)
     {
@@ -820,6 +821,9 @@ tapi_netperf_mi_report(const tapi_netperf_report *report)
             ERROR("Unknown test type");
             return TE_RC(TE_TAPI, TE_EINVAL);
     }
+    te_mi_logger_add_meas_key(logger, NULL, "Test name",
+                              tapi_netperf_test_name_maps[report->tst_name]);
+
     te_mi_logger_destroy(logger);
     return 0;
 }
