@@ -1654,11 +1654,39 @@ typedef enum {
     TRC_REPORT_KEYS_TYPE_NONE,
 } trc_report_keys_type;
 
-static char *trc_report_keys_table_heading[] = {
-    "Bugs that lead to known test failures.",
-    "Bugs (prehaps fixed) that do not lead to expected test failures.",
-    "Bugs specified for expected test behaviour.",
-    "Bugs that do not lead to expected test behaviour.",
+/** Information about keys type */
+typedef struct keys_type_info {
+    const char *table_heading;    /**< Heading for key table in report */
+    const char *link_text;        /**< Text for a link to key table */
+    const char *link_prefix;      /**< Prefix used in links to key table */
+    enum trc_report_flags flag;   /**< Flag for a given key type */
+} keys_type_info;
+
+static keys_type_info keys_types_info[] = {
+    {
+      .table_heading = "Bugs that lead to failures and/or verdicts",
+      .link_text = "f",
+      .link_prefix = "fail_key_",
+      .flag = TRC_REPORT_KEYS_FAILURES,
+    },
+    {
+      .table_heading = "Bugs that lead to unexpected results or verdicts",
+      .link_text = "s",
+      .link_prefix = "sanity_key_",
+      .flag = TRC_REPORT_KEYS_SANITY,
+    },
+    {
+      .table_heading = "Bugs that lead to expected results",
+      .link_text = "e",
+      .link_prefix = "exp_key_",
+      .flag = TRC_REPORT_KEYS_EXPECTED,
+    },
+    {
+      .table_heading = "Bugs that lead to unexpected results",
+      .link_text = "u",
+      .link_prefix = "unexp_key_",
+      .flag = TRC_REPORT_KEYS_UNEXPECTED,
+    },
 };
 
 static int file_to_file(FILE *dst, FILE *src);
@@ -1737,110 +1765,10 @@ trc_report_key_find(trc_keys *keys, const char *key_name)
     return key;
 }
 
-trc_report_key_entry *
-trc_report_key_add(trc_keys *keys,
-                   const char *key_name,
-                   const trc_report_test_iter_entry *iter_entry,
-                   const char *test_name, const char *key_test_path,
-                   const char *test_path)
-{
-    trc_report_key_entry        *key = trc_report_key_find(keys, key_name);
-    trc_report_key_test_entry   *key_test = NULL;
-    trc_report_key_iter_entry   *key_iter = NULL;
-
-    /* Create new key entry, if key does not exist */
-    if (key == NULL)
-    {
-        if ((key = calloc(1, sizeof(trc_report_key_entry))) == NULL)
-            return NULL;
-
-        key->name = strdup(key_name);
-        TAILQ_INIT(&key->tests);
-        TAILQ_INSERT_TAIL(keys, key, links);
-    }
-
-    if ((key_iter = calloc(1, sizeof(trc_report_key_iter_entry))) == NULL)
-        return NULL;
-    key_iter->iter = iter_entry;
-
-    TAILQ_FOREACH(key_test, &key->tests, links)
-    {
-        if (strcmp(key_test_path, key_test->key_path) == 0)
-        {
-            /* Do not duplicate iterations, exit */
-            TAILQ_INSERT_TAIL(&key_test->iters, key_iter, links);
-            key_test->count++;
-            key->count++;
-            return key;
-        }
-    }
-
-    /* Create new key iteration entry, if not found */
-    if ((key_test = calloc(1, sizeof(trc_report_key_test_entry))) == NULL)
-    {
-        ERROR("Failed to allocate structure to store iteration key");
-        return NULL;
-    }
-    key_test->name = strdup(test_name);
-    key_test->path = strdup(test_path);
-    key_test->key_path = strdup(key_test_path);
-
-    TAILQ_INIT(&key_test->iters);
-    TAILQ_INSERT_TAIL(&key_test->iters, key_iter, links);
-    key_test->count++;
-
-    TAILQ_INSERT_TAIL(&key->tests, key_test, links);
-    key->count++;
-
-    return key;
-}
-
-int
-trc_report_keys_add(trc_keys *keys,
-                    const char *key_names,
-                    const trc_report_test_iter_entry *iter_entry,
-                    const char *test_name, const char *key_test_path,
-                    const char *test_path)
-{
-    int     count = 0;
-    char   *p = NULL;
-
-    if ((key_names == NULL) || (*key_names == '\0'))
-    {
-        trc_report_key_add(keys, TRC_REPORT_KEY_UNSPEC, iter_entry,
-                           test_name, key_test_path, test_path);
-        return ++count;
-    }
-
-    /* Iterate through keys list with ',' delimiter */
-    while ((key_names != NULL) && (*key_names != '\0'))
-    {
-        if ((p = strchr(key_names, ',')) != NULL)
-        {
-            char *tmp_key_name = strndup(key_names, p - key_names);
-
-            if (tmp_key_name == NULL)
-                break;
-
-            trc_report_key_add(keys, tmp_key_name, iter_entry,
-                               test_name, key_test_path, test_path);
-            free(tmp_key_name);
-            key_names = p + 1;
-            while (*key_names == ' ')
-                key_names++;
-        }
-        else
-        {
-            trc_report_key_add(keys, key_names, iter_entry,
-                               test_name, key_test_path, test_path);
-            key_names = NULL;
-        }
-        count++;
-    }
-
-    return count;
-}
-
+/*
+ * Construct a string concatenating test path and key name, to be
+ * used in references in key table.
+ */
 char *
 trc_report_key_test_path(const char *test_path,
                          const char *key_names)
@@ -1858,9 +1786,190 @@ trc_report_key_test_path(const char *test_path,
             *p = '_';
         else if (*p == ',')
             *p = '-';
+        else if (*p == '/')
+            *p = '_';
     }
 
     return path;
+}
+
+trc_report_key_entry *
+trc_report_key_add(trc_keys *keys,
+                   const char *key_name,
+                   const trc_report_test_iter_entry *iter_entry,
+                   const char *test_name,
+                   const char *test_path)
+{
+    trc_report_key_entry        *key = trc_report_key_find(keys, key_name);
+    trc_report_key_test_entry   *key_test = NULL;
+    trc_report_key_iter_entry   *key_iter = NULL;
+
+    char *key_path = NULL;
+
+    /* Create new key entry, if key does not exist */
+    if (key == NULL)
+    {
+        trc_report_key_entry *key_aux = NULL;
+        trc_report_key_entry *prev_key = NULL;
+
+        if ((key = calloc(1, sizeof(trc_report_key_entry))) == NULL)
+            return NULL;
+
+        key->name = strdup(key_name);
+        TAILQ_INIT(&key->tests);
+
+        /* Keep keys sorted */
+
+        TAILQ_FOREACH(key_aux, keys, links)
+        {
+            if (strcmp(key_aux->name, key->name) >= 0)
+                break;
+
+            prev_key = key_aux;
+        }
+
+        if (prev_key != NULL)
+            TAILQ_INSERT_AFTER(keys, prev_key, key, links);
+        else
+            TAILQ_INSERT_HEAD(keys, key, links);
+    }
+
+    if ((key_iter = calloc(1, sizeof(trc_report_key_iter_entry))) == NULL)
+        return NULL;
+    key_iter->iter = iter_entry;
+
+    key_path = trc_report_key_test_path(test_path, key_name);
+    assert(key_path != NULL);
+
+    TAILQ_FOREACH(key_test, &key->tests, links)
+    {
+        if (strcmp(key_path, key_test->key_path) == 0)
+        {
+            /* Do not duplicate iterations, exit */
+            TAILQ_INSERT_TAIL(&key_test->iters, key_iter, links);
+            key_test->count++;
+            key->count++;
+            free(key_path);
+            return key;
+        }
+    }
+
+    /* Create new key iteration entry, if not found */
+    if ((key_test = calloc(1, sizeof(trc_report_key_test_entry))) == NULL)
+    {
+        ERROR("Failed to allocate structure to store iteration key");
+        free(key_path);
+        return NULL;
+    }
+    key_test->name = strdup(test_name);
+    key_test->path = strdup(test_path);
+    key_test->key_path = key_path;
+
+    TAILQ_INIT(&key_test->iters);
+    TAILQ_INSERT_TAIL(&key_test->iters, key_iter, links);
+    key_test->count++;
+
+    TAILQ_INSERT_TAIL(&key->tests, key_test, links);
+    key->count++;
+
+    return key;
+}
+
+/*
+ * Parse key attribute. It can contain multiple keys separated with commas.
+ * "keys_out" should be freed by caller with a single free() call to
+ * release all the allocated memory.
+ */
+static te_errno
+parse_key_attr(const char *value, char ***keys_out, unsigned int *num_out)
+{
+    unsigned int i;
+    unsigned int j;
+    unsigned int k;
+    unsigned int key_num = 1;
+    unsigned int len = 0;
+    unsigned int alloc_len;
+    char *value_copy = NULL;
+    te_bool skip_spaces;
+
+    char **keys = NULL;
+
+    if (value == NULL || value[0] == '\0')
+        value = TRC_REPORT_KEY_UNSPEC;
+
+    for (i = 0; value[i] != '\0' ; i++)
+    {
+        len++;
+        if (value[i] == ',')
+            key_num++;
+    }
+
+    alloc_len = sizeof(char *) * key_num + len + 1;
+    keys = TE_ALLOC(alloc_len);
+    if (keys == NULL)
+        return TE_ENOMEM;
+
+    value_copy = (char *)(keys + key_num);
+    keys[0] = value_copy;
+
+    skip_spaces = TRUE;
+    for (i = 0, j = 0, k = 1; i < len; i++)
+    {
+        if (skip_spaces && value[i] == ' ')
+        {
+            continue;
+        }
+        else if (value[i] == ',')
+        {
+            value_copy[j] = '\0';
+            skip_spaces = TRUE;
+            j++;
+            keys[k] = value_copy + j;
+            k++;
+        }
+        else
+        {
+            skip_spaces = FALSE;
+            value_copy[j] = value[i];
+            j++;
+        }
+    }
+    value_copy[j] = '\0';
+
+    *keys_out = keys;
+    *num_out = key_num;
+    return 0;
+}
+
+static void
+trc_report_keys_add(trc_keys *keys,
+                    const char *key_names,
+                    const trc_report_test_iter_entry *iter_entry,
+                    const char *test_name,
+                    const char *test_path)
+{
+    char **parsed_keys = NULL;
+    unsigned int count = 0;
+    unsigned int i;
+    te_errno rc = 0;
+    trc_report_key_entry *key_entry;
+
+    rc = parse_key_attr(key_names, &parsed_keys, &count);
+    if (rc != 0)
+        return;
+
+    for (i = 0; i < count; i++)
+    {
+        key_entry = trc_report_key_add(keys, parsed_keys[i], iter_entry,
+                                       test_name, test_path);
+        if (key_entry == NULL)
+        {
+            ERROR("%s(): failed to add key %s", __FUNCTION__,
+                  parsed_keys[i]);
+        }
+    }
+
+    free(parsed_keys);
 }
 
 trc_keys *
@@ -1934,6 +2043,33 @@ char *trc_keys_filename(const char *filename)
     return keys_filename;
 }
 
+/*
+ * Get all matching key flags for a given iteration entry.
+ */
+static unsigned int
+get_key_flags(const trc_report_test_iter_data *iter_data,
+              const trc_report_test_iter_entry *iter_entry)
+{
+    te_bool is_exp = (iter_entry->is_exp);
+    te_bool has_key =
+        (iter_data->exp_result->key != NULL);
+    te_bool has_verdict =
+        (TAILQ_FIRST(&iter_entry->result.verdicts) != NULL);
+    unsigned int flags = 0;
+
+    if (has_key && ((!is_exp) || has_verdict))
+        flags |= TRC_REPORT_KEYS_SANITY;
+    if (is_exp && (has_key || has_verdict))
+        flags |= TRC_REPORT_KEYS_EXPECTED;
+    if (!is_exp)
+        flags |= TRC_REPORT_KEYS_UNEXPECTED;
+    if (iter_entry->result.status == TE_TEST_FAILED ||
+        (iter_entry->result.status == TE_TEST_PASSED && has_verdict))
+        flags |= TRC_REPORT_KEYS_FAILURES;
+
+    return flags;
+}
+
 /**
  * Output test iteration expected/obtained results to HTML report.
  *
@@ -1973,48 +2109,13 @@ trc_keys_iter_add(trc_keys *keys,
             if ((test->type == TRC_TEST_SCRIPT) &&
                 (iter_data->exp_result != NULL))
             {
-                te_bool key_add = FALSE;
-                te_bool is_exp = (iter_entry->is_exp);
-                te_bool has_key =
-                    (iter_data->exp_result->key != NULL);
-                te_bool has_verdict =
-                    (TAILQ_FIRST(&iter_entry->result.verdicts) != NULL);
-
-                char *key_test_path =
-                    trc_report_key_test_path(test_path,
-                        iter_data->exp_result->key);
-
-                if ((flags & TRC_REPORT_KEYS_SANITY) != 0)
-                {
-                    key_add = has_key && ((!is_exp) || has_verdict);
-                }
-                else if ((flags & TRC_REPORT_KEYS_EXPECTED) != 0)
-                {
-                    key_add = is_exp && (has_key || has_verdict);
-                }
-                else if ((flags & TRC_REPORT_KEYS_UNEXPECTED) != 0)
-                {
-                    key_add = (!is_exp);
-                }
-                else
-                {
-                    key_add =
-                        (iter_entry->result.status == TE_TEST_FAILED) ||
-                        ((iter_entry->result.status == TE_TEST_PASSED) &&
-                         (TAILQ_FIRST(&iter_entry->result.verdicts) !=
-                          NULL));
-                }
-
-                if (key_add)
+                if (get_key_flags(iter_data, iter_entry) & flags)
                 {
                     trc_report_keys_add(keys,
                                         iter_data->exp_result->key,
                                         iter_entry, test->name,
-                                        key_test_path,
                                         test_path);
                 }
-
-                free(key_test_path);
             }
         }
     } while (iter_entry != NULL &&
@@ -2116,13 +2217,40 @@ trc_report_keys_collect(trc_keys *keys,
 #define TRC_REPORT_OL_KEY_PREFIX        "OL "
 #define TRC_KEYTOOL_CMD_BUF_SIZE        4096
 
+/*
+ * Compose key id from its name (used as part of reference names).
+ */
+static char *
+get_key_id(const char *key)
+{
+    char *id;
+    unsigned int i;
+
+    if (key == NULL)
+        return NULL;
+
+    id = strdup(key);
+    if (id == NULL)
+        return NULL;
+
+    for (i = 0; id[i] != '\0'; i++)
+    {
+        if (isspace(id[i]))
+            id[i] = '_';
+    }
+
+    return id;
+}
+
 /**
  * Output key entry to HTML report.
  *
  * @param f             File stream to write to
- * @param keytool_fn    Key table generation tool
+ * @param keytool_fn    Tool for getting information about keys
+ *                      (ignored for now)
  * @param keys          List of keys to report
  * @param keys_only     Suppress URLs to test iterations
+ * @param keys_type     Key type
  *
  * @return              Status code.
  */
@@ -2132,121 +2260,108 @@ trc_report_keys_to_html(FILE           *f,
                         char           *keytool_fn,
                         trc_keys       *keys,
                         te_bool         keys_only,
-                        char           *title)
+                        trc_report_keys_type keys_type)
 {
-    int                   fd_in       = -1;
-    int                   fd_out      = -1;
-    FILE                 *f_in        = NULL;
-    FILE                 *f_out       = NULL;
-    pid_t                 pid;
     trc_report_key_entry *key;
-    tqe_string           *tag;
+    char *key_id = NULL;
+    keys_type_info *type_info = &keys_types_info[keys_type];
+    te_errno rc = 0;
 
-    te_string cmd_str = TE_STRING_INIT_STATIC(TRC_KEYTOOL_CMD_BUF_SIZE);
-    te_errno rc;
+    UNUSED(keytool_fn);
 
-    rc = te_string_append(&cmd_str, "%s", keytool_fn);
-    if (rc != 0)
-        return rc;
+    WRITE_STR("<table border=1 cellpadding=4 cellspacing=3 "
+              "style=\"font-size:small;\">\n");
+    WRITE_FILE("<tr><td colspan=8 align=center><b>%s</b></td></tr>\n",
+               type_info->table_heading);
+    WRITE_STR("<tr>\n");
+    WRITE_STR("<td><b>Key</b></td>\n");
+    WRITE_STR("<td><b>Tests</b></td>\n");
+    WRITE_STR("<td><b>Priority</b></td>\n");
+    WRITE_STR("<td><b>Status</b></td>\n");
+    WRITE_STR("<td><b>Summary</b></td>\n");
+    WRITE_STR("<td><b>Product: Component</b></td>\n");
+    WRITE_STR("</tr>\n");
 
-    if (title != NULL)
+    TAILQ_FOREACH(key, keys, links)
     {
-        rc = te_string_append(&cmd_str,
-                              " --title=\"%s\"", title);
-        if (rc != 0)
-            return rc;
+        trc_report_key_test_entry *key_test = NULL;
+
+        key_id = get_key_id(key->name);
+        if (key_id == NULL)
+        {
+            ERROR("%s(): out of memory", __FUNCTION__);
+            rc = TE_ENOMEM;
+            break;
+        }
+
+        WRITE_STR("<tr>\n");
+        WRITE_FILE("<td><a id=\"%s%s\"></a>",
+                   type_info->link_prefix, key_id);
+        trc_re_key_substs(TRC_RE_KEY_URL, key->name, f);
+        WRITE_STR("</td>\n");
+
+        free(key_id);
+        key_id = NULL;
+
+        WRITE_STR("<td>\n");
+
+        TAILQ_FOREACH(key_test, &key->tests, links)
+        {
+            trc_report_key_iter_entry *key_iter = NULL;
+
+            if (key_test != TAILQ_FIRST(&key->tests))
+                WRITE_STR("<br>\n");
+
+            if (keys_only)
+            {
+                WRITE_FILE("%s&nbsp;[%d]", key_test->name,
+                           key_test->count);
+            }
+            else
+            {
+                unsigned int i = 1;
+                te_bool refs_skipped = FALSE;
+
+                WRITE_FILE("<a href=\"#%s\">%s</a>", key_test->key_path,
+                           key_test->name);
+                WRITE_STR("&nbsp;[");
+                TAILQ_FOREACH(key_iter, &key_test->iters, links)
+                {
+                    if (i <= 3 || TAILQ_NEXT(key_iter, links) == NULL)
+                    {
+                        WRITE_FILE("%s<a href=\"#iter_%s\">%u</a>",
+                                   (i > 1 ? "," : ""),
+                                   trc_report_get_iter_id(key_iter->iter),
+                                   i);
+                    }
+                    else if (!refs_skipped)
+                    {
+                        WRITE_STR(",...");
+                        refs_skipped = TRUE;
+                    }
+
+                    i++;
+                }
+                WRITE_STR("]");
+            }
+        }
+
+        WRITE_STR("</td>\n");
+
+        WRITE_STR("<td/>\n");
+        WRITE_STR("<td/>\n");
+        WRITE_STR("<td/>\n");
+        WRITE_STR("<td/>\n");
+        WRITE_STR("</tr>\n");
     }
 
-    TAILQ_FOREACH(tag, &ctx->tags, links)
-    {
-        char *keyw =
-            trc_re_key_substs_buf(TRC_RE_KEY_TAGS, tag->v);
+    WRITE_STR("</table>\n<br/>\n");
 
-        if (keyw == NULL)
-            return ENOMEM;
+cleanup:
 
-        rc = te_string_append(&cmd_str,
-                              " --keyword=%s", keyw);
-        free(keyw);
-        if (rc != 0)
-            return rc;
-    }
-
-    VERB("Run: %s", cmd_str.ptr);
-    if ((pid = te_shell_cmd(cmd_str.ptr, -1, &fd_in, &fd_out, NULL)) < 0)
-    {
-        return pid;
-    }
-
-    f_in = fdopen(fd_in, "w");
-    f_out = fdopen(fd_out, "r");
-    if ((f_in == NULL) || (f_out == NULL))
-    {
-        ERROR("Failed to fdopen in/out pipes for te-trc-key tool");
-        close(fd_in);
-        close(fd_out);
-        return te_rc_os2te(errno);
-    }
-
-#define FWRITE_FMT(args...) \
-    do {                        \
-        fprintf(f_in, args);    \
-        VERB(args);             \
-    } while (0)
-
-    for (key = TAILQ_FIRST(keys);
-         key != NULL;
-         key = TAILQ_NEXT(key, links))
-    {
-         trc_report_key_test_entry *key_test = NULL;
-
-         char *script =
-            trc_re_key_substs_buf(TRC_RE_KEY_SCRIPT, key->name);
-         FWRITE_FMT("%s:", script);
-         free(script);
-
-         TAILQ_FOREACH(key_test, &key->tests, links)
-         {
-             trc_report_key_iter_entry *key_iter = NULL;
-
-             if (key_test != TAILQ_FIRST(&key->tests))
-             {
-                 FWRITE_FMT(",");
-             }
-
-             FWRITE_FMT("%s", key_test->name);
-             if (!keys_only)
-             {
-                 FWRITE_FMT("#%s", key_test->key_path);
-                 TAILQ_FOREACH(key_iter, &key_test->iters, links)
-                 {
-                     FWRITE_FMT("|%s",
-                                trc_report_get_iter_id(key_iter->iter));
-                 }
-             }
-             else
-             {
-                 FWRITE_FMT("&nbsp;[%d]", key_test->count);
-             }
-         }
-         FWRITE_FMT("\n");
-    }
-
-#undef FWRITE_FMT
-
-    fclose(f_in);
-    close(fd_in);
-
-    file_to_file(f, f_out);
-
-    fclose(f_out);
-    close(fd_out);
-
-    fprintf(f, "<br/>");
-
-    return 0;
+    free(key_id);
+    return rc;
 }
-
 
 /**
  * Output grand total statistics to HTML.
@@ -2579,6 +2694,88 @@ check_forbidden_symbols(const char *s)
 }
 #endif
 
+/* Print bug key for a given test iteration entry. */
+static te_errno
+print_iter_key(FILE *f, const trc_report_test_iter_data *iter_data,
+               const trc_report_test_iter_entry *iter_entry,
+               const char *test_path, unsigned int flags)
+{
+    te_errno rc = 0;
+    char **parsed_keys = NULL;
+    const char *key;
+    char *key_path = NULL;
+    char *key_id = NULL;
+    unsigned int count = 0;
+    unsigned int i;
+    unsigned int key_flags;
+    te_bool table_links = FALSE;
+
+    rc = parse_key_attr(iter_data->exp_result->key, &parsed_keys, &count);
+    if (rc != 0)
+        return rc;
+
+    key_flags = get_key_flags(iter_data, iter_entry);
+    if ((flags & key_flags) && (~flags & TRC_REPORT_NO_KEYS))
+        table_links = TRUE;
+
+    for (i = 0; i < count; i++)
+    {
+        key = parsed_keys[i];
+
+        trc_re_key_substs(TRC_RE_KEY_URL, key, f);
+
+        key_path = trc_report_key_test_path(test_path, key);
+        WRITE_FILE("<a name=\"%s\"></a>", key_path);
+        free(key_path);
+        key_path = NULL;
+
+        if (table_links)
+        {
+            trc_report_keys_type key_type;
+            keys_type_info *type_info;
+
+            key_id = get_key_id(key);
+            if (key_id == NULL)
+            {
+                ERROR("%s(): out of memory", __FUNCTION__);
+                rc = TE_ENOMEM;
+                goto cleanup;
+            }
+
+            WRITE_STR("&nbsp;[&nbsp;");
+
+            for (key_type = TRC_REPORT_KEYS_TYPE_FAILURES;
+                 key_type < TRC_REPORT_KEYS_TYPE_MAX; key_type++)
+            {
+                type_info = &keys_types_info[key_type];
+
+                if ((flags & type_info->flag) &&
+                    (key_flags & type_info->flag))
+                {
+                    WRITE_FILE("<a href=\"#%s%s\">%s</a>&nbsp;",
+                               type_info->link_prefix,
+                               key_id,
+                               type_info->link_text);
+                }
+            }
+
+            WRITE_STR("]");
+            free(key_id);
+            key_id = NULL;
+        }
+
+        WRITE_STR("<br>\n");
+    }
+
+cleanup:
+
+    free(parsed_keys);
+    free(key_id);
+    free(key_path);
+
+    return rc;
+}
+
 /**
  * Output test iteration expected/obtained results to HTML report.
  *
@@ -2860,60 +3057,10 @@ trc_report_exp_got_to_html(FILE             *f,
             if ((test->type == TRC_TEST_SCRIPT) &&
                 (iter_data->exp_result != NULL))
             {
-                if (iter_data->exp_result->key != NULL)
-                {
-                    char *iter_key =
-                        trc_re_key_substs_buf(TRC_RE_KEY_URL,
-                                              iter_data->exp_result->key);
-                    if (iter_key != NULL)
-                        fprintf(f, "%s", iter_key);
-                    free(iter_key);
-                }
-
-                if ((iter_entry != NULL) &&
-                    ((iter_entry->result.status == TE_TEST_FAILED) ||
-                     ((iter_entry->result.status == TE_TEST_PASSED) &&
-                      (TAILQ_FIRST(&iter_entry->result.verdicts) !=
-                      NULL))))
-                {
-                    char *key_link = NULL;
-                    char *key_test_path =
-                        trc_report_key_test_path(test_path,
-                            iter_data->exp_result->key);
-
-                    fprintf(f, "<a name=\"%s\"/>", key_test_path);
-                    /*
-                     * Iterations does not have unique names and paths yet,
-                     * use test name and path instead of
-                     */
-                    free(key_test_path);
-
-                    /* Add also link to keys table */
-                    if (iter_data->exp_result->key != NULL)
-                    {
-                        key_link =
-                            trc_re_key_substs_buf(TRC_RE_KEY_TABLE_HREF,
-                                iter_data->exp_result->key);
-                    }
-                    else if (((iter_entry->result.status ==
-                               TE_TEST_PASSED) &&
-                              (~flags &
-                               TRC_REPORT_KEYS_SKIP_PASSED_UNSPEC)) ||
-                             ((iter_entry->result.status ==
-                               TE_TEST_FAILED) &&
-                              (~flags &
-                               TRC_REPORT_KEYS_SKIP_FAILED_UNSPEC)))
-                    {
-                        key_link =
-                            trc_re_key_substs_buf(TRC_RE_KEY_TABLE_HREF,
-                                                  TRC_REPORT_KEY_UNSPEC);
-
-                    }
-                    if (key_link != NULL)
-                        fprintf(f, "%s", key_link);
-
-                    free(key_link);
-                }
+                rc = print_iter_key(f, iter_data, iter_entry, test_path,
+                                    flags);
+                if (rc != 0)
+                    break;
             }
 
             fprintf(f, trc_test_exp_got_row_end,
@@ -3632,8 +3779,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
                 goto cleanup;
 
             trc_report_keys_to_html(f, gctx, "te-trc-key", keys,
-                !(~flags & TRC_REPORT_KEYS_ONLY),
-                trc_report_keys_table_heading[keys_type]);
+                !(~flags & TRC_REPORT_KEYS_ONLY), keys_type);
         }
     }
 

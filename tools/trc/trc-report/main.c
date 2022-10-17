@@ -177,7 +177,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
           "FILENAME" },
 
         { "key2html", '\0', POPT_ARG_STRING, NULL, TRC_OPT_KEY2HTML,
-          "File with regular expressions to apply when output keys to "
+          "File with formatting rules used when printing keys to "
           "HTML report.", "FILENAME" },
 
         { "no-total", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_TOTAL_STATS,
