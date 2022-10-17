@@ -1236,7 +1236,10 @@ tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs, tapi_env *env,
     tapi_dpdk_testpmd_prep_eal prep_eal;
 
     tapi_job_factory_t *factory = NULL;
-    tapi_dpdk_testpmd_job_t testpmd_job_s = {0};
+    tapi_dpdk_testpmd_job_t testpmd_job_s = {
+        .cmdline_setup = TE_STRING_INIT,
+        .cmdline_start = TE_STRING_INIT,
+    };
     tapi_dpdk_testpmd_job_t *testpmd_job = &testpmd_job_s;
     te_string stop_testpmd_cmd = TE_STRING_INIT;
     tapi_job_status_t status;
