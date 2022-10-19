@@ -651,7 +651,8 @@ tapi_eal_close_bond_slave_pci_devices(tapi_env             *env,
             rc = rpc_rte_eal_hotplug_remove(rpcs, "pci", slaves[i]);
             if (rc != 0 && rc != -TE_RC(TE_RPC, TE_ENODEV) &&
                 /* -EINVAL is returned in the case of no PCI device */
-                rc != -TE_RC(TE_RPC, TE_EINVAL))
+                rc != -TE_RC(TE_RPC, TE_EINVAL) &&
+                rc != -TE_RC(TE_RPC, TE_ENOENT))
                 goto out;
 
             rc = tapi_rte_get_dev_args_by_pci_addr(rpcs->ta, slaves[i],
@@ -779,7 +780,8 @@ tapi_reuse_eal(tapi_env         *env,
         rc = rpc_rte_eal_hotplug_remove(rpcs, bus_name, dev_name);
         if (rc != 0 && rc != -TE_RC(TE_RPC, TE_ENODEV) &&
             /* -EINVAL is returned in the case of no PCI device */
-            rc != -TE_RC(TE_RPC, TE_EINVAL))
+            rc != -TE_RC(TE_RPC, TE_EINVAL) &&
+            rc != -TE_RC(TE_RPC, TE_ENOENT))
             goto out;
 
         if (strncmp(dev_name, net_bonding_prefix,
