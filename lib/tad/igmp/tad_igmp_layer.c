@@ -545,13 +545,19 @@ tad_igmp_match_post_cb(csap_p              csap,
     if (rc != 0)
         return rc;
 
-    /* TODO: not sure post-check should be so simple */
-
-    rc = tad_bps_pkt_frag_match_post(&proto_data->group_address,
-                                     &pkt_data->group_address,
-                                     pkt, &bitoff, meta_pkt_layer->nds);
-    if (rc != 0)
-        return rc;
+    /*
+     * An IGMPv3 report, in contrast to any other IGMP message
+     * (including IGMPv1 and IGMPv2 reports), does not contain
+     * a multicast group address field (see RFC 3376, 4.2)
+     */
+    if (pkt_data->hdr.dus[0].val_i32 != IGMPV3_HOST_MEMBERSHIP_REPORT)
+    {
+        rc = tad_bps_pkt_frag_match_post(&proto_data->group_address,
+                                         &pkt_data->group_address,
+                                         pkt, &bitoff, meta_pkt_layer->nds);
+        if (rc != 0)
+            return rc;
+    }
 
     /* End of packet - no more matching */
     if (tad_pkt_len(pkt) <= (bitoff >> 3))
