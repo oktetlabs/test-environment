@@ -5,6 +5,7 @@ tests = [
     'changed',
     'dir',
     'key',
+    'oid',
     'phy',
     'process',
     'process_autorestart',

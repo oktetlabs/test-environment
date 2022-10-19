@@ -22,6 +22,7 @@ test_deps = [
 
 te_libs = [
     'rcfapi',
+    'conf_oid',
     'confapi',
     'tapi_rpc',
     'tapi_tad',
