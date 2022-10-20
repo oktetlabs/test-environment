@@ -698,9 +698,8 @@ EOF
 }
 EOF
 
-    # TODO(Boleslav Stankevich): A command to generate the Supper Summary
-    #                            document will be provided on the following
-    #                            commit.
+    tce_susum "${conf}" "tce_log_susum.html" || \
+        die "failed to generate Super Summary"
 }
 
 for comp in "${!tce_types[@]}" ; do

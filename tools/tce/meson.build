@@ -14,6 +14,7 @@ tce_scripts = [
     'tce_report',
     'tce_resolve_gcov.py',
     'tce_summary',
+    'tce_susum',
 ]
 
 install_data(tce_scripts, install_dir: 'bin')
