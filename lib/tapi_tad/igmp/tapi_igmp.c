@@ -194,7 +194,7 @@ tapi_igmp_add_ip4_pdu_gen(asn_value **tmpl_or_ptrn,
     if (rc != 0)
         return rc;
 
-    /* Add manndatory Router Alert IP option */
+    /* Add mandatory Router Alert IP option */
     rc = asn_write_value_field(ip4_pdu,
                              ip_opt_router_alert,
                              sizeof(ip_opt_router_alert),
@@ -258,7 +258,7 @@ tapi_igmp_add_ip4_eth_pdu_gen(asn_value **tmpl_or_ptrn,
     if (rc != 0)
         return rc;
 
-    /* Add manndatory Router Alert IP option */
+    /* Add mandatory Router Alert IP option */
     rc = asn_write_value_field(ip4_pdu,
                              ip_opt_router_alert,
                              sizeof(ip_opt_router_alert),
