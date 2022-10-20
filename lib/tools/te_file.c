@@ -24,6 +24,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <dirent.h>
+#include <fnmatch.h>
 #endif
 
 #if HAVE_STDARG_H
@@ -424,4 +426,93 @@ te_file_read_text(const char *path, char *buffer, size_t bufsize)
     }
 
     return 0;
+}
+
+static te_errno
+do_scandir(const char *dirname, const char *pattern,
+           te_file_scandir_callback *callback, void *data)
+{
+    te_errno rc = 0;
+    DIR *dir = opendir(dirname);
+    struct dirent *entry = NULL;
+    te_string pathname = TE_STRING_INIT;
+    size_t dirname_len;
+
+    te_string_append(&pathname, "%s/", dirname);
+    dirname_len = pathname.len;
+
+    if (dir == NULL)
+    {
+        rc = TE_OS_RC(TE_MODULE_NONE, errno);
+        ERROR("Cannot open the directory '%s': %r", dirname, rc);
+        te_string_free(&pathname);
+        return rc;
+    }
+
+    do {
+        errno = 0;
+        entry = readdir(dir);
+        if (entry == NULL)
+        {
+            if (errno != 0)
+            {
+                rc = TE_OS_RC(TE_MODULE_NONE, errno);
+                ERROR("Error scanning '%s': %r", dirname, rc);
+            }
+        }
+        else
+        {
+            if (strcmp(entry->d_name, ".") == 0 ||
+                strcmp(entry->d_name, "..") == 0)
+            {
+                continue;
+            }
+
+            if (pattern != NULL &&
+                fnmatch(pattern, entry->d_name, FNM_PATHNAME | FNM_PERIOD) != 0)
+            {
+                continue;
+            }
+
+            pathname.len = dirname_len;
+            pathname.ptr[pathname.len] = '\0';
+            te_string_append(&pathname, "%s", entry->d_name);
+            rc = callback(pattern, pathname.ptr, data);
+            if (rc != 0)
+            {
+                entry = NULL;
+                if (rc == TE_EOK)
+                    rc = 0;
+            }
+        }
+    } while (entry != NULL);
+
+    closedir(dir);
+    te_string_free(&pathname);
+
+    return rc;
+}
+
+te_errno
+te_file_scandir(const char *dirname,
+                te_file_scandir_callback *callback, void *data,
+                const char *pattern_fmt, ...)
+{
+    te_string pattern = TE_STRING_INIT;
+    te_errno rc;
+
+    if (pattern_fmt != NULL)
+    {
+       va_list args;
+
+       va_start(args, pattern_fmt);
+       te_string_append_va(&pattern, pattern_fmt, args);
+       va_end(args);
+    }
+
+    rc = do_scandir(dirname, pattern_fmt == NULL ? NULL : pattern.ptr,
+                    callback, data);
+
+    te_string_free(&pattern);
+    return rc;
 }

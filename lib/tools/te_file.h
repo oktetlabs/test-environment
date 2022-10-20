@@ -220,6 +220,48 @@ extern te_errno te_file_check_executable(const char *path);
 extern te_errno te_file_read_text(const char *path, char *buffer,
                                   size_t bufsize);
 
+/**
+ * Function type for callbacks for te_file_scandir().
+ *
+ * @param pattern   pattern used to filter pathnames
+ * @param pathname  full pathname of a current file
+ * @param data      user data as passed to te_file_scandir().
+ *
+ * @return status code
+ * @retval TE_EOK   The scanning would stop, but @c 0 would be returned
+ *                  by te_file_scandir().
+ */
+typedef te_errno te_file_scandir_callback(const char *pattern,
+                                          const char *pathname, void *data);
+
+/**
+ * Call @p callback for each file in @p dirname matching a pattern.
+ *
+ * Special entries @c . and @c .. are always skipped.
+ *
+ * The callback is passed a concatenation of a @p dirname and the basename
+ * of the current file, not just the basename as scandir() would do.
+ *
+ * If the callback returns non-zero, the scanning stop and the result value
+ * is passed upstream, but if it is @c TE_EOK, zero would be returned.
+ *
+ * @param dirname     directory to scan
+ * @param callback    the callback
+ * @param data        user data passed to @p callback
+ * @param pattern_fmt glob-style pattern format
+ * @param ...         arguments
+ *
+ * @note @p pattern_fmt may be @c NULL, in which case no arguments shall be
+ *       be provided and all files in @p dirname will be processed.
+ *
+ * @return status code
+ */
+extern te_errno te_file_scandir(const char *dirname,
+                                te_file_scandir_callback *callback,
+                                void *data,
+                                const char *pattern_fmt, ...)
+    __attribute__((format(printf, 4, 5)));
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
