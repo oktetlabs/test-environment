@@ -14,6 +14,7 @@
 #include "te_file.h"
 #include "te_string.h"
 #include "te_dbuf.h"
+#include "te_alloc.h"
 #include "logger_api.h"
 
 #ifdef STDC_HEADERS
@@ -515,4 +516,95 @@ te_file_scandir(const char *dirname,
 
     te_string_free(&pattern);
     return rc;
+}
+
+static void
+analyze_pattern(const char *pattern, size_t *prefix_len, size_t *suffix_len)
+{
+    te_bool seen_wildcard = FALSE;
+    size_t count = 0;
+
+    while (*pattern != '\0')
+    {
+        switch (*pattern)
+        {
+            case '\\':
+                count++;
+                assert(pattern[1] != '\0');
+                pattern += 2;
+                break;
+            case '[':
+                count++;
+                pattern++;
+                if (*pattern == '!')
+                    pattern++;
+                if (*pattern == ']')
+                    pattern++;
+                while (*pattern != ']')
+                {
+                    assert(*pattern != '\0');
+                    if (*pattern == '[' &&
+                        (pattern[1] == ':' ||
+                         pattern[1] == '.' ||
+                         pattern[1] == '='))
+                    {
+                        pattern = strchr(pattern, ']');
+                        assert(pattern != NULL);
+                    }
+                    pattern++;
+                }
+                pattern++;
+                break;
+            case '*':
+                if (seen_wildcard)
+                    TE_FATAL_ERROR("Multiple wildcards in the pattern");
+                *prefix_len = count;
+                pattern++;
+                count = 0;
+                seen_wildcard = TRUE;
+                break;
+            default:
+                pattern++;
+                count++;
+                break;
+        }
+    }
+
+    if (!seen_wildcard)
+        TE_FATAL_ERROR("No wildcard in the pattern");
+    *suffix_len = count;
+}
+
+char *
+te_file_extract_glob(const char *filename, const char *pattern,
+                     te_bool basename)
+{
+    size_t prefix_len;
+    size_t suffix_len;
+    size_t fname_len;
+    char *result = NULL;
+
+    if (basename)
+    {
+        const char *rdir = strrchr(filename, '/');
+
+        if (rdir != NULL)
+            filename = rdir + 1;
+    }
+
+    if (fnmatch(pattern, filename, FNM_PATHNAME | FNM_PERIOD) != 0)
+        return NULL;
+
+    analyze_pattern(pattern, &prefix_len, &suffix_len);
+    fname_len = strlen(filename);
+    assert(prefix_len + suffix_len <= fname_len);
+
+    result = TE_ALLOC(fname_len - prefix_len - suffix_len + 1);
+    if (result == NULL)
+        TE_FATAL_ERROR("Not enough memory");
+
+    memcpy(result, filename + prefix_len, fname_len - prefix_len - suffix_len);
+    result[fname_len - prefix_len - suffix_len] = '\0';
+
+    return result;
 }

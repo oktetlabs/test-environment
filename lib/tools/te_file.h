@@ -262,6 +262,23 @@ extern te_errno te_file_scandir(const char *dirname,
                                 const char *pattern_fmt, ...)
     __attribute__((format(printf, 4, 5)));
 
+/**
+ * Extract a varying part of a @p filename matching @p pattern.
+ *
+ * Only a limited subset of globs is supported, namely it must contain
+ * exactly one @c * wildcard, otherwise a fatal error is reported.
+ *
+ * @param filename  filename
+ * @param pattern   glob pattern with a single @c *
+ * @param basename  if @c TRUE, only the basename of @p filename is
+ *                  used for matching.
+ *
+ * @return the varying part of the filename (must be free()'d) or
+ *         @c NULL if @p filename does not match a @p pattern.
+ */
+extern char *te_file_extract_glob(const char *filename, const char *pattern,
+                                  te_bool basename);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
