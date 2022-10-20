@@ -40,6 +40,60 @@
         </run>
 
         <run>
+            <script name="extract_glob"/>
+            <arg name="filename">
+                <value>/dir/name.suffix</value>
+            </arg>
+            <arg name="pattern" list="">
+                <value>*</value>
+                <value>/dir/*</value>
+                <value>name.*</value>
+                <value>*.suffix</value>
+                <value>n*x</value>
+                <value>/*/name.suffix</value>
+                <value>nomatch</value>
+                <value>nomatch.*</value>
+                <value>????.*</value>
+                <value>[nN][[:alpha:]][m-x][][:alpha:][:digit:]]*su[f-h][[:alpha:]]\ix</value>
+                <!-- invalid glob patterns won't match -->
+                <value>name.*\</value>
+                <value>name.*[x-</value>
+                <!-- The following values are marked as broken because they would
+                     trigger a fatal error -->
+                <value reqs="BROKEN">*.*</value>
+                <value reqs="BROKEN">name.suffix</value>
+            </arg>
+            <arg name="expect_full" list="">
+                <value>NULL</value>
+                <value>name.suffix</value>
+                <value>NULL</value>
+                <value>NULL</value>
+                <value>NULL</value>
+                <value>dir</value>
+                <value>NULL</value>
+                <value>NULL</value>
+                <value>NULL</value>
+                <value>NULL</value>
+                <value>NULL</value>
+                <value>NULL</value>
+            </arg>
+            <arg name="expect_base" list="">
+                <value>name.suffix</value>
+                <value>NULL</value>
+                <value>suffix</value>
+                <value>name</value>
+                <value>ame.suffi</value>
+                <value>NULL</value>
+                <value>NULL</value>
+                <value>NULL</value>
+                <value>suffix</value>
+                <value>.</value>
+                <value>NULL</value>
+                <value>NULL</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="hexdump"/>
         </run>
 

@@ -1,0 +1,10 @@
+<test name="extract_glob" type="script">
+    <objective>Testing te_file_extract_glob() correctness..</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="filename" />
+        <arg name="pattern" />
+        <arg name="expect_full" />
+        <arg name="expect_base" />
+    </iter>
+</test>

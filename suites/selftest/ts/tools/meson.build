@@ -4,6 +4,7 @@
 tests = [
     'compare_bufs',
     'enum_map',
+    'extract_glob',
     'hexdump',
     'intset',
     'make_bufs',
