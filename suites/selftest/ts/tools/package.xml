@@ -46,6 +46,12 @@
         <run>
             <script name="intset"/>
         </run>
+        <run>
+            <script name="scandir"/>
+            <arg name="n_files">
+                <value>10</value>
+            </arg>
+        </run>
 
         <run>
             <script name="string"/>

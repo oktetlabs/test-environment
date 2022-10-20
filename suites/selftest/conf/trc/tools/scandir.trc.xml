@@ -1,0 +1,7 @@
+<test name="scandir" type="script">
+    <objective>Testing te_file_scandir() correctness.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="n_files" />
+    </iter>
+</test>

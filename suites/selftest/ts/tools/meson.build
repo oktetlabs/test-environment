@@ -9,6 +9,7 @@ tests = [
     'make_bufs',
     'readlink',
     'resolvepath',
+    'scandir',
     'string',
     'units',
     'vector',
