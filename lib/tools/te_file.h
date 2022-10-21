@@ -198,6 +198,22 @@ extern te_errno te_file_resolve_pathname(const char *filename,
 extern te_errno te_file_check_executable(const char *path);
 
 /**
+ * Check that a filename is accessible for a given @p mode.
+ *
+ * The filename is constructed from the format string and arguments.
+ *
+ * @param mode   access mode (see system access())
+ * @param fmt    format string
+ * @param ...    arguments
+ *
+ * @return status code
+ * @retval TE_EACCESS  Access to the file is denied
+ * @retval TE_ENOENT   The file or any of its parents does not exist
+ */
+extern te_errno te_access_fmt(int mode, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+
+/**
  * Read the contents of the file @p path into @p buffer.
  *
  * The function ensures that the contents of the file is no

@@ -362,6 +362,25 @@ te_file_check_executable(const char *path)
 }
 
 te_errno
+te_access_fmt(int mode, const char *fmt, ...)
+{
+    te_string path = TE_STRING_INIT;
+    te_errno rc = 0;
+    va_list args;
+
+    va_start(args, fmt);
+    te_string_append_va(&path, fmt, args);
+    va_end(args);
+
+    if (access(path.ptr, mode) != 0)
+        rc = TE_OS_RC(TE_MODULE_NONE, errno);
+
+    te_string_free(&path);
+
+    return rc;
+}
+
+te_errno
 te_file_read_text(const char *path, char *buffer, size_t bufsize)
 {
     int fd = open(path, O_RDONLY);
