@@ -114,6 +114,54 @@ te_timer_start(te_timer_t *timer, unsigned int timeout_s)
 
 /* See description in te_timer.h */
 te_errno
+te_timer_restart(te_timer_t *timer, unsigned int timeout_s)
+{
+    sigset_t mask;
+    struct itimerspec trigger;
+
+    if (timer->id == 0)
+    {
+        ERROR("Timer is not running or initialized incorrectly");
+        return TE_EINVAL;
+    }
+
+    /* Block timer signal temporarily */
+    TE_TIMER_CHECK_ERRNO(sigemptyset(&mask));
+    TE_TIMER_CHECK_ERRNO(sigaddset(&mask, TE_TIMER_SIGNO));
+    TE_TIMER_CHECK_ERRNO(sigprocmask(SIG_SETMASK, &mask, NULL));
+
+    /* Arm the timer */
+    trigger.it_value.tv_sec = timeout_s;
+    trigger.it_value.tv_nsec = 0;
+    trigger.it_interval.tv_sec = 0;
+    trigger.it_interval.tv_nsec = 0;
+
+    TE_TIMER_CHECK_ERRNO(timer_settime(timer->id, 0, &trigger, NULL));
+
+    timer->expire = 0;
+
+    /* Unlock the timer signal, so that timer notification can be delivered */
+    TE_TIMER_CHECK_ERRNO(sigprocmask(SIG_UNBLOCK, &mask, NULL));
+
+    return 0;
+}
+
+/* See description in te_timer.h */
+te_errno
+te_timer_stop(te_timer_t *timer)
+{
+    if (timer->id != 0)
+    {
+        TE_TIMER_CHECK_ERRNO(timer_delete(timer->id));
+        timer->id = 0;
+        timer->expire = 0;
+    }
+
+    return 0;
+}
+
+/* See description in te_timer.h */
+te_errno
 te_timer_expired(te_timer_t *timer)
 {
     if (timer->expire == 0)

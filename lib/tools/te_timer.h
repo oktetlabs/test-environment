@@ -113,6 +113,25 @@ typedef struct te_timer_t {
 extern te_errno te_timer_start(te_timer_t *timer, unsigned int timeout_s);
 
 /**
+ * Restart already running timer with a new timeout.
+ *
+ * @param timer         Timer handle.
+ * @param timeout_s     Timeout for triggering timer.
+ *
+ * @return Status code.
+ */
+extern te_errno te_timer_restart(te_timer_t *timer, unsigned int timeout_s);
+
+/**
+ * Stop timer.
+ *
+ * @param timer         Timer handle.
+ *
+ * @return Status code.
+ */
+extern te_errno te_timer_stop(te_timer_t *timer);
+
+/**
  * Check whether timeout set with te_timer_start() has expired or not
  *
  * @note It stops the timer if time is expired
