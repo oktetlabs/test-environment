@@ -127,27 +127,62 @@ tarpc_rte_eth_tx_offloads2str(te_log_buf *tlbp, uint64_t tx_offloads)
 }
 
 static const char *
-tarpc_rte_eth_dev_flow_types2str(te_log_buf *tlbp, uint64_t rss_flow_types)
+tarpc_rte_eth_dev_rss_types2str(te_log_buf *tlbp, uint64_t rss_flow_types)
 {
     const struct te_log_buf_bit2str rss_flow_types2str[] = {
-#define TARPC_RTE_ETH_FLOW_TYPE2STR(_bit) \
-        { TARPC_RTE_ETH_FLOW_##_bit, #_bit }
-        TARPC_RTE_ETH_FLOW_TYPE2STR(IPV4),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(FRAG_IPV4),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(NONFRAG_IPV4_TCP),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(NONFRAG_IPV4_UDP),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(NONFRAG_IPV4_SCTP),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(NONFRAG_IPV4_OTHER),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(IPV6),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(FRAG_IPV6),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(NONFRAG_IPV6_TCP),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(NONFRAG_IPV6_UDP),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(NONFRAG_IPV6_SCTP),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(NONFRAG_IPV6_OTHER),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(L2_PAYLOAD),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(IPV6_EX),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(IPV6_TCP_EX),
-        TARPC_RTE_ETH_FLOW_TYPE2STR(IPV6_UDP_EX),
+#define TARPC_RTE_ETH_RSS_TYPE2STR(_bit) \
+        { TARPC_RTE_ETH_RSS_##_bit, #_bit }
+        TARPC_RTE_ETH_RSS_TYPE2STR(IPV4),
+        TARPC_RTE_ETH_RSS_TYPE2STR(FRAG_IPV4),
+        TARPC_RTE_ETH_RSS_TYPE2STR(NONFRAG_IPV4_TCP),
+        TARPC_RTE_ETH_RSS_TYPE2STR(NONFRAG_IPV4_UDP),
+        TARPC_RTE_ETH_RSS_TYPE2STR(NONFRAG_IPV4_SCTP),
+        TARPC_RTE_ETH_RSS_TYPE2STR(NONFRAG_IPV4_OTHER),
+        TARPC_RTE_ETH_RSS_TYPE2STR(IPV6),
+        TARPC_RTE_ETH_RSS_TYPE2STR(FRAG_IPV6),
+        TARPC_RTE_ETH_RSS_TYPE2STR(NONFRAG_IPV6_TCP),
+        TARPC_RTE_ETH_RSS_TYPE2STR(NONFRAG_IPV6_UDP),
+        TARPC_RTE_ETH_RSS_TYPE2STR(NONFRAG_IPV6_SCTP),
+        TARPC_RTE_ETH_RSS_TYPE2STR(NONFRAG_IPV6_OTHER),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L2_PAYLOAD),
+        TARPC_RTE_ETH_RSS_TYPE2STR(IPV6_EX),
+        TARPC_RTE_ETH_RSS_TYPE2STR(IPV6_TCP_EX),
+        TARPC_RTE_ETH_RSS_TYPE2STR(IPV6_UDP_EX),
+        TARPC_RTE_ETH_RSS_TYPE2STR(PORT),
+        TARPC_RTE_ETH_RSS_TYPE2STR(VXLAN),
+        TARPC_RTE_ETH_RSS_TYPE2STR(GENEVE),
+        TARPC_RTE_ETH_RSS_TYPE2STR(NVGRE),
+        TARPC_RTE_ETH_RSS_TYPE2STR(GTPU),
+        TARPC_RTE_ETH_RSS_TYPE2STR(ETH),
+        TARPC_RTE_ETH_RSS_TYPE2STR(S_VLAN),
+        TARPC_RTE_ETH_RSS_TYPE2STR(C_VLAN),
+        TARPC_RTE_ETH_RSS_TYPE2STR(ESP),
+        TARPC_RTE_ETH_RSS_TYPE2STR(AH),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L2TPV3),
+        TARPC_RTE_ETH_RSS_TYPE2STR(PFCP),
+        TARPC_RTE_ETH_RSS_TYPE2STR(PPPOE),
+        TARPC_RTE_ETH_RSS_TYPE2STR(ECPRI),
+        TARPC_RTE_ETH_RSS_TYPE2STR(MPLS),
+        TARPC_RTE_ETH_RSS_TYPE2STR(IPV4_CHKSUM),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L4_CHKSUM),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L2TPV2),
+
+        TARPC_RTE_ETH_RSS_TYPE2STR(L3_SRC_ONLY),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L3_DST_ONLY),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L4_SRC_ONLY),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L4_DST_ONLY),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L2_SRC_ONLY),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L2_DST_ONLY),
+
+        TARPC_RTE_ETH_RSS_TYPE2STR(L3_PRE32),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L3_PRE40),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L3_PRE48),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L3_PRE56),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L3_PRE64),
+        TARPC_RTE_ETH_RSS_TYPE2STR(L3_PRE96),
+
+        TARPC_RTE_ETH_RSS_TYPE2STR(LEVEL_OUTERMOST),
+        TARPC_RTE_ETH_RSS_TYPE2STR(LEVEL_INNERMOST),
 #undef TARPC_RTE_ETH_FLOW_BIT2STR
         { 0, NULL }
     };
@@ -353,7 +388,7 @@ tarpc_rte_eth_dev_info2str(te_log_buf *tlbp,
     te_log_buf_append(tlbp, ", reta_size=%u, hash_key_size=%u, "
                       "flow_type_rss_offloads=",
                       dev_info->reta_size, dev_info->hash_key_size);
-    tarpc_rte_eth_dev_flow_types2str(tlbp, dev_info->flow_type_rss_offloads);
+    tarpc_rte_eth_dev_rss_types2str(tlbp, dev_info->flow_type_rss_offloads);
 
     te_log_buf_append(tlbp, ", default_rxconf=");
     tarpc_rte_eth_rxconf2str(tlbp, &dev_info->default_rxconf);
