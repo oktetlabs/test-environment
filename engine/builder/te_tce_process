@@ -14,11 +14,10 @@ SCRIPT_DIR=`dirname $0`
 
 TCE_WS="${TE_BUILD}/tce_workspace"
 
-if test -d "${TCE_WS}" ; then
-    rm -rf "${TCE_WS}"
-fi
-mkdir "${TCE_WS}" || \
-    tce_die "fail to create workspace to process TCE"
+[[ -d "${TCE_WS}" ]] \
+    && rm --interactive=never -r "${TCE_WS}" 2> /dev/null
+mkdir "${TCE_WS}" 2> /dev/null \
+    || tce_die "failed to create workspace"
 
 declare -A platform_ws
 
