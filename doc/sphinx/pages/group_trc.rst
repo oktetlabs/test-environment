@@ -307,7 +307,7 @@ Tags Comparison
 
 The above code specifies certain conditions in which the test is expected to fail. To be specific '(num >= 5) and (val < 3)'. Special characters must be escaped.
 
-Values are passed to the trc tool (or trc.sh wrapper script} as --tag=num:3.
+Values are passed to the trc tool (or trc.sh wrapper script} as --tag=num:3. TRC supports only numeric tag values.
 
 Supported operators are ( operator : representation):
 
