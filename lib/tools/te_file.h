@@ -214,6 +214,21 @@ extern te_errno te_access_fmt(int mode, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
 
 /**
+ * Delete a file.
+ *
+ * The filename is constructed from the format string and arguments.
+ *
+ * @param fmt    format string
+ * @param ...    arguments
+ *
+ * @return status code
+ * @retval TE_ENOENT   The file or any of its parents does not exist.
+ */
+extern te_errno te_unlink_fmt(const char *fmt, ...)
+    __attribute__((format(printf, 1, 2)));
+
+
+/**
  * Read the contents of the file @p path into @p buffer.
  *
  * The function ensures that the contents of the file is no
