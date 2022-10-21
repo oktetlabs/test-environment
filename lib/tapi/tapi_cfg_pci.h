@@ -492,6 +492,29 @@ extern te_errno tapi_cfg_pci_get_vendor_dev_ids(const char *pci_oid,
                                                 unsigned int *subsystem_vendor_id,
                                                 unsigned int *subsystem_device_id);
 
+
+/**
+ * Get the name of a SPDK JSON config file associated with the device.
+ *
+ * @param[in]  pci_oid   PCI device OID (/agent/hardware/pci/device or
+ *                       /agent/hardware/pci/vendor/device/instance)
+ * @param[in]  cfg_name  SPDK configuration name
+ * @param[in]  create    if @c TRUE, create the requested configuration
+ * @param[out] filename  JSON file name (at the agent)
+ *
+ * @note The PCI OID must refer to a NVME device.
+ *
+ * @return status code
+ * @retval TE_ENOTBLK  The device is not NVME.
+ * @retval TE_ENOENT   The configuration or the device do not exist.
+ * @retval TE_EEXIST   The configuration already exists
+ *                     (if @p create is @c TRUE).
+ */
+extern te_errno tapi_cfg_pci_get_spdk_config_filename(const char *pci_oid,
+                                                      const char *cfg_name,
+                                                      te_bool create,
+                                                      char **filename);
+
 /**@} <!-- END tapi_conf_pci --> */
 
 #ifdef __cplusplus

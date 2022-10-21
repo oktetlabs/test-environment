@@ -36,6 +36,7 @@
 #include "tapi_cfg_base.h"
 #include "tapi_test.h"
 #include "tapi_env.h"
+#include "tapi_file.h"
 #include "te_vector.h"
 
 static te_errno
@@ -48,6 +49,78 @@ for_each_pci_instance(cfg_handle handle, void *data)
     CHECK_RC(TE_VEC_APPEND(list, oid));
 
     return 0;
+}
+
+static void
+check_spdk_config(const char *ta, const char *pci_oid, const char *vnd_oid)
+{
+    char *filename;
+    char *filename2;
+    char *filename3;
+    te_errno rc;
+    unsigned int class_id;
+    char *contents1;
+    char *contents2;
+
+    CHECK_RC(tapi_cfg_pci_get_class(pci_oid, &class_id, NULL, NULL));
+    if (class_id != TE_PCI_CLASS_MASS_STORAGE_CONTROLLER)
+    {
+        rc = tapi_cfg_pci_get_spdk_config_filename(pci_oid, "Test",
+                                                   TRUE, &filename);
+        if (rc != TE_RC(TE_TA_UNIX, TE_ENOTBLK))
+            TEST_VERDICT("SPDK config added to a non-storage device");
+
+        rc = tapi_cfg_pci_get_spdk_config_filename(vnd_oid, "Test",
+                                                   TRUE, &filename);
+        if (rc != TE_RC(TE_TA_UNIX, TE_ENOTBLK))
+            TEST_VERDICT("SPDK config added to a non-storage device");
+        return;
+    }
+
+    CHECK_RC(tapi_cfg_pci_get_spdk_config_filename(pci_oid, "Test",
+                                                   TRUE, &filename));
+    rc = tapi_cfg_pci_get_spdk_config_filename(pci_oid, "Test",
+                                               TRUE, &filename);
+    if (rc != TE_RC(TE_CS, TE_EEXIST))
+        TEST_VERDICT("Duplicate SPDK config was added");
+
+    CHECK_RC(tapi_cfg_pci_get_spdk_config_filename(vnd_oid, "Test",
+                                                   FALSE, &filename2));
+    if (strcmp(filename, filename2) != 0)
+    {
+        ERROR("Two filenames of the same SPDK config differ: '%s' vs '%s'",
+              filename, filename2);
+        TEST_VERDICT("Config filenames differ");
+    }
+
+    rc = tapi_cfg_pci_get_spdk_config_filename(vnd_oid, "Test1",
+                                               FALSE, &filename3);
+    if (rc != TE_RC(TE_CS, TE_ENOENT))
+        TEST_VERDICT("Non-existing SPDK config file was retrieved", rc);
+    CHECK_RC(tapi_cfg_pci_get_spdk_config_filename(vnd_oid, "Test1",
+                                                   TRUE, &filename3));
+    if (strcmp(filename, filename3) == 0)
+    {
+        ERROR("Two filenames of different SPDK configs are the same '%s'",
+              filename3);
+        free(filename);
+        free(filename2);
+        TEST_VERDICT("Config filenames are the same");
+    }
+
+    CHECK_RC(tapi_file_read_ta(ta, filename, &contents1));
+    CHECK_RC(tapi_file_read_ta(ta, filename3, &contents2));
+    if (strstr(contents1, "\"Test\"") == NULL ||
+        strstr(contents2, "\"Test1\"") == NULL)
+    {
+        TEST_VERDICT("No config name in JSON file");
+    }
+
+    free(contents1);
+    free(contents2);
+    free(filename);
+    free(filename2);
+    free(filename3);
 }
 
 static void
@@ -113,6 +186,7 @@ main(int argc, char **argv)
     te_vec vnd_oids = TE_VEC_INIT(char *);
     te_vec pci_oids = TE_VEC_INIT(char *);
     char **oid;
+    unsigned int i;
 
     TEST_START;
     TEST_GET_PCO(pco_iut);
@@ -157,6 +231,15 @@ main(int argc, char **argv)
     TE_VEC_FOREACH(&pci_oids, oid)
     {
         check_pci_class(*oid);
+    }
+
+    TEST_STEP("Check SPDK config generation");
+    for (i = 0; i < te_vec_size(&pci_oids); i++)
+    {
+        char *pci_oid = TE_VEC_GET(char *, &pci_oids, i);
+        char *vnd_oid = TE_VEC_GET(char *, &vnd_oids, i);
+
+        check_spdk_config(pco_iut->ta, pci_oid, vnd_oid);
     }
 
     TEST_SUCCESS;

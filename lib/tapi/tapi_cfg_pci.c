@@ -1007,3 +1007,34 @@ tapi_cfg_pci_get_vendor_dev_ids(const char *pci_oid,
     return get_hex_prop(pci_oid, "subsystem_device",
                         subsystem_device_id);
 }
+
+
+/* See description in tapi_cfg_pci.h */
+te_errno
+tapi_cfg_pci_get_spdk_config_filename(const char *pci_oid, const char *cfg_name,
+                                      te_bool create, char **filename)
+{
+    char *resolved_oid = NULL;
+    te_errno rc;
+
+    rc = tapi_cfg_pci_resolve_device_oid(&resolved_oid, "%s", pci_oid);
+    if (rc != 0)
+        return rc;
+
+    if (create)
+    {
+        rc = cfg_add_instance_fmt(NULL, CFG_VAL(NONE, NULL),
+                                  "%s/spdk_config:%s", resolved_oid, cfg_name);
+        if (rc != 0)
+        {
+            free(resolved_oid);
+            return rc;
+        }
+    }
+
+    rc = cfg_get_instance_string_fmt(filename, "%s/spdk_config:%s/filename:",
+                                     resolved_oid, cfg_name);
+    free(resolved_oid);
+
+    return rc;
+}

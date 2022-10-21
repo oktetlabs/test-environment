@@ -257,6 +257,27 @@
       d: |
          @todo Power management
 
+    - oid: "/agent/hardware/pci/device/spdk_config"
+      access: read_create
+      type: none
+      d: |
+        SPDK configuration associated with a device.
+
+        @note This may only be created if the device is an NVMe device.
+
+        Name: the identifier of a configuration
+        Value: none
+
+    - oid: "/agent/hardware/pci/device/spdk_config/filename"
+      access: read_only
+      type: string
+      d: |
+        The name of a JSON file with parameters that may be used to
+        initialize SPDK for a given device.
+
+        Name: none
+        Value: JSON filename
+
     - oid: "/agent/hardware/pci/device/pcie"
       access: read_only
       type: int32

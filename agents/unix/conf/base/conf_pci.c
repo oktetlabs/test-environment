@@ -65,6 +65,7 @@
 #include "unix_internal.h"
 #include "conf_common.h"
 #include "te_alloc.h"
+#include "te_pci.h"
 
 #ifdef USE_LIBNETCONF
 #include "netconf.h"
@@ -3136,6 +3137,162 @@ param_value_set(unsigned int gid, const char *oid, const char *value,
 #endif
 }
 
+#define PCI_SPDK_CONFIG_PATTERN_FMT "te_spdk_config_%s_*.json"
+#define PCI_SPDK_CONFIG_NAME_FMT "%ste_spdk_config_%s_%s.json"
+#define PCI_SPDK_CONFIG_NAME_ARGS(_pci_addr, _cfg_name) \
+    ta_tmp_dir, (_pci_addr), (_cfg_name)
+
+static te_errno
+pci_spdk_config_add(unsigned int gid, const char *oid, const char *value,
+                    const char *unused, const char *unused2,
+                    const char *pci_addr, const char *cfg_name)
+{
+    te_errno rc = 0;
+    const pci_device *dev = NULL;
+    FILE *json_file;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused);
+    UNUSED(unused2);
+
+    rc = find_device_by_addr_str(pci_addr, (pci_device **)&dev);
+    if (rc != 0)
+        return rc;
+
+    if (dev->device_class != TE_PCI_PROG_INTERFACE_NVM_CONTROLLER_NVME)
+    {
+        ERROR("SPDK configs are only meaningful for NVMe devices");
+        return TE_RC(TE_TA_UNIX, TE_ENOTBLK);
+    }
+
+    if (te_access_fmt(F_OK, PCI_SPDK_CONFIG_NAME_FMT,
+                      PCI_SPDK_CONFIG_NAME_ARGS(pci_addr, cfg_name)) == 0)
+    {
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    }
+
+    json_file = te_fopen_fmt("w", PCI_SPDK_CONFIG_NAME_FMT,
+                             PCI_SPDK_CONFIG_NAME_ARGS(pci_addr, cfg_name));
+    if (json_file == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EIO);
+
+    fprintf(json_file,
+            "{\n"
+            "   \"subsystems\": [\n"
+            "    {\n"
+            "       \"subsystem\": \"bdev\",\n"
+            "       \"config\": [\n"
+            "           {\n"
+            "              \"method\": \"bdev_nvme_attach_controller\"\n"
+            "              \"params\": {\n"
+            "                 \"trtype\": \"PCIe\",\n"
+            "                 \"name\":\"%s\",\n"
+            "                 \"traddr\":\"%04x:%02x:%02x.%x\"\n"
+            "               }\n"
+            "           }\n"
+            "       ]\n"
+            "    }\n"
+            "   ]\n"
+            "}\n",
+            cfg_name, dev->address.domain, dev->address.bus,
+            dev->address.slot, dev->address.fn);
+    fclose(json_file);
+
+    return 0;
+}
+
+static te_errno
+pci_spdk_config_del(unsigned int gid, const char *oid,
+                    const char *unused, const char *unused2,
+                    const char *pci_addr, const char *cfg_name)
+{
+    te_errno rc;
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused);
+    UNUSED(unused2);
+
+    rc = te_unlink_fmt(PCI_SPDK_CONFIG_NAME_FMT,
+                       PCI_SPDK_CONFIG_NAME_ARGS(pci_addr, cfg_name));
+    return TE_RC_UPSTREAM(TE_TA_UNIX, rc);
+}
+
+static te_file_scandir_callback add_spdk_config;
+static te_errno add_spdk_config(const char *pattern, const char *pathname,
+                                void *data)
+{
+    te_string *dest = data;
+    char *base = te_file_extract_glob(pathname, pattern, TRUE);
+
+    if (base == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    te_string_append(dest, "%s%s", dest->len > 0 ? " " : "", base);
+    free(base);
+
+    return 0;
+}
+
+static te_errno
+pci_spdk_config_list(unsigned int gid, const char *oid,
+                     const char *sub_id, char **list,
+                     const char *unused, const char *unused2,
+                     const char *pci_addr, const char *cfg_name)
+{
+    te_string items = TE_STRING_INIT;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+    UNUSED(unused);
+    UNUSED(unused2);
+
+    rc = te_file_scandir(ta_tmp_dir, add_spdk_config, &items,
+                         PCI_SPDK_CONFIG_PATTERN_FMT, pci_addr);
+
+    if (rc == 0)
+        te_string_move(list, &items);
+
+    te_string_free(&items);
+    return rc;
+}
+
+static te_errno
+pci_spdk_config_filename_get(unsigned int gid, const char *oid, char *value,
+                             const char *unused, const char *unused2,
+                             const char *pci_addr, const char *cfg_name)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused);
+    UNUSED(unused2);
+
+    if (te_access_fmt(R_OK, PCI_SPDK_CONFIG_NAME_FMT,
+                      PCI_SPDK_CONFIG_NAME_ARGS(pci_addr, cfg_name)) != 0)
+    {
+        ERROR("There is no SPDK config '%s' for PCI device %s",
+              cfg_name, pci_addr);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    TE_SNPRINTF(value, RCF_MAX_VAL,
+                PCI_SPDK_CONFIG_NAME_FMT,
+                PCI_SPDK_CONFIG_NAME_ARGS(pci_addr, cfg_name));
+
+    return 0;
+}
+
+RCF_PCH_CFG_NODE_RO(node_pci_spdk_config_filename, "filename",
+                    NULL, NULL, pci_spdk_config_filename_get);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_pci_spdk_config, "spdk_config",
+                            &node_pci_spdk_config_filename, NULL,
+                            pci_spdk_config_add,
+                            pci_spdk_config_del,
+                            pci_spdk_config_list, NULL);
+
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_pci_param_value, "value",
                                NULL, NULL,
                                param_value_get,
@@ -3151,7 +3308,7 @@ RCF_PCH_CFG_NODE_RO(node_pci_param_drv_spec, "driver_specific",
                     param_drv_specific_get);
 
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_param, "param",
-                               &node_pci_param_drv_spec, NULL,
+                               &node_pci_param_drv_spec, &node_pci_spdk_config,
                                NULL, pci_param_list);
 
 RCF_PCH_CFG_NODE_RO(node_pci_serialno, "serialno",
