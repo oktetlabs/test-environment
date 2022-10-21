@@ -87,11 +87,13 @@ typedef struct cache_item {
     char *type;
     uintmax_t level;
     uintmax_t linesize;
+    uintmax_t size;
 } cache_item;
 
 typedef enum cache_item_field {
     CACHE_ITEM_LEVEL = 0,
     CACHE_ITEM_LINESIZE,
+    CACHE_ITEM_SIZE,
 } cache_item_field;
 #endif
 
@@ -827,7 +829,7 @@ get_type(const char *cpu_name, const char *index_name, char **type)
 
 static cache_item *
 init_cache_item(uintmax_t sys_id, char *type, uintmax_t level,
-                uintmax_t linesize)
+                uintmax_t linesize, uintmax_t size)
 {
     cache_item *result;
 
@@ -840,6 +842,7 @@ init_cache_item(uintmax_t sys_id, char *type, uintmax_t level,
     result->type = type;
     result->level = level;
     result->linesize = linesize;
+    result->size = size;
 
     return result;
 }
@@ -852,6 +855,7 @@ get_cache_info(const char *cpu_name, const char *index_name,
     char *type;
     uintmax_t level;
     uintmax_t linesize;
+    uintmax_t size;
     te_errno rc;
 
     rc = get_cache_dim(cpu_name, index_name, "id", &sys_id);
@@ -870,7 +874,11 @@ get_cache_info(const char *cpu_name, const char *index_name,
     if (rc != 0)
         return rc;
 
-    *cache = init_cache_item(sys_id, type, level, linesize);
+    rc = get_cache_dim(cpu_name, index_name, "size", &size);
+    if (rc != 0)
+        return rc;
+
+    *cache = init_cache_item(sys_id, type, level, linesize, size);
 
     return 0;
 }
@@ -1124,6 +1132,10 @@ copy_cache_item_field(cache_item *cache, char *value, cache_item_field field)
             numval = cache->linesize;
             break;
 
+        case CACHE_ITEM_SIZE:
+            numval = cache->size;
+            break;
+
         default:
             TE_FATAL_ERROR("No such field in cache_item structure");
             break;
@@ -1236,6 +1248,54 @@ cpu_package_cache_linesize_get(unsigned int gid, const char *oid, char *value,
 #if SUPPORT_CACHES
     rc = cpu_cache_get_value(node_str, package_str, NULL, cache_str, value,
                              CACHE_ITEM_LINESIZE);
+#else
+    UNUSED(node_str);
+    UNUSED(package_str);
+    UNUSED(cache_str);
+#endif
+
+    return rc;
+}
+
+static te_errno
+cpu_core_cache_size_get(unsigned int gid, const char *oid, char *value,
+                        const char *unused1, const char *node_str,
+                        const char *package_str, const char *core_str,
+                        const char *cache_str)
+{
+    te_errno rc = TE_EOPNOTSUPP;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+
+#if SUPPORT_CACHES
+    rc = cpu_cache_get_value(node_str, package_str, core_str, cache_str, value,
+                             CACHE_ITEM_SIZE);
+#else
+    UNUSED(node_str);
+    UNUSED(package_str);
+    UNUSED(core_str);
+    UNUSED(cache_str);
+#endif
+
+    return rc;
+}
+
+static te_errno
+cpu_package_cache_size_get(unsigned int gid, const char *oid, char *value,
+                           const char *unused1, const char *node_str,
+                           const char *package_str, const char *cache_str)
+{
+    te_errno rc = TE_EOPNOTSUPP;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+
+#if SUPPORT_CACHES
+    rc = cpu_cache_get_value(node_str, package_str, NULL, cache_str, value,
+                             CACHE_ITEM_SIZE);
 #else
     UNUSED(node_str);
     UNUSED(package_str);
@@ -1687,8 +1747,11 @@ avail_memory_get(unsigned int gid, const char *oid, char *value)
 RCF_PCH_CFG_NODE_RO(node_thread_isolated, "isolated",
                     NULL, NULL, cpu_thread_isolated_get);
 
-RCF_PCH_CFG_NODE_RO(node_cpu_core_cache_linesize, "linesize", NULL, NULL,
-                    cpu_core_cache_linesize_get);
+RCF_PCH_CFG_NODE_RO(node_cpu_core_cache_size, "size", NULL, NULL,
+                    cpu_core_cache_size_get);
+
+RCF_PCH_CFG_NODE_RO(node_cpu_core_cache_linesize, "linesize", NULL,
+                    &node_cpu_core_cache_size, cpu_core_cache_linesize_get);
 
 RCF_PCH_CFG_NODE_RO(node_cpu_core_cache_level, "level", NULL,
                     &node_cpu_core_cache_linesize, cpu_core_cache_level_get);
@@ -1704,7 +1767,11 @@ RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_core, "core",
                                &node_cpu_thread, NULL,
                                NULL, cpu_core_list);
 
-RCF_PCH_CFG_NODE_RO(node_cpu_package_cache_linesize, "linesize", NULL, NULL,
+RCF_PCH_CFG_NODE_RO(node_cpu_package_cache_size, "size", NULL, NULL,
+                    cpu_package_cache_size_get);
+
+RCF_PCH_CFG_NODE_RO(node_cpu_package_cache_linesize, "linesize", NULL,
+                    &node_cpu_package_cache_size,
                     cpu_package_cache_linesize_get);
 
 RCF_PCH_CFG_NODE_RO(node_cpu_package_cache_level, "level", NULL,
