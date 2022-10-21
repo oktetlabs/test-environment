@@ -12,19 +12,13 @@
 SCRIPT_DIR=`dirname $0`
 . ${SCRIPT_DIR}/te_functions
 
-function die
-{
-    echo "ERROR: $*" > /dev/stderr
-    exit 1
-}
-
 TCE_WS="${TE_BUILD}/tce_workspace"
 
 if test -d "${TCE_WS}" ; then
     rm -rf "${TCE_WS}"
 fi
 mkdir "${TCE_WS}" || \
-    die "fail to create workspace to process TCE"
+    tce_die "fail to create workspace to process TCE"
 
 declare -A platform_ws
 
@@ -132,9 +126,9 @@ function map_platform_to_hosts
         test -n "$line" || \
             continue
         parse_ta_list_line platform_hosts "$line" || \
-            die "fail to parse the list of TA hosts"
+            tce_die "fail to parse the list of TA hosts"
     done < "${ta_file}" || \
-        die "fail to read the list of TA hosts"
+        tce_die "fail to read the list of TA hosts"
 }
 
 map_platform_to_hosts
@@ -172,8 +166,8 @@ function check_host_dir
         return $rc
         ;;
     *)
-        die "fail to check directory: " \
-            "platform ${platform} host {$host}"
+        tce_die "fail to check directory: " \
+                "platform ${platform} host {$host}"
         ;;
     esac
 }
@@ -231,8 +225,8 @@ function fetch_host_tce
     local build="${platform_tce_build["${platform}_${tce}"]}"
 
     mkdir -p "${tcedir}/build" || \
-        die "fail to create directory to save TCE: " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to create directory to save TCE: " \
+                "platform ${platform} host ${host} tce ${tce}"
 
     # Check TCE provided by a host
     check_host_dir ${platform} ${host} "${hostdir}/${build}" || \
@@ -240,8 +234,8 @@ function fetch_host_tce
 
     rsync_fnmatch_from "*.gcda" "${platform}_${host}" "${hostdir}/${build}" \
                        "${tcedir}/build" || \
-        die "fail to fetch TCE: " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to fetch TCE: " \
+                "platform ${platform} host ${host} tce ${tce}"
 }
 
 function clean_platform_tce
@@ -256,8 +250,8 @@ function clean_platform_tce
                    export PATH=\"${hostdest}/bin:\${PATH}\" ;
                    te_clean_gcov.sh \"${hostdir}/${build}\"
                    " || \
-        die "fail to clean platform TCE: " \
-            "platform ${platform} tce ${tce}"
+        tce_die "fail to clean platform TCE: " \
+                "platform ${platform} tce ${tce}"
 }
 
 function process_host_tce
@@ -272,20 +266,20 @@ function process_host_tce
 
     rsync_fnmatch_to "*.gcda" ${platform} "${tcedir}/build" \
                      "${hostdir}/${build}" || \
-        die "fail to place TCE onto platform: " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to place TCE onto platform: " \
+                "platform ${platform} host ${host} tce ${tce}"
 
     te_eval_or_ssh ${platform} "
                    export PATH=\"${hostdest}/bin:\${PATH}\" ;
                    te_process_gcov.sh \"${hostdir}/${build}\"
                    " || \
-        die "fail to process TCE on platform: " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to process TCE on platform: " \
+                "platform ${platform} host ${host} tce ${tce}"
 
     rsync_fnmatch_from "*.gcov" ${platform} "${hostdir}/${build}" \
                        "${tcedir}/build" || \
-        die "fail to fetch TCE from platform: " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to fetch TCE from platform: " \
+                "platform ${platform} host ${host} tce ${tce}"
 }
 
 function link_platform_tce_install
@@ -300,12 +294,12 @@ function link_platform_tce_install
         return 0
 
     test -d "${TE_INSTALL}/${platform}" || \
-        die "fail to locate install directory: " \
-            "platform ${platform} tce ${tce}"
+        tce_die "fail to locate install directory: " \
+                "platform ${platform} tce ${tce}"
 
     ln -s "${TE_INSTALL}/${platform}" "${inst}" || \
-        die "fail to link install directory: " \
-            "platform ${platform} tce ${tce}"
+        tce_die "fail to link install directory: " \
+                "platform ${platform} tce ${tce}"
 }
 
 function resolve_platform_host_tce
@@ -331,8 +325,8 @@ function resolve_platform_host_tce
 EOF
 
     tce_resolve_gcov.py "${conf}" || \
-        die "fail to resolve gcovs: " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to resolve gcovs: " \
+                "platform ${platform} host ${host} tce ${tce}"
 }
 
 tce_py="${TE_INSTALL}/${TE_HOST}/lib"
@@ -392,17 +386,17 @@ function clean_tce_on_build
     local f=
 
     pushd "${wsdir}/${build}" > /dev/null || \
-        die "fail to locate build: " \
-            "platform ${platform} tce ${tce}"
+        tce_die "fail to locate build: " \
+                "platform ${platform} tce ${tce}"
 
     files=$(find . -name \*.gcda -o -name \*.gcov) || \
-        die "fail to list TCE files into build: " \
-            "platform ${platform} tce ${tce}"
+        tce_die "fail to list TCE files into build: " \
+                "platform ${platform} tce ${tce}"
 
     for f in ${files} ; do
         rm "$f" || \
-            die "fail to remove $f from build: " \
-                "platform ${platform} tce ${tce}"
+            tce_die "fail to remove $f from build: " \
+                    "platform ${platform} tce ${tce}"
     done
 
     popd > /dev/null
@@ -418,13 +412,13 @@ function copy_tce_to_build
     local wsdir="${TE_BUILD}/platforms/${platform}"
 
     test -d "${tcedir}/build" || \
-        die "fail to locate TCE files: " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to locate TCE files: " \
+                "platform ${platform} host ${host} tce ${tce}"
 
     rsync -a --include=\*.gcov --include=\*/ --exclude=\* \
           "${tcedir}/build/" "${wsdir}/${build}/" || \
-        die "fail to place TCE into build: " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to place TCE into build: " \
+                "platform ${platform} host ${host} tce ${tce}"
 }
 
 function report_host_tce
@@ -440,21 +434,21 @@ function report_host_tce
     local f=
 
     > "${report}" || \
-        die "fail to clean TCE report: " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to clean TCE report: " \
+                "platform ${platform} host ${host} tce ${tce}"
 
     pushd "${wsdir}/${build}" > /dev/null || \
-        die "fail to locate build: " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to locate build: " \
+                "platform ${platform} host ${host} tce ${tce}"
 
     files=$(find . -name \*.gcov | sort) || \
-        die "fail to list TCE files into build: " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to list TCE files into build: " \
+                "platform ${platform} host ${host} tce ${tce}"
 
     for f in ${files} ; do
         cat "$f" | tce_report >> "${report}" || \
-            die "fail to process report for TCE file $f: " \
-                "platform ${platform} host ${host} tce ${tce}"
+            tce_die "fail to process report for TCE file $f: " \
+                    "platform ${platform} host ${host} tce ${tce}"
     done
 
     popd > /dev/null
@@ -480,15 +474,15 @@ function summarise_tce
     mkdir -p "${resbase}_files"
 
     pushd "${wsdir}/${build}" > /dev/null || \
-        die "fail to locate platform to summarise TCE: " \
-             "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to locate platform to summarise TCE: " \
+                "platform ${platform} host ${host} tce ${tce}"
 
     tce_summary -vEXCLUDE="${excl}" -vSORTMODE=coverage \
                 -vDATADIR="${resbase}_files" \
                 "${report}" > \
                 "${resbase}.html" || \
-        die "fail to create summary for TCE report" \
-             "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to create summary for TCE report" \
+                "platform ${platform} host ${host} tce ${tce}"
 
     popd > /dev/null
 }
@@ -509,8 +503,8 @@ function copy_host_report
     mkdir -p "${mtcedir}"
 
     cp -t "${mtcedir}" "${conf}" "${report}" || \
-        die "fail to copy TCE into merge workspace: " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to copy TCE into merge workspace: " \
+                "platform ${platform} host ${host} tce ${tce}"
 }
 
 function merge_host_report
@@ -528,9 +522,9 @@ function merge_host_report
 
     tce_merge_report.py "${mconf}" "${mreport}" \
                          "${conf}" "${report}" || \
-        die "fail to merge reports: " \
-            "merge platform ${mplatform} " \
-            "platform ${platform} host ${host} tce ${tce}"
+        tce_die "fail to merge reports: " \
+                "merge platform ${mplatform} " \
+                "platform ${platform} host ${host} tce ${tce}"
 }
 
 all_tce="$(echo "${platform_tce[@]}" | sed 's/ \+/\n/g' | sort -u)"
