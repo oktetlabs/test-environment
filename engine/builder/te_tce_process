@@ -20,7 +20,8 @@ declare -A platform_ws
 
 for platform in $TE_BS_PLATFORMS ; do
     ws_file="${TE_BUILD}/platforms/${platform}/${platform}.ws"
-    ws_dir="$(cat "$ws_file")"
+    ws_dir="$(cat "$ws_file" 2> /dev/null)" \
+        || tce_die "failed to locate base directories for builds"
     platform_ws[${platform}]="${ws_dir}"
 done
 
