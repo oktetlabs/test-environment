@@ -299,8 +299,8 @@
  * @param ...    arguments as specified by @p _fmt
  */
 #define TE_FATAL_ERROR(_fmt, ...) \
-    do {                                                        \
-        ERROR("%s() at %s:%d" _fmt, __func__, __FILE__, __LINE__,   \
+    do {                                                            \
+        ERROR("%s() at %s:%d: " _fmt, __func__, __FILE__, __LINE__, \
               ##__VA_ARGS__);                                       \
         abort();                                                    \
     } while (0)
