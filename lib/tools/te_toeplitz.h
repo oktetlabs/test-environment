@@ -21,6 +21,7 @@ extern "C" {
 #include "te_config.h"
 #include "te_defs.h"
 #include "te_stdint.h"
+#include "te_sockaddr.h"
 
 #if HAVE_STDLIB_H
 #include <stdlib.h>
@@ -61,6 +62,30 @@ extern uint32_t te_toeplitz_hash(
     const te_toeplitz_hash_cache *toeplitz_hash_cache,
     unsigned int addr_size, const uint8_t *src_addr, uint16_t src_port,
     const uint8_t *dst_addr, uint16_t dst_port);
+
+/** Known variants of Toeplitz hash algorithm */
+typedef enum te_toeplitz_hash_variant {
+    TE_TOEPLITZ_HASH_STANDARD,   /**< Standard implementation */
+    TE_TOEPLITZ_HASH_SYM_OR_XOR, /**< Symmetric hash using OR and XOR */
+} te_toeplitz_hash_variant;
+
+/**
+ * Calculate a RSS hash for address/port pairs using pre-calculated cache.
+ *
+ * @param cache        Pre-constructed cache
+ * @param src_addr     Source address/port
+ * @param dst_addr     Destination address/port
+ * @param hash_var     Hash variant
+ * @param hash_out     Where to save computed hash
+ *
+ * @return Status code
+ */
+extern te_errno te_toeplitz_hash_sa(
+    const te_toeplitz_hash_cache *toeplitz_hash_cache,
+    const struct sockaddr *src_addr,
+    const struct sockaddr *dst_addr,
+    te_toeplitz_hash_variant hash_var,
+    uint32_t *hash_out);
 
 /**
  * Calculate a RSS hash using pre-calculated cache and symmetric

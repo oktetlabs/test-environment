@@ -127,6 +127,72 @@ te_toeplitz_hash_sym_or_xor(
 }
 
 /* See description in te_toeplitz.h */
+te_errno
+te_toeplitz_hash_sa(
+    const te_toeplitz_hash_cache *toeplitz_hash_cache,
+    const struct sockaddr *src_addr,
+    const struct sockaddr *dst_addr,
+    te_toeplitz_hash_variant hash_var,
+    uint32_t *hash_out)
+{
+    unsigned int addr_size;
+    const uint8_t *src_addr_ptr;
+    uint16_t src_port;
+    const uint8_t *dst_addr_ptr;
+    uint16_t dst_port;
+
+    if (src_addr->sa_family != dst_addr->sa_family)
+    {
+        ERROR("%s(): address families must be the same",
+              __FUNCTION__);
+        return TE_EINVAL;
+    }
+    if (src_addr->sa_family != AF_INET &&
+        src_addr->sa_family != AF_INET6)
+    {
+        ERROR("%s(): not supported address family %d",
+              __FUNCTION__, src_addr->sa_family);
+        return TE_EINVAL;
+    }
+
+    src_addr_ptr = te_sockaddr_get_netaddr(src_addr);
+    dst_addr_ptr = te_sockaddr_get_netaddr(dst_addr);
+    src_port = te_sockaddr_get_port(src_addr);
+    dst_port = te_sockaddr_get_port(dst_addr);
+
+    addr_size = te_netaddr_get_size(src_addr->sa_family);
+    if (TE_TOEPLITZ_TCPUDP_LEN(addr_size) > toeplitz_hash_cache->max_in_size)
+    {
+        ERROR("%s(): address size %u is too big for provided cache",
+              __FUNCTION__, addr_size);
+        return TE_ESMALLBUF;
+    }
+
+    switch (hash_var)
+    {
+        case TE_TOEPLITZ_HASH_STANDARD:
+            *hash_out = te_toeplitz_hash(toeplitz_hash_cache, addr_size,
+                                         src_addr_ptr, src_port,
+                                         dst_addr_ptr, dst_port);
+            break;
+
+        case TE_TOEPLITZ_HASH_SYM_OR_XOR:
+            *hash_out =  te_toeplitz_hash_sym_or_xor(toeplitz_hash_cache,
+                                                     addr_size,
+                                                     src_addr_ptr, src_port,
+                                                     dst_addr_ptr, dst_port);
+            break;
+
+        default:
+            ERROR("%s(): unknown algorithm variant %d",
+                  __FUNCTION__, hash_var);
+            return TE_EINVAL;
+    }
+
+    return 0;
+}
+
+/* See description in te_toeplitz.h */
 te_toeplitz_hash_cache *
 te_toeplitz_cache_init_size(const uint8_t *key, size_t key_size)
 {
