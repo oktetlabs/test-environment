@@ -343,6 +343,30 @@ rpc_readbuf_off(rcf_rpc_server *rpcs, int fd, rpc_ptr_off *buf,
 extern tarpc_off_t rpc_lseek(rcf_rpc_server *rpcs,
                              int fd, tarpc_off_t pos, rpc_lseek_mode mode);
 
+/*
+ * RPC equivalent of @c truncate.
+ *
+ * @param rpcs    RPC server
+ * @param path    filename
+ * @param length  desired length
+ *
+ * @return @c 0 on success, @c -1 on error
+ */
+extern int rpc_truncate(rcf_rpc_server *rpcs,
+                        const char *path, tarpc_off_t length);
+
+/*
+ * RPC equivalent of @c ftruncate.
+ *
+ * @param rpcs    RPC server
+ * @param fd      file descriptor
+ * @param length  desired length
+ *
+ * @return @c 0 on success, @c -1 on error
+ */
+extern int rpc_ftruncate(rcf_rpc_server *rpcs,
+                         int fd, tarpc_off_t length);
+
 /**
  * RPC equivalent of 'fsync'
  *

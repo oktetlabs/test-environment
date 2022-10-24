@@ -27,5 +27,19 @@
             <script name="pread_pwrite"/>
             <arg name="env" ref="env" />
         </run>
+        <run>
+            <script name="truncate" />
+            <arg name="env" ref="env" />
+            <arg name="use_ftruncate">
+                <value>TRUE</value>
+                <value>FALSE</value>
+            </arg>
+            <arg name="length">
+                <value>1M</value>
+            </arg>
+            <arg name="trail_size">
+                <value>1024</value>
+            </arg>
+        </run>
     </session>
 </package>

@@ -2908,6 +2908,20 @@ TARPC_FUNC(lseek, {},
 })
 #endif
 
+/*-------------- truncate() ------------------------------*/
+
+TARPC_FUNC(truncate, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in->path, in->length));
+})
+
+/*-------------- ftruncate() ------------------------------*/
+
+TARPC_FUNC(ftruncate, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in->fd, in->length));
+})
+
 /*-------------- fsync() ------------------------------*/
 
 TARPC_FUNC(fsync, {},

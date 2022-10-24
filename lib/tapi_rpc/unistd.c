@@ -646,6 +646,62 @@ rpc_lseek(rcf_rpc_server *rpcs,
 }
 
 int
+rpc_truncate(rcf_rpc_server *rpcs,
+             const char *path, tarpc_off_t length)
+{
+    tarpc_truncate_in in;
+    tarpc_truncate_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __func__);
+        RETVAL_INT(truncate, -1);
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.path = strdup(path);
+    in.length = length;
+
+    rcf_rpc_call(rpcs, "truncate", &in, &out);
+
+    free(in.path);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(truncate, out.retval);
+    TAPI_RPC_LOG(rpcs, truncate, "%s, %lld", "%d",
+                 path, (long long)length, out.retval);
+    RETVAL_INT(truncate, out.retval);
+}
+
+int
+rpc_ftruncate(rcf_rpc_server *rpcs,
+              int fd, tarpc_off_t length)
+{
+    tarpc_ftruncate_in in;
+    tarpc_ftruncate_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __func__);
+        RETVAL_INT(ftruncate, -1);
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.fd = fd;
+    in.length = length;
+
+    rcf_rpc_call(rpcs, "ftruncate", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(ftruncate, out.retval);
+    TAPI_RPC_LOG(rpcs, truncate, "%d, %lld", "%d",
+                 fd, (long long)length, out.retval);
+    RETVAL_INT(ftruncate, out.retval);
+}
+
+int
 rpc_fsync(rcf_rpc_server *rpcs, int fd)
 {
     tarpc_fsync_in  in;

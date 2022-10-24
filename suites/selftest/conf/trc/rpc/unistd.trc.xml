@@ -38,5 +38,14 @@
                 <arg name="env">{{{'pco_iut':IUT}}}</arg>
             </iter>
         </test>
+        <test name="truncate">
+            <objective>Test the implementation of truncate/ftruncate RPC.</objective>
+            <iter result="PASSED">
+                <arg name="env" />
+                <arg name="use_ftruncate" />
+                <arg name="length" />
+                <arg name="trail_size" />
+            </iter>
+        </test>
     </iter>
 </test>

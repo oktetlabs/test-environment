@@ -1165,6 +1165,32 @@ struct tarpc_lseek_out {
     tarpc_off_t          retval;
 };
 
+/* truncate() */
+
+struct tarpc_truncate_in {
+    struct tarpc_in_arg common;
+
+    string path<>;
+    tarpc_off_t length;
+};
+
+struct tarpc_truncate_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+};
+
+/* ftruncate() */
+
+struct tarpc_ftruncate_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int fd;
+    tarpc_off_t length;
+};
+
+typedef struct tarpc_truncate_out tarpc_ftruncate_out;
+
 /* fsync() */
 
 struct tarpc_fsync_in {
@@ -5562,6 +5588,8 @@ program tarpc
         RPC_DEF(pwritev2)
 
         RPC_DEF(lseek)
+        RPC_DEF(truncate)
+        RPC_DEF(ftruncate)
 
         RPC_DEF(fsync)
 

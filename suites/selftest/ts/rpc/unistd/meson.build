@@ -5,7 +5,8 @@ tests = [
     'append',
     'ioctl_blkflsbuf',
     'mkdir',
-    'pread_pwrite'
+    'pread_pwrite',
+    'truncate',
 ]
 
 foreach test : tests
