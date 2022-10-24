@@ -16,6 +16,7 @@
 #include "tapi_fio.h"
 #include "tapi_job_opt.h"
 #include "te_vector.h"
+#include "te_enum.h"
 
 static inline int16_t
 get_default_timeout(const tapi_fio_opts *opts)
@@ -44,49 +45,6 @@ runtime_argument(const void *value, const void *priv, te_vec *args)
         rc = te_vec_append_str_fmt(args, "--time_based");
 
     return rc;
-}
-
-static te_errno
-enum_argument(unsigned int value, const char **map, size_t size, te_vec *args)
-{
-    if (value > size)
-        return TE_EINVAL;
-
-    return te_vec_append_str_fmt(args, "%s", map[value]);
-}
-
-static te_errno
-rwtype_argument(const void *value, const void *priv, te_vec *args)
-{
-    static const char *rwtypes[] = {
-        [TAPI_FIO_RWTYPE_SEQ] = "rw",
-        [TAPI_FIO_RWTYPE_RAND] = "randrw"
-    };
-
-    UNUSED(priv);
-
-    tapi_fio_rwtype enum_value = *(const tapi_fio_rwtype *)value;
-    return enum_argument(enum_value, rwtypes, TE_ARRAY_LEN(rwtypes), args);
-}
-
-static te_errno
-ioengine_argument(const void *value, const void *priv, te_vec *args)
-{
-    static const char *ioengines[] = {
-        [TAPI_FIO_IOENGINE_LIBAIO] = "libaio",
-        [TAPI_FIO_IOENGINE_SYNC] = "sync",
-        [TAPI_FIO_IOENGINE_PSYNC] = "psync",
-        [TAPI_FIO_IOENGINE_VSYNC] = "vsync",
-        [TAPI_FIO_IOENGINE_PVSYNC] = "pvsync",
-        [TAPI_FIO_IOENGINE_PVSYNC2] = "pvsync2",
-        [TAPI_FIO_IOENGINE_POSIXAIO] = "posixaio",
-        [TAPI_FIO_IOENGINE_RBD] = "rbd"
-    };
-
-    UNUSED(priv);
-
-    tapi_fio_ioengine enum_value = *(const tapi_fio_ioengine *)value;
-    return enum_argument(enum_value, ioengines, TE_ARRAY_LEN(ioengines), args);
 }
 
 static te_errno
@@ -149,6 +107,26 @@ rand_generator_argument(const void *value, const void *priv, te_vec *args)
     return TE_EINVAL;
 }
 
+/** Mapping of possible values for fio::ioengine option. */
+static const te_enum_map tapi_fio_ioengine_mapping[] = {
+    {.name = "sync",        .value = TAPI_FIO_IOENGINE_SYNC},
+    {.name = "psync",       .value = TAPI_FIO_IOENGINE_PSYNC},
+    {.name = "vsync",       .value = TAPI_FIO_IOENGINE_VSYNC},
+    {.name = "pvsync",      .value = TAPI_FIO_IOENGINE_PVSYNC},
+    {.name = "pvsync2",     .value = TAPI_FIO_IOENGINE_PVSYNC2},
+    {.name = "libaio",      .value = TAPI_FIO_IOENGINE_LIBAIO},
+    {.name = "posixaio",    .value = TAPI_FIO_IOENGINE_POSIXAIO},
+    {.name = "rbd",         .value = TAPI_FIO_IOENGINE_RBD},
+    TE_ENUM_MAP_END
+};
+
+/** Mapping of possible values for fio::rwtype option. */
+static const te_enum_map tapi_fio_rwtype_mapping[] = {
+    {.name = "randrw",      .value = TAPI_FIO_RWTYPE_RAND},
+    {.name = "rw",          .value = TAPI_FIO_RWTYPE_SEQ},
+    TE_ENUM_MAP_END
+};
+
 static const tapi_job_opt_bind fio_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_STRING("--name=", TRUE, tapi_fio_opts, name),
     TAPI_JOB_OPT_STRING("--filename=", TRUE, tapi_fio_opts, filename),
@@ -168,17 +146,10 @@ static const tapi_job_opt_bind fio_binds[] = TAPI_JOB_OPT_SET(
         rand_generator_argument, "--random_generator=", TRUE, NULL,
         TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(tapi_fio_opts, rand_gen, char *), NULL
     },
-    {
-        rwtype_argument, "--readwrite=", TRUE, NULL,
-        TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(tapi_fio_opts, rwtype, tapi_fio_rwtype),
-        NULL
-    },
-    {
-        ioengine_argument, "--ioengine=", TRUE, NULL,
-        TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(tapi_fio_opts, ioengine,
-                                       tapi_fio_ioengine),
-        NULL
-    },
+    TAPI_JOB_OPT_ENUM("--readwrite=", TRUE, tapi_fio_opts, rwtype,
+                      tapi_fio_rwtype_mapping),
+    TAPI_JOB_OPT_ENUM("--ioengine=", TRUE, tapi_fio_opts, ioengine,
+                      tapi_fio_ioengine_mapping),
     TAPI_JOB_OPT_UINT("--numjobs=", TRUE, NULL, tapi_fio_opts, numjobs.value),
     TAPI_JOB_OPT_DUMMY("--thread"),
     {
