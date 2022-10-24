@@ -124,6 +124,13 @@ static const te_enum_map tapi_fio_ioengine_mapping[] = {
 static const te_enum_map tapi_fio_rwtype_mapping[] = {
     {.name = "randrw",      .value = TAPI_FIO_RWTYPE_RAND},
     {.name = "rw",          .value = TAPI_FIO_RWTYPE_SEQ},
+    {.name = "read",        .value = TAPI_FIO_RWTYPE_READ},
+    {.name = "write",       .value = TAPI_FIO_RWTYPE_WRITE},
+    {.name = "trim",        .value = TAPI_FIO_RWTYPE_TRIM},
+    {.name = "randread",    .value = TAPI_FIO_RWTYPE_RANDREAD},
+    {.name = "randwrite",   .value = TAPI_FIO_RWTYPE_RANDWRITE},
+    {.name = "randtrim",    .value = TAPI_FIO_RWTYPE_RANDTRIM},
+    {.name = "trimwrite",   .value = TAPI_FIO_RWTYPE_TRIMWRITE},
     TE_ENUM_MAP_END
 };
 

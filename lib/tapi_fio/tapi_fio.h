@@ -137,13 +137,28 @@ typedef enum {
 
 /** Support IO direction */
 typedef enum {
-    TAPI_FIO_RWTYPE_RAND,     /**< Random read/write */
-    TAPI_FIO_RWTYPE_SEQ       /**< Sequential read/write */
+    TAPI_FIO_RWTYPE_RAND,       /**< Random read/write */
+    TAPI_FIO_RWTYPE_SEQ,        /**< Sequential read/write */
+    TAPI_FIO_RWTYPE_READ,       /**< Sequential reads */
+    TAPI_FIO_RWTYPE_WRITE,      /**< Sequential writes */
+    TAPI_FIO_RWTYPE_TRIM,       /**< Sequential trims */
+    TAPI_FIO_RWTYPE_RANDREAD,   /**< Random reads */
+    TAPI_FIO_RWTYPE_RANDWRITE,  /**< Random writes */
+    TAPI_FIO_RWTYPE_RANDTRIM,   /**< Random trims */
+    TAPI_FIO_RWTYPE_TRIMWRITE,  /**< Sequential trim+write sequences */
 } tapi_fio_rwtype;
 
+/** List of values allowed for parameter of type 'tapi_fio_rwtype'. */
 #define TAPI_FIO_RWTYPE_MAPPING_LIST \
-    {"rand", TAPI_FIO_RWTYPE_RAND},     \
-    {"seq", TAPI_FIO_RWTYPE_SEQ}
+    {"rand", TAPI_FIO_RWTYPE_RAND},             \
+    {"seq", TAPI_FIO_RWTYPE_SEQ},               \
+    {"read", TAPI_FIO_RWTYPE_READ},             \
+    {"write", TAPI_FIO_RWTYPE_WRITE},           \
+    {"trim", TAPI_FIO_RWTYPE_TRIM},             \
+    {"randread", TAPI_FIO_RWTYPE_RANDREAD},     \
+    {"randwrite", TAPI_FIO_RWTYPE_RANDWRITE},   \
+    {"randtrim", TAPI_FIO_RWTYPE_RANDTRIM},     \
+    {"trimwrite", TAPI_FIO_RWTYPE_TRIMWRITE}
 
 /**
  * Get the value of parameter of type 'tapi_fio_rwtype'
