@@ -346,6 +346,41 @@ tapi_cfg_if_set_ring_size(const char *ta, const char *ifname,
 
 /* See description in the tapi_cfg_if.h */
 te_errno
+tapi_cfg_if_set_ring_size_to_max(const char *ta, const char *ifname,
+                                 bool is_rx, int *ring_size)
+{
+    te_errno rc;
+    int cur;
+    int max;
+
+    rc = tapi_cfg_if_get_max_ring_size(ta, ifname, is_rx, &max);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_if_get_ring_size(ta, ifname, is_rx, &cur);
+    if (rc != 0)
+        return rc;
+
+    if (max != -1 && cur != -1 && max > cur)
+    {
+        rc = tapi_cfg_if_set_ring_size(ta, ifname, is_rx, max);
+        if (rc != 0)
+            return rc;
+
+        if (ring_size != NULL)
+            *ring_size = max;
+    }
+    else
+    {
+        if (ring_size != NULL)
+            *ring_size = cur;
+    }
+
+    return 0;
+}
+
+/* See description in the tapi_cfg_if.h */
+te_errno
 tapi_cfg_if_reset(const char *ta, const char *ifname)
 {
     return tapi_cfg_if_common_set(ta, ifname, "reset", 1);

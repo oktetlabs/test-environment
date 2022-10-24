@@ -278,6 +278,19 @@ extern te_errno tapi_cfg_if_set_ring_size(const char *ta, const char *ifname,
                                           bool is_rx, int ring_size);
 
 /**
+ * Set network interface Rx or Tx ring size to its maximum
+ *
+ * @param is_rx         Rx or Tx option
+ * @param ta            Test agent name
+ * @param ifname        Interface name
+ * @param ring_size     Optional location for effective ring size
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_if_set_ring_size_to_max(const char *ta, const char *ifname,
+                                                 bool is_rx, int *ring_size);
+
+/**
  * Reset an ethernet interface
  *
  * @param ta        Test agent name
