@@ -38,17 +38,17 @@
         (TE_TOEPLITZ_IN_MAX(_key_len) * (UINT8_MAX + 1))
 
 struct te_toeplitz_hash_cache {
-    unsigned int *cache;
+    uint32_t *cache;
     size_t size;
 };
 
 /* See description in te_toeplitz.h */
-unsigned int
+uint32_t
 te_toeplitz_hash_data(const te_toeplitz_hash_cache *toeplitz_hash_cache,
                       const uint8_t *input, unsigned int pos,
                       unsigned int datalen)
 {
-    unsigned int hash = 0;
+    uint32_t hash = 0;
 
     for (; datalen != 0; datalen--, pos++, input++)
         hash ^= toeplitz_hash_cache->cache[pos * (UINT8_MAX + 1) + *input];
@@ -57,13 +57,13 @@ te_toeplitz_hash_data(const te_toeplitz_hash_cache *toeplitz_hash_cache,
 }
 
 /* See description in te_toeplitz.h */
-unsigned int
+uint32_t
 te_toeplitz_hash(const te_toeplitz_hash_cache *toeplitz_hash_cache,
                  unsigned int addr_size,
                  const uint8_t *src_addr, uint16_t src_port,
                  const uint8_t *dst_addr, uint16_t dst_port)
 {
-    unsigned int hash = 0;
+    uint32_t hash = 0;
     unsigned int pos = 0;
 
     hash ^= te_toeplitz_hash_data(toeplitz_hash_cache, src_addr, pos,
@@ -105,7 +105,7 @@ te_toeplitz_cache_init_size(const uint8_t *key, size_t key_size)
         return NULL;
 
     toeplitz_hash_cache->cache = calloc(TE_TOEPLITZ_CACHE_SIZE(key_size),
-                                        sizeof(unsigned int));
+                                        sizeof(uint32_t));
     if (toeplitz_hash_cache->cache == NULL)
     {
         free(toeplitz_hash_cache);
@@ -114,25 +114,25 @@ te_toeplitz_cache_init_size(const uint8_t *key, size_t key_size)
 
     for (i = 0; i < TE_TOEPLITZ_IN_MAX(key_size); i++, key++)
     {
-        unsigned int key_bits[CHAR_BIT] = {};
+        uint32_t key_bits[CHAR_BIT] = {};
         unsigned int j;
         unsigned int mask;
         unsigned int byte;
 
-        key_bits[0] = htonl(*(unsigned int *)key);
+        key_bits[0] = htonl(*(uint32_t *)key);
         for (j = 1, mask = 1 << (CHAR_BIT - 1);
              j < CHAR_BIT;
              j++, mask >>= 1)
         {
             key_bits[j] = key_bits[j - 1] << 1;
 
-            if ((key[sizeof(unsigned int)] & mask) != 0)
+            if ((key[sizeof(uint32_t)] & mask) != 0)
                 key_bits[j] |= 1;
         }
 
         for (byte = 0; byte <= UINT8_MAX; byte++)
         {
-            unsigned int res = 0;
+            uint32_t res = 0;
             for (j = 0, mask = 1 << (CHAR_BIT - 1);
                  j < CHAR_BIT;
                  j++, mask >>= 1)

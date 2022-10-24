@@ -40,7 +40,7 @@ typedef struct te_toeplitz_hash_cache te_toeplitz_hash_cache;
  *
  * @retval RSS hash value of input data
  */
-extern unsigned int te_toeplitz_hash_data(
+extern uint32_t te_toeplitz_hash_data(
     const te_toeplitz_hash_cache *toeplitz_hash_cache,
     const uint8_t *input, unsigned int pos, unsigned int datalen);
 
@@ -57,7 +57,7 @@ extern unsigned int te_toeplitz_hash_data(
  *
  * @retval RSS hash value
  */
-extern unsigned int te_toeplitz_hash(
+extern uint32_t te_toeplitz_hash(
     const te_toeplitz_hash_cache *toeplitz_hash_cache,
     unsigned int addr_size, const uint8_t *src_addr, uint16_t src_port,
     const uint8_t *dst_addr, uint16_t dst_port);
