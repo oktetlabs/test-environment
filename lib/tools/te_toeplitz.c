@@ -39,7 +39,7 @@
 
 struct te_toeplitz_hash_cache {
     uint32_t *cache;
-    size_t size;
+    size_t max_in_size;
 };
 
 /* See description in te_toeplitz.h */
@@ -111,6 +111,8 @@ te_toeplitz_cache_init_size(const uint8_t *key, size_t key_size)
         free(toeplitz_hash_cache);
         return NULL;
     }
+
+    toeplitz_hash_cache->max_in_size = TE_TOEPLITZ_IN_MAX(key_size);
 
     for (i = 0; i < TE_TOEPLITZ_IN_MAX(key_size); i++, key++)
     {
