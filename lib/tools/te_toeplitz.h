@@ -63,6 +63,24 @@ extern uint32_t te_toeplitz_hash(
     const uint8_t *dst_addr, uint16_t dst_port);
 
 /**
+ * Calculate a RSS hash using pre-calculated cache and symmetric
+ * algorithm with OR and XOR.
+ *
+ * @param cache        Pre-constructed cache
+ * @param addr_size    IPv4 / IPv6 address length
+ * @param src_addr     Pointer to source address
+ * @param src_port     Source port number in network byte order
+ * @param dst_addr     Pointer to destination address
+ * @param dst_port     Desination port number in network byte order
+ *
+ * @return RSS hash value.
+ */
+extern uint32_t te_toeplitz_hash_sym_or_xor(
+    const te_toeplitz_hash_cache *toeplitz_hash_cache,
+    unsigned int addr_size, const uint8_t *src_addr, uint16_t src_port,
+    const uint8_t *dst_addr, uint16_t dst_port);
+
+/**
  * Free pre-constructed cache
  *
  * @param cache          Pointer to cache

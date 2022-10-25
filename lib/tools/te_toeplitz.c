@@ -37,6 +37,14 @@
 #define TE_TOEPLITZ_CACHE_SIZE(_key_len) \
         (TE_TOEPLITZ_IN_MAX(_key_len) * (UINT8_MAX + 1))
 
+/**
+ * Length of hashed data for a given TCP or UDP connection.
+ *
+ * @param _addr_size    Address size
+ */
+#define TE_TOEPLITZ_TCPUDP_LEN(_addr_size) \
+    (_addr_size * 2 + sizeof(uint16_t) * 2)
+
 struct te_toeplitz_hash_cache {
     uint32_t *cache;
     size_t max_in_size;
@@ -85,6 +93,37 @@ te_toeplitz_hash(const te_toeplitz_hash_cache *toeplitz_hash_cache,
     }
 
     return hash;
+}
+
+/* See description in te_toeplitz.h */
+uint32_t
+te_toeplitz_hash_sym_or_xor(
+    const te_toeplitz_hash_cache *cache,
+    unsigned int addr_size,
+    const uint8_t *src_addr, uint16_t src_port,
+    const uint8_t *dst_addr, uint16_t dst_port)
+{
+    static const size_t max_addr_size = sizeof(struct in6_addr);
+    uint8_t data[TE_TOEPLITZ_TCPUDP_LEN(max_addr_size)];
+    unsigned int i;
+    unsigned int pos = 0;
+
+    assert(addr_size <= max_addr_size);
+    assert(TE_TOEPLITZ_TCPUDP_LEN(addr_size) <= cache->max_in_size);
+
+    for (i = 0; i < addr_size; i++)
+        data[pos++] = src_addr[i] | dst_addr[i];
+
+    for (i = 0; i < addr_size; i++)
+        data[pos++] = src_addr[i] ^ dst_addr[i];
+
+    *(uint16_t *)&data[pos] = src_port | dst_port;
+    pos += sizeof(uint16_t);
+
+    *(uint16_t *)&data[pos] = src_port ^ dst_port;
+    pos += sizeof(uint16_t);
+
+    return te_toeplitz_hash_data(cache, data, 0, pos);
 }
 
 /* See description in te_toeplitz.h */
