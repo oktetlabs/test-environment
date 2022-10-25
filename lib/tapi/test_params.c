@@ -37,6 +37,7 @@
 #include "te_ethernet.h"
 #include "te_units.h"
 #include "te_str.h"
+#include "te_numeric.h"
 #include "logger_api.h"
 
 #include "tapi_test.h"
@@ -1170,4 +1171,35 @@ test_get_value_unit_param(int argc, char **argv, const char *name)
     }
 
     return te_unit_unpack(unit);
+}
+
+/* See description in tapi_test.h */
+uintmax_t
+test_get_value_bin_unit_param(int argc, char **argv, const char *name)
+{
+    const char *str_val = NULL;
+    te_unit unit;
+    double dval;
+    uintmax_t intval;
+    te_errno rc;
+
+    str_val = test_get_param(argc, argv, name);
+    if (str_val == NULL)
+    {
+        TEST_FAIL("Failed to get unit value for param %s", name);
+    }
+
+    if (te_unit_from_string(str_val, &unit) != 0)
+    {
+        TEST_FAIL("The value of '%s' parameter should be "
+                  "convertible to double, but '%s' is not", name,
+                  str_val);
+    }
+
+    dval = te_unit_bin_unpack(unit);
+    rc = te_double2uint_safe(dval, UINTMAX_MAX, &intval);
+    if (rc != 0)
+        TEST_FAIL("Cannot convert %g to an integer: %r", dval, rc);
+
+    return intval;
 }

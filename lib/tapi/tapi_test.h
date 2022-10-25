@@ -712,6 +712,32 @@ cleanup_specific:                                                   \
     (var_name_) = TEST_VALUE_UNIT_PARAM(var_name_)
 
 /**
+ * The macro to get binary-scaled parameters (unsigned with unit prefix).
+ *
+ * Unlike TEST_VALUE_UNIT_PARAM(), the macro uses binary prefixes
+ * (i.e. 1024, not 1000).
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ *
+ * @return unsigned value
+ */
+#define TEST_VALUE_BIN_UNIT_PARAM(var_name_) \
+    test_get_value_bin_unit_param(argc, argv, #var_name_)
+
+/**
+ * The macro to get binary-scaled parameters (unsigned with unit prefix).
+ *
+ * Unlike TEST_GET_VALUE_UNIT_PARAM(), the macro uses binary prefixes
+ * (i.e. 1024, not 1000).
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ */
+#define TEST_GET_VALUE_BIN_UNIT_PARAM(var_name_) \
+    (var_name_) = TEST_VALUE_BIN_UNIT_PARAM(var_name_)
+
+/**
  * The macro to get parameter of type 'octet string'
  *
  * @param var_name_  Variable whose name is the same as the name of
@@ -1245,6 +1271,26 @@ extern uint64_t test_get_default_uint64_param(const char *test_name,
  */
 extern double test_get_value_unit_param(int argc, char **argv,
                                         const char *name);
+
+/**
+ * Return parameters of type 'value-unit' (unsigned).
+ *
+ * Unlike test_get_value_unit_param(), the function uses binary base
+ * prefixes (i.e. @c 1024, not @c 1000).
+ *
+ * @bug
+ * The function uses doubles internally for unit conversion,
+ * and a double cannot hold all range of 64-bit integral values,
+ * so very large values (greater than approx. @c 4.5e15 or @c 4P)
+ * may be represented imprecisely.
+ *
+ * @param argc       Count of arguments
+ * @param argv       List of arguments
+ * @param name       Name of parameter
+ */
+extern uintmax_t test_get_value_bin_unit_param(int argc, char **argv,
+                                               const char *name);
+
 
 /**
  * Print octet string.
