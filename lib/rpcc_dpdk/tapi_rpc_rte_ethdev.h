@@ -11,6 +11,7 @@
 #ifndef __TE_TAPI_RPC_RTE_ETHDEV_H__
 #define __TE_TAPI_RPC_RTE_ETHDEV_H__
 
+#include "log_bufs.h"
 #include "rcf_rpc.h"
 
 #include "tapi_rpc_rte.h"
@@ -755,6 +756,17 @@ extern int rpc_rte_eth_rx_metadata_negotiate(rcf_rpc_server  *rpcs,
 
 extern const char *tarpc_rte_eth_tunnel_type2str(
                                     enum tarpc_rte_eth_tunnel_type tunnel_type);
+
+/**
+ * Convert a RSS hash proto mask to string representation
+ *
+ * @param tlbp Caller-allocated log buffer
+ * @param rss_flow_types The bitmask to be converted
+ *
+ * @return The resulting string representation of the given bitmask
+ */
+extern const char * tarpc_rte_eth_dev_rss_types2str(te_log_buf *tlbp,
+                                                    uint64_t rss_flow_types);
 
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 

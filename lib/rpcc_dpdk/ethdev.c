@@ -126,7 +126,7 @@ tarpc_rte_eth_tx_offloads2str(te_log_buf *tlbp, uint64_t tx_offloads)
     return result;
 }
 
-static const char *
+const char *
 tarpc_rte_eth_dev_rss_types2str(te_log_buf *tlbp, uint64_t rss_flow_types)
 {
     const struct te_log_buf_bit2str rss_flow_types2str[] = {
