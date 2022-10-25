@@ -2067,7 +2067,8 @@ af_packet_addr_h2rpc(const struct sockaddr *sa, tarpc_sa *rpc)
     const struct sockaddr_ll  *sll = (const struct sockaddr_ll*)sa;
     struct tarpc_ll           *ll  = &rpc->data.tarpc_sa_data_u.ll;
 
-    rpc->sa_family = rpc->data.type = RPC_AF_PACKET;
+    rpc->sa_family = RPC_AF_PACKET;
+    rpc->data.type = TARPC_AF_PACKET;
 
     ll->sll_protocol =
         eth_proto_h2rpc(ntohs(sll->sll_protocol));
@@ -2109,14 +2110,16 @@ sockaddr_input_h2rpc(const struct sockaddr *sa, tarpc_sa *rpc)
     switch (sa->sa_family)
     {
         case AF_UNSPEC:
-            rpc->sa_family = rpc->data.type = RPC_AF_UNSPEC;
+            rpc->sa_family = RPC_AF_UNSPEC;
+            rpc->data.type = TARPC_AF_UNSPEC;
             break;
 
         case AF_INET:
         {
             const struct sockaddr_in   *sin = CONST_SIN(sa);
 
-            rpc->sa_family = rpc->data.type = RPC_AF_INET;
+            rpc->sa_family = RPC_AF_INET;
+            rpc->data.type = TARPC_AF_INET;
             rpc->data.tarpc_sa_data_u.in.port = ntohs(sin->sin_port);
             assert(sizeof(rpc->data.tarpc_sa_data_u.in.addr) ==
                    sizeof(sin->sin_addr));
@@ -2129,7 +2132,8 @@ sockaddr_input_h2rpc(const struct sockaddr *sa, tarpc_sa *rpc)
         {
             const struct sockaddr_in6  *sin6 = CONST_SIN6(sa);
 
-            rpc->sa_family = rpc->data.type = RPC_AF_INET6;
+            rpc->sa_family = RPC_AF_INET6;
+            rpc->data.type = TARPC_AF_INET6;
             rpc->data.tarpc_sa_data_u.in6.port = ntohs(sin6->sin6_port);
             rpc->data.tarpc_sa_data_u.in6.flowinfo = sin6->sin6_flowinfo;
             assert(sizeof(rpc->data.tarpc_sa_data_u.in6.addr) ==
@@ -2146,7 +2150,8 @@ sockaddr_input_h2rpc(const struct sockaddr *sa, tarpc_sa *rpc)
 #ifdef AF_LOCAL
         /* AF_UNIX */
         case AF_LOCAL:
-            rpc->sa_family = rpc->data.type = RPC_AF_LOCAL;
+            rpc->sa_family = RPC_AF_LOCAL;
+            rpc->data.type = TARPC_AF_LOCAL;
             memcpy(rpc->data.tarpc_sa_data_u.un.path,
                    &CONST_SUN(sa)->sun_path,
                    sizeof(rpc->data.tarpc_sa_data_u.un.path));
@@ -2154,7 +2159,8 @@ sockaddr_input_h2rpc(const struct sockaddr *sa, tarpc_sa *rpc)
 #endif
 
         case TE_AF_ETHER:
-            rpc->sa_family = rpc->data.type = RPC_AF_ETHER;
+            rpc->sa_family = RPC_AF_ETHER;
+            rpc->data.type = TARPC_AF_ETHER;
             assert(sizeof(sa->sa_data) >=
                    sizeof(rpc->data.tarpc_sa_data_u.local.data));
             memcpy(rpc->data.tarpc_sa_data_u.local.data, sa->sa_data,
@@ -2263,7 +2269,8 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                     goto finish;
                 }
             }
-            rpc->sa_family = rpc->data.type = RPC_AF_INET;
+            rpc->sa_family = RPC_AF_INET;
+            rpc->data.type = TARPC_AF_INET;
             rpc->data.tarpc_sa_data_u.in.port = ntohs(sin->sin_port);
             assert(sizeof(rpc->data.tarpc_sa_data_u.in.addr) ==
                    sizeof(sin->sin_addr));
@@ -2285,7 +2292,8 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                 raw_fallback = TRUE;
                 goto finish;
             }
-            rpc->sa_family = rpc->data.type = RPC_AF_INET6;
+            rpc->sa_family = RPC_AF_INET6;
+            rpc->data.type = TARPC_AF_INET6;
             rpc->data.tarpc_sa_data_u.in6.port = ntohs(sin6->sin6_port);
             rpc->data.tarpc_sa_data_u.in6.flowinfo = sin6->sin6_flowinfo;
             assert(sizeof(rpc->data.tarpc_sa_data_u.in6.addr) ==
@@ -2311,7 +2319,8 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                 raw_fallback = TRUE;
                 goto finish;
             }
-            rpc->sa_family = rpc->data.type = RPC_AF_LOCAL;
+            rpc->sa_family = RPC_AF_LOCAL;
+            rpc->data.type = TARPC_AF_LOCAL;
             memcpy(rpc->data.tarpc_sa_data_u.un.path,
                    &CONST_SUN(sa)->sun_path,
                    sizeof(rpc->data.tarpc_sa_data_u.un.path));
@@ -2328,7 +2337,8 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                 raw_fallback = TRUE;
                 goto finish;
             }
-            rpc->sa_family = rpc->data.type = RPC_AF_ETHER;
+            rpc->sa_family = RPC_AF_ETHER;
+            rpc->data.type = TARPC_AF_ETHER;
             memcpy(rpc->data.tarpc_sa_data_u.local.data, sa->sa_data,
                    sizeof(rpc->data.tarpc_sa_data_u.local.data));
             break;
