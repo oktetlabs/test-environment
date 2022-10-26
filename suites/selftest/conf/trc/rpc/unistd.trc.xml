@@ -12,6 +12,16 @@
                 <notes/>
             </iter>
         </test>
+
+        <test name="ioctl_blkflsbuf" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env">{{{'pco_iut':IUT}}}</arg>
+                <notes/>
+            </iter>
+        </test>
+
         <test name="mkdir" type="script">
             <objective/>
             <notes/>
@@ -21,6 +31,7 @@
                 <notes/>
             </iter>
         </test>
+
         <test name="pread_pwrite">
             <objective/>
             <iter result="PASSED">

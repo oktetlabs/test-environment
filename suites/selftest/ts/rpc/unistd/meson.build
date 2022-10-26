@@ -3,6 +3,7 @@
 
 tests = [
     'append',
+    'ioctl_blkflsbuf',
     'mkdir',
     'pread_pwrite'
 ]

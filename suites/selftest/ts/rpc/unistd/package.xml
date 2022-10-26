@@ -13,6 +13,10 @@
             <arg name="env" ref="env" />
         </run>
         <run>
+            <script name="ioctl_blkflsbuf"/>
+            <arg name="env" ref="env" />
+        </run>
+        <run>
             <script name="mkdir"/>
             <arg name="env" ref="env" />
             <arg name="nfiles">
