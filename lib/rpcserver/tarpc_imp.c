@@ -83,6 +83,7 @@
 #include "tq_string.h"
 #include "te_hex_diff_dump.h"
 #include "te_time.h"
+#include "te_intset.h"
 
 #include "agentlib.h"
 #include "iomux.h"
@@ -456,6 +457,7 @@ try_ta_symtbl:
  * select() or poll().
  *
  * @param preamble  name of fd_set entity, e.g. readfds, writefds or exceptfds
+ * @param nfds      highest numbered FD in the set plus 1 as passed to select().
  * @param before    fd_set data before a call
  * @param after     fd_set data after a call
  * @param nfds      number of descriptors in the set
@@ -464,33 +466,24 @@ try_ta_symtbl:
  *
  */
 static void
-log_fd_set(const char *preamble, fd_set *before, fd_set *after, int nfds,
+log_fd_set(const char *preamble, int nfds, fd_set *before, fd_set *after,
            uint16_t seqno, rpc_fd_set_p fd_set_id)
 {
-    int i = 0;
-    te_string str = ((te_string)TE_STRING_INIT);
+    char *before_str;
+    char *after_str;
+    if (before == NULL || after == NULL)
+        return;
 
-    for (i = 0; i < nfds; i++)
-    {
-        te_bool before_bit = FD_ISSET(i, before);
-        te_bool after_bit = FD_ISSET(i, after);
+    before_str = te_fdset2string(nfds, before);
+    after_str = te_fdset2string(nfds, after);
 
-        if (!before_bit)
-            continue;
+    RING("-> %s[%" PRIu64 "]("RPC_TYPE_NS_FD_SET"(%#x)): %s => %s", preamble,
+         seqno, fd_set_id,
+         te_str_is_null_or_empty(before_str) ? "<empty>" : before_str,
+         te_str_is_null_or_empty(after_str) ? "<empty>" : after_str);
 
-        if (after_bit)
-            te_string_append(&str, "%d(rdy) ", i);
-        else
-            te_string_append(&str, "%d ", i);
-    }
-
-    if (str.ptr != NULL)
-    {
-        RING("-> %s[%" PRIu64 "]("RPC_TYPE_NS_FD_SET"(%#x)): %s", preamble,
-             seqno, fd_set_id, str.ptr);
-    }
-
-    te_string_free(&str);
+    free(before_str);
+    free(after_str);
 }
 
 /**
@@ -3106,17 +3099,17 @@ TARPC_FUNC(select,
 
     if (rfds != NULL)
     {
-        log_fd_set("readfds", &rfds_init, rfds, in->n, in->common.seqno,
+        log_fd_set("readfds", in->n, &rfds_init, rfds, in->common.seqno,
                    in->readfds);
     }
     if (wfds != NULL)
     {
-        log_fd_set("writefds", &wfds_init, wfds, in->n, in->common.seqno,
+        log_fd_set("writefds", in->n, &wfds_init, wfds, in->common.seqno,
                    in->writefds);
     }
     if (efds != NULL)
     {
-        log_fd_set("exceptfds", &efds_init, efds, in->n, in->common.seqno,
+        log_fd_set("exceptfds", in->n, &efds_init, efds, in->common.seqno,
                    in->exceptfds);
     }
 
@@ -4633,17 +4626,17 @@ TARPC_FUNC(pselect,
 
             if (rfds != NULL)
             {
-                log_fd_set("readfds", &rfds_init, rfds, in->n, in->common.seqno,
+                log_fd_set("readfds", in->n, &rfds_init, rfds, in->common.seqno,
                            in->readfds);
             }
             if (wfds != NULL)
             {
-                log_fd_set("writefds", &wfds_init, wfds, in->n,
+                log_fd_set("writefds", in->n, &wfds_init, wfds,
                            in->common.seqno, in->writefds);
             }
             if (efds != NULL)
             {
-                log_fd_set("exceptfds", &efds_init, efds, in->n,
+                log_fd_set("exceptfds", in->n, &efds_init, efds,
                            in->common.seqno, in->exceptfds);
             }
 
