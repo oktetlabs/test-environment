@@ -398,6 +398,13 @@ te_vec_get_index(const te_vec *vec, const void *ptr)
 extern te_errno te_vec_split_string(const char *str, te_vec *strvec, char sep,
                                     te_bool empty_is_none);
 
+/**
+ * Sort the elements of @p vec in place according to @p compar.
+ *
+ * @param vec      Vector to sort
+ * @param compar   Comparison function (as for qsort())
+ */
+extern void te_vec_sort(te_vec *vec, int (*compar)(const void *elt1, const void *elt2));
 
 #ifdef __cplusplus
 } /* extern "C" */

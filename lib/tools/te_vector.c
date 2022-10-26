@@ -165,3 +165,9 @@ te_vec_split_string(const char *str, te_vec *strvec, char sep,
 
     return 0;
 }
+
+void
+te_vec_sort(te_vec *vec, int (*compar)(const void *, const void *))
+{
+    qsort(vec->data.ptr, te_vec_size(vec), vec->element_size, compar);
+}
