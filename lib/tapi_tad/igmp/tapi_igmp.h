@@ -775,9 +775,9 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
 #define IGMP3_GROUP_LIST(...) \
     tapi_igmp3_group_list_new(NULL, __VA_ARGS__ __VA_OPT__(,) NULL)
 
-#define IGMP3_GROUP_RECORD(_group_type, _group_address, _aux_data, _aux_data_len...) \
-    tapi_igmp3_group_record_new(NULL, _group_type, _group_address, \
-                                _aux_data, _aux_data_len, 0)
+#define IGMP3_GROUP_RECORD(_group_type, _group_address, ...)                \
+    tapi_igmp3_group_record_new(NULL, _group_type, _group_address, NULL, 0, \
+                                __VA_ARGS__ __VA_OPT__(,) 0)
 
 /**
  * Send IGMPv3 report and free group list.
@@ -807,25 +807,19 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
                                  _src_addr, _src_mac, _addr1...)        \
     IGMP3_SEND_REPORT((_pco), (_csap),                                  \
         IGMP3_GROUP_LIST(                                               \
-            IGMP3_GROUP_RECORD(                                         \
-                (_group_type), (_group_addr),                           \
-                NULL, 0, _addr1)),                                      \
+            IGMP3_GROUP_RECORD((_group_type), (_group_addr), _addr1)),  \
         (_src_addr), (_src_mac))
 
-#define IGMP3_SEND_JOIN(_pco, _csap, _group_addr, _src_addr, _src_mac) \
-    IGMP3_SEND_REPORT((_pco), (_csap),          \
-        IGMP3_GROUP_LIST(                       \
-            IGMP3_GROUP_RECORD(                 \
-                IGMPV3_CHANGE_TO_EXCLUDE,       \
-                (_group_addr), NULL, 0)),       \
+#define IGMP3_SEND_JOIN(_pco, _csap, _group_addr, _src_addr, _src_mac)    \
+    IGMP3_SEND_REPORT((_pco), (_csap),                                    \
+        IGMP3_GROUP_LIST(                                                 \
+            IGMP3_GROUP_RECORD(IGMPV3_CHANGE_TO_EXCLUDE, (_group_addr))), \
         (_src_addr), (_src_mac))
 
-#define IGMP3_SEND_LEAVE(_pco, _csap, _group_addr, _src_addr, _src_mac) \
-    IGMP3_SEND_REPORT((_pco), (_csap),          \
-        IGMP3_GROUP_LIST(                       \
-            IGMP3_GROUP_RECORD(                 \
-                IGMPV3_CHANGE_TO_INCLUDE,       \
-                (_group_addr), NULL, 0)),       \
+#define IGMP3_SEND_LEAVE(_pco, _csap, _group_addr, _src_addr, _src_mac)   \
+    IGMP3_SEND_REPORT((_pco), (_csap),                                    \
+        IGMP3_GROUP_LIST(                                                 \
+            IGMP3_GROUP_RECORD(IGMPV3_CHANGE_TO_INCLUDE, (_group_addr))), \
         (_src_addr), (_src_mac))
 
 #define IGMP3_SEND_ALLOW(_pco, _csap, _group_addr, _src_addr, _src_mac, \
@@ -833,8 +827,7 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
     IGMP3_SEND_REPORT((_pco), (_csap),                                  \
         IGMP3_GROUP_LIST(                                               \
             IGMP3_GROUP_RECORD(                                         \
-                IGMPV3_ALLOW_NEW_SOURCES,                               \
-                (_group_addr), NULL, 0, _addr1)),                       \
+                IGMPV3_ALLOW_NEW_SOURCES, (_group_addr), _addr1)),      \
         (_src_addr), (_src_mac))
 
 #define IGMP3_SEND_BLOCK(_pco, _csap, _group_addr, _src_addr, _src_mac, \
@@ -842,8 +835,7 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
     IGMP3_SEND_REPORT((_pco), (_csap),                                  \
         IGMP3_GROUP_LIST(                                               \
             IGMP3_GROUP_RECORD(                                         \
-                IGMPV3_BLOCK_OLD_SOURCES,                               \
-                (_group_addr), NULL, 0, _addr1)),                       \
+                IGMPV3_BLOCK_OLD_SOURCES, (_group_addr), _addr1)),      \
         (_src_addr), (_src_mac))
 
 
