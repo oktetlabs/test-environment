@@ -4,6 +4,12 @@
 <test name="cs" type="package">
     <objective>Package for demonstrating minimal tests</objective>
     <iter result="PASSED">
+        <test name="changed" type="script">
+            <objective>Check that data change tracking works properly</objective>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
         <test name="dir" type="script">
             <objective> Check that TA reports its directories sanely</objective>
             <notes/>

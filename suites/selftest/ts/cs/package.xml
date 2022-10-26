@@ -6,6 +6,10 @@
     <author mailto="te-maint@oktetlabs.ru"/>
 
     <session track_conf="silent">
+        <run>
+            <script name="changed">
+            </script>
+        </run>
 
         <run>
             <script name="dir" />
