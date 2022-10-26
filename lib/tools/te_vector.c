@@ -11,6 +11,7 @@
 #include "te_defs.h"
 #include "te_alloc.h"
 
+#include "te_defs.h"
 #include "te_vector.h"
 #include "te_string.h"
 
@@ -170,4 +171,43 @@ void
 te_vec_sort(te_vec *vec, int (*compar)(const void *, const void *))
 {
     qsort(vec->data.ptr, te_vec_size(vec), vec->element_size, compar);
+}
+
+te_bool
+te_vec_search(const te_vec *vec, const void *key,
+              int (*compar)(const void *, const void *),
+              unsigned int *minpos, unsigned int *maxpos)
+{
+    const void *found = bsearch(key, vec->data.ptr, te_vec_size(vec),
+                                vec->element_size, compar);
+
+    if (found == NULL)
+        return FALSE;
+
+    if (minpos != NULL)
+    {
+        const uint8_t *iter = found;
+
+        while (iter != vec->data.ptr)
+        {
+            if (compar(key, iter - vec->element_size) != 0)
+                break;
+            iter -= vec->element_size;
+        }
+        *minpos = te_vec_get_index(vec, iter);
+    }
+
+    if (maxpos != NULL)
+    {
+        const uint8_t *iter = found;
+
+        while (iter != vec->data.ptr + vec->data.len - vec->element_size)
+        {
+            if (compar(key, iter + vec->element_size) != 0)
+                break;
+            iter += vec->element_size;
+        }
+        *maxpos = te_vec_get_index(vec, iter);
+    }
+    return TRUE;
 }

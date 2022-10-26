@@ -22,5 +22,7 @@
                     href="tools/units.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/vector.trc.xml" parse="xml"/>
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tools/vector_search.trc.xml" parse="xml"/>
     </iter>
 </test>

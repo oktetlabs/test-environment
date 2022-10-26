@@ -54,5 +54,9 @@
         <run>
             <script name="vector"/>
         </run>
+
+        <run>
+            <script name="vector_search"/>
+        </run>
     </session>
 </package>

@@ -406,6 +406,42 @@ extern te_errno te_vec_split_string(const char *str, te_vec *strvec, char sep,
  */
 extern void te_vec_sort(te_vec *vec, int (*compar)(const void *elt1, const void *elt2));
 
+/**
+ * Search a sorted vector @p vec for an item equal to @p key
+ * using @p compar as a comparison function.
+ *
+ * The function implements binary search, however unlike C standard
+ * bsearch() it can be reliably used on non-unique matches, because
+ * it returns the lowest and the highest indices of matching elements.
+ *
+ * @note Mind the order of arguments. @p compar expects the **first**
+ * argument to be a key and the second argument to be an array element,
+ * for a compatibility with bsearch(). However, the order of arguments of
+ * the function itself is reverse wrt bsearch(): the vector goes first and
+ * the key follows it for consistency with other vector functions.
+ * For cases where the key has the same structure as the array element,
+ * this should not matter.
+ *
+ * @note The vector must be sorted in a way compatible with @p compar, i.e.
+ * by using te_vec_sort() with the same @p compar, however, the comparison
+ * functions need not to be truly identical: the search comparison function
+ * may treat more elements as equal than the sort comparison.
+ *
+ * @param[in]  vec     Vector to search in
+ * @param[in]  key     Key to search
+ * @param[in]  compar  Comparison function (as for bsearch())
+ * @param[out] minpos  The lowest index of a matching element.
+ * @param[out] maxpos  The highest index of a matchin element.
+ *                     Any of @p minpos and @p maxpos may be @c NULL.
+ *                     If they are both @c NULL, the function just checks
+ *                     for an existence of a matching element.
+ *
+ * @return TRUE iff an element matching @p key is found.
+ */
+ extern te_bool te_vec_search(const te_vec *vec, const void *key,
+                              int (*compar)(const void *key, const void *elt),
+                              unsigned int *minpos, unsigned int *maxpos);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

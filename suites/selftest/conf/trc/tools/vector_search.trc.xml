@@ -1,0 +1,6 @@
+<test name="vector_search" type="script">
+    <objective>Testing vector sorting and searching routines</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>

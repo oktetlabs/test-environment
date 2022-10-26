@@ -10,7 +10,8 @@ tests = [
     'resolvepath',
     'string',
     'units',
-    'vector'
+    'vector',
+    'vector_search',
 ]
 
 foreach test : tests
