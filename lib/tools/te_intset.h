@@ -22,6 +22,9 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include <inttypes.h>
+#if HAVE_SCHED_H
+#include <sched.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -200,6 +203,70 @@ te_fdset_is_subset(int nfds, const fd_set *sub, const fd_set *super)
     return te_intset_generic_is_subset(&te_fdset_intset, 0, nfds - 1,
                                        sub, super);
 }
+
+#if HAVE_SCHED_SETAFFINITY
+
+/** Description of Linux cpu sets as an integral set */
+extern const te_intset_ops te_cpuset_intset;
+
+/**
+ * Convert a string to a cpu_set_t.
+ *
+ * The string @p str is a comma-separated list of single numbers and
+ * ranges, e.g. @c 0,2-10,512.
+ *
+ * @param[in]  str    string to parse
+ * @param[out] cpuset resulting CPU set
+ *
+ * @return status code
+ *
+ * @sa te_intset_generic_parse
+ */
+static inline te_errno
+te_cpuset_parse(const char *str, cpu_set_t *cpuset)
+{
+    return te_intset_generic_parse(&te_cpuset_intset, 0, CPU_SETSIZE - 1,
+                                   str, cpuset);
+}
+
+/**
+ * Convert a CPU set to a string.
+ *
+ * Sequences of consecutive CPU ids are represented as ranges @c N-M.
+ *
+ * @param  cpuset  CPU set
+ *
+ * @return a string representation or @c NULL in case of an error
+ *         (it should be free()'d)
+ *
+ * @note Currently this only support fixed-size cpu_set_t's, not
+ *       those returned by CPU_ALLOC.
+ *
+ * @sa te_intset_generic2string
+ */
+static inline char *
+te_cpuset2string(const cpu_set_t *cpuset)
+{
+    return te_intset_generic2string(&te_cpuset_intset, 0,
+                                    CPU_SETSIZE - 1, cpuset);
+}
+
+/**
+ * Check whether a CPI set @p sub is a subset of @p super.
+ *
+ * @param sub    CPU set to test
+ * @param super  CPU superset
+ *
+ * @return @c TRUE iff @p sub is a subset of @p super
+ */
+static inline te_bool
+te_cpuset_is_subset(const cpu_set_t *sub, const cpu_set_t *super)
+{
+    return te_intset_generic_is_subset(&te_cpuset_intset, 0, CPU_SETSIZE - 1,
+                                       sub, super);
+}
+
+#endif /* HAVE_SCHED_SETAFFINITY */
 
 #ifdef __cplusplus
 } /* extern "C" */

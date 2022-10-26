@@ -470,6 +470,23 @@ if rpc_lib_found
     endif
 endif
 
+h = 'sched.h'
+if cc.has_header(h)
+    c_args += [ '-DHAVE_' + h.to_upper().underscorify() ]
+endif
+
+sched_funcs = [
+    'sched_setaffinity',
+    'sched_getaffinity',
+]
+
+foreach f : sched_funcs
+    if cc.has_function(f)
+        c_args += [ '-DHAVE_' + f.to_upper() ]
+    endif
+endforeach
+
+
 rpc_server_config_h = configure_file(input: 'rpc_server_config.h.meson',
                                      output: 'rpc_server_config.h',
                                      configuration: conf)

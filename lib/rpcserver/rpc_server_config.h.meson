@@ -200,3 +200,12 @@
 
 /* RPC XDR for unsigned 8bit width type */
 #mesondefine xdr_uint8_t
+
+/* Define to 1 if you have <sched.h> header file. */
+#mesondefine HAVE_SCHED_H
+
+/* Define to 1 if you have `sched_setaffinity'. */
+#mesondefine HAVE_SCHED_SETAFFINITY
+
+/* Define to 1 if you have `sched_getaffinity'. */
+#mesondefine HAVE_SCHED_GETAFFINITY

@@ -405,6 +405,23 @@ foreach d : string_sets_list
     endif
 endforeach
 
+h = 'sched.h'
+if cc.has_header(h)
+    c_args += [ '-DHAVE_' + h.to_upper().underscorify() ]
+endif
+
+sched_funcs = [
+    'sched_setaffinity',
+    'sched_getaffinity',
+]
+
+foreach f : sched_funcs
+    if cc.has_function(f)
+        c_args += [ '-DHAVE_' + f.to_upper() ]
+    endif
+endforeach
+
+
 #
 # Without input template, meson will generate defines for all
 # things from conf_data automatically.

@@ -170,3 +170,31 @@ const te_intset_ops te_fdset_intset = {
     .set = fd_set_set,
     .check = fd_set_check,
 };
+
+#if HAVE_SCHED_SETAFFINITY
+
+static void
+cpu_set_clear(void *val)
+{
+    CPU_ZERO((cpu_set_t *)val);
+}
+
+static void
+cpu_set_set(int v, void *val)
+{
+    CPU_SET(v, (cpu_set_t *)val);
+}
+
+static te_bool
+cpu_set_check(int v, const void *val)
+{
+    return CPU_ISSET(v, (const cpu_set_t *)val);
+}
+
+const te_intset_ops te_cpuset_intset = {
+    .clear = cpu_set_clear,
+    .set = cpu_set_set,
+    .check = cpu_set_check,
+};
+
+#endif /* HAVE_SCHED_SETAFFINITY */
