@@ -650,17 +650,21 @@ tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
 te_errno
 tapi_igmp3_src_list_init(tapi_igmp3_src_list_t *src_list)
 {
+#define IGMP3_SRC_LIST_PREALLOCATED_SIZE 16
+
     if (src_list == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     src_list->src_no = 0;
-    src_list->src_no_max = TAPI_IGMP3_SRC_LIST_SIZE_MIN;
+    src_list->src_no_max = IGMP3_SRC_LIST_PREALLOCATED_SIZE;
     src_list->src_addr = (in_addr_t *)calloc(sizeof(in_addr_t) *
                                              src_list->src_no_max, 1);
     if (src_list->src_addr == NULL)
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
     return 0;
+
+#undef IGMP3_SRC_LIST_PREALLOCATED_SIZE
 }
 
 /* See the description in tapi_igmp.h */
@@ -887,11 +891,13 @@ tapi_igmp3_group_record_add_source(tapi_igmp3_group_record_t *group_record,
 te_errno
 tapi_igmp3_group_list_init(tapi_igmp3_group_list_t *group_list)
 {
+#define IGMP3_GROUP_LIST_PREALLOCATED_SIZE 16
+
     if (group_list == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     group_list->groups_no = 0;
-    group_list->groups_no_max = TAPI_IGMP3_GROUP_LIST_SIZE_MIN;
+    group_list->groups_no_max = IGMP3_GROUP_LIST_PREALLOCATED_SIZE;
     group_list->groups =
         calloc(sizeof(tapi_igmp3_group_record_t *) *
                group_list->groups_no_max, 1);
@@ -899,6 +905,8 @@ tapi_igmp3_group_list_init(tapi_igmp3_group_list_t *group_list)
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
     return 0;
+
+#undef IGMP3_GROUP_LIST_PREALLOCATED_SIZE
 }
 
 /* See the description in tapi_igmp.h */

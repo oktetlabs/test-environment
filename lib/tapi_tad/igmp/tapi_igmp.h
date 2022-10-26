@@ -93,12 +93,6 @@ typedef enum {
 /** Default ToS for IGMPv3 messages is 0xc0 */
 #define TAPI_IGMP3_IP4_TOS_DEFAULT   0xc0
 
-/** Pre-allocated size for source addresses list */
-#define TAPI_IGMP3_SRC_LIST_SIZE_MIN    16
-
-/** Pre-allocated size for group records list */
-#define TAPI_IGMP3_GROUP_LIST_SIZE_MIN  16
-
 #define TAPI_IGMP3_GROUP_RECORD_HDR_LEN 8
 
 
