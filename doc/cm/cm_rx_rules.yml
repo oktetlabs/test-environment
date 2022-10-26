@@ -1,0 +1,318 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+
+- comment: |
+    Configuration information related to Rx classification rules.
+
+- register:
+
+    - oid: "/agent/interface/rx_rules"
+      access: read_only
+      type: none
+      d: |
+         Rx classification rules
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/rx_rules/table_size"
+      access: read_only
+      type: uint32
+      d: |
+         Name: none
+         Value: rules table size
+
+    - oid: "/agent/interface/rx_rules/spec_loc"
+      access: read_only
+      type: bool
+      d: |
+         Whether special rule locations are supported
+         Name: none
+         Value: 1 if supported, 0 otherwise
+
+    - oid: "/agent/interface/rx_rules/last_added"
+      access: read_only
+      type: int64
+      volatile: true
+      d: |
+         Location of the rule added the last time.
+         This value is reset every time a new rule is added on TA
+         (even if for a different interface). This object is useful
+         when you add a rule to a special location (first/last/any)
+         and its real location in rules table becomes known only
+         after committing it. It is assumed that user gets the real
+         location of the added rule from this node right after
+         adding it, before adding another rule.
+         Name: none
+         Value: index in rules table or -1
+
+    - oid: "/agent/interface/rx_rules/rule"
+      access: read_create
+      type: none
+      unit: true
+      d: |
+         Rx classification rule
+         Name: location in rules table.
+               Location is an index in the table. However for newly
+               created rules which are not committed yet it can also
+               be "any", "first" or "last" if special insert locations
+               are supported. Use last_added to find out real index
+               just after a new Rx rule commit. If special insert
+               locations are used, test should not try to restore
+               configuration using history - restore by backup must
+               be used.
+         Value: none
+
+    - oid: "/agent/interface/rx_rules/rule/rss_context"
+      access: read_write
+      type: int64
+      d: |
+         RSS context for Rx rule
+         Name: none
+         Value: context Id (-1 if not specified - this is default value)
+
+    - oid: "/agent/interface/rx_rules/rule/rx_queue"
+      access: read_write
+      type: int64
+      d: |
+         Rx queue index
+         Name: none
+         Value: Queue index or -1 if packets should be discarded;
+                default is 0. If RSS context is specified, this
+                value must be nonnegative and will be added to
+                Rx queue Id get from indirection table in that
+                RSS context.
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec"
+      access: read_write
+      type: string
+      d: |
+         Rx flow specification
+         Name: none
+         Value: flow type name (tcp_v4, udp_v4, sctp_v4,
+                tcp_v6, udp_v6, sctp_v6, ah_v4, esp_v4, ah_v6,
+                esp_v6, ipv4_user, ipv6_user, ether)
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/src_mac"
+      access: read_write
+      type: address
+      d: |
+         Source MAC address
+         Name: none
+         Value: MAC address
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/src_mac/mask"
+      access: read_write
+      type: address
+      d: |
+         Mask for the parent
+         Name: none
+         Value: mask for MAC address
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/dst_mac"
+      access: read_write
+      type: address
+      d: |
+         Destination MAC address
+         Name: none
+         Value: MAC address
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/dst_mac/mask"
+      access: read_write
+      type: address
+      d: |
+         Mask for the parent
+         Name: none
+         Value: mask for MAC address
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/ether_type"
+      access: read_write
+      type: uint16
+      d: |
+         EtherType field
+         Name: none
+         Value: 16bit number in host byte order
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/ether_type/mask"
+      access: read_write
+      type: uint16
+      d: |
+         Mask for EtherType field
+         Name: none
+         Value: 16bit number in host byte order
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/vlan_tpid"
+      access: read_write
+      type: uint16
+      d: |
+         VLAN tag protocol identifier
+         Name: none
+         Value: first two bytes of VLAN tag in host byte order
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/vlan_tpid/mask"
+      access: read_write
+      type: uint16
+      d: |
+         Mask for the parent
+         Name: none
+         Value: mask for first two bytes of VLAN tag in host byte order
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/vlan_tci"
+      access: read_write
+      type: uint16
+      d: |
+         VLAN tag control information including PCP (priority code point),
+         DEI (drop eligible indicator) and VID (VLAN identifier)
+         Name: none
+         Value: last two bytes of VLAN tag in host byte order
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/vlan_tci/mask"
+      access: read_write
+      type: uint16
+      d: |
+         Mask for the parent
+         Name: none
+         Value: mask for last two bytes of VLAN tag in host byte order
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/data0"
+      access: read_write
+      type: uint32
+      d: |
+         The first 32bit number in user defined data
+         Name: none
+         Value: number (host byte order)
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/data0/mask"
+      access: read_write
+      type: uint32
+      d: |
+         Name: none
+         Value: 32bit mask (host byte order)
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/data1"
+      access: read_write
+      type: uint32
+      d: |
+         The second 32bit number in user defined data
+         Name: none
+         Value: number (host byte order)
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/data1/mask"
+      access: read_write
+      type: uint32
+      d: |
+         Name: none
+         Value: 32bit mask (host byte order)
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/src_l3_addr"
+      access: read_write
+      type: address
+      d: |
+         Name: none
+         Value: Source level 3 addressa (IPv4, IPv6)
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/src_l3_addr/mask"
+      access: read_write
+      type: address
+      d: |
+         Name: none
+         Value: mask for source L3 address
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/dst_l3_addr"
+      access: read_write
+      type: address
+      d: |
+         Name: none
+         Value: Destination level 3 address (IPv4, IPv6)
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/dst_l3_addr/mask"
+      access: read_write
+      type: address
+      d: |
+         Name: none
+         Value: mask for destination L3 address
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/src_port"
+      access: read_write
+      type: uint16
+      d: |
+         Name: none
+         Value: transport protocol (e.g. TCP) source port
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/src_port/mask"
+      access: read_write
+      type: uint16
+      d: |
+         Name: none
+         Value: mask for source port
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/dst_port"
+      access: read_write
+      type: uint16
+      d: |
+         Name: none
+         Value: transport protocol (e.g. TCP) destination port
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/dst_port/mask"
+      access: read_write
+      type: uint16
+      d: |
+         Name: none
+         Value: mask for destination port
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/tos_or_tclass"
+      access: read_write
+      type: uint8
+      d: |
+         Name: none
+         Value: Type of Service or Traffic Class
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/tos_or_tclass/mask"
+      access: read_write
+      type: uint8
+      d: |
+         Name: none
+         Value: mask for TOS or traffic class
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/spi"
+      access: read_write
+      type: uint32
+      d: |
+         Name: none
+         Value: Security Parameters Index
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/spi/mask"
+      access: read_write
+      type: uint32
+      d: |
+         Name: none
+         Value: mask for security parameters index
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/l4_4_bytes"
+      access: read_write
+      type: uint32
+      d: |
+         Name: none
+         Value: First four bytes of L4 (transport) header
+                (network byte order)
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/l4_4_bytes/mask"
+      access: read_write
+      type: uint32
+      d: |
+         Name: none
+         Value: mask for the parent
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/l4_proto"
+      access: read_write
+      type: uint8
+      d: |
+         Name: none
+         Value: transport protocol number
+
+    - oid: "/agent/interface/rx_rules/rule/flow_spec/l4_proto/mask"
+      access: read_write
+      type: uint8
+      d: |
+         Name: none
+         Value: mask for the transport protocol number

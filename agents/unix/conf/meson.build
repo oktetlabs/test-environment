@@ -35,6 +35,7 @@ sources += files(
     'base/conf_phy.c',
     'base/conf_rlimits.c',
     'base/conf_rss.c',
+    'base/conf_rx_rules.c',
     'base/conf_stats.c',
     'base/conf_sys.c',
     'base/conf_sys_tree.c',
