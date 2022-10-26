@@ -32,6 +32,7 @@ headers += files(
     'tapi_cfg_phy.h',
     'tapi_cfg_pppoe.h',
     'tapi_cfg_process.h',
+    'tapi_cfg_rx_rule.h',
     'tapi_cfg_qdisc.h',
     'tapi_cfg_socks.h',
     'tapi_cfg_stats.h',
@@ -90,6 +91,7 @@ sources += files(
     'tapi_cfg_phy.c',
     'tapi_cfg_pppoe.c',
     'tapi_cfg_process.c',
+    'tapi_cfg_rx_rule.c',
     'tapi_cfg_qdisc.c',
     'tapi_cfg_socks.c',
     'tapi_cfg_stats.c',
@@ -123,4 +125,5 @@ te_libs += [
     'rcfapi',
     'rcfrpc',
     'tools',
+    'rpc_types',
 ]
