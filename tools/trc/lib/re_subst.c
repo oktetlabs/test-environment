@@ -561,6 +561,8 @@ trc_re_key_substs(const char *name, const char *key, FILE *f)
 
     if (keyn != NULL)
         trc_re_substs_exec_start(&keyn->substs, key, f);
+    else if (key != NULL)
+        fprintf(f, "%s", key);
 }
 
 /* See the description in re_subst.h */
