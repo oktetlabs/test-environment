@@ -1,0 +1,47 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Local configurations related to generic change tracking
+
+    Copyright (C) 2022 OKTET Labs Ltd
+
+    Author: Artem Andreev <Artem.Andreev@oktetlabs.ru>
+
+    The prototypical usecase is as follows:
+    - suppose there's a possibly large NV storage
+    - and there are read-only and read-write tests
+    - naturally, read-only tests would expect some known contents of a storage,
+      while write tests spoil it
+    - it is infeasible to re-initialize the whole device even before each
+       session of read-only tests.
+    - it is also not very robust to require that all write tests
+      to clean up after themselves
+
+    Instead a test that changes the content of a data block, record its position
+    and extent in this subtree. Then at some point an epilogue or a prologue
+    processes all the regions under a given tag and restores their content.
+
+- register:
+
+    - oid: "/local/changed"
+      access: read_create
+      type: none
+      d: |
+         The subtree grouping changes related to a certain entity.
+
+         Name: arbitrary tag identifying some entity (e.g. a block device)
+         Value: none.
+
+    - oid: "/local/changed/region"
+      access: read_create
+      type: string
+      d: |
+         Test Agent subtree.
+
+         Name: start of a region
+         Value: extent of a region
+
+         The name and value would usually be integral values,
+         but it is not mandated here, because specific usecases may
+         require some non-numeric values such as "end" or the like
