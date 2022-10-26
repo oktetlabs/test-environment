@@ -146,3 +146,27 @@ const te_intset_ops te_bits_intset = {
     .set = set_uint64_bit,
     .check = check_uint64_bit,
 };
+
+static void
+fd_set_clear(void *val)
+{
+    FD_ZERO((fd_set *)val);
+}
+
+static void
+fd_set_set(int v, void *val)
+{
+    FD_SET(v, (fd_set *)val);
+}
+
+static te_bool
+fd_set_check(int v, const void *val)
+{
+    return FD_ISSET(v, (const fd_set *)val);
+}
+
+const te_intset_ops te_fdset_intset = {
+    .clear = fd_set_clear,
+    .set = fd_set_set,
+    .check = fd_set_check,
+};

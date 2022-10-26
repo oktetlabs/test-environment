@@ -17,6 +17,8 @@
 #ifndef __TE_INTSET_H__
 #define __TE_INTSET_H__
 
+#include "te_config.h"
+
 #include "te_defs.h"
 #include "te_errno.h"
 #include <inttypes.h>
@@ -137,6 +139,66 @@ te_bits2string(uint64_t val)
     return te_intset_generic2string(&te_bits_intset,
                                     0, sizeof(uint64_t) * CHAR_BIT - 1,
                                     &val);
+}
+
+/** Description of POSIX fd_set as an integral set. */
+extern const te_intset_ops te_fdset_intset;
+
+/**
+ * Convert a string to a fd_set.
+ *
+ * The string @p str is a comma-separated list of single numbers and
+ * ranges, e.g. @c 1,2-10,511.
+ *
+ * @param[in]  str    string to parse
+ * @param[out] fdset  resulting FD set
+ *
+ * @return status code
+ *
+ * @sa te_intset_generic_parse
+ */
+static inline te_errno
+te_fdset_parse(const char *str, fd_set *fdset)
+{
+    return te_intset_generic_parse(&te_fdset_intset, 0, FD_SETSIZE,
+                                   str, fdset);
+}
+
+/**
+ * Convert an FD set to a string.
+ *
+ * Sequences of consecutive FD numbers are represented as ranges @c N-M.
+ *
+ * @param nfds   highest FD number in @p fdset plus 1
+ *               (the same as with POSIX select())
+ * @param fdset  FD set
+ *
+ * @return a string representation or @c NULL in case of an error.
+ *         (it should be free()'d)
+ *
+ * @sa te_intset_generic2string
+ */
+static inline char *
+te_fdset2string(int nfds, const fd_set *fdset)
+{
+    return te_intset_generic2string(&te_fdset_intset, 0, nfds - 1, fdset);
+}
+
+/**
+ * Check whether a FD set @p sub is a subset of @p super.
+ *
+ * @param nfds   highest FD number in @p fdset plus 1
+ *               (the same as with POSIX select())
+ * @param sub    FD set to test
+ * @param super  FD superset
+ *
+ * @return @c TRUE iff @p sub is a subset of @p super
+ */
+static inline te_bool
+te_fdset_is_subset(int nfds, const fd_set *sub, const fd_set *super)
+{
+    return te_intset_generic_is_subset(&te_fdset_intset, 0, nfds - 1,
+                                       sub, super);
 }
 
 #ifdef __cplusplus
