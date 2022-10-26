@@ -587,6 +587,18 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             break;
         }
 
+        case RPC_BLKFLSBUF:
+            in.access = IOCTL_WR;
+            if (arg != NULL)
+            {
+                ERROR("%s(): %s should have no argument", __func__,
+                      ioctl_rpc2str(request));
+                rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
+                te_string_free(req_str);
+                RETVAL_INT(ioctl, -1);
+            }
+            break;
+
         default:
             ERROR("Unsupported ioctl code: %d", request);
             rpcs->_errno = TE_RC(TE_RCF, TE_EOPNOTSUPP);

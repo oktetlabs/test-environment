@@ -75,6 +75,7 @@ check_headers = [
 # Solaris-style sysinfo()
     'sys/systeminfo.h',
     'sys/epoll.h',
+    'sys/mount.h',
     'dirent.h',
 ]
 

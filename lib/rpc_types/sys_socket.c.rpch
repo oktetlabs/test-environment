@@ -95,6 +95,10 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #include <linux/ptp_clock.h>
 #endif
 
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
+
 #endif
 
 #include "te_defs.h"
@@ -1919,6 +1923,8 @@ ioctl_rpc2str(rpc_ioctl_code code)
         RPC2STR(SIO_INDEX_BIND);
         RPC2STR(SIO_UCAST_IF);
 
+        RPC2STR(BLKFLSBUF);
+
         default: return "<IOCTL_FATAL_ERROR>";
     }
 }
@@ -1998,6 +2004,8 @@ ioctl_rpc2h(rpc_ioctl_code code)
         RPC2H_CHECK(SIO_UDP_CONNRESET);
         RPC2H_CHECK(SIO_INDEX_BIND);
         RPC2H_CHECK(SIO_UCAST_IF);
+
+        RPC2H_CHECK(BLKFLSBUF);
 
         default:
             WARN("%s is converted to TE_IOCTL_UNKNOWN (%u)",

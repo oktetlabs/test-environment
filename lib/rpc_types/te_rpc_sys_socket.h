@@ -1103,6 +1103,8 @@ typedef enum rpc_ioctl_code {
     RPC_SIO_INDEX_BIND,
     RPC_SIO_UCAST_IF,
 
+    RPC_BLKFLSBUF,
+
     RPC_SIOUNKNOWN          /**< Invalid ioctl code */
 
 } rpc_ioctl_code;
