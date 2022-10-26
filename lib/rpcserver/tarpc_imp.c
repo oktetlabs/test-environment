@@ -6295,6 +6295,14 @@ TARPC_FUNC(fdopen, {},
 }
 )
 
+/*-------------- mkstemp() --------------------------------*/
+TARPC_FUNC(mkstemp, {},
+{
+    MAKE_CALL(out->fd = func_ptr(in->template));
+    out->pathname = strdup(in->template);
+}
+)
+
 /*-------------- fclose() -------------------------------*/
 TARPC_FUNC(fclose, {},
 {

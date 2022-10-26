@@ -70,6 +70,26 @@ extern int rpc_open64(rcf_rpc_server         *rpcs,
                       rpc_fcntl_flags         flags,
                       rpc_file_mode_flags     mode);
 
+
+/**
+ * Create and open a temporary file.
+ *
+ * @param[in] rpcs      RPC server handle.
+ * @param[in] template  Template for a pathname.
+ *                      Like for the POSIX mkstemp(),
+ *                      it must end with six @c XXXXXX,
+ *                      but unlike mkstemp(), the value won't
+ *                      be modified.
+ * @param[out] pathname The location for a generated name
+ *                      (may be @c NULL, otherwise the memory
+ *                      should be free()'d).
+ *
+ * @return File descriptor or -1 on failure
+ */
+extern int rpc_mkstemp(rcf_rpc_server *rpcs,
+                       const char *template,
+                       char **pathname);
+
 /**
  *  Close file descriptor on RPC server side.
  *

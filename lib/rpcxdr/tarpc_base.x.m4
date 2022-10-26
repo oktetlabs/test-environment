@@ -3796,6 +3796,21 @@ struct tarpc_fdopen_out {
     tarpc_ptr mem_ptr;
 };
 
+/* mkstemp() */
+struct tarpc_mkstemp_in {
+    struct tarpc_in_arg common;
+
+    string      template<>;
+};
+
+struct tarpc_mkstemp_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int   fd;
+    string      pathname<>;
+};
+
+
 /* fclose() */
 struct tarpc_fclose_in {
     struct tarpc_in_arg  common;
@@ -5648,6 +5663,7 @@ program tarpc
         RPC_DEF(open64)
         RPC_DEF(fopen)
         RPC_DEF(fdopen)
+        RPC_DEF(mkstemp)
         RPC_DEF(fclose)
         RPC_DEF(te_shell_cmd)
         RPC_DEF(system)
