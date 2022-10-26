@@ -44,6 +44,10 @@
         </run>
 
         <run>
+            <script name="intset"/>
+        </run>
+
+        <run>
             <script name="string"/>
         </run>
 

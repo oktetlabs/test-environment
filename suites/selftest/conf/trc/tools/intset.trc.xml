@@ -1,0 +1,6 @@
+<test name="intset" type="script">
+    <objective>Testing integral set functions</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>
