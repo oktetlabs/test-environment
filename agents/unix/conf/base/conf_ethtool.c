@@ -223,6 +223,21 @@ ethtool_cmd2str(int cmd)
 #endif
         CASE_CMD(ETHTOOL_GPFLAGS);
         CASE_CMD(ETHTOOL_SPFLAGS);
+#ifdef ETHTOOL_GRXCLSRLCNT
+        CASE_CMD(ETHTOOL_GRXCLSRLCNT);
+#endif
+#ifdef ETHTOOL_GRXCLSRLALL
+        CASE_CMD(ETHTOOL_GRXCLSRLALL);
+#endif
+#ifdef ETHTOOL_GRXCLSRULE
+        CASE_CMD(ETHTOOL_GRXCLSRULE);
+#endif
+#ifdef ETHTOOL_SRXCLSRLINS
+        CASE_CMD(ETHTOOL_SRXCLSRLINS);
+#endif
+#ifdef ETHTOOL_SRXCLSRLDEL
+        CASE_CMD(ETHTOOL_SRXCLSRLDEL);
+#endif
     }
 
     return "<UNKNOWN>";
@@ -1575,5 +1590,819 @@ ta_ethtool_get_max_speed(ta_ethtool_lsets *lsets, unsigned int *speed,
 
     return 0;
 }
+
+#ifdef ETHTOOL_GRXCLSRLALL
+
+/* Release memory allocated for ta_ethtool_rx_cls_rules */
+static void
+free_rx_cls_rules(void *arg)
+{
+    ta_ethtool_rx_cls_rules *rules = arg;
+
+    if (rules == NULL)
+        return;
+
+    free(rules->locs);
+    free(rules);
+}
+
+/* See description in conf_ethtool.h */
+te_errno
+ta_ethtool_get_rx_cls_rules(unsigned int gid, const char *if_name,
+                            ta_ethtool_rx_cls_rules **rules_data)
+{
+    struct ethtool_rxnfc rules_count;
+    struct ethtool_rxnfc *rules = NULL;
+    size_t req_size;
+    ta_ethtool_rx_cls_rules *result = NULL;
+    ta_cfg_obj_t *obj;
+    unsigned int i;
+    te_errno rc;
+
+    obj = ta_obj_find(TA_OBJ_TYPE_IF_RX_CLS_RULES, if_name, gid);
+    if (obj != NULL)
+    {
+        *rules_data = obj->user_data;
+        return 0;
+    }
+
+    result = TE_ALLOC(sizeof(*result));
+    if (result == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto cleanup;
+    }
+
+    memset(&rules_count, 0, sizeof(rules_count));
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_GRXCLSRLCNT, &rules_count);
+    if (rc != 0)
+        goto cleanup;
+
+#ifdef RX_CLS_LOC_SPECIAL
+    result->table_size = rules_count.data & ~RX_CLS_LOC_SPECIAL;
+    result->spec_loc_flag = !!(rules_count.data & RX_CLS_LOC_SPECIAL);
+#else
+    result->table_size = rules_count.data;
+    result->spec_loc_flag = FALSE;
+#endif
+
+    result->rule_cnt = rules_count.rule_cnt;
+    if (result->rule_cnt > 0)
+    {
+        result->locs = TE_ALLOC(sizeof(unsigned int) * result->rule_cnt);
+        if (result->locs == NULL)
+        {
+            rc = TE_ENOMEM;
+            goto cleanup;
+        }
+
+        req_size = sizeof(*rules) + sizeof(uint32_t) * result->rule_cnt;
+        rules = TE_ALLOC(req_size);
+        if (rules == NULL)
+        {
+            rc = TE_ENOMEM;
+            goto cleanup;
+        }
+        rules->rule_cnt = result->rule_cnt;
+
+        rc = call_ethtool_ioctl(if_name, ETHTOOL_GRXCLSRLALL, rules);
+        if (rc != 0)
+            goto cleanup;
+
+        /*
+         * May be some rule was removed between two SIOCETHTOOL calls.
+         */
+        if (rules->rule_cnt < result->rule_cnt)
+            result->rule_cnt = rules->rule_cnt;
+
+        for (i = 0; i < result->rule_cnt; i++)
+        {
+            result->locs[i] = rules->rule_locs[i];
+        }
+    }
+
+    rc = ta_obj_add(TA_OBJ_TYPE_IF_RX_CLS_RULES, if_name,
+                    "", gid, result, &free_rx_cls_rules, &obj);
+
+cleanup:
+
+    if (rc == 0)
+        *rules_data = result;
+    else
+        free_rx_cls_rules(result);
+
+    free(rules);
+
+    return rc;
+}
+
+/* Define missing flow type flags to zero to simplify code. */
+
+#ifndef FLOW_EXT
+#define FLOW_EXT 0
+#endif
+#ifndef FLOW_MAC_EXT
+#define FLOW_MAC_EXT 0
+#endif
+#ifndef FLOW_RSS
+#define FLOW_RSS 0
+#endif
+
+/* All the known network flow flags */
+#define FLOW_TYPE_FLAGS (FLOW_EXT | FLOW_MAC_EXT | FLOW_RSS)
+
+/*
+ * Fill fields in TA Rx rule structure with data stored in
+ * ethtool_flow_union.
+ */
+
+static void
+ether_to_ta(const struct ethhdr *spec,
+            ta_ethtool_rx_cls_rule_fields *ta_fields)
+{
+    memcpy(&ta_fields->src_mac, &spec->h_source,
+           sizeof(spec->h_source));
+    memcpy(&ta_fields->dst_mac, &spec->h_dest,
+           sizeof(spec->h_dest));
+
+    ta_fields->ether_type = ntohs(spec->h_proto);
+}
+
+#ifdef HAVE_STRUCT_ETHTOOL_USRIP6_SPEC
+static void
+usrip6_to_ta(const struct ethtool_usrip6_spec *spec,
+             ta_ethtool_rx_cls_rule_fields *ta_fields)
+{
+    memcpy(&ta_fields->src_l3_addr, &spec->ip6src,
+           sizeof(spec->ip6src));
+    memcpy(&ta_fields->dst_l3_addr, &spec->ip6dst,
+           sizeof(spec->ip6dst));
+
+    ta_fields->l4_4_bytes = spec->l4_4_bytes;
+    ta_fields->tos_or_tclass = spec->tclass;
+    ta_fields->l4_proto = spec->l4_proto;
+}
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_AH_ESPIP6_SPEC
+static void
+ah_espip6_to_ta(const struct ethtool_ah_espip6_spec *spec,
+                ta_ethtool_rx_cls_rule_fields *ta_fields)
+{
+    memcpy(&ta_fields->src_l3_addr, &spec->ip6src,
+           sizeof(spec->ip6src));
+    memcpy(&ta_fields->dst_l3_addr, &spec->ip6dst,
+           sizeof(spec->ip6dst));
+
+    ta_fields->spi = ntohl(spec->spi);
+    ta_fields->tos_or_tclass = spec->tclass;
+}
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_TCPIP6_SPEC
+static void
+tcpip6_to_ta(const struct ethtool_tcpip6_spec *spec,
+             ta_ethtool_rx_cls_rule_fields *ta_fields)
+{
+    memcpy(&ta_fields->src_l3_addr, &spec->ip6src,
+           sizeof(spec->ip6src));
+    memcpy(&ta_fields->dst_l3_addr, &spec->ip6dst,
+           sizeof(spec->ip6dst));
+
+    ta_fields->src_port = ntohs(spec->psrc);
+    ta_fields->dst_port = ntohs(spec->pdst);
+    ta_fields->tos_or_tclass = spec->tclass;
+}
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_USRIP4_SPEC
+static void
+usrip4_to_ta(const struct ethtool_usrip4_spec *spec,
+             ta_ethtool_rx_cls_rule_fields *ta_fields)
+{
+    memcpy(&ta_fields->src_l3_addr, &spec->ip4src,
+           sizeof(spec->ip4src));
+    memcpy(&ta_fields->dst_l3_addr, &spec->ip4dst,
+           sizeof(spec->ip4dst));
+
+    ta_fields->l4_4_bytes = spec->l4_4_bytes;
+    ta_fields->tos_or_tclass = spec->tos;
+    ta_fields->l4_proto = spec->proto;
+}
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_AH_ESPIP4_SPEC
+static void
+ah_espip4_to_ta(const struct ethtool_ah_espip4_spec *spec,
+                ta_ethtool_rx_cls_rule_fields *ta_fields)
+{
+    memcpy(&ta_fields->src_l3_addr, &spec->ip4src,
+           sizeof(spec->ip4src));
+    memcpy(&ta_fields->dst_l3_addr, &spec->ip4dst,
+           sizeof(spec->ip4dst));
+
+    ta_fields->spi = ntohl(spec->spi);
+    ta_fields->tos_or_tclass = spec->tos;
+}
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_TCPIP4_SPEC
+static void
+tcpip4_to_ta(const struct ethtool_tcpip4_spec *spec,
+             ta_ethtool_rx_cls_rule_fields *ta_fields)
+{
+    memcpy(&ta_fields->src_l3_addr, &spec->ip4src,
+           sizeof(spec->ip4src));
+    memcpy(&ta_fields->dst_l3_addr, &spec->ip4dst,
+           sizeof(spec->ip4dst));
+
+    ta_fields->src_port = ntohs(spec->psrc);
+    ta_fields->dst_port = ntohs(spec->pdst);
+    ta_fields->tos_or_tclass = spec->tos;
+}
+#endif
+
+static te_errno
+rule_fields_h2ta(uint32_t flow_type,
+                 const union ethtool_flow_union *h_fields,
+                 ta_ethtool_rx_cls_rule_fields *ta_fields)
+{
+    switch (flow_type)
+    {
+#ifdef HAVE_STRUCT_ETHTOOL_TCPIP4_SPEC
+        case TCP_V4_FLOW:
+        case UDP_V4_FLOW:
+        case SCTP_V4_FLOW:
+            tcpip4_to_ta((struct ethtool_tcpip4_spec *)h_fields,
+                         ta_fields);
+            break;
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_AH_ESPIP4_SPEC
+        case AH_V4_FLOW:
+        case ESP_V4_FLOW:
+            ah_espip4_to_ta((struct ethtool_ah_espip4_spec *)h_fields,
+                            ta_fields);
+            break;
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_USRIP4_SPEC
+        case IPV4_USER_FLOW:
+            usrip4_to_ta((struct ethtool_usrip4_spec *)h_fields, ta_fields);
+            break;
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_TCPIP6_SPEC
+        case TCP_V6_FLOW:
+        case UDP_V6_FLOW:
+        case SCTP_V6_FLOW:
+            tcpip6_to_ta((struct ethtool_tcpip6_spec *)h_fields,
+                         ta_fields);
+            break;
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_AH_ESPIP6_SPEC
+        case AH_V6_FLOW:
+        case ESP_V6_FLOW:
+            ah_espip6_to_ta((struct ethtool_ah_espip6_spec *)h_fields,
+                            ta_fields);
+            break;
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_USRIP6_SPEC
+        case IPV6_USER_FLOW:
+            usrip6_to_ta((struct ethtool_usrip6_spec *)h_fields, ta_fields);
+            break;
+#endif
+
+        case ETHER_FLOW:
+            ether_to_ta((struct ethhdr *)h_fields, ta_fields);
+            break;
+
+        default:
+            ERROR("%s(): not supported flow type 0x%x", __FUNCTION__,
+                  flow_type);
+            return TE_EINVAL;
+    }
+
+    return 0;
+}
+
+/*
+ * Fill fields in TA Rx rule structure with data stored in ethtool_flow_ext
+ * structure.
+ */
+static void
+rule_ext_fields_h2ta(uint32_t flow_flags,
+                     const struct ethtool_flow_ext *h_fields,
+                     ta_ethtool_rx_cls_rule_fields *ta_fields)
+{
+#if FLOW_MAC_EXT != 0
+    if (flow_flags & FLOW_MAC_EXT)
+    {
+        memcpy(&ta_fields->dst_mac, &h_fields->h_dest,
+               sizeof(h_fields->h_dest));
+    }
+#endif
+
+    if (flow_flags & FLOW_EXT)
+    {
+        ta_fields->vlan_tpid = ntohs(h_fields->vlan_etype);
+        ta_fields->vlan_tci = ntohs(h_fields->vlan_tci);
+        ta_fields->data0 = ntohl(h_fields->data[0]);
+        ta_fields->data1 = ntohl(h_fields->data[1]);
+    }
+}
+
+/*
+ * Convert native representation of Rx classification rule to
+ * TA representation.
+ */
+static te_errno
+rule_h2ta(const struct ethtool_rxnfc *h_rule,
+          ta_ethtool_rx_cls_rule *ta_rule)
+{
+    te_errno rc;
+
+    memset(ta_rule, 0, sizeof(*ta_rule));
+
+    ta_rule->location = h_rule->fs.location;
+
+    ta_rule->flow_type = h_rule->fs.flow_type & ~FLOW_TYPE_FLAGS;
+
+    ta_rule->rx_queue = h_rule->fs.ring_cookie;
+
+    if (h_rule->fs.flow_type & FLOW_RSS)
+        ta_rule->rss_context = h_rule->rss_context;
+    else
+        ta_rule->rss_context = -1;
+
+    rc = rule_fields_h2ta(ta_rule->flow_type, &h_rule->fs.h_u,
+                          &ta_rule->field_values);
+    if (rc != 0)
+        return rc;
+
+    rc = rule_fields_h2ta(ta_rule->flow_type, &h_rule->fs.m_u,
+                          &ta_rule->field_masks);
+    if (rc != 0)
+        return rc;
+
+    rule_ext_fields_h2ta(h_rule->fs.flow_type, &h_rule->fs.h_ext,
+                         &ta_rule->field_values);
+    rule_ext_fields_h2ta(h_rule->fs.flow_type, &h_rule->fs.m_ext,
+                         &ta_rule->field_masks);
+
+    return 0;
+}
+
+/*
+ * Fill ethtool_flow_union with data stored in TA Rx rule structure.
+ */
+
+static void
+ether_from_ta(const ta_ethtool_rx_cls_rule_fields *ta_fields,
+              struct ethhdr *spec)
+{
+    memcpy(&spec->h_source, &ta_fields->src_mac,
+           sizeof(spec->h_source));
+    memcpy(&spec->h_dest, &ta_fields->dst_mac,
+           sizeof(spec->h_dest));
+
+    spec->h_proto = htons(ta_fields->ether_type);
+}
+
+#ifdef HAVE_STRUCT_ETHTOOL_USRIP6_SPEC
+static void
+usrip6_from_ta(const ta_ethtool_rx_cls_rule_fields *ta_fields,
+               struct ethtool_usrip6_spec *spec)
+{
+    memcpy(&spec->ip6src, &ta_fields->src_l3_addr,
+           sizeof(spec->ip6src));
+    memcpy(&spec->ip6dst, &ta_fields->dst_l3_addr,
+           sizeof(spec->ip6dst));
+
+    spec->l4_4_bytes = ta_fields->l4_4_bytes;
+    spec->tclass = ta_fields->tos_or_tclass;
+    spec->l4_proto = ta_fields->l4_proto;
+}
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_AH_ESPIP6_SPEC
+static void
+ah_espip6_from_ta(const ta_ethtool_rx_cls_rule_fields *ta_fields,
+                  struct ethtool_ah_espip6_spec *spec)
+{
+    memcpy(&spec->ip6src, &ta_fields->src_l3_addr,
+           sizeof(spec->ip6src));
+    memcpy(&spec->ip6dst, &ta_fields->dst_l3_addr,
+           sizeof(spec->ip6dst));
+
+    spec->spi = htonl(ta_fields->spi);
+    spec->tclass = ta_fields->tos_or_tclass;
+}
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_TCPIP6_SPEC
+static void
+tcpip6_from_ta(const ta_ethtool_rx_cls_rule_fields *ta_fields,
+               struct ethtool_tcpip6_spec *spec)
+{
+    memcpy(&spec->ip6src, &ta_fields->src_l3_addr,
+           sizeof(spec->ip6src));
+    memcpy(&spec->ip6dst, &ta_fields->dst_l3_addr,
+           sizeof(spec->ip6dst));
+
+    spec->psrc = htons(ta_fields->src_port);
+    spec->pdst = htons(ta_fields->dst_port);
+    spec->tclass = ta_fields->tos_or_tclass;
+}
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_USRIP4_SPEC
+static void
+usrip4_from_ta(const ta_ethtool_rx_cls_rule_fields *ta_fields,
+               te_bool mask, struct ethtool_usrip4_spec *spec)
+{
+    memcpy(&spec->ip4src, &ta_fields->src_l3_addr,
+           sizeof(spec->ip4src));
+    memcpy(&spec->ip4dst, &ta_fields->dst_l3_addr,
+           sizeof(spec->ip4dst));
+
+    spec->l4_4_bytes = ta_fields->l4_4_bytes;
+    spec->tos = ta_fields->tos_or_tclass;
+
+    if (mask)
+    {
+        /* Comments in ethtool.h say mask must be 0 for these fields */
+        spec->ip_ver = 0;
+        spec->proto = 0;
+    }
+    else
+    {
+        spec->ip_ver = ETH_RX_NFC_IP4;
+        spec->proto = ta_fields->l4_proto;
+    }
+}
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_AH_ESPIP4_SPEC
+static void
+ah_espip4_from_ta(const ta_ethtool_rx_cls_rule_fields *ta_fields,
+                  struct ethtool_ah_espip4_spec *spec)
+{
+    memcpy(&spec->ip4src, &ta_fields->src_l3_addr,
+           sizeof(spec->ip4src));
+    memcpy(&spec->ip4dst, &ta_fields->dst_l3_addr,
+           sizeof(spec->ip4dst));
+
+    spec->spi = htonl(ta_fields->spi);
+    spec->tos = ta_fields->tos_or_tclass;
+}
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_TCPIP4_SPEC
+static void
+tcpip4_from_ta(const ta_ethtool_rx_cls_rule_fields *ta_fields,
+               struct ethtool_tcpip4_spec *spec)
+{
+    memcpy(&spec->ip4src, &ta_fields->src_l3_addr,
+           sizeof(spec->ip4src));
+    memcpy(&spec->ip4dst, &ta_fields->dst_l3_addr,
+           sizeof(spec->ip4dst));
+
+    spec->psrc = htons(ta_fields->src_port);
+    spec->pdst = htons(ta_fields->dst_port);
+    spec->tos = ta_fields->tos_or_tclass;
+}
+#endif
+
+static te_errno
+rule_fields_ta2h(uint32_t flow_type, te_bool mask,
+                 const ta_ethtool_rx_cls_rule_fields *ta_fields,
+                 union ethtool_flow_union *h_fields)
+{
+    UNUSED(mask);
+
+    switch (flow_type)
+    {
+#ifdef HAVE_STRUCT_ETHTOOL_TCPIP4_SPEC
+        case TCP_V4_FLOW:
+        case UDP_V4_FLOW:
+        case SCTP_V4_FLOW:
+            tcpip4_from_ta(ta_fields,
+                           (struct ethtool_tcpip4_spec *)h_fields);
+            break;
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_AH_ESPIP4_SPEC
+        case AH_V4_FLOW:
+        case ESP_V4_FLOW:
+            ah_espip4_from_ta(ta_fields,
+                              (struct ethtool_ah_espip4_spec *)h_fields);
+            break;
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_USRIP4_SPEC
+        case IPV4_USER_FLOW:
+            usrip4_from_ta(ta_fields, mask,
+                           (struct ethtool_usrip4_spec *)h_fields);
+            break;
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_TCPIP6_SPEC
+        case TCP_V6_FLOW:
+        case UDP_V6_FLOW:
+        case SCTP_V6_FLOW:
+            tcpip6_from_ta(ta_fields,
+                           (struct ethtool_tcpip6_spec *)h_fields);
+            break;
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_AH_ESPIP6_SPEC
+        case AH_V6_FLOW:
+        case ESP_V6_FLOW:
+            ah_espip6_from_ta(ta_fields,
+                              (struct ethtool_ah_espip6_spec *)h_fields);
+            break;
+#endif
+
+#ifdef HAVE_STRUCT_ETHTOOL_USRIP6_SPEC
+        case IPV6_USER_FLOW:
+            usrip6_from_ta(ta_fields,
+                           (struct ethtool_usrip6_spec *)h_fields);
+            break;
+#endif
+
+        case ETHER_FLOW:
+            ether_from_ta(ta_fields, (struct ethhdr *)h_fields);
+            break;
+
+        default:
+            ERROR("%s(): not supported flow type 0x%x", __FUNCTION__,
+                  flow_type);
+            return TE_EINVAL;
+    }
+
+    return 0;
+}
+
+/* Check whether given buffer contains only zeroes */
+
+static te_bool
+data_is_zero(const void *data, size_t len)
+{
+    const uint8_t *p = (uint8_t *)data;
+    size_t i;
+
+    for (i = 0; i < len; i++)
+    {
+        if (p[i] != 0)
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+#define DATA_IS_ZERO(data_) data_is_zero(&data_, sizeof(data_))
+
+/* Fill ethtool_flow_ext structure from data stored in TA structure */
+static void
+rule_ext_fields_ta2h(uint32_t flow_type,
+                     const ta_ethtool_rx_cls_rule_fields *ta_fields,
+                     struct ethtool_rx_flow_spec *h_spec,
+                     struct ethtool_flow_ext *h_fields)
+{
+#if FLOW_MAC_EXT != 0
+    if (!DATA_IS_ZERO(ta_fields->dst_mac) && flow_type != ETHER_FLOW)
+    {
+        h_spec->flow_type |= FLOW_MAC_EXT;
+        memcpy(h_fields->h_dest, ta_fields->dst_mac,
+               sizeof(h_fields->h_dest));
+    }
+#endif
+
+    if (!DATA_IS_ZERO(ta_fields->vlan_tpid) ||
+        !DATA_IS_ZERO(ta_fields->vlan_tci) ||
+        !DATA_IS_ZERO(ta_fields->data0) ||
+        !DATA_IS_ZERO(ta_fields->data1))
+    {
+        h_spec->flow_type |= FLOW_EXT;
+        h_fields->vlan_etype = htons(ta_fields->vlan_tpid);
+        h_fields->vlan_tci = htons(ta_fields->vlan_tci);
+        h_fields->data[0] = htonl(ta_fields->data0);
+        h_fields->data[1] = htonl(ta_fields->data1);
+    }
+}
+
+/*
+ * Fill native Rx classification rule structure with data stored
+ * in TA structure.
+ */
+static te_errno
+rule_ta2h(const ta_ethtool_rx_cls_rule *ta_rule,
+          struct ethtool_rxnfc *h_rule)
+{
+    te_errno rc;
+
+    memset(h_rule, 0, sizeof(*h_rule));
+
+    h_rule->fs.location = ta_rule->location;
+
+#ifdef RX_CLS_LOC_SPECIAL
+    if (ta_rule->location == RX_CLS_LOC_ANY ||
+        ta_rule->location == RX_CLS_LOC_FIRST ||
+        ta_rule->location == RX_CLS_LOC_LAST)
+    {
+        h_rule->fs.location |= RX_CLS_LOC_SPECIAL;
+    }
+#endif
+
+    h_rule->fs.flow_type = ta_rule->flow_type;
+
+    h_rule->fs.ring_cookie = ta_rule->rx_queue;
+
+    if (ta_rule->rss_context >= 0)
+    {
+        h_rule->fs.flow_type |= FLOW_RSS;
+        h_rule->rss_context = ta_rule->rss_context;
+    }
+
+    rc = rule_fields_ta2h(ta_rule->flow_type, FALSE, &ta_rule->field_values,
+                          &h_rule->fs.h_u);
+    if (rc != 0)
+        return rc;
+
+    rc = rule_fields_ta2h(ta_rule->flow_type, TRUE, &ta_rule->field_masks,
+                          &h_rule->fs.m_u);
+    if (rc != 0)
+        return rc;
+
+    rule_ext_fields_ta2h(ta_rule->flow_type, &ta_rule->field_values,
+                         &h_rule->fs, &h_rule->fs.h_ext);
+    rule_ext_fields_ta2h(ta_rule->flow_type, &ta_rule->field_masks,
+                         &h_rule->fs, &h_rule->fs.m_ext);
+
+    return 0;
+}
+
+/* See description in conf_ethtool.h */
+te_errno
+ta_ethtool_get_rx_cls_rule(unsigned int gid, const char *if_name,
+                           unsigned int location,
+                           ta_ethtool_rx_cls_rule **rule_out)
+{
+    te_string obj_name = TE_STRING_INIT_STATIC(MAX_OBJ_NAME_LEN);
+    struct ethtool_rxnfc rule;
+    ta_ethtool_rx_cls_rule *ta_rule;
+    ta_cfg_obj_t *obj;
+    te_errno rc = 0;
+
+    rc = te_string_append_chk(&obj_name, "%s.%u", if_name, location);
+    if (rc != 0)
+        goto cleanup;
+
+    obj = ta_obj_find(TA_OBJ_TYPE_IF_RX_CLS_RULE,
+                      te_string_value(&obj_name),
+                      gid);
+    if (obj != NULL)
+    {
+        *rule_out = obj->user_data;
+        return 0;
+    }
+
+    ta_rule = TE_ALLOC(sizeof(*ta_rule));
+    if (ta_rule == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto cleanup;
+    }
+
+    memset(&rule, 0, sizeof(rule));
+    rule.fs.location = location;
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_GRXCLSRULE, &rule);
+    if (rc != 0)
+        goto cleanup;
+
+    rc = rule_h2ta(&rule, ta_rule);
+    if (rc != 0)
+        goto cleanup;
+
+    rc = ta_obj_add(TA_OBJ_TYPE_IF_RX_CLS_RULE, te_string_value(&obj_name),
+                    "", gid, ta_rule, &free, &obj);
+
+cleanup:
+
+    if (rc == 0)
+        *rule_out = ta_rule;
+    else
+        free(ta_rule);
+
+    return rc;
+}
+
+/* See description in conf_ethtool.h */
+te_errno
+ta_ethtool_add_rx_cls_rule(unsigned int gid, const char *if_name,
+                           unsigned int location,
+                           ta_ethtool_rx_cls_rule **rule_out)
+{
+    te_string obj_name = TE_STRING_INIT_STATIC(MAX_OBJ_NAME_LEN);
+    ta_ethtool_rx_cls_rule *ta_rule = NULL;
+    ta_cfg_obj_t *obj;
+    te_errno rc = 0;
+
+    rc = te_string_append_chk(&obj_name, "%s.%u", if_name, location);
+    if (rc != 0)
+        goto cleanup;
+
+    ta_rule = TE_ALLOC(sizeof(*ta_rule));
+    if (ta_rule == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto cleanup;
+    }
+
+    ta_rule->location = location;
+    ta_rule->rss_context = -1;
+
+    rc = ta_obj_add(TA_OBJ_TYPE_IF_RX_CLS_RULE, te_string_value(&obj_name),
+                    "", gid, ta_rule, &free, &obj);
+
+cleanup:
+
+    if (rc == 0)
+    {
+        if (rule_out != NULL)
+            *rule_out = ta_rule;
+    }
+    else
+    {
+        free(ta_rule);
+    }
+
+    return rc;
+}
+
+/* See description in conf_ethtool.h */
+te_errno
+ta_ethtool_commit_rx_cls_rule(unsigned int gid, const char *if_name,
+                              unsigned int location,
+                              unsigned int *ret_location)
+{
+    te_errno rc;
+    te_string obj_name = TE_STRING_INIT_STATIC(MAX_OBJ_NAME_LEN);
+    ta_cfg_obj_t *obj;
+    struct ethtool_rxnfc rule;
+    ta_ethtool_rx_cls_rule *ta_rule = NULL;
+
+    rc = te_string_append_chk(&obj_name, "%s.%u", if_name, location);
+    if (rc != 0)
+        return rc;
+
+    obj = ta_obj_find(TA_OBJ_TYPE_IF_RX_CLS_RULE,
+                      te_string_value(&obj_name),
+                      gid);
+    if (obj == NULL)
+    {
+        /*
+         * Nothing to commit. This is normal; commit is called
+         * in case of delete operation even though there is
+         * no need in that.
+         */
+        return 0;
+    }
+
+    ta_rule = obj->user_data;
+    rc = rule_ta2h(ta_rule, &rule);
+    if (rc != 0)
+    {
+        ta_obj_free(obj);
+        return rc;
+    }
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_SRXCLSRLINS, &rule);
+    if (rc == 0)
+        *ret_location = rule.fs.location;
+
+    ta_obj_free(obj);
+    return rc;
+}
+
+/* See description in conf_ethtool.h */
+te_errno
+ta_ethtool_del_rx_cls_rule(const char *if_name,
+                           unsigned int location)
+{
+    struct ethtool_rxnfc rule;
+
+    memset(&rule, 0, sizeof(rule));
+    rule.fs.location = location;
+
+    return call_ethtool_ioctl(if_name, ETHTOOL_SRXCLSRLDEL, &rule);
+}
+
+#endif /* ifdef ETHTOOL_GRXCLSRLALL */
 
 #endif

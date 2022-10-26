@@ -319,6 +319,17 @@ extern void ta_cfg_obj_log(const ta_cfg_obj_t *obj);
  */
 #define TA_OBJ_TYPE_IF_PFLAGS "if_pflags"
 
+/*
+ * Name for the object type containing list of RX classification
+ * rules.
+ */
+#define TA_OBJ_TYPE_IF_RX_CLS_RULES "if_rx_cls_rules"
+
+/**
+ * Name for the object type containing RX classification rule.
+ */
+#define TA_OBJ_TYPE_IF_RX_CLS_RULE "if_rx_cls_rule"
+
 /** System-independent route types */
 typedef enum ta_route_type {
     TA_RT_TYPE_UNSPECIFIED,

@@ -275,3 +275,18 @@ if unix_daemons.length() != 0
         )
     endif
 endif
+
+flow_spec_types = [
+    'struct ethtool_tcpip4_spec',
+    'struct ethtool_ah_espip4_spec',
+    'struct ethtool_usrip4_spec',
+    'struct ethtool_tcpip6_spec',
+    'struct ethtool_ah_espip6_spec',
+    'struct ethtool_usrip6_spec',
+]
+
+foreach t : flow_spec_types
+    if cc.has_type(t, prefix: '#include <linux/ethtool.h>')
+        c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+    endif
+endforeach

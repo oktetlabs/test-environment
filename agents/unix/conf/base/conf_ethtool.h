@@ -16,6 +16,13 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_string.h"
@@ -460,5 +467,149 @@ extern te_errno ta_ethtool_commit_rssh(unsigned int gid,
 #endif
 
 #endif
+
+#ifdef ETHTOOL_GRXCLSRLALL
+
+/** Information about Rx rules */
+typedef struct ta_ethtool_rx_cls_rules {
+    unsigned int table_size;  /**< Size of rules table */
+    unsigned int rule_cnt;    /**< Current number of rules */
+    te_bool spec_loc_flag;    /**< If @c TRUE, special insert locations
+                                   for rules are supported */
+    unsigned int *locs;       /**< Locations of existing rules in rules
+                                   table */
+} ta_ethtool_rx_cls_rules;
+
+/* Maximum size of level 3 (IP) address */
+#define TA_MAX_L3_ADDR sizeof(struct in6_addr)
+
+/* Fields defining network flow for Rx classification rule */
+typedef struct ta_ethtool_rx_cls_rule_fields {
+    /** Source MAC address */
+    uint8_t src_mac[ETH_ALEN];
+    /** Destination MAC address */
+    uint8_t dst_mac[ETH_ALEN];
+    /** EtherType */
+    uint16_t ether_type;
+    /** VLAN tag protocol identifier */
+    uint16_t vlan_tpid;
+    /** VLAN tag control information */
+    uint16_t vlan_tci;
+    /** First number of user-defined data */
+    uint32_t data0;
+    /** Second number of user-defined data */
+    uint32_t data1;
+
+    /** Level 3 (IP) source address */
+    uint8_t src_l3_addr[TA_MAX_L3_ADDR];
+    /** Level 3 (IP) destination address */
+    uint8_t dst_l3_addr[TA_MAX_L3_ADDR];
+    /** Source port (TCP, UDP) */
+    uint16_t src_port;
+    /** Destination port (TCP, UDP) */
+    uint16_t dst_port;
+    /** IPv4 TOS or IPv6 traffic class */
+    uint8_t tos_or_tclass;
+    /** Security Parameters Index */
+    uint32_t spi;
+    /** First four bytes of L4 (transport) header */
+    uint32_t l4_4_bytes;
+    /** Transport protocol number */
+    uint8_t l4_proto;
+} ta_ethtool_rx_cls_rule_fields;
+
+/** Description of Rx classification rule */
+typedef struct ta_ethtool_rx_cls_rule {
+    /** Location in rules table */
+    uint32_t location;
+
+    /** Network flow type (TCP_V4_FLOW, ETHER_FLOW, etc) */
+    uint32_t flow_type;
+    /** RSS context (negative means not set) */
+    intmax_t rss_context;
+    /** Rx queue */
+    uintmax_t rx_queue;
+
+    /** Values of network flow fields */
+    ta_ethtool_rx_cls_rule_fields field_values;
+    /** Masks of network flow fields */
+    ta_ethtool_rx_cls_rule_fields field_masks;
+} ta_ethtool_rx_cls_rule;
+
+/**
+ * Get information about Rx rules.
+ *
+ * @param gid         Request group ID
+ * @param if_name     Interface name
+ * @param rules_data  Where to save pointer to ta_ethtool_rx_cls_rules
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_get_rx_cls_rules(
+                                      unsigned int gid, const char *if_name,
+                                      ta_ethtool_rx_cls_rules **rules_data);
+
+/**
+ * Get information about specific Rx classification rule.
+ *
+ * @param gid             Request group ID
+ * @param if_name         Interface name
+ * @param location        Rule location
+ * @param rule_out        Where to save pointer to rule data
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_get_rx_cls_rule(
+                                      unsigned int gid, const char *if_name,
+                                      unsigned int location,
+                                      ta_ethtool_rx_cls_rule **rule_out);
+
+/**
+ * Add a new Rx classification rule (should be committed later).
+ *
+ * @param gid             Request group ID
+ * @param if_name         Interface name
+ * @param location        Rule location
+ * @param rule_out        Where to save pointer to rule data
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_add_rx_cls_rule(
+                                      unsigned int gid, const char *if_name,
+                                      unsigned int location,
+                                      ta_ethtool_rx_cls_rule **rule_out);
+
+/**
+ * Commit changes made to existing Rx classification rule or insert a new
+ * rule.
+ *
+ * @param gid             Request group ID
+ * @param if_name         Interface name
+ * @param location        Rule location (may be one of special rule
+ *                        insert location values like @c RX_CLS_LOC_ANY)
+ * @param ret_location    Resulting rule location (may be different from
+ *                        requested @p location if special value was
+ *                        passed)
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_commit_rx_cls_rule(
+                                            unsigned int gid,
+                                            const char *if_name,
+                                            unsigned int location,
+                                            unsigned int *ret_location);
+
+/**
+ * Remove existing Rx classification rule.
+ *
+ * @param if_name         Interface name
+ * @param location        Rule location
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_del_rx_cls_rule(const char *if_name,
+                                           unsigned int location);
+
+#endif /* ifdef ETHTOOL_GRXCLSRLALL */
 
 #endif /* !__TE_AGENTS_UNIX_CONF_BASE_CONF_ETHTOOL_H_ */
