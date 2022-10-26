@@ -32,6 +32,22 @@
 #include <unistd.h>
 #endif
 
+#if HAVE_SCHED_H
+#include <sched.h>
+/*
+ * cpu_set_t is used to save the ids of CPUs connected to cpu_items.
+ * Information about caches available to corresponding cpu_items is
+ * added using these CPUs ids.
+ */
+#ifdef CPU_SETSIZE
+#define SUPPORT_CACHES 1
+#endif
+#endif
+
+#ifndef SUPPORT_CACHES
+#define SUPPORT_CACHES 0
+#endif
+
 #include "ctype.h"
 
 #include "te_stdint.h"
@@ -67,6 +83,9 @@ typedef union cpu_properties {
 typedef struct cpu_item {
     LIST_ENTRY(cpu_item) next;
 
+#if SUPPORT_CACHES
+    cpu_set_t vcpus;
+#endif
     cpu_item_type type;
     unsigned int id;
     cpu_properties prop;
@@ -123,6 +142,9 @@ init_item(cpu_item_type type, unsigned int id, cpu_properties prop,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
+#if SUPPORT_CACHES
+    CPU_ZERO(&result->vcpus);
+#endif
     result->type = type;
     result->id = id;
     result->prop = prop;
@@ -167,6 +189,11 @@ add_cpu_item(cpu_item_list *root, cpu_item_type type, unsigned int *ids,
 
             LIST_INSERT_HEAD(list, item, next);
         }
+
+#if SUPPORT_CACHES
+        if (type == CPU_ITEM_THREAD)
+            CPU_SET(ids[type], &item->vcpus);
+#endif
 
         list = &item->children;
     }
