@@ -179,6 +179,40 @@ addition to overall design approval.
 `Tested-by:` means that the reviewer has tried the changeset or entire patch
 series, checked that it does the job and found no regressions.
 
+#### Breaking changes
+
+A change is breaking if testsuites using some part of TE need to be updated,
+or else they would not compile, would crash or misbehave.
+
+The presence of a breaking change must be indicated by the `Breaks:` trailer
+containing a description of what exactly was broken. It may be a reference
+to a particular symbol, a particular header or some other info that is
+sufficient for testsuite maintainers to assess whether they are affected by
+the change.
+
+Changes that are generally non-breaking:
+
+ - documentation and style changes
+ - changes that do not affect the public API, e.g. if a better algorithm or
+   a more robust implementation is employed
+ - bugfixes (if a function crashed on some inputs and now it returns a proper
+   error code, no user of this function is broken)
+ - addition of new modules, provided they do not introduce new build
+   dependencies
+ - addition of new API functions to existing modules
+ - addition of new fields to existing structures, when the exact binary layout
+   of a structure is not important
+ - backward-compatible changes in function signatures and object types
+   (e.g. a replacement of `long long` to `int64_t`)
+
+Changes that are generally breaking:
+
+ - introduction of new build dependencies
+ - removal of existing modules
+ - removal of public API elements
+ - changes in function signatures (addition or removal of parameters,
+   type changes)
+ - addition of function attributes, such as `format` or `deprecated`
 
 #### Example
 
