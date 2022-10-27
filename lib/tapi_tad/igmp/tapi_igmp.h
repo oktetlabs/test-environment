@@ -101,6 +101,27 @@ typedef enum {
 /** Maximum number of Group Records in list (see RFC 3376) */
 #define TAPI_IGMP3_GROUP_LIST_SIZE_MAX  65535
 
+/**
+ * Max Response Time default value in seconds, can be converted to
+ * Max Resp Code (see RFC 3376/RFC 2236, 8.3)
+ */
+#define TAPI_IGMP_QUERY_MAX_RESP_TIME_DEFAULT_S 10
+
+/**
+ * Max Response Time maximum value in seconds for IGMPv3 Query message
+ * (see RFC 3376, 4.1.1)
+ */
+#define TAPI_IGMP3_QUERY_MAX_RESP_TIME_MAX_S    3174
+
+/**
+ * Querier's Query Interval (QQI) default value in seconds, can be converted to
+ * Querier's Query Interval Code (QQIС)(see RFC 3376, 4.1.7)
+ */
+#define TAPI_IGMP3_QUERY_QQI_DEFAULT_S 125
+
+/** Querier's Query Interval (QQI) maximum value (see RFC 3376, 4.1.7) */
+#define TAPI_IGMP3_QUERY_QQI_MAX_S     31744
+
 
 /**
  * IGMPv3 Source Address List (simple array) storage
@@ -435,6 +456,58 @@ tapi_igmp3_ip4_eth_send_report(const char      *ta_name,
                                tapi_igmp3_group_list_t  *group_list,
                                in_addr_t        src_addr,
                                uint8_t         *eth_src);
+
+/**
+ * Convert Max Response Time to IGMPv3 Max Response Code.
+ * See RFC 3376, section 4.1.1.
+ *
+ * @param max_resp_time  Max Response Time in seconds.
+ *
+ * @note  Predefined @p max_resp_time values:
+ *        @ref TAPI_IGMP_QUERY_MAX_RESP_TIME_DEFAULT_S
+ *        @ref TAPI_IGMP3_QUERY_MAX_RESP_TIME_MAX_S
+ *
+ * @return               Max Response Code suitable for writing to
+ *                       IGMPv3 Query message.
+ */
+extern uint8_t tapi_igmp3_max_response_time_to_code(unsigned max_resp_time);
+
+/**
+ * Convert IGMPv3 Max Response Code to Max Response Time.
+ * See RFC 3376, section 4.1.1.
+ *
+ * @param max_resp_code  Max Response Code in exponential form
+ *                       from IGMPv3 Query message.
+ *
+ * @return               Max Response Time in seconds.
+ */
+extern unsigned tapi_igmp3_max_response_code_to_time(uint8_t max_resp_code);
+
+/**
+ * Convert Querier's Query Interval to Querier's Query Interval Code.
+ * See RFC 3376, section 4.1.7.
+ *
+ * @param qqi  Querier's Query Interval (QQI) in seconds.
+ *
+ * @note  Predefined @p qqi values:
+ *        @ref TAPI_IGMP3_QUERY_QQI_DEFAULT_S
+ *        @ref TAPI_IGMP3_QUERY_QQI_MAX_S
+ *
+ * @return     Querier's Query Interval Code (QQIC) suitable for writing to
+ *             IGMPv3 Query message.
+ */
+extern uint8_t tapi_igmp3_qqi_to_qqic(unsigned qqi);
+
+/**
+ * Convert Querier's Query Interval Code to Querier's Query Interval.
+ * See RFC 3376, section 4.1.7.
+ *
+ * @param qqic  Querier's Query Interval Code (QQIC) in exponential form
+ *              from IGMPv3 Query message.
+ *
+ * @return      Querier's Query Interval (QQI) in seconds.
+ */
+extern unsigned tapi_igmp3_qqic_to_qqi(uint8_t qqic);
 
 /**
  * Add IGMPv3 Query PDU as the last PDU to the last unit of the traffic

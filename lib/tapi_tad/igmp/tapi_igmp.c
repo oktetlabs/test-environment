@@ -525,6 +525,112 @@ tapi_igmp3_ip4_eth_send_report(const char      *ta_name,
     return rc;
 }
 
+
+/* Threshold from which the exponential form of time representation is used */
+#define IGMP3_TIME_EXPONENTIAL      128
+
+/**
+ * Convert encoded exponential timeout code to seconds.
+ * See RFC 3376, section 4.1.1, 4.1.7.
+ *
+ * @param code  Time interval in exponential form.
+ *
+ * @return      Time interval in traditional linear representation.
+ */
+static unsigned
+tapi_igmp3_code_to_time(uint8_t code)
+{
+    unsigned interval = 0;
+
+    if (code < IGMP3_TIME_EXPONENTIAL)
+    {
+        interval = code;
+    }
+    else
+    {
+        uint8_t mant = code & 0x0f;
+        uint8_t exp = (code & 0x70) >> 4;
+
+        interval = (mant | 0x10) << (exp + 3);
+    }
+
+    return interval;
+}
+
+/**
+ * Convert IGMPv3 time to exponential code.
+ * See RFC 3376, section 4.1.1, 4.1.7.
+ *
+ * @param interval  Time interval in traditional linear representation:
+ *                  - 1/10 second for Max Resp Code
+ *                  - seconds for Querier's Query Interval Code
+ *
+ * @return          Time interval in exponential form suitable for
+ *                  Max Resp Code field and
+ *                  QQIC (Querier's Query Interval Code) field
+ *                  of IGMPv3 Query message.
+ */
+static uint8_t
+tapi_igmp3_time_to_code(unsigned interval)
+{
+    const uint8_t mant_max = 0x0f;
+    const uint8_t exp_min  = 0;
+    const uint8_t exp_max  = 0x07;
+    unsigned      mant     = 0;
+    uint8_t       exp      = 0;
+    uint8_t       code     = 0;
+
+
+    if (interval < IGMP3_TIME_EXPONENTIAL)
+        return (uint8_t)interval;
+
+    for (exp = exp_min; exp <= exp_max; exp++)
+    {
+        /* Round down time to represent in exponential form */
+        mant = interval >> (exp + 3);
+        if (mant <= (mant_max | 0x10))
+            break;
+    }
+    mant &= mant_max;
+
+    code = 0x80 | (exp << 4) | mant;
+
+    return code;
+}
+
+#undef IGMP3_TIME_EXPONENTIAL
+
+/* See the description in tapi_igmp.h */
+uint8_t
+tapi_igmp3_max_response_time_to_code(unsigned max_resp_time)
+{
+    /* Max Response Code represented in units of 1/10 second */
+    return tapi_igmp3_time_to_code(max_resp_time * 10);
+}
+
+/* See the description in tapi_igmp.h */
+unsigned
+tapi_igmp3_max_response_code_to_time(uint8_t max_resp_code)
+{
+    /* Max Response Code represented in units of 1/10 second */
+    return tapi_igmp3_code_to_time(max_resp_code) / 10;
+}
+
+/* See the description in tapi_igmp.h */
+uint8_t
+tapi_igmp3_qqi_to_qqic(unsigned qqi)
+{
+    return tapi_igmp3_time_to_code(qqi);
+}
+
+/* See the description in tapi_igmp.h */
+unsigned
+tapi_igmp3_qqic_to_qqi(uint8_t qqic)
+{
+    return tapi_igmp3_code_to_time(qqic);
+}
+
+
 /* See the description in tapi_igmp.h */
 te_errno
 tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
