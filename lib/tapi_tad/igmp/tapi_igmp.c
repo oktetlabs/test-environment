@@ -715,6 +715,7 @@ tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
 {
     te_errno       rc = 0;
     asn_value     *pkt_tmpl = NULL;
+    in_addr_t      dst_addr = 0;
 
     rc = tapi_igmp3_add_query_pdu(&pkt_tmpl, NULL, FALSE,
                                   max_resp_code, group_addr, s_flag,
@@ -723,16 +724,19 @@ tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
         return rc;
 
     /* Add IPv4 layer header to PDU template/pattern */
+    dst_addr =
+        (group_addr == htonl(INADDR_ANY)) ? TAPI_MCAST_ADDR_ALL_HOSTS :
+                                            group_addr;
     if (skip_eth)
     {
         rc = tapi_igmp_add_ip4_pdu(&pkt_tmpl, NULL, FALSE,
-                                   TAPI_MCAST_ADDR_ALL_MCR,
+                                   dst_addr,
                                    src_addr);
     }
     else
     {
         rc = tapi_igmp_add_ip4_eth_pdu(&pkt_tmpl, NULL, FALSE,
-                                       TAPI_MCAST_ADDR_ALL_MCR,
+                                       dst_addr,
                                        src_addr, eth_src);
     }
     if (rc != 0)
