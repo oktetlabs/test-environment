@@ -113,6 +113,12 @@ typedef enum {
  */
 #define TAPI_IGMP3_QUERY_MAX_RESP_TIME_MAX_S    3174
 
+/** Suppress Router-Side Processing flag (see RFC 3376, 4.1.5) */
+#define TAPI_IGMP3_QUERY_S_DEFAULT 0
+
+/** Querier's Robustness Variable (see RFC 3376, 4.1.6) */
+#define TAPI_IGMP3_QUERY_QRV_DEFAULT 2
+
 /**
  * Querier's Query Interval (QQI) default value in seconds, can be converted to
  * Querier's Query Interval Code (QQIС)(see RFC 3376, 4.1.7)
@@ -585,6 +591,32 @@ tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
                               te_bool                skip_eth,
                               uint8_t               *eth_src);
 
+/**
+ * Send IGMPv3 Group Membership Query message with default timeouts and flags.
+ *
+ * @param ta_name       Test Agent name.
+ * @param session       RCF SID.
+ * @param csap          igmp.ip4.eth CSAP handle to send IGMP message through.
+ * @param group_addr    Multicast Group Address field of IGMPv3 Query message.
+ * @param src_list      List of source addresses to be sent in this PDU,
+ *                      or @c NULL.
+ * @param src_addr      IPv4 layer Source Address field or @c INADDR_ANY to
+ *                      keep unspecified.
+ * @param skip_eth      Do not add @p eth_src.
+ * @param eth_src       Ethernet layer Source Address field or @c NULL to keep
+ *                      unspecified.
+ *
+ * @return              Status code.
+ */
+extern te_errno
+tapi_igmp3_ip4_eth_send_query_default(const char            *ta_name,
+                                      int                    session,
+                                      csap_handle_t          csap,
+                                      in_addr_t              group_addr,
+                                      tapi_igmp3_src_list_t *src_list,
+                                      in_addr_t              src_addr,
+                                      te_bool                skip_eth,
+                                      uint8_t               *eth_src);
 
 /**
  * Initialise Source Address List instance
@@ -911,6 +943,36 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
                 IGMPV3_BLOCK_OLD_SOURCES, (_group_addr), _addr1)),      \
         (_src_addr), (_src_mac))
 
+/**
+ * Send IGMPv3 query.
+ *
+ * @param _pco         RPC server.
+ * @param _csap        igmp.ip4.eth CSAP handle to send IGMP message through.
+ * @param _group_addr  Multicast Group Address field of IGMPv3 Query message.
+ * @param _src_addr    IPv4 layer Source Address field or @c INADDR_ANY to
+ *                     keep unspecified.
+ * @param _skip_eth    Do not add @p _src_mac
+ * @param _src_mac     Ethernet layer Source Address field or @c NULL to keep
+ *                     unspecified.
+ * @param ...          List of source addresses to be added to the record.
+ *                     May be omitted.
+ */
+#define IGMP3_SEND_QUERY(_pco, _csap, _group_addr,               \
+                         _src_addr, _skip_eth, _src_mac, ...)    \
+    do {                                                         \
+        tapi_igmp3_src_list_t *sl_magic_5201 = NULL;             \
+                                                                 \
+        __VA_OPT__(sl_magic_5201 = IGMP3_SRC_LIST(__VA_ARGS__);) \
+        CHECK_RC(tapi_igmp3_ip4_eth_send_query_default(          \
+                     (_pco)->ta, (_pco)->sid,                    \
+                     (_csap),                                    \
+                     (_group_addr),                              \
+                     sl_magic_5201,                              \
+                     (_src_addr),                                \
+                     (_skip_eth), (_src_mac)));                  \
+        tapi_igmp3_src_list_free(sl_magic_5201);                 \
+        free(sl_magic_5201);                                     \
+    } while (0)
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -746,7 +746,31 @@ tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
     return rc;
 }
 
-
+/* See the description in tapi_igmp.h */
+extern te_errno
+tapi_igmp3_ip4_eth_send_query_default(const char            *ta_name,
+                                      int                    session,
+                                      csap_handle_t          csap,
+                                      in_addr_t              group_addr,
+                                      tapi_igmp3_src_list_t *src_list,
+                                      in_addr_t              src_addr,
+                                      te_bool                skip_eth,
+                                      uint8_t               *eth_src)
+{
+    return tapi_igmp3_ip4_eth_send_query(
+        ta_name, session,
+        csap,
+        tapi_igmp3_max_response_time_to_code(
+            TAPI_IGMP_QUERY_MAX_RESP_TIME_DEFAULT_S),
+        group_addr,
+        TAPI_IGMP3_QUERY_S_DEFAULT,
+        TAPI_IGMP3_QUERY_QRV_DEFAULT,
+        tapi_igmp3_qqi_to_qqic(TAPI_IGMP3_QUERY_QQI_DEFAULT_S),
+        src_list,
+        src_addr,
+        skip_eth,
+        eth_src);
+}
 
 /* See the description in tapi_igmp.h */
 te_errno
