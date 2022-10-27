@@ -478,6 +478,20 @@ extern int rpc_rte_pktmbuf_redist(rcf_rpc_server *rpcs,
  */
 extern int rpc_rte_vlan_strip(rcf_rpc_server *rpcs, rpc_rte_mbuf_p m);
 
+/**
+ * Calculate CRC of a packet in the mbuf
+ *
+ * @param m               RTE mbuf pointer
+ * @param crc_in_data     Is CRC in packet data
+ * @param crc             Calculated CRC
+ *
+ * @return @c 0 on success; jumps out in case of failure
+ */
+extern int rpc_rte_pktmbuf_calc_packet_crc(rcf_rpc_server *rpcs,
+                                           rpc_rte_mbuf_p m,
+                                           te_bool crc_in_data,
+                                           uint32_t *crc);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */
 
 #ifdef __cplusplus
