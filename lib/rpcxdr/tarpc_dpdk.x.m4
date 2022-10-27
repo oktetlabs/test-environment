@@ -2297,6 +2297,21 @@ struct tarpc_dpdk_find_representors_out {
     tarpc_int            retval;
 };
 
+/** rte_pktmbuf_calc_packet_crc() */
+struct tarpc_rte_pktmbuf_calc_packet_crc_in {
+    struct tarpc_in_arg  common;
+
+    tarpc_rte_mbuf       m;
+    tarpc_bool           crc_in_data;
+};
+
+struct tarpc_rte_pktmbuf_calc_packet_crc_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+    uint32_t             crc;
+};
+
 program dpdk
 {
     version ver0
@@ -2346,6 +2361,7 @@ program dpdk
         RPC_DEF(rte_pktmbuf_get_tx_offload)
         RPC_DEF(rte_pktmbuf_set_tx_offload)
         RPC_DEF(rte_pktmbuf_refcnt_update)
+        RPC_DEF(rte_pktmbuf_calc_packet_crc)
 
         RPC_DEF(rte_pktmbuf_redist)
 

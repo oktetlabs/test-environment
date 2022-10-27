@@ -15,12 +15,14 @@
 #include "rte_config.h"
 #include "rte_mbuf.h"
 #include "rte_ether.h"
+#include "rte_net_crc.h"
 
 #include "logger_api.h"
 
 #include "rpc_server.h"
 #include "rpcs_dpdk.h"
 #include "rpc_dpdk_defs.h"
+#include "te_alloc.h"
 #include "te_errno.h"
 
 static uint64_t
@@ -1337,5 +1339,40 @@ TARPC_FUNC_STATIC(rte_vlan_strip, {},
     });
 
     MAKE_CALL(out->retval = func(m));
+}
+)
+
+TARPC_FUNC_STANDALONE(rte_pktmbuf_calc_packet_crc, {},
+{
+    uint8_t    *bounce_buf = NULL;
+    const void *pkt_data = NULL;
+    struct      rte_mbuf *m;
+    uint32_t    data_len;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+    });
+
+    data_len = m->pkt_len - ((in->crc_in_data) ? RTE_ETHER_CRC_LEN : 0);
+
+    bounce_buf = TE_ALLOC(data_len);
+    if (bounce_buf == NULL)
+    {
+        out->retval = TE_ENOMEM;
+        goto done;
+    }
+
+    pkt_data = rte_pktmbuf_read(m, 0, data_len, (void *)bounce_buf);
+    if (pkt_data == NULL)
+    {
+        out->retval = TE_EFAULT;
+        goto done;
+    }
+
+    out->crc = rte_net_crc_calc(pkt_data, data_len, RTE_NET_CRC32_ETH);
+
+done:
+    free(bounce_buf);
+    neg_errno_h2rpc(&out->retval);
 }
 )
