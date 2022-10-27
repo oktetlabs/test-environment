@@ -14,6 +14,28 @@
       type: none
       depends:
         - oid: "/agent/rsrc"
+        - oid: "/agent/module"
       d: |
          Block devices list.
          Name: Name of the block device
+
+    - oid: "/agent/block/loop"
+      access: read_only
+      type: integer
+      d: |
+        1 if the block device is a loop block device;
+        0 otherwise.
+        If a device is not a loop, all children of this
+        node will return empty strings.
+
+    - oid: "/agent/block/loop/backing_file"
+      access: read_write
+      type: string
+      d: |
+        Backing file for a loop block device.
+
+    - oid: "/agent/block/loop/backing_file/offset"
+      access: read_write
+      type: uint64
+      d: |
+        Offset within a backing file.
