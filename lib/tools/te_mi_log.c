@@ -27,6 +27,7 @@
 #include "tq_string.h"
 #include "te_mi_log.h"
 #include "te_vector.h"
+#include "math.h"
 
 #define TE_MI_LOG_VERSION 1
 
@@ -313,9 +314,18 @@ te_mi_meas_value_str_append(const te_mi_meas_value *value, te_mi_meas_type type,
 {
     te_errno rc;
 
-    rc = te_string_append(str,
-            "{\"aggr\":"TE_MI_STR_FMT",\"value\":%.3f,",
-            te_mi_meas_aggr2str(value->aggr), value->val);
+    if (!isfinite(value->val))
+    {
+        rc = te_string_append(str,
+                "{\"aggr\":"TE_MI_STR_FMT",\"value\":null,",
+                te_mi_meas_aggr2str(value->aggr));
+    }
+    else
+    {
+        rc = te_string_append(str,
+                "{\"aggr\":"TE_MI_STR_FMT",\"value\":%.3f,",
+                te_mi_meas_aggr2str(value->aggr), value->val);
+    }
 
     if (rc == 0)
     {
