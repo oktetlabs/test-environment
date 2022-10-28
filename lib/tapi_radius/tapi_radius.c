@@ -723,9 +723,9 @@ tapi_radius_serv_set(const char *ta_name, const tapi_radius_serv_t *cfg)
         }                                                           \
     } while (0)
 
-    RADIUS_CFG_SET_VALUE("auth_port", CFG_VAL(INTEGER, cfg->auth_port),
+    RADIUS_CFG_SET_VALUE("auth_port", CFG_VAL(INT32, cfg->auth_port),
                          "Authentication Port");
-    RADIUS_CFG_SET_VALUE("acct_port", CFG_VAL(INTEGER, cfg->acct_port),
+    RADIUS_CFG_SET_VALUE("acct_port", CFG_VAL(INT32, cfg->acct_port),
                          "Accounting Port");
     RADIUS_CFG_SET_VALUE("net_addr", CFG_VAL(ADDRESS, &addr),
                          "Network Address");
@@ -820,7 +820,7 @@ tapi_radius_serv_add_user(const char *ta_name,
     assert(ta_name != NULL && user_name != NULL);
 
     if ((rc = cfg_add_instance_fmt(&handle,
-                                   CFG_VAL(INTEGER, acpt_user ? 1 : 0),
+                                   CFG_VAL(INT32, acpt_user ? 1 : 0),
                                    "/agent:%s/radiusserver:/user:%s",
                                    ta_name, user_name)) != 0)
     {

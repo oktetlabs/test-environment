@@ -124,7 +124,7 @@ tapi_cfg_xen_set_rcf_port(char const *ta, unsigned int port)
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, port),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, port),
                                    "/agent:%s/xen:/rcf_port:", ta)) != 0)
     {
         ERROR("Failed to set RCF port on %s", ta);
@@ -326,7 +326,7 @@ tapi_cfg_xen_set_accel(char const *ta, te_bool accel)
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, accel ? 1 : 0),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, accel ? 1 : 0),
                                    "/agent:%s/xen:/accel:",
                                    ta)) != 0)
     {
@@ -350,7 +350,7 @@ tapi_cfg_xen_set_init(char const *ta, te_bool init)
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, init ? 1 : 0),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, init ? 1 : 0),
                                    "/agent:%s/xen:/init:",
                                    ta)) != 0)
     {
@@ -375,7 +375,7 @@ tapi_cfg_xen_create_dom_u(char const *ta, char const *dom_u)
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, 0),
+    if ((rc = cfg_add_instance_fmt(NULL, CFG_VAL(INT32, 0),
                                    "/agent:%s/xen:/dom_u:%s",
                                    ta, dom_u)) != 0)
     {
@@ -383,7 +383,7 @@ tapi_cfg_xen_create_dom_u(char const *ta, char const *dom_u)
               "directory and images in XEN storage", dom_u, ta);
     }
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                                    "/agent:%s/xen:/dom_u:%s",
                                    ta, dom_u)) != 0)
     {
@@ -417,7 +417,7 @@ tapi_cfg_xen_destroy_dom_u(char const *ta, char const *dom_u)
     }
 
     /* Remove directory/disk images of domU from XEN storage */
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                                    "/agent:%s/xen:/dom_u:%s",
                                    ta, dom_u)) != 0)
     {
@@ -590,7 +590,7 @@ tapi_cfg_xen_dom_u_set_memory_size(char const *ta, char const *dom_u,
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, size),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, size),
                                    "/agent:%s/xen:/dom_u:%s/memory:",
                                    ta, dom_u)) != 0)
     {
@@ -985,7 +985,7 @@ tapi_cfg_xen_dom_u_bridge_set_accel(char const *ta, char const *dom_u,
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, accel ? 1 : 0),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, accel ? 1 : 0),
                                    "/agent:%s/xen:/dom_u:%s"
                                    "/bridge:%s/accel:",
                                    ta, dom_u, bridge)) != 0)
@@ -1074,7 +1074,7 @@ tapi_cfg_xen_dom_u_migrate(char const *from_ta, char const *to_ta,
     if (running)
     {
         /* Set kind of migration (live/non-live) */
-        if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, live),
+        if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, live),
                                        "/agent:%s/xen:/dom_u:%s/"
                                        "migrate:/kind:",
                                        from_ta, dom_u)) != 0)
@@ -1103,7 +1103,7 @@ tapi_cfg_xen_dom_u_migrate(char const *from_ta, char const *to_ta,
     }
 
     /* Create domU on target agent (domU will have "non-running" state) */
-    if ((rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, 1),
+    if ((rc = cfg_add_instance_fmt(NULL, CFG_VAL(INT32, 1),
                                    "/agent:%s/xen:/dom_u:%s",
                                    to_ta, dom_u)) != 0)
     {

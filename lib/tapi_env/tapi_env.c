@@ -497,7 +497,7 @@ tapi_env_free(tapi_env *env)
             else
             {
                 n_entries -= n_deleted;
-                rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, n_entries),
+                rc = cfg_set_instance_fmt(CFG_VAL(INT32, n_entries),
                                           "%s/n_entries:", ip_net_oid);
                 if (rc != 0)
                 {

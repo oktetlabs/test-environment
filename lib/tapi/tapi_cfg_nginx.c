@@ -285,7 +285,7 @@ tapi_cfg_nginx_http_upstream_keepalive_num_set(const char *ta,
                                                unsigned int keepalive_num)
 {
 
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, keepalive_num),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, keepalive_num),
                 TE_CFG_TA_NGINX_US_FMT,
                 TE_CFG_TA_NGINX_US_ARGS(ta, inst_name, us_name));
 }
@@ -333,7 +333,7 @@ tapi_cfg_nginx_http_us_server_weight_set(const char *ta,
                                          const char *srv_name,
                                          unsigned int weight)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, weight),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, weight),
                 TE_CFG_TA_NGINX_US_SRV_FMT,
                 TE_CFG_TA_NGINX_US_SRV_ARGS(ta, inst_name, us_name, srv_name));
 }

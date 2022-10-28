@@ -207,7 +207,7 @@ cfg_job_start(const tapi_job_t *job)
     const char *ta = tapi_job_get_ta(job);
     const char *ps_name = tapi_job_get_name(job);
 
-    rc  = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+    rc  = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                                TE_CFG_TA_PS "/status:", ta, ps_name);
     if (rc != 0)
         ERROR("Cannot start process '%s' on TA '%s': %r", ps_name, ta, rc);
@@ -462,7 +462,7 @@ cfg_job_stop(const tapi_job_t *job, int signo, int term_timeout_ms)
     if (term_timeout_ms != -1)
         WARN_PARAM_NOT_SUPPORTED(term_timeout_ms);
 
-    rc  = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+    rc  = cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                                TE_CFG_TA_PS "/status:", ta, ps_name);
     if (rc != 0)
         ERROR("Cannot stop process '%s' on TA '%s': %r", ps_name, ta, rc);
@@ -496,7 +496,7 @@ cfg_job_set_autorestart(const tapi_job_t *job, unsigned int value)
     const char *ta = tapi_job_get_ta(job);
     const char *ps_name = tapi_job_get_name(job);
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, value),
                               TE_CFG_TA_PS "/autorestart:", ta, ps_name);
     if (rc != 0)
     {

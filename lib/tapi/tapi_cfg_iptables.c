@@ -50,7 +50,7 @@ tapi_cfg_iptables_chain_set(const char *ta,
     INFO("Set iptables chain (TA:%s, ifname:%s, table:%s, chain:%s) %s",
          ta, ifname, table, chain, enable ? "ON" : "OFF");
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, enable),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, enable),
                               "/agent:%s/interface:%s/iptables:"
                               "/table:%s/chain:%s",
                               ta, ifname, table, chain);
@@ -90,14 +90,14 @@ tapi_cfg_iptables_chain_add(const char *ta,
                            "/table:%s/chain:%s", ta, ifname,
                            table, chain)) == 0)
     {
-        if ((rc = cfg_set_instance(handle, CFG_VAL(INTEGER, enable))) != 0)
+        if ((rc = cfg_set_instance(handle, CFG_VAL(INT32, enable))) != 0)
         {
             ERROR("Failed to setup iptables chain %s for %s table on %s, "
                   "rc=%r", chain, table, ifname, rc);
             return rc;
         }
     }
-    else if ((rc = cfg_add_instance_fmt(&handle, CFG_VAL(INTEGER, enable),
+    else if ((rc = cfg_add_instance_fmt(&handle, CFG_VAL(INT32, enable),
                                         "/agent:%s/interface:%s/iptables:"
                                         "/table:%s/chain:%s",
                                         ta, ifname, table, chain)) != 0)

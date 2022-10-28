@@ -352,7 +352,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
 
     if (save_sid)
     {
-        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, sid),
+        rc = cfg_set_instance_fmt(CFG_VAL(INT32, sid),
                                   "/agent:%s/rpcserver:%s/sid:", ta, name);
         if (rc != 0)
             RETERR(rc, "Cannot add RPC server instance");
@@ -512,7 +512,7 @@ rcf_rpc_server_mark_deleted_threads(rcf_rpc_server *rpcs)
             if (servers[i] != my_handle)
             {
                 rc = cfg_set_instance_fmt(
-                                     CFG_VAL(INTEGER, 1),
+                                     CFG_VAL(INT32, 1),
                                      "/agent:%s/rpcserver:%s/finished:",
                                      rpcs->ta, name);
                 if (rc != 0)

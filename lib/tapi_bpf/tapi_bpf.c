@@ -763,7 +763,7 @@ tapi_bpf_map_set_writable(const char *ta, unsigned int bpf_id, const char *map)
     assert(ta != NULL);
     assert(map != NULL);
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, value),
                                    "/agent:%s/bpf:%u/map:%s/writable:",
                                    ta, bpf_id, map)) != 0)
     {
@@ -784,7 +784,7 @@ tapi_bpf_map_unset_writable(const char *ta, unsigned int bpf_id, const char *map
     assert(ta != NULL);
     assert(map != NULL);
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, value),
                                    "/agent:%s/bpf:%u/map:%s/writable:",
                                    ta, bpf_id, map)) != 0)
     {
@@ -1046,7 +1046,7 @@ tapi_bpf_perf_event_init(const char *ta, unsigned int bpf_id,
     te_errno rc = 0;
     int      val;
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, event_size),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, event_size),
                                    "/agent:%s/bpf:%u/perf_map:%s/event_size:",
                                    ta, bpf_id, map)) != 0)
     {
@@ -1056,7 +1056,7 @@ tapi_bpf_perf_event_init(const char *ta, unsigned int bpf_id,
         return rc;
     }
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                                   "/agent:%s/bpf:%u/perf_map:%s"
                                   "/events_enable:",
                                   ta, bpf_id, map)) != 0)
@@ -1094,7 +1094,7 @@ tapi_bpf_perf_event_deinit(const char *ta, unsigned int bpf_id,
 {
     te_errno rc = 0;
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                                   "/agent:%s/bpf:%u/perf_map:%s"
                                   "/events_enable:",
                                   ta, bpf_id, map)) != 0)

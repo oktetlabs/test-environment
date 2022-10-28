@@ -153,7 +153,7 @@ tapi_cfg_vm_start(const char *ta, const char *vm_name)
 {
     te_errno rc;
 
-    rc  = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+    rc  = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                                TE_CFG_TA_VM "/status:", ta, vm_name);
     if (rc != 0)
         ERROR("Cannot start VM %s on TA %s: %r", vm_name, ta, rc);
@@ -167,7 +167,7 @@ tapi_cfg_vm_stop(const char *ta, const char *vm_name)
 {
     te_errno rc;
 
-    rc  = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+    rc  = cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                                TE_CFG_TA_VM "/status:", ta, vm_name);
     if (rc != 0)
         ERROR("Cannot stop VM %s on TA %s: %r", vm_name, ta, rc);
@@ -192,7 +192,7 @@ tapi_cfg_vm_add_drive(const char *ta, const char *vm_name,
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, snapshot),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, snapshot),
                                TE_CFG_TA_VM "/drive:%s/snapshot:",
                                ta, vm_name, drive_name);
     if (rc != 0)

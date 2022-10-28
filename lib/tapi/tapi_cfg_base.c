@@ -450,7 +450,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
     }
     else
     {
-        rc = cfg_add_instance_fmt(cfg_hndl, CFG_VAL(INTEGER, prefix),
+        rc = cfg_add_instance_fmt(cfg_hndl, CFG_VAL(INT32, prefix),
                                   "%s/net_addr:%s", oid,
                                   inet_ntop(addr->sa_family,
                                             te_sockaddr_get_netaddr(addr),
@@ -961,7 +961,7 @@ do { \
     if (old_mtu != NULL)
         *old_mtu = old_mtu_l;
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, mtu),
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, mtu),
                                    "/agent:%s/interface:%s/mtu:",
                                    agent, interface)) != 0)
         MTU_ERR("%s(): Failed to set new MTU for %s on %s: %r",
@@ -977,14 +977,14 @@ do { \
     {
         RING("Network interface %s on %s will put down/up to avoid "
              "configurator-IPv6 problems.", interface, agent);
-        if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+        if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                                        "/agent:%s/interface:%s/status:",
                                         agent, interface)) != 0)
             MTU_ERR("%s(): Failed to put down interface %s on %s: %r",
                     __FUNCTION__, interface, agent, rc);
         sleep(1);
 
-        if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+        if ((rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                                        "/agent:%s/interface:%s/status:",
                                        agent, interface)) != 0)
             MTU_ERR("%s(): Failed to put up interface %s on %s: %r",

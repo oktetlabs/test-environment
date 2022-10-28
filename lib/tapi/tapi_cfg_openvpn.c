@@ -149,7 +149,7 @@ tapi_cfg_openvpn_peer_port_set(const char *ta, tapi_openvpn_id id,
 {
     int ival = (int)val;
 
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, ival),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, ival),
                                 "/agent:%s/openvpn:%s/client:/peer:%s/port:",
                                 ta, (const char *)id, (const char *)peer);
 }

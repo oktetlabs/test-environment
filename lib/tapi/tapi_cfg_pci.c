@@ -193,7 +193,7 @@ tapi_cfg_pci_enable_vfs_of_pf(const char *pf_oid, unsigned int n_vfs)
 {
     te_errno rc;
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, n_vfs),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, n_vfs),
                               "%s/sriov:/num_vfs:", pf_oid);
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
         ERROR("Failed to set the number of VFs for a device: %r", rc);

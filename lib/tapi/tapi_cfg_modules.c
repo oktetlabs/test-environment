@@ -34,7 +34,7 @@ tapi_cfg_module_change_finish(const char *ta_name, const char *mod_name)
     if (rsrc_name == NULL)
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                               "/agent:%s/rsrc:%s/shared:",
                               ta_name, rsrc_name);
     if (rc != 0)
@@ -135,19 +135,19 @@ tapi_cfg_module_grab(const char *ta_name, const char *mod_name,
             goto out;
     }
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                               "/agent:%s/rsrc:%s/fallback_shared:",
                               ta_name, rsrc_name);
     if (rc != 0)
         goto out;
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, grab_timeout_ms),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, grab_timeout_ms),
                               "/agent:%s/rsrc:%s/acquire_attempts_timeout:",
                               ta_name, rsrc_name);
     if (rc != 0)
         goto out;
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, *shared),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, *shared),
                               "/agent:%s/rsrc:%s/shared:",
                               ta_name, rsrc_name);
     if (rc != 0)
@@ -229,7 +229,7 @@ static te_errno
 tapi_cfg_module_loaded_set(const char *ta_name, const char *mod_name,
                            te_bool loaded)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, loaded ? 1 : 0),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, loaded ? 1 : 0),
                                 CFG_MODULE_OID_FMT "/loaded:", ta_name,
                                 mod_name);
 }
@@ -459,7 +459,7 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
             goto out;
         }
 
-        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+        rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                                   "/agent:%s/module:%s/unload_holders:",
                                   ta_name, module_name);
         if (rc != 0)
@@ -498,7 +498,7 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
 
     if (load_dependencies)
     {
-        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+        rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                                   "/agent:%s/module:%s/filename:"
                                   "/load_dependencies:", ta_name,
                                   module_name);
@@ -510,7 +510,7 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
         }
     }
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, fallback ? 1 : 0),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, fallback ? 1 : 0),
                               "/agent:%s/module:%s/filename:/fallback:",
                               ta_name, module_name);
     if (rc != 0)

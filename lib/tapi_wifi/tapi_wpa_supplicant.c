@@ -224,11 +224,11 @@ wpa_supplicant_reset_security(const char *ta, const char *ifname)
                             CFG_SUPPLICANT_PATH_FMT "/key_mgmt:",
                             ta, ifname));
 
-    CHECK_NZ_RETURN(cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+    CHECK_NZ_RETURN(cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                             CFG_SUPPLICANT_PATH_FMT "/pmf:",
                             ta, ifname));
 
-    CHECK_NZ_RETURN(cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+    CHECK_NZ_RETURN(cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                             CFG_SUPPLICANT_PATH_FMT "/ieee80211w:",
                             ta, ifname));
 
@@ -339,11 +339,11 @@ wpa_supplicant_configure_security(
                             ? security->passphrase : "",
                         CFG_SUPPLICANT_PATH_FMT "/psk:", ta, ifname));
 
-    CHECK_NZ_RETURN(cfg_set_instance_fmt(CFG_VAL(INTEGER,
+    CHECK_NZ_RETURN(cfg_set_instance_fmt(CFG_VAL(INT32,
                         security_pmf2val(security->pmf)),
                         CFG_SUPPLICANT_PATH_FMT "/pmf:", ta, ifname));
 
-    CHECK_NZ_RETURN(cfg_set_instance_fmt(CFG_VAL(INTEGER,
+    CHECK_NZ_RETURN(cfg_set_instance_fmt(CFG_VAL(INT32,
                         security_pmf2val(security->ieee80211w)),
                         CFG_SUPPLICANT_PATH_FMT "/ieee80211w:", ta, ifname));
 
@@ -450,7 +450,7 @@ tapi_wpa_supplicant_reset(const char *ta, const char *ifname)
 te_errno
 tapi_wpa_supplicant_start(const char *ta, const char *ifname)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 1), CFG_SUPPLICANT_PATH_FMT,
+    return cfg_set_instance_fmt(CFG_VAL(INT32, 1), CFG_SUPPLICANT_PATH_FMT,
                                 ta, ifname);
 }
 
@@ -458,7 +458,7 @@ tapi_wpa_supplicant_start(const char *ta, const char *ifname)
 te_errno
 tapi_wpa_supplicant_stop(const char *ta, const char *ifname)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 0), CFG_SUPPLICANT_PATH_FMT,
+    return cfg_set_instance_fmt(CFG_VAL(INT32, 0), CFG_SUPPLICANT_PATH_FMT,
                                 ta, ifname);
 }
 

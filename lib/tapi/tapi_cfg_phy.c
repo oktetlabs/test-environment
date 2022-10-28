@@ -31,7 +31,7 @@ te_errno
 tapi_cfg_phy_autoneg_set(const char *ta, const char *if_name, int state)
 {
     return cfg_set_instance_local_fmt(
-                            CFG_VAL(INTEGER, state),
+                            CFG_VAL(INT32, state),
                             "/agent:%s/interface:%s/phy:/autoneg:",
                             ta, if_name);
 }
@@ -205,7 +205,7 @@ tapi_cfg_phy_speed_admin_set(const char *ta, const char *if_name, int speed)
 {
     te_errno rc = 0;
 
-    rc = cfg_set_instance_local_fmt(CFG_VAL(INTEGER, speed),
+    rc = cfg_set_instance_local_fmt(CFG_VAL(INT32, speed),
                             "/agent:%s/interface:%s/phy:/speed_admin:",
                             ta, if_name);
 

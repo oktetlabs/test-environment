@@ -239,7 +239,7 @@ tapi_cfg_sys_set_int(const char *ta, int val, int *old_val,
     te_errno rc;
 
     va_start(ap, fmt);
-    rc = tapi_cfg_sys_set_va(ta, CFG_VAL(INTEGER, val), old_val, fmt, ap);
+    rc = tapi_cfg_sys_set_va(ta, CFG_VAL(INT32, val), old_val, fmt, ap);
     va_end(ap);
 
     return rc;
@@ -397,7 +397,7 @@ tapi_cfg_sys_ns_set_int(const char *ta, int val, int *old_val,
     te_errno rc;
 
     va_start(ap, fmt);
-    rc = tapi_cfg_sys_ns_set_va(ta, CFG_VAL(INTEGER, val), old_val, fmt, ap);
+    rc = tapi_cfg_sys_ns_set_va(ta, CFG_VAL(INT32, val), old_val, fmt, ap);
     va_end(ap);
 
     return rc;

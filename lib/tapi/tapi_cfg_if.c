@@ -97,7 +97,7 @@ tapi_cfg_if_feature_set(const char *ta,
         (feature_name == NULL))
         return TE_EINVAL;
 
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, feature_value),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, feature_value),
                                 TE_CFG_TA_IF_FMT "/feature:%s",
                                 ta, ifname, feature_name);
 }

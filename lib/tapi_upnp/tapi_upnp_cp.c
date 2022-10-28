@@ -43,7 +43,7 @@ tapi_upnp_cp_start(const char *ta, const char *target, const char *iface)
         ERROR("Failed to set the network interface");
         return rc;
     }
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                               TE_CFG_UPNP_CP_ROOT_FMT "/enable:", ta);
     if (rc != 0)
     {
@@ -57,7 +57,7 @@ tapi_upnp_cp_start(const char *ta, const char *target, const char *iface)
 te_errno
 tapi_upnp_cp_stop(const char *ta)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                                 TE_CFG_UPNP_CP_ROOT_FMT "/enable:", ta);
 }
 

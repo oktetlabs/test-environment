@@ -578,7 +578,7 @@ tapi_cfg_base_if_up(const char *ta, const char *iface)
 {
     int if_status = 1; /* enable */
 
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, if_status),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, if_status),
                                 "/agent:%s/interface:%s/status:",
                                 ta, iface);
 }
@@ -588,7 +588,7 @@ tapi_cfg_base_if_down(const char *ta, const char *iface)
 {
     int if_status = 0; /* disable */
 
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, if_status),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, if_status),
                                 "/agent:%s/interface:%s/status:",
                                 ta, iface);
 
@@ -617,7 +617,7 @@ tapi_cfg_base_if_arp_enable(const char *ta, const char * iface)
 {
     int arp_use = 1; /* enable */
 
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, arp_use),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, arp_use),
                                 "/agent:%s/interface:%s/arp:",
                                 ta, iface);
 }
@@ -627,7 +627,7 @@ tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
 {
     int arp_use = 0; /* disable */
 
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, arp_use),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, arp_use),
                                 "/agent:%s/interface:%s/arp:",
                                 ta, iface);
 }
@@ -648,7 +648,7 @@ tapi_cfg_base_if_set_promisc(const char *ta,
 {
     int val = (enable ? 1 : 0);
 
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, val),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, val),
                                 "/agent:%s/interface:%s/promisc:",
                                 ta, ifname);
 }

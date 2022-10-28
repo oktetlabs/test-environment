@@ -447,7 +447,7 @@ extern te_errno rcf_rpc_server_destroy(rcf_rpc_server *rpcs);
 static inline te_errno
 rcf_rpc_server_dead(rcf_rpc_server *rpcs)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                                 "/agent:%s/rpcserver:%s/dead:",
                                 rpcs->ta, rpcs->name);
 }
@@ -464,7 +464,7 @@ rcf_rpc_server_dead(rcf_rpc_server *rpcs)
 static inline te_errno
 rcf_rpc_server_finished(rcf_rpc_server *rpcs)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                                 "/agent:%s/rpcserver:%s/finished:",
                                 rpcs->ta, rpcs->name);
 }

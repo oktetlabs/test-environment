@@ -728,7 +728,7 @@ tapi_radius_disable_auth(const char *ta_name,
 {
     assert(auth != NULL);
     auth->valid = FALSE;
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                                 "/agent:%s/radiusserver:/user:%s",
                                 ta_name, auth->identity);
 }
@@ -745,7 +745,7 @@ tapi_radius_disable_auth(const char *ta_name,
 static inline te_errno
 tapi_supp_set(const char *ta_name, const char *if_name, int value)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, value),
                                 "/agent:%s/interface:%s/supplicant:",
                                 ta_name, if_name);
 }

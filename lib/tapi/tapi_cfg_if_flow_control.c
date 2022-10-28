@@ -33,7 +33,7 @@ te_errno
 tapi_cfg_if_fc_autoneg_set(const char *ta, const char *ifname,
                            int autoneg)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, autoneg),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, autoneg),
                                 COMMON_FMT "/autoneg:",
                                 ta, ifname);
 }
@@ -44,7 +44,7 @@ tapi_cfg_if_fc_autoneg_set_local(const char *ta,
                                  const char *ifname,
                                  int autoneg)
 {
-    return cfg_set_instance_local_fmt(CFG_VAL(INTEGER, autoneg),
+    return cfg_set_instance_local_fmt(CFG_VAL(INT32, autoneg),
                                       COMMON_FMT "/autoneg:",
                                       ta, ifname);
 }
@@ -64,7 +64,7 @@ tapi_cfg_if_fc_rx_get(const char *ta, const char *ifname, int *rx)
 te_errno
 tapi_cfg_if_fc_rx_set(const char *ta, const char *ifname, int rx)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, rx),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, rx),
                                 COMMON_FMT "/rx:",
                                 ta, ifname);
 }
@@ -74,7 +74,7 @@ te_errno
 tapi_cfg_if_fc_rx_set_local(const char *ta, const char *ifname,
                             int rx)
 {
-    return cfg_set_instance_local_fmt(CFG_VAL(INTEGER, rx),
+    return cfg_set_instance_local_fmt(CFG_VAL(INT32, rx),
                                       COMMON_FMT "/rx:",
                                       ta, ifname);
 }
@@ -94,7 +94,7 @@ tapi_cfg_if_fc_tx_get(const char *ta, const char *ifname, int *tx)
 te_errno
 tapi_cfg_if_fc_tx_set(const char *ta, const char *ifname, int tx)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, tx),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, tx),
                                 COMMON_FMT "/tx:",
                                 ta, ifname);
 }
@@ -104,7 +104,7 @@ te_errno
 tapi_cfg_if_fc_tx_set_local(const char *ta, const char *ifname,
                             int tx)
 {
-    return cfg_set_instance_local_fmt(CFG_VAL(INTEGER, tx),
+    return cfg_set_instance_local_fmt(CFG_VAL(INT32, tx),
                                       COMMON_FMT "/tx:",
                                       ta, ifname);
 }

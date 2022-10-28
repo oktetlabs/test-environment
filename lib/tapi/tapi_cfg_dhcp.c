@@ -52,7 +52,7 @@ tapi_cfg_dhcps_add_subnet(const char            *ta,
     }
 
     /* Add subnet configuration entry */
-    rc = cfg_add_instance_fmt(handle, CFG_VAL(INTEGER, prefix_len),
+    rc = cfg_add_instance_fmt(handle, CFG_VAL(INT32, prefix_len),
                               TE_CFG_TA_DHCP_SERVER_FMT "/subnet:%s",
                               ta, str);
     free(str);

@@ -137,7 +137,7 @@ tapi_cfg_socks_proto_add(const char         *ta,
                          tapi_socks_proto_id proto_id,
                          int                 proto)
 {
-    return cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, proto),
+    return cfg_add_instance_fmt(NULL, CFG_VAL(INT32, proto),
                                 TE_CFG_TA_SOCKS_FMT "/proto:%s",
                                 TE_CFG_TA_SOCKS_ARGS(ta, id),
                                 (const char *)proto_id);

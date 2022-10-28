@@ -49,7 +49,7 @@ sniffer_enable_sync(tapi_sniffer_id *snif_id)
     te_errno        rc;
     char            sn_oid[CFG_OID_MAX];
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                               TE_CFG_SNIF_FMT "/enable:",
                               snif_id->ta, snif_id->ifname,
                               snif_id->snifname);
@@ -206,7 +206,7 @@ tapi_sniffer_add(const char *ta, const char *iface, const char *name,
 
     if (ofill == TRUE)
     {
-        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1), TE_CFG_SNIF_FMT
+        rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1), TE_CFG_SNIF_FMT
                                   "/tmp_logs:/overfill_meth:",
                                   ta, iface, snifname);
         if (rc != 0)
@@ -308,7 +308,7 @@ tapi_sniffer_stop(tapi_sniffer_id *id)
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                                 TE_CFG_SNIF_FMT "/enable:",
                                 id->ta, id->ifname, id->snifname);
 }
@@ -422,7 +422,7 @@ tapi_sniffer_common_snaplen_set(const char *ta, int snaplen)
 {
     te_errno rc;
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, snaplen),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, snaplen),
                               "/agent:%s/sniffer_settings:/snaplen:", ta);
     if (rc != 0)
     {

@@ -174,7 +174,7 @@ tapi_cfg_key_add(const char *ta, const char *key_name,
     if (rc != 0)
         goto fail;
 
-    rc = cfg_set_instance_local_fmt(CFG_VAL(INTEGER, bit_size),
+    rc = cfg_set_instance_local_fmt(CFG_VAL(INT32, bit_size),
                                     "/agent:%s/key:%s/bitsize:", ta, key_name);
     if (rc != 0)
         goto fail;

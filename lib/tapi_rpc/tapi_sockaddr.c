@@ -110,7 +110,7 @@ tapi_allocate_port(struct rcf_rpc_server *pco, uint16_t *p_port)
     }
 
     /* Set /volatile:/sockaddr_port */
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, port),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, port),
                               "/volatile:/sockaddr_port:");
     if (rc != 0)
     {

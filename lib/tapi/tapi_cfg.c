@@ -1089,7 +1089,7 @@ add_nexthops(const char *ta,
         }
 
         rc = cfg_set_instance_local_fmt(
-                  CFG_VAL(INTEGER, hops[i].weight),
+                  CFG_VAL(INT32, hops[i].weight),
                   "/agent:%s/route:%s/nexthop:%u/weight:",
                   ta, route_inst_name, i);
         if (rc != 0)
@@ -1360,7 +1360,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
  */
 #define CFG_RT_SET_LOCAL(field_) \
             if ((rc = cfg_set_instance_local_fmt(               \
-                          CFG_VAL(INTEGER, field_),             \
+                          CFG_VAL(INT32, field_),             \
                           "/agent:%s/route:%s/" #field_ ":",    \
                           ta, route_inst_name)) != 0)           \
             {                                                   \
@@ -1457,7 +1457,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
 #define CFG_RT_SET_LOCAL(field_) \
             if (field_ != 0 &&                                  \
                 (rc = cfg_set_instance_local_fmt(               \
-                          CFG_VAL(INTEGER, field_),               \
+                          CFG_VAL(INT32, field_),               \
                           "/agent:%s/route:%s/" #field_ ":",    \
                           ta, route_inst_name)) != 0)           \
             {                                                   \
@@ -2279,7 +2279,7 @@ tapi_cfg_add_net(const char *net_pool, const struct sockaddr *net_addr,
     }
 
     /* Add new entry to the pool */
-    rc = cfg_add_instance_fmt(&net, CFG_VAL(INTEGER, state),
+    rc = cfg_add_instance_fmt(&net, CFG_VAL(INT32, state),
                               "%s/entry:%s", net_pool, buf);
     if (rc != 0)
     {
@@ -2287,7 +2287,7 @@ tapi_cfg_add_net(const char *net_pool, const struct sockaddr *net_addr,
               __FUNCTION__, net_pool, buf, rc);
         return rc;
     }
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, prefix),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, prefix),
                               "%s/entry:%s/prefix:", net_pool, buf);
     if (rc != 0)
     {
@@ -2295,7 +2295,7 @@ tapi_cfg_add_net(const char *net_pool, const struct sockaddr *net_addr,
               __FUNCTION__, net_pool, buf, rc);
         return rc;
     }
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                               "%s/entry:%s/n_entries:", net_pool, buf);
     if (rc != 0)
     {
@@ -2508,7 +2508,7 @@ tapi_cfg_insert_net_addr(cfg_handle        net_pool_entry,
     }
 
     /* Add used entry in the pool */
-    rc = cfg_add_instance_fmt(&entry, CFG_VAL(INTEGER, 1),
+    rc = cfg_add_instance_fmt(&entry, CFG_VAL(INT32, 1),
                               "%s/pool:/entry:%s", net_oid, buf);
     if (rc != 0)
     {
@@ -2520,7 +2520,7 @@ tapi_cfg_insert_net_addr(cfg_handle        net_pool_entry,
     }
 
     /* Update number of entries ASAP */
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, n_entries),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, n_entries),
                               "%s/n_entries:", net_oid);
     if (rc != 0)
     {
@@ -2565,7 +2565,7 @@ tapi_cfg_alloc_net_addr(cfg_handle net_pool_entry, cfg_handle *p_entry,
 te_errno
 tapi_cfg_set_loglevel(const char *agent, int level)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, level),
+    return cfg_set_instance_fmt(CFG_VAL(INT32, level),
                                 "/agent:%s/sys:/console_loglevel:", agent);
 }
 
@@ -2593,7 +2593,7 @@ tapi_cfg_set_loglevel_save(const char *ta, int new_val, int *old_val)
 
     if (new_val != prev_val && new_val >= 0)
     {
-        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, new_val),
+        rc = cfg_set_instance_fmt(CFG_VAL(INT32, new_val),
                                   "/agent:%s/sys:/console_loglevel:", ta);
         if (rc != 0)
         {
@@ -2659,7 +2659,7 @@ tapi_cfg_set_int_str(int value, int *old_value, const char *oid)
             return rc;
     }
 
-    rc = cfg_set_instance_str(CFG_VAL(INTEGER, value), oid);
+    rc = cfg_set_instance_str(CFG_VAL(INT32, value), oid);
     if (rc != 0)
         ERROR("Failed to set %s to %d", oid, value);
 

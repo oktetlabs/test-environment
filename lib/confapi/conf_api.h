@@ -416,7 +416,7 @@ extern te_errno cfg_add_instance_str(const char *oid, cfg_handle *p_handle,
  * but OID may be format string.
  *
  * Use macro CFG_VAL() to make the second and the third arguments pair.
- * E.g. rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, 1), "/hello:tom");
+ * E.g. rc = cfg_add_instance_fmt(NULL, CFG_VAL(INT32, 1), "/hello:tom");
  */
 extern te_errno cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
                                      const void *val, const char *oid_fmt, ...)
@@ -464,7 +464,7 @@ extern te_errno cfg_add_instance_local_str(const char   *oid,
  * but OID may be format string.
  *
  * Use macro CFG_VAL() to make the second and the third arguments pair.
- * E.g. rc = cfg_add_instance_local_fmt(NULL, CFG_VAL(INTEGER, 1),
+ * E.g. rc = cfg_add_instance_local_fmt(NULL, CFG_VAL(INT32, 1),
  *                                      "/hello:tom");
  */
 extern te_errno cfg_add_instance_local_fmt(cfg_handle *p_handle,
@@ -551,7 +551,7 @@ extern te_errno cfg_set_instance(cfg_handle handle, cfg_val_type type, ...);
  * Set instance by the OID. OID may be format string.
  *
  * Use macro CFG_VAL() to make the first and the second arguments pair.
- * E.g. rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1), "/hello:");
+ * E.g. rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1), "/hello:");
  */
 extern te_errno cfg_set_instance_fmt(cfg_val_type type, const void *val,
                                      const char *oid_fmt, ...)
@@ -561,7 +561,7 @@ extern te_errno cfg_set_instance_fmt(cfg_val_type type, const void *val,
  * Set instance by the OID string.
  *
  * Use macro CFG_VAL() to make the first and the second arguments pair.
- * E.g. rc = cfg_set_instance_str(CFG_VAL(INTEGER, 1), "/hello:");
+ * E.g. rc = cfg_set_instance_str(CFG_VAL(INT32, 1), "/hello:");
  *
  * @param type      value type (necessary for fast processing)
  * @param val       value to set

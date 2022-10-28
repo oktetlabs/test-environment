@@ -48,7 +48,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
 
     /* Configure tunnel */
 
-    rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, 0),
+    rc = cfg_add_instance_fmt(NULL, CFG_VAL(INT32, 0),
                               "/agent:%s/vtund:/server:%u",
                               ta_srv, srv_port);
     if (rc != 0)
@@ -61,7 +61,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
     if (rc != 0)
         return rc;
 
-    rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, 0),
+    rc = cfg_add_instance_fmt(NULL, CFG_VAL(INT32, 0),
                               "/agent:%s/vtund:/client:%s-%s",
                               ta_clnt, ta_srv, ta_clnt);
     if (rc != 0)
@@ -73,19 +73,19 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
     if (rc != 0)
         return rc;
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, srv_port),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, srv_port),
                               "/agent:%s/vtund:/client:%s-%s/port:",
                               ta_clnt, ta_srv, ta_clnt);
     if (rc != 0)
         return rc;
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                               "/agent:%s/vtund:/server:%u",
                               ta_srv, srv_port);
     if (rc != 0)
         return rc;
 
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                               "/agent:%s/vtund:/client:%s-%s",
                               ta_clnt, ta_srv, ta_clnt);
     if (rc != 0)

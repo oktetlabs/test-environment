@@ -137,7 +137,7 @@ tapi_cfg_if_rss_indir_set_local(const char *ta,
                                 int val)
 {
     return cfg_set_instance_local_fmt(
-            CFG_VAL(INTEGER, val),
+            CFG_VAL(INT32, val),
             "/agent:%s/interface:%s/rss:/context:%u/hash_indir:/indir:%u",
             ta, if_name, rss_context, idx);
 }
@@ -317,7 +317,7 @@ tapi_cfg_if_rss_hfunc_set_local(const char *ta,
                                 int state)
 {
     return cfg_set_instance_local_fmt(
-          CFG_VAL(INTEGER, state),
+          CFG_VAL(INT32, state),
           "/agent:%s/interface:%s/rss:/context:%u/hash_indir:/hash_func:%s",
           ta, if_name, rss_context, func_name);
 }

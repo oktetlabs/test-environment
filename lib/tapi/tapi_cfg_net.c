@@ -290,7 +290,7 @@ tapi_cfg_net_register_net(const char *name, cfg_net_t *net, ...)
             ERROR("Failed to add node!");
             break;
         }
-        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, node->type),
+        rc = cfg_set_instance_fmt(CFG_VAL(INT32, node->type),
                                   "/net:%s/node:%d/type:", name, node_num);
         if (rc != 0)
             break;
@@ -1599,7 +1599,7 @@ tapi_cfg_net_all_up(te_bool force)
         {
             if (force)
             {
-                rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+                rc = cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                                           "%s/status:", nodes[k]);
                 if (rc != 0)
                 {
@@ -1625,7 +1625,7 @@ tapi_cfg_net_all_up(te_bool force)
     {
         if (nodes[k] == NULL)
             continue; /* Not an interface or the interface was already up */
-        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+        rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
                                   "%s/status:", nodes[k]);
         if (rc != 0)
         {
@@ -2028,7 +2028,7 @@ tapi_cfg_net_unassign_ip(unsigned int af, cfg_net_t *net,
                                      pool_entry_oid_str) == 0)
             {
                 n_entries--;
-                rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, n_entries),
+                rc = cfg_set_instance_fmt(CFG_VAL(INT32, n_entries),
                                           "%s/n_entries:",
                                           pool_entry_oid_str);
                 if (rc != 0)
@@ -2043,7 +2043,7 @@ tapi_cfg_net_unassign_ip(unsigned int af, cfg_net_t *net,
                 {
                     /* Reset pool entry "in use" value */
                     cfg_set_instance(pool_entry_handle,
-                                     CFG_VAL(INTEGER, 0));
+                                     CFG_VAL(INT32, 0));
                 }
             }
         }
