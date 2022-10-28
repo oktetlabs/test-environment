@@ -14,6 +14,7 @@
 #include "te_alloc.h"
 #include "te_errno.h"
 #include "te_str.h"
+#include "te_enum.h"
 
 #include "rte_config.h"
 #include "rte_ethdev.h"
@@ -2276,6 +2277,142 @@ TARPC_FUNC(rte_eth_rx_metadata_negotiate,
                         *features, rx_metadata_map,
                          TARPC_RTE_ETH_RX_METADATA__UNKNOWN_BIT);
     }
+
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
+
+const te_enum_trn link_speed_trn[] = {
+#define LINK_SPEED_MAP(_speed) {              \
+    .from = TARPC_RTE_ETH_SPEED_NUM_##_speed, \
+    .to = RTE_ETH_SPEED_NUM_##_speed          \
+}
+    LINK_SPEED_MAP(10M),
+    LINK_SPEED_MAP(100M),
+    LINK_SPEED_MAP(1G),
+    LINK_SPEED_MAP(2_5G),
+    LINK_SPEED_MAP(5G),
+    LINK_SPEED_MAP(10G),
+    LINK_SPEED_MAP(20G),
+    LINK_SPEED_MAP(25G),
+    LINK_SPEED_MAP(40G),
+    LINK_SPEED_MAP(50G),
+    LINK_SPEED_MAP(56G),
+    LINK_SPEED_MAP(100G),
+#undef LINK_SPEED
+    TE_ENUM_TRN_END
+};
+
+/*
+ * This map is used for translation RTE FEC capa to TARPC FEC capa.
+ * From this point of view, a particular mode can be safely considered
+ * a position of bit.
+ */
+static const te_enum_bitmask_conv fec_capa_map[] = {
+#define FEC_CAPA_BIT_MAP(_bit) {                                \
+    .bits_from = UINT64_C(1) << TARPC_RTE_ETH_FEC_##_bit##_BIT, \
+    .bits_to = RTE_ETH_FEC_MODE_CAPA_MASK(_bit)                 \
+}
+    FEC_CAPA_BIT_MAP(NOFEC),
+    FEC_CAPA_BIT_MAP(AUTO),
+    FEC_CAPA_BIT_MAP(BASER),
+    FEC_CAPA_BIT_MAP(RS),
+    FEC_CAPA_BIT_MAP(LLRS),
+#undef FEC_CAPA_BIT_MAP
+    TE_ENUM_BITMASK_CONV_END
+};
+
+static void
+tarpc_rte_speed_fec_capa2rpc(const struct rte_eth_fec_capa *rte,
+                             struct tarpc_rte_eth_fec_capa *rpc)
+{
+    rpc->speed = te_enum_translate(link_speed_trn, (int)rte->speed, TRUE,
+                                   TARPC_RTE_ETH_SPEED_NUM_UNKNOWN);
+    rpc->capa = rpc_dpdk_bitmask32_rte2rpc(rte->capa, fec_capa_map,
+                                           TARPC_RTE_ETH_FEC__UNKNOWN_BIT);
+}
+
+TARPC_FUNC(rte_eth_fec_get_capability,
+{
+    COPY_ARG(speed_fec_capa);
+},
+{
+    struct rte_eth_fec_capa *speed_fec_capa = NULL;
+    int                      i;
+
+    if (out->speed_fec_capa.speed_fec_capa_len != 0)
+    {
+        speed_fec_capa = calloc(in->num, sizeof(*speed_fec_capa));
+        if (speed_fec_capa == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, speed_fec_capa, in->num));
+
+    if (speed_fec_capa != NULL && out->retval > 0)
+    {
+        for (i = 0; i < out->retval; i++)
+        {
+            tarpc_rte_speed_fec_capa2rpc(
+                        &speed_fec_capa[i],
+                        &out->speed_fec_capa.speed_fec_capa_val[i]);
+        }
+    }
+
+    free(speed_fec_capa);
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
+
+TARPC_FUNC(rte_eth_fec_get,
+{
+    COPY_ARG(fec_capa);
+},
+{
+    uint32_t *fec_capap = NULL;
+
+    CHECK_ARG_SINGLE_PTR(out, fec_capa);
+
+    if (out->fec_capa.fec_capa_len != 0)
+        fec_capap = out->fec_capa.fec_capa_val;
+
+    MAKE_CALL(out->retval = func(in->port_id, fec_capap));
+
+    if (out->fec_capa.fec_capa_len != 0)
+    {
+        *fec_capap = rpc_dpdk_bitmask32_rte2rpc(
+                         *fec_capap, fec_capa_map,
+                         TARPC_RTE_ETH_FEC__UNKNOWN_BIT);
+    }
+
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
+
+TARPC_FUNC(rte_eth_fec_set, {},
+{
+    uint32_t fec_capa;
+    te_errno rc;
+
+    rc = rpc_dpdk_bitmask32_rpc2rte(in->fec_capa, fec_capa_map, &fec_capa);
+    if (rc != 0)
+    {
+        out->common._errno = TE_RC(TE_RPCS, rc);
+        out->retval = -out->common._errno;
+        goto done;
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, fec_capa));
 
     neg_errno_h2rpc(&out->retval);
 
