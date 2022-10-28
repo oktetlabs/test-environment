@@ -25,26 +25,34 @@ extern "C" {
 /**
  * Generate a unique basename for a file.
  *
- * @param[out] dest  The string to hold the name.
+ * If @p dest is @c NULL, a fresh string is allocated and returned.
+ *
+ * @param[out] dest  The string to hold the name or @c NULL.
  *
  * @note The name is appended to the string contents.
  *       That way it is easier to construct derived pathnames
  *       and similiar stuff.
+ *
+ * @return the pointer to the contents of @p dest or a heap-allocated buffer
  */
-extern void tapi_file_make_name(te_string *dest);
+extern char *tapi_file_make_name(te_string *dest);
 
 /**
  * Generate a unique pathname for a file on the Engine side.
  *
- * @param[out] dest    The string to hold the name.
+ * If @p dest is @c NULL, a fresh string is allocated and returned.
+ *
+ * @param[out] dest    The string to hold the name or @c NULL.
  * @param[in]  dirname Directory component (may be @c NULL,
  *                     in which case a relative name is generated)
  * @param[in]  suffix  A custom suffix to add to a generated
  *                     pathname (may be @c NULL).
  *
  * @note The name is appended to the string contents.
+ *
+ * @return the pointer to the contents of @p dest or a heap-allocated buffer
  */
-extern void tapi_file_make_custom_pathname(te_string *dest,
+extern char *tapi_file_make_custom_pathname(te_string *dest,
                                            const char *dirname,
                                            const char *suffix);
 
@@ -52,12 +60,16 @@ extern void tapi_file_make_custom_pathname(te_string *dest,
 /**
  * Generate a unique pathname for a file on the Engine side.
  *
- * @param[out] dest  The string to hold the name.
+ * If @p dest is @c NULL, a fresh string is allocated and returned.
+ *
+ * @param[out] dest  The string to hold the name or @c NULL.
  *
  * @note The name is appended to the string contents.
  * @note @c TE_TMP env variable must be set.
+ *
+ * @return the pointer to the contents of @p dest or a heap-allocated buffer
  */
-extern void tapi_file_make_pathname(te_string *dest);
+extern char *tapi_file_make_pathname(te_string *dest);
 
 /**
  * Generate unique basename for file.

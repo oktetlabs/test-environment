@@ -41,27 +41,40 @@
 #include "logger_api.h"
 #include "tapi_file.h"
 
-void
+char *
 tapi_file_make_name(te_string *dest)
 {
     static unsigned int seq = 0;
+    te_string tmp = TE_STRING_INIT;
+
+    if (dest == NULL)
+        dest = &tmp;
 
     te_string_append(dest, "te_tmp_%u_%u_%u", (unsigned)time(NULL), getpid(),
                      seq++);
+
+    return dest->ptr;
 }
 
-void
+char *
 tapi_file_make_custom_pathname(te_string *dest, const char *dirname,
                                const char *suffix)
 {
+    te_string tmp = TE_STRING_INIT;
+
+    if (dest == NULL)
+        dest = &tmp;
+
     if (dirname != NULL)
         te_string_append(dest, "%s/", dirname);
     tapi_file_make_name(dest);
     if (suffix != NULL)
         te_string_append(dest, "%s", suffix);
+
+    return dest->ptr;
 }
 
-void
+char *
 tapi_file_make_pathname(te_string *dest)
 {
     const char *te_tmp = getenv("TE_TMP");
@@ -69,7 +82,7 @@ tapi_file_make_pathname(te_string *dest)
     if (te_tmp == NULL)
         TE_FATAL_ERROR("TE_TMP is empty");
 
-    tapi_file_make_custom_pathname(dest, te_tmp, NULL);
+    return tapi_file_make_custom_pathname(dest, te_tmp, NULL);
 }
 
 char *

@@ -67,7 +67,7 @@ remove_files(rcf_rpc_server *rpcs, const char *path)
 int
 main(int argc, char **argv)
 {
-    te_string rdir = TE_STRING_INIT;
+    char *rdir = NULL;
     rcf_rpc_server *pco_iut = NULL;
     size_t          nfiles = 0;
 
@@ -76,11 +76,11 @@ main(int argc, char **argv)
     TEST_GET_UINT_PARAM(nfiles);
 
     TEST_STEP("Create a directory on TA");
-    tapi_file_make_name(&rdir);
-    rpc_mkdir(pco_iut, rdir.ptr, 0);
+    rdir = tapi_file_make_name(NULL);
+    rpc_mkdir(pco_iut, rdir, 0);
 
     TEST_STEP("Create files in the directory");
-    if (create_files(nfiles, pco_iut, rdir.ptr) != nfiles)
+    if (create_files(nfiles, pco_iut, rdir) != nfiles)
         TEST_VERDICT("Files aren't created");
 
     TEST_SUCCESS;
@@ -88,14 +88,14 @@ main(int argc, char **argv)
 cleanup:
 
     TEST_STEP("Remove the directory");
-    if (remove_files(pco_iut, rdir.ptr) != 0)
+    if (remove_files(pco_iut, rdir) != 0)
         TEST_VERDICT("Directory isn't removed");
 
-    rpc_rmdir(pco_iut, rdir.ptr);
+    rpc_rmdir(pco_iut, rdir);
 
     TEST_STEP("Check if the directory is deleted");
     RPC_AWAIT_ERROR(pco_iut);
-    if (rpc_access(pco_iut, rdir.ptr, RPC_F_OK) == 0)
+    if (rpc_access(pco_iut, rdir, RPC_F_OK) == 0)
     {
         TEST_VERDICT("The removed directory still exists");
     }
@@ -104,7 +104,7 @@ cleanup:
         TEST_VERDICT("access() failed with an unexpected error: %r",
                      RPC_ERRNO(pco_iut));
     }
-    te_string_free(&rdir);
+    free(rdir);
 
     TEST_END;
 }
