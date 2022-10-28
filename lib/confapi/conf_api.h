@@ -641,9 +641,54 @@ extern te_errno cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
                                      const char *oid_fmt, ...)
                                      __attribute__((format(printf, 3, 4)));
 
-/** Type-safe version of cfg_get_instance_fmt() for integer values */
+/**
+ * Type-safe version of cfg_get_instance_fmt() for values of int type.
+ *
+ * In reality it looks for int32 values and converts it to int. It is only
+ * for backward compability.
+ */
 extern te_errno cfg_get_int(int *val, const char *oid_fmt, ...)
                             __attribute__((format(printf, 2, 3)));
+
+/** Type-safe version of cfg_get_instance_fmt() for values of te_bool type */
+extern te_errno cfg_get_bool(te_bool *val,
+                             const char *oid_fmt, ...)
+                             __attribute__((format(printf, 2, 3)));
+
+/** Type-safe version of cfg_get_instance_fmt() for values of int8_t type */
+extern te_errno cfg_get_int8(int8_t *val,
+                             const char *oid_fmt, ...)
+                             __attribute__((format(printf, 2, 3)));
+
+/** Type-safe version of cfg_get_instance_fmt() for values of uint8_t type */
+extern te_errno cfg_get_uint8(uint8_t *val,
+                              const char *oid_fmt, ...)
+                              __attribute__((format(printf, 2, 3)));
+
+/** Type-safe version of cfg_get_instance_fmt() for values of int16_t type */
+extern te_errno cfg_get_int16(int16_t *val,
+                              const char *oid_fmt, ...)
+                              __attribute__((format(printf, 2, 3)));
+
+/** Type-safe version of cfg_get_instance_fmt() for values of uint16_t type */
+extern te_errno cfg_get_uint16(uint16_t *val,
+                               const char *oid_fmt, ...)
+                               __attribute__((format(printf, 2, 3)));
+
+/** Type-safe version of cfg_get_instance_fmt() for values of uint32_t type */
+extern te_errno cfg_get_uint32(uint32_t *val,
+                               const char *oid_fmt, ...)
+                               __attribute__((format(printf, 2, 3)));
+
+/** Type-safe version of cfg_get_instance_fmt() for values of int32_t type */
+extern te_errno cfg_get_int32(int32_t *val,
+                              const char *oid_fmt, ...)
+                              __attribute__((format(printf, 2, 3)));
+
+/** Type-safe version of cfg_get_instance_fmt() for values of int64_t type */
+extern te_errno cfg_get_int64(int64_t *val,
+                              const char *oid_fmt, ...)
+                               __attribute__((format(printf, 2, 3)));
 
 /** Type-safe version of cfg_get_instance_fmt() for values of uint64_t type */
 extern te_errno cfg_get_uint64(uint64_t *val,
@@ -697,10 +742,71 @@ extern te_errno cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
                                           const char *oid_fmt, ...)
                                           __attribute__((format(printf, 3, 4)));
 
-/** Type-safe version of cfg_get_instance_sync_fmt() for integer values */
+/**
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of int type.
+ *
+ * In reality it looks for int32 values and converts it to int. It is only
+ * for backward compability.
+ */
 extern te_errno cfg_get_int_sync(int *val,
                                  const char *oid_fmt, ...)
                                  __attribute__((format(printf, 2, 3)));
+
+/**
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of te_bool type
+ */
+extern te_errno cfg_get_bool_sync(te_bool *val,
+                                  const char *oid_fmt, ...)
+                                  __attribute__((format(printf, 2, 3)));
+
+/**
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of int8_t type
+ */
+extern te_errno cfg_get_int8_sync(int8_t *val,
+                                  const char *oid_fmt, ...)
+                                  __attribute__((format(printf, 2, 3)));
+
+/**
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of uint8_t type
+ */
+extern te_errno cfg_get_uint8_sync(uint8_t *val,
+                                   const char *oid_fmt, ...)
+                                   __attribute__((format(printf, 2, 3)));
+
+/**
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of int16_t type
+ */
+extern te_errno cfg_get_int16_sync(int16_t *val,
+                                   const char *oid_fmt, ...)
+                                   __attribute__((format(printf, 2, 3)));
+
+/**
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of uint16_t type
+ */
+extern te_errno cfg_get_uint16_sync(uint16_t *val,
+                                    const char *oid_fmt, ...)
+                                    __attribute__((format(printf, 2, 3)));
+
+/**
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of int32_t type
+ */
+extern te_errno cfg_get_int32_sync(int32_t *val,
+                                   const char *oid_fmt, ...)
+                                   __attribute__((format(printf, 2, 3)));
+
+/**
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of uint32_t type
+ */
+extern te_errno cfg_get_uint32_sync(uint32_t *val,
+                                    const char *oid_fmt, ...)
+                                    __attribute__((format(printf, 2, 3)));
+
+/**
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of int64_t type
+ */
+extern te_errno cfg_get_int64_sync(int64_t *val,
+                                   const char *oid_fmt, ...)
+                                   __attribute__((format(printf, 2, 3)));
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of uint64_t type

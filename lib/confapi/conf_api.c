@@ -1795,20 +1795,38 @@ te_errno
 cfg_get_int(int *val, const char *oid_fmt, ...)
 {
     cfg_val_type type = CVT_INT32;
+    int32_t val_tmp;
 
     _CFG_HANDLE_BY_FMT;
-    return cfg_get_instance(handle, &type, val);
+    rc = cfg_get_instance(handle, &type, &val_tmp);
+    if (rc != 0)
+        return rc;
+    *val = (int)val_tmp;
+    return 0;
 }
 
-/* See description in conf_api.h */
-te_errno
-cfg_get_uint64(uint64_t *val, const char *oid_fmt, ...)
-{
-    cfg_val_type type = CVT_UINT64;
+#define DEFINE_CFG_GET_INT_TYPE(variant_, cvt_type_, type_) \
+te_errno                                                                     \
+cfg_get_ ## variant_ (type_ *val, const char *oid_fmt, ...)                  \
+{                                                                            \
+    cfg_val_type type = cvt_type_;                                           \
+                                                                             \
+    _CFG_HANDLE_BY_FMT;                                                      \
+    return cfg_get_instance(handle, &type, val);                             \
+}                                                                            \
+struct noop
 
-    _CFG_HANDLE_BY_FMT;
-    return cfg_get_instance(handle, &type, val);
-}
+DEFINE_CFG_GET_INT_TYPE(bool, CVT_BOOL, te_bool);
+DEFINE_CFG_GET_INT_TYPE(int8, CVT_INT8, int8_t);
+DEFINE_CFG_GET_INT_TYPE(uint8, CVT_UINT8, uint8_t);
+DEFINE_CFG_GET_INT_TYPE(int16, CVT_INT16, int16_t);
+DEFINE_CFG_GET_INT_TYPE(uint16, CVT_UINT16, uint16_t);
+DEFINE_CFG_GET_INT_TYPE(int32, CVT_INT32, int32_t);
+DEFINE_CFG_GET_INT_TYPE(uint32, CVT_UINT32, uint32_t);
+DEFINE_CFG_GET_INT_TYPE(int64, CVT_INT64, int64_t);
+DEFINE_CFG_GET_INT_TYPE(uint64, CVT_UINT64, uint64_t);
+
+#undef DEFINE_CFG_GET_INT_TYPE
 
 /* See description in conf_api.h */
 te_errno
@@ -1969,20 +1987,38 @@ te_errno
 cfg_get_int_sync(int *val, const char *oid_fmt, ...)
 {
     cfg_val_type type = CVT_INT32;
+    int32_t val_tmp;
 
     _CFG_HANDLE_BY_FMT;
-    return cfg_get_instance_sync(handle, &type, val);
+    rc = cfg_get_instance_sync(handle, &type, &val_tmp);
+    if (rc != 0)
+        return rc;
+    *val = (int)val_tmp;
+    return 0;
 }
 
-/* See description in conf_api.h */
-te_errno
-cfg_get_uint64_sync(uint64_t *val, const char *oid_fmt, ...)
-{
-    cfg_val_type type = CVT_UINT64;
+#define DEFINE_CFG_GET_INT_TYPE_SYNC(variant_, cvt_type_, type_) \
+te_errno                                                                       \
+cfg_get_ ## variant_ ## _sync(type_ *val, const char *oid_fmt, ...)            \
+{                                                                              \
+    cfg_val_type type = cvt_type_;                                             \
+                                                                               \
+    _CFG_HANDLE_BY_FMT;                                                        \
+    return cfg_get_instance_sync(handle, &type, val);                          \
+}                                                                              \
+struct noop
 
-    _CFG_HANDLE_BY_FMT;
-    return cfg_get_instance_sync(handle, &type, val);
-}
+DEFINE_CFG_GET_INT_TYPE_SYNC(bool, CVT_BOOL, te_bool);
+DEFINE_CFG_GET_INT_TYPE_SYNC(int8, CVT_INT8, int8_t);
+DEFINE_CFG_GET_INT_TYPE_SYNC(uint8, CVT_UINT8, uint8_t);
+DEFINE_CFG_GET_INT_TYPE_SYNC(int16, CVT_INT16, int16_t);
+DEFINE_CFG_GET_INT_TYPE_SYNC(uint16, CVT_UINT16, uint16_t);
+DEFINE_CFG_GET_INT_TYPE_SYNC(int32, CVT_INT32, int32_t);
+DEFINE_CFG_GET_INT_TYPE_SYNC(uint32, CVT_UINT32, uint32_t);
+DEFINE_CFG_GET_INT_TYPE_SYNC(int64, CVT_INT64, int64_t);
+DEFINE_CFG_GET_INT_TYPE_SYNC(uint64, CVT_UINT64, uint64_t);
+
+#undef DEFINE_CFG_GET_INT_TYPE_SYNC
 
 /* See description in conf_api.h */
 te_errno
