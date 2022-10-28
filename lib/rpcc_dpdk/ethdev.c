@@ -3358,3 +3358,204 @@ rpc_rte_eth_rx_metadata_negotiate(rcf_rpc_server  *rpcs,
 
     RETVAL_ZERO_INT(rte_eth_rx_metadata_negotiate, out.retval);
 }
+
+static const char *
+tarpc_rte_fec_capa2str(te_string      *str,
+                       const uint32_t *fec_capa)
+{
+    int rc;
+    const te_bit2str mode2str[] = {
+#define TARPC_RTE_ETH_FEC_MODE2STR(_mode) \
+        { TARPC_RTE_ETH_FEC_##_mode##_BIT, #_mode }
+
+        TARPC_RTE_ETH_FEC_MODE2STR(NOFEC),
+        TARPC_RTE_ETH_FEC_MODE2STR(AUTO),
+        TARPC_RTE_ETH_FEC_MODE2STR(BASER),
+        TARPC_RTE_ETH_FEC_MODE2STR(RS),
+        TARPC_RTE_ETH_FEC_MODE2STR(LLRS),
+
+#undef TARPC_RTE_ETH_FEC_MODE2STR
+
+        { 0, NULL }
+    };
+
+    rc = te_bit_mask2te_str(str, *fec_capa, mode2str);
+
+    return (rc == 0) ? str->ptr : NULL;
+}
+
+int
+rpc_rte_eth_fec_get(rcf_rpc_server  *rpcs,
+                    uint16_t         port_id,
+                    uint32_t        *fec_capa)
+{
+    tarpc_rte_eth_fec_get_in   in = {};
+    tarpc_rte_eth_fec_get_out  out = {};
+    te_string                  str = TE_STRING_INIT;
+
+    TAPI_RPC_SET_IN_ARG_IF_PTR_NOT_NULL(fec_capa);
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_fec_get", &in, &out);
+
+    TAPI_RPC_CHECK_OUT_ARG_SINGLE_PTR(rte_eth_fec_get, fec_capa);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_fec_get, "port_id=%" PRIu16,
+                 "fec_capa=%s; " NEG_ERRNO_FMT, in.port_id,
+                 TAPI_RPC_LOG_ARG_TO_STR(out, fec_capa, &str,
+                                         tarpc_rte_fec_capa2str),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_string_free(&str);
+
+    TAPI_RPC_COPY_OUT_ARG_IF_PTR_NOT_NULL(fec_capa);
+
+    RETVAL_ZERO_INT(rte_eth_fec_get, out.retval);
+}
+
+static const char *
+tarpc_eth_link_num_speeds2str(uint32_t speed)
+{
+   static const te_enum_map speed_map[] = {
+        {.name = "NONE", .value = TARPC_RTE_ETH_SPEED_NUM_NONE},
+        {.name = "10M", .value = TARPC_RTE_ETH_SPEED_NUM_10M},
+        {.name = "100M", .value = TARPC_RTE_ETH_SPEED_NUM_100M},
+        {.name = "1G", .value = TARPC_RTE_ETH_SPEED_NUM_1G},
+        {.name = "2_5G", .value = TARPC_RTE_ETH_SPEED_NUM_2_5G},
+        {.name = "5G", .value = TARPC_RTE_ETH_SPEED_NUM_5G},
+        {.name = "10G", .value = TARPC_RTE_ETH_SPEED_NUM_10G},
+        {.name = "20G", .value = TARPC_RTE_ETH_SPEED_NUM_20G},
+        {.name = "25G", .value = TARPC_RTE_ETH_SPEED_NUM_25G},
+        {.name = "40G", .value = TARPC_RTE_ETH_SPEED_NUM_40G},
+        {.name = "50G", .value = TARPC_RTE_ETH_SPEED_NUM_50G},
+        {.name = "56G", .value = TARPC_RTE_ETH_SPEED_NUM_56G},
+        {.name = "100G", .value = TARPC_RTE_ETH_SPEED_NUM_100G},
+        {.name = "200G", .value = TARPC_RTE_ETH_SPEED_NUM_200G},
+        TE_ENUM_MAP_END
+    };
+
+    return te_enum_map_from_any_value(speed_map, speed, "<UNKNOWN>");
+}
+
+static const char *
+tarpc_rte_eth_fec_capa2str(te_log_buf                          *lb,
+                           const struct tarpc_rte_eth_fec_capa *speed_fec_capa)
+{
+    te_string str = TE_STRING_INIT;
+
+    te_log_buf_append(lb, "speed=%s, ", tarpc_eth_link_num_speeds2str(
+                                            speed_fec_capa->speed));
+
+    te_log_buf_append(lb, "capa=%s", tarpc_rte_fec_capa2str(
+                                         &str, &speed_fec_capa->capa));
+    te_string_free(&str);
+
+    return te_log_buf_get(lb);
+}
+
+static const char *
+tarpc_rte_eth_fec_capa_arr2str(
+    te_log_buf                          *lb,
+    const struct tarpc_rte_eth_fec_capa *speed_fec_capa,
+    unsigned int                         num)
+{
+    int         i;
+    te_log_buf *tlbp;
+
+    for (i = 0; i < num; i++)
+    {
+        tlbp = te_log_buf_alloc();
+
+        te_log_buf_append(lb, "{");
+        te_log_buf_append(lb, tarpc_rte_eth_fec_capa2str(
+                                  tlbp, &speed_fec_capa[i]));
+        te_log_buf_append(lb, "}");
+
+        if (i != num - 1)
+            te_log_buf_append(lb, ", ");
+
+        te_log_buf_free(tlbp);
+    }
+
+    return te_log_buf_get(lb);
+}
+
+int
+rpc_rte_eth_fec_get_capability(rcf_rpc_server                *rpcs,
+                               uint16_t                       port_id,
+                               struct tarpc_rte_eth_fec_capa *speed_fec_capa,
+                               unsigned int                   num)
+{
+    tarpc_rte_eth_fec_get_capability_in   in = {};
+    tarpc_rte_eth_fec_get_capability_out  out = {};
+    te_log_buf                           *tlbp = NULL;
+    int                                   real_num;
+
+    if ((num != 0) && (speed_fec_capa == NULL))
+    {
+        ERROR("%s(): No array of speed_fec_capa, but num is greater than 0",
+              __FUNCTION__);
+        RETVAL_ZERO_INT(rte_eth_fec_get_capability, -EINVAL);
+    }
+
+    in.port_id = port_id;
+    in.num = num;
+
+    in.speed_fec_capa.speed_fec_capa_len = num;
+    in.speed_fec_capa.speed_fec_capa_val = speed_fec_capa;
+
+    rcf_rpc_call(rpcs, "rte_eth_fec_get_capability", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        real_num = out.retval;
+
+        if (real_num <= num && out.speed_fec_capa.speed_fec_capa_len != 0)
+        {
+            memcpy(speed_fec_capa, out.speed_fec_capa.speed_fec_capa_val,
+                   out.retval * sizeof(speed_fec_capa[0]));
+
+            tlbp = te_log_buf_alloc();
+            tarpc_rte_eth_fec_capa_arr2str(tlbp, speed_fec_capa, real_num);
+        }
+    }
+
+    TAPI_RPC_LOG(rpcs, rte_eth_fec_get_capability,
+                 "port_id=%" PRIu16 ", num=%u",
+                 "speed_fec_capa=%s; " NEG_ERRNO_FMT, in.port_id, in.num,
+                 (tlbp == NULL) ? "N/A" : te_log_buf_get(tlbp),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+
+    TAPI_RPC_OUT(rte_eth_fec_get_capability, ((out.retval < 0) ||
+                 (num > 0 && out.retval > num)));
+
+    return out.retval;
+}
+
+int
+rpc_rte_eth_fec_set(rcf_rpc_server *rpcs,
+                    uint16_t        port_id,
+                    uint32_t        fec_capa)
+{
+    tarpc_rte_eth_fec_set_in   in = {};
+    tarpc_rte_eth_fec_set_out  out = {};
+    te_string                  str = TE_STRING_INIT;
+
+    in.port_id = port_id;
+    in.fec_capa = fec_capa;
+
+    rcf_rpc_call(rpcs, "rte_eth_fec_set", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_fec_set,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_fec_set,
+                 "port_id=%" PRIu16 ", fec_capa=%s",
+                 NEG_ERRNO_FMT, in.port_id,
+                 tarpc_rte_fec_capa2str(&str, &in.fec_capa),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_string_free(&str);
+
+    RETVAL_ZERO_INT(rte_eth_fec_set, out.retval);
+}

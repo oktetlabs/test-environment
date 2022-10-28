@@ -825,6 +825,26 @@ enum tarpc_eth_link_speeds {
     TARPC_RTE_ETH_LINK_SPEED__UNKNOWN_BIT
 };
 
+/** Numeric link speeds in Mbps */
+enum tarpc_eth_num_link_speeds {
+    TARPC_RTE_ETH_SPEED_NUM_NONE = 0,
+    TARPC_RTE_ETH_SPEED_NUM_10M = 10,
+    TARPC_RTE_ETH_SPEED_NUM_100M = 100,
+    TARPC_RTE_ETH_SPEED_NUM_1G = 1000,
+    TARPC_RTE_ETH_SPEED_NUM_2_5G = 2500,
+    TARPC_RTE_ETH_SPEED_NUM_5G = 5000,
+    TARPC_RTE_ETH_SPEED_NUM_10G = 10000,
+    TARPC_RTE_ETH_SPEED_NUM_20G = 20000,
+    TARPC_RTE_ETH_SPEED_NUM_25G = 25000,
+    TARPC_RTE_ETH_SPEED_NUM_40G = 40000,
+    TARPC_RTE_ETH_SPEED_NUM_50G = 50000,
+    TARPC_RTE_ETH_SPEED_NUM_56G = 56000,
+    TARPC_RTE_ETH_SPEED_NUM_100G = 100000,
+    TARPC_RTE_ETH_SPEED_NUM_200G = 200000,
+
+    TARPC_RTE_ETH_SPEED_NUM_UNKNOWN = INT_MAX
+};
+
 /** Device capabilities */
 enum tarpc_eth_dev_capa {
     TARPC_RTE_ETH_DEV_CAPA_RUNTIME_RX_QUEUE_SETUP_BIT = 0,
@@ -2328,6 +2348,65 @@ struct tarpc_rte_pktmbuf_calc_packet_crc_out {
     uint32_t             crc;
 };
 
+/** enum rte_eth_fec_mode */
+enum tarpc_rte_eth_fec_mode {
+    TARPC_RTE_ETH_FEC_NOFEC_BIT = 0,
+    TARPC_RTE_ETH_FEC_AUTO_BIT,
+    TARPC_RTE_ETH_FEC_BASER_BIT,
+    TARPC_RTE_ETH_FEC_RS_BIT,
+    TARPC_RTE_ETH_FEC_LLRS_BIT,
+
+    TARPC_RTE_ETH_FEC__UNKNOWN_BIT
+};
+
+/** struct rte_eth_fec_capa */
+struct tarpc_rte_eth_fec_capa {
+    uint32_t speed;
+    uint32_t capa;
+};
+
+/** rte_eth_fec_get_capability() */
+struct tarpc_rte_eth_fec_get_capability_in {
+    struct tarpc_in_arg           common;
+
+    uint16_t                      port_id;
+    struct tarpc_rte_eth_fec_capa speed_fec_capa<>;
+    unsigned int                  num;
+};
+
+struct tarpc_rte_eth_fec_get_capability_out {
+    struct tarpc_out_arg          common;
+
+    tarpc_int                     retval;
+    struct tarpc_rte_eth_fec_capa speed_fec_capa<>;
+};
+
+
+/** rte_eth_fec_get() */
+struct tarpc_rte_eth_fec_get_in {
+    struct tarpc_in_arg           common;
+
+    uint16_t                      port_id;
+    uint32_t                      fec_capa<>;
+};
+
+struct tarpc_rte_eth_fec_get_out {
+    struct tarpc_out_arg          common;
+
+    tarpc_int                     retval;
+    uint32_t                      fec_capa<>;
+};
+
+/** rte_eth_fec_set() */
+struct tarpc_rte_eth_fec_set_in {
+    struct tarpc_in_arg           common;
+
+    uint16_t                      port_id;
+    uint32_t                      fec_capa;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_fec_set_out;
+
 program dpdk
 {
     version ver0
@@ -2461,6 +2540,9 @@ program dpdk
         RPC_DEF(rte_eth_dev_tx_offload_name)
         RPC_DEF(rte_eth_representor_info_get)
         RPC_DEF(rte_eth_rx_metadata_negotiate)
+        RPC_DEF(rte_eth_fec_get_capability)
+        RPC_DEF(rte_eth_fec_get)
+        RPC_DEF(rte_eth_fec_set)
 
         RPC_DEF(rte_mk_flow_rule_components)
         RPC_DEF(rte_insert_flow_rule_items)

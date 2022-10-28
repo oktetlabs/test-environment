@@ -768,6 +768,49 @@ extern const char *tarpc_rte_eth_tunnel_type2str(
 extern const char * tarpc_rte_eth_dev_rss_types2str(te_log_buf *tlbp,
                                                     uint64_t rss_flow_types);
 
+/**
+ * @b rte_eth_fec_get_capability() RPC
+ *
+ * @param[in]  port_id        The port identifier of the device
+ * @param[in]  num            A number of elements in speed_fec_capa array
+ * @param[out] speed_fec_capa Per-speed capabilities
+ *
+ * @return
+ *   - A non-negative value lower or equal to num: success. The return value
+ *     is the number of entries filled in the fec capa array.
+ *   - A non-negative value higher than num: error, the given fec capa array
+ *     is too small. The return value corresponds to the num that should
+ *     be given to succeed. The entries in fec capa array are not valid and
+ *     shall not be used by the caller.
+ *   - jumps out on error (negative value)
+ */
+extern int rpc_rte_eth_fec_get_capability(
+                                rcf_rpc_server *rpcs, uint16_t port_id,
+                                struct tarpc_rte_eth_fec_capa *speed_fec_capa,
+                                unsigned int num);
+
+/**
+ * @b rte_eth_fec_get() RPC
+ *
+ * @param[in]  port_id     The port identifier of the device
+ * @param[out] fec_capa    A bitmask of enabled FEC modes
+ *
+ * @return @c 0 on success; jumps out on error (negative value)
+ */
+extern int rpc_rte_eth_fec_get(rcf_rpc_server *rpcs, uint16_t port_id,
+                               uint32_t *fec_capa);
+
+/**
+ * @b rte_eth_fec_set() RPC
+ *
+ * @param  port_id     The port identifier of the device
+ * @param  fec_capa    A bitmask of FEC modes to set
+ *
+ * @return @c 0 on success; jumps out on error (negative value)
+ */
+extern int rpc_rte_eth_fec_set(rcf_rpc_server *rpcs, uint16_t port_id,
+                               uint32_t fec_capa);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus
