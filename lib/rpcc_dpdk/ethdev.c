@@ -714,7 +714,9 @@ tarpc_rte_eth_conf2str(te_log_buf *tlbp,
 
     te_log_buf_append(tlbp, "{ ");
 
-    te_log_buf_append(tlbp, "link_speeds=%#x, rxmode=", eth_conf->link_speeds);
+    te_log_buf_append(tlbp, "link_speeds=");
+    tarpc_rte_eth_speeds2str(tlbp, eth_conf->link_speeds);
+    te_log_buf_append(tlbp, ", rxmode=");
     tarpc_rte_eth_rxmode2str(tlbp, &eth_conf->rxmode);
     te_log_buf_append(tlbp, ", txmode=");
     tarpc_rte_eth_txmode2str(tlbp, &eth_conf->txmode);
