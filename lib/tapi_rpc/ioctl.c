@@ -1173,7 +1173,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                  i < answ->n_samples * 2 + 1 && i < TE_ARRAY_LEN(answ->ts);
                  i++)
             {
-                te_string_append(req_str, "%s %lld.%06u, ",
+                te_string_append(req_str, "%s %lld.%09u, ",
                                  (i % 2 == 0 ? "sys" : "phc"),
                                  (long long int)(answ->ts[i].sec),
                                  (unsigned int)(answ->ts[i].nsec));
