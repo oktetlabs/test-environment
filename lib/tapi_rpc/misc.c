@@ -3043,14 +3043,48 @@ te_bool
 tapi_interface_is_vlan(rcf_rpc_server *rpcs,
                        const struct if_nameindex *interface)
 {
-    char if_par[IFNAMSIZ] = {0};
+    char     if_name[IFNAMSIZ];
+    char    *val = NULL;
+    te_bool  result = FALSE;
+    te_errno rc;
 
-    rpc_vlan_get_parent(rpcs, interface->if_name, if_par);
+    te_strlcpy(if_name, interface->if_name, IFNAMSIZ);
 
-    if (strlen(if_par) > 0)
-        return TRUE;
+    while (TRUE)
+    {
+        rc = cfg_get_instance_string_fmt(&val,
+                                         "/agent:%s/interface:%s/kind:",
+                                         rpcs->ta, if_name);
+        if (rc != 0)
+        {
+            ERROR("Failed to get kind of %s interface: %r", if_name, rc);
+            return FALSE;
+        }
+        if (strcmp(val, "vlan") == 0)
+        {
+            result = TRUE;
+            break;
+        }
+        else if (strcmp(val, "") == 0)
+        {
+            result = FALSE;
+            break;
+        }
+        free(val);
 
-    return FALSE;
+        rc = cfg_get_instance_string_fmt(&val,
+                                         "/agent:%s/interface:%s/parent:",
+                                         rpcs->ta, if_name);
+        if (rc != 0)
+        {
+            ERROR("Failed to get parent of %s interface: %r", if_name, rc);
+            return FALSE;
+        }
+        te_strlcpy(if_name, val, IFNAMSIZ);
+        free(val);
+    }
+    free(val);
+    return result;
 }
 
 /**

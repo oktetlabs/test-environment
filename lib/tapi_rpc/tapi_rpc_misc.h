@@ -1391,6 +1391,10 @@ extern te_errno tapi_set_if_mtu_smart2_rollback(te_saved_mtus *backup);
 /**
  * Check if the interface is VLAN interface.
  *
+ * @note There could be some interfaces like ipvlan, macvlan, bond and etc.
+ *       over vlan, and this function theoretically should work for such
+ *       combinations, but it was tested only for macvlan over vlan.
+ *
  * @param rpcs       RPC server handler
  * @param interface  Interface name
  *
