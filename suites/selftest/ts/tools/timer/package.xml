@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>Timer functions self-tests</description>
+    <author mailto="te-maint@oktetlabs.ru"/>
+    <session>
+        <run>
+            <script name="one_timer"/>
+            <arg name="timeout_s">
+                <value>3</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="two_timers"/>
+        </run>
+
+        <run>
+            <script name="restart_timer"/>
+        </run>
+    </session>
+</package>

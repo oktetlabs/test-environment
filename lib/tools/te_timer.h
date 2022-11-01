@@ -29,60 +29,6 @@
  * if (rc != TE_ETIMEDOUT)
  *     CHECK_RC(rc);
  * @endcode
- *
- * The next example shows how a few timers could be used in parallel
- *
- * @todo This code could be reused in selftests
- *
- * @code
- * #include "te_timer.h"
- *
- * te_timer_t timer_a = TE_TIMER_INIT;
- * te_timer_t timer_b = TE_TIMER_INIT;
- * te_errno rc_a, rc_b;
- *
- * TEST_STEP("Use a single timer_a");
- * CHECK_RC(te_timer_start(&timer_a, 3));
- * do {
- *     VSLEEP(1, "waiting for timer_a");
- * } while ((rc_a = te_timer_expired(&timer_a)) == 0);
- * if (rc_a == TE_ETIMEDOUT)
- *     RING("timer_a has expired");
- * else
- *     CHECK_RC(rc_a);
- *
- * TEST_STEP("Reuse timer_a one more time and start timer_b in parallel");
- * CHECK_RC(te_timer_start(&timer_a, 5));
- * CHECK_RC(te_timer_start(&timer_b, 15));
- * do {
- *     VSLEEP(1, "waiting for any timer_a or timer_b");
- * } while ((rc_a = te_timer_expired(&timer_a)) == 0 &&
- *          (rc_b = te_timer_expired(&timer_b)) == 0);
- * if (rc_a == TE_ETIMEDOUT)
- *     RING("timer_a has expired");
- * else
- *     CHECK_RC(rc_a);
- * if (rc_b == TE_ETIMEDOUT)
- *     RING("timer_b has expired");
- * else
- *     CHECK_RC(rc_b);
- *
- * TEST_SUBSTEP("Try to continue with timer_a");
- * while ((rc_a = te_timer_expired(&timer_a)) == 0)
- *     VSLEEP(1, "waiting for rest timer_a");
- * if (rc_a == TE_ETIMEDOUT)
- *     RING("timer_a has expired");
- * else
- *     CHECK_RC(rc_a);
- *
- * TEST_SUBSTEP("Try to continue with timer_b");
- * while ((rc_b = te_timer_expired(&timer_b)) == 0)
- *     VSLEEP(1, "waiting for rest timer_b");
- * if (rc_b == TE_ETIMEDOUT)
- *     RING("timer_b has expired");
- * else
- *     CHECK_RC(rc_b);
- * @endcode
  */
 #ifndef __TE_TIMER_H__
 #define __TE_TIMER_H__

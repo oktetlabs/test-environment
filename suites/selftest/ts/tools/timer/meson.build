@@ -2,19 +2,9 @@
 # Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
 
 tests = [
-    'compare_bufs',
-    'enum_map',
-    'extract_glob',
-    'hexdump',
-    'intset',
-    'make_bufs',
-    'readlink',
-    'resolvepath',
-    'scandir',
-    'string',
-    'units',
-    'vector',
-    'vector_search',
+    'one_timer',
+    'restart_timer',
+    'two_timers',
 ]
 
 foreach test : tests
@@ -33,14 +23,3 @@ tests_info_xml = custom_target(package_dir.underscorify() + 'tests-info-xml',
                                           meson.current_source_dir() ])
 
 install_data([ 'package.xml' ], install_dir: package_dir)
-
-packages = [
-    'timer',
-]
-
-tools_mydir = package_dir
-foreach package : packages
-    package_dir = join_paths(tools_mydir, package)
-    package_tests_c = []
-    subdir(package)
-endforeach

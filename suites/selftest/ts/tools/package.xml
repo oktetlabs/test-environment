@@ -112,6 +112,10 @@
         </run>
 
         <run>
+            <package name="timer"/>
+        </run>
+
+        <run>
             <script name="units"/>
         </run>
 

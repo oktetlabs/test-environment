@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="timer" type="package">
+    <objective>Timer functions self-tests</objective>
+    <iter result="PASSED">
+        <test name="one_timer" type="script">
+            <objective>Testing a single timer functionality.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="timeout_s" />
+            </iter>
+        </test>
+
+        <test name="two_timers" type="script">
+            <objective>Testing a few timers functionality.</objective>
+            <notes/>
+            <iter result="PASSED">
+            </iter>
+        </test>
+
+        <test name="restart_timer" type="script">
+            <objective>Testing a timer restart functionality.</objective>
+            <notes/>
+            <iter result="PASSED">
+            </iter>
+        </test>
+    </iter>
+</test>
