@@ -142,41 +142,37 @@ extern te_errno tapi_job_opt_append_args(const tapi_job_opt_bind *binds,
                                          const void *opt, te_vec *tool_args);
 
 
-/** Unsigned integer which can be left undefined */
-typedef struct tapi_job_opt_uint_t {
-    unsigned int value; /**< Value */
-    te_bool defined;    /**< If @c TRUE, value is defined */
-} tapi_job_opt_uint_t;
+/** Unsigned integer which can be left undefined.
+ *
+ * This is guaranteed to be assignment-compatible with te_optional_uint_t.
+ */
+typedef te_optional_uint_t tapi_job_opt_uint_t;
 
 /**
  * Defined value for tapi_job_opt_uint_t.
  *
  * @param _x        Value to set.
  */
-#define TAPI_JOB_OPT_UINT_VAL(_x) \
-    (tapi_job_opt_uint_t){ .value = (_x), .defined = TRUE }
+#define TAPI_JOB_OPT_UINT_VAL(_x) TE_OPTIONAL_UINT_VAL(_x)
 
 /** Undefined value for tapi_job_opt_uint_t. */
-#define TAPI_JOB_OPT_UINT_UNDEF \
-    (tapi_job_opt_uint_t){ .defined = FALSE }
+#define TAPI_JOB_OPT_UINT_UNDEF TE_OPTIONAL_UINT_UNDEF
 
-/** Double which can be left undefined */
-typedef struct tapi_job_opt_double_t {
-    double value; /**< Value */
-    te_bool defined; /**< If @c TRUE, value is defined */
-} tapi_job_opt_double_t;
+/** Double which can be left undefined.
+ *
+ * This is guaranteed to be assignment-compatible with te_optional_double_t.
+ */
+typedef te_optional_double_t tapi_job_opt_double_t;
 
 /**
  * Defined value for tapi_job_opt_double_t.
  *
  * @param _x        Value to set.
  */
-#define TAPI_JOB_OPT_DOUBLE_VAL(_x) \
-    (tapi_job_opt_double_t){ .value = (_x), .defined = TRUE }
+#define TAPI_JOB_OPT_DOUBLE_VAL(_x) TE_OPTIONAL_DOUBLE_VAL(_x)
 
 /** Undefined value for tapi_job_opt_double_t. */
-#define TAPI_JOB_OPT_DOUBLE_UNDEF \
-    (tapi_job_opt_double_t){ .defined = FALSE }
+#define TAPI_JOB_OPT_DOUBLE_UNDEF TE_OPTIONAL_DOUBLE_UNDEF
 
 /**
  * @defgroup tapi_job_opt_formatting functions for argument formatting

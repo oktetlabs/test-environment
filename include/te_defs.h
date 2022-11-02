@@ -555,6 +555,50 @@ te_round_to_zero(unsigned int n, unsigned int m)
 
 #define TE_DIV_ROUND_UP(_n, _d) (((_n) + (_d) - 1) / (_d))
 
+
+/** @name Optional types.
+ * These are the types that have a dedicated undefined value.
+ */
+/**@{*/
+
+/** Unsigned integer which can be left undefined */
+typedef struct te_optional_uint_t {
+    unsigned int value; /**< Value */
+    te_bool defined;    /**< If @c TRUE, value is defined */
+} te_optional_uint_t;
+
+/**
+ * Defined value for te_optional_uint_t.
+ *
+ * @param _x        Value to set.
+ */
+#define TE_OPTIONAL_UINT_VAL(_x) \
+    (te_optional_uint_t){ .value = (_x), .defined = TRUE }
+
+/** Undefined value for te_optional_uint_t. */
+#define TE_OPTIONAL_UINT_UNDEF \
+    (te_optional_uint_t){ .defined = FALSE }
+
+/** Double which can be left undefined */
+typedef struct te_optional_double_t {
+    double value; /**< Value */
+    te_bool defined; /**< If @c TRUE, value is defined */
+} te_optional_double_t;
+
+/**
+ * Defined value for te_optional_double_t.
+ *
+ * @param _x        Value to set.
+ */
+#define TE_OPTIONAL_DOUBLE_VAL(_x) \
+    (te_optional_double_t){ .value = (_x), .defined = TRUE }
+
+/** Undefined value for te_optional_double_t. */
+#define TE_OPTIONAL_DOUBLE_UNDEF \
+    (te_optional_double_t){ .defined = FALSE }
+
+/**@}*/
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
