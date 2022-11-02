@@ -28,6 +28,10 @@
 #include <inttypes.h>
 #endif
 
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #include "ctype.h"
 
 #include "te_stdint.h"
@@ -895,6 +899,75 @@ out:
     return rc;
 }
 
+static te_errno
+memory_get(unsigned int gid, const char *oid, char *value)
+{
+  UNUSED(gid);
+  UNUSED(oid);
+  uint64_t mem = 0;
+
+#ifdef _SC_PHYS_PAGES
+  long n_pages, page_size;
+
+  errno = 0;
+
+  n_pages = sysconf(_SC_PHYS_PAGES);
+  if (n_pages == -1)
+  {
+      ERROR("Failed to get sysconf number of memory pages");
+      return TE_OS_RC(TE_TA_UNIX, errno);
+  }
+
+  page_size = sysconf(_SC_PAGESIZE);
+  if (page_size == -1)
+  {
+      ERROR("Failed to get sysconf memory page size");
+      return TE_OS_RC(TE_TA_UNIX, errno);
+  }
+
+  /* Total memory in bytes */
+  mem = (uint64_t)n_pages * (uint64_t)page_size;
+#endif
+
+  snprintf(value, RCF_MAX_VAL, "%" PRIu64, mem);
+  return 0;
+}
+
+static te_errno
+avail_memory_get(unsigned int gid, const char *oid, char *value)
+{
+  UNUSED(gid);
+  UNUSED(oid);
+  uint64_t avail_mem = 0;
+
+#ifdef _SC_AVPHYS_PAGES
+  long avail_pages, page_size;
+
+  errno = 0;
+
+  avail_pages = sysconf(_SC_AVPHYS_PAGES);
+  if (avail_pages == -1)
+  {
+      ERROR("Failed to get sysconf number of available pages");
+      return TE_OS_RC(TE_TA_UNIX, errno);
+  }
+
+  page_size = sysconf(_SC_PAGESIZE);
+  if (page_size == -1)
+  {
+      ERROR("Failed to get sysconf memory page size");
+      return TE_OS_RC(TE_TA_UNIX, errno);
+  }
+
+  /* Available memory in bytes */
+  avail_mem = (uint64_t)avail_pages * (uint64_t)page_size;
+#endif
+
+  snprintf(value, RCF_MAX_VAL, "%" PRIu64, avail_mem);
+  return 0;
+}
+
+
 RCF_PCH_CFG_NODE_RO(node_thread_isolated, "isolated",
                     NULL, NULL, cpu_thread_isolated_get);
 
@@ -906,9 +979,14 @@ RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_core, "core",
                                &node_cpu_thread, NULL,
                                NULL, cpu_core_list);
 
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu, "cpu",
-                               &node_cpu_core, NULL,
-                               NULL, cpu_list);
+RCF_PCH_CFG_NODE_RO(node_avail_memory, "free", NULL, NULL,
+                    avail_memory_get);
+
+RCF_PCH_CFG_NODE_RO(node_memory, "memory", &node_avail_memory, NULL,
+                    memory_get);
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu, "cpu", &node_cpu_core,
+                               &node_memory, NULL, cpu_list);
 
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_numa_node, "node",
                                &node_cpu, NULL,
