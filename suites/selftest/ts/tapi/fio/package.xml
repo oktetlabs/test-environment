@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2022 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+
+    <description>Test Suite to test TAPI fio implementation</description>
+
+    <author mailto="Artem.Andreev@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+        <var name="env">
+            <value>{{{'pco_iut':IUT}}}</value>
+        </var>
+        <run>
+            <script name="fio"/>
+            <arg name="env" ref="env" />
+            <arg name="ioengine">
+                <value>sync</value>
+                <value>pvsync</value>
+            </arg>
+            <arg name="numjobs">
+                <value>1</value>
+                <value>1nproc</value>
+            </arg>
+            <arg name="rwtype">
+                <value>randread</value>
+                <value>randwrite</value>
+            </arg>
+            <arg name="size">
+                <value>1000000</value>
+            </arg>
+            <arg name="runtime">
+                <value>1</value>
+            </arg>
+        </run>
+    </session>
+</package>

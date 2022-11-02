@@ -4,6 +4,7 @@
 packages = [
     'cache',
     'file',
+    'fio',
     'job',
     'jobopt',
     'tool',

@@ -15,6 +15,10 @@
         </run>
 
         <run>
+            <package name="fio"/>
+        </run>
+
+        <run>
             <package name="job"/>
         </run>
 

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2022 OKTET Labs Ltd. All rights reserved. -->
+<test name="fio" type="package">
+    <objective></objective>
+    <notes/>
+    <iter result="PASSED">
+        <notes/>
+        <test name="fio" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="ioengine"/>
+                <arg name="rwtype"/>
+                <arg name="numjobs" />
+                <arg name="runtime" />
+                <arg name="size" />
+                <notes/>
+            </iter>
+        </test>
+    </iter>
+</test>
