@@ -329,7 +329,7 @@
 
     - oid: "/agent/hardware/node/memory"
       access: read_only
-      type: int32
+      type: uint64
       d: |
          Amount of physical memory on a given node
          Name: none
@@ -345,7 +345,7 @@
 
     - oid: "/agent/hardware/node/memory/free"
       access: read_only
-      type: int32
+      type: uint64
       volatile: true
       d: |
          Free physical memory
