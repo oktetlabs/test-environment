@@ -55,10 +55,7 @@ app_init(tapi_fio_app *app, const tapi_fio_opts *opts,
         app->opts = *opts;
 
     if (app->opts.output_path.ptr == NULL)
-    {
-        te_string_append(&app->opts.output_path, "%s.json",
-                         tapi_file_generate_name());
-    }
+        tapi_file_make_custom_pathname(&app->opts.output_path, NULL, ".json");
 
     numjobs_transform(app->factory, &app->opts.numjobs);
 }
