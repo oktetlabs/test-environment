@@ -1166,6 +1166,7 @@ vm_add(unsigned int gid, const char *oid, const char *value,
     SLIST_INIT(&vm->virtfses);
     SLIST_INIT(&vm->pci_pts);
     SLIST_INIT(&vm->devices);
+    vm->cmd = (te_string)TE_STRING_INIT;
 
     vm->name = strdup(vm_name);
     if (vm->name == NULL)
@@ -1188,6 +1189,7 @@ vm_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
+    vm->cpu.model = (te_string)TE_STRING_INIT;
     rc = te_string_append(&vm->cpu.model, "host");
     if (rc != 0)
     {
@@ -2281,6 +2283,8 @@ vm_drive_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
+    drive->file = (te_string)TE_STRING_INIT;
+
     SLIST_INSERT_HEAD(&vm->drives, drive, links);
 
     return 0;
@@ -2832,6 +2836,7 @@ vm_pci_pt_add(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
+    pt->pci_addr = (te_string)TE_STRING_INIT;
     if ((rc = te_string_append(&pt->pci_addr, "%s",  value)) != 0)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
@@ -2988,6 +2993,7 @@ vm_device_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
+    dev->device = (te_string)TE_STRING_INIT;
     if ((rc = te_string_append(&dev->device, "%s",  value)) != 0)
     {
         vm_device_free(dev);
