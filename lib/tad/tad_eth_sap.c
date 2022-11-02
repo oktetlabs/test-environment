@@ -67,6 +67,14 @@
 #include <sys/mman.h>
 #endif /* USE_PF_PACKET && WITH_PACKET_MMAP_RX_RING */
 
+#if HAVE_LINUX_SOCKIOS_H && defined(WITH_PACKET_MMAP_RX_RING)
+#include <linux/sockios.h>
+#endif
+
+#if HAVE_LINUX_ETHTOOL_H && defined(WITH_PACKET_MMAP_RX_RING)
+#include "te_ethtool.h"
+#endif
+
 #include "te_errno.h"
 #include "te_alloc.h"
 #include "te_str.h"
@@ -767,6 +775,30 @@ tad_eth_sap_pkt_vlan_tag_valid(uint16_t    tp_vlan_tci,
                      UINT16_MAX + ETHER_CRC_LEN)
 
 static te_errno
+tad_eth_rx_desc_count_get(const tad_eth_sap_data *sap_data,
+                          unsigned int *rx_desc_count)
+{
+    struct ethtool_ringparam ethtool_ringparam = { .cmd = ETHTOOL_GRINGPARAM };
+    char ifname[IFNAMSIZ];
+    struct ifreq ifr = {};
+    int ret;
+
+    if (if_indextoname(sap_data->ifindex, ifname) == NULL)
+        return TE_EINVAL;
+
+    te_strlcpy(ifr.ifr_name, ifname, IFNAMSIZ);
+    ifr.ifr_data = (void *)&ethtool_ringparam;
+
+    ret = ioctl(sap_data->in, SIOCETHTOOL, &ifr);
+    if (ret != 0)
+        return TE_EINVAL;
+
+    *rx_desc_count = ethtool_ringparam.rx_max_pending;
+
+    return 0;
+}
+
+static te_errno
 tad_eth_sap_pkt_rx_ring_setup(tad_eth_sap *sap)
 {
     tad_eth_sap_data   *data;
@@ -803,9 +835,15 @@ tad_eth_sap_pkt_rx_ring_setup(tad_eth_sap *sap)
         return rc;
     }
 
-    nb_frames = te_round_up_pow2(rx_ctx->ptrn_data.n_units);
-    nb_frames = MAX(nb_frames, ETH_SAP_PKT_RX_RING_NB_FRAMES_MIN);
-    nb_frames = MIN(nb_frames, ETH_SAP_PKT_RX_RING_NB_FRAMES_MAX);
+    rc = tad_eth_rx_desc_count_get(data, &nb_frames);
+    if (rc != 0)
+    {
+        WARN("PACKET_RX_RING: cannot set frame count from HW descriptor count");
+        WARN("PACKET_RX_RING: will set frame count from pattern / defaults");
+        nb_frames = te_round_up_pow2(rx_ctx->ptrn_data.n_units);
+        nb_frames = MAX(nb_frames, ETH_SAP_PKT_RX_RING_NB_FRAMES_MIN);
+        nb_frames = MIN(nb_frames, ETH_SAP_PKT_RX_RING_NB_FRAMES_MAX);
+    }
 
     tp->tp_frame_nr = nb_frames;
     tp->tp_frame_size = ETH_SAP_PKT_RX_RING_FRAME_LEN;
