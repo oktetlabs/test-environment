@@ -7,7 +7,6 @@
 
     <author mailto="Daniil.Byshenko@oktetlabs.ru"/>
 
-    <req id="BROKEN"/>
     <session>
         <run>
             <script name="memcached"/>
