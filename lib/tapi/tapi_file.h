@@ -53,9 +53,8 @@ extern char *tapi_file_make_name(te_string *dest);
  * @return the pointer to the contents of @p dest or a heap-allocated buffer
  */
 extern char *tapi_file_make_custom_pathname(te_string *dest,
-                                           const char *dirname,
-                                           const char *suffix);
-
+                                            const char *dirname,
+                                            const char *suffix);
 
 /**
  * Generate a unique pathname for a file on the Engine side.
