@@ -58,6 +58,21 @@ te_str_empty_if_null(const char *str)
 }
 
 /**
+ * Checks whether two strings are equal modulo space difference.
+ *
+ * In particular:
+ * - leading and trailing spaces are completely ignored
+ * - in the middle all non-empty sequences of whitespace characters are
+ *   considered equal.
+ *
+ * @param str1  the first string
+ * @param str2  the second string
+ *
+ * @return @c TRUE iff @p str1 and @p str2 are equal up to space difference.
+ */
+extern te_bool te_str_is_equal_nospace(const char *str1, const char *str2);
+
+/**
  * Convert lowercase letters of the @p string to uppercase. The function does
  * not work with multibyte/wide strings.
  *

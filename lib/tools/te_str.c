@@ -63,6 +63,36 @@ te_str_lower(const char *src)
 }
 
 /* See description in te_str.h */
+te_bool
+te_str_is_equal_nospace(const char *str1, const char *str2)
+{
+    te_bool has_space1 = TRUE;
+    te_bool has_space2 = TRUE;
+
+    while (*str1 != '\0' || *str2 != '\0')
+    {
+        for (; *str1 != '\0' && isspace(*str1); str1++)
+            has_space1 = TRUE;
+        for (; *str2 != '\0' && isspace(*str2); str2++)
+            has_space2 = TRUE;
+
+        if (*str1 != *str2)
+            return FALSE;
+        if (has_space1 != has_space2 && *str1 != '\0')
+            return FALSE;
+
+        has_space1 = has_space2 = FALSE;
+        if (*str1 != '\0')
+        {
+            str1++;
+            str2++;
+        }
+    }
+
+    return TRUE;
+}
+
+/* See description in te_str.h */
 char *
 te_str_concat(const char *first, const char *second)
 {
