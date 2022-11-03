@@ -1203,3 +1203,56 @@ test_get_value_bin_unit_param(int argc, char **argv, const char *name)
 
     return intval;
 }
+
+static te_bool
+is_opt_param_none(int argc, char **argv, const char *name)
+{
+    const char *value = test_get_param(argc, argv, name);
+
+    if (value == NULL)
+        TEST_FAIL("Failed to get the value of param '%s'", name);
+
+    return te_str_is_equal_nospace(value, "-");
+}
+
+/* See description in tapi_test.h */
+const char *
+test_get_opt_string_param(int argc, char **argv, const char *name)
+{
+    const char *value = test_get_param(argc, argv, name);
+
+    if (value == NULL)
+        TEST_FAIL("Failed to get the value of param '%s'", name);
+
+    return is_opt_param_none(argc, argv, name) ? NULL : value;
+}
+
+/* See description in tapi_test.h */
+te_optional_uint_t
+test_get_opt_uint_param(int argc, char **argv, const char *name)
+{
+    if (is_opt_param_none(argc, argv, name))
+        return TE_OPTIONAL_UINT_UNDEF;
+
+    return TE_OPTIONAL_UINT_VAL(test_get_uint_param(argc, argv, name));
+}
+
+/* See description in tapi_test.h */
+te_optional_double_t
+test_get_opt_double_param(int argc, char **argv, const char *name)
+{
+    if (is_opt_param_none(argc, argv, name))
+        return TE_OPTIONAL_DOUBLE_UNDEF;
+
+    return TE_OPTIONAL_DOUBLE_VAL(test_get_double_param(argc, argv, name));
+}
+
+/* See description in tapi_test.h */
+te_optional_double_t
+test_get_opt_value_unit_param(int argc, char **argv, const char *name)
+{
+    if (is_opt_param_none(argc, argv, name))
+        return TE_OPTIONAL_DOUBLE_UNDEF;
+
+    return TE_OPTIONAL_DOUBLE_VAL(test_get_value_unit_param(argc, argv, name));
+}

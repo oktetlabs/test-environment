@@ -1291,6 +1291,154 @@ extern double test_get_value_unit_param(int argc, char **argv,
 extern uintmax_t test_get_value_bin_unit_param(int argc, char **argv,
                                                const char *name);
 
+/** @name Optional parameters.
+ *
+ * The functions and macros in this section are analogous to
+ * plain parameter functions, but they allow to specify "missing"
+ * value by providing literal @c - instead of a value.
+ */
+/**@{*/
+
+/**
+ * Same as test_get_string_param(), but returns @c NULL if
+ * the parameter value is blank.
+ *
+ * @param argc       count of arguments
+ * @param argv       list of arguments
+ * @param name       name of parameter
+ *
+ * @return parameter value or @c NULL
+ */
+extern const char * test_get_opt_string_param(int argc, char **argv,
+                                              const char *name);
+
+/**
+ * Same as test_get_uint_param(), but the return type is optional.
+ *
+ * @param argc       count of arguments
+ * @param argv       list of arguments
+ * @param name       name of parameter
+ *
+ * @return an optional unsigned value
+ *
+ * @sa te_optional_uint_t
+ */
+extern te_optional_uint_t test_get_opt_uint_param(int argc, char **argv,
+                                                  const char *name);
+
+/**
+ * Same as test_get_double_param() but the return type is optional.
+ *
+ * @param argc       count of arguments
+ * @param argv       list of arguments
+ * @param name       name of parameter
+ *
+ * @return an optional double value
+ *
+ * @sa te_optional_double_t
+ */
+extern te_optional_double_t test_get_opt_double_param(int argc, char **argv,
+                                                      const char *name);
+
+/**
+ * Same as test_get_value_unit_param() but the return type is optional.
+ *
+ * @param argc       count of arguments
+ * @param argv       list of arguments
+ * @param name       name of parameter
+ *
+ * @return an optional double value
+ *
+ * @sa te_optional_double_t
+ */
+extern te_optional_double_t test_get_opt_value_unit_param(int argc,
+                                                          char **argv,
+                                                          const char *name);
+
+/**
+ * Same as TEST_STRING_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ *
+ * @return string value (@c NULL if "missing")
+ */
+#define TEST_OPT_STRING_PARAM(var_name_) \
+    test_get_opt_string_param(argc, argv, #var_name_)
+
+/**
+ * Same as TEST_GET_STRING_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ */
+#define TEST_GET_OPT_STRING_PARAM(var_name_) \
+    (var_name_) = TEST_OPT_STRING_PARAM(var_name_)
+
+
+/**
+ * Same as TEST_UINT_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ *
+ * @return optional unsigned value
+ */
+#define TEST_OPT_UINT_PARAM(var_name_) \
+    test_get_opt_uint_param(argc, argv, #var_name_)
+
+/**
+ * Same as TEST_GET_UINT_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ */
+#define TEST_GET_OPT_UINT_PARAM(var_name_) \
+    (var_name_) = TEST_OPT_UINT_PARAM(var_name_)
+
+
+/**
+ * Same as TEST_DOUBLE_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ *
+ * @return optional double value
+ */
+#define TEST_OPT_DOUBLE_PARAM(var_name_) \
+    test_get_opt_double_param(argc, argv, #var_name_)
+
+
+/**
+ * Same as TEST_GET_DOUBLE_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ */
+#define TEST_GET_OPT_DOUBLE_PARAM(var_name_) \
+    (var_name_) = TEST_OPT_DOUBLE_PARAM(var_name_)
+
+/**
+ * Same as TEST_VALUE_UNIT_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ *
+ * @return optional double value
+ */
+#define TEST_OPT_VALUE_UNIT_PARAM(var_name_) \
+    test_get_opt_value_unit_param(argc, argv, #var_name_)
+
+/**
+ * Same as TEST_GET_VALUE_UNIT_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ */
+#define TEST_GET_OPT_VALUE_UNIT_PARAM(var_name_) \
+    (var_name_) = TEST_OPT_VALUE_UNIT_PARAM(var_name_)
+
+/**@}*/
 
 /**
  * Print octet string.
