@@ -25,6 +25,7 @@
  * do {
  *     VSLEEP(1, "repeat some routine until the timer expires");
  * } while ((rc = te_timer_expired(&timer)) == 0);
+ * CHECK_RC(te_timer_stop(&timer));
  * if (rc != TE_ETIMEDOUT)
  *     CHECK_RC(rc);
  * @endcode
@@ -96,11 +97,10 @@ extern "C" {
 /** Timer context */
 typedef struct te_timer_t {
     timer_t id;         /**< POSIX.1 timer ID */
-    int expire;         /**< Counter of timer overruns */
 } te_timer_t;
 
 /** On-stack timer context initializer */
-#define TE_TIMER_INIT { .id = 0, .expire = 0 }
+#define TE_TIMER_INIT { .id = 0 }
 
 /**
  * Start timer
@@ -113,7 +113,7 @@ typedef struct te_timer_t {
 extern te_errno te_timer_start(te_timer_t *timer, unsigned int timeout_s);
 
 /**
- * Restart already running timer with a new timeout.
+ * Restart already running or expired timer with a new timeout.
  *
  * @param timer         Timer handle.
  * @param timeout_s     Timeout for triggering timer.
@@ -123,7 +123,7 @@ extern te_errno te_timer_start(te_timer_t *timer, unsigned int timeout_s);
 extern te_errno te_timer_restart(te_timer_t *timer, unsigned int timeout_s);
 
 /**
- * Stop timer.
+ * Stop the timer and free its resources.
  *
  * @param timer         Timer handle.
  *
@@ -132,9 +132,10 @@ extern te_errno te_timer_restart(te_timer_t *timer, unsigned int timeout_s);
 extern te_errno te_timer_stop(te_timer_t *timer);
 
 /**
- * Check whether timeout set with te_timer_start() has expired or not
+ * Check whether timeout has expired or not.
  *
- * @note It stops the timer if time is expired
+ * @note It does not stop the timer if it expires, so te_timer_stop()
+ * should be called to free timer's resources.
  *
  * @param timer         Timer handle
  *
