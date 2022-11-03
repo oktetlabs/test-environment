@@ -1262,6 +1262,16 @@ test_get_opt_uint_param(int argc, char **argv, const char *name)
 }
 
 /* See description in tapi_test.h */
+te_optional_uintmax_t
+test_get_opt_uint64_param(int argc, char **argv, const char *name)
+{
+    if (is_opt_param_none(argc, argv, name))
+        return TE_OPTIONAL_UINTMAX_UNDEF;
+
+    return TE_OPTIONAL_UINTMAX_VAL(test_get_uint64_param(argc, argv, name));
+}
+
+/* See description in tapi_test.h */
 te_optional_double_t
 test_get_opt_double_param(int argc, char **argv, const char *name)
 {
@@ -1279,4 +1289,15 @@ test_get_opt_value_unit_param(int argc, char **argv, const char *name)
         return TE_OPTIONAL_DOUBLE_UNDEF;
 
     return TE_OPTIONAL_DOUBLE_VAL(test_get_value_unit_param(argc, argv, name));
+}
+
+/* See description in tapi_test.h */
+te_optional_uintmax_t
+test_get_opt_value_bin_unit_param(int argc, char **argv, const char *name)
+{
+    if (is_opt_param_none(argc, argv, name))
+        return TE_OPTIONAL_UINTMAX_UNDEF;
+
+    return TE_OPTIONAL_UINTMAX_VAL(
+        test_get_value_bin_unit_param(argc, argv, name));
 }

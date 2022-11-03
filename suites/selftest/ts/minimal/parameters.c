@@ -41,10 +41,14 @@ main(int argc, char **argv)
     const char *opt_str_val_param = NULL;
     te_optional_uint_t opt_uint_none_param = TE_OPTIONAL_UINT_VAL(0);
     te_optional_uint_t opt_uint_val_param = TE_OPTIONAL_UINT_UNDEF;
+    te_optional_uintmax_t opt_uint64_none_param = TE_OPTIONAL_UINTMAX_VAL(0);
+    te_optional_uintmax_t opt_uint64_val_param = TE_OPTIONAL_UINTMAX_UNDEF;
     te_optional_double_t opt_dbl_none_param = TE_OPTIONAL_DOUBLE_VAL(0.0);
     te_optional_double_t opt_dbl_val_param = TE_OPTIONAL_DOUBLE_UNDEF;
     te_optional_double_t opt_unit_none_param = TE_OPTIONAL_DOUBLE_VAL(0.0);
     te_optional_double_t opt_unit_val_param = TE_OPTIONAL_DOUBLE_UNDEF;
+    te_optional_uintmax_t opt_bin_unit_none_param = TE_OPTIONAL_UINTMAX_VAL(0);
+    te_optional_uintmax_t opt_bin_unit_val_param = TE_OPTIONAL_UINTMAX_UNDEF;
 
     TEST_START;
 
@@ -65,10 +69,14 @@ main(int argc, char **argv)
     TEST_GET_OPT_STRING_PARAM(opt_str_val_param);
     TEST_GET_OPT_UINT_PARAM(opt_uint_none_param);
     TEST_GET_OPT_UINT_PARAM(opt_uint_val_param);
+    TEST_GET_OPT_UINT64_PARAM(opt_uint64_none_param);
+    TEST_GET_OPT_UINT64_PARAM(opt_uint64_val_param);
     TEST_GET_OPT_DOUBLE_PARAM(opt_dbl_none_param);
     TEST_GET_OPT_DOUBLE_PARAM(opt_dbl_val_param);
     TEST_GET_OPT_VALUE_UNIT_PARAM(opt_unit_none_param);
     TEST_GET_OPT_VALUE_UNIT_PARAM(opt_unit_val_param);
+    TEST_GET_OPT_VALUE_BIN_UNIT_PARAM(opt_bin_unit_none_param);
+    TEST_GET_OPT_VALUE_BIN_UNIT_PARAM(opt_bin_unit_val_param);
 
     TEST_STEP("Verify parameter values");
 
@@ -129,9 +137,13 @@ main(int argc, char **argv)
     } while(0)
 
     CHECK_OPTNUMERIC_PARAMS(opt_uint_none_param, opt_uint_val_param, 42, "%u");
+    CHECK_OPTNUMERIC_PARAMS(opt_uint64_none_param, opt_uint64_val_param, 42ull,
+                            "%" PRIu64);
     CHECK_OPTNUMERIC_PARAMS(opt_dbl_none_param, opt_dbl_val_param, 42.0, "%g");
     CHECK_OPTNUMERIC_PARAMS(opt_unit_none_param, opt_unit_val_param,
                             1e6, "%g");
+    CHECK_OPTNUMERIC_PARAMS(opt_bin_unit_none_param, opt_bin_unit_val_param,
+                            1ull << 20, "%ju");
 #undef CHECK_OPTNUMERIC_PARAMS
 
     TEST_SUCCESS;

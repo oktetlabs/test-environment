@@ -1358,6 +1358,20 @@ extern te_optional_uint_t test_get_opt_uint_param(int argc, char **argv,
                                                   const char *name);
 
 /**
+ * Same as test_get_uint64_param(), but the return type is optional.
+ *
+ * @param argc       count of arguments
+ * @param argc       list of arguments
+ * @param name       name of parameter
+ *
+ * @return an optional long unsigned value
+ *
+ * @sa te_optional_uintmax_t
+ */
+extern te_optional_uintmax_t test_get_opt_uint64_param(int argc, char **argv,
+                                                       const char *name);
+
+/**
  * Same as test_get_double_param() but the return type is optional.
  *
  * @param argc       count of arguments
@@ -1385,6 +1399,20 @@ extern te_optional_double_t test_get_opt_double_param(int argc, char **argv,
 extern te_optional_double_t test_get_opt_value_unit_param(int argc,
                                                           char **argv,
                                                           const char *name);
+
+/**
+ * Same as test_get_value_bin_unit_param() but the return type is optional.
+ *
+ * @param argc       count of arguments
+ * @param argv       list of arguments
+ * @param name       name of parameter
+ *
+ * @return an optional long unsigned value
+ *
+ * @sa te_optional_uintmax_t
+ */
+extern te_optional_uintmax_t test_get_opt_value_bin_unit_param(
+    int argc, char **argv, const char *name);
 
 /**
  * Same as TEST_STRING_PARAM() but for optional parameters.
@@ -1427,6 +1455,25 @@ extern te_optional_double_t test_get_opt_value_unit_param(int argc,
 #define TEST_GET_OPT_UINT_PARAM(var_name_) \
     (var_name_) = TEST_OPT_UINT_PARAM(var_name_)
 
+/**
+ * Same as TEST_UINT64_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ *
+ * @return optional long unsigned value
+ */
+#define TEST_OPT_UINT64_PARAM(var_name_) \
+    test_get_opt_uint64_param(argc, argv, #var_name_)
+
+/**
+ * Same as TEST_GET_UINT64_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ */
+#define TEST_GET_OPT_UINT64_PARAM(var_name_) \
+    (var_name_) = TEST_OPT_UINT64_PARAM(var_name_)
 
 /**
  * Same as TEST_DOUBLE_PARAM() but for optional parameters.
@@ -1468,6 +1515,26 @@ extern te_optional_double_t test_get_opt_value_unit_param(int argc,
  */
 #define TEST_GET_OPT_VALUE_UNIT_PARAM(var_name_) \
     (var_name_) = TEST_OPT_VALUE_UNIT_PARAM(var_name_)
+
+/**
+ * Same as TEST_VALUE_BIN_UNIT_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ *
+ * @return optional long unsigned value
+ */
+#define TEST_OPT_VALUE_BIN_UNIT_PARAM(var_name_) \
+    test_get_opt_value_bin_unit_param(argc, argv, #var_name_)
+
+/**
+ * Same as TEST_GET_VALUE_BIN_UNIT_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ */
+#define TEST_GET_OPT_VALUE_BIN_UNIT_PARAM(var_name_) \
+    (var_name_) = TEST_OPT_VALUE_BIN_UNIT_PARAM(var_name_)
 
 /**@}*/
 
