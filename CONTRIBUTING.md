@@ -55,18 +55,7 @@ The summary line should:
  - highlight the scope and the impact of the change
  - be up to 60 characters
  - be lowercase apart from acronyms and proper names
- - be prefixed with the component name, for example:
-    - `agent/unix`
-    - `build` (for generic changes in the build system which affect various
-      components)
-    - `doc/cm`
-    - `engine/tester`
-    - `include`
-    - `lib/asn`
-    - `lib/rpc_dpdk` (when you define an RPC call and implement both
-      client and server sides in one patch)
-    - `suites/selftest`
-    - `tool/trc`
+ - be prefixed with the component name (see below)
  - start with the imperative of a verb, for example:
 
    ```
@@ -83,6 +72,43 @@ Note that it is prohibited to use ticket tracker references (e.g.
 "Bug 12345: " or "#12345") in the summary line. Use corresponding helper
 trailer instead.
 
+#### Component name
+
+Normally a component name is a second-level directory name
+(or a first-level one, when the second level does not exist), for example:
+
+ - `agent/unix`
+ - `dispatcher` for changes in `./dispatcher.sh` only
+ - `doc/cm`
+ - `engine/tester`
+ - `include`
+ - `lib/asn`
+ - `suites/selftest`
+ - `tool/trc`
+
+If a patch touches code in several second-level directories,
+then the most important one should be chosen as the component name.
+In particular, if the patch implements a new RPC call, both client and
+server parts, the "common denominator" directory shall be used, e.g.:
+
+ - `lib/rpc_dpdk`
+ - `lib/rpcxdr` (for changes in the base set of RPCs)
+
+For changes that really affect large portions of code across directories,
+there is a curated list of special component names:
+
+ - `build` for generic changes in the build system
+ - `common` for changes that affect everything. This should be reserved
+   for cases like bulk copyright boilerplate update and the like.
+ - `cs` for co-ordinated changes related to the Configurator subsystem.
+   Note that changes to the model files and the implementation in an agent
+   are better kept in separate patches with appropriate component names.
+ - `doc` for generic changes in the documentation
+ - `logger` for co-ordinated changes related to logging
+ - `rcf` for co-ordinated changes in the RCF subsystem
+
+If a patch does not fall under any of the above categories, it is a good
+idea to split it into several parts.
 
 ### Body
 
