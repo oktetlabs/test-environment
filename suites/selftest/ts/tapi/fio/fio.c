@@ -14,6 +14,11 @@
  * @param ioengine  FIO I/O engine to use
  * @param rwtype    I/O pattern to use
  * @param runtime   run time in seconds
+ * @param size      I/O size
+ * @param filesize  size of a file to create
+ *
+ * @note Either @p size or @p filesize may be absent,
+ *       but not both.
  *
  * @par Scenario:
  *
@@ -35,7 +40,8 @@ int main(int argc, char **argv)
     tapi_fio_ioengine ioengine;
     tapi_fio_rwtype rwtype;
     int runtime;
-    tarpc_off_t size;
+    te_optional_uintmax_t size = TE_OPTIONAL_UINTMAX_UNDEF;
+    te_optional_uintmax_t filesize = TE_OPTIONAL_UINTMAX_UNDEF;
     tapi_fio_report report;
     static const char filename_template[] = "te_tmp_fio_XXXXXX";
     char *filename = NULL;
@@ -48,16 +54,19 @@ int main(int argc, char **argv)
     TEST_GET_FIO_RWTYPE_PARAM(rwtype);
     TEST_GET_FIO_NUMJOBS_PARAM(numjobs);
     TEST_GET_INT_PARAM(runtime);
-    TEST_GET_INT64_PARAM(size);
+    TEST_GET_OPT_VALUE_BIN_UNIT_PARAM(size);
+    TEST_GET_OPT_VALUE_BIN_UNIT_PARAM(filesize);
 
     opts.ioengine = ioengine;
     opts.rwtype = rwtype;
     opts.numjobs = numjobs;
     opts.runtime_sec = runtime;
+    opts.size = size;
 
     TEST_STEP("Create a temporary file");
     fd = rpc_mkstemp(pco_iut, filename_template, &filename);
-    rpc_ftruncate(pco_iut, fd, size);
+    if (filesize.defined)
+        rpc_ftruncate(pco_iut, fd, filesize.value);
     rpc_close(pco_iut, fd);
     fd = -1;
     opts.filename = filename;

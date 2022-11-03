@@ -16,6 +16,7 @@
                 <arg name="numjobs" />
                 <arg name="runtime" />
                 <arg name="size" />
+                <arg name="filesize" />
                 <notes/>
             </iter>
         </test>

@@ -21,6 +21,7 @@
 #include "tapi_job.h"
 #include "te_vector.h"
 #include "te_mi_log.h"
+#include "tapi_job_opt.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -235,7 +236,7 @@ typedef struct tapi_fio_opts {
     const char *rbdname;         /**< Specifies the name of the RBD */
     const char *pool;            /**< Specifies the name of the Ceph pool
                                       containing RBD or RADOS data. */
-    const char *size;            /**< The total size of file I/O for
+    tapi_job_opt_uintmax_t size; /**< The total size of file I/O for
                                       each thread of this job */
 } tapi_fio_opts;
 
@@ -261,7 +262,7 @@ typedef struct tapi_fio_opts {
     .prefix = NULL,                                     \
     .rbdname = NULL,                                    \
     .pool = NULL,                                       \
-    .size = NULL,                                       \
+    .size = TAPI_JOB_OPT_UINTMAX_UNDEF,                 \
 })
 
 /** FIO tool context. Based on tapi_perf_app */

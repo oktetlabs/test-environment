@@ -165,7 +165,7 @@ static const tapi_job_opt_bind fio_binds[] = TAPI_JOB_OPT_SET(
     },
     TAPI_JOB_OPT_STRING("--rbdname=", TRUE, tapi_fio_opts, rbdname),
     TAPI_JOB_OPT_STRING("--pool=", TRUE, tapi_fio_opts, pool),
-    TAPI_JOB_OPT_STRING("--size=", TRUE, tapi_fio_opts, size)
+    TAPI_JOB_OPT_UINTMAX_T("--size=", TRUE, NULL, tapi_fio_opts, size)
 );
 
 /* See description in tapi_internal.h */

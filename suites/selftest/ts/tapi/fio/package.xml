@@ -26,8 +26,13 @@
                 <value>randread</value>
                 <value>randwrite</value>
             </arg>
-            <arg name="size">
-                <value>1000000</value>
+            <arg name="size" list="">
+                <value>10M</value>
+                <value>-</value>
+            </arg>
+            <arg name="filesize" list="">
+                <value>-</value>
+                <value>10M</value>
             </arg>
             <arg name="runtime">
                 <value>1</value>
