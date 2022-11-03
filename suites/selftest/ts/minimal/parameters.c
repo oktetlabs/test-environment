@@ -31,6 +31,7 @@ main(int argc, char **argv)
     const char *str_param = NULL;
     int int_param = 0;
     unsigned int uint_param = 0;
+    uint64_t uint64_param = 0ull;
     double dbl_param = 0.0;
     double unit_param = 0.0;
     uintmax_t bin_unit_param = 0;
@@ -52,6 +53,7 @@ main(int argc, char **argv)
     TEST_GET_STRING_PARAM(str_param);
     TEST_GET_INT_PARAM(int_param);
     TEST_GET_UINT_PARAM(uint_param);
+    TEST_GET_UINT64_PARAM(uint64_param);
     TEST_GET_DOUBLE_PARAM(dbl_param);
     TEST_GET_VALUE_UNIT_PARAM(unit_param);
     TEST_GET_VALUE_BIN_UNIT_PARAM(bin_unit_param);
@@ -83,6 +85,7 @@ main(int argc, char **argv)
 
     CHECK_NUMERIC_PARAM(int_param, 42, "%d");
     CHECK_NUMERIC_PARAM(uint_param, 42u, "%u");
+    CHECK_NUMERIC_PARAM(uint64_param, 42ull, "%" PRIu64);
     CHECK_NUMERIC_PARAM(dbl_param, 42.0, "%g");
     CHECK_NUMERIC_PARAM(unit_param, 1e6, "%g");
     CHECK_NUMERIC_PARAM(bin_unit_param, 1ull << 20, "%ju");

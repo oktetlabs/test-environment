@@ -59,6 +59,7 @@
                 <arg name="str_param" />
                 <arg name="int_param" />
                 <arg name="uint_param" />
+                <arg name="uint64_param" />
                 <arg name="dbl_param" />
                 <arg name="unit_param" />
                 <arg name="bin_unit_param" />

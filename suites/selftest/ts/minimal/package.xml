@@ -42,6 +42,9 @@
             <arg name="uint_param">
                 <value>42</value>
             </arg>
+            <arg name="uint64_param">
+                <value>42</value>
+            </arg>
             <arg name="dbl_param">
                 <value>42.0</value>
             </arg>

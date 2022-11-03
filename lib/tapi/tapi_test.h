@@ -649,6 +649,25 @@ cleanup_specific:                                                   \
 #define TEST_GET_INT64_PARAM(var_name_) \
     (var_name_) = TEST_INT64_PARAM(var_name_)
 
+/**
+ * The macro to return parameters of type 'uint64'
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ *
+ * @return uint64 value
+ */
+#define TEST_UINT64_PARAM(var_name_) \
+    test_get_uint64_param(argc, argv, #var_name_)
+
+/**
+ * The macro to get parameters of type 'uint64'
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ */
+#define TEST_GET_UINT64_PARAM(var_name_) \
+    (var_name_) = TEST_UINT64_PARAM(var_name_)
 
 /**
  * The macro to return parameters of type 'double' ('float' also may
@@ -1240,6 +1259,18 @@ extern unsigned int test_get_uint_param(int argc, char **argv,
  */
 extern int64_t test_get_int64_param(int argc, char **argv,
                                     const char *name);
+
+/**
+ * Return parameters of type 'unsigned long long int'
+ *
+ * @param argc       count of arguments
+ * @param argv       list of arguments
+ * @param name       parameter name
+ *
+ * @return the value of a parameter @p name
+ */
+extern uint64_t test_get_uint64_param(int argc, char **argv,
+                                      const char *name);
 
 /**
  * Return parameters of type 'double'

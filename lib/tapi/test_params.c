@@ -1052,6 +1052,30 @@ test_get_int64_param(int argc, char **argv, const char *name)
 }
 
 /* See description in tapi_test.h */
+uint64_t
+test_get_uint64_param(int argc, char **argv, const char *name)
+{
+    const char *str_val = NULL;
+    uint64_t value;
+    te_errno rc;
+
+    str_val = test_get_param(argc, argv, name);
+    if (str_val == NULL)
+    {
+        TEST_FAIL("Failed to get uint64 value for param %s", name);
+    }
+
+    rc = te_str_to_uint64(str_val, 0, &value);
+    if (rc != 0)
+    {
+        TEST_FAIL("The value of '%s' ('%s') cannot be converted to uint64: %r",
+                  name, str_val, rc);
+    }
+
+    return value;
+}
+
+/* See description in tapi_test.h */
 double
 test_get_double_param(int argc, char **argv, const char *name)
 {
