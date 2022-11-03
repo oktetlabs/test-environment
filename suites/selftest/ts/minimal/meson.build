@@ -6,6 +6,7 @@ tests = [
     'env',
     'helloworld',
     'mi_meas_line_graph',
+    'parameters',
     'verdict'
 ]
 

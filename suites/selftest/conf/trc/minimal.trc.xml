@@ -53,5 +53,27 @@
                 <notes/>
             </iter>
         </test>
+        <test name="parameters" type="script">
+            <objective>Test that various types of parameters are properly handled.</objective>
+            <iter result="PASSED">
+                <arg name="str_param" />
+                <arg name="int_param" />
+                <arg name="uint_param" />
+                <arg name="dbl_param" />
+                <arg name="unit_param" />
+                <arg name="bin_unit_param" />
+                <arg name="true_param" />
+                <arg name="false_param" />
+                <arg name="opt_str_none_param" />
+                <arg name="opt_str_val_param" />
+                <arg name="opt_uint_none_param" />
+                <arg name="opt_uint_val_param" />
+                <arg name="opt_dbl_none_param" />
+                <arg name="opt_dbl_val_param" />
+                <arg name="opt_unit_none_param" />
+                <arg name="opt_unit_val_param" />
+                <notes/>
+            </iter>
+        </test>
     </iter>
 </test>
