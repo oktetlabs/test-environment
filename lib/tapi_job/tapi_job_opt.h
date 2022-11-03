@@ -158,6 +158,22 @@ typedef te_optional_uint_t tapi_job_opt_uint_t;
 /** Undefined value for tapi_job_opt_uint_t. */
 #define TAPI_JOB_OPT_UINT_UNDEF TE_OPTIONAL_UINT_UNDEF
 
+/** Unsigned long integer which can be left undefined.
+ *
+ * This is guaranteed to be assignment-compatible with te_optional_uintmax_t.
+ */
+typedef te_optional_uintmax_t tapi_job_opt_uintmax_t;
+
+/**
+ * Defined value for tapi_job_opt_uintmax_t.
+ *
+ * @param _x        Value to set.
+ */
+#define TAPI_JOB_OPT_UINTMAX_VAL(_x) TE_OPTIONAL_UINTMAX_VAL(_x)
+
+/** Undefined value for tapi_job_opt_uintmax_t. */
+#define TAPI_JOB_OPT_UINTMAX_UNDEF TE_OPTIONAL_UINTMAX_UNDEF
+
 /** Double which can be left undefined.
  *
  * This is guaranteed to be assignment-compatible with te_optional_double_t.
@@ -198,6 +214,10 @@ te_errno tapi_job_opt_create_uint_t_octal(const void *value, const void *priv,
 /** value type: `unsigned int` */
 te_errno tapi_job_opt_create_uint(const void *value, const void *priv,
                                   te_vec *args);
+
+/** value type: `tapi_job_opt_uintmax_t` */
+te_errno tapi_job_opt_create_uintmax_t(const void *value, const void *priv,
+                                       te_vec *args);
 
 /** value type: `unsigned int`, may be omitted */
 te_errno tapi_job_opt_create_uint_omittable(const void *value, const void *priv,
@@ -312,6 +332,20 @@ te_errno tapi_job_opt_create_enum_bool(const void *value, const void *priv,
     { tapi_job_opt_create_uint_t_octal, _prefix, _concat_prefix, _suffix, \
       TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                     \
                                      tapi_job_opt_uint_t), NULL }
+/**
+ * Bind `tapi_job_opt_uintmax_t` argument.
+ *
+ * @param[in] _prefix         Argument prefix.
+ * @param[in] _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in] _suffix         Argument suffix.
+ * @param[in] _struct         Option struct.
+ * @param[in] _field          Field name in option struct.
+ */
+#define TAPI_JOB_OPT_UINTMAX_T(_prefix, _concat_prefix, _suffix, \
+                               _struct, _field)                          \
+    { tapi_job_opt_create_uintmax_t, _prefix, _concat_prefix, _suffix,   \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                    \
+                                     tapi_job_opt_uintmax_t), NULL }
 
 /**
  * Bind `unsigned int` argument.

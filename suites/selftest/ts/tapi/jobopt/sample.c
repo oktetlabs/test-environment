@@ -80,6 +80,7 @@ main(int argc, char **argv)
         tapi_job_opt_uint_t opt_uint2;
         tapi_job_opt_uint_t opt_uint3;
         tapi_job_opt_uint_t opt_uint4;
+        tapi_job_opt_uintmax_t opt_uint64;
         tapi_job_opt_double_t dbl1;
         tapi_job_opt_double_t dbl2;
         const char *str;
@@ -116,6 +117,8 @@ main(int argc, char **argv)
             TAPI_JOB_OPT_UINT_T_HEX("-h", FALSE, "h", data_sample, opt_uint3),
             TAPI_JOB_OPT_UINT_T_OCTAL("-o", FALSE, NULL, data_sample,
                                       opt_uint4),
+            TAPI_JOB_OPT_UINTMAX_T("--uint64=", TRUE, NULL, data_sample,
+                                   opt_uint64),
             TAPI_JOB_OPT_DOUBLE("-d", FALSE, NULL, data_sample, dbl1),
             TAPI_JOB_OPT_DOUBLE("-d", FALSE, NULL, data_sample, dbl2),
             TAPI_JOB_OPT_STRING("-s", FALSE, data_sample, str),
@@ -153,6 +156,7 @@ main(int argc, char **argv)
         .opt_uint2 = TAPI_JOB_OPT_UINT_UNDEF,
         .opt_uint3 = TAPI_JOB_OPT_UINT_VAL(0xdeadbeef),
         .opt_uint4 = TAPI_JOB_OPT_UINT_VAL(0750),
+        .opt_uint64 = TAPI_JOB_OPT_UINTMAX_VAL(UINT64_MAX),
         .dbl1 = TAPI_JOB_OPT_DOUBLE_VAL(1.0),
         .dbl2 = TAPI_JOB_OPT_DOUBLE_UNDEF,
         .str = "string",
@@ -179,6 +183,7 @@ main(int argc, char **argv)
         "--uint=2",
         "-h", "0xdeadbeefh",
         "-o", "750",
+        "--uint64=18446744073709551615",
         "-d", "1.000000",
         "-s", "string",
         "--flag1",

@@ -59,6 +59,19 @@ tapi_job_opt_create_uint_t_octal(const void *value, const void *priv,
 }
 
 te_errno
+tapi_job_opt_create_uintmax_t(const void *value, const void *priv, te_vec *args)
+{
+    tapi_job_opt_uintmax_t *p = (tapi_job_opt_uintmax_t *)value;
+
+    UNUSED(priv);
+
+    if (!p->defined)
+        return TE_ENOENT;
+
+    return te_vec_append_str_fmt(args, "%ju", p->value);
+}
+
+te_errno
 tapi_job_opt_create_uint(const void *value, const void *priv, te_vec *args)
 {
     unsigned int uint = *(const unsigned int *)value;
