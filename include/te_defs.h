@@ -18,6 +18,7 @@
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #include <stdbool.h>
+#include <inttypes.h>
 #endif
 #ifdef HAVE_ASSERT_H
 #include <assert.h>
@@ -578,6 +579,24 @@ typedef struct te_optional_uint_t {
 /** Undefined value for te_optional_uint_t. */
 #define TE_OPTIONAL_UINT_UNDEF \
     (te_optional_uint_t){ .defined = FALSE }
+
+/** Unsigned long integer which can be left undefined */
+typedef struct te_optional_uintmax_t {
+    uintmax_t value; /**< Value */
+    te_bool defined; /**< If @c TRUE, value is defined */
+} te_optional_uintmax_t;
+
+/**
+ * Defined value for te_optional_uintmax_t.
+ *
+ * @param _x        Value to set.
+ */
+#define TE_OPTIONAL_UINTMAX_VAL(_x) \
+    (te_optional_uintmax_t){ .value = (_x), .defined = TRUE }
+
+/** Undefined value for te_optional_uintmax_t. */
+#define TE_OPTIONAL_UINTMAX_UNDEF \
+    (te_optional_uintmax_t){ .defined = FALSE }
 
 /** Double which can be left undefined */
 typedef struct te_optional_double_t {
