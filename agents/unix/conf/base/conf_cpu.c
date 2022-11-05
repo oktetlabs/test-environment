@@ -85,7 +85,12 @@ typedef struct cache_item {
     cpu_set_t shared_cpu_set;
     uintmax_t sys_id;
     char *type;
+    uintmax_t level;
 } cache_item;
+
+typedef enum cache_item_field {
+    CACHE_ITEM_LEVEL = 0,
+} cache_item_field;
 #endif
 
 typedef enum cpu_item_type {
@@ -712,6 +717,8 @@ compare_cache_items(cache_item *item1, cache_item *item2)
         return FALSE;
     if (strcmp(item1->type, item2->type) != 0)
         return FALSE;
+    if (item1->level != item2->level)
+        return FALSE;
 
     return TRUE;
 }
@@ -817,7 +824,7 @@ get_type(const char *cpu_name, const char *index_name, char **type)
 }
 
 static cache_item *
-init_cache_item(uintmax_t sys_id, char *type)
+init_cache_item(uintmax_t sys_id, char *type, uintmax_t level)
 {
     cache_item *result;
 
@@ -828,6 +835,7 @@ init_cache_item(uintmax_t sys_id, char *type)
     result->id = 0;
     result->sys_id = sys_id;
     result->type = type;
+    result->level = level;
 
     return result;
 }
@@ -838,6 +846,7 @@ get_cache_info(const char *cpu_name, const char *index_name,
 {
     uintmax_t sys_id;
     char *type;
+    uintmax_t level;
     te_errno rc;
 
     rc = get_cache_dim(cpu_name, index_name, "id", &sys_id);
@@ -848,7 +857,11 @@ get_cache_info(const char *cpu_name, const char *index_name,
     if (rc != 0)
         return rc;
 
-    *cache = init_cache_item(sys_id, type);
+    rc = get_cache_dim(cpu_name, index_name, "level", &level);
+    if (rc != 0)
+        return rc;
+
+    *cache = init_cache_item(sys_id, type, level);
 
     return 0;
 }
@@ -1087,6 +1100,91 @@ find_cache(const char *node_id_str, const char *package_id_str,
     return NULL;
 }
 
+static void
+copy_cache_item_field(cache_item *cache, char *value, cache_item_field field)
+{
+    uintmax_t numval;
+
+    switch (field)
+    {
+        case CACHE_ITEM_LEVEL:
+            numval = cache->level;
+            break;
+
+        default:
+            TE_FATAL_ERROR("No such field in cache_item structure");
+            break;
+    }
+
+    snprintf(value, RCF_MAX_VAL, "%ju", numval);
+}
+
+static te_errno
+cpu_cache_get_value(const char *node_str, const char *package_str,
+                    const char *core_str, const char *cache_str,
+                    char *value, cache_item_field field)
+{
+    cache_item *cache = NULL;
+
+    cache = find_cache(node_str, package_str, core_str, cache_str);
+    if (cache == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    copy_cache_item_field(cache, value, field);
+
+    return 0;
+}
+#endif
+
+static te_errno
+cpu_core_cache_level_get(unsigned int gid, const char *oid, char *value,
+                         const char *unused1, const char *node_str,
+                         const char *package_str, const char *core_str,
+                         const char *cache_str)
+{
+    te_errno rc = TE_EOPNOTSUPP;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+
+#if SUPPORT_CACHES
+    rc = cpu_cache_get_value(node_str, package_str, core_str, cache_str, value,
+                             CACHE_ITEM_LEVEL);
+#else
+    UNUSED(node_str);
+    UNUSED(package_str);
+    UNUSED(core_str);
+    UNUSED(cache_str);
+#endif
+
+    return rc;
+}
+
+static te_errno
+cpu_package_cache_level_get(unsigned int gid, const char *oid, char *value,
+                         const char *unused1, const char *node_str,
+                         const char *package_str, const char *cache_str)
+{
+    te_errno rc = TE_EOPNOTSUPP;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+
+#if SUPPORT_CACHES
+    rc = cpu_cache_get_value(node_str, package_str, NULL, cache_str, value,
+                             CACHE_ITEM_LEVEL);
+#else
+    UNUSED(node_str);
+    UNUSED(package_str);
+    UNUSED(cache_str);
+#endif
+
+    return rc;
+}
+
+#if SUPPORT_CACHES
 static te_errno
 cpu_cache_type_get(char *value, const char *node_id_str,
                    const char *package_id_str, const char *core_id_str,
@@ -1528,9 +1626,12 @@ avail_memory_get(unsigned int gid, const char *oid, char *value)
 RCF_PCH_CFG_NODE_RO(node_thread_isolated, "isolated",
                     NULL, NULL, cpu_thread_isolated_get);
 
+RCF_PCH_CFG_NODE_RO(node_cpu_core_cache_level, "level", NULL, NULL,
+                    cpu_core_cache_level_get);
+
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_core_cache, "cache",
-                               NULL, NULL, cpu_core_cache_type_get,
-                               cpu_core_cache_list);
+                               &node_cpu_core_cache_level, NULL,
+                               cpu_core_cache_type_get, cpu_core_cache_list);
 
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_thread, "thread", &node_thread_isolated,
                                &node_cpu_core_cache, NULL, cpu_thread_list);
@@ -1539,8 +1640,12 @@ RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_core, "core",
                                &node_cpu_thread, NULL,
                                NULL, cpu_core_list);
 
+RCF_PCH_CFG_NODE_RO(node_cpu_package_cache_level, "level", NULL, NULL,
+                    cpu_package_cache_level_get);
+
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_package_cache, "cache",
-                               NULL, &node_cpu_core, cpu_package_cache_type_get,
+                               &node_cpu_package_cache_level, &node_cpu_core,
+                               cpu_package_cache_type_get,
                                cpu_package_cache_list);
 
 RCF_PCH_CFG_NODE_RO(node_avail_memory, "free", NULL, NULL,
