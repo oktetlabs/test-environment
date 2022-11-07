@@ -1010,6 +1010,9 @@ rcf_init_agent(ta *agent)
 {
     int       rc;
     te_string str = TE_STRING_INIT;
+    rcf_talib_param param = {
+        .tce_conf = tce_conf,
+    };
 
     if ((rc = te_kvpair_to_str(&agent->conf, &str)) != 0)
     {
@@ -1027,7 +1030,7 @@ rcf_init_agent(ta *agent)
     /* Initially mark TA as dead - no valid connection */
     agent->flags |= TA_DEAD;
 
-    if ((rc = (agent->m.start)(agent->name, agent->type,
+    if ((rc = (agent->m.start)(agent->name, agent->type, &param,
                                &agent->conf, &(agent->handle),
                                &(agent->flags))) != 0)
     {

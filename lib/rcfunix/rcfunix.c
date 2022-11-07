@@ -482,6 +482,7 @@ rcfunix_connect_to(const unix_ta *ta, te_bool ignore_proxy)
  * @param ta_name       Test Agent name
  * @param ta_type       Test Agent type (Test Agent executable is equal
  *                      to ta_type and is located in TE_INSTALL/agents/bin)
+ * @param param         Parameters for RCF/ controllers.
  * @param conf          TA-specific configurations list of kvpairs
  * @param handle        location for TA handle
  * @param flags         location for TA flags
@@ -490,6 +491,7 @@ rcfunix_connect_to(const unix_ta *ta, te_bool ignore_proxy)
  */
 static te_errno
 rcfunix_start(const char *ta_name, const char *ta_type,
+              const rcf_talib_param *param,
               const te_kvpair_h *conf, rcf_talib_handle *handle,
               unsigned int *flags)
 {
@@ -510,6 +512,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     te_bool     shell_is_bash = TRUE;
 
     unsigned int timestamp;
+
+    UNUSED(param);
 
     if (ta_name == NULL || ta_type == NULL ||
         ta_name[0] == '\0' || strlen(ta_name) >= RCF_MAX_NAME ||

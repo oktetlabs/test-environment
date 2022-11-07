@@ -45,6 +45,13 @@ typedef void *rcf_talib_handle;
 #define TA_REBOOTING    0x1000  /**< TA is performing cold reboot */
 /*@}*/
 
+/** See the definition in the rcf_tce_conf.h file. */
+typedef struct rcf_tce_conf rcf_tce_conf_t;
+
+/** Parameters for RCF/ controllers */
+typedef struct rcf_talib_param {
+    rcf_tce_conf_t *tce_conf;   /**< The TCE configuration. */
+} rcf_talib_param;
 
 /**
  * Start the Test Agent. Note that it's not necessary
@@ -54,6 +61,7 @@ typedef void *rcf_talib_handle;
  * @param ta_name       Test Agent name
  * @param ta_type       Test Agent type (Test Agent executable is equal
  *                      to ta_type and is located in TE_INSTALL/agents/bin)
+ * @param param         Parameters for RCF/ controllers.
  * @param conf          TA-specific configuration list of kv_pairs
  * @param handle        location for TA handle
  * @param flags         IN/OUT location of TA flags;
@@ -61,11 +69,12 @@ typedef void *rcf_talib_handle;
  *
  * @return Error code.
  */
-typedef te_errno (* rcf_talib_start)(const char        *ta_name,
-                                     const char        *ta_type,
-                                     const te_kvpair_h *conf,
-                                     rcf_talib_handle  *handle,
-                                     unsigned int      *flags);
+typedef te_errno (* rcf_talib_start)(const char             *ta_name,
+                                     const char             *ta_type,
+                                     const rcf_talib_param  *param,
+                                     const te_kvpair_h      *conf,
+                                     rcf_talib_handle       *handle,
+                                     unsigned int           *flags);
 
 /**
  * Kill all processes related to TA on the station where it is run.
