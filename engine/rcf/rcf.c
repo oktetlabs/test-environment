@@ -62,6 +62,7 @@
 #include "te_printf.h"
 #include "te_str.h"
 #include "rcf.h"
+#include "rcf_tce_parser.h"
 
 #define RCF_NEED_TYPES      1
 #define RCF_NEED_TYPE_LEN   1
@@ -95,6 +96,9 @@ ta_check ta_checker;
 
 #define RCF_FOREGROUND  0x01    /**< Flag to run RCF in foreground */
 static unsigned int flags = 0;  /**< Global flags */
+
+static const char *tce_conf_file = NULL;    /**< The TCE configuration file. */
+static rcf_tce_conf_t *tce_conf = NULL;     /**< The TCE configuration. */
 
 static const char *cfg_file;    /**< Configuration file name */
 static ta *agents = NULL;       /**< List of Test Agents */
@@ -2885,6 +2889,8 @@ process_cmd_line_opts(int argc, const char **argv)
         { "foreground", 'f', POPT_ARG_NONE | POPT_BIT_SET, &flags,
           RCF_FOREGROUND,
           "Run in foreground (usefull for debugging).", NULL },
+        { "tce-conf", '\0', POPT_ARG_STRING, &tce_conf_file, 0,
+          "Specify file with TCE configuration.", NULL },
 
         POPT_AUTOHELP
         POPT_TABLEEND
@@ -2984,6 +2990,12 @@ main(int argc, const char *argv[])
 
     if ((ta_list_file = getenv("TE_TA_LIST_FILE")) != NULL)
         unlink(ta_list_file);
+
+    if (tce_conf_file != NULL &&
+        rcf_tce_conf_parse(&tce_conf, tce_conf_file) != 0)
+    {
+        goto exit;
+    }
 
     if (parse_config(cfg_file) != 0)
         goto exit;
@@ -3169,6 +3181,8 @@ exit:
 
     free_ta_list();
     ipc_close_server(server);
+
+    rcf_tce_conf_free(tce_conf);
 
     if (result != 0)
         ERROR("Error exit");

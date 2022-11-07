@@ -1112,8 +1112,7 @@ if test -n "${TE_DO_TCE}" ; then
     tce_conf="${TE_TMP}/tce_conf.yaml"
     te_tce_conf "${TE_DO_TCE}" "${tce_conf}" || exit 1
 
-    # TODO(Boleslav Stankevich): The configuration will be provided to RCF on
-    #                            the following commit.
+    RCF_OPTS="${RCF_OPTS} --tce-conf=${tce_conf}"
 fi
 
 te_log_message Dispatcher Start "Starting TEN applications"

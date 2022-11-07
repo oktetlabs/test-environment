@@ -6,7 +6,13 @@ rcf_consistency_checks = custom_target('get-rcf-consistency-check',
     capture: true, build_always_stale: true, build_by_default: true,
     command: [ te_rcf_consistency_checks, '--generate-c' ])
 
-deps = [ dep_threads, dep_libxml2, dep_popt ]
+dep_yaml = dependency('yaml-0.1', required: false)
+required_deps += 'yaml-0.1'
+if not dep_yaml.found()
+    missed_deps += 'yaml-0.1'
+endif
+
+deps = [ dep_threads, dep_libxml2, dep_popt, dep_yaml ]
 
 common_deps = [
     dep_lib_rcfapi,
@@ -21,7 +27,14 @@ if dep_dl.found()
     deps += [ dep_dl ]
 endif
 
-executable('te_rcf', ['rcf.c', 'rcf_reboot.c'], rcf_consistency_checks, install: true,
+rcf_cfiles = [
+    'rcf.c',
+    'rcf_reboot.c',
+    'rcf_tce_conf.c',
+    'rcf_tce_parser.c',
+    ]
+
+executable('te_rcf', rcf_cfiles, rcf_consistency_checks, install: true,
            link_args: [  '-rdynamic', '-export-dynamic' ],
            dependencies: [ common_deps, dep_lib_ipcserver, deps ])
 
