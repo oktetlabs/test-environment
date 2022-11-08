@@ -10,6 +10,20 @@ if test -n "${TERM}" -a "${TERM}" != dumb ; then
     # echo "${red}red text ${green}green text${reset}"
 fi
 
+#######################################
+# Print all passed arguments to stdout with the appropriate prefix.
+#######################################
+ring() {
+    echo RING: $*
+}
+
+#######################################
+# Print all passed arguments to stderr with the appropriate prefix.
+#######################################
+warn() {
+    echo WARNING: $* >&2
+}
+
 fail () {
     echo "" >&2
     echo $* >&2
@@ -42,5 +56,19 @@ function call_if_defined() {
 
     if declare -p -F -f "${fname}" >/dev/null 2>&1 ; then
         "${fname}" "$@"
+    fi
+}
+
+#######################################
+# Include a file as source if it exists.
+# Arguments:
+#   File name
+#   All the following arguments are passed to the sourcing file
+#######################################
+source_if_exists() {
+    local fname="$1" ; shift
+
+    if [[ -f "$fname" ]] ; then
+        source "$fname" "$@"
     fi
 }
