@@ -779,10 +779,29 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
     tapi_igmp3_group_record_new(_group_record, _group_type, _group_address, \
                                 _aux_data, _aux_data_len, 0)
 
-#define IGMP3_SEND_REPORT(_pco, _csap, _group_list, _src_addr, _src_mac) \
-    CHECK_RC(tapi_igmp3_ip4_eth_send_report((_pco)->ta, (_pco)->sid,     \
-                                            (_csap), (_group_list),      \
-                                            (_src_addr), (_src_mac)))
+/**
+ * Send IGMPv3 report and free group list.
+ *
+ * @param _pco         RPC server.
+ * @param _csap        igmp.ip4.eth CSAP handle to send IGMP message through.
+ * @param _group_list  Group Record List to be sent.
+ * @param _src_addr    IPv4 layer Source Address field or @c INADDR_ANY to
+ *                     keep unspecified.
+ * @param _src_mac     Ethernet layer Source Address field or @c NULL to keep
+ *                     unspecified.
+ *
+ * @note  @p _group_list will be freed after sending.
+ */
+#define IGMP3_SEND_REPORT(_pco, _csap, _group_list, _src_addr, _src_mac)   \
+    do {                                                                   \
+        tapi_igmp3_group_list_t *gl_magic_3f859 = (_group_list);           \
+                                                                           \
+        CHECK_RC(tapi_igmp3_ip4_eth_send_report((_pco)->ta, (_pco)->sid,   \
+                                                (_csap), gl_magic_3f859,   \
+                                                (_src_addr), (_src_mac))); \
+        tapi_igmp3_group_list_free(gl_magic_3f859);                        \
+        free(gl_magic_3f859);                                              \
+    } while (0)
 
 #define IGMP3_SEND_SINGLE_REPORT(_pco, _csap, _group_type, _group_addr, \
                                  _src_addr, _src_mac, _addr1...)        \
