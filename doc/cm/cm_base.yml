@@ -595,6 +595,23 @@
          Value: 0 - feature can be changed
                 1 - feature is read-only
 
+    - oid: "/agent/interface/private"
+      access: read_only
+      type: none
+      d: |
+         Network interface private flags
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/private/flag"
+      access: read_write
+      type: bool
+      d: |
+         Network interface private flag
+         Name:  Flag name
+         Value: 0 - disabled
+                1 - enabled
+
     - oid: "/agent/interface/channels"
       access: read_only
       type: none

@@ -313,6 +313,12 @@ extern void ta_cfg_obj_log(const ta_cfg_obj_t *obj);
  */
 #define TA_OBJ_TYPE_IF_RSSH "if_rssh"
 
+/**
+ * Name for the object type containing private flags for network
+ * interface.
+ */
+#define TA_OBJ_TYPE_IF_PFLAGS "if_pflags"
+
 /** System-independent route types */
 typedef enum ta_route_type {
     TA_RT_TYPE_UNSPECIFIED,

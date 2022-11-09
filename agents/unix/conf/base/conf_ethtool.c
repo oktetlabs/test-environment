@@ -221,6 +221,8 @@ ethtool_cmd2str(int cmd)
 #ifdef ETHTOOL_SRSSH
         CASE_CMD(ETHTOOL_SRSSH);
 #endif
+        CASE_CMD(ETHTOOL_GPFLAGS);
+        CASE_CMD(ETHTOOL_SPFLAGS);
     }
 
     return "<UNKNOWN>";
@@ -521,6 +523,12 @@ get_ethtool_value(const char *if_name, unsigned int gid,
             val_size = sizeof(ta_ethtool_lsets);
             break;
 
+        case TA_ETHTOOL_PFLAGS:
+            obj_type = TA_OBJ_TYPE_IF_PFLAGS;
+            val_size = sizeof(struct ethtool_value);
+            native_cmd = ETHTOOL_GPFLAGS;
+            break;
+
         default:
             ERROR("%s(): unknown ethtool command %d", __FUNCTION__, cmd);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -594,6 +602,11 @@ commit_ethtool_value(const char *if_name, unsigned int gid,
 
         case TA_ETHTOOL_LINKSETTINGS:
             obj_type = TA_OBJ_TYPE_IF_LINK_SETS;
+            break;
+
+        case TA_ETHTOOL_PFLAGS:
+            obj_type = TA_OBJ_TYPE_IF_PFLAGS;
+            native_cmd = ETHTOOL_SPFLAGS;
             break;
 
         default:
@@ -714,6 +727,60 @@ ta_ethtool_get_strings(unsigned int gid, const char *if_name,
 
     *strs = result;
     return rc;
+}
+
+/* see description in conf_ethtool.h */
+te_errno
+ta_ethtool_get_strings_list(unsigned int gid, const char *if_name,
+                            unsigned int set_id, char **list_out)
+{
+    const struct ta_ethtool_strings *sset = NULL;
+    unsigned int i;
+    te_errno rc;
+    te_string str = TE_STRING_INIT;
+
+    rc = ta_ethtool_get_strings(gid, if_name, set_id, &sset);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < sset->num; i++)
+    {
+        rc = te_string_append_chk(&str, "%s ", sset->strings[i]);
+        if (rc != 0)
+        {
+            te_string_free(&str);
+            return rc;
+        }
+    }
+
+    *list_out = str.ptr;
+    return 0;
+}
+
+/* see description in conf_ethtool.h */
+te_errno
+ta_ethtool_get_string_idx(unsigned int gid, const char *if_name,
+                          unsigned int set_id, const char *target,
+                          unsigned int *idx)
+{
+    const ta_ethtool_strings *sset = NULL;
+    unsigned int i;
+    te_errno rc;
+
+    rc = ta_ethtool_get_strings(gid, if_name, set_id, &sset);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < sset->num; i++)
+    {
+        if (strcmp(target, sset->strings[i]) == 0)
+        {
+            *idx = i;
+            return 0;
+        }
+    }
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
 #ifdef ETHTOOL_GRSSH

@@ -30,6 +30,7 @@ typedef enum ta_ethtool_cmd {
     TA_ETHTOOL_PAUSEPARAM,    /**< ETHTOOL_[G|S]PAUSEPARAM */
     TA_ETHTOOL_LINKSETTINGS,  /**< ETHTOOL_[G|S]LINKSETTINGS if supported,
                                    or ETHTOOL_[G|S]SET otherwise */
+    TA_ETHTOOL_PFLAGS,        /**< ETHTOOL_[G|S]PFLAGS */
 } ta_ethtool_cmd;
 
 /**
@@ -376,6 +377,40 @@ extern te_errno ta_ethtool_get_strings(unsigned int gid,
                                        const char *if_name,
                                        unsigned int set_id,
                                        const ta_ethtool_strings **strs);
+
+/*
+ * Same as ta_ethtool_get_strings(), but obtained set of strings is
+ * returned as a space-separated list suitable for list() method of
+ * configuration object.
+ *
+ * @param gid         Request group ID
+ * @param if_name     Interface name
+ * @param set_id      String set ID
+ * @param list_out    Where to save pointer to the list
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_get_strings_list(unsigned int gid,
+                                            const char *if_name,
+                                            unsigned int set_id,
+                                            char **list_out);
+
+/**
+ * Get index of a given string in a set of strings.
+ *
+ * @param gid         Request group ID
+ * @param if_name     Interface name
+ * @param set_id      String set ID
+ * @param target      Target string
+ * @param idx         Where to save index of the target string
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_get_string_idx(unsigned int gid,
+                                          const char *if_name,
+                                          unsigned int set_id,
+                                          const char *target,
+                                          unsigned int *idx);
 
 #ifdef ETHTOOL_GRSSH
 /**

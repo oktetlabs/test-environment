@@ -47,6 +47,7 @@
 #include "te_rpc_sys_socket.h"
 
 #include "conf_oid.h"
+#include "conf_ethtool.h"
 
 #ifdef HAVE_LINUX_ETHTOOL_H
 #define E_BITS_PER_DWORD ((unsigned)(sizeof(uint32_t) * CHAR_BIT))
@@ -547,6 +548,117 @@ eth_feature_readonly_get(unsigned int gid,
     value[1] = '\0';
 
     return 0;
+}
+
+/* list all private flags */
+static te_errno
+eth_priv_flags_list(unsigned int gid, const char *oid_str,
+                    const char *sub_id, char **list_out,
+                    const char *if_name)
+{
+    UNUSED(oid_str);
+    UNUSED(sub_id);
+
+    return ta_ethtool_get_strings_list(gid, if_name,
+                                       ETH_SS_PRIV_FLAGS, list_out);
+}
+
+/* common code for getting and setting private flag */
+static te_errno
+eth_priv_flags_common(unsigned int gid, const char *oid_str,
+                      const char *if_name, const char *flags_name,
+                      const char *flag_name, unsigned int *idx,
+                      uint32_t **data)
+{
+    te_errno rc;
+    struct ethtool_value *pflags = NULL;
+
+    UNUSED(oid_str);
+    UNUSED(flags_name);
+
+    rc = ta_ethtool_get_string_idx(gid, if_name, ETH_SS_PRIV_FLAGS,
+                                   flag_name, idx);
+    if (rc != 0)
+        return rc;
+
+    rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_PFLAGS,
+                           (void **)&pflags);
+    if (rc != 0)
+        return rc;
+
+    *data = &pflags->data;
+    return 0;
+}
+
+/* get state of private flag */
+static te_errno
+eth_priv_flags_get(unsigned int gid, const char *oid_str,
+                   char *value, const char *if_name,
+                   const char *flags_name, const char *flag_name)
+{
+    te_errno rc;
+    unsigned int idx;
+    uint32_t *data;
+
+    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
+
+    rc = eth_priv_flags_common(gid, oid_str, if_name, flags_name,
+                               flag_name, &idx, &data);
+    if (rc != 0)
+        return rc;
+
+    return te_string_append_chk(&str_val, "%u",
+                                (*data & (1 << idx)) ? 1 : 0);
+}
+
+/* set state of private flag */
+static te_errno
+eth_priv_flags_set(unsigned int gid, const char *oid_str,
+                   const char *value, const char *if_name,
+                   const char *flags_name, const char *flag_name)
+{
+    te_errno rc;
+    unsigned int idx;
+    uint32_t *data;
+    unsigned int int_val;
+
+    rc = te_strtoui(value, 10, &int_val);
+    if (rc != 0 || (int_val != 0 && int_val != 1))
+    {
+        ERROR("%s(): cannot parse private flag value '%s'", __FUNCTION__,
+              value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = eth_priv_flags_common(gid, oid_str, if_name, flags_name,
+                               flag_name, &idx, &data);
+    if (rc != 0)
+        return rc;
+
+    if (idx > sizeof(uint32_t) * 8)
+    {
+        ERROR("%s(): index of private flag '%s' is too big (%u), cannot "
+              "access it", __FUNCTION__, flag_name, idx);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if (int_val == 1)
+        *data = *data | (1 << idx);
+    else
+        *data = *data & ~(1 << idx);
+
+    return 0;
+}
+
+/* commit private flags */
+static te_errno
+eth_priv_flags_commit(unsigned int gid, const cfg_oid *oid)
+{
+    const char *if_name;
+
+    if_name = CFG_OID_GET_INST_NAME(oid, 2);
+
+    return commit_ethtool_value(if_name, gid, TA_ETHTOOL_PFLAGS);
 }
 
 /**
@@ -1169,6 +1281,23 @@ static rcf_pch_cfg_object eth_feature = {
     (rcf_ch_cfg_commit)eth_feature_commit, NULL, NULL
 };
 
+static rcf_pch_cfg_object eth_priv_flags;
+
+static rcf_pch_cfg_object eth_priv_flag = {
+    .sub_id = "flag",
+    .get = (rcf_ch_cfg_get)eth_priv_flags_get,
+    .set = (rcf_ch_cfg_set)eth_priv_flags_set,
+    .list = (rcf_ch_cfg_list)eth_priv_flags_list,
+    .commit_parent = &eth_priv_flags
+};
+
+static rcf_pch_cfg_object eth_priv_flags = {
+    .sub_id = "private",
+    .son = &eth_priv_flag,
+    .brother = &eth_feature,
+    .commit = (rcf_ch_cfg_commit)eth_priv_flags_commit
+};
+
 RCF_PCH_CFG_NODE_RO(eth_ring_tx_max, "max", NULL, NULL,
                     eth_ring_tx_max_get);
 
@@ -1185,7 +1314,7 @@ RCF_PCH_CFG_NODE_RW(eth_ring_rx_current, "current", NULL, &eth_ring_rx_max,
 
 RCF_PCH_CFG_NODE_NA(eth_ring_rx, "rx", &eth_ring_rx_current, &eth_ring_tx);
 
-RCF_PCH_CFG_NODE_NA(eth_ring, "ring", &eth_ring_rx, &eth_feature);
+RCF_PCH_CFG_NODE_NA(eth_ring, "ring", &eth_ring_rx, &eth_priv_flags);
 
 RCF_PCH_CFG_NODE_RO(eth_channels_tx_maximum, "maximum",
                     NULL, NULL, eth_channels_get);
