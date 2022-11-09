@@ -909,6 +909,14 @@ tapi_igmp3_group_list_free(tapi_igmp3_group_list_t *group_list)
         return;
     if ((group_list->groups_no_max > 0) && (group_list->groups != NULL))
     {
+        int grp_no;
+
+        for (grp_no = 0; grp_no < group_list->groups_no; grp_no++)
+        {
+            tapi_igmp3_group_record_free(group_list->groups[grp_no]);
+            free(group_list->groups[grp_no]);
+        }
+
         free(group_list->groups);
         group_list->groups = NULL;
         group_list->groups_no_max = 0;
