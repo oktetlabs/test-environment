@@ -1792,7 +1792,7 @@ cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
 
 /* See description in conf_api.h */
 te_errno
-cfg_get_instance_int_fmt(int *val, const char *oid_fmt, ...)
+cfg_get_int(int *val, const char *oid_fmt, ...)
 {
     cfg_val_type type = CVT_INT32;
 
@@ -1802,7 +1802,7 @@ cfg_get_instance_int_fmt(int *val, const char *oid_fmt, ...)
 
 /* See description in conf_api.h */
 te_errno
-cfg_get_instance_uint64_fmt(uint64_t *val, const char *oid_fmt, ...)
+cfg_get_uint64(uint64_t *val, const char *oid_fmt, ...)
 {
     cfg_val_type type = CVT_UINT64;
 
@@ -1812,7 +1812,7 @@ cfg_get_instance_uint64_fmt(uint64_t *val, const char *oid_fmt, ...)
 
 /* See description in conf_api.h */
 te_errno
-cfg_get_instance_string_fmt(char **val, const char *oid_fmt, ...)
+cfg_get_string(char **val, const char *oid_fmt, ...)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -1822,7 +1822,7 @@ cfg_get_instance_string_fmt(char **val, const char *oid_fmt, ...)
 
 /* See description in conf_api.h */
 te_errno
-cfg_get_instance_addr_fmt(struct sockaddr **val, const char *oid_fmt, ...)
+cfg_get_addr(struct sockaddr **val, const char *oid_fmt, ...)
 {
     cfg_val_type type = CVT_ADDRESS;
 
@@ -1966,7 +1966,7 @@ cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
 
 /* See description in conf_api.h */
 te_errno
-cfg_get_instance_int_sync_fmt(int *val, const char *oid_fmt, ...)
+cfg_get_int_sync(int *val, const char *oid_fmt, ...)
 {
     cfg_val_type type = CVT_INT32;
 
@@ -1976,7 +1976,7 @@ cfg_get_instance_int_sync_fmt(int *val, const char *oid_fmt, ...)
 
 /* See description in conf_api.h */
 te_errno
-cfg_get_instance_uint64_sync_fmt(uint64_t *val, const char *oid_fmt, ...)
+cfg_get_uint64_sync(uint64_t *val, const char *oid_fmt, ...)
 {
     cfg_val_type type = CVT_UINT64;
 
@@ -1986,7 +1986,7 @@ cfg_get_instance_uint64_sync_fmt(uint64_t *val, const char *oid_fmt, ...)
 
 /* See description in conf_api.h */
 te_errno
-cfg_get_instance_string_sync_fmt(char **val, const char *oid_fmt, ...)
+cfg_get_string_sync(char **val, const char *oid_fmt, ...)
 {
     cfg_val_type type = CVT_STRING;
 
@@ -1996,7 +1996,7 @@ cfg_get_instance_string_sync_fmt(char **val, const char *oid_fmt, ...)
 
 /* See description in conf_api.h */
 te_errno
-cfg_get_instance_addr_sync_fmt(struct sockaddr **val, const char *oid_fmt, ...)
+cfg_get_addr_sync(struct sockaddr **val, const char *oid_fmt, ...)
 {
     cfg_val_type type = CVT_ADDRESS;
 
