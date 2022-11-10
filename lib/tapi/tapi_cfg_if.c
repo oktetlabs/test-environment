@@ -402,3 +402,24 @@ tapi_cfg_if_msglvl_set(const char *ta, const char *ifname, uint64_t msglvl)
                                 "/agent:%s/interface:%s/msglvl:",
                                 ta, ifname);
 }
+
+/* See description in the tapi_cfg_if.h */
+te_errno
+tapi_cfg_if_priv_flag_get(const char *ta, const char *if_name,
+                          const char *flag_name, te_bool *state)
+{
+    return cfg_get_bool(
+                state, "/agent:%s/interface:%s/private:/flag:%s",
+                ta, if_name, flag_name);
+}
+
+/* See description in the tapi_cfg_if.h */
+te_errno
+tapi_cfg_if_priv_flag_set(const char *ta, const char *if_name,
+                          const char *flag_name, te_bool state)
+{
+    return cfg_set_instance_fmt(
+              CFG_VAL(BOOL, state),
+              "/agent:%s/interface:%s/private:/flag:%s",
+              ta, if_name, flag_name);
+}

@@ -359,6 +359,37 @@ extern te_errno tapi_cfg_if_msglvl_get(const char *ta, const char *ifname,
 extern te_errno tapi_cfg_if_msglvl_set(const char *ta, const char *ifname,
                                        uint64_t msglvl);
 
+/**
+ * Get status of a private flag for a network interface.
+ *
+ * @param ta              Test agent name
+ * @param if_name         Interface name
+ * @param flag_name       Name of the flag
+ * @param state           Will be set to @c TRUE if flag is enabled,
+ *                        to @c FALSE otherwise
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_priv_flag_get(const char *ta,
+                                          const char *if_name,
+                                          const char *flag_name,
+                                          te_bool *state);
+
+/**
+ * Set status of a private flag for a network interface.
+ *
+ * @param ta              Test agent name
+ * @param if_name         Interface name
+ * @param flag_name       Name of the flag
+ * @param state           @c TRUE to enable, @c FALSE to disable
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_priv_flag_set(const char *ta,
+                                          const char *if_name,
+                                          const char *flag_name,
+                                          te_bool state);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
