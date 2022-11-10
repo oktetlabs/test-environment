@@ -65,6 +65,29 @@
 #include "te_str.h"
 #include "te_alloc.h"
 
+#include "te_intset.h"
+
+#if SUPPORT_CACHES
+#include "te_file.h"
+#include "te_numeric.h"
+#include "te_units.h"
+
+typedef LIST_HEAD(cache_item_list, cache_item) cache_item_list;
+
+/*
+ * id field contains id for a cache_item in a cache_list.
+ * sys_id field contains id for cache in sysfs.
+ */
+typedef struct cache_item {
+    LIST_ENTRY(cache_item) next;
+
+    unsigned int id;
+    cpu_set_t shared_cpu_set;
+    uintmax_t sys_id;
+    char *type;
+} cache_item;
+#endif
+
 typedef enum cpu_item_type {
     CPU_ITEM_NODE = 0,
     CPU_ITEM_PACKAGE,
@@ -89,6 +112,10 @@ typedef struct cpu_item {
     cpu_item_type type;
     unsigned int id;
     cpu_properties prop;
+
+#if SUPPORT_CACHES
+    cache_item_list cache_list;
+#endif
 
     cpu_item_list children;
 } cpu_item;
@@ -129,6 +156,55 @@ find_cpu_item(cpu_item_list *root, cpu_item_type type, const unsigned int *ids)
     return NULL;
 }
 
+#if SUPPORT_CACHES
+/*
+ * By construction, a set of CPU ids of a CPU thread contains only this thread
+ * and a set of CPU ids of higher level CPU sets is a union of CPU id sets of
+ * their children.
+ *
+ * Normally, we search for a CPU item that is uniquely identified by a shared
+ * cpu set. However, there may be cases when a provided CPU id set falls
+ * between the layers, in which case we're going to associate it with the parent
+ * cpu set.
+ *
+ * Therefore:
+ * - if a CPU id set of the current item is equal to the requested id set -
+ *   the item is found;
+ * - if it's a superset of the requested id set, then we should look in
+ *   descendants;
+ * - if it's a subset of the requested id set, we shall stick with the parent.
+ */
+static cpu_item *
+find_item_by_cpu_set(cpu_item_list *root, cpu_set_t *shared_cpu_set)
+{
+    cpu_item *container_item = NULL;
+    cpu_item *item;
+
+    while (root != NULL)
+    {
+        LIST_FOREACH(item, root, next)
+        {
+            if (CPU_EQUAL(shared_cpu_set, &item->vcpus))
+                return item;
+
+            if (te_cpuset_is_subset(shared_cpu_set, &item->vcpus) != 0)
+            {
+                container_item = item;
+                root = &container_item->children;
+                break;
+            }
+
+            if (te_cpuset_is_subset(&item->vcpus, shared_cpu_set) != 0)
+                return container_item;
+
+            root = NULL;
+        }
+    }
+
+    return NULL;
+}
+#endif
+
 static te_errno
 init_item(cpu_item_type type, unsigned int id, cpu_properties prop,
           cpu_item **item)
@@ -148,6 +224,9 @@ init_item(cpu_item_type type, unsigned int id, cpu_properties prop,
     result->type = type;
     result->id = id;
     result->prop = prop;
+#if SUPPORT_CACHES
+    LIST_INIT(&result->cache_list);
+#endif
     LIST_INIT(&result->children);
 
     *item = result;
@@ -582,6 +661,30 @@ populate_cpu(cpu_item_list *root, const char *name, const char *isolated_str)
     return rc;
 }
 
+#if SUPPORT_CACHES
+static void
+free_cache_item(cache_item *cache)
+{
+    free(cache->type);
+    free(cache);
+}
+
+static void
+free_cache_list(cache_item_list *cache_list)
+{
+    if (cache_list == NULL)
+        return;
+
+    while (!LIST_EMPTY(cache_list))
+    {
+        cache_item *cache = LIST_FIRST(cache_list);
+
+        LIST_REMOVE(cache, next);
+        free_cache_item(cache);
+    }
+}
+#endif
+
 static void
 free_list(cpu_item_list *root)
 {
@@ -594,9 +697,211 @@ free_list(cpu_item_list *root)
 
         free_list(&item->children);
         LIST_REMOVE(item, next);
+#if SUPPORT_CACHES
+        free_cache_list(&item->cache_list);
+#endif
         free(item);
     }
 }
+
+#if SUPPORT_CACHES
+static te_bool
+compare_cache_items(cache_item *item1, cache_item *item2)
+{
+    if (item1->sys_id != item2->sys_id)
+        return FALSE;
+    if (strcmp(item1->type, item2->type) != 0)
+        return FALSE;
+
+    return TRUE;
+}
+
+static void
+add_cache_to_cpu_item(cpu_item_list *root, cache_item *cache)
+{
+    cpu_item *item;
+    cache_item *cache_item = NULL;
+
+    item = find_item_by_cpu_set(root, &cache->shared_cpu_set);
+
+    if (item == NULL)
+        TE_FATAL_ERROR("Cache item does not belong to any CPU");
+
+    LIST_FOREACH(cache_item, &item->cache_list, next)
+    {
+        if (compare_cache_items(cache_item, cache))
+        {
+            free_cache_item(cache);
+            return;
+        }
+    }
+
+    if (LIST_FIRST(&item->cache_list) != NULL)
+        cache->id = LIST_FIRST(&item->cache_list)->id + 1;
+    LIST_INSERT_HEAD(&item->cache_list, cache, next);
+}
+
+static te_errno
+read_shared_cpu_list(const char *cpu_name, const char *index_name,
+                     cpu_set_t *shared_cpu_set)
+{
+    char shared_cpu_list[RCF_MAX_VAL];
+    te_errno rc = 0;
+
+    rc = read_sys_value(shared_cpu_list, sizeof(shared_cpu_list), FALSE,
+                        SYSFS_SYSTEM_TREE "/cpu/%s/cache/%s/shared_cpu_list",
+                        cpu_name, index_name);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to read shared_cpu_list system file for cache %s of %s",
+              index_name, cpu_name);
+        return rc;
+    }
+
+    rc = te_cpuset_parse(shared_cpu_list, shared_cpu_set);
+
+    return rc;
+}
+
+static te_errno
+get_cache_dim(const char *cpu_name, const char *index_name,
+              const char *item_name, uintmax_t *dim)
+{
+    char result[RCF_MAX_VAL];
+    te_unit unit;
+    te_errno rc = 0;
+
+    rc = read_sys_value(result, sizeof(result), FALSE, SYSFS_SYSTEM_TREE
+                        "/cpu/%s/cache/%s/%s", cpu_name,
+                        index_name, item_name);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to read %s system file for cache %s of %s",
+              item_name, index_name, cpu_name);
+        return rc;
+    }
+
+    if ((rc = te_unit_from_string(result, &unit)) != 0)
+    {
+        ERROR("Failed to create %s unit from string for cache %s of %s",
+              item_name, index_name, cpu_name);
+        return rc;
+    }
+
+    rc = te_double2uint_safe(te_unit_bin_unpack(unit), UINTMAX_MAX, dim);
+
+    return rc;
+}
+
+static te_errno
+get_type(const char *cpu_name, const char *index_name, char **type)
+{
+    char result[RCF_MAX_VAL];
+    te_errno rc = 0;
+
+    rc = read_sys_value(result, sizeof(result), FALSE, SYSFS_SYSTEM_TREE
+                        "/cpu/%s/cache/%s/type", cpu_name, index_name);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to read type system file for cache %s of %s", index_name,
+              cpu_name);
+        return rc;
+    }
+
+    *type = strdup(result);
+
+    return 0;
+}
+
+static cache_item *
+init_cache_item(uintmax_t sys_id, char *type)
+{
+    cache_item *result;
+
+    result = TE_ALLOC(sizeof(*result));
+    if (result == NULL)
+        TE_FATAL_ERROR("Failed to allocate a cache item");
+
+    result->id = 0;
+    result->sys_id = sys_id;
+    result->type = type;
+
+    return result;
+}
+
+static te_errno
+get_cache_info(const char *cpu_name, const char *index_name,
+               cache_item **cache)
+{
+    uintmax_t sys_id;
+    char *type;
+    te_errno rc;
+
+    rc = get_cache_dim(cpu_name, index_name, "id", &sys_id);
+    if (rc != 0)
+        return rc;
+
+    rc = get_type(cpu_name, index_name, &type);
+    if (rc != 0)
+        return rc;
+
+    *cache = init_cache_item(sys_id, type);
+
+    return 0;
+}
+
+typedef struct cache_location {
+    cpu_item_list *root;
+    const char *name;
+} cache_location;
+
+static te_file_scandir_callback add_index_name;
+static te_errno
+add_index_name(const char *pattern, const char *pathname, void *data)
+{
+    cache_location *location = data;
+    cpu_item_list *root = location->root;
+    const char *name = location->name;
+    char *index_name = strrchr(pathname, '/') + 1;
+    cache_item *cache = NULL;
+    te_errno rc = 0;
+
+    rc = get_cache_info(name, index_name, &cache);
+    if (cache == NULL)
+    {
+        ERROR("Could not get information about cache %s for %s", index_name,
+              name);
+        return rc;
+    }
+
+    rc = read_shared_cpu_list(name, index_name, &cache->shared_cpu_set);
+    if (rc != 0)
+        return rc;
+
+    add_cache_to_cpu_item(root, cache);
+
+    return rc;
+}
+
+static te_errno
+insert_cache_info(cpu_item_list *root, const char *name)
+{
+    te_errno rc = 0;
+    char buf[RCF_MAX_VAL];
+    cache_location data = {root, name};
+
+    TE_SPRINTF(buf, SYSFS_SYSTEM_TREE "/cpu/%s/cache", name);
+    rc = te_file_scandir(buf, add_index_name, &data, "index*");
+
+    if (rc != 0)
+        ERROR("Could not scan cache directory for %s", name);
+
+    return rc;
+}
+#endif
 
 static te_errno
 scan_system(cpu_item_list *root)
@@ -639,6 +944,18 @@ scan_system(cpu_item_list *root)
             goto out;
         }
     }
+
+#if SUPPORT_CACHES
+    for (i = 0; i < n_cpus; i++)
+    {
+        if ((rc = insert_cache_info(&result, names[i]->d_name)) != 0)
+        {
+            ERROR("Could not get info about cache available to '%s'",
+                  names[i]->d_name);
+            goto out;
+        }
+    }
+#endif
 
     memcpy(root, &result, sizeof(cpu_item_list));
 
@@ -718,6 +1035,219 @@ cpu_thread_isolated_get(unsigned int gid, const char *oid, char *value,
     snprintf(value, RCF_MAX_VAL, "%u", thread->prop.thread.isolated);
 
     return 0;
+}
+
+#if SUPPORT_CACHES
+static cache_item *
+find_cache(const char *node_id_str, const char *package_id_str,
+           const char *core_id_str, const char *cache_id_str)
+{
+    unsigned long node_id;
+    unsigned long package_id;
+    unsigned long core_id;
+    unsigned long cache_id;
+    cpu_item *item = NULL;
+    cache_item *cache = NULL;
+    te_errno rc;
+
+    if ((rc = get_index(node_id_str, &node_id)) != 0)
+        return NULL;
+
+    if ((rc = get_index(package_id_str, &package_id)) != 0)
+        return NULL;
+
+    if (core_id_str != NULL)
+    {
+        if ((rc = get_index(core_id_str, &core_id)) != 0)
+            return NULL;
+    }
+
+    if (core_id_str != NULL)
+    {
+        item = find_cpu_item(&global_cpu_item_root, CPU_ITEM_CORE,
+                             (unsigned int[]){node_id, package_id, core_id});
+    }
+    else
+    {
+        item = find_cpu_item(&global_cpu_item_root, CPU_ITEM_PACKAGE,
+                             (unsigned int[]){node_id, package_id});
+    }
+    if (item == NULL)
+        return NULL;
+
+    if ((rc = get_index(cache_id_str, &cache_id)) != 0)
+        return NULL;
+
+    LIST_FOREACH(cache, &item->cache_list, next)
+    {
+        if (cache->id == cache_id)
+            return cache;
+    }
+
+    return NULL;
+}
+
+static te_errno
+cpu_cache_type_get(char *value, const char *node_id_str,
+                   const char *package_id_str, const char *core_id_str,
+                   const char *cache_id_str)
+{
+    cache_item *cache = NULL;
+
+    cache = find_cache(node_id_str, package_id_str, core_id_str, cache_id_str);
+    if (cache == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    strcpy(value, cache->type);
+
+    return 0;
+}
+#endif
+
+static te_errno
+cpu_core_cache_type_get(unsigned int gid, const char *oid, char *value,
+                        const char *unused1, const char *node_id_str,
+                        const char *package_id_str, const char *core_id_str,
+                        const char *cache_id_str)
+{
+    te_errno rc = TE_EOPNOTSUPP;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+
+#if SUPPORT_CACHES
+    rc = cpu_cache_type_get(value, node_id_str, package_id_str, core_id_str,
+                            cache_id_str);
+#else
+    UNUSED(node_id_str);
+    UNUSED(package_id_str);
+    UNUSED(core_id_str);
+    UNUSED(cache_id_str);
+#endif
+
+    return rc;
+}
+
+static te_errno
+cpu_package_cache_type_get(unsigned int gid, const char *oid, char *value,
+                           const char *unused1, const char *node_id_str,
+                           const char *package_id_str, const char *cache_id_str)
+{
+    te_errno rc = TE_EOPNOTSUPP;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+
+#if SUPPORT_CACHES
+    rc = cpu_cache_type_get(value, node_id_str, package_id_str, NULL,
+                            cache_id_str);
+#else
+    UNUSED(node_id_str);
+    UNUSED(package_id_str);
+    UNUSED(cache_id_str);
+#endif
+
+    return rc;
+}
+
+static te_errno
+cpu_core_cache_list(unsigned int gid, const char *oid, const char *sub_id,
+                    char **list, const char *unused1, const char *node_str,
+                    const char *package_str, const char *core_str)
+{
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+    UNUSED(unused1);
+
+#if SUPPORT_CACHES
+    te_string result = TE_STRING_INIT;
+    unsigned long node_id;
+    unsigned long package_id;
+    unsigned long core_id;
+    te_bool first = TRUE;
+    cpu_item *core = NULL;
+    cache_item *cache;
+
+    if ((rc = get_index(node_str, &node_id)) != 0)
+        return rc;
+    if ((rc = get_index(package_str, &package_id)) != 0)
+        return rc;
+    if ((rc = get_index(core_str, &core_id)) != 0)
+        return rc;
+
+    core = find_cpu_item(&global_cpu_item_root, CPU_ITEM_CORE,
+                         (unsigned int[]){node_id, package_id, core_id});
+    if (core == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    LIST_FOREACH(cache, &core->cache_list, next)
+    {
+        te_string_append(&result, "%s%u", first ? "" : " ", cache->id);
+        first = FALSE;
+    }
+
+    *list = result.ptr;
+#else
+    UNUSED(node_str);
+    UNUSED(package_str);
+    UNUSED(core_str);
+
+    rc = string_empty_list(list);
+#endif
+
+    return rc;
+}
+
+static te_errno
+cpu_package_cache_list(unsigned int gid, const char *oid, const char *sub_id,
+                       char **list, const char *unused1, const char *node_str,
+                       const char *package_str)
+{
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+    UNUSED(unused1);
+
+#if SUPPORT_CACHES
+    te_string result = TE_STRING_INIT;
+    unsigned long node_id;
+    unsigned long package_id;
+    te_bool first = TRUE;
+    cpu_item *package = NULL;
+    cache_item *cache;
+
+    if ((rc = get_index(node_str, &node_id)) != 0)
+        return rc;
+    if ((rc = get_index(package_str, &package_id)) != 0)
+        return rc;
+
+    package = find_cpu_item(&global_cpu_item_root, CPU_ITEM_PACKAGE,
+                            (unsigned int[]){node_id, package_id});
+    if (package == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    LIST_FOREACH(cache, &package->cache_list, next)
+    {
+        te_string_append(&result, "%s%u", first ? "" : " ", cache->id);
+        first = FALSE;
+    }
+
+    *list = result.ptr;
+#else
+    UNUSED(node_str);
+    UNUSED(package_str);
+
+    rc = string_empty_list(list);
+#endif
+
+    return rc;
 }
 
 static te_errno
@@ -998,13 +1528,20 @@ avail_memory_get(unsigned int gid, const char *oid, char *value)
 RCF_PCH_CFG_NODE_RO(node_thread_isolated, "isolated",
                     NULL, NULL, cpu_thread_isolated_get);
 
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_thread, "thread",
-                               &node_thread_isolated, NULL,
-                               NULL, cpu_thread_list);
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_core_cache, "cache",
+                               NULL, NULL, cpu_core_cache_type_get,
+                               cpu_core_cache_list);
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_thread, "thread", &node_thread_isolated,
+                               &node_cpu_core_cache, NULL, cpu_thread_list);
 
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_core, "core",
                                &node_cpu_thread, NULL,
                                NULL, cpu_core_list);
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_package_cache, "cache",
+                               NULL, &node_cpu_core, cpu_package_cache_type_get,
+                               cpu_package_cache_list);
 
 RCF_PCH_CFG_NODE_RO(node_avail_memory, "free", NULL, NULL,
                     avail_memory_get);
@@ -1012,7 +1549,7 @@ RCF_PCH_CFG_NODE_RO(node_avail_memory, "free", NULL, NULL,
 RCF_PCH_CFG_NODE_RO(node_memory, "memory", &node_avail_memory, NULL,
                     memory_get);
 
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu, "cpu", &node_cpu_core,
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu, "cpu", &node_cpu_package_cache,
                                &node_memory, NULL, cpu_list);
 
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_numa_node, "node",
