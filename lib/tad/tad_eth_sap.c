@@ -769,7 +769,7 @@ tad_eth_sap_pkt_vlan_tag_valid(uint16_t    tp_vlan_tci,
 
 #ifdef WITH_PACKET_MMAP_RX_RING
 #define ETH_SAP_PKT_RX_RING_NB_FRAMES_MIN   256
-#define ETH_SAP_PKT_RX_RING_NB_FRAMES_MAX   1024
+#define ETH_SAP_PKT_RX_RING_NB_FRAMES_MAX   4096
 #define ETH_SAP_PKT_RX_RING_FRAME_LEN \
     te_round_up_pow2(TPACKET2_HDRLEN + ETHER_HDR_LEN + TAD_VLAN_TAG_LEN + \
                      UINT16_MAX + ETHER_CRC_LEN)
@@ -804,6 +804,7 @@ tad_eth_sap_pkt_rx_ring_setup(tad_eth_sap *sap)
     tad_eth_sap_data   *data;
     csap_p              csap;
     tad_recv_context   *rx_ctx;
+    unsigned int        nb_frames_min;
     unsigned int        nb_frames;
     int                 version;
     struct tpacket_req *tp;
@@ -835,15 +836,13 @@ tad_eth_sap_pkt_rx_ring_setup(tad_eth_sap *sap)
         return rc;
     }
 
-    rc = tad_eth_rx_desc_count_get(data, &nb_frames);
+    rc = tad_eth_rx_desc_count_get(data, &nb_frames_min);
     if (rc != 0)
-    {
-        WARN("PACKET_RX_RING: cannot set frame count from HW descriptor count");
-        WARN("PACKET_RX_RING: will set frame count from pattern / defaults");
-        nb_frames = te_round_up_pow2(rx_ctx->ptrn_data.n_units);
-        nb_frames = MAX(nb_frames, ETH_SAP_PKT_RX_RING_NB_FRAMES_MIN);
-        nb_frames = MIN(nb_frames, ETH_SAP_PKT_RX_RING_NB_FRAMES_MAX);
-    }
+        nb_frames_min = ETH_SAP_PKT_RX_RING_NB_FRAMES_MIN;
+
+    nb_frames = MAX(nb_frames_min, te_round_up_pow2(rx_ctx->ptrn_data.n_units));
+    nb_frames = MIN(nb_frames, ETH_SAP_PKT_RX_RING_NB_FRAMES_MAX);
+    INFO("PACKET_RX_RING: nb_frames=%u", nb_frames);
 
     tp->tp_frame_nr = nb_frames;
     tp->tp_frame_size = ETH_SAP_PKT_RX_RING_FRAME_LEN;
