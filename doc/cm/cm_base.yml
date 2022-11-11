@@ -1569,7 +1569,7 @@
 
     - oid: "/agent/rlimits/memlock/cur"
       access: read_write
-      type: int32
+      type: uint64
       depends:
         - oid: "/agent/rlimits/memlock/max"
       d: |
@@ -1579,7 +1579,7 @@
 
     - oid: "/agent/rlimits/memlock/max"
       access: read_write
-      type: int32
+      type: uint64
       depends:
         - oid: "/agent/rlimits/memlock/cur"
       d: |
