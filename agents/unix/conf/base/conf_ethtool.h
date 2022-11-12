@@ -354,6 +354,19 @@ extern te_errno ta_ethtool_lmode_list_names(ta_ethtool_lsets *lsets,
                                             te_bool link_partner,
                                             te_string *list_str);
 
+/**
+ * Determine best speed/duplex supported by network interface.
+ *
+ * @param lsets         Structure with link settings
+ * @param speed         Where to save best speed
+ * @param duplex        Where to save corresponding duplex value
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_get_max_speed(ta_ethtool_lsets *lsets,
+                                         unsigned int *speed,
+                                         unsigned int *duplex);
+
 /** Set of strings returned by ETHTOOL_GSTRINGS */
 typedef struct ta_ethtool_strings {
     size_t num; /**< Number of strings */

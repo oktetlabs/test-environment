@@ -1371,4 +1371,209 @@ ta_ethtool_lmode_list_names(ta_ethtool_lsets *lsets,
     return 0;
 }
 
+/* See description in conf_ethtool.h */
+te_errno
+ta_ethtool_get_max_speed(ta_ethtool_lsets *lsets, unsigned int *speed,
+                         unsigned int *duplex)
+{
+    unsigned int last_speed;
+    unsigned int last_duplex;
+    unsigned int mode_speed;
+    unsigned int mode_duplex;
+    unsigned int i;
+    te_bool update_speed;
+    te_bool enabled;
+    te_errno rc;
+
+    last_speed = SPEED_UNKNOWN;
+    last_duplex = DUPLEX_UNKNOWN;
+
+    for (i = 0; i < TE_ARRAY_LEN(modes_info); i++)
+    {
+        update_speed = FALSE;
+
+        switch (i)
+        {
+            case TA_ETHTOOL_LINK_MODE_10baseT_Half:
+                mode_speed = 10;
+                mode_duplex = DUPLEX_HALF;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_10baseT_Full:
+                mode_speed = 10;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_100baseT_Half:
+            case TA_ETHTOOL_LINK_MODE_100baseFX_Half:
+                mode_speed = 100;
+                mode_duplex = DUPLEX_HALF;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_100baseT_Full:
+            case TA_ETHTOOL_LINK_MODE_100baseT1_Full:
+            case TA_ETHTOOL_LINK_MODE_100baseFX_Full:
+                mode_speed = 100;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_1000baseT_Half:
+                mode_speed = 1000;
+                mode_duplex = DUPLEX_HALF;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_1000baseT_Full:
+            case TA_ETHTOOL_LINK_MODE_1000baseKX_Full:
+            case TA_ETHTOOL_LINK_MODE_1000baseX_Full:
+            case TA_ETHTOOL_LINK_MODE_1000baseT1_Full:
+                mode_speed = 1000;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_2500baseX_Full:
+            case TA_ETHTOOL_LINK_MODE_2500baseT_Full:
+                mode_speed = 2500;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_5000baseT_Full:
+                mode_speed = 5000;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_10000baseT_Full:
+            case TA_ETHTOOL_LINK_MODE_10000baseKX4_Full:
+            case TA_ETHTOOL_LINK_MODE_10000baseKR_Full:
+            case TA_ETHTOOL_LINK_MODE_10000baseR_FEC:
+            case TA_ETHTOOL_LINK_MODE_10000baseCR_Full:
+            case TA_ETHTOOL_LINK_MODE_10000baseSR_Full:
+            case TA_ETHTOOL_LINK_MODE_10000baseLR_Full:
+            case TA_ETHTOOL_LINK_MODE_10000baseLRM_Full:
+            case TA_ETHTOOL_LINK_MODE_10000baseER_Full:
+                mode_speed = 10000;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_20000baseMLD2_Full:
+            case TA_ETHTOOL_LINK_MODE_20000baseKR2_Full:
+                mode_speed = 20000;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_25000baseCR_Full:
+            case TA_ETHTOOL_LINK_MODE_25000baseKR_Full:
+            case TA_ETHTOOL_LINK_MODE_25000baseSR_Full:
+                mode_speed = 25000;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_40000baseKR4_Full:
+            case TA_ETHTOOL_LINK_MODE_40000baseCR4_Full:
+            case TA_ETHTOOL_LINK_MODE_40000baseSR4_Full:
+            case TA_ETHTOOL_LINK_MODE_40000baseLR4_Full:
+                mode_speed = 40000;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_50000baseCR2_Full:
+            case TA_ETHTOOL_LINK_MODE_50000baseKR2_Full:
+            case TA_ETHTOOL_LINK_MODE_50000baseSR2_Full:
+            case TA_ETHTOOL_LINK_MODE_50000baseKR_Full:
+            case TA_ETHTOOL_LINK_MODE_50000baseSR_Full:
+            case TA_ETHTOOL_LINK_MODE_50000baseCR_Full:
+            case TA_ETHTOOL_LINK_MODE_50000baseLR_ER_FR_Full:
+            case TA_ETHTOOL_LINK_MODE_50000baseDR_Full:
+                mode_speed = 50000;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_56000baseKR4_Full:
+            case TA_ETHTOOL_LINK_MODE_56000baseCR4_Full:
+            case TA_ETHTOOL_LINK_MODE_56000baseSR4_Full:
+            case TA_ETHTOOL_LINK_MODE_56000baseLR4_Full:
+                mode_speed = 56000;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_100000baseKR4_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseSR4_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseCR4_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseLR4_ER4_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseKR2_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseSR2_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseCR2_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseLR2_ER2_FR2_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseDR2_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseKR_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseSR_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseLR_ER_FR_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseCR_Full:
+            case TA_ETHTOOL_LINK_MODE_100000baseDR_Full:
+                mode_speed = 100000;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_200000baseKR4_Full:
+            case TA_ETHTOOL_LINK_MODE_200000baseSR4_Full:
+            case TA_ETHTOOL_LINK_MODE_200000baseLR4_ER4_FR4_Full:
+            case TA_ETHTOOL_LINK_MODE_200000baseDR4_Full:
+            case TA_ETHTOOL_LINK_MODE_200000baseCR4_Full:
+            case TA_ETHTOOL_LINK_MODE_200000baseKR2_Full:
+            case TA_ETHTOOL_LINK_MODE_200000baseSR2_Full:
+            case TA_ETHTOOL_LINK_MODE_200000baseLR2_ER2_FR2_Full:
+            case TA_ETHTOOL_LINK_MODE_200000baseDR2_Full:
+            case TA_ETHTOOL_LINK_MODE_200000baseCR2_Full:
+                mode_speed = 200000;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            case TA_ETHTOOL_LINK_MODE_400000baseKR8_Full:
+            case TA_ETHTOOL_LINK_MODE_400000baseSR8_Full:
+            case TA_ETHTOOL_LINK_MODE_400000baseLR8_ER8_FR8_Full:
+            case TA_ETHTOOL_LINK_MODE_400000baseDR8_Full:
+            case TA_ETHTOOL_LINK_MODE_400000baseCR8_Full:
+            case TA_ETHTOOL_LINK_MODE_400000baseKR4_Full:
+            case TA_ETHTOOL_LINK_MODE_400000baseSR4_Full:
+            case TA_ETHTOOL_LINK_MODE_400000baseLR4_ER4_FR4_Full:
+            case TA_ETHTOOL_LINK_MODE_400000baseDR4_Full:
+            case TA_ETHTOOL_LINK_MODE_400000baseCR4_Full:
+                mode_speed = 400000;
+                mode_duplex = DUPLEX_FULL;
+                break;
+
+            default:
+                continue;
+        }
+
+        if (last_speed == SPEED_UNKNOWN || mode_speed > last_speed)
+        {
+            update_speed = TRUE;
+        }
+        else if (mode_speed == last_speed)
+        {
+            if (last_duplex == DUPLEX_UNKNOWN ||
+                (last_duplex == DUPLEX_HALF && mode_duplex == DUPLEX_FULL))
+                update_speed = TRUE;
+        }
+
+        if (update_speed)
+        {
+            rc = ta_ethtool_lmode_supported(lsets, i, &enabled);
+            if (rc != 0)
+                return rc;
+
+            if (enabled)
+            {
+                last_speed = mode_speed;
+                last_duplex = mode_duplex;
+            }
+        }
+    }
+
+    *speed = last_speed;
+    *duplex = last_duplex;
+
+    return 0;
+}
+
 #endif

@@ -99,6 +99,42 @@ phy_field_get(unsigned int gid, const char *if_name,
                 return 0;
             }
         }
+        else
+        {
+            rc = ta_ethtool_lsets_field_get(lsets_ptr, field, value);
+            if (rc != 0)
+                return rc;
+
+            if ((field == TA_ETHTOOL_LSETS_SPEED &&
+                 (*value == SPEED_UNKNOWN || *value == 0)) ||
+                (field == TA_ETHTOOL_LSETS_DUPLEX &&
+                 *value == DUPLEX_UNKNOWN))
+            {
+                unsigned int best_speed;
+                unsigned int best_duplex;
+
+                /*
+                 * If returned speed or duplex value is UNKNOWN while
+                 * autonegotiation is disabled, report maximum supported
+                 * values for administrative speed/duplex instead.
+                 * So that if Configurator tries to restore the current
+                 * state, it will use values that can be set.
+                 * See https://redmine.oktetlabs.ru/issues/12521.
+                 */
+
+                rc = ta_ethtool_get_max_speed(lsets_ptr, &best_speed,
+                                              &best_duplex);
+                if (rc == 0)
+                {
+                    if (field == TA_ETHTOOL_LSETS_SPEED)
+                        *value = best_speed;
+                    else
+                        *value = best_duplex;
+                }
+            }
+
+            return 0;
+        }
     }
 
     return ta_ethtool_lsets_field_get(lsets_ptr, field, value);
