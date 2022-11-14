@@ -1976,6 +1976,7 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
     {
         cfg_instance *tmp = &cfg_inst_root;
         cfg_instance *last_subinst = NULL;
+        te_bool not_added_ancestor = FALSE;
 
         while (TRUE)
         {
@@ -1998,6 +1999,9 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
                 break;
             }
 
+            if (tmp->obj->access == CFG_READ_CREATE && !tmp->added)
+                not_added_ancestor = TRUE;
+
             last_subinst = tmp;
 
             tmp = tmp->son;
@@ -2011,9 +2015,7 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
              * perform local set on this leaf.
              */
 
-            if (last_subinst->obj->access == CFG_READ_CREATE &&
-                !last_subinst->added &&
-                i == oid->len)
+            if (not_added_ancestor && i == oid->len)
             {
                 int         rc;
                 const char *subobj_name =
