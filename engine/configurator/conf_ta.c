@@ -247,8 +247,11 @@ sync_ta_instance(const char *ta, const char *oid)
 
     if ((rc = cfg_types[obj->type].str2val(cfg_get_buf, &val)) != 0)
     {
-        ERROR("Conversion of '%s' to value type %d for OID '%s' "
-                "failed", cfg_get_buf, obj->type, oid);
+        ERROR("Conversion of '%s' to value type %s(%d) for OID '%s' "
+                "failed", cfg_get_buf,
+                te_enum_map_from_any_value(cfg_cvt_mapping, obj->type,
+                                           "unknown type"),
+                obj->type, oid);
         return rc;
     }
 

@@ -265,8 +265,11 @@ expand_substitution(cfg_inst_val val_in, cfg_inst_val *val_out,
     {
         rc = cfg_types[type].str2val(val_out_str.ptr, val_out);
         if (rc != 0)
-            ERROR("Failed to convert string '%s' to value type %d: %r",
-                  val_out_str.ptr, type, rc);
+            ERROR("Failed to convert string '%s' to value type %s(%d): %r",
+                  val_out_str.ptr,
+                  te_enum_map_from_any_value(cfg_cvt_mapping, type,
+                                             "unknown type"),
+                  type, rc);
     }
     else
     {
