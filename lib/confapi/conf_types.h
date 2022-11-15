@@ -27,7 +27,13 @@ extern "C" {
 
 /** Constants for primary types */
 typedef enum {
-    CVT_BOOL = 0,    /**< Value of the type 'te_bool' */
+    /**
+     * The object instance has no value. It is a default type for
+     * Configurator. It is set if the type is missed in a configuration yaml
+     * file. Therefore it should be set as a zero.
+     */
+    CVT_NONE = 0,
+    CVT_BOOL,        /**< Value of the type 'te_bool' */
     CVT_INT8,        /**< Value of the type 'int8_t' */
     CVT_UINT8,       /**< Value of the type 'uint8_t' */
     CVT_INT16,       /**< Value of the type 'int16_t' */
@@ -38,7 +44,6 @@ typedef enum {
     CVT_UINT64,      /**< Value of the type 'uint64_t' */
     CVT_STRING,      /**< Value of the type 'char *' */
     CVT_ADDRESS,     /**< Value of the type 'sockaddr *' */
-    CVT_NONE,        /**< The object instance has no value */
     CVT_UNSPECIFIED  /**< The type is unknown. It'd be the last enum member */
 } cfg_val_type;
 
