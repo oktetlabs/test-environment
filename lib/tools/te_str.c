@@ -294,6 +294,136 @@ te_strtoumax(const char *str, int base, uintmax_t *value)
 
 /* See description in te_str.h */
 te_errno
+te_strtou_size(const char *str, int base, void *value, size_t size)
+{
+    uintmax_t max_val;
+    uintmax_t parsed_val;
+    te_errno rc;
+
+    switch (size)
+    {
+        case sizeof(uint8_t):
+            max_val = UINT8_MAX;
+            break;
+
+        case sizeof(uint16_t):
+            max_val = UINT16_MAX;
+            break;
+
+        case sizeof(uint32_t):
+            max_val = UINT32_MAX;
+            break;
+
+        case sizeof(uint64_t):
+            max_val = UINT64_MAX;
+            break;
+
+        default:
+            ERROR("%s(): not supported value size %zu", __FUNCTION__, size);
+            return TE_EINVAL;
+    }
+
+    rc = te_strtoumax(str, base, &parsed_val);
+    if (rc != 0)
+        return rc;
+    if (parsed_val > max_val)
+    {
+        ERROR("%s(): %s is too big for %zu bytes", __FUNCTION__, str, size);
+        return TE_ERANGE;
+    }
+
+    switch (size)
+    {
+        case sizeof(uint8_t):
+            *(uint8_t *)value = parsed_val;
+            break;
+
+        case sizeof(uint16_t):
+            *(uint16_t *)value = parsed_val;
+            break;
+
+        case sizeof(uint32_t):
+            *(uint32_t *)value = parsed_val;
+            break;
+
+        case sizeof(uint64_t):
+            *(uint64_t *)value = parsed_val;
+            break;
+    }
+
+    return 0;
+}
+
+/* See description in te_str.h */
+te_errno
+te_strtoi_size(const char *str, int base, void *value, size_t size)
+{
+    intmax_t max_val;
+    intmax_t min_val;
+    intmax_t parsed_val;
+    te_errno rc;
+
+    switch (size)
+    {
+        case sizeof(uint8_t):
+            min_val = INT8_MIN;
+            max_val = INT8_MAX;
+            break;
+
+        case sizeof(uint16_t):
+            min_val = INT16_MIN;
+            max_val = INT16_MAX;
+            break;
+
+        case sizeof(uint32_t):
+            min_val = INT32_MIN;
+            max_val = INT32_MAX;
+            break;
+
+        case sizeof(uint64_t):
+            min_val = INT64_MIN;
+            max_val = INT64_MAX;
+            break;
+
+        default:
+            ERROR("%s(): not supported value size %zu", __FUNCTION__, size);
+            return TE_EINVAL;
+    }
+
+    rc = te_strtoimax(str, base, &parsed_val);
+    if (rc != 0)
+        return rc;
+    if (parsed_val > max_val || parsed_val < min_val)
+    {
+        ERROR("%s(): %s does not fit in %zu bytes",
+              __FUNCTION__, str, size);
+        return TE_ERANGE;
+    }
+
+    switch (size)
+    {
+        case sizeof(uint8_t):
+            *(int8_t *)value = parsed_val;
+            break;
+
+        case sizeof(uint16_t):
+            *(int16_t *)value = parsed_val;
+            break;
+
+        case sizeof(uint32_t):
+            *(int32_t *)value = parsed_val;
+            break;
+
+        case sizeof(uint64_t):
+            *(int64_t *)value = parsed_val;
+            break;
+    }
+
+    return 0;
+}
+
+/* See description in te_str.h */
+te_errno
 te_strtoimax(const char *str, int base, intmax_t *value)
 {
     char     *endptr = NULL;

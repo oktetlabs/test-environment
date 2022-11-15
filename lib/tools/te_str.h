@@ -254,6 +254,33 @@ extern char *te_str_strip_spaces(const char *str);
  */
 extern te_errno te_strtoumax(const char *str, int base,
                              uintmax_t *value);
+
+/**
+ * Parse unsigned integer of a given size.
+ *
+ * @param str       String to parse.
+ * @param base      Base of a numeral system.
+ * @param value     Parsed value.
+ * @param size      Size of @p value in bytes (1, 2, 4 and 8 are supported).
+ *
+ * @return Status code.
+ */
+extern te_errno te_strtou_size(const char *str, int base,
+                               void *value, size_t size);
+
+/**
+ * Parse signed integer of a given size.
+ *
+ * @param str       String to parse.
+ * @param base      Base of a numeral system.
+ * @param value     Parsed value.
+ * @param size      Size of @p value in bytes (1, 2, 4 and 8 are supported).
+ *
+ * @return Status code.
+ */
+extern te_errno te_strtoi_size(const char *str, int base,
+                               void *value, size_t size);
+
 /**
  * Wrapper over strtoimax().
  *
