@@ -127,7 +127,7 @@ if cc.has_member('struct rte_eth_dev_info', 'dev_capa',
     c_args += [ '-DHAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA' ]
 endif
 t = 'struct rte_eth_dev_portconf'
-if cc.has_type(t, prefix: code_prefix_ethdev)
+if cc.has_type(t, args: te_cflags, prefix: code_prefix_ethdev)
     c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
 endif
 
