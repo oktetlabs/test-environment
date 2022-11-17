@@ -556,11 +556,24 @@ eth_priv_flags_list(unsigned int gid, const char *oid_str,
                     const char *sub_id, char **list_out,
                     const char *if_name)
 {
+    te_errno rc;
+
     UNUSED(oid_str);
     UNUSED(sub_id);
 
-    return ta_ethtool_get_strings_list(gid, if_name,
-                                       ETH_SS_PRIV_FLAGS, list_out);
+    rc = ta_ethtool_get_strings_list(gid, if_name,
+                                     ETH_SS_PRIV_FLAGS, list_out);
+    /*
+     * If private flags are not supported, let Configurator
+     * think they are not present to avoid error messages.
+     */
+    if (rc == TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP))
+    {
+        *list_out = NULL;
+        rc = 0;
+    }
+
+    return rc;
 }
 
 /* common code for getting and setting private flag */
