@@ -292,6 +292,15 @@ cfg_wipe_cmd_error(uint8_t type, cfg_handle handle)
         WARN("Restore backup to configuration which was before "
              "the first local ADD/DEL/SET commands. Restored with code %r",
              rc);
+
+        /*
+         * Detach backup file from dynamic history as it will never
+         * be used again.
+         */
+        cfg_dh_release_backup(local_cmd_bkp);
+
+        free(local_cmd_bkp);
+        local_cmd_bkp = NULL;
     }
     else if (type == CFG_ADD)
     {

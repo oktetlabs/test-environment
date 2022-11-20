@@ -967,6 +967,12 @@ cfg_tas_commit(const char *oid)
             WARN("Restore backup to configuration which was before "
                  "the first local ADD/DEL/SET commands restored with "
                  "code %r", ret);
+
+            /*
+             * Detach backup file from dynamic history as it will never
+             * be used again.
+             */
+            cfg_dh_release_backup(local_cmd_bkp);
         }
         free(local_cmd_bkp);
         local_cmd_bkp = NULL;
