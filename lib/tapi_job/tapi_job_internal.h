@@ -107,6 +107,18 @@ extern const char *tapi_job_get_name(const tapi_job_t *job);
  */
 extern void tapi_job_set_name(tapi_job_t *job, const char *name);
 
+/**
+ * Get value of the field that manages RPC calls muting.
+ *
+ * The function is primarily intended for internal usage.
+ *
+ * @param job       Job instance handle
+ *
+ * @return          Status code
+ * @exception       TEST_FAIL
+ */
+extern te_bool tapi_job_get_silent_pass(const tapi_job_t *job);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

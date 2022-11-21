@@ -75,6 +75,9 @@ struct tapi_job_t {
 
     /* List of all channels/filters belonging to a job */
     channel_entry_list channel_entries;
+
+    /* Field to manage silent_pass log mode of RPC server */
+    te_bool silent_pass;
 };
 
 struct tapi_job_wrapper_t {
@@ -95,6 +98,8 @@ struct tapi_job_channel_t {
     tapi_job_t *job;
 
     rcf_rpc_server *rpcs;
+    /* Field to manage silent_pass log mode of RPC server */
+    te_bool silent_pass;
     unsigned int id;
 };
 
@@ -108,7 +113,7 @@ init_channel(tapi_job_t *job, rcf_rpc_server *rpcs, unsigned int id,
     channel->rpcs = rpcs;
     channel->id = id;
     channel->ref_count = ref_count;
-
+    channel->silent_pass = job != NULL ? job->silent_pass : rpcs->silent_pass;
     SLIST_INIT(&channel->filter_entries);
 }
 
@@ -427,6 +432,7 @@ tapi_job_create_named(tapi_job_factory_t *factory, const char *name,
         case TAPI_JOB_FACTORY_RPC:
             if (name != NULL)
                 WARN("Name is ignored for jobs created by RPC factory");
+            tapi_job->silent_pass = factory->backend.rpcs->silent_pass;
             break;
 
         case TAPI_JOB_FACTORY_CFG:
@@ -896,6 +902,7 @@ tapi_job_dealloc_channels(tapi_job_channel_set_t channels)
     unsigned int *channel_ids;
     unsigned int n_channels;
     rcf_rpc_server *rpcs;
+    te_bool silent_pass;
 
     if ((rc = validate_channel_set(channels)) != 0)
         return rc;
@@ -914,7 +921,11 @@ tapi_job_dealloc_channels(tapi_job_channel_set_t channels)
 
     alloc_id_array_from_channel_set(channels, &n_channels, &channel_ids);
 
+    silent_pass = rpcs->silent_pass;
+    rpcs->silent_pass = channels[0]->silent_pass;
     rc = rpc_job_deallocate_channels(rpcs, n_channels, channel_ids);
+    rpcs->silent_pass = silent_pass;
+
     if (rc != 0)
         return rc;
 
@@ -937,6 +948,7 @@ tapi_job_attach_filter(tapi_job_channel_set_t channels, const char *filter_name,
     rcf_rpc_server *rpcs;
     unsigned int i;
     te_errno rc;
+    te_bool silent_pass;
 
     if ((rc = validate_channel_set(channels)) != 0)
         return rc;
@@ -957,6 +969,8 @@ tapi_job_attach_filter(tapi_job_channel_set_t channels, const char *filter_name,
     if (filter != NULL)
         result = tapi_malloc(sizeof(*result));
 
+    silent_pass = rpcs->silent_pass;
+    rpcs->silent_pass = channels[0]->silent_pass;
     rc = rpc_job_attach_filter(rpcs,
                                filter_name == NULL ? "Unnamed" : filter_name,
                                n_channels, channel_ids, readable, log_level,
@@ -965,12 +979,21 @@ tapi_job_attach_filter(tapi_job_channel_set_t channels, const char *filter_name,
     if (rc != 0)
     {
         free(result);
+	rpcs->silent_pass = silent_pass;
         return rc;
     }
 
     if (filter != NULL)
     {
         unsigned int i;
+
+        /*
+         * After rpc_job_attach_filter() the rpcs->silent_pass may be set
+         * to default value. To mute rpc logs related to a filter,
+         * the filter has to inherit the silent_pass value of channel
+         * via rpcs->silent_pass.
+         */
+        rpcs->silent_pass = channels[0]->silent_pass;
 
         init_secondary_channel(rpcs, result_id, n_channels, result);
 
@@ -982,6 +1005,7 @@ tapi_job_attach_filter(tapi_job_channel_set_t channels, const char *filter_name,
         }
         *filter = result;
     }
+    rpcs->silent_pass = silent_pass;
 
     return 0;
 }
@@ -1039,7 +1063,15 @@ te_errno
 tapi_job_filter_add_regexp(tapi_job_channel_t *filter, const char *re,
                            unsigned int extract)
 {
-    return rpc_job_filter_add_regexp(filter->rpcs, filter->id, re, extract);
+    te_errno rc;
+    rcf_rpc_server *rpcs = filter->rpcs;
+    te_bool silent_pass = rpcs->silent_pass;
+
+    rpcs->silent_pass = filter->silent_pass;
+    rc = rpc_job_filter_add_regexp(rpcs, filter->id, re, extract);
+    rpcs->silent_pass = silent_pass;
+
+    return rc;
 }
 
 /* See description in tapi_job.h */
@@ -1052,6 +1084,7 @@ tapi_job_filter_add_channels(tapi_job_channel_t *filter,
     unsigned int n_channels;
     rcf_rpc_server *rpcs;
     unsigned int i;
+    te_bool silent_pass;
 
     if ((rc = validate_channel_set(channels)) != 0)
         return rc;
@@ -1069,7 +1102,11 @@ tapi_job_filter_add_channels(tapi_job_channel_t *filter,
 
     alloc_id_array_from_channel_set(channels, &n_channels, &channel_ids);
 
+    silent_pass = rpcs->silent_pass;
+    rpcs->silent_pass = channels[0]->silent_pass;
     rc = rpc_job_filter_add_channels(rpcs, filter->id, n_channels, channel_ids);
+    rpcs->silent_pass = silent_pass;
+
     free(channel_ids);
     if (rc != 0)
         return rc;
@@ -1094,6 +1131,7 @@ tapi_job_filter_remove_channels(tapi_job_channel_t *filter,
     unsigned int n_channels;
     rcf_rpc_server *rpcs;
     unsigned int i;
+    te_bool silent_pass;
 
     if ((rc = validate_channel_set(channels)) != 0)
         return rc;
@@ -1102,8 +1140,12 @@ tapi_job_filter_remove_channels(tapi_job_channel_t *filter,
 
     alloc_id_array_from_channel_set(channels, &n_channels, &channel_ids);
 
+    silent_pass = rpcs->silent_pass;
+    rpcs->silent_pass = channels[0]->silent_pass;
     rc = rpc_job_filter_remove_channels(rpcs, filter->id, n_channels,
                                         channel_ids);
+    rpcs->silent_pass = silent_pass;
+
     free(channel_ids);
     if (rc != 0)
         return rc;
@@ -1137,7 +1179,15 @@ tapi_job_filter_remove_channels(tapi_job_channel_t *filter,
 te_errno
 tapi_job_send(tapi_job_channel_t *channel, const te_string *str)
 {
-    return rpc_job_send(channel->rpcs, channel->id, str->ptr, str->size);
+    te_errno rc;
+    rcf_rpc_server *rpcs = channel->rpcs;
+    te_bool silent_pass = rpcs->silent_pass;
+
+    rpcs->silent_pass = channel->silent_pass;
+    rc = rpc_job_send(rpcs, channel->id, str->ptr, str->size);
+    rpcs->silent_pass = silent_pass;
+
+    return rc;
 }
 
 void
@@ -1158,6 +1208,7 @@ tapi_job_poll(const tapi_job_channel_set_t wait_set, int timeout_ms)
     unsigned int n_channels;
     rcf_rpc_server *rpcs;
     te_errno rc;
+    te_bool silent_pass;
 
     if ((rc = validate_channel_set(wait_set)) != 0)
         return rc;
@@ -1165,7 +1216,11 @@ tapi_job_poll(const tapi_job_channel_set_t wait_set, int timeout_ms)
 
     alloc_id_array_from_channel_set(wait_set, &n_channels, &channel_ids);
 
+    silent_pass = rpcs->silent_pass;
+    rpcs->silent_pass = wait_set[0]->silent_pass;
     rc = rpc_job_poll(rpcs, n_channels, channel_ids, timeout_ms);
+    rpcs->silent_pass = silent_pass;
+
     free(channel_ids);
 
     return rc;
@@ -1214,6 +1269,7 @@ receive_common(const tapi_job_channel_set_t filters, int timeout_ms,
     unsigned int *channel_ids;
     unsigned int n_channels;
     rcf_rpc_server *rpcs;
+    te_bool silent_pass;
 
     tarpc_job_buffer buf;
     te_errno rc;
@@ -1224,7 +1280,11 @@ receive_common(const tapi_job_channel_set_t filters, int timeout_ms,
 
     alloc_id_array_from_channel_set(filters, &n_channels, &channel_ids);
 
+    silent_pass = rpcs->silent_pass;
+    rpcs->silent_pass = filters[0]->silent_pass;
     rc = rpc_job_receive_cb(rpcs, n_channels, channel_ids, timeout_ms, &buf);
+    rpcs->silent_pass = silent_pass;
+
     free(channel_ids);
     if (rc != 0)
         return rc;
@@ -1263,6 +1323,7 @@ tapi_job_receive_many(const tapi_job_channel_set_t filters, int timeout_ms,
     tapi_job_buffer_t *tapi_bufs = NULL;
     unsigned int bufs_count = *count;
     unsigned int i;
+    te_bool silent_pass;
 
     *buffers = NULL;
     *count = 0;
@@ -1273,8 +1334,12 @@ tapi_job_receive_many(const tapi_job_channel_set_t filters, int timeout_ms,
 
     alloc_id_array_from_channel_set(filters, &n_channels, &channel_ids);
 
+    silent_pass = rpcs->silent_pass;
+    rpcs->silent_pass = filters[0]->silent_pass;
     rc = rpc_job_receive_many(rpcs, n_channels, channel_ids, timeout_ms,
                               &bufs, &bufs_count);
+    rpcs->silent_pass = silent_pass;
+
     free(channel_ids);
 
     if (bufs_count > 0)
@@ -1402,6 +1467,7 @@ tapi_job_clear(const tapi_job_channel_set_t filters)
     unsigned int *channel_ids;
     unsigned int n_channels;
     rcf_rpc_server *rpcs;
+    te_bool silent_pass;
 
     te_errno rc;
 
@@ -1411,7 +1477,11 @@ tapi_job_clear(const tapi_job_channel_set_t filters)
 
     alloc_id_array_from_channel_set(filters, &n_channels, &channel_ids);
 
+    silent_pass = rpcs->silent_pass;
+    rpcs->silent_pass = filters[0]->silent_pass;
     rc = rpc_job_clear(rpcs, n_channels, channel_ids);
+    rpcs->silent_pass = silent_pass;
+
     free(channel_ids);
 
     return rc;
@@ -1542,4 +1612,17 @@ tapi_job_get_autorestart(tapi_job_t *job, unsigned int *value)
     TAPI_JOB_CHECK_METHOD_SUPPORT(job, get_autorestart);
 
     return job->methods.get_autorestart(job, value);
+}
+
+/* See description in tapi_job_internal.h */
+te_bool
+tapi_job_get_silent_pass(const tapi_job_t *job)
+{
+    if (job == NULL)
+        TEST_FAIL("Job is NULL");
+
+    if (job->factory->type != TAPI_JOB_FACTORY_RPC)
+        TEST_FAIL("Job was not created by RPC factory");
+
+    return job->silent_pass;
 }

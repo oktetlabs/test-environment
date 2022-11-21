@@ -65,6 +65,7 @@ rpc_job_create(tapi_job_t *job, const char *spawner, const char *tool,
                const char **argv, const char **env)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
+    te_bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_create_in  in;
     tarpc_job_create_out out;
@@ -114,6 +115,7 @@ rpc_job_create(tapi_job_t *job, const char *spawner, const char *tool,
     if (tool != NULL)
         in.tool = tapi_strdup(tool);
 
+    rpcs->silent_pass = tapi_job_get_silent_pass(job);
     rcf_rpc_call(rpcs, "job_create", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_create, out.retval);
 
@@ -126,6 +128,8 @@ rpc_job_create(tapi_job_t *job, const char *spawner, const char *tool,
                  te_args2log_buf(tlbp_env, in.env.env_len - 1,
                                  (const char **)env),
                  out.retval, out.job_id);
+    rpcs->silent_pass = silent_pass;
+
     te_log_buf_free(tlbp_argv);
     te_log_buf_free(tlbp_env);
 
@@ -154,6 +158,7 @@ te_errno
 rpc_job_start(const tapi_job_t *job)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
+    te_bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_start_in  in;
     tarpc_job_start_out out;
@@ -163,10 +168,12 @@ rpc_job_start(const tapi_job_t *job)
 
     in.job_id = tapi_job_get_id(job);
 
+    rpcs->silent_pass = tapi_job_get_silent_pass(job);
     rcf_rpc_call(rpcs, "job_start", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_start, out.retval);
 
     TAPI_RPC_LOG(rpcs, job_start, "%u", "%r", in.job_id, out.retval);
+    rpcs->silent_pass = silent_pass;
 
     RETVAL_TE_ERRNO(job_start, out.retval);
 }
@@ -187,6 +194,7 @@ rpc_job_allocate_channels(const tapi_job_t *job, te_bool input_channels,
                           unsigned int n_channels, unsigned int *channels)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
+    te_bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_allocate_channels_in  in;
     tarpc_job_allocate_channels_out out;
@@ -201,6 +209,7 @@ rpc_job_allocate_channels(const tapi_job_t *job, te_bool input_channels,
     in.channels.channels_val = channels;
     in.channels.channels_len = channels == NULL ? 0 : n_channels;
 
+    rpcs->silent_pass = tapi_job_get_silent_pass(job);
     rcf_rpc_call(rpcs, "job_allocate_channels", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_allocate_channels, out.retval);
 
@@ -212,6 +221,8 @@ rpc_job_allocate_channels(const tapi_job_t *job, te_bool input_channels,
                                           out.channels.channels_len,
                                           out.channels.channels_val),
                  out.retval);
+    rpcs->silent_pass = silent_pass;
+
     te_log_buf_free(tlbp_channels);
 
     if (out.retval == 0 && channels != NULL &&
@@ -612,6 +623,7 @@ te_errno
 rpc_job_kill(const tapi_job_t *job, int signo)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
+    te_bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_kill_in  in;
     tarpc_job_kill_out out;
@@ -622,11 +634,13 @@ rpc_job_kill(const tapi_job_t *job, int signo)
     in.job_id = tapi_job_get_id(job);
     in.signo = signum_h2rpc(signo);
 
+    rpcs->silent_pass = tapi_job_get_silent_pass(job);
     rcf_rpc_call(rpcs, "job_kill", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_kill, out.retval);
 
     TAPI_RPC_LOG(rpcs, job_kill, "%u, %s", "%r", in.job_id,
                  signum_rpc2str(in.signo), out.retval);
+    rpcs->silent_pass = silent_pass;
 
     RETVAL_TE_ERRNO(job_kill, out.retval);
 }
@@ -635,6 +649,7 @@ te_errno
 rpc_job_killpg(const tapi_job_t *job, int signo)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
+    te_bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_killpg_in  in;
     tarpc_job_killpg_out out;
@@ -645,11 +660,13 @@ rpc_job_killpg(const tapi_job_t *job, int signo)
     in.job_id = tapi_job_get_id(job);
     in.signo = signum_h2rpc(signo);
 
+    rpcs->silent_pass = tapi_job_get_silent_pass(job);
     rcf_rpc_call(rpcs, "job_killpg", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_killpg, out.retval);
 
     TAPI_RPC_LOG(rpcs, job_killpg, "%u, %s", "%r", in.job_id,
                  signum_rpc2str(in.signo), out.retval);
+    rpcs->silent_pass = silent_pass;
 
     RETVAL_TE_ERRNO(job_killpg, out.retval);
 }
@@ -706,6 +723,7 @@ te_errno
 rpc_job_wait(const tapi_job_t *job, int timeout_ms, tapi_job_status_t *status)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
+    te_bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_wait_in   in;
     tarpc_job_wait_out  out;
@@ -718,6 +736,8 @@ rpc_job_wait(const tapi_job_t *job, int timeout_ms, tapi_job_status_t *status)
     in.timeout_ms = timeout_ms;
 
     rpc_job_set_rpcs_timeout(rpcs, timeout_ms, TAPI_RPC_JOB_BIG_TIMEOUT_MS);
+
+    rpcs->silent_pass = tapi_job_get_silent_pass(job);
     rcf_rpc_call(rpcs, "job_wait", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_wait, out.retval);
 
@@ -728,6 +748,7 @@ rpc_job_wait(const tapi_job_t *job, int timeout_ms, tapi_job_status_t *status)
                  in.timeout_ms, out.retval,
                  out.retval == 0 ?
                      tarpc_job_status2str(tlbp, &out.status) : "N/A");
+    rpcs->silent_pass = silent_pass;
 
     te_log_buf_free(tlbp);
 
@@ -746,6 +767,7 @@ te_errno
 rpc_job_stop(const tapi_job_t *job, int signo, int term_timeout_ms)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
+    te_bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_stop_in   in;
     tarpc_job_stop_out  out;
@@ -758,11 +780,14 @@ rpc_job_stop(const tapi_job_t *job, int signo, int term_timeout_ms)
     in.term_timeout_ms = term_timeout_ms;
 
     rpc_job_set_rpcs_timeout(rpcs, term_timeout_ms, RCF_RPC_UNSPEC_TIMEOUT);
+
+    rpcs->silent_pass = tapi_job_get_silent_pass(job);
     rcf_rpc_call(rpcs, "job_stop", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_stop, out.retval);
 
     TAPI_RPC_LOG(rpcs, job_stop, "%u, %s, %d ms", "%r", in.job_id,
                  signum_rpc2str(in.signo), in.term_timeout_ms, out.retval);
+    rpcs->silent_pass = silent_pass;
 
     RETVAL_TE_ERRNO(job_stop, out.retval);
 }
@@ -771,6 +796,7 @@ te_errno
 rpc_job_destroy(const tapi_job_t *job, int term_timeout_ms)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
+    te_bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_destroy_in  in;
     tarpc_job_destroy_out out;
@@ -782,11 +808,14 @@ rpc_job_destroy(const tapi_job_t *job, int term_timeout_ms)
     in.term_timeout_ms = term_timeout_ms;
 
     rpc_job_set_rpcs_timeout(rpcs, term_timeout_ms, RCF_RPC_DEFAULT_TIMEOUT);
+
+    rpcs->silent_pass = tapi_job_get_silent_pass(job);
     rcf_rpc_call(rpcs, "job_destroy", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_destroy, out.retval);
 
     TAPI_RPC_LOG(rpcs, job_destroy, "%u, %d ms", "%r",
                  in.job_id, in.term_timeout_ms, out.retval);
+    rpcs->silent_pass = silent_pass;
 
     RETVAL_TE_ERRNO(job_destroy, out.retval);
 }
@@ -822,6 +851,7 @@ rpc_job_wrapper_add(const tapi_job_t *job, const char *tool, const char **argv,
 {
     te_errno rc;
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
+    te_bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_wrapper_add_in  in;
     tarpc_job_wrapper_add_out out;
@@ -857,6 +887,7 @@ rpc_job_wrapper_add(const tapi_job_t *job, const char *tool, const char **argv,
     if (tool != NULL)
         in.tool = tapi_strdup(tool);
 
+    rpcs->silent_pass = tapi_job_get_silent_pass(job);
     rcf_rpc_call(rpcs, "job_wrapper_add", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_wrapper_add, out.retval);
 
@@ -866,6 +897,8 @@ rpc_job_wrapper_add(const tapi_job_t *job, const char *tool, const char **argv,
                  te_args2log_buf(tlbp_argv, in.argv.argv_len - 1,
                                  (const char **)argv),
                  out.retval);
+    rpcs->silent_pass = silent_pass;
+
     te_log_buf_free(tlbp_argv);
 
     if (in.argv.argv_val != NULL)
@@ -886,6 +919,7 @@ te_errno
 rpc_job_wrapper_delete(const tapi_job_t *job, unsigned int wrapper_id)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
+    te_bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_wrapper_delete_in  in;
     tarpc_job_wrapper_delete_out out;
@@ -896,10 +930,13 @@ rpc_job_wrapper_delete(const tapi_job_t *job, unsigned int wrapper_id)
     in.wrapper_id = wrapper_id;
     in.job_id = tapi_job_get_id(job);
 
+    rpcs->silent_pass = tapi_job_get_silent_pass(job);
     rcf_rpc_call(rpcs, "job_wrapper_delete", &in, &out);
 
     TAPI_RPC_LOG(rpcs, job_wrapper_delete, "%u, %u", "%r",
                  in.job_id, in.wrapper_id, out.retval);
+    rpcs->silent_pass = silent_pass;
+
     RETVAL_TE_ERRNO(job_wrapper_delete, out.retval);
 }
 
@@ -1036,6 +1073,7 @@ rpc_job_add_sched_param(const tapi_job_t *job,
 {
     te_errno rc;
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
+    te_bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_sched_param *sched_param = NULL;
     size_t sched_param_len;
@@ -1058,10 +1096,12 @@ rpc_job_add_sched_param(const tapi_job_t *job,
     in.param.param_len = sched_param_len;
     in.param.param_val = sched_param;
 
+    rpcs->silent_pass = tapi_job_get_silent_pass(job);
     rcf_rpc_call(rpcs, "job_add_sched_param", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_add_sched_param, out.retval);
 
     TAPI_RPC_LOG(rpcs, job_add_sched_param, "%u", "%r", in.job_id, out.retval);
+    rpcs->silent_pass = silent_pass;
 
     free(sched_param);
     free(affinity);
