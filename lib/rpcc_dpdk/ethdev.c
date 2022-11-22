@@ -278,8 +278,10 @@ static const char *
 tarpc_rte_eth_dev_desc_lim2str(te_log_buf *tlbp,
                                const struct tarpc_rte_eth_desc_lim *desc_lim)
 {
-    te_log_buf_append(tlbp, "{ nb_max=%u, nb_min=%u, nb_align=%u }",
-                      desc_lim->nb_max, desc_lim->nb_min, desc_lim->nb_align);
+    te_log_buf_append(tlbp, "{ nb_max=%u, nb_min=%u, nb_align=%u, "
+                              "nb_seg_max=%u, nb_mtu_seg_max=%u }",
+                      desc_lim->nb_max, desc_lim->nb_min, desc_lim->nb_align,
+                      desc_lim->nb_seg_max, desc_lim->nb_mtu_seg_max);
     return te_log_buf_get(tlbp);
 }
 

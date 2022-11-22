@@ -571,6 +571,8 @@ tarpc_rte_eth_desc_lim2rpc(const struct rte_eth_desc_lim *rte,
     rpc->nb_max = rte->nb_max;
     rpc->nb_min = rte->nb_min;
     rpc->nb_align = rte->nb_align;
+    rpc->nb_seg_max = rte->nb_seg_max;
+    rpc->nb_mtu_seg_max = rte->nb_mtu_seg_max;
 }
 
 static uint32_t

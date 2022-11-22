@@ -998,6 +998,8 @@ struct tarpc_rte_eth_desc_lim {
     uint16_t                        nb_max;
     uint16_t                        nb_min;
     uint16_t                        nb_align;
+    uint16_t                        nb_seg_max;
+    uint16_t                        nb_mtu_seg_max;
 };
 
 struct tarpc_rte_eth_dev_portconf {
