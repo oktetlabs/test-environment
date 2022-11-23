@@ -340,6 +340,24 @@ extern te_errno tapi_cfg_rx_rule_table_size_get(
                                         const char *if_name,
                                         uint32_t *size);
 
+/**
+ * Find a free place to insert a new Rx rule.
+ *
+ * @param ta          Test Agent
+ * @param if_name     Interface name
+ * @param start       Index from which to start search
+ * @param end         Last acceptable index plus one
+ *                    (if zero, rules table size will be used)
+ * @param location    Found free location
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_rx_rule_find_location(const char *ta,
+                                               const char *if_name,
+                                               unsigned int start,
+                                               unsigned int end,
+                                               int64_t *location);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

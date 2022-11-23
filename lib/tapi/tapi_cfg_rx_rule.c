@@ -546,3 +546,42 @@ tapi_cfg_rx_rule_table_size_get(const char *ta, const char *if_name,
                           "/agent:%s/interface:%s/rx_rules:/table_size:",
                           ta, if_name);
 }
+
+/* See description in tapi_cfg_rx_rule.h */
+te_errno
+tapi_cfg_rx_rule_find_location(const char *ta, const char *if_name,
+                               unsigned int start, unsigned int end,
+                               int64_t *location)
+{
+    te_errno rc;
+    uint32_t table_size;
+    unsigned int i;
+    cfg_handle rule_handle;
+
+    if (end == 0)
+    {
+        rc = tapi_cfg_rx_rule_table_size_get(ta, if_name, &table_size);
+        if (rc != 0)
+            return rc;
+
+        end = table_size;
+    }
+
+    for (i = start; i < end; i++)
+    {
+        rc = cfg_find_fmt(&rule_handle,
+                          "/agent:%s/interface:%s/rx_rules:/rule:%u",
+                          ta, if_name, i);
+        if (rc == TE_RC(TE_CS, TE_ENOENT))
+        {
+            *location = i;
+            return 0;
+        }
+        else if (rc != 0)
+        {
+            return rc;
+        }
+    }
+
+    return TE_RC(TE_TAPI, TE_ENOSPC);
+}
