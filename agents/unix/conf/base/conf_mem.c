@@ -65,6 +65,9 @@
 /** Name of the file to store reserved hugepages */
 #define HUGEPAGES_FILENAME_RESV "resv_hugepages"
 
+/** Path to system transparent hugepages directory */
+#define SYS_THP "/sys/kernel/mm/transparent_hugepage"
+
 /** Delimiter used in the mountpount name instead of '/' */
 #define PATH_DELIMITER "$"
 
@@ -881,13 +884,58 @@ hugepages_mountpoint_grab(const char *name)
     return TE_RC(TE_TA_UNIX, rc);
 }
 
+static te_errno
+thp_enabled_get(unsigned int gid, const char *oid, char *value, ...)
+{
+    te_errno    rc = 0;
+    char        val[RCF_MAX_VAL] = {0};
+    char       *ptr_start = NULL;
+    char       *ptr_end = NULL;
+    size_t      len;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = read_sys_value(val, RCF_MAX_VAL, FALSE, SYS_THP "/%s", "enabled");
+    if (rc != 0)
+        return rc;
+
+    /* Parse output, for example: "always madvise [never]" */
+    ptr_start = strchr(val, '[');
+    ptr_end = strchr(val, ']');
+    if (ptr_start == NULL || ptr_end == NULL || ptr_start > ptr_end)
+    {
+        ERROR("%s(): failed to parse '%s'", __func__, val);
+        return TE_ERANGE;
+    }
+
+    ptr_start++;
+    len = ptr_end - ptr_start;
+    memcpy(value, ptr_start, len);
+    value[len] = '\0';
+
+    return 0;
+}
+
+static te_errno
+thp_enabled_set(unsigned int gid, const char *oid, char *value, ...)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return write_sys_value(value, SYS_THP "/%s", "enabled");
+}
+
+RCF_PCH_CFG_NODE_RW(thp_enabled, "enabled", NULL, NULL,
+                    thp_enabled_get, thp_enabled_set);
+RCF_PCH_CFG_NODE_NA(node_mem_thp, "transparent_hugepage", &thp_enabled, NULL);
 RCF_PCH_CFG_NODE_COLLECTION(node_hugepage_mountpoint, "mountpoint",
                             NULL, NULL,
                             hugepages_mountpoint_add, hugepages_mountpoint_del,
                             hugepages_mountpoint_list,
                             NULL);
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_hugepages, "hugepages",
-                               &node_hugepage_mountpoint, NULL,
+                               &node_hugepage_mountpoint, &node_mem_thp,
                                hugepages_get, hugepages_set, NULL, NULL,
                                hugepages_list,
                                NULL);

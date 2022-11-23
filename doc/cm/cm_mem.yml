@@ -54,3 +54,20 @@
 
       Name: Directory name
       Value: none
+
+  - oid: "/agent/mem/transparent_hugepage"
+    access: read_only
+    type: none
+    d: |
+        Root of transparent_hugepage model.
+
+        Name: none
+
+  - oid: "/agent/mem/transparent_hugepage/enabled"
+    access: read_write
+    type: string
+    d: |
+       Global Transparent Hugepage controls.
+
+       Name: none
+       Value: always, madvise, never
