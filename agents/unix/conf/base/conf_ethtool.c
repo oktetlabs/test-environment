@@ -1640,10 +1640,8 @@ ta_ethtool_get_rx_cls_rules(unsigned int gid, const char *if_name,
         goto cleanup;
 
 #ifdef RX_CLS_LOC_SPECIAL
-    result->table_size = rules_count.data & ~RX_CLS_LOC_SPECIAL;
     result->spec_loc_flag = !!(rules_count.data & RX_CLS_LOC_SPECIAL);
 #else
-    result->table_size = rules_count.data;
     result->spec_loc_flag = FALSE;
 #endif
 
@@ -1656,30 +1654,32 @@ ta_ethtool_get_rx_cls_rules(unsigned int gid, const char *if_name,
             rc = TE_ENOMEM;
             goto cleanup;
         }
+    }
 
-        req_size = sizeof(*rules) + sizeof(uint32_t) * result->rule_cnt;
-        rules = TE_ALLOC(req_size);
-        if (rules == NULL)
-        {
-            rc = TE_ENOMEM;
-            goto cleanup;
-        }
-        rules->rule_cnt = result->rule_cnt;
+    req_size = sizeof(*rules) + sizeof(uint32_t) * result->rule_cnt;
+    rules = TE_ALLOC(req_size);
+    if (rules == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto cleanup;
+    }
+    rules->rule_cnt = result->rule_cnt;
 
-        rc = call_ethtool_ioctl(if_name, ETHTOOL_GRXCLSRLALL, rules);
-        if (rc != 0)
-            goto cleanup;
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_GRXCLSRLALL, rules);
+    if (rc != 0)
+        goto cleanup;
 
-        /*
-         * May be some rule was removed between two SIOCETHTOOL calls.
-         */
-        if (rules->rule_cnt < result->rule_cnt)
-            result->rule_cnt = rules->rule_cnt;
+    result->table_size = rules->data;
 
-        for (i = 0; i < result->rule_cnt; i++)
-        {
-            result->locs[i] = rules->rule_locs[i];
-        }
+    /*
+     * May be some rule was removed between two SIOCETHTOOL calls.
+     */
+    if (rules->rule_cnt < result->rule_cnt)
+        result->rule_cnt = rules->rule_cnt;
+
+    for (i = 0; i < result->rule_cnt; i++)
+    {
+        result->locs[i] = rules->rule_locs[i];
     }
 
     rc = ta_obj_add(TA_OBJ_TYPE_IF_RX_CLS_RULES, if_name,
