@@ -49,6 +49,16 @@
          Name: empty
          Value: the current number of pre-allocated huge pages
 
+    - oid: "/agent/sys/vm/overcommit_memory"
+      access: read_write
+      type: int32
+      d: |
+         Linux kernel overcommit handling mode
+         Name: empty
+         Value: 0 = heuristic overcommit handling
+                1 = always overcommit
+                2 = do not overcommit
+
     - oid: "/agent/sys/fs"
       access: read_only
       type: none
