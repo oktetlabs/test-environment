@@ -282,6 +282,9 @@ extern void ta_cfg_obj_log(const ta_cfg_obj_t *obj);
 /** Name for object of type route */
 #define TA_OBJ_TYPE_ROUTE "route"
 
+/** Name for object of type blackhole route */
+#define TA_OBJ_TYPE_BLACKHOLE "blackhole"
+
 /** Name for object of type sniffer */
 #define TA_OBJ_TYPE_SNIFFER "sniffer"
 

@@ -681,10 +681,11 @@ tapi_cfg_add_route(const char *ta, int addr_family,
 }
 
 static int
-tapi_cfg_add_blackhole(const char *ta, int addr_family,
+tapi_cfg_add_blocking_routes(const char *ta, int addr_family,
                        const void *dst_addr, int prefix,
-                       cfg_handle *handle)
+                       cfg_handle *handle, const char *route_type)
 {
+    te_errno    rc;
     char        dst_addr_str[INET6_ADDRSTRLEN];
     int         netaddr_size = te_netaddr_get_size(addr_family);
 
@@ -709,9 +710,47 @@ tapi_cfg_add_blackhole(const char *ta, int addr_family,
               "into a character string", __FUNCTION__);
         return TE_OS_RC(TE_TAPI, errno);
     }
-    return cfg_add_instance_fmt(handle, CFG_VAL(NONE, NULL),
-                                "/agent:%s/blackhole:%s|%d",
-                                ta, dst_addr_str, prefix);
+
+    rc = cfg_add_instance_local_fmt(handle, CFG_VAL(NONE, NULL),
+                                    "/agent:%s/blackhole:%s|%d",
+                                    ta, dst_addr_str, prefix);
+    if (rc != 0)
+    {
+        ERROR("%s() fails to add a new blackhole route %s|%d",
+                __func__, dst_addr_str, prefix);
+        return rc;
+    }
+
+    rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, route_type),
+                                    "/agent:%s/blackhole:%s|%d/type:",
+                                    ta, dst_addr_str, prefix);
+    if (rc != 0)
+    {
+        ERROR("%s() fails to add a new blackhole route %s|%d with type %s",
+              __func__, dst_addr_str, prefix, route_type);
+        return rc;
+    }
+
+    rc = cfg_commit_fmt("/agent:%s/blackhole:%s|%d",
+                        ta, dst_addr_str, prefix);
+    if (rc != 0)
+    {
+        ERROR("%s() fails to commit a new blackhole route %s|%d with type %s",
+              __func__, dst_addr_str, prefix, route_type);
+        return rc;
+    }
+
+    return 0;
+}
+
+static int
+tapi_cfg_add_blackhole(const char *ta, int addr_family,
+                       const void *dst_addr, int prefix,
+                       cfg_handle *handle)
+{
+    return tapi_cfg_add_blocking_routes(ta, addr_family,
+                                        dst_addr, prefix,
+                                        handle, "blackhole");
 }
 
 /* See the description in tapi_cfg.h */
@@ -725,10 +764,13 @@ tapi_cfg_add_full_route(const char *ta, int addr_family,
 {
     tapi_cfg_rt_params rt_params;
 
-    if (type != NULL && strcmp(type, "blackhole") == 0)
+    if (type != NULL && (strcmp(type, "blackhole") == 0 ||
+                         strcmp(type, "unreachable") == 0 ||
+                         strcmp(type, "prohibit") == 0 ||
+                         strcmp(type, "throw") == 0))
     {
-        return tapi_cfg_add_blackhole(ta, addr_family, dst_addr,
-                                      prefix, cfg_hndl);
+        return tapi_cfg_add_blocking_routes(ta, addr_family, dst_addr,
+                                            prefix, cfg_hndl, type);
     }
     if (type != NULL &&
         strcmp(type, "unicast") != 0 &&

@@ -598,34 +598,104 @@ static te_errno
 blackhole_add(unsigned int gid, const char *oid, const char *value,
               const char *route)
 {
-    te_errno        rc;
-    ta_rt_info_t    rt_info;
-
-    UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
 
-    rc = ta_rt_parse_inst_name(route, &rt_info);
-    if (rc != 0)
-        return rc;
-
-    return ta_unix_conf_route_blackhole_add(&rt_info);
+    return ta_obj_add(TA_OBJ_TYPE_BLACKHOLE, route, value, gid,
+                      NULL, NULL, NULL);
 }
 
 static te_errno
 blackhole_del(unsigned int gid, const char *oid, const char *route)
 {
-    te_errno        rc;
-    ta_rt_info_t    rt_info;
-
-    UNUSED(gid);
     UNUSED(oid);
 
-    rc = ta_rt_parse_inst_name(route, &rt_info);
+    return ta_obj_del(TA_OBJ_TYPE_BLACKHOLE, route, NULL,
+                      NULL, gid, route_load_attrs);
+}
+
+static te_errno
+blackhole_commit(unsigned int gid, const cfg_oid *p_oid)
+{
+    const char             *route;
+    ta_cfg_obj_t           *obj;
+    ta_rt_info_t            rt_info;
+    te_errno                rc;
+    ta_cfg_obj_action_e     obj_action;
+
+    route = ((cfg_inst_subid *)(p_oid->ids))[p_oid->len - 1].name;
+    ENTRY("%s", route);
+
+    obj = ta_obj_find(TA_OBJ_TYPE_BLACKHOLE, route, gid);
+    if (obj == NULL)
+    {
+        WARN("Commit for %s route which has not been updated", route);
+        return 0;
+    }
+
+    memset(&rt_info, 0, sizeof(rt_info));
+
+    rc = ta_rt_parse_inst_name(obj->name, &rt_info);
+    if (rc != 0)
+    {
+        ERROR("%s(): ta_rt_parse_inst_name() failed: %r", __func__, rc);
+        ta_obj_free(obj);
+        return rc;
+    }
+
+    rc = ta_rt_parse_attrs(obj->attrs, &rt_info);
+    if (rc != 0)
+    {
+        ERROR("%s(): ta_rt_parse_attrs() failed: %r", __func__, rc);
+        ta_obj_free(obj);
+        return rc;
+    }
+
+    if (rt_info.type != TA_RT_TYPE_BLACKHOLE &&
+        rt_info.type != TA_RT_TYPE_UNREACHABLE &&
+        rt_info.type != TA_RT_TYPE_PROHIBIT &&
+        rt_info.type != TA_RT_TYPE_THROW)
+    {
+        ERROR("Blackhole route type '%s' is not supported yet", rt_info.type);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    obj_action = obj->action;
+    ta_obj_free(obj);
+
+    rc = ta_unix_conf_route_change(obj_action, &rt_info);
+    ta_rt_info_clean(&rt_info);
+    return rc;
+}
+
+static te_errno
+blackhole_type_get(unsigned int gid, const char *oid,
+                   char *value, const char *route)
+{
+    te_errno rc;
+    ta_rt_info_t *rt_info;
+
+    UNUSED(oid);
+
+    rc = route_find(gid, route, &rt_info);
     if (rc != 0)
         return rc;
 
-    return ta_unix_conf_route_blackhole_del(&rt_info);
+    if (rt_info->type >= TA_RT_TYPE_MAX_VALUE)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    snprintf(value, RCF_MAX_VAL, "%s", ta_rt_type2name(rt_info->type));
+    return 0;
+}
+
+static te_errno
+blackhole_type_set(unsigned int gid, const char *oid,
+                   char *value, const char *route)
+{
+    UNUSED(oid);
+
+    return ta_obj_set(TA_OBJ_TYPE_BLACKHOLE, route, "type",
+                      value, gid, route_load_attrs);
 }
 
 /**
@@ -1170,10 +1240,15 @@ RCF_PCH_CFG_NODE_RO(node_ip4_rt_default_if, "ip4_rt_default_if",
 RCF_PCH_CFG_NODE_RO(node_ip6_rt_default_if, "ip6_rt_default_if",
                     NULL, &node_ip4_rt_default_if, ip6_rt_default_if_get);
 
+static rcf_pch_cfg_object node_blackhole;
+
+RCF_PCH_CFG_NODE_RWC(node_blackhole_type, "type", NULL, NULL,
+                     blackhole_type_get, blackhole_type_set, &node_blackhole);
+
 RCF_PCH_CFG_NODE_COLLECTION(node_blackhole, "blackhole",
-                            NULL, &node_ip6_rt_default_if,
+                            &node_blackhole_type, &node_ip6_rt_default_if,
                             blackhole_add, blackhole_del,
-                            blackhole_list, NULL);
+                            blackhole_list, blackhole_commit);
 
 static rcf_pch_cfg_object node_route;
 
