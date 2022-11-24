@@ -6,6 +6,7 @@
 # specified in the shell environment.
 
 TEST_TE_BASE=(
+    "${TS_TOPDIR}/../.."
     "../../.."
     "../.."
     ".."
