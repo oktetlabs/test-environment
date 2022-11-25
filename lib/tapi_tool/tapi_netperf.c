@@ -294,7 +294,7 @@ create_optional_ipversion(const void *value, const void *priv, te_vec *args)
      offsetof(_struct, _field) }
 
 /**
- * Сheck that the values in the structure are correct
+ * Check that the values in the structure are correct
  *
  * @param[in] opt Command line options.
  *

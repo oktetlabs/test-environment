@@ -157,7 +157,7 @@ extern te_errno tapi_iscsi_ini_csap_create(const char        *ta_name,
                                            csap_handle_t     *csap);
 
 /**
- * Create 'iscsi' CSAP over connectєd TCP socket on TA.
+ * Create 'iscsi' CSAP over connected TCP socket on TA.
  *
  * @param ta_name       Test Agent name
  * @param socket        File descriptor of TCP socket on TA

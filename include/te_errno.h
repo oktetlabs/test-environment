@@ -457,7 +457,7 @@ te_rc_mod2str(te_errno err)
         MOD2STR(RPCS);
         case TE_MODULE_NONE: return "";
         default:
-            /* Fix warning "case value ‘0’ not in enumerated type" */
+            /* Fix warning "case value '0' not in enumerated type" */
             if (TE_RC_GET_MODULE(err) == 0)
                 return "";
 

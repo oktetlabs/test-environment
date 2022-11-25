@@ -124,7 +124,7 @@ main(int argc, char *argv[])
 
 
     /*
-     * TCP connection єstablished, start data transmit
+     * TCP connection established, start data transmit
      */
 
     do {

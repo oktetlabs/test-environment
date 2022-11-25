@@ -72,7 +72,7 @@ static uint8_t  tad_all5_pad[ATM_PAYLOAD_LEN - 1] = { 0, };
  * G(x) = x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10 +
  *             + x^8  + x^7  + x^5  + x^4  + x^2  + x    + 1
  *
- * Note, that bitwise XOR is åddition for polynomials over Z_2 field.
+ * Note, that bitwise XOR is addition for polynomials over Z_2 field.
  *
  * @param a     Bitmask, representing coefficients of polynomial over
  *              Z_2 field with degree, less then 32.

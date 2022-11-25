@@ -482,7 +482,7 @@ ndn_match_mask(const asn_value *mask_pat, const uint8_t *data, size_t d_len)
 
     if (mask_pat->asn_type != &ndn_data_unit_mask_s)
     {
-        ERROR("%s(): wrong asn type of masḵ_pat", __FUNCTION__);
+        ERROR("%s(): wrong asn type of mask_pat", __FUNCTION__);
         return TE_EASNWRONGTYPE;
     }
 

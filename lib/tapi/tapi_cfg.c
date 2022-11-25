@@ -1309,7 +1309,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
         /*
          * Setting metric to 0 (or not setting it at all) does not work
          * for IPv6 - it seems Linux considers zero as "not defined" and
-         * sets metric to 1024 in such case (IP6_RT_PRIO_USER¸ see
+         * sets metric to 1024 in such case (IP6_RT_PRIO_USER, see
          * ip6_route_info_create() in net/ipv6/route.c in kernel sources).
          */
         metric = 1;

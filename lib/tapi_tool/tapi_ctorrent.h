@@ -6,7 +6,7 @@
  * @ingroup te_ts_tapi
  * @{
  *
- * TAPI to manage ctorrent – a BitTorrent client.
+ * TAPI to manage ctorrent - a BitTorrent client.
  *
  * Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.
  */

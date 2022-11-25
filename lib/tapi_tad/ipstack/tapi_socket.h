@@ -99,7 +99,7 @@ extern te_errno tapi_tcp_server_recv(const char *ta_name, int sid,
  * @param sid           RCF SID
  * @param tcp_csap      CSAP handle
  * @param timeout       timeout in milliseconds
- * @param forward       id of CSAP to which forward recєived messages,
+ * @param forward       id of CSAP to which forward received messages,
  *                      may be CSAP_INVALID_HANDLE for disabled forward
  * @param exact         boolean flag: whether CSAP have to wait
  *                      all specified number of bytes or not

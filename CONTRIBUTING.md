@@ -154,7 +154,7 @@ git commit --signoff # or -s
 ```
 
 The purpose of the signoff is explained in the
-[Developer’s Certificate of Origin](https://www.kernel.org/doc/html/latest/process/submitting-patches.html#developer-s-certificate-of-origin-1-1)
+[Developer's Certificate of Origin](https://www.kernel.org/doc/html/latest/process/submitting-patches.html#developer-s-certificate-of-origin-1-1)
 section of the Linux kernel guidelines. Ensure that you have read and fully
 understood it prior to applying the signoff.
 

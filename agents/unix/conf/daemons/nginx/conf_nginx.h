@@ -234,7 +234,7 @@ typedef struct nginx_inst {
 } nginx_inst;
 
 /**
- * Apply locally stored changeѕ.
+ * Apply locally stored changes.
  *
  * @param gid       Group identifier
  * @param p_oid     Pointer to the OID

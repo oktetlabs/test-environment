@@ -121,7 +121,7 @@ typedef enum {
 
 /**
  * Querier's Query Interval (QQI) default value in seconds, can be converted to
- * Querier's Query Interval Code (QQIС)(see RFC 3376, 4.1.7)
+ * Querier's Query Interval Code (QQIC)(see RFC 3376, 4.1.7)
  */
 #define TAPI_IGMP3_QUERY_QQI_DEFAULT_S 125
 

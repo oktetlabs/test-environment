@@ -2,7 +2,7 @@
 /** @file
  * @brief TAPI to manage ctorrent
  *
- * TAPI to manage ctorrent – a BitTorrent client.
+ * TAPI to manage ctorrent - a BitTorrent client.
  *
  * Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.
  */

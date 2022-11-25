@@ -135,7 +135,7 @@ typedef struct ta_initial_task {
  * - (4) - RCF received confirmation from the TA
  * - @c REBOOTING - RCF is waiting for the reboot to finish using the specified
  *                  timeout. If the waiting time has expired, the RCF marks the
- *                  agent unrecoverable dead. Either switсh to the next reboot
+ *                  agent unrecoverable dead. Either switch to the next reboot
  *                  type if it allowed
  * - (5) - RCF is initializing the TA process
  *
