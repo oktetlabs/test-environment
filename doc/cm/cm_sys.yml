@@ -305,6 +305,8 @@
     - oid: "/agent/sys/net/ipv6"
       access: read_only
       type: none
+      depends:
+        - oid: "/agent/interface/mtu"
 
     - oid: "/agent/sys/net/ipv6/neigh"
       access: read_only
