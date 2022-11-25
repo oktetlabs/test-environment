@@ -1283,6 +1283,20 @@ extern double test_get_double_param(int argc, char **argv,
                                     const char *name);
 
 /**
+ * Get default value of string parameter from local subtree.
+ *
+ * @param test_name   Name of test the parameter belongs.
+ * @param param_name  Parameter name.
+ *
+ * @return Default value of @c param_name.
+ *
+ * @note Function allocates memory with malloc(), which should be freed
+ * with free() by the caller.
+ */
+extern char *test_get_default_string_param(const char *test_name,
+                                           const char *param_name);
+
+/**
  * Get default value of uint64 parameter from local subtree.
  *
  * @param test_name   Name of test the parameter belongs.

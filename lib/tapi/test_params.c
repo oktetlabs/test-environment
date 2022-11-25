@@ -1129,13 +1129,12 @@ modify_test_name_for_configurator(const char *test_name,
 }
 
 /* See description in tapi_test.h */
-uint64_t
-test_get_default_uint64_param(const char *test_name,
+char *
+test_get_default_string_param(const char *test_name,
                               const char *param_name)
 {
     te_errno rc;
-    uint64_t value = 0;
-    char *str_value = NULL;
+    char *value = NULL;
     te_string modified_test_name = TE_STRING_INIT;
 
     rc = modify_test_name_for_configurator(test_name,
@@ -1148,28 +1147,38 @@ test_get_default_uint64_param(const char *test_name,
                   test_name);
     }
 
-    rc = cfg_get_instance_string_fmt(&str_value,
+    rc = cfg_get_instance_string_fmt(&value,
                                      "/local:/test:/testname:%s/default:%s",
                                      modified_test_name.ptr,
                                      param_name);
     if (rc != 0)
     {
-        free(str_value);
+        free(value);
         te_string_free(&modified_test_name);
 
         TEST_FAIL("Cannot get default value of parameter '%s' as string",
                   param_name);
     }
 
-    rc = te_str_to_uint64(str_value, 0, &value);
-    if (rc != 0)
-    {
-        free(str_value);
-        te_string_free(&modified_test_name);
+    return value;
+}
 
-        /* Note: te_str_to_uint64() log all the details. */
+/* See description in tapi_test.h */
+uint64_t
+test_get_default_uint64_param(const char *test_name,
+                              const char *param_name)
+{
+    te_errno rc;
+    uint64_t value = 0;
+    char *str_value = NULL;
+
+    str_value = test_get_default_string_param(test_name, param_name);
+
+    rc = te_str_to_uint64(str_value, 0, &value);
+    free(str_value);
+    /* Note: te_str_to_uint64() log all the details. */
+    if (rc != 0)
         TEST_FAIL("Cannot convert string value to uint64 one");
-    }
 
     return value;
 }
