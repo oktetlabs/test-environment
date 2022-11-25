@@ -488,5 +488,5 @@ ta_scripts = files(
 install_data(
     ta_scripts,
     install_dir: tadir,
-    install_mode: 'r-xr-xr-x',
+    install_mode: 'rwxr-xr-x',
     )
