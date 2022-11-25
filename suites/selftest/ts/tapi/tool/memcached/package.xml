@@ -20,5 +20,11 @@
                 <value>{{{'iut_rpcs':IUT},addr:'iut_addr':inet:unicast}}</value>
             </arg>
         </run>
+        <run>
+            <script name="memtier"/>
+            <arg name="env">
+                <value>{{{'iut_rpcs':IUT},addr:'iut_addr':inet:unicast}}</value>
+            </arg>
+        </run>
     </session>
 </package>

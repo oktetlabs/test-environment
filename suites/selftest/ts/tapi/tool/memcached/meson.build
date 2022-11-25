@@ -6,6 +6,7 @@ install_headers('memcached.h')
 tests = [
     'memaslap',
     'memcached',
+    'memtier',
 ]
 
 foreach test : tests

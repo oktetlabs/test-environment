@@ -16,5 +16,11 @@
                 <arg name="env"/>
             </iter>
         </test>
+        <test name="memtier">
+            <objective>Use memtier TAPI to run memtier_benchmark tool and test memcached server.</objective>
+            <iter result="PASSED">
+                <arg name="env"/>
+            </iter>
+        </test>
     </iter>
 </test>
