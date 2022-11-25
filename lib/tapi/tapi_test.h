@@ -702,6 +702,17 @@ cleanup_specific:                                                   \
     test_get_default_uint64_param(TE_TEST_NAME, #var_name_)
 
 /**
+ * The macro to return default value of 'double' parameter
+ * from local subtree.
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value.
+ * @return double value.
+ */
+#define TEST_DEFAULT_DOUBLE_PARAM(var_name_) \
+    test_get_default_double_param(TE_TEST_NAME, #var_name_)
+
+/**
  * The macro to get default value of 'uint64' parameter
  * from local subtree.
  *
@@ -710,6 +721,16 @@ cleanup_specific:                                                   \
  */
 #define TEST_GET_DEFAULT_UINT64_PARAM(var_name_) \
     ((var_name_) = TEST_DEFAULT_UINT64_PARAM(var_name_))
+
+/**
+ * The macro to get default value of 'double' parameter
+ * from local subtree.
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value.
+ */
+#define TEST_GET_DEFAULT_DOUBLE_PARAM(var_name_) \
+    ((var_name_) = TEST_DEFAULT_DOUBLE_PARAM(var_name_))
 
 /**
  * The macro to get parameters of type 'value-unit' (double with unit prefix)
@@ -1306,6 +1327,17 @@ extern char *test_get_default_string_param(const char *test_name,
  */
 extern uint64_t test_get_default_uint64_param(const char *test_name,
                                               const char *param_name);
+
+/**
+ * Get default value of double parameter from local subtree.
+ *
+ * @param test_name   Name of test the parameter belongs.
+ * @param param_name  Parameter name.
+ *
+ * @return Default value of @c param_name.
+ */
+extern double test_get_default_double_param(const char *test_name,
+                                            const char *param_name);
 
 /**
  * Return parameters of type 'value-unit' ('double')

@@ -1185,6 +1185,25 @@ test_get_default_uint64_param(const char *test_name,
 
 /* See description in tapi_test.h */
 double
+test_get_default_double_param(const char *test_name,
+                              const char *param_name)
+{
+    te_errno rc;
+    double value = 0;
+    char *str_value = NULL;
+
+    str_value = test_get_default_string_param(test_name, param_name);
+
+    rc = te_strtod(str_value, &value);
+    free(str_value);
+    if (rc != 0)
+        TEST_FAIL("Cannot convert string value to double one");
+
+    return value;
+}
+
+/* See description in tapi_test.h */
+double
 test_get_value_unit_param(int argc, char **argv, const char *name)
 {
     const char *str_val = NULL;
