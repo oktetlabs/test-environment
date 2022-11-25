@@ -25,8 +25,9 @@
 /* How long memaslap test runs in seconds. */
 #define MEMASLAP_RUN_TIMEOUT 30
 
-/* Path to memcached exec. */
-static const char memaslap_path[] = "memcaslap";
+/* Path to memaslap exec. */
+static const char default_memaslap_path[] = "memaslap";
+static const char debian_memaslap_path[] = "memcaslap";
 
 int
 main(int argc, char **argv)
@@ -62,7 +63,17 @@ main(int argc, char **argv)
     memcached_opts.username = "root";
 
     TEST_SUBSTEP("Check if memaslap is on iut");
-    if (rpc_te_file_check_executable(iut_rpcs, memaslap_path) != 0)
+
+    if (rpc_te_file_check_executable(iut_rpcs, default_memaslap_path) == 0)
+    {
+        memaslap_opts.memaslap_path = default_memaslap_path;
+    }
+    else if (rpc_te_file_check_executable(iut_rpcs,
+                                          debian_memaslap_path) == 0)
+    {
+        memaslap_opts.memaslap_path = debian_memaslap_path;
+    }
+    else
     {
         TEST_SKIP("There is no memaslap app on iut");
     }
@@ -72,7 +83,6 @@ main(int argc, char **argv)
     /* Set work time for memaslap. */
     memaslap_opts.time.value   = MEMASLAP_RUN_TIMEOUT;
     memaslap_opts.time.defined = TRUE;
-    memaslap_opts.memaslap_path = memaslap_path;
 
     /* Set servers = 127.0.0.1:11212 and number of servers = 1. */
     memaslap_opts.servers[0]   = (const struct sockaddr *)iut_addr;
