@@ -1167,8 +1167,8 @@ test_get_default_uint64_param(const char *test_name,
         free(str_value);
         te_string_free(&modified_test_name);
 
-        TEST_FAIL("Cannot convert string value '%s' to uint64 one",
-                  str_value);
+        /* Note: te_str_to_uint64() log all the details. */
+        TEST_FAIL("Cannot convert string value to uint64 one");
     }
 
     return value;
