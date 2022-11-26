@@ -96,7 +96,7 @@ rpc_socket_domain_by_addr(const struct sockaddr *addr)
  *                  specified.
  *
  * @return The socket descriptor to be used. Otherwise -1 is returned when
- *         error occured
+ *         error occurred
  */
 
 extern int rpc_socket(rcf_rpc_server *rpcs,
@@ -212,7 +212,7 @@ extern ssize_t rpc_recv_gen(rcf_rpc_server *rpcs,
  *               Other supported flags can be found in
  *               te_rpc_sys_socket.h
  *
- * @return Number of bytes received, otherwise -1 when error occured
+ * @return Number of bytes received, otherwise -1 when error occurred
  */
 static inline ssize_t
 rpc_recv(rcf_rpc_server *rpcs,
@@ -497,7 +497,7 @@ extern void tapi_rpc_msghdr_msg_flags_init_check(te_bool enable);
  *                        link-layer broadcast.
  *
  * @return Length of message, otherwise -1 is returned when an error
- *         occured
+ *         occurred
  */
 extern ssize_t rpc_sendmsg(rcf_rpc_server *rpcs,
                            int s, const struct rpc_msghdr *msg,
@@ -514,7 +514,7 @@ extern ssize_t rpc_sendmsg(rcf_rpc_server *rpcs,
  * @param flags     bitwise OR of zero or more of the flags;
  *                  see @b rpc_recv for more information
  *
- * @return Length of received data, otherwise -1 when an error occured.
+ * @return Length of received data, otherwise -1 when an error occurred.
  */
 extern ssize_t rpc_recvmsg(rcf_rpc_server *rpcs,
                            int s, struct rpc_msghdr *msg,
@@ -624,7 +624,7 @@ extern ssize_t rpc_send_one_byte_many(rcf_rpc_server *rpcs, int s,
  *                  Other supported flags can be found in
  *                  te_rpc_sys_socket.h
  *
- * @return Number of bytes received, otherwise -1 when error occured
+ * @return Number of bytes received, otherwise -1 when error occurred
  */
 extern tarpc_ssize_t rpc_recvbuf_gen(rcf_rpc_server *rpcs,
                                      int fd, rpc_ptr buf, size_t buf_off,
@@ -711,7 +711,7 @@ extern int rpc_connect_raw(rcf_rpc_server *rpcs, int s,
                            const struct sockaddr *addr, socklen_t addrlen);
 
 /**
- * Try to listen for incomming connections for connection oriented sockets
+ * Try to listen for incoming connections for connection oriented sockets
  * This operation takes place on RPC server side.
  *
  * @param rpcs        RPC server handle
@@ -1071,7 +1071,7 @@ extern int rpc_setsockopt_check_int(rcf_rpc_server *rpcs,
 /**
  *  Query the current name of the specified socket on RPC server side,
  *  store this address in the @b sockaddr structure ponited by @b name,
- *  and store the lenght of this address to the object pointed by @b
+ *  and store the length of this address to the object pointed by @b
  *  namelen.
  *
  *  @note See @b getsockname manual page for more information
@@ -1115,7 +1115,7 @@ rpc_getsockname(rcf_rpc_server *rpcs,
 /**
  *  Query the peer name of a specified socket on RPC server side,
  *  store this address in the @b sockaddr structure ponited by @b name,
- *  and store the lenght of this address to the object pointed by @b
+ *  and store the length of this address to the object pointed by @b
  *  namelen.
  *
  *  @note See @b getpeername manual page for more information
@@ -1168,7 +1168,7 @@ rpc_getpeername(rcf_rpc_server *rpcs,
  *                  see @b rpc_recv for more information
  * @param timeout   Timeout for receiving
  *
- * @return Number of received packets, otherwise -1 when an error occured.
+ * @return Number of received packets, otherwise -1 when an error occurred.
  */
 extern int rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd,
                             struct rpc_mmsghdr *mmsg, unsigned int vlen,
@@ -1187,7 +1187,7 @@ extern int rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd,
  * @param flags     bitwise OR of zero or more of the flags;
  *                  see @b rpc_send for more information
  *
- * @return Number of sent packets, otherwise -1 when an error occured.
+ * @return Number of sent packets, otherwise -1 when an error occurred.
  *
  * @se msg_len field of each message will be set to number of actually
  *     sent bytes

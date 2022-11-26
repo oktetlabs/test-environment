@@ -2,7 +2,7 @@
 /** @file
  * @brief Home Gateway Configuration Notation
  *
- * Defition of Home Gateway configuration using ASN.1 syntax.
+ * Definition of Home Gateway configuration using ASN.1 syntax.
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

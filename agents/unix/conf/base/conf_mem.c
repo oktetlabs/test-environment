@@ -68,7 +68,7 @@
 /** Path to system transparent hugepages directory */
 #define SYS_THP "/sys/kernel/mm/transparent_hugepage"
 
-/** Delimiter used in the mountpount name instead of '/' */
+/** Delimiter used in the mountpoint name instead of '/' */
 #define PATH_DELIMITER "$"
 
 /** Information about mountpoint */

@@ -986,7 +986,7 @@ tad_pkt_get_frag_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
     F_EXIT();
 
     /*
-     * TODO: May be it is usefull to interrupt iteration here,
+     * TODO: May be it is useful to interrupt iteration here,
      * if we went after the interested fragment.
      */
     return 0;

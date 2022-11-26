@@ -21,7 +21,7 @@
 
     - oid: "/agent/iscsi/max_connections"
       access: read_write
-      type: integet
+      type: integer
       d: |
          iSCSI Initiator MaxConnections parameter
           Name: empty

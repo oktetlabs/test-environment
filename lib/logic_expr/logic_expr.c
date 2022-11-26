@@ -186,7 +186,7 @@ is_str_in_set(const char *str, const tqh_strings *set)
                 return i;
             }
         }
-        /* we should have exact lenght match */
+        /* we should have exact length match */
         else if (c - s->v == (int) strlen(str))
         {
             if (strncmp(str, s->v, c - s->v) == 0)
@@ -510,7 +510,7 @@ and_or_replace(logic_expr **and_expr, logic_expr *or_expr,
  *
  * @param expr      Logic expression
  *
- * @return 0 on succes
+ * @return 0 on success
  */
 static te_errno
 make_and_chain(logic_expr **expr)
@@ -585,7 +585,7 @@ expr_eq_expr(logic_expr *p, logic_expr *q)
  * @param comp_func     Function comparing logical
  *                      expressions
  *
- * @return 0 on succes or error code
+ * @return 0 on success or error code
  */
 static te_errno
 sort_and_chain(logic_expr *and_chain,
@@ -978,7 +978,7 @@ logic_expr_dnf_gen(logic_expr **expr,
 
         case LOGIC_EXPR_OR:
             /*
-             * Remove or-nodes from the left subtree untill there will be
+             * Remove or-nodes from the left subtree until there will be
              * no such nodes in the subtree
              */
             while ((or_expr = find_or((*expr)->u.binary.lhv, &parent))

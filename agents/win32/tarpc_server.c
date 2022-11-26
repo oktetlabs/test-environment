@@ -1506,7 +1506,7 @@ TARPC_FUNC(write_file,
                                       (LPWSAOVERLAPPED)overlapped));
 
     /*
-     * If the operation is not overlapped or fatal error occured,
+     * If the operation is not overlapped or fatal error occurred,
      * release memory.
      */
     if (out->retval || out->common._errno != RPC_E_IO_PENDING)
@@ -3059,23 +3059,23 @@ TARPC_FUNC(enum_network_events,
     COPY_ARG(events);
 },
 {
-    WSANETWORKEVENTS  events_occured;
+    WSANETWORKEVENTS  events_occurred;
     uint32_t i;
-    memset(&events_occured, 0, sizeof(events_occured));
+    memset(&events_occurred, 0, sizeof(events_occurred));
     UNUSED(list);
 
     out->retval = WSAEnumNetworkEvents(in->fd, IN_HEVENT,
                                        out->events.events_len == 0 ? NULL :
-                                       &events_occured);
+                                       &events_occurred);
     if (out->events.events_len != 0)
     {
 
         out->events.events_val[0].network_events =
-            network_event_h2rpc(events_occured.lNetworkEvents);
+            network_event_h2rpc(events_occurred.lNetworkEvents);
         for(i = 0; i < 10; i++)
         {
             out->events.events_val[0].error_code[i] =
-            win_rpc_errno(events_occured.iErrorCode[i]);
+            win_rpc_errno(events_occurred.iErrorCode[i]);
         }
     }
 }

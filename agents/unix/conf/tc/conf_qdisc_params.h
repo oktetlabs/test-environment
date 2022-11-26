@@ -19,7 +19,7 @@
  * @param oid       full object instance identifier
  * @param value     location for the value
  * @param if_name   interface name
- * @param tc        Trafic Control value (empty string)
+ * @param tc        Traffic Control value (empty string)
  * @param qdisc     QDisc value (empty string)
  * @param param     parameter name for set value
  *
@@ -37,7 +37,7 @@ extern te_errno conf_qdisc_param_set(unsigned int gid, const char *oid,
  * @param oid       full object instance identifier
  * @param value     location for the value
  * @param if_name   interface name
- * @param tc        Trafic Control value (empty string)
+ * @param tc        Traffic Control value (empty string)
  * @param qdisc     QDisc value (empty string)
  * @param param     parameter name for get value
  *
@@ -55,7 +55,7 @@ extern te_errno conf_qdisc_param_get(unsigned int gid, const char *oid,
  * @param oid       full object instance identifier
  * @param value     parameter for add
  * @param if_name   interface name
- * @param tc        Trafic Control value (empty string)
+ * @param tc        Traffic Control value (empty string)
  * @param qdisc     QDisc value (empty string)
  * @param param     parameter name
  *
@@ -72,7 +72,7 @@ extern te_errno conf_qdisc_param_add(unsigned int gid, const char *oid,
  * @param gid       group identifier
  * @param oid       full object instance identifier
  * @param if_name   interface name
- * @param tc        Trafic Control value (empty string)
+ * @param tc        Traffic Control value (empty string)
  * @param qdisc     QDisc value (empty string)
  * @param param     Parameter name to delete
  *

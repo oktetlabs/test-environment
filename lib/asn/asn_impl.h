@@ -31,7 +31,7 @@ extern "C" {
 typedef enum {
     AUTOMATIC, /**< Tags are assigned automatically */
     IMPLICIT,  /**< Tag is not inserted for this value */
-    EXPLICIT   /**< Tag is explicitely specified */
+    EXPLICIT   /**< Tag is explicitly specified */
 } asn_tagging_type;
 
 /**
@@ -89,9 +89,9 @@ struct asn_type {
     union
     {
         const asn_named_entry_t
-                       *named_entries; /**< for syntaxies SEQUENCE, SET
+                       *named_entries; /**< for syntaxes SEQUENCE, SET
                                                     and CHOICE */
-        const asn_type *subtype;       /**< for syntaxies *_OF and TAGGED */
+        const asn_type *subtype;       /**< for syntaxes *_OF and TAGGED */
 
         const asn_enum_entry_t
                        *enum_entries;  /**< for syntax ENUMERATED */
@@ -133,7 +133,7 @@ struct asn_value
         asn_value  **array;     /**< for COMPOUND syntaxes */
         void        *other;     /**< Other syntaxes: octet and character
                                      strings, long ints, etc. Pointer
-                                     is casted explicitely in internal
+                                     is casted explicitly in internal
                                      sources. */
     } data;        /**< Syntax-specific data */
 
@@ -235,7 +235,7 @@ extern te_errno asn_child_tag_index(const asn_type *type,
  * that new_value has respective type as specified in ASN.1 type.
  *
  * This method does not check that incoming pointers are not NULL,
- * so be carefull, when call it directly.
+ * so be careful, when call it directly.
  *
  * @param container     ASN.1 value which child should be updated,
  *                      have to be of syntax SEQUENCE, SET, or CHOICE
@@ -255,7 +255,7 @@ extern te_errno asn_put_child_by_index(asn_value *container,
  * as specified in ASN.1 type.
  *
  * This method does not check that incoming pointers are not NULL,
- * so be carefull, when call it directly.
+ * so be careful, when call it directly.
  *
  * @param container     ASN.1 value which child should be updated,
  *                      have to be of syntax SEQUENCE, SET, or CHOICE

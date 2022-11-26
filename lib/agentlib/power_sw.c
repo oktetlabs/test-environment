@@ -171,7 +171,7 @@ recognize_power_switch(int fd, int *rebootable, int *sockets_num)
 }
 
 /**
- * Add prober TTY settins: Baud 115200, parity check OFF, 8bit.
+ * Add prober TTY settings: Baud 115200, parity check OFF, 8bit.
  *
  * @param[in]   fd  Device descriptor.
  *

@@ -284,7 +284,7 @@ extern int rcf_ch_vwrite(struct rcf_comm_connection *handle,
                          rcf_var_type_t type, const char *var, ...);
 /**@} <!-- END rcf_ch_var --> */
 
-/** @defgroup rcf_ch_file Command Handler: File maniputation support
+/** @defgroup rcf_ch_file Command Handler: File manipulation support
  * @ingroup rcf_ch
  * @{
  */

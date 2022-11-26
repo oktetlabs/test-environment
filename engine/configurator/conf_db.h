@@ -98,7 +98,7 @@ typedef struct cfg_instance {
     char       *oid;                /**< OID of the instance */
     char        name[CFG_INST_NAME_MAX];    /**< Own name of the instance */
     cfg_object *obj;                /**< Object of the instance */
-    te_bool     added;              /**< Wheter this instance was added
+    te_bool     added;              /**< Whether this instance was added
                                          to the Test Agent or not
                                          (has sense only for read-create
                                          instances) */
@@ -182,7 +182,7 @@ cfg_get_ta_name(const char *oid, char *ta)
 
 /*----------------- User request processing ----------------------------*/
 
-/* SIze of the buffer requered for messages and responses except pattern */
+/* Size of the buffer required for messages and responses except pattern */
 #define CFG_BUF_LEN     (CFG_OID_MAX + sizeof(cfg_get_oid_msg))
 
 /**
@@ -349,7 +349,7 @@ extern void cfg_db_destroy(void);
  */
 extern te_bool cfg_oid_match_volatile(const char *oid_s, char **oid_out);
 
-/** Delay for configuration changes accomodation */
+/** Delay for configuration changes accommodation */
 extern uint32_t cfg_conf_delay;
 
 /**

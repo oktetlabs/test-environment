@@ -18,7 +18,7 @@
  * - the directory where to save the TCE information.
  * The former provides:
  * - the name of a TA type,
- * - the base of build direcotries of TA components,
+ * - the base of build directories of TA components,
  * - the information on TA components of the TA type, names and build
  *   directories.
  */

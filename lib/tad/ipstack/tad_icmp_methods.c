@@ -133,7 +133,7 @@ tad_icmp_build_ipv4_hdr(uint8_t *ptr, const uint8_t *orig_pkt, size_t ip_msg_len
     csum_ptr = (uint16_t *)ptr;
     ptr += sizeof(uint16_t);
 
-    /* dst and srt ipv4 adresses */
+    /* dst and srt ipv4 addresses */
     COPY_DATA_INCR(ptr, orig_pkt + sizeof(uint32_t) * IP4_HDR_DST_OFFSET,
                    IP4_ADDR_LEN);
     COPY_DATA_INCR(ptr, orig_pkt + sizeof(uint32_t) * IP4_HDR_SRC_OFFSET,
@@ -170,7 +170,7 @@ tad_icmp_build_ipv6_hdr(uint8_t *ptr, const uint8_t *orig_pkt,
     /* hope limit */
     *ptr++ = DEFAULT_TTL;
 
-    /* src and dst ipv6 adresses */
+    /* src and dst ipv6 addresses */
     COPY_DATA_INCR(ptr, orig_pkt + sizeof(uint32_t) * IP6_HDR_DST_OFFSET,
                    IP6_ADDR_LEN);
     COPY_DATA_INCR(ptr, orig_pkt + sizeof(uint32_t) * IP6_HDR_SRC_OFFSET,

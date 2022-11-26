@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 /*
- * Decimal unit-convertion functions
+ * Decimal unit-conversion functions
  * (International System of Units (SI))
  */
 #define TE_UNITS_DEC_G2U(_val) ((_val) * 1000000000.)
@@ -39,7 +39,7 @@ extern "C" {
 #define TE_UNITS_DEC_U2K(_val) ((_val) / 1000.)
 
 /*
- * Binary unit-convertion functions
+ * Binary unit-conversion functions
  * (International Electrotechnical Commission (IEC))
  */
 #define TE_UNITS_BIN_G2U(_val) ((_val) * 1024. * 1024. * 1024.)

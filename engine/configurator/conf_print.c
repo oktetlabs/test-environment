@@ -261,7 +261,7 @@ ins_tree_bufprint(cfg_instance *ins, const int indent)
 }
 
 /**
- * Print all dependancies of an object into a file and(or) log.
+ * Print all dependencies of an object into a file and(or) log.
  *
  * @param filename          output filename (NULL to skip)
  * @param log_lvl           TE log level (0 to skip)
@@ -321,7 +321,7 @@ cfg_db_obj_print_deps(const char *filename,
 }
 
 /**
- * Print all dependancies of an object into the buffer.
+ * Print all dependencies of an object into the buffer.
  *
  * @param obj       The object of interest.
  *
@@ -350,7 +350,7 @@ obj_bufprint_deps(cfg_object *obj)
                         otmp != NULL ? otmp->oid : "NULL") != NULL);
     }
 
-    CHECK(bufprintf(&buf, &offset, &sz, "Dependants of the object: %s\n",
+    CHECK(bufprintf(&buf, &offset, &sz, "Dependents of the object: %s\n",
                     obj->oid) != NULL);
     for (dependants = obj->dependants;
          dependants != NULL; dependants = dependants->next)
@@ -376,7 +376,7 @@ obj_bufprint_deps(cfg_object *obj)
  * @param p_sz      current size of the buffer (IN/OUT).
  * @param format    format string.
  *
- * @return  Pointer to an allocated buffer, or NULL if error occured.
+ * @return  Pointer to an allocated buffer, or NULL if error occurred.
  */
 static char *
 bufprintf(char **p_buf, int *p_offset, size_t *p_sz,

@@ -92,7 +92,7 @@
       d: |
          System settings from /proc/sys/net/.
 
-         Objects corressponding to files under /proc/sys/net.
+         Objects corresponding to files under /proc/sys/net.
 
          To make particular parameter from /proc/sys/net/* paths
          available, you should also register an object named after

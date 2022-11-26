@@ -132,7 +132,7 @@ extern void tad_payload_spec_clear(tad_payload_spec_t *pld_spec);
  * @param string        Text with expression.
  * @param expr          Place where pointer to new expression will
  *                      be put (OUT).
- * @param syms          Quantity of parsed symbols, if syntax error occured,
+ * @param syms          Quantity of parsed symbols, if syntax error occurred,
  *                      error position (OUT).
  *
  * @return status code.
@@ -302,7 +302,7 @@ extern int tad_data_unit_convert_simple(const asn_value *du_field,
                                         tad_data_unit_t *location);
 
 /**
- * Constract data-unit structure from specified binary data for
+ * Construct data-unit structure from specified binary data for
  * simple per-byte compare.
  *
  * @param[in]  data     Binary data which should be compared

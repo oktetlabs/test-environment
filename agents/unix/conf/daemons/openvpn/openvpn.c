@@ -649,7 +649,7 @@ openvpn_client_peer_port_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-/* Macro definitions for uniformal configuring methods */
+/* Macro definitions for uniform configuring methods */
 /** Definition of list method for peers, users, options */
 #define LIST_METHOD(_gh) \
 static te_errno                                                             \

@@ -767,7 +767,7 @@ static unsigned long residual = 0;
  * See description in iscsi_initiator.h
  *
  * This function reads output from `iscsicli' until a full line is read.
- * It then matches it agains one of three patterns (@p pattern,
+ * It then matches it against one of three patterns (@p pattern,
  * @p abort_pattern, @p terminal_pattern). If a match is found, the function
  * returns filling @p buffers as necessary and leaving all remaining output
  * (i.e. a beginning of the next line of the output) in the @p cli_buffer
@@ -1226,7 +1226,7 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
  *
  * @return Status code
  * @param target        Target-wide data
- * @param connection    Conncection data
+ * @param connection    Connection data
  */
 static te_errno
 iscsi_win32_do_discovery(iscsi_target_data_t *target,
@@ -1303,7 +1303,7 @@ iscsi_win32_do_discovery(iscsi_target_data_t *target,
 
 
 /**
- * See iscsi_initiator.h and iscsi_initator_conn_request_thread()
+ * See iscsi_initiator.h and iscsi_initiator_conn_request_thread()
  * for a complete description of the state machine involved.
  */
 te_errno

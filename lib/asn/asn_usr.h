@@ -54,7 +54,7 @@ typedef struct asn_type asn_type;
  *  - primitive syntaxes, internal presentation of which
  *      requires memory allocation, because number of octets occupied
  *      depends on the value.
- *  - constractive syntaxes.
+ *  - constructive syntaxes.
  *      Codes of types, which specification contain array of namedValues
  *      (with types), have lower bit zero.
  */
@@ -166,7 +166,7 @@ extern te_errno asn_get_subtype(const asn_type *type,
 
 
 /**
- * Get ASN.1 type of on-level child of constaint ASN.1 type by child tag.
+ * Get ASN.1 type of on-level child of constraint ASN.1 type by child tag.
  *
  * @param type      root of ASN.1 value tree which subvalue is interested
  * @param subtype   location for pointer to ASN.1 sub-value (OUT)
@@ -312,7 +312,7 @@ extern asn_value *asn_copy_value(const asn_value *value);
 extern te_errno asn_assign_value(asn_value *dst, const asn_value *src);
 
 /**
- * Free memory allocalted by ASN.1 value instance.
+ * Free memory allocated by ASN.1 value instance.
  *
  * @param value       ASN.1 value to be destroyed
  *
@@ -350,7 +350,7 @@ extern te_bool asn_check_type(const asn_value *value, const asn_type *type);
 /**
  * Parse textual presentation of single ASN.1 value of specified type and
  * create a new instance of asn_value type with its internal presentation.
- * @note Text should correspoind to the "Value" production label in ASN.1
+ * @note Text should correspond to the "Value" production label in ASN.1
  * specification.
  *
  * @param string        text to be parsed
@@ -386,7 +386,7 @@ extern te_errno asn_parse_dvalue_in_file(const char *filename,
  * specified buffer.
  * This method writes trailing zero to the text buffer, and checks that
  * there is space for it, but does not include it in amount of
- * printed symbols - excactly like standard snprintf().
+ * printed symbols - exactly like standard snprintf().
  *
  * Besides, if required buffer length is greater, then passed, last buffer
  * byte will be set to zero, and textual presentation of value will be
@@ -399,7 +399,7 @@ extern te_errno asn_parse_dvalue_in_file(const char *filename,
  * @param indent        current indent, usually zero
  *
  * @return number characters should be written to buffer
- * (without trailing zero), or -1 if error occured.
+ * (without trailing zero), or -1 if error occurred.
  */
 extern int asn_sprint_value(const asn_value *value, char *buffer,
                             size_t buf_len, unsigned int indent);
@@ -520,7 +520,7 @@ extern te_errno asn_free_child(asn_value *value,
  *                    labels, specifying subvalue in ASN.1 value tree with
  *                    'container' as a root. Label for `SEQUENCE OF` and
  *                    `SET OF` subvalues is decimal notation of its integer
- *                    index in array. Choice labels shouls be prepended by
+ *                    index in array. Choice labels should be prepended by
  *                    symbol `#`
  *
  * @return zero on success, otherwise error code.
@@ -541,7 +541,7 @@ extern te_errno asn_free_descendant(asn_value *value, const char *labels);
  *
  * @param value         Root of ASN.1 value tree.
  * @param status        Location of status of operation,
- *                      allways changed unless @c NULL (OUT).
+ *                      always changed unless @c NULL (OUT).
  * @param labels_fmt    Format (*printf-like) string for labels string.
  * @param ...           Respective parameters for format string.
  *
@@ -564,7 +564,7 @@ extern asn_value *asn_find_descendant(const asn_value *value,
  *
  * @param value         Root of ASN.1 value tree.
  * @param status        Location of status of operation,
- *                      allways changed unless NULL (OUT).
+ *                      always changed unless NULL (OUT).
  * @param labels_fmt    Format (*printf-like) string for labels string.
  * @param ...           Respective parameters for format string.
  *
@@ -603,7 +603,7 @@ extern te_errno asn_get_descendent(const asn_value *container,
  *
  * @param container     Root of ASN.1 value tree.
  * @param subval        ASN.1 sub-value which should be inserted, may
- *                      be @c NULL, if respecive part of 'container'
+ *                      be @c NULL, if respective part of 'container'
  *                      just should be cleared.
  * @param labels        Textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description.
@@ -782,7 +782,7 @@ asn_check_value_contains(asn_value *container, asn_value *value);
  *                    labels, specifying subvalue in ASN.1 value tree with
  *                    'container' as a root. Label for `SEQUENCE OF` and
  *                    `SET OF` subvalues is decimal notation of its integer
- *                    index in array. Choice labels shouls be prepended by
+ *                    index in array. Choice labels should be prepended by
  *                    symbol `#`
  *
  * @return zero on success, otherwise error code.
@@ -1117,7 +1117,7 @@ extern asn_value *asn_read_indexed(const asn_value *container,
  *        `BIT_STRING` -- number of bits;
  *    constraint syntax:
  *          number of sub-values; should be one or zero (for non-complete
- *          values) for `CHOICE` and `TAGGED` syntacies.
+ *          values) for `CHOICE` and `TAGGED` syntactic.
  *
  * @param container     root of ASN.1 value tree which subvalue is interested
  * @param labels        textual ASN.1 labels of subvalue; see
@@ -1276,9 +1276,9 @@ extern te_errno asn_get_field_data(const asn_value *container,
 
 
 /**
- * Get tag of value;
+ * Get tag of value.
  *
- * @param container     value which name is intereseted
+ * @param container     value which name is interested
  *
  * @return value's name or @c NULL.
  */

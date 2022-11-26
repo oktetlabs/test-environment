@@ -41,7 +41,7 @@ enum {
                                 RPC_SOF_TIMESTAMPING_LAST
 };
 
-/* Mappilg list for conversion flags to string. */
+/* Mapping list for conversion flags to string. */
 #define HWTSTAMP_INSTR_MAPPING_LIST \
     RPC_BIT_MAP_ENTRY(SOF_TIMESTAMPING_TX_HARDWARE), \
     RPC_BIT_MAP_ENTRY(SOF_TIMESTAMPING_TX_SOFTWARE), \
@@ -86,7 +86,7 @@ typedef enum rpc_hwtstamp_tx_types {
 } rpc_hwtstamp_tx_types;
 
 /**
- * Convert RPC constant to corresponsing value from hwtstamp_tx_types enum.
+ * Convert RPC constant to corresponding value from hwtstamp_tx_types enum.
  *
  * @param type      RPC constant
  *
@@ -166,7 +166,7 @@ typedef enum rpc_hwtstamp_rx_filters {
 } rpc_hwtstamp_rx_filters;
 
 /**
- * Convert RPC constant to corresponsing value from hwtstamp_rx_filters
+ * Convert RPC constant to corresponding value from hwtstamp_rx_filters
  * enum.
  *
  * @param filter      RPC constant

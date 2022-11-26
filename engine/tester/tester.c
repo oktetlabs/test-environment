@@ -261,7 +261,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 #if 0
         { "no-simultaneous", '\0', POPT_ARG_NONE, NULL,
           TESTER_OPT_NO_SIMULT,
-          "Force to run all tests in series. Usefull for debugging.",
+          "Force to run all tests in series. Useful for debugging.",
           NULL },
 #endif
 
@@ -1109,7 +1109,7 @@ main(int argc, char *argv[])
     }
 
     /*
-     * Execure testing scenario.
+     * Execute testing scenario.
      */
     if ((~tester_global_context.flags & TESTER_NO_RUN) &&
         !TAILQ_EMPTY(&tester_global_context.cfgs.head))

@@ -577,7 +577,7 @@ extern int rpc_dpdk_eth_await_link_up(rcf_rpc_server *rpcs,
  * @b rte_eth_stats_get() RPC
  *
  * @param port_id         The port identifier of the Ethernet device
- * @param stats           Location for the responce containing stats
+ * @param stats           Location for the response containing stats
  *
  * @return @c 0 on success; jumps out on error (negative return code)
  */

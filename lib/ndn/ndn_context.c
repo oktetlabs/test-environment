@@ -27,7 +27,7 @@
 #include "ndn_rte_mbuf.h"
 
 
-/* Add here declaraions of protocol-specific CSAP init params */
+/* Add here declarations of protocol-specific CSAP init params */
 extern asn_type ndn_pcap_csap_s;
 extern asn_type ndn_atm_csap_s;
 extern asn_type ndn_aal5_csap_s;
@@ -94,7 +94,7 @@ asn_type ndn_generic_csap_layer_s = {
 const asn_type * const ndn_generic_csap_layer = &ndn_generic_csap_layer_s;
 
 
-/* Add here declaraions of protocol-specific PDU ASN type */
+/* Add here declarations of protocol-specific PDU ASN type */
 extern asn_type ndn_atm_header_s;
 extern asn_type ndn_aal5_cpcs_trailer_s;
 extern asn_type ndn_pcap_filter_s;

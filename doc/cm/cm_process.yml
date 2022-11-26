@@ -90,7 +90,7 @@
         Process options to be passed as -<short> <value> or --<long> <value>.
         If value is empty string, it is assumed that the option has no value and
         should be passed without it, i.e. --<long>.
-        Note: above makes it imposisble to have an option with really empty string
+        Note: above makes it impossible to have an option with really empty string
               value, but such options could be passed using /agent/process/arg.
         Name: option name (short if one letter, long otherwise)
 

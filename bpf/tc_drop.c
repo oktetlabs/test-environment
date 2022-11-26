@@ -17,7 +17,7 @@
 /**
  * RX count map.
  * The map contents:
- * 0 - couner of RX packets.
+ * 0 - counter of RX packets.
  */
 struct bpf_map SEC("maps") rxcnt = {
     .type = BPF_MAP_TYPE_ARRAY,

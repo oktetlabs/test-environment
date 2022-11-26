@@ -1161,11 +1161,11 @@ trc_read_doc(const char *location, xmlDocPtr *doc)
     {
 #if HAVE_XMLERROR
         err = xmlCtxtGetLastError(parser);
-        ERROR("Error occured during parsing configuration file:\n"
+        ERROR("Error occurred during parsing configuration file:\n"
               "    %s:%d\n    %s", location,
               err->line, err->message);
 #else
-        ERROR("Error occured during parsing configuration file:\n"
+        ERROR("Error occurred during parsing configuration file:\n"
               "%s", location);
 #endif
         xmlFreeParserCtxt(parser);

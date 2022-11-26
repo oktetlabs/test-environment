@@ -619,7 +619,7 @@ static void
 ovs_interface_fini(ovs_ctx_t       *ctx,
                    interface_entry *interface)
 {
-    INFO("Finalising the interface list entry for '%s'", interface->name);
+    INFO("Finalizing the interface list entry for '%s'", interface->name);
 
     if (interface->temporary == interface->active)
     {
@@ -642,7 +642,7 @@ ovs_interface_fini_all(ovs_ctx_t *ctx)
     interface_entry *interface_tmp;
     interface_entry *interface;
 
-    INFO("Finalising the interface list entries");
+    INFO("Finalizing the interface list entries");
 
     SLIST_FOREACH_SAFE(interface, &ctx->interfaces, links, interface_tmp)
     {
@@ -1121,7 +1121,7 @@ ovs_bridge_port_fini(ovs_ctx_t    *ctx,
                      bridge_entry *bridge,
                      port_entry   *port)
 {
-    INFO("Finalising the port '%s'", port->name);
+    INFO("Finalizing the port '%s'", port->name);
 
     assert(!port->bridge_local);
 
@@ -1137,7 +1137,7 @@ ovs_bridge_port_fini_all(ovs_ctx_t    *ctx,
     port_entry *port;
     port_entry *port_tmp;
 
-    INFO("Finalising all ports but the local one at the bridge '%s'",
+    INFO("Finalizing all ports but the local one at the bridge '%s'",
          bridge->interface->name);
 
     SLIST_FOREACH_SAFE(port, &bridge->ports, links, port_tmp)
@@ -1361,7 +1361,7 @@ ovs_bridge_fini(ovs_ctx_t    *ctx,
 {
     interface_entry *interface = bridge->interface;
 
-    INFO("Finalising the bridge '%s'", interface->name);
+    INFO("Finalizing the bridge '%s'", interface->name);
 
     ovs_bridge_port_fini_all(ctx, bridge);
     ovs_bridge_deactivate(ctx, bridge);
@@ -1375,7 +1375,7 @@ ovs_bridge_fini_all(ovs_ctx_t *ctx)
     bridge_entry *bridge_tmp;
     bridge_entry *bridge;
 
-    INFO("Finalising the bridge(s)");
+    INFO("Finalizing the bridge(s)");
 
     SLIST_FOREACH_SAFE(bridge, &ctx->bridges, links, bridge_tmp)
         ovs_bridge_fini(ctx, bridge);

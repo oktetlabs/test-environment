@@ -32,7 +32,7 @@ typedef struct cfg_dh_entry {
     cfg_val_type         type;    /**< Type of the old_val */
     cfg_inst_val         old_val; /**< Data for reversing delete and set */
     int                  seq;     /**< Sequence number for debugging */
-    te_bool              committed; /**< Wheter the command kept in this
+    te_bool              committed; /**< Whether the command kept in this
                                          entry is committed or not */
 } cfg_dh_entry;
 
@@ -1191,7 +1191,7 @@ has_backup(cfg_dh_entry *entry, char *filename)
  * @param hard_check    whether hard check should be applied
  *                      on restore backup. For instance if on deleting
  *                      some instance we got ESRCH or ENOENT, we should
- *                      kepp processing without any error.
+ *                      keep processing without any error.
  * @param shutdown      if @c TRUE - the configurator shuts down.
  *                      Do no stop restoring backup when error @c ENOENT
  *                      occurs (for example for @c CFG_SET command).
@@ -1616,7 +1616,7 @@ cfg_dh_delete_last_command(void)
 }
 
 /**
- * Destroy dynamic hostory before shut down.
+ * Destroy dynamic history before shut down.
  */
 void
 cfg_dh_destroy(void)
@@ -1827,7 +1827,7 @@ cfg_dh_release_backup(char *filename)
 }
 
 /**
- * Notify history DB about successfull commit operation.
+ * Notify history DB about successful commit operation.
  * The result of calling of this function is that some entries in DH DB
  * enter committed state.
  *

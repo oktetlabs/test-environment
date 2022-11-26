@@ -130,7 +130,7 @@ extern void ta_obj_cleanup(void);
  * Set (or add if there is no such attribute) specified value to
  * the particular attribute.
  *
- * @param obj    Object where to update attibute list
+ * @param obj    Object where to update attribute list
  * @param name   Attribute name to update (or to add)
  * @param value  Attribute value
  *

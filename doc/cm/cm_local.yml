@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 - comment: |
-    Miscellaneous local configurations inculding test engine and
+    Miscellaneous local configurations including test engine and
     test API options.
 
     Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
@@ -21,7 +21,7 @@
       access: read_create
       type: string
       d: |
-         Requirements dynamically by prologue which, for exmaple, identifies,
+         Requirements dynamically by prologue which, for example, identifies,
          that some functionality is not supported.
            Name: test ID
            Value: requirements expression

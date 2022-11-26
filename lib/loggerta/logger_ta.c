@@ -708,7 +708,7 @@ ta_log_init(const char *lgr_entity)
 
 
 /**
- * Finish Logger activity on the Test Agent side (fluhes buffers
+ * Finish Logger activity on the Test Agent side (flushes buffers
  * in the file if that means exists and so on).
  *
  * @return  Operation status.

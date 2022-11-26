@@ -172,7 +172,7 @@ Adding new configuration nodes
 |	:ref:`Test Agents: Command Handler<doxid-group__rcf__ch>`
 |		:ref:`Command Handler: Configuration support<doxid-group__rcf__ch__cfg>`
 |			:ref:`Configuration node definition macros<doxid-group__rcf__ch__cfg__node__def>`
-|		:ref:`Command Handler: File maniputation support<doxid-group__rcf__ch__file>`
+|		:ref:`Command Handler: File manipulation support<doxid-group__rcf__ch__file>`
 |		:ref:`Command Handler: Function call support<doxid-group__rcf__ch__func>`
 |		:ref:`Command Handler: Process/thread support<doxid-group__rcf__ch__proc>`
 |		:ref:`Command Handler: Reboot and shutdown support<doxid-group__rcf__ch__reboot>`

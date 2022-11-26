@@ -303,7 +303,7 @@ tadf_add_forw_task(const char *forw_asn_spec, int sendq_id)
     {
         /*
          * Last operation, which may fail, is insertion into hash,
-         * so if error occured, in any case, entry is not inserted in
+         * so if error occurred, in any case, entry is not inserted in
          * hash. Do not try to remove it.
          */
         asn_free_value(new_task_descr->asn_forw_action);

@@ -1797,7 +1797,7 @@ xmlxdr_char(XDR *xdrs, char *ip)
 
 /**
  * Initializes XDR structure to perform
- * further convertions.
+ * further conversions.
  *
  * @param xdrs      XDR structure
  * @param buf       buffer to contain xml document representing

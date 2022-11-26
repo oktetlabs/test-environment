@@ -282,7 +282,7 @@ lgr_rb_remove_oldest(struct lgr_rb *ring_buffer)
 
 
 /**
- * Allocate ring buffer space for nmbr elements.
+ * Allocate ring buffer space for number elements.
  *
  * @param ring_buffer Ring buffer location.
  * @param nmbr        Number of elements need to be allocated.
@@ -377,7 +377,7 @@ lgr_rb_fill_allocated_header(lgr_mess_header *allocated,
 
 /**
  * Allocate ring buffer space and copy length bytes from start address.
- * Only 256 bytes can be copied if ring buffer unused space is enought.
+ * Only 256 bytes can be copied if ring buffer unused space is enough.
  *
  * @param ring_buffer    Ring buffer location.
  * @param start          Byte array start address.

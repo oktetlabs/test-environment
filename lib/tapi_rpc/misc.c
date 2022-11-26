@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API - RPC
  *
- * TAPI for auxilury remote socket calls implementation
+ * TAPI for auxiliary remote socket calls implementation
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

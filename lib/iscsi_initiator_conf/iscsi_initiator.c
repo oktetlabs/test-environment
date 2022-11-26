@@ -93,7 +93,7 @@ iscsi_get_cid(const char *oid)
 }
 
 /**
- * Initalize operational parameters and security parameters
+ * Initialize operational parameters and security parameters
  * to default values
  *
  * @param conn_data    Connection parameters
@@ -138,11 +138,11 @@ iscsi_init_default_connection_parameters(iscsi_connection_data_t *conn_data)
 }
 
 /**
- * Initalize default parameters for all possible connections
+ * Initialize default parameters for all possible connections
  * of a given target.
  *
  * @param tgt_data    Structure of the target data to
- *                    initalize.
+ *                    initialize.
  */
 void
 iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data)
@@ -936,7 +936,7 @@ iscsi_initiator_timer_thread(void *arg)
  * DOWN
  * ...
  *
- * Errorneous states are as follows:
+ * Erroneous states are as follows:
  *
  * (a) ABNORMAL
  *     |

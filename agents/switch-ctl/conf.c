@@ -567,7 +567,7 @@ port_clocks_to_number(const char *str, poe_port_clocks *p_val)
 /*@}*/
 
 
-/** @name Auxiluary routines to work with PoE library */
+/** @name Auxiliary routines to work with PoE library */
 
 /**
  * Update PoE global data.
@@ -641,7 +641,7 @@ update_poe_ports(unsigned int gid)
 /**
  * Find up-to-date switch port.
  *
- * @param gid       - request group identifer
+ * @param gid       - request group identifier
  * @param pid_str   - port gidas string
  * @param p_port    - location for port pointer (OUT)
  *
@@ -735,7 +735,7 @@ update_poe_stp(unsigned int gid)
  * Get number of switch ports.
  *
  * @param gid       - request group identifier
- * @param oid       - instance identifer
+ * @param oid       - instance identifier
  * @param value     - location for value as string
  *
  * @return Status code.
@@ -761,7 +761,7 @@ get_number_of_ports(unsigned int gid, const char *oid, char *value)
  * @param list      - location for the list pointer
  *
  * @return Status code
- * @retval 0        - success
+ * @retval 0           - success
  * @retval TE_ENOMEM   - cannot allocate memory
  */
 static te_errno
@@ -850,7 +850,7 @@ port_commit(unsigned int gid, const cfg_oid *p_oid)
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -874,7 +874,7 @@ port_get_type(unsigned int gid, const char *oid, char *value,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -898,7 +898,7 @@ port_get_admin_status(unsigned int gid, const char *oid, char *value,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - value to set
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -927,7 +927,7 @@ port_set_admin_status(unsigned int gid, const char *oid, const char *value,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -952,7 +952,7 @@ port_get_autonegotiation(unsigned int gid, const char *oid, char *value,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - value to set
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -981,7 +981,7 @@ port_set_autonegotiation(unsigned int gid, const char *oid,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1005,7 +1005,7 @@ port_get_admin_speed(unsigned int gid, const char *oid, char *value,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - value to set
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1034,7 +1034,7 @@ port_set_admin_speed(unsigned int gid, const char *oid,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1058,7 +1058,7 @@ port_get_admin_duplexity(unsigned int gid, const char *oid, char *value,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - value to set
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1087,7 +1087,7 @@ port_set_admin_duplexity(unsigned int gid, const char *oid,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1111,7 +1111,7 @@ port_get_admin_clocks(unsigned int gid, const char *oid, char *value,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - value to set
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1140,7 +1140,7 @@ port_set_admin_clocks(unsigned int gid, const char *oid,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1163,7 +1163,7 @@ port_get_mtu(unsigned int gid, const char *oid, char *value,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - value to set
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1203,7 +1203,7 @@ port_set_mtu(unsigned int gid, const char *oid, const char *value,
  * @param gid       group identifier
  * @param oid       full instance OID
  * @param value     location for value
- * @param pid_str   port identifer as string
+ * @param pid_str   port identifier as string
  *
  * @return status code
  */
@@ -1234,7 +1234,7 @@ port_get_default_vlan(unsigned int gid, const char *oid, char *value,
  * @param gid       group identifier
  * @param oid       full instance OID
  * @param value     new tag
- * @param pid_str   port identifer as string
+ * @param pid_str   port identifier as string
  *
  * @return status code
  */
@@ -1263,7 +1263,7 @@ port_set_default_vlan(unsigned int gid, const char *oid, const char *value,
  * @param gid       group identifier
  * @param oid       full instance OID
  * @param value     location for value
- * @param pid_str   port identifer as string
+ * @param pid_str   port identifier as string
  *
  * @return status code
  */
@@ -1286,7 +1286,7 @@ port_get_untagged_priority(unsigned int gid, const char *oid, char *value,
  * @param gid       group identifier
  * @param oid       full instance OID
  * @param value     new priority
- * @param pid_str   port identifer as string
+ * @param pid_str   port identifier as string
  *
  * @return status code
  */
@@ -1317,7 +1317,7 @@ port_set_untagged_priority(unsigned int gid, const char *oid,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1341,7 +1341,7 @@ port_get_oper_status(unsigned int gid, const char *oid, char *value,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1366,7 +1366,7 @@ port_get_oper_speed(unsigned int gid, const char *oid, char *value,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1391,7 +1391,7 @@ port_get_oper_duplexity(unsigned int gid, const char *oid, char *value,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1415,7 +1415,7 @@ port_get_oper_clocks(unsigned int gid, const char *oid, char *value,
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1435,12 +1435,12 @@ port_get_hol_blocking(unsigned int gid, const char *oid, char *value,
 
 
 /**
- * Get backpresure state of switch port.
+ * Get back pressure state of switch port.
  *
  * @param gid       - request group identifier
  * @param oid       - full instance identifier
  * @param value     - location for value
- * @param pid_str   - port identifer as string
+ * @param pid_str   - port identifier as string
  *
  * @return Status code.
  */
@@ -1592,7 +1592,7 @@ cos_set(unsigned int gid, const char *oid, char *value)
 
 
 
-/** Poiter to the cached ARL table */
+/** Pointer to the cached ARL table */
 static poe_arl  *arl_table = NULL;
 /** Number of entries in ARL Table  */
 static int       arl_table_num = 0;
@@ -2009,7 +2009,7 @@ arl_list(unsigned int gid, const char *oid, const char *sub_id,
  * Variable to keep temporary STP port entry - not committed yet.
  * At the present time no more than one entry of this type can be
  * created. In the future, if there is need in having more than one
- * entry simultaniously, you may extend such variable to the list
+ * entry simultaneously, you may extend such variable to the list
  * of local entries.
  *
  * @sa
@@ -2020,7 +2020,7 @@ static poe_stp_port local_stp_port_entry;
 static uint32_t local_stp_port_entry_flags;
 
 /**
- * Falags to control which fields in stp_port_entry_local structure are set
+ * Flags to control which fields in stp_port_entry_local structure are set
  */
 #define STP_PORT_ENTRY_PNUM_SET      0x01
 #define STP_PORT_ENTRY_PRIO_SET      0x02
@@ -2038,11 +2038,11 @@ static poe_stp_port *stp_port_table = NULL;
 static int stp_port_table_num = 0;
 
 /**
- * Determines if STP port entry is one of aready committed or not.
+ * Determines if STP port entry is one of already committed or not.
  *
  * @param stp_port_entry  - entry to check
  *
- * @return TRUE if the STP port entry has been alread committed,
+ * @return TRUE if the STP port entry has been already committed,
  * and FALSE otherwise
  */
 static te_bool
@@ -2859,7 +2859,7 @@ stp_get_port_designated_cost(unsigned int gid, const char *oid, char *value,
  * @param gid         - request group identifier
  * @param oid         - full instance identifier
  * @param value       - Location for the value: (OUT)
- *                        eight octets' value in hexdecimal format
+ *                        eight octets' value in hexadecimal format
  * @param stp_name    - Name of the "/agent/stp" object - an empty string
  * @param port_num    - Port number whose "Designated Root" value
  *                      will be returned
@@ -3315,7 +3315,7 @@ find_vlan(char *vid, poe_vlan *vlan)
 /**
  * Get VLAN status.
  *
- * @param gid   groupd identifier (unused)
+ * @param gid   group identifier (unused)
  * @param oid   full instance identifier (unused)
  * @param value location for value
  * @param vid   VLAN tag as a string
@@ -3344,7 +3344,7 @@ vlan_get(int gid, char *oid, char *value, char *vid)
 /**
  * Get VLAN status.
  *
- * @param gid   groupd identifier (unused)
+ * @param gid   group identifier (unused)
  * @param oid   full instance identifier (unused)
  * @param value new status
  * @param vid   VLAN tag as a string
@@ -3393,7 +3393,7 @@ vlan_set(int gid, char *oid, char *value, char *vid)
 /**
  * Add VLAN.
  *
- * @param gid   groupd identifier (unused)
+ * @param gid   group identifier (unused)
  * @param oid   full instance identifier (unused)
  * @param value VLAN status
  * @param vid   VLAN tag as a string
@@ -3448,7 +3448,7 @@ vlan_add(int gid, char *oid, char *value, char *vid)
 /**
  * Delete VLAN.
  *
- * @param gid   groupd identifier (unused)
+ * @param gid   group identifier (unused)
  * @param oid   full instance identifier (unused)
  * @param vid   VLAN tag as a string
  *
@@ -3484,7 +3484,7 @@ vlan_del(int gid, char *oid, char *vid)
 /**
  * Construct VLAN list.
  *
- * @param gid     groupd identifier (unused)
+ * @param gid     group identifier (unused)
  * @param oid     full instance identifier (unused)
  * @param sub_id  ID of the object to be listed
  * @param list    location for result
@@ -3540,7 +3540,7 @@ vlan_list(int gid, char *oid, const char *sub_id, char **list)
 /**
  * Add port to the VLAN.
  *
- * @param gid   groupd identifier (unused)
+ * @param gid   group identifier (unused)
  * @param oid   full instance identifier (unused)
  * @param value unused
  * @param vid   VLAN tag as a string
@@ -3606,7 +3606,7 @@ vlan_port_add(int gid, char *oid, char *value, char *vid, char *p)
 /**
  * Delete port from the VLAN.
  *
- * @param gid   groupd identifier (unused)
+ * @param gid   group identifier (unused)
  * @param oid   full instance identifier (unused)
  * @param vid   VLAN tag as a string
  * @param p     port number as a string
@@ -3664,7 +3664,7 @@ vlan_port_del(int gid, char *oid, char *vid, char *p)
 /**
  * List VLAN ports.
  *
- * @param gid     groupd identifier (unused)
+ * @param gid     group identifier (unused)
  * @param oid     full instance identifier (unused)
  * @param sub_id  ID of the object to be listed
  * @param list    location for result
@@ -3707,7 +3707,7 @@ vlan_port_list(int gid, char *oid, const char *sub_id,
 /**
  * Get IP address of IP over VLAN interface
  *
- * @param gid   groupd identifier (unused)
+ * @param gid   group identifier (unused)
  * @param oid   full instance identifier (unused)
  * @param value location for value
  * @param vid   VLAN tag as a string
@@ -3754,7 +3754,7 @@ vlan_ip_get(int gid, char *oid, char *value, char *vid)
 /**
  * Set IP address of IP over VLAN interface
  *
- * @param gid   groupd identifier (unused)
+ * @param gid   group identifier (unused)
  * @param oid   full instance identifier (unused)
  * @param value new
  * @param vid   VLAN tag as a string

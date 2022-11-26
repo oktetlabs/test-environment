@@ -722,7 +722,7 @@ extern int tapi_tcp_destroy_connection(tapi_tcp_handler_t handler);
 /**
  * Wait for complete process of opening TCP connection: blocks until
  * SYN and ACKs from peer will be received.
- * If timed out, TAPI connection hanlder will be destroyed.
+ * If timed out, TAPI connection handler will be destroyed.
  *
  * @param handler       TAPI handler of TCP connection;
  * @param timeout       time in milliseconds, while TA should wait for
@@ -820,7 +820,7 @@ extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
 /**
  * Prepare template for TCP message via established connection.
  * Fields SEQN and ACKN are filled by default, if user want
- * to set them explicetly , one can do it via ASN lib API.
+ * to set them explicitly , one can do it via ASN lib API.
  *
  * @param handler       TAPI handler of TCP connection;
  * @param payload       data for message payload;
@@ -948,7 +948,7 @@ extern int tapi_tcp_ack_all(tapi_tcp_handler_t handler);
  *
  * @param handler       TAPI handler of TCP connection.
  *
- * @return SEQ number or zero if @p hanlder is not valid.
+ * @return SEQ number or zero if @p handler is not valid.
  */
 extern tapi_tcp_pos_t tapi_tcp_first_seqn_got(tapi_tcp_handler_t handler);
 
@@ -957,7 +957,7 @@ extern tapi_tcp_pos_t tapi_tcp_first_seqn_got(tapi_tcp_handler_t handler);
  *
  * @param handler       TAPI handler of TCP connection;
  *
- * @return SEQ number of zero if 'hanlder' not valid.
+ * @return SEQ number of zero if 'handler' not valid.
  */
 extern tapi_tcp_pos_t tapi_tcp_last_seqn_got(tapi_tcp_handler_t handler);
 
@@ -966,7 +966,7 @@ extern tapi_tcp_pos_t tapi_tcp_last_seqn_got(tapi_tcp_handler_t handler);
  *
  * @param handler       TAPI handler of TCP connection;
  *
- * @return ACK number of zero if 'hanlder' not valid.
+ * @return ACK number of zero if 'handler' not valid.
  */
 extern tapi_tcp_pos_t tapi_tcp_last_ackn_got(tapi_tcp_handler_t handler);
 
@@ -984,7 +984,7 @@ extern tapi_tcp_pos_t tapi_tcp_first_seqn_sent(tapi_tcp_handler_t handler);
  *
  * @param handler       TAPI handler of TCP connection;
  *
- * @return SEQ number of zero if 'hanlder' not valid.
+ * @return SEQ number of zero if 'handler' not valid.
  */
 extern tapi_tcp_pos_t tapi_tcp_last_seqn_sent(tapi_tcp_handler_t handler);
 
@@ -993,7 +993,7 @@ extern tapi_tcp_pos_t tapi_tcp_last_seqn_sent(tapi_tcp_handler_t handler);
  *
  * @param handler       TAPI handler of TCP connection;
  *
- * @return ACK number of zero if 'hanlder' not valid.
+ * @return ACK number of zero if 'handler' not valid.
  */
 extern tapi_tcp_pos_t tapi_tcp_last_ackn_sent(tapi_tcp_handler_t handler);
 
@@ -1002,7 +1002,7 @@ extern tapi_tcp_pos_t tapi_tcp_last_ackn_sent(tapi_tcp_handler_t handler);
  *
  * @param handler       TAPI handler of TCP connection;
  *
- * @return SEQ number of zero if 'hanlder' not valid.
+ * @return SEQ number of zero if 'handler' not valid.
  */
 extern size_t tapi_tcp_last_win_got(tapi_tcp_handler_t handler);
 
@@ -1031,7 +1031,7 @@ extern te_bool tapi_tcp_rst_got(tapi_tcp_handler_t handler);
  *
  * @param handler       TAPI handler of TCP connection;
  *
- * @return SEQ number of zero if 'hanlder' not valid.
+ * @return SEQ number of zero if 'handler' not valid.
  */
 extern tapi_tcp_pos_t tapi_tcp_next_seqn(tapi_tcp_handler_t handler);
 
@@ -1040,7 +1040,7 @@ extern tapi_tcp_pos_t tapi_tcp_next_seqn(tapi_tcp_handler_t handler);
  *
  * @param handler       TAPI handler of TCP connection;
  *
- * @return ACK number of zero if 'hanlder' not valid.
+ * @return ACK number of zero if 'handler' not valid.
  */
 extern tapi_tcp_pos_t tapi_tcp_next_ackn(tapi_tcp_handler_t handler);
 

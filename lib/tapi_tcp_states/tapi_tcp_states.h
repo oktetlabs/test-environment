@@ -211,7 +211,7 @@ typedef struct tsa_state {
     rpc_tcp_state       state_from;     /**< TCP state before change */
     rpc_tcp_state       state_to;       /**< TCP state after change */
     const char         *rem_path;       /**< Part of TCP state sequence
-                                             remaining when error occured */
+                                             remaining when error occurred */
     te_bool             timeout_used;   /**< TRUE if the last TCP state
                                              change was achieved through
                                              timeout */
@@ -544,7 +544,7 @@ extern te_errno tsa_do_tcp_move(tsa_session *ss, rpc_tcp_state state_from,
  * Perform a given sequence of TCP state transitions.
  *
  * @param ss            Pointer to TSA session structure
- * @param stop_state    TCP state where to stop (it's usefull when we want
+ * @param stop_state    TCP state where to stop (it's useful when we want
  *                      to perform some actions in some interjacent state
  *                      and then resume transition)
  * @param flags         Flags defined in tsa_flags enum
@@ -567,7 +567,7 @@ extern te_errno tsa_do_moves(tsa_session *ss, rpc_tcp_state stop_state,
  *                      when we work with TCP_LISTEN -> TCP_SYN_RECV ->
  *                      TCP_ESTABLISHED because TCP_SYN_RECV is not
  *                      observable in this case)
- * @param stop_state    TCP state where to stop (it's usefull when we want
+ * @param stop_state    TCP state where to stop (it's useful when we want
  *                      to perform some actions in some interjacent state
  *                      and then resume transition)
  * @param flags         Flags defined in tsa_flags enum
@@ -620,7 +620,7 @@ extern te_errno tsa_destroy_session(tsa_session *ss);
  *
  * @param ss            Pointer to TSA session structure
  * @param state         TCP state to be achieved
- * @param stop_state    TCP state where to stop (it's usefull when we want
+ * @param stop_state    TCP state where to stop (it's useful when we want
  *                      to perform some actions in some interjacent state
  *                      and then resume transition)
  * @param flags         Flags defined in tsa_flags enum

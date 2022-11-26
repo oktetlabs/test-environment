@@ -90,7 +90,7 @@ extern te_errno streaming_filter_add_action(streaming_filter *filter,
                                             int listener_id);
 
 
-/** Array of streamling filters */
+/** Array of streaming filters */
 extern streaming_filter streaming_filters[LOG_MAX_FILTERS];
 extern size_t           streaming_filters_num;
 

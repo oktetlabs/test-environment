@@ -97,7 +97,7 @@ Config file of the **Configurator** should contains the following objects subtre
 	  </register>
 	</history>
 
-After each launch of the TE, automatically generates a file **сs.сonf.sniffer**. That is used to launch sniffers configured by the **Dispatcher** options. If there is no sniffers launched by **Dispatcher**, then the file will contains only xml header and the open/close history tags.
+After each launch of the TE, automatically generates a file **cs.conf.sniffer**. That is used to launch sniffers configured by the **Dispatcher** options. If there is no sniffers launched by **Dispatcher**, then the file will contains only xml header and the open/close history tags.
 
 
 

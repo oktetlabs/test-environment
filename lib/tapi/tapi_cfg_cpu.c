@@ -348,7 +348,7 @@ tapi_cfg_cpu_grab_by_prop(const char *ta, const tapi_cpu_prop_t *prop,
         {
             continue;
         }
-        else /* An error occured */
+        else /* An error occurred */
         {
             goto out;
         }
@@ -457,7 +457,7 @@ tapi_cfg_cpu_grab_multiple_with_id(const char *ta,
         {
             continue;
         }
-        else /* An error occured */
+        else /* An error occurred */
         {
             goto out;
         }

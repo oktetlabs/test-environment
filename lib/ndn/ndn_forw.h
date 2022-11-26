@@ -96,7 +96,7 @@ typedef struct {
 extern const asn_type * const ndn_forw_action;
 
 /**
- * Convert Forwarder-Action ASN value to plain C structrue.
+ * Convert Forwarder-Action ASN value to plain C structure.
  *
  * @param val           ASN value of type
  * @param forw_action   converted structure (OUT).
@@ -107,7 +107,7 @@ extern int ndn_forw_action_asn_to_plain(const asn_value *val,
                                 ndn_forw_action_plain *forw_action);
 
 /**
- * Convert plain C structrue to Forwarder-Action ASN value.
+ * Convert plain C structure to Forwarder-Action ASN value.
  *
  * @param forw_action   converted structure.
  * @param val           location for pointer to ASN value of type (OUT)

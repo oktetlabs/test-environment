@@ -863,7 +863,7 @@
       type: uint64
       volatile: true
       d: |
-         The total number of recieved IPv4 packets.
+         The total number of received IPv4 packets.
          Name:  Received IPv4 packets
 
     - oid: "/agent/stats/ipv4_in_hdr_errs"
@@ -933,7 +933,7 @@
       volatile: true
       d: |
          The total number of output IP packets for which no problems
-         were ecountered to prevent their countinued processing, but
+         were encountered to prevent their continued processing, but
          which were discarded (e.g., for lack of buffer space).
          Name:  Discarded outgouing IP packets counter
 
@@ -967,7 +967,7 @@
       type: uint64
       volatile: true
       d: |
-         The number of successfuly reassemblied IP packets.
+         The number of successfully reassembled IP packets.
          Name:  Total reassembled IP packets counter
 
     - oid: "/agent/stats/ipv4_reasm_fails"
@@ -983,16 +983,16 @@
       type: uint64
       volatile: true
       d: |
-         The number of successfuly fragmented IP packets.
-         Name:  Successfuly fragmented IP packets counter
+         The number of successfully fragmented IP packets.
+         Name:  Successfully fragmented IP packets counter
 
     - oid: "/agent/stats/ipv4_frag_fails"
       access: read_only
       type: uint64
       volatile: true
       d: |
-         The number of unsuccessfuly fragmented IP packets.
-         Name:  Unuccessfuly fragmented IP packets counter
+         The number of unsuccessfully fragmented IP packets.
+         Name:  Unsuccessfully fragmented IP packets counter
 
     - oid: "/agent/stats/ipv4_frag_creates"
       access: read_only

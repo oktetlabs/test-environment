@@ -62,7 +62,7 @@ static char configfs_name[RCF_MAX_NAME];
  * Mount configfs.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         Value (unused)
  * @param name          Instance name
  *
@@ -126,7 +126,7 @@ configfs_add(unsigned int gid, const char *oid, char *value,
  * Unmount configfs.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param name          Instance name (unused)
  *
  * @return              Status code
@@ -171,7 +171,7 @@ configfs_del(unsigned int gid, const char *oid, const char *name)
  * Get configfs mounting point
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         where to store obtained value
  * @param name          name (unused)
  *

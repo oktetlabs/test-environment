@@ -725,9 +725,9 @@ asn_check_type(const asn_value *value, const asn_type *type)
 }
 
 /**
- * Get name of value;
+ * Get name of value.
  *
- * @param container     value which name is intereseted
+ * @param container     value which name is interested
  *
  * @return value's name or NULL.
  */
@@ -1975,7 +1975,7 @@ asn_impl_write_value_field(asn_value *container,
  *                      labels, specifying primitive-syntax leaf in
  *                      ASN.1 value tree with 'container' as a root.
  *                      Label for 'SEQUENCE OF' and 'SET OF' subvalues
- *                      is decimalnotation of its integer index in array.
+ *                      is decimal notation of its integer index in array.
  *
  * @return zero on success, otherwise error code.
  */
@@ -2021,7 +2021,7 @@ asn_read_value_field_fmt(const asn_value  *container,
 
 /**
  * Read data into primitive syntax leaf in specified ASN.1 value, internal
- * implemetation of this functionality.
+ * implementation of this functionality.
  *
  * @param container     pointer to ASN.1 value which leaf field is interested
  * @param data          pointer to buffer for read data (OUT)
@@ -2033,7 +2033,7 @@ asn_read_value_field_fmt(const asn_value  *container,
  *                      labels, specifying primitive-syntax leaf in
  *                      ASN.1 value tree with 'container' as a root.
  *                      Label for 'SEQUENCE OF' and 'SET OF' subvalues
- *                      is decimalnotation of its integer index in array.
+ *                      is decimal notation of its integer index in array.
  *
  * @return zero on success, otherwise error code.
  */
@@ -2750,7 +2750,7 @@ asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
  *                      labels, specifying indexed syntax subvalue in ASN
  *                      value tree with 'container' as a root.
  *
- * @return number of elements in constractive subvalue, -1 if error occurred.
+ * @return number of elements in constructive subvalue, -1 if error occurred.
  */
 int
 asn_get_length(const asn_value *container, const char *subval_labels)
@@ -2780,7 +2780,7 @@ asn_get_length(const asn_value *container, const char *subval_labels)
  *                      'container'. Label for 'SEQUENCE OF' and 'SET OF'
  *                      subvalues is decimal notation of its integer
  *                      index in array.
- * @param found_value   found subvalue respecive to field_labels (OUT).
+ * @param found_value   found subvalue respective to field_labels (OUT).
  *
  * @return zero on success, otherwise error code.
  */
@@ -3025,7 +3025,7 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
 /**
  * Get tag of value;
  *
- * @param container     value which tag is intereseted
+ * @param container     value which tag is interested
  *
  * @return tag value or -1 on error.
  */
@@ -3686,7 +3686,7 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
         {
             /*
              * fixme: previously it was an error message
-             * it's not a good style to log tonns of errors from
+             * it's not a good style to log tons of errors from
              * a generic library, so right now it's a warn.
              * when one invents a nice way to solve the problem of
              * expected/unexpected parsing failures - just make it

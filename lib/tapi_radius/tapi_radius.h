@@ -96,7 +96,7 @@ typedef enum {
 } tapi_radius_type_t;
 
 /**
- * Convert the type of RADIUS atribute from integer to readable string.
+ * Convert the type of RADIUS attribute from integer to readable string.
  *
  * @param type  RADIUS attribute type
  *

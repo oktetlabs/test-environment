@@ -591,7 +591,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
     /*
      * since rc from 'asn_child_named_index' was zero,
      * we may be sure that named_entries field here is correct;
-     * get first subtype in Data-Unit, that is "plain" allways.
+     * get first subtype in Data-Unit, that is "plain" always.
      */
     du_type = pattern->asn_type->sp.named_entries[field_index].type;
 
@@ -769,7 +769,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
 
 
 /**
- * Get timestamp from recieved Raw-Packet
+ * Get timestamp from received Raw-Packet
  *
  * @param packet ASN-value of Raw-Packet type.
  * @param ts     location for timestamp (OUT).

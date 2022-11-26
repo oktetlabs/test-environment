@@ -207,7 +207,7 @@ These lines will force :ref:`Configurator <doxid-group__te__engine__conf>` to ru
 |	:ref:`API: Configurator<doxid-group__confapi__base>`
 |		:ref:`Configuration backup manipulation<doxid-group__confapi__base__backup>`
 |		:ref:`Configuration tree traversal<doxid-group__confapi__base__traverse>`
-|		:ref:`Contriguration tree access operations<doxid-group__confapi__base__access>`
+|		:ref:`Configuration tree access operations<doxid-group__confapi__base__access>`
 |		:ref:`Synchronization configuration tree with Test Agent<doxid-group__confapi__base__sync>`
 |		:ref:`Test Agent reboot<doxid-group__confapi__base__reboot>`
 |	:ref:`TAPI: Test API for configuration nodes<doxid-group__tapi__conf>`

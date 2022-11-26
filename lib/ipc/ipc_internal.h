@@ -119,8 +119,8 @@ extern int ipc_remember_datagram(struct ipc_datagrams *p_pool,
 
 
 /** @name
- * Sizes of the internal server/clent buffers. It is used to avoid
- * duplicate writing to the TCP channel to increase performace. In the
+ * Sizes of the internal server/client buffers. It is used to avoid
+ * duplicate writing to the TCP channel to increase performance. In the
  * case message is longer than buffer the message will be send in two
  * steps (header + message). There is no reason to make this value
  * greater than MSS.

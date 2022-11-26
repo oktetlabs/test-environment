@@ -21,7 +21,7 @@ extern "C" {
 /* ifreq flags */
 typedef enum rpc_if_fl {
     RPC_IFF_UP          = 0x0001,   /**< Interface is up */
-    RPC_IFF_BROADCAST   = 0x0002,   /**< Broadcast adress valid */
+    RPC_IFF_BROADCAST   = 0x0002,   /**< Broadcast address valid */
     RPC_IFF_DEBUG       = 0x0004,   /**< Is a loopback net */
     RPC_IFF_POINTOPOINT = 0x0008,   /**< Interface is point-to-point link */
     RPC_IFF_NOTRAILERS  = 0x0010,   /**< Avoid use of trailers */

@@ -32,7 +32,7 @@
 /* Time to wait while memory is not freed, microseconds */
 #define SNIF_WAIT_MEM 500000
 
-/** Overfill type constans */
+/** Overfill type constants */
 typedef enum overfill_type {
     ROTATION   = 0, /**< Overfill type rotation */
     TAIL_DROP  = 1, /**< Overfill type tail drop */
@@ -54,7 +54,7 @@ typedef struct dump_info {
     char           *file_path;              /**< Capture file path */
     char           *file_name;              /**< File for the raw packets */
     size_t          file_size;              /**< Max file size */
-    size_t          max_fnum;               /**< Max filse num to
+    size_t          max_fnum;               /**< Max files num to
                                                  rotation */
     size_t          log_num;                /**< Log sequence number */
     size_t          total_size;             /**< Total files size */
@@ -279,7 +279,7 @@ cleanup_rf:
 }
 
 /**
- * Inser the marker packet into the capture file.
+ * Insert the marker packet into the capture file.
  *
  * @param fd_o      A descriptor of the opened file.
  * @param msg   String for a message of packet.

@@ -84,7 +84,7 @@ typedef enum tapi_iomux_evt {
     EVT_WR_NORM = 0x010,           /**< Writing now will not block */
     EVT_RD_BAND = 0x020,           /**< Priority data may be read */
     EVT_WR_BAND = 0x040,           /**< Priority data may be written */
-    EVT_EXC     = 0x080,           /**< Generic exception was occured */
+    EVT_EXC     = 0x080,           /**< Generic exception was occurred */
     EVT_ERR     = 0x100,           /**< Error condition */
     EVT_HUP     = 0x200,           /**< Hung up */
     EVT_RDHUP   = 0x400,           /**< Stream socket peer closed
@@ -128,7 +128,7 @@ RPCBITMAP2STR(tapi_iomux_event, IOMUX_EVENT_MAPPING_LIST);
  *
  * @param iomux         name of function: "select", "pselect", or "poll".
  *
- * @return respecive value from tapi_iomux_type enum.
+ * @return respective value from tapi_iomux_type enum.
  */
 extern tapi_iomux_type tapi_iomux_call_str2en(const char *iomux);
 

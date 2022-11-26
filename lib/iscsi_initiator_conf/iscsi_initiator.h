@@ -84,7 +84,7 @@
  * Configurator.
  */
 typedef enum {
-    ISCSI_NO_INITIATOR,         /**< No dcfined initiator */
+    ISCSI_NO_INITIATOR,         /**< No defined initiator */
     ISCSI_UNH,                  /**< UNH Initiator (GPL 2) */
     ISCSI_L5,                   /**< Level 5 Networks */
     ISCSI_OPENISCSI,            /**< Open iSCSI */
@@ -176,7 +176,7 @@ typedef struct iscsi_connection_data {
     int               error_recovery_level; /**< ErrorRecoveryLevel */
     char              session_type[ISCSI_SESSION_TYPE_LENGTH]; /**< SessionType */
 
-    iscsi_tgt_chap_data_t chap; /**< Serurity related data */
+    iscsi_tgt_chap_data_t chap; /**< Security related data */
     char              device_name[ISCSI_MAX_DEVICE_NAME_LEN];
     char              scsi_generic_device_name[ISCSI_MAX_DEVICE_NAME_LEN];
     char              connection_id[ISCSI_SESSION_ID_LENGTH];
@@ -351,11 +351,11 @@ extern te_errno iscsi_post_connection_request(int target_id, int cid,
 extern te_errno iscsi_initiator_start_thread(void);
 
 /**
- * Initalize default parameters for all possible connections
+ * Initialize default parameters for all possible connections
  * of a given target.
  *
  * @param tgt_data    Structure of the target data to
- *                    initalize.
+ *                    initialize.
  */
 extern void iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data);
 
@@ -460,7 +460,7 @@ extern te_errno iscsi_win32_prepare_device(iscsi_connection_data_t *conn,
 /**
  * Attempt to write a sample to a SCSI device
  *
- * @return       Status codc
+ * @return       Status code
  * @param        Connection data
  */
 extern te_errno iscsi_win32_write_to_device(iscsi_connection_data_t *conn);

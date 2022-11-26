@@ -146,7 +146,7 @@ do {                                                                    \
                 if (!tapi_jmp_stack_is_empty())                         \
                 {                                                       \
                     ERROR("Jumping because a test execution error "     \
-                          "occured earlier");                           \
+                          "occurred earlier");                           \
                     TAPI_JMP_DO(TE_EFAIL);                              \
                 }                                                       \
             }                                                           \

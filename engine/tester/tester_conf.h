@@ -196,7 +196,7 @@ struct run_item;
 /** Unified run item */
 typedef struct run_item run_item;
 
-/** List of run itens */
+/** List of run items */
 typedef TAILQ_HEAD(run_items, run_item) run_items;
 
 
@@ -535,7 +535,7 @@ extern te_errno test_entity_values_enum(
  * variable.
  *
  * @param ri            Run item or NULL
- * @param va            Varialbe/argument
+ * @param va            Variable/argument
  * @param callback      Function to be called for each singleton value
  * @param opaque        Data to be passed in callback function
  * @param enum_error_cb Function to be called on back path when
@@ -579,7 +579,7 @@ extern te_errno test_var_arg_get_value(
 
 
 /**
- * Allocatate and initialize Tester configuration.
+ * Allocate and initialize Tester configuration.
  *
  * @param filename      Name of the file with configuration
  *
@@ -589,7 +589,7 @@ extern te_errno test_var_arg_get_value(
 extern tester_cfg * tester_cfg_new(const char *filename);
 
 /**
- * Parse Tester configuratin files.
+ * Parse Tester configuration files.
  *
  * @param cfgs          Tester configurations with not parsed file
  * @param build         Build test suites
@@ -623,7 +623,7 @@ extern void tester_cfgs_free(tester_cfgs *cfgs);
 typedef enum tester_cfg_walk_ctl {
     TESTER_CFG_WALK_CONT,   /**< Continue */
     TESTER_CFG_WALK_BACK,   /**< Continue in backward direction */
-    TESTER_CFG_WALK_BREAK,  /**< Break repeation or iteration loop and
+    TESTER_CFG_WALK_BREAK,  /**< Break repetition or iteration loop and
                                  continue */
     TESTER_CFG_WALK_SKIP,   /**< Skip this item and continue with
                                  the rest */

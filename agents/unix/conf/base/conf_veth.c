@@ -34,7 +34,7 @@
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
  * @param peer      Peer interface name
- * @param ifname    The inteface name
+ * @param ifname    The interface name
  *
  * @return      Status code
  */
@@ -72,7 +72,7 @@ veth_del(unsigned int gid, const char *oid, const char *ifname)
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
  * @param peer      Peer interface name
- * @param ifname    The inteface name
+ * @param ifname    The interface name
  *
  * @return      Status code
  */

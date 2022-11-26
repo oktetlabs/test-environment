@@ -181,7 +181,7 @@ netconf_ipvlan_list(netconf_handle nh, const char *link, char **list)
                                  ipvlan_list_cb, NULL);
     if (nlist == NULL)
     {
-        ERROR("Failed to get IP VLAN intefaces list");
+        ERROR("Failed to get IP VLAN interfaces list");
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
@@ -219,7 +219,7 @@ netconf_ipvlan_get_mode(netconf_handle nh, const char *ifname,
                                  ipvlan_list_cb, NULL);
     if (nlist == NULL)
     {
-        ERROR("Failed to get IP VLAN intefaces list");
+        ERROR("Failed to get IP VLAN interfaces list");
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 

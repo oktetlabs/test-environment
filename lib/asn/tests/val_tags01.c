@@ -59,7 +59,7 @@ main (void)
 
     r = asn_get_child_value(seq_val, (const asn_value **)&subval,
                             PRIVATE, SEQ_INT_ARRAY_TAG);
-    printf("rc getting subval by tag 'ingeter_array': %d\n", r);
+    printf("rc getting subval by tag 'integer_array': %d\n", r);
 
     r = asn_write_value_field(ch_val, &a, sizeof(a), "#number");
     if (r) { printf("write number to choice error: %d\n", r); return 1; }

@@ -2,7 +2,7 @@
 /** @file
  * @brief Test Environment: IPC library
  *
- * Implemenatation of IPC PMAP routines (client side).
+ * Implementation of IPC PMAP routines (client side).
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */

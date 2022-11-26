@@ -609,10 +609,10 @@ get_next_arg(log_msg *msg)
 }
 
 /**
- * Processes event occured on a node of the flow tree.
+ * Processes event occurred on a node of the flow tree.
  * Currently the only event that is actually processed is MORE_BRANCHES.
  *
- * @param type      Type of a node on which an event has occured.
+ * @param type      Type of a node on which an event has occurred.
  * @param evt       Type of an event.
  * @param node      User-specific data that is passed on creation
  *                  of the node.

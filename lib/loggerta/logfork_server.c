@@ -206,7 +206,7 @@ logfork_destroy_list(list **list)
 /**
  * Close opened socket and clear the list of process info.
  *
- * @param  sockd  socket descriptor
+ * @param  opaque  socket descriptor
  */
 static void
 logfork_cleanup(void *opaque)
@@ -239,7 +239,7 @@ logfork_entry(void)
     logfork_msg msg;
 
 #if HAVE_PTHREAD_H
-    /* It seems, recv() is not a cancelation point on Solaris. */
+    /* It seems, recv() is not a cancellation point on Solaris. */
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
     pthread_cleanup_push(logfork_cleanup, &data);

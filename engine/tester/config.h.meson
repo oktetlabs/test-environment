@@ -3,10 +3,10 @@
 /* Define if your curses library supports color. */
 #mesondefine HAVE_COLOR
 
-/* Define whether openssl library is availiable. */
+/* Define whether openssl library is available. */
 #mesondefine HAVE_OPENSSL
 
-/* Define whether readline library is availiable. */
+/* Define whether readline library is available. */
 #mesondefine HAVE_READLINE
 
 /* Define to 1 if the system has the type `xmlError'. */

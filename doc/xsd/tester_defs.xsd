@@ -75,7 +75,7 @@
         <attribute name="sticky" type="boolean" default="false">
             <annotation>
                 <documentation>
-                    This attribute may be usefull in a test package set
+                    This attribute may be useful in a test package set
                     of requirements. If it is true, it means that ALL
                     descendants test the requirement.
                 </documentation>
@@ -170,7 +170,7 @@
             <annotation>
                 <documentation>
                     Controls enumeration policy for values.
-                    This attribute is usefull to organize parallel
+                    This attribute is useful to organize parallel
                     enumeration of two or more lists. For example,
                     if A = {a1, a2, a3}, B = {b1, b2, b3} and the
                     attribute is false for both variables/arguments,

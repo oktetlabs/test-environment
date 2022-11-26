@@ -2,7 +2,7 @@
 /** @file
  * @brief Unix Logger sniffers support.
  *
- * Defenition of unix Logger sniffers logging support.
+ * Definition of unix Logger sniffers logging support.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
@@ -28,7 +28,7 @@ extern void sniffers_handler(char *agent);
 /**
  * This is an entry point of sniffers mark message server.
  * This server should be run as separate thread.
- * Mark messages to all sniffers tranmitted by this routine.
+ * Mark messages to all sniffers transmitted by this routine.
  *
  * @param mark_data     Data for the marker packet
  */

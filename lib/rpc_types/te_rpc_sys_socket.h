@@ -69,7 +69,7 @@ extern const char * scm_tstamp_rpc2str(rpc_scm_tstamp type);
 
 /**
  * Total amount of bytes occupied by cmsghdr structure taking into
- * accound payload and spacing
+ * account payload and spacing
  *
  * @param c     Pointer to cmsghdr structure
  */
@@ -416,7 +416,7 @@ typedef enum rpc_send_recv_flags {
                                       progress happened */
     RPC_MSG_EOR        = 0x2000, /**< Terminates a record */
     RPC_MSG_PARTIAL    = 0x4000, /**< Don't fail if the message is
-                                      trancated; indicates trancated message
+                                      truncated; indicates truncated message
                                       on output*/
     RPC_MSG_WAITFORONE = 0x8000, /**< recvmmsg(): block until 1+ packets
                                       avail */
@@ -661,7 +661,7 @@ typedef enum rpc_sockopt {
                                  (TTL) field that is sent in every
                                  packet originating from the socket */
 
-    RPC_IP_MTU,             /**< Retrive the current known path MTU
+    RPC_IP_MTU,             /**< Retrieve the current known path MTU
                                  of the current connected socket */
     RPC_IP_MTU_DISCOVER,    /**< Enable/disable Path MTU discover
                                  on the socket */
@@ -721,7 +721,7 @@ typedef enum rpc_sockopt {
 
     RPC_IPV6_MTU_DISCOVER,  /**< Enable/disable Path MTU discover */
 
-    RPC_IPV6_RECVERR,       /**< Whether to receive asyncronous
+    RPC_IPV6_RECVERR,       /**< Whether to receive asynchronous
                                  error messages */
 
     RPC_IPV6_V6ONLY,        /**< Use socket for IPv6 communication only */
@@ -760,7 +760,7 @@ typedef enum rpc_sockopt {
     RPC_TCP_KEEPIDLE,       /**< Start sending keepalive probes after
                                  this period */
     RPC_TCP_KEEPINTVL,      /**< Interval between keepalive probes */
-    RPC_TCP_KEEPCNT,        /**< Number of keepalive probess before death */
+    RPC_TCP_KEEPCNT,        /**< Number of keepalive probes before death */
 
     RPC_TCP_KEEPALIVE_THRESHOLD,        /**< Start sending keepalive probes
                                              after this idle period in

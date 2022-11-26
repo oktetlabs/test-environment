@@ -105,7 +105,7 @@ INCLUDE(te_win_defs.h)
 
 #endif
 
-/** Convert RPC network evenet flags to native flags */
+/** Convert RPC network event flags to native flags */
 unsigned int
 network_event_rpc2h(rpc_network_event flags)
 {
@@ -124,7 +124,7 @@ network_event_rpc2h(rpc_network_event flags)
                 FD_ADDRESS_LIST_CHANGE);
 }
 
-/** Convert native network evenet flags to RPC flags */
+/** Convert native network event flags to RPC flags */
 rpc_network_event
 network_event_h2rpc(unsigned int flags)
 {

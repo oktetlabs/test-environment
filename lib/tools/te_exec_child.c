@@ -247,7 +247,7 @@ te_exec_child(const char *file, char *const argv[],
         setpgid(getpid(), getpid());
         if (uid != (uid_t)(-1) && setuid(uid) != 0)
         {
-            ERROR("Failed to set user %d before runing program \"%s\"",
+            ERROR("Failed to set user %d before running program \"%s\"",
                   uid, file);
         }
 

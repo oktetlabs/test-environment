@@ -2,7 +2,7 @@
 /** @file
  * @brief Test Environment common definitions
  *
- * PHY usefull constants definition (Both: TAPI and configurator)
+ * PHY useful constants definition (Both: TAPI and configurator)
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

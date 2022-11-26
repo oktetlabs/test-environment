@@ -288,7 +288,7 @@ process_trc_tags(const log_msg_view *msg)
  * Process the log message with the test execution plan.
  *
  * It is assumed that this message is the last piece of data needed for
- * live resuts, so this is where the connections to listeners will be
+ * live results, so this is where the connections to listeners will be
  * initialized.
  *
  * @param plan          log message with execution plan

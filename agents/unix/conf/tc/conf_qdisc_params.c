@@ -518,13 +518,13 @@ static struct tbf_param tbf_params_list[] = {
         .set = conf_qdisc_tbf_latency_set
     },
     {
-        /* Pealrate of tbf qdisc */
+        /* Peak rate of tbf qdisc */
         .name = "peakrate",
         .get = conf_qdisc_tbf_peakrate_get,
         .set = conf_qdisc_tbf_peakrate_set
     },
     {
-         /* Pealrate bucket size */
+         /* Peak rate bucket size */
         .name = "mtu",
         .get = conf_qdisc_tbf_mtu_get,
         .set = conf_qdisc_tbf_mtu_set

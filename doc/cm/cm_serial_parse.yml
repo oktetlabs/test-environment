@@ -28,9 +28,9 @@
       access: read_write
       type: int32
       d: |
-         Period of polling events states froms agents serial console parsers
+         Period of polling events states from agents serial console parsers
          Name:  empty
-         Value: sleep pseriod in milliseconds
+         Value: sleep period in milliseconds
 
     - oid: "/local/tester/location"
       access: read_write
@@ -54,7 +54,7 @@
       d: |
          The event handler
          Name:  A human-readable handler name
-         Value: Name of the executebale file
+         Value: Name of the executable file
 
     - oid: "/local/tester/event/handler/priority"
       access: read_write
@@ -125,7 +125,7 @@
       access: read_write
       type: int32
       d: |
-         Reset status of eache event on the parser
+         Reset status of each event on the parser
          Name:  empty
          Value: use 1 to perform reset
 
@@ -143,7 +143,7 @@
       d: |
          The agent event subtree
          Name:  A human-readable name of the event
-         Value: Name of instace of the Tester event
+         Value: Name of instance of the Tester event
 
     - oid: "/agent/parser/event/pattern"
       access: read_create

@@ -266,7 +266,7 @@ test_var_arg_value_index(unsigned int iter,
  *
  * @param ctx           Context with run item and iteration specified
  *                      plus context to resolve further external
- *                      referencies
+ *                      references
  * @param name          Name of the argument to find
  * @param value         Location to found value pointer
  *
@@ -358,7 +358,7 @@ typedef struct test_path_arg_value_cb_data {
 /**
  * Function to be called for each singleton value of the run item
  * argument (explicit or inherited) to create bit mask of iterations
- * in accordace with value specified by user.
+ * in accordance with value specified by user.
  *
  * The function complies with test_entity_value_enum_cb prototype.
  */
@@ -1009,7 +1009,7 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
 
     if (!run_spec && all_by_default)
     {
-        /* No test paths to run are specified, scenarion is still empty */
+        /* No test paths to run are specified, scenario is still empty */
         assert(TAILQ_EMPTY(scenario));
         /* Add act with all items */
         rc = scenario_add_act(scenario, 0, total_iters - 1, 0, NULL);

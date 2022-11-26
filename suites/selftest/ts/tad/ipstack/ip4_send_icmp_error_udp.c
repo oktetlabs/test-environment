@@ -275,7 +275,7 @@ main(int argc, char *argv[])
     cmsg = CMSG_FIRSTHDR(&rx_msghdr);
     if (cmsg == NULL)
         TEST_FAIL("Ancillary data on pco_iut socket "
-                  "is not recieved");
+                  "is not received");
 
     /* Check ancilliary data */
     optptr = (struct sock_extended_err *) CMSG_DATA(cmsg);

@@ -75,7 +75,7 @@ extern "C" {
 
 #define LGR_TANAMES_LEN   1024
 
-/** Overfill type constans */
+/** Overfill type constants */
 typedef enum overfill_type {
     ROTATION   = 0, /**< Overfill type rotation */
     TAIL_DROP  = 1, /**< Overfill type tail drop */

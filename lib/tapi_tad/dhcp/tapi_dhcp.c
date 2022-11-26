@@ -97,7 +97,7 @@ static void dhcp_options_destroy(struct dhcp_option *opt);
 
 
 /**
- * Convert DHCPv4 ASN value to plain C structrue
+ * Convert DHCPv4 ASN value to plain C structure
  *
  * @param[in]   pkt         ASN value of type DHCPv4 message or
  *                          Generic-PDU with choice "dhcp"
@@ -209,7 +209,7 @@ ndn_dhcpv4_packet_to_plain(const asn_value *pkt,
 }
 
 /**
- * Convert DHCPv4 Option ASN value to plain C structrue
+ * Convert DHCPv4 Option ASN value to plain C structure
  *
  * @param[in]   dhcp_opt    ASN value of type DHCPv4 option
  * @param[out]  opt_p       Converted structure

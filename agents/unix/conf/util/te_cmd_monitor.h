@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /** @file
- * @brief Command monitor process defenition
+ * @brief Command monitor process definition
  *
- * Defenition of command monitor function.
+ * Definition of command monitor function.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */

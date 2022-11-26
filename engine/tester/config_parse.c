@@ -755,7 +755,7 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
     }
 
 #if 1
-    /* 'exclude' is depricated */
+    /* 'exclude' is deprecated */
     rc = get_bool_prop(node, "exclude", &p->sticky);
     if (rc != TE_RC(TE_TESTER, TE_ENOENT))
     {
@@ -827,7 +827,7 @@ get_requirements(xmlNodePtr *node, test_requirements *reqs,
     assert(node != NULL);
     assert(reqs != NULL);
 
-    /* Get opddtional information about requirements to be tested */
+    /* Get additional information about requirements to be tested */
     while (*node != NULL &&
            xmlStrcmp((*node)->name, CONST_CHAR2XML("req")) == 0)
     {
@@ -1022,7 +1022,7 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script)
         if (script->objective != NULL && ti->objective != NULL &&
             strcmp(script->objective, ti->objective) != 0)
         {
-            WARN("Inconsitency in test '%s' objective from package.xml "
+            WARN("Inconsistency in test '%s' objective from package.xml "
                  "and tests-info.xml", script->name);
         }
         if (ti->objective != NULL)
@@ -1166,7 +1166,7 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
             p->ref = NULL;
         }
         /*
-         * If type is specified, referencies to type values are the next
+         * If type is specified, references to type values are the next
          * priority.
          */
         if (p->ref == NULL && p->type != NULL)
@@ -1622,8 +1622,8 @@ vars_process(xmlNodePtr *node, test_session *session,
  * Get command monitor property value and expand environment
  * variables in it
  *
- * @param node        XML node with a priperty
- * @param value [out] Where to store property value
+ * @param node        XML node with a property
+ * @param[out] value  Where to store property value
  * @param name        Property name
  *
  * @return 0 on success, error code on failure
@@ -1995,7 +1995,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     p->context = session;
     p->iterate = 1;
 
-    /* Just for corrent clean up in the case of failure */
+    /* Just for current clean up in the case of failure */
     p->type = RUN_ITEM_NONE;
     if (runs != NULL)
     {
@@ -2221,7 +2221,7 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg,
 #ifndef XML_DOC_ASSUME_VALID
     else
     {
-        ERROR("'session' is mandarory in Test Package description");
+        ERROR("'session' is mandatory in Test Package description");
     }
 
     /* No more */
@@ -2253,7 +2253,7 @@ get_target_reqs(xmlNodePtr *node, logic_expr **targets)
     assert(node != NULL);
     assert(targets != NULL);
 
-    /* Get opddtional information about requirements to be tested */
+    /* Get additional information about requirements to be tested */
     while (*node != NULL &&
            xmlStrcmp((*node)->name, CONST_CHAR2XML("req")) == 0)
     {
@@ -2630,10 +2630,10 @@ parse_test_package(tester_cfg *cfg, const test_session *session,
 #if HAVE_XMLERROR
         xmlError   *err = xmlCtxtGetLastError(parser);
 
-        ERROR("Error occured during parsing Test Package file:\n"
+        ERROR("Error occurred during parsing Test Package file:\n"
               "    %s:%d\n    %s", pkg->path, err->line, err->message);
 #else
-        ERROR("Error occured during parsing Test Package file:\n"
+        ERROR("Error occurred during parsing Test Package file:\n"
               "%s", pkg->path);
 #endif
         rc = TE_RC(TE_TESTER, TE_EINVAL);
@@ -2652,10 +2652,10 @@ parse_test_package(tester_cfg *cfg, const test_session *session,
 #if HAVE_XMLERROR
             xmlError   *err = xmlCtxtGetLastError(parser);
 
-            ERROR("Error occured during parsing Tests Infol file:\n"
+            ERROR("Error occurred during parsing Tests Info file:\n"
                   "    %s:%d\n    %s", pkg->path, err->line, err->message);
 #else
-            ERROR("Error occured during parsing Tests Info file:\n"
+            ERROR("Error occurred during parsing Tests Info file:\n"
                   "%s", pkg->path);
 #endif
             rc = TE_RC(TE_TESTER, TE_EINVAL);
@@ -2699,7 +2699,7 @@ cleanup:
 
 
 /**
- * Parse Tester configuratin file.
+ * Parse Tester configuration file.
  *
  * @param cfg           Tester configuration with not parsed file
  * @param build         Build test suites
@@ -2733,10 +2733,10 @@ tester_parse_config(tester_cfg *cfg, te_bool build, te_bool verbose)
 #if HAVE_XMLERROR
         xmlError   *err = xmlCtxtGetLastError(parser);
 
-        ERROR("Error occured during parsing configuration file:\n"
+        ERROR("Error occurred during parsing configuration file:\n"
               "    %s:%d\n    %s", cfg->filename, err->line, err->message);
 #else
-        ERROR("Error occured during parsing configuration file:\n"
+        ERROR("Error occurred during parsing configuration file:\n"
               "%s", cfg->filename);
 #endif
         xmlFreeParserCtxt(parser);

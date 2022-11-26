@@ -411,8 +411,8 @@ delete_with_children(cfg_instance *inst, te_bool *has_deps)
     /*
      * modifications below are related to OL Bug 6111.
      * In generic ignoring TE_ENOENT is not a good
-     * thig - this may hide a bug or pospone it's discovery
-     * to upcomming tests.
+     * thing - this may hide a bug or postpone it's discovery
+     * to upcoming tests.
      */
 #if 0                           /* was */
     return TE_RC_GET_ERROR(msg.rc) == TE_ENOENT ? 0 : msg.rc;
@@ -439,7 +439,7 @@ topo_qsort_predicate(const void *arg1, const void *arg2)
 /**
  * Check that oid belongs to subtree from vector of the subtrees
  *
- * @param subtrees Vector of the subtreees.
+ * @param subtrees Vector of the subtrees.
  * @param oid      Instance oid to check.
  *
  * @return @c TRUE if oid belongs to subtree

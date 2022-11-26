@@ -257,7 +257,7 @@ netconf_vlan_get_ifname(netconf_handle nh, const char *link, unsigned int vid,
             if (te_strlcpy(ifname, node->data.vlan.ifname, len) >= len)
             {
                 ERROR("Interface name '%s' is too long to fit "
-                      "into prodived buffer", node->data.vlan.ifname);
+                      "into provided buffer", node->data.vlan.ifname);
                 rc = TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
             }
             break;

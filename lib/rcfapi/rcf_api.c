@@ -266,7 +266,7 @@ msg_buffer_insert(msg_buf_head_t *buf_head, rcf_msg *message)
  * @param opaque        Opaque data of the callback function
  *
  * @return pointer to found message or zero if not found
- * After ussage of message pointer should be freed.
+ * After usage of message pointer should be freed.
  */
 static rcf_msg *
 msg_buffer_find(msg_buf_head_t *msg_buf, rcf_message_match_cb match_cb,
@@ -527,9 +527,9 @@ send_recv_rcf_ipc_message(thread_ctx_t *ctx,
 
 #ifdef HAVE_PTHREAD_H
 /**
- * Destructor of resources assosiated with thread.
+ * Destructor of resources associated with thread.
  *
- * @handle      Handle assosiated with thread
+ * @param handle      Handle associated with thread
  */
 static void
 rcf_api_thread_ctx_destroy(void *handle)
@@ -569,7 +569,7 @@ rcf_api_key_create(void)
  *
  * @param create    Create context client, if it is not exist or not
  *
- * @return context handle or NULL if some error occured
+ * @return context handle or NULL if some error occurred
  */
 static thread_ctx_t *
 get_ctx_handle(te_bool create)
@@ -656,7 +656,7 @@ rcf_api_cleanup(void)
 
 /**
  * Check that length of parameter string after quoting and inserting
- * of escape sequences is not greater than maslen.
+ * of escape sequences is not greater than maxlen.
  *
  * @param params        parameters string (unquoted)
  * @param maxlen        maximum length
@@ -779,7 +779,7 @@ rcf_add_ta(const char *name, const char *type,
     /* On success perform postprocessing */
     if (rc == 0 && (rc = msg.error) == 0)
     {
-        /* Add logger hanlder for just added TA */
+        /* Add logger handler for just added TA */
 
         size_t const       pl         = strlen(LGR_SRV_FOR_TA_PREFIX);
         size_t const       nl         = strlen(name);
@@ -810,7 +810,7 @@ rcf_add_ta(const char *name, const char *type,
             else
             {
                 if (ipc_close_client(log_client) != 0)
-                    WARN("Failed to close IPC clienti: %r", rc);
+                    WARN("Failed to close IPC client: %r", rc);
             }
         }
         else
@@ -2553,7 +2553,7 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
         }
         else
         {
-            /* TODO: Try to understand usefull actions here */
+            /* TODO: Try to understand useful actions here */
         }
     }
 

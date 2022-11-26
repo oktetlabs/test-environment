@@ -239,7 +239,7 @@ netconf_macvlan_list(netconf_handle nh, const char *link, char **list)
                                  macvlan_list_cb, NULL);
     if (nlist == NULL)
     {
-        ERROR("Failed to get MAC VLAN intefaces list");
+        ERROR("Failed to get MAC VLAN interfaces list");
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
@@ -271,7 +271,7 @@ netconf_macvlan_get_mode(netconf_handle nh, const char *ifname,
                                  macvlan_list_cb, NULL);
     if (nlist == NULL)
     {
-        ERROR("Failed to get MAC VLAN intefaces list");
+        ERROR("Failed to get MAC VLAN interfaces list");
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 

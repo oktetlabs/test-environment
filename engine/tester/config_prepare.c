@@ -137,7 +137,7 @@ config_prepare_destroy_ctx(config_prepare_data *gctx)
 
 /**
  * Inherit executable and update inheritance settings for the next
- * descendanct.
+ * descendant.
  *
  * @param child_exec    Location of the child executable
  * @param child_flags   Child flags to mark that executable is inherited

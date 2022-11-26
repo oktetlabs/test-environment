@@ -31,8 +31,8 @@ extern "C" {
 /* DPDK lcore mask */
 typedef struct lcore_mask_t {
     /* The lcore mask, with enabled cores bits set.
-     * The first element is the least signigicat byte (cores from 0 to 7).
-     * Each element specifies 8 cores, least signigicant bit specifies
+     * The first element is the least significant byte (cores from 0 to 7).
+     * Each element specifies 8 cores, least significant bit specifies
      * the core with the smallest index.
      */
     uint8_t bytes[32];
@@ -132,7 +132,7 @@ extern int rpc_dpdk_get_version(rcf_rpc_server *rpcs);
  * rte_eal_hotplug_add() RPC
  *
  * @param busname Bus name for the device to be added to
- * @param devname Device name to undergo indentification and probing
+ * @param devname Device name to undergo identification and probing
  * @param devargs Device arguments to be passed to the driver
  *
  * @return @c 0 on success; jumps out on error (negative value).

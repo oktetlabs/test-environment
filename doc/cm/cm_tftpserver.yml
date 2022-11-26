@@ -31,7 +31,7 @@
       access: read_only
       type: string
       d: |
-         Name of the last file sucessfully transferred by TFTP server.
+         Name of the last file successfully transferred by TFTP server.
          Name:  empty
          Limit: 1
 
@@ -39,7 +39,7 @@
       access: read_only
       type: string
       d: |
-         Timestamp of the last request that sucessfully completed
+         Timestamp of the last request that successfully completed
          on TFTP server. Specifies the number of seconds elapsed
          since 00:00:00 on January 1, 1970, Coordinated Universal Time (UTC)
          Name:  empty

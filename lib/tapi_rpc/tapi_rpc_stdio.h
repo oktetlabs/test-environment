@@ -40,7 +40,7 @@ typedef rpc_ptr rpc_file_p;
  * @param f      file stream
  *
  * @return  The stream file descriptor, otherwise -1 when
- *          error occured
+ *          error occurred
  */
 extern int rpc_fileno(rcf_rpc_server *rpcs,
                       rpc_file_p f);

@@ -201,6 +201,6 @@
       access: read_create
       type: none
       d: |
-         Addtitional options to pppd
+         Additional options to pppd
          Name: as example: nodeflate, noproxyarp, lock.
                Other options can be found in man pppd

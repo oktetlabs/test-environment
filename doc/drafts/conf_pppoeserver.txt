@@ -19,13 +19,13 @@ Configuration model:
 
   - Set method starts/stops pppoe-server daemon
 
-2) To simplify the configuration of pppoe-server, only neccessary parameters
+2) To simplify the configuration of pppoe-server, only necessary parameters
    are added to the configuration tree.
 
-   - Local address parameter (-L option) is representer by local_addr node:
+   - Local address parameter (-L option) is represented by local_addr node:
       /agent/interface/pppoe_server/local_addr
 
-   - Remote address parameter (-R option) is representer by remote_addr node:
+   - Remote address parameter (-R option) is represented by remote_addr node:
       /agent/interface/pppoe_server/remote_addr
 
    - In case pppoe server should operate with ethernet interface other
@@ -37,12 +37,12 @@ Configuration model:
         /agent:TST1/interface:eth3/pppoe_server:/vlans: = "3 4 5"
      will run 'pppoe-server -I eth3.3 -I eth3.4 -I eth3.5...'
 
-   NOTE: all these parameter are changable only if pppoe-server
-         daemon is not runnning, otherwise these parameters are parsed
+   NOTE: all these parameter are changeable only if pppoe-server
+         daemon is not running, otherwise these parameters are parsed
          from ps tool output.
 
 3) Diagnostics
-   It is not neccessary, but should be useful to have status of running pppd
+   It is not necessary, but should be useful to have status of running pppd
    daemons in the configuration model:
 
    - /agent/interface/pppd node represents if pppd is running on the specified
@@ -50,9 +50,9 @@ Configuration model:
      This node is read-only and volatile, get method greps output of ps tool.
 
    - /agent/interface/pppd/pid - pid of the corresponding pppd process running
-     other specified interface, get methos is similar to previous one.
+     other specified interface, get method is similar to previous one.
 
    - /agent/interface/pppd/ppp_if - name of ppp interface created other
-     specified ethernet interface (w/wo vlan_id). Get methos compares value
+     specified ethernet interface (w/wo vlan_id). Get method compares value
      of /var/run/pppdX.pid files with corresponding pid of pppd process.
 

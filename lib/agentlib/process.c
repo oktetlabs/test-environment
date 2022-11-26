@@ -46,7 +46,7 @@
 
 /** Status of exited child. */
 typedef struct ta_children_dead {
-    SLIST_ENTRY(ta_children_dead) links;    /**< dead children linek list */
+    SLIST_ENTRY(ta_children_dead) links;    /**< dead children link list */
 
     pid_t                       pid;        /**< PID of the child */
     int                         status;     /**< status of the child */

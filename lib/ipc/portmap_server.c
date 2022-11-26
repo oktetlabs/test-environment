@@ -319,7 +319,7 @@ ipc_init(void)
             {
                 /*
                  * Sometimes Linux binds socket to the port below 1024.
-                 * It is not alloowed to public such ports. So we'll try
+                 * It is not allowed to public such ports. So we'll try
                  * to listen/public a number of times.
                  */
                 if (cntr != 0)

@@ -189,7 +189,7 @@ const asn_type * const ndn_forw_action = &ndn_forw_action_s;
  *******************************************************/
 
 /**
- * Convert Forwarder-Action ASN value to plain C structrue.
+ * Convert Forwarder-Action ASN value to plain C structure.
  *
  * @param val           ASN value of type Forwarder-Action-Delay-Params
  * @param forw_dealy    converted structure (OUT).
@@ -270,7 +270,7 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
 
 
 /**
- * Convert Forwarder-Action ASN value to plain C structrue.
+ * Convert Forwarder-Action ASN value to plain C structure.
  *
  * @param val           ASN value of type Forwarder-Action-Reorder-Params
  * @param forw_reorder    converted structure (OUT).
@@ -308,7 +308,7 @@ ndn_forw_reorder_to_plain(const asn_value *val,
 }
 
 /**
- * Convert Forwarder-Action ASN value to plain C structrue.
+ * Convert Forwarder-Action ASN value to plain C structure.
  *
  * @param val          ASN value of type Forwarder-Action-Params
  * @param forw_drop    converted structure (OUT).
@@ -350,7 +350,7 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
 }
 
 /**
- * Convert Forwarder-Action ASN value to plain C structrue.
+ * Convert Forwarder-Action ASN value to plain C structure.
  *
  * @param val           ASN value of type
  * @param forw_action   converted structure (OUT).
@@ -396,7 +396,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
-        forw_action->delay.type = 0; /* uninitalized, default */
+        forw_action->delay.type = 0; /* uninitialized, default */
         rc = 0;
     }
     else
@@ -414,7 +414,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
-        forw_action->reorder.type = 0; /* uninitalized, default */
+        forw_action->reorder.type = 0; /* uninitialized, default */
         rc = 0;
     }
     else
@@ -424,7 +424,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
     rc = ndn_forw_drop_to_plain(val, &(forw_action->drop));
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
-        forw_action->drop.type = 0; /* uninitalized, default */
+        forw_action->drop.type = 0; /* uninitialized, default */
         rc = 0;
     }
     else
@@ -436,7 +436,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
 
 
 /**
- * Convert plain C structrue to Forwarder-Action ASN value.
+ * Convert plain C structure to Forwarder-Action ASN value.
  *
  * @param forw_action   converted structure.
  * @param result        location for pointer to ASN value of type (OUT)
@@ -501,7 +501,7 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                 break; /* nothing to do */
 
             case FORW_DELAY_CONSTANT:
-                /* explicetly discard 'const' qualifier */
+                /* explicitly discard 'const' qualifier */
                 ((ndn_forw_action_plain *)forw_action)->delay.max =
                     forw_action->delay.min;
                 /* fall through */

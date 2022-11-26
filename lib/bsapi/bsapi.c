@@ -26,7 +26,7 @@
 #include "te_errno.h"
 #include "te_builder_ts.h"
 
-/* Maxmimum length of the shell command */
+/* Maximum length of the shell command */
 #define MAX_SH_CMD      2048
 
 static char cmd[MAX_SH_CMD];

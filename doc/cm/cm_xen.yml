@@ -174,7 +174,7 @@
       access: read_write
       type: string
       d: |
-         Status contolling and reflecting domU state.
+         Status controlling and reflecting domU state.
          Name: none
          Value: "non-running", "running" and "saved"; the transition
                 from "non-running" to "saved" status is NOT allowed

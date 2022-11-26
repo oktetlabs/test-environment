@@ -2,7 +2,7 @@
 /** @file
  * @brief Test Environment common definitions
  *
- * Common usefull definition
+ * Common useful definition
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
@@ -66,7 +66,7 @@ typedef enum te_bool3 {
 
 /** Exit from application because of caught SIGINT signal */
 #define TE_EXIT_SIGINT      0x2
-/** Exit with biiig problems  */
+/** Exit with big problems  */
 #define TE_EXIT_ERROR       0x3
 /** Exit from application because of caught SIGUSR2 signal */
 #define TE_EXIT_SIGUSR2     0x4
@@ -106,7 +106,7 @@ typedef enum te_bool3 {
 #define TE_LOG_EXEC_PLAN_USER     "Execution Plan"
 /* User name for the message with the TRC tags */
 #define TE_LOG_TRC_TAGS_USER      "TRC tags"
-/* User name for the message with proocess info, e.g. PID */
+/* User name for the message with proccess info, e.g. PID */
 #define TE_LOG_PROC_INFO_USER     "Process Info"
 
 #ifndef __CONCAT
@@ -133,7 +133,7 @@ typedef enum te_bool3 {
 /**
  * Helper to get all arguments of the variadic macro except the first one.
  *
- * If there is no arguments except the first one, nothing is substututed.
+ * If there is no arguments except the first one, nothing is substituted.
  */
 #define TE_VA_TAIL(first, ...)  __VA_ARGS__
 
@@ -442,7 +442,7 @@ te_make_tmp_file(char *tmp_name)
 #endif
 
 /**
- * Check if a pointer is @c NULL. It's to avoid warnings in macroses.
+ * Check if a pointer is @c NULL. It's to avoid warnings in macros.
  *
  * @param ptr   A pointer
  *

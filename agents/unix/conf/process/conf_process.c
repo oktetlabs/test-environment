@@ -1398,7 +1398,7 @@ autorestart_loop(void *arg)
     {
         /*
          * Simple sleep should not be used here since a restarted process may
-         * terminate and send SIGCHLD during the sleep and intrrupt it.
+         * terminate and send SIGCHLD during the sleep and interrupt it.
          */
         rc = signal_protected_sleep(1);
         if (rc != 0)

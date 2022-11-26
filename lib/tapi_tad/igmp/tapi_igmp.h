@@ -956,7 +956,7 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
         (_src_addr), (_src_mac))
 
 /**
- * Send IGMPv3 report with one Group Record to recieve multicast traffic
+ * Send IGMPv3 report with one Group Record to receive multicast traffic
  * from any source (same as IGMPv2 Membership Report).
  *
  * @param _pco         RPC server.

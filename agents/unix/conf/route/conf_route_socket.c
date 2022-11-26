@@ -148,7 +148,7 @@ rt_msghdr_type2str(unsigned int type)
  *
  * @return String representation of flags.
  *
- * @attentation The function use static buffer for string and,
+ * @note The function use static buffer for string and,
  * therefore, it is not reenterable.
  */
 static const char *
@@ -247,7 +247,7 @@ rt_msghdr_flags2str(unsigned int flags)
  *
  * @return String representation of addresses flags.
  *
- * @attentation The function use static buffer for string and,
+ * @note The function use static buffer for string and,
  * therefore, it is not reenterable.
  */
 static const char *
@@ -478,7 +478,7 @@ route_log(const char *title, const struct rt_msghdr *rtm)
  * representation.
  *
  * @param msg       Routing socket message
- * @param rt_info   Location for system-independed route representation
+ * @param rt_info   Location for system-independent route representation
  *
  * @return Status code.
  */
@@ -666,7 +666,7 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
  * message.
  *
  * @param action    Action
- * @param rt_info   System-independed route representation
+ * @param rt_info   System-independent route representation
  * @param msg       Routing socket message
  * @param msglen    Length of memory buffer for the message
  *

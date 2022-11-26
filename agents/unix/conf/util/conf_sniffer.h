@@ -2,7 +2,7 @@
 /** @file
  * @brief Unix Test Agent sniffers support.
  *
- * Defenition of unix TA sniffers configuring support.
+ * Definition of unix TA sniffers configuring support.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */

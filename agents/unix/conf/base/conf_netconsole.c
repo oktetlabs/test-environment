@@ -364,7 +364,7 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
  * Load netconsole module with specified parameters
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         module parameters
  * @param name          Instance name (unused)
  *
@@ -460,7 +460,7 @@ netconsole_add(unsigned int gid, const char *oid, char *value,
  * Unload netconsole kernel module
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param name          Instance name (unused)
  *
  * @return              Status code
@@ -543,7 +543,7 @@ netconsole_del(unsigned int gid, const char *oid, const char *name)
  * Get netconsole value (i.e. its parameters)
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         where to store obtained value
  * @param name          name of netconsole node
  *

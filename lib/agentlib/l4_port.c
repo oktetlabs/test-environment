@@ -162,7 +162,7 @@ agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
             break;
 
         default:
-            ERROR("Invalid soket family");
+            ERROR("Invalid socket family");
             return FALSE;
     }
 
@@ -174,7 +174,7 @@ agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
             break;
 
         default:
-            ERROR("Invalid soket type");
+            ERROR("Invalid socket type");
             return FALSE;
     }
 
@@ -251,7 +251,7 @@ agent_alloc_l4_specified_port(int socket_family, int socket_type,
 
     if (port > MAX_AVAILABLE_PORT && port < MIN_AVAILABLE_PORT)
     {
-        ERROR("Invalid port nubmer");
+        ERROR("Invalid port number");
         pthread_mutex_unlock(&alloc_lock);
         return TE_EINVAL;
     }

@@ -37,7 +37,7 @@ extern "C" {
  * Get status parameter of CSAP.
  *
  * @param ta_name   - name of the Test Agent
- * @param ta_sid    - session identfier to be used
+ * @param ta_sid    - session identifier to be used
  * @param csap_id   - CSAP handle
  * @param status    - location for status of csap (OUT)
  *
@@ -51,7 +51,7 @@ extern int tapi_csap_get_status(const char *ta_name, int ta_sid,
  * Get total number of bytes parameter of CSAP.
  *
  * @param ta_name   - name of the Test Agent
- * @param ta_sid    - session identfier to be used
+ * @param ta_sid    - session identifier to be used
  * @param csap_id   - CSAP handle
  * @param p_bytes   - location for total number of bytes (OUT)
  *
@@ -68,7 +68,7 @@ extern int tapi_csap_get_total_bytes(const char *ta_name, int ta_sid,
  * of the last packet and timestamp of the first packet.
  *
  * @param ta_name   - name of the Test Agent
- * @param ta_sid    - session identfier to be used
+ * @param ta_sid    - session identifier to be used
  * @param csap_id   - CSAP handle
  * @param p_dur     - location for duration (OUT)
  *
@@ -82,7 +82,7 @@ extern int tapi_csap_get_duration(const char *ta_name, int ta_sid,
  * Get 'long long int' CSAP parameter from TA.
  *
  * @param ta_name       - name of the Test Agent
- * @param ta_sid        - session identfier to be used
+ * @param ta_sid        - session identifier to be used
  * @param csap_id       - CSAP handle
  * @param param_name    - parameter name
  * @param p_llint       - location for 'long long int'
@@ -98,7 +98,7 @@ extern int tapi_csap_param_get_llint(const char *ta_name, int ta_sid,
  * Get timestamp CSAP parameter from TA in format "<sec>.<usec>".
  *
  * @param ta_name       - name of the Test Agent
- * @param ta_sid        - session identfier to be used
+ * @param ta_sid        - session identifier to be used
  * @param csap_id       - CSAP handle
  * @param param_name    - parameter name
  * @param p_timestamp   - location for timestamp
@@ -325,7 +325,7 @@ extern int tapi_tad_add_iterator_ints(asn_value *templ, int *array,
  *
  * @param ta_name       TA name
  * @param session       RCF session id
- * @param csap_rcv      identifier of recieve CSAP
+ * @param csap_rcv      identifier of receive CSAP
  * @param csap_fwd      identifier of CSAP which should obtain data
  * @param pattern       traffic Pattern to receive data
  * @param timeout       timeout to wait data, in milliseconds
@@ -355,7 +355,7 @@ extern te_errno tapi_tad_socket_add_csap_layer(asn_value **csap_spec,
  * Get number of unmatched packets using a parameter of CSAP.
  *
  * @param ta_name   - name of the Test Agent
- * @param session   - session identfier to be used
+ * @param session   - session identifier to be used
  * @param csap_id   - CSAP handle
  * @param val       - location for number of unmatched packets (OUT)
  *

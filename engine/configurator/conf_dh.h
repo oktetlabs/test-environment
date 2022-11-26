@@ -59,7 +59,7 @@ extern int cfg_dh_attach_backup(char *filename);
  * @param hard_check    whether hard check should be applied
  *                      on restore backup. For instance if on deleting
  *                      some instance we got ESRCH or ENOENT, we should
- *                      kepp processing without any error.
+ *                      keep processing without any error.
  *
  * @return status code (see te_errno.h)
  * @retval TE_ENOENT       there is not command in dynamic history to which
@@ -89,7 +89,7 @@ extern int cfg_dh_push_command(cfg_msg *msg, te_bool local,
                                const cfg_inst_val *old_val);
 
 /**
- * Notify history DB about successfull commit operation.
+ * Notify history DB about successful commit operation.
  * The result of calling of this function is that some entries in DH DB
  * enter committed state.
  *
@@ -105,7 +105,7 @@ extern int cfg_dh_apply_commit(const char *oid);
 extern void cfg_dh_delete_last_command(void);
 
 /**
- * Destroy dynamic hostory before shut down.
+ * Destroy dynamic history before shut down.
  */
 extern void cfg_dh_destroy(void);
 

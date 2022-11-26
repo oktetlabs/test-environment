@@ -6,7 +6,7 @@
  * @ingroup te_tools
  * @{
  *
- * Defenition of unix TA serial console parse configuring support.
+ * Definition of unix TA serial console parse configuring support.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */

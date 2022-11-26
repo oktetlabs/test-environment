@@ -31,7 +31,7 @@ extern "C" {
  *
  * @note The name is appended to the string contents.
  *       That way it is easier to construct derived pathnames
- *       and similiar stuff.
+ *       and similar stuff.
  *
  * @return the pointer to the contents of @p dest or a heap-allocated buffer
  */

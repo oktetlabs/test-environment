@@ -29,7 +29,7 @@ typedef struct trc_report_stats {
     unsigned int    pass_une;       /**< Passed unexpectedly */
     unsigned int    fail_exp;       /**< Failed as expected */
     unsigned int    fail_une;       /**< Failed unexpectedly */
-    unsigned int    aborted;        /**< No usefull result */
+    unsigned int    aborted;        /**< No useful result */
     unsigned int    new_run;        /**< Run iterations with unknown
                                          expected result */
     unsigned int    not_run;        /**< Not run iterations */

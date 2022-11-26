@@ -30,7 +30,7 @@ Configurator API exports functionality that makes it possible to:
 
 * change the value of an object instance;
 
-* Get the value of an object instace.
+* Get the value of an object instance.
 
 Details of API usage can be found at :ref:`API Usage: Configurator API <doxid-group__confapi>` page.
 

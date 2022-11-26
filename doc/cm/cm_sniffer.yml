@@ -92,7 +92,7 @@
       access: read_write
       type: int32
       d: |
-         Default overfill handle methode for the sniffers on the Agent
+         Default overfill handle method for the sniffers on the Agent
          Name: empty
          Value: 0 - rotation (default);
                 1 - tail drop
@@ -135,7 +135,7 @@
       d: |
          Length of packet capture for the sniffer
          Name:  empty
-         Value: capture lenth in bytes
+         Value: capture length in bytes
 
     - oid: "/agent/interface/sniffer/tmp_logs"
       access: read_only

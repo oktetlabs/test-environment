@@ -2,7 +2,7 @@
 /** @file
  * @brief Tester Subsystem
  *
- * Header file for tester command monitore feature
+ * Header file for tester command monitor feature
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

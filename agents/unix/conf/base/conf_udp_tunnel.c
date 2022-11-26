@@ -244,7 +244,7 @@ udp_tunnel_generic_init(netconf_udp_tunnel *generic, const char *ifname,
  *
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
- * @param ifname    The inteface name
+ * @param ifname    The interface name
  *
  * @return      Status code
  */

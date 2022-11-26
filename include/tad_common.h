@@ -66,7 +66,7 @@ typedef enum {
     CSAP_BUSY,          /**< CSAP is busy with some traffic processing */
     CSAP_COMPLETED,     /**< Last traffic processing completed and CSAP
                              waiting for *_stop command from Test. */
-    CSAP_ERROR,         /**< Error was occured during processing, CSAP
+    CSAP_ERROR,         /**< Error was occurred during processing, CSAP
                              waiting for *_stop command from Test. */
 } tad_csap_status_t;
 

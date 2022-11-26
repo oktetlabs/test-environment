@@ -126,7 +126,7 @@ typedef enum {
  * flags parameter that controls some aspects of how the data is encoded.
  */
 #if UPNP_DEBUG
-/* Encode with indents (better for debuging, i.e. more human readable). */
+/* Encode with indents (better for debugging, i.e. more human readable). */
 # define JSON_ENCODING_FLAGS   (JSON_INDENT(1) | JSON_PRESERVE_ORDER)
 #else /* !UPNP_DEBUG */
 /* Encode without indents (decrease the size). */

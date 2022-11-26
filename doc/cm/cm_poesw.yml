@@ -64,7 +64,7 @@
          Status of the link for the port
          Name: empty
          Value:
-             Port is desabled (link status DOWN) - 0
+             Port is disabled (link status DOWN) - 0
              Port is enabled (link status UP)    - 1
 
     - oid: "/agent/port/state/speed"
@@ -381,7 +381,7 @@
          Current Designated Root value set up in the Bridge.
          Name: empty
          Value:
-             eight octets' value in hexdecimal format
+             eight octets' value in hexadecimal format
              AABBCCDDEEFFAABB
 
     - oid: "/agent/stp/root_path_cost"
@@ -502,7 +502,7 @@
          Designated Root value for the port.
          Name: empty
          Value:
-             eight octets' value in hexdecimal format
+             eight octets' value in hexadecimal format
              AABBCCDDEEFFAABB
 
     - oid: "/agent/stp/port/designated_cost"
@@ -519,7 +519,7 @@
          Designated Bridge value for the port.
          Name: empty
          Value:
-             eight octets' value in hexdecimal format
+             eight octets' value in hexadecimal format
              AABBCCDDEEFFAABB
 
     - oid: "/agent/stp/port/designated_port"

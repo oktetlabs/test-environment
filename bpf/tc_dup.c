@@ -4,7 +4,7 @@
  *
  * BPF program to duplicate packets.
  *
- * This program attaches to the interface and duplacates packets.
+ * This program attaches to the interface and duplicates packets.
  * The number of packets is specified in control map.
  *
  * Copyright (C) 2021-2022 OKTET Labs Ltd. All rights reserved.
@@ -17,7 +17,7 @@
 /**
  * RX count map.
  * The map contents:
- * 0 - couner of RX packets.
+ * 0 - counter of RX packets.
  */
 struct bpf_map SEC("maps") rxcnt = {
     .type = BPF_MAP_TYPE_ARRAY,

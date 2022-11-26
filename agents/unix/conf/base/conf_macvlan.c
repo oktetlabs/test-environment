@@ -34,7 +34,7 @@
  * @param oid       Full object instance identifier (unused)
  * @param mode      Macvlan mode
  * @param link      Parent (link) interface name
- * @param ifname    The inteface name
+ * @param ifname    The interface name
  *
  * @return      Status code
  */
@@ -75,7 +75,7 @@ macvlan_del(unsigned int gid, const char *oid, const char *link,
  * @param oid       Full object instance identifier (unused)
  * @param mode      Macvlan mode
  * @param link      Parent (link) interface name
- * @param ifname    The inteface name
+ * @param ifname    The interface name
  *
  * @return      Status code
  */

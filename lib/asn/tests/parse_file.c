@@ -42,7 +42,7 @@ main (int argc, char *argv[])
         asn_free_subvalue(packet, "0.pdus.0.#eth.dst-addr");
         rc = asn_write_value_field(packet, eth_src_script,
                 sizeof(eth_src_script), "0.pdus.0.#eth.dst-addr.#script");
-        printf("tempalte write expr %x\n", rc);
+        printf("template write expr %x\n", rc);
     }
 
     n = asn_count_txt_len(packet, 0);

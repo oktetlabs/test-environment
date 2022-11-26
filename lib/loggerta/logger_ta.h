@@ -10,7 +10,7 @@
  * There are facilities for both fast and slow  logging.
  * Fast logging(LOGF_... macros) does not copy
  * bytes arrays and strings into local log buffer. Only start
- * memory address and length of dumped memory are regestered.
+ * memory address and length of dumped memory are registered.
  * So, user has to take care about validity of logged data
  * (logged data should not be volatile).
  * Slow logging (LOGS_... macros) parses log message format string
@@ -46,7 +46,7 @@ extern te_log_message_f logfork_log_message;
 extern te_errno ta_log_init(const char *lgr_entity);
 
 /**
- * Finish Logger activity on the Test Agent side (fluhes buffers
+ * Finish Logger activity on the Test Agent side (flushes buffers
  * in the file if that means exists and so on).
  *
  * @return Status code (see te_errno.h)

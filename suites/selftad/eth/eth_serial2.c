@@ -37,7 +37,7 @@
 /* Destination MAC addresses are used in tests */
 #define DST_MAC  "21:07:21:06:24:41"
 
-#define TEST_CANCELATION \
+#define TEST_CANCELLATION \
     do {                                              \
         rcf_ta_csap_destroy(agent_a, sid_a, tx_csap); \
         rcf_ta_csap_destroy(agent_b, sid_b, rx_csap); \
@@ -46,7 +46,7 @@
 #define TEST_TERMINATION(_x...) \
     do {                        \
         VERB(_x);  \
-        TEST_CANCELATION;       \
+        TEST_CANCELLATION;       \
         return (1);             \
     } while (0)
 

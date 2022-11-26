@@ -408,7 +408,7 @@ GEN_IMP_FUNC_PTR(wmi_mtu_set);
 
 static te_bool wmi_imported = FALSE;
 
-/** Function used to initalize function poiners with respective
+/** Function used to initialize function poiners with respective
   * function addresses from talib.
   * If import was successfull it marks wmi_imported as TRUE.
   *
@@ -1566,7 +1566,7 @@ name2index(const char *ifname, DWORD *ifindex)
  * Get index of the interface.
  *
  * @param gid           request group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         location for interface index
  * @param ifname        name of the interface (like "eth0")
  *
@@ -1704,7 +1704,7 @@ check_address(const char *addr, DWORD if_index)
  * If the address does not exist, alias interface is created.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value string (unused)
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
@@ -1821,7 +1821,7 @@ net_addr_del_dhcp(unsigned int dwIndex)
  * Clear interface address of the down interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
  *
@@ -1959,7 +1959,7 @@ net_addr_list(unsigned int gid, const char *oid,
  * Get netmask (prefix) of the interface address.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         netmask location (netmask is presented in dotted
  *                      notation)
  * @param ifname        name of the interface (like "eth0")
@@ -2001,7 +2001,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
  * Change netmask (prefix) of the interface address.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         pointer to the new network mask in dotted notation
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
@@ -2045,7 +2045,7 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
  * Get broadcast address of the interface address.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         netmask location (netmask is presented in dotted
  *                      notation)
  * @param ifname        name of the interface (like "eth0")
@@ -2087,7 +2087,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
  * Change broadcast address of the interface address - does nothing.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         pointer to the new network mask in dotted notation
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
@@ -2125,7 +2125,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
  * Only MAC addresses are supported now.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         location for hardware address (address is returned
  *                      as XX:XX:XX:XX:XX:XX)
  * @param ifname        name of the interface (like "eth0")
@@ -2159,7 +2159,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
  * the ff:ff:ff:ff:ff:ff is returned for test purposes.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         broadcast hardware address (it should be
  *                      provided as XX:XX:XX:XX:XX:XX string)
  * @param ifname        name of the interface (like "eth0")
@@ -2199,7 +2199,7 @@ static struct mtu_entry_t mtus[20];
  * Get MTU of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -2246,7 +2246,7 @@ mtu_get(unsigned int gid, const char *oid, char *value,
  * Change MTU of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
  *
@@ -2400,7 +2400,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
  * Get status of the interface ("0" - down or "1" - up).
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -2429,7 +2429,7 @@ status_get(unsigned int gid, const char *oid, char *value,
  * list of down interfaces.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
  *
@@ -2462,7 +2462,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
  * Get promiscuous mode of the interface ("0" - disabled or "1" - enabled).
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -2489,7 +2489,7 @@ promisc_get(unsigned int gid, const char *oid, char *value,
  * list of down interfaces.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
  *
@@ -2564,7 +2564,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
  * Get neighbour entry state.
  *
  * @param gid            group identifier (unused)
- * @param oid            full object instence identifier (unused)
+ * @param oid            full object instance identifier (unused)
  * @param value          location for the value
  *                       (XX:XX:XX:XX:XX:XX is returned)
  * @param ifname         interface name
@@ -2595,7 +2595,7 @@ neigh_state_get(unsigned int gid, const char *oid, char *value,
  * Get neighbour entry value (hardware address corresponding to IP).
  *
  * @param gid            group identifier (unused)
- * @param oid            full object instence identifier (unused)
+ * @param oid            full object instance identifier (unused)
  * @param value          location for the value
  *                       (XX:XX:XX:XX:XX:XX is returned)
  * @param ifname         interface name
@@ -2617,7 +2617,7 @@ neigh_get(unsigned int gid, const char *oid, char *value,
  * Change already existing neighbour entry.
  *
  * @param gid            group identifier
- * @param oid            full object instence identifier (unused)
+ * @param oid            full object instance identifier (unused)
  * @param value          new value pointer ("XX:XX:XX:XX:XX:XX")
  * @param ifname         interface name
  * @param addr           IP address in human notation
@@ -2640,7 +2640,7 @@ neigh_set(unsigned int gid, const char *oid, const char *value,
  * Add a new neighbour entry.
  *
  * @param gid            group identifier (unused)
- * @param oid            full object instence identifier (unused)
+ * @param oid            full object instance identifier (unused)
  * @param value          new entry value pointer ("XX:XX:XX:XX:XX:XX")
  * @param ifname         interface name
  * @param addr           IP address in human notation
@@ -2696,7 +2696,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
  * Delete neighbour entry.
  *
  * @param gid            group identifier (unused)
- * @param oid            full object instence identifier (unused)
+ * @param oid            full object instance identifier (unused)
  * @param ifname         interface name
  * @param addr           IP address in human notation
  *
@@ -2756,7 +2756,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
  * Get instance list for object "agent/arp" and "agent/volatile/arp".
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier
+ * @param oid           full object instance identifier
  * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  * @param ifname        interface name
@@ -3008,7 +3008,7 @@ route_dev_set(unsigned int gid, const char *oid,
  * Add a new route.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value string (unused)
  * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
@@ -3029,7 +3029,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
  * Delete a route.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
@@ -3046,7 +3046,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
 /** Get the value of the route.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value string (unused)
  * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
@@ -3088,7 +3088,7 @@ route_get(unsigned int gid, const char *oid, char *value,
 /** Set new value for the route.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value string (unused)
  * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
@@ -3183,7 +3183,7 @@ route_list(unsigned int gid, const char *oid,
  * Commit changes made for the route.
  *
  * @param gid           group identifier (unused)
- * @param p_oid         object instence data structure
+ * @param p_oid         object instance data structure
  *
  * @return status code
  */
@@ -4722,7 +4722,7 @@ static int phy_parameters_set(const char *ifname)
  * Get VLAN ifname
  *
  * @param gid           request group identifier (unused)
- * @param oid           full object instence identifier
+ * @param oid           full object instance identifier
  * @param value         location for interface name
  * @param ifname        name of the interface
  * @param vid           name of the vlan (decimal integer)
@@ -4864,7 +4864,7 @@ vlans_list(unsigned int gid, const char *oid,
  * Add link to VLAN Ethernet device.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier
+ * @param oid           full object instance identifier
  * @param value         value string
  * @param ifname        device name, over it VLAN should be added
  * @param vid_str       VLAN id string, decimal notation
@@ -4934,7 +4934,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
  * Delete link to VLAN Ethernet device.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param ifname        VLAN device name: ef*
  *
  * @return              Status code

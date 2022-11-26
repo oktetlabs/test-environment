@@ -182,7 +182,7 @@ typedef enum {
 } te_ip6_upper_layer_csum_t;
 
 /* NDN ASN types. */
-    /* DATA-UNIT wrappers over respecive bit integer fields */
+    /* DATA-UNIT wrappers over respective bit integer fields */
 extern const asn_type *const ndn_data_unit_int4;
 extern const asn_type *const ndn_data_unit_int5;
 extern const asn_type *const ndn_data_unit_int8;
@@ -327,7 +327,7 @@ extern int ndn_match_mask(const asn_value *mask_pat,
                           const uint8_t *data, size_t d_len);
 
 /**
- * Get timestamp from recieved Raw-Packet
+ * Get timestamp from received Raw-Packet
  *
  * @param packet ASN-value of Raw-Packet type.
  * @param ts     location for timestamp (OUT).

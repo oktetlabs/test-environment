@@ -193,7 +193,7 @@ check_snif_exist(snifidl_h_t *sniflist_head, snif_id_l *new_snif)
 /**
  * Parse sniffer id string.
  *
- * @param buf   Sntring with sniffer id.
+ * @param buf   String with sniffer id.
  * @param id    Sniffer id (OUT).
  *
  * @return Number of parsed symbols or -1 if errors.
@@ -490,7 +490,7 @@ sniffer_check_markers(size_t size, snif_id_l *snif, const char *agent)
 }
 
 /**
- * Inser the marker packet into the capture file.
+ * Insert the marker packet into the capture file.
  *
  * @param fd_o  A descriptor of the opened file.
  * @param mark  Location of the marker parameters.
@@ -1085,7 +1085,7 @@ sniffer_ins_mark_all(char *mark_data)
 /**
  * This is an entry point of sniffers mark message server.
  * This server should be run as separate thread.
- * Mark messages to all sniffers tranmitted by this routine.
+ * Mark messages to all sniffers transmitted by this routine.
  *
  * @param mark_data     Data for the marker packet.
  */

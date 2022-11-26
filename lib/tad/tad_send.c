@@ -648,7 +648,7 @@ tad_send_cb(tad_pkt *pkt, void *opaque)
     rc = write_cb(csap, pkt);
     if (rc != 0)
     {
-        /* An error occured */
+        /* An error occurred */
         F_ERROR(CSAP_LOG_FMT "Write callback error: %r",
                 CSAP_LOG_ARGS(csap), rc);
         /* Stop packets enumeration */
@@ -918,7 +918,7 @@ tad_send_do(csap_p csap)
      */
     CSAP_LOCK(csap);
 
-    /* Ignore errors, since we can do nothing usefull here. */
+    /* Ignore errors, since we can do nothing useful here. */
     (void)csap_command_under_lock(csap, TAD_OP_SEND_DONE);
 
     if (csap->state & CSAP_STATE_RECV)

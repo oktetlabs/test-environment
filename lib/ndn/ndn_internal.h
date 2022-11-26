@@ -18,7 +18,7 @@
  * Macro for definition of C structures, presenting
  * DATA-UNIT based ASN types.
  *
- * @param id            suffix, used to constract global constant names
+ * @param id            suffix, used to construct global constant names
  * @param asn_t         base ASN type, constant of asn_type type
  * @param asn_bt_txt_id textual name of base ASN type
  */
@@ -46,7 +46,7 @@
  * Macro for definition of C structures, presenting
  * DATA-UNIT-range item and DATA-UNIT with it based ASN types.
  *
- * @param id            suffix, used to constract global constant names
+ * @param id            suffix, used to construct global constant names
  * @param asn_t         base ASN type, constant of asn_type type
  */
 #define NDN_DATA_UNIT_WITH_RANGE_TYPE(id, asn_t, asn_bt_txt_id)                   \

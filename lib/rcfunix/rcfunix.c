@@ -1271,10 +1271,10 @@ bad_conf:
 
 /**
  * Kill all processes related to TA on the station where it is run.
- * Reboot station which TA is runing on (if it's allowed).
+ * Reboot station which TA is running on (if it's allowed).
  * Handle should not be freed.
  *
- * @param handle        TA handle locaton, may already contain memory
+ * @param handle        TA handle location, may already contain memory
  *                      pointer in the case of TA restart
  * @param parms         library-specific parameters
  *

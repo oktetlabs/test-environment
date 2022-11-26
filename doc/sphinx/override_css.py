@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
 
-# A small extention for able override css for doxyrest
+# A small extension for able override css for doxyrest
 
 import os
 

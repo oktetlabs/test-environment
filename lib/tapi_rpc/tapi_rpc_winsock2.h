@@ -204,7 +204,7 @@ extern int rpc_wsa_accept(rcf_rpc_server *rpcs,
  * @param s                 descriptor of socket that has already been
  *                          called with the listen function
  * @param s_a               descriptor idenfifying a socket on which to
- *                          accept an incomming connection
+ *                          accept an incoming connection
  * @param buf               RPC pointer to the buffer to receive data
  * @param len               length of the buffer to receive data (should not
  *                          include the size of local and remote addresses)
@@ -303,7 +303,7 @@ rpc_get_accept_addr(rcf_rpc_server *rpcs,
  * @param flags         call flags
  *
  * @return TRUE         if data were successfully sent,
- *         FALSE        if some error occured
+ *         FALSE        if some error occurred
  *                      (and errno is set to respective value)
  */
 extern te_bool

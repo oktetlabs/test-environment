@@ -669,7 +669,7 @@ ipc_dgram_receive_message(struct ipc_server *ipcs,
     }
     else
     {
-        /* Buffer provided by caller is enought */
+        /* Buffer provided by caller is enough */
         assert(client->dgram.msg_rest == 0);
         assert(client->dgram.frag_rest == 0);
 
@@ -1039,7 +1039,7 @@ ipc_pmap_unregister_server(const char *server_name, uint16_t port)
 /**
  * Search in pool for the item with specified address and return
  * pointer to this item.  Allocate a new entry, if entry not found.
- * If new entry is created, all fileds is set to zero expect sa,
+ * If new entry is created, all fields is set to zero expect sa,
  * sa_len and buffer.
  *
  * @param ipcs      - pointer to the IPC server structure
@@ -1171,7 +1171,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
         return TE_RC(TE_IPC, rc);
     }
 
-    /* No appropriate atagram in the pool found */
+    /* No appropriate datagram in the pool found */
     while (TRUE)
     {
         struct sockaddr_un          sa;
@@ -1195,7 +1195,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
             int rc2;
 
             /*
-             * While we trying to recevie rest of the partial-received
+             * While we trying to receive rest of the partial-received
              * message, we've got the message from other client.
              * We have to save the datagram for future read.
              */

@@ -37,7 +37,7 @@ typedef struct log_branch_filter {
 } log_branch_filter;
 
 /**
- * Initialite a branch filter.
+ * Initialize a branch filter.
  *
  * @param filter    branch filter
  */

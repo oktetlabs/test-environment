@@ -1500,7 +1500,7 @@ iut_wait_change_gen(tsa_session *ss, int timeout)
     if (state_cur != tsa_state_from(ss))
         return 0;
 
-    RING("Wait untill TCP state of IUT socket will change");
+    RING("Wait until TCP state of IUT socket will change");
     for(i = 0; i <= timeout; i += step)
     {
         MSLEEP(step);

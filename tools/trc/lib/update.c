@@ -3498,11 +3498,11 @@ trc_update_load_rules(char *filename,
     {
 #if HAVE_XMLERROR
         err = xmlCtxtGetLastError(parser);
-        ERROR("Error occured during parsing configuration file:\n"
+        ERROR("Error occurred during parsing configuration file:\n"
               "    %s:%d\n    %s", filename,
               err->line, err->message);
 #else
-        ERROR("Error occured during parsing configuration file:\n"
+        ERROR("Error occurred during parsing configuration file:\n"
               "%s", filename);
 #endif
         xmlFreeParserCtxt(parser);

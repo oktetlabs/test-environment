@@ -29,7 +29,7 @@ enum interactive_mode_opts {
     TESTER_INTERACTIVE_RESUME  = (1 << 1), /**< Continue the testing (as if
                                                 it wasn't interrupted) */
     TESTER_INTERACTIVE_STOP    = (1 << 2), /**< Stop the testing */
-    TESTER_INTERACTIVE_ERROR   = (1 << 3)  /**< An error occured */
+    TESTER_INTERACTIVE_ERROR   = (1 << 3)  /**< An error occurred */
 };
 
 

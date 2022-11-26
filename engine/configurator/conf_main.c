@@ -60,7 +60,7 @@ static const char *cs_dirs_cfg = NULL;
 /** @name Configurator global options */
 #define CS_PRINT_TREES  0x1     /**< Print objects and object instances
                                      trees after initialization */
-#define CS_LOG_DIFF     0x2     /**< Log diff if backup verificatino
+#define CS_LOG_DIFF     0x2     /**< Log diff if backup verification
                                      failed */
 #define CS_FOREGROUND   0x4     /**< Run Configurator in foreground */
 #define CS_SHUTDOWN     0x8     /**< Shutdown after message processing */
@@ -167,7 +167,7 @@ set_inconsistency_state(void)
  * @param cmd        Command name ("add", "del" or "set")
  * @param oid        OID used in operation
  * @param msg        Message that should be processed
- * @param update_dh  Wheter t update dynamic history?
+ * @param update_dh  Whether to update dynamic history?
  *                   (@todo How it should be used?)
  *
  * @return Zero on success, and errno on failure
@@ -258,9 +258,9 @@ cfg_avoid_local_cmd_problem(const char *cmd, const char *oid,
 }
 
 /**
- * This function should be called when an error occures during processing
+ * This function should be called when an error occurs during processing
  * ADD, DEL and SET requests.
- * In case of local commands processing state, it rolles back all the
+ * In case of local commands processing state, it rolls back all the
  * configuration that was before the first local command (in sequence of
  * local commands) and clears all resources allocated under local commands.
  * In case of non-local command it deletes an instance specified by
@@ -435,10 +435,10 @@ parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool history,
 #if HAVE_XMLERROR
         xmlError *err = xmlGetLastError();
 
-        ERROR("Error occured during parsing configuration file:\n"
+        ERROR("Error occurred during parsing configuration file:\n"
               "    %s:%d\n    %s", file, err->line, err->message);
 #else
-        ERROR("Error occured during parsing configuration file:\n"
+        ERROR("Error occurred during parsing configuration file:\n"
               "    %s", file);
 #endif
         xmlCleanupParser();
@@ -1987,7 +1987,7 @@ verify_backup(const char *backup, te_bool log, const char *msg,
  *
  * @return 0 if all agents are running normally;
  *         @c TE_ETADEAD if at least one of the agents is dead;
- *         stasus code otherwise
+ *         status code otherwise
  */
 static te_errno
 check_agents(void)
@@ -2843,7 +2843,7 @@ process_cmd_line_opts(int argc, char **argv)
 
         { "foreground", 'f', POPT_ARG_NONE | POPT_BIT_SET, &cs_flags,
           CS_FOREGROUND,
-          "Run in foreground (usefull for debugging).", NULL },
+          "Run in foreground (useful for debugging).", NULL },
 
         { "sniff-conf", '\0', POPT_ARG_STRING, &cs_sniff_cfg_file, 0,
           "Auxiliary conf file for the sniffer framework.", NULL },

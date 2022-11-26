@@ -369,7 +369,7 @@
          at one node from a CPU at another node.  The absolute values are
          not meaningful and should be compared to the cost of local access.
          So, /agent:XXX/hardware/node:0/distance:1 would contain the
-         distance from node 0 to node 1, wherea
+         distance from node 0 to node 1, whereas
          /agent:XXX/hardware/node:0/distance:0 would contain the cost value
          of local access.
 

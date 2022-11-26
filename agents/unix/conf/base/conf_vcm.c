@@ -119,7 +119,7 @@ vcm_swversion_set(unsigned int gid, const char *oid,
              "%s --setSoftwareRevision %s %s %s",
              java_command_base, vcm_address, box_name, value);
 
-    RING("%s: prepared java comand: <%s>",  __FUNCTION__, java_command);
+    RING("%s: prepared java command: <%s>",  __FUNCTION__, java_command);
     java_cmd_pid = te_shell_cmd(java_command, -1, NULL, &out_fd, &err_fd);
     if (java_cmd_pid < 0)
     {
@@ -138,7 +138,7 @@ vcm_swversion_set(unsigned int gid, const char *oid,
          __FUNCTION__, out_buffer, err_buffer);
 
     ta_waitpid(java_cmd_pid, &status, 0);
-    RING("%s: status of java comand: %d",  __FUNCTION__, status);
+    RING("%s: status of java command: %d",  __FUNCTION__, status);
     return 0;
 }
 
@@ -207,7 +207,7 @@ vcm_parameter_set(unsigned int gid, const char *oid,
          __FUNCTION__, out_buffer, err_buffer);
 
     ta_waitpid(java_cmd_pid, &status, 0);
-    RING("%s: status of java comand: %d",  __FUNCTION__, status);
+    RING("%s: status of java command: %d",  __FUNCTION__, status);
     return 0;
 }
 
@@ -289,7 +289,7 @@ vcmconn_path_set(unsigned int gid, const char *oid,
  * Determine list of VCM boxes.
  *
  * @param gid     group identifier (unused)
- * @param oid     full parent object instence identifier (unused)
+ * @param oid     full parent object instance identifier (unused)
  * @param sub_id  ID of the object to be listed (unused)
  * @param list    location for the list pointer
  * @param name    interface name

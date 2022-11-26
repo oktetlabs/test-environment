@@ -22,11 +22,11 @@
       d: |
         Name of aggregation interface
         Name: empty
-        Value: aggregation inteface name
+        Value: aggregation interface name
 
     - oid: "/agent/aggregation/member"
       access: read_create
       type: none
       d: |
         The name of member interface
-        Name: Name of member inteface
+        Name: Name of member interface

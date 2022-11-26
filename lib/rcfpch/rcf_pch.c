@@ -80,7 +80,7 @@ static char rcf_pch_id[RCF_PCH_MAX_ID_LEN];
 /**
  * Get the rcf session identifier.
  *
- * @param id    Pointer to copy of RCF session indentifier (OUT).
+ * @param id    Pointer to copy of RCF session identifier (OUT).
  */
 void
 rcf_pch_get_id(char *id)

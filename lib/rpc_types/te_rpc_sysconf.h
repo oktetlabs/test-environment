@@ -43,7 +43,7 @@ extern const char *sysconf_name_rpc2str(rpc_sysconf_name name);
 extern int sysconf_name_rpc2h(rpc_sysconf_name name);
 
 /**
- * Convert native sysconf() nameto RPC one.
+ * Convert native sysconf() name to RPC one.
  */
 extern rpc_sysconf_name sysconf_name_h2rpc(int name);
 

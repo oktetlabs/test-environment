@@ -85,7 +85,7 @@ tester_new_target_reqs(logic_expr **targets, const char *req)
 
 
 /**
- * Clone a requirement. Reffered requirements are not supported.
+ * Clone a requirement. Referred requirements are not supported.
  *
  * @param req             Requirement to be cloned
  *
@@ -218,7 +218,7 @@ is_req_in_set(const char *req, const test_requirements *set,
 }
 
 /**
- * Has one of arguments specified requirments in its set?
+ * Has one of arguments specified requirements in its set?
  *
  * @param req           Requirement ID
  * @param n_args        Number of arguments

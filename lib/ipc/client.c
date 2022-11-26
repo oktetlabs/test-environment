@@ -214,7 +214,7 @@ ipc_client_name(const struct ipc_client *ipcc)
 /**
  * Search in pool for the item with specified server name and return
  * pointer to this item. Allocate a new entry if entry not found.
- * If new entry is created, all fileds is set to zero expect sa,
+ * If new entry is created, all fields is set to zero expect sa,
  * sa_len and buffer.
  *
  * @param ipcc          Pointer to the ipcc structure.
@@ -388,7 +388,7 @@ get_datagram(struct ipc_client *ipcc,
     }
 
     /*
-     * No datagram in the pool or datargarm with specified address not
+     * No datagram in the pool or datagram with specified address not
      * found
      */
     if (pool_item == NULL) /* Datagram with any source address expected */
@@ -450,7 +450,7 @@ get_datagram(struct ipc_client *ipcc,
                 memcmp(&sa,&pool_item->sa, sa_len))
             {
                 /*
-                 * While we trying to recevie rest of the partial
+                 * While we trying to receive rest of the partial
                  * received message, we've got the message from other
                  * client. We have to save the datagram for future read.
                  */
@@ -918,7 +918,7 @@ ipc_dgram_receive_answer(struct ipc_client *ipcc, const char *server_name,
         /* Unreachable place */
     }
 
-    /* Multi-datargams message, process it */
+    /* Multi-datagrams message, process it */
     {
         size_t total_octets_written = 0;
         size_t full_message_length = iph->length;
@@ -1124,7 +1124,7 @@ ipc_dgram_receive_rest_answer(struct ipc_client *ipcc,
                n);
 
         /* Is it all? */
-        if (/* Last datargam */
+        if (/* Last datagram */
             server->dgram.length == server->dgram.octets_received
             &&
             server->dgram.fragment_size - sizeof(struct ipc_dgram_header) -
@@ -1415,7 +1415,7 @@ ipc_client_int_receive(struct ipc_client_server *server,
         /* If we have something to read */
         if (rc != 0)
         {
-            /* Error occured */
+            /* Error occurred */
             if (TE_RC_GET_ERROR(rc) != TE_ECONNRESET)
                 fprintf(stderr, "%s(): read_socket() failed: %s\n",
                                 __FUNCTION__, te_rc_err2str(rc));

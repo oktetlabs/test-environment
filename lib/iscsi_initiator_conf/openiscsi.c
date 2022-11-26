@@ -345,7 +345,7 @@ iscsi_openiscsi_alloc_node(iscsi_initiator_data_t *data,
         if (status < 0)
             WARN("Error while waiting for iscsiadm: %s", strerror(errno));
         else
-            WARN("iscsiadm terminated abnormally wuth code %x",
+            WARN("iscsiadm terminated abnormally with code %x",
                  (unsigned)status);
     }
 
@@ -361,7 +361,7 @@ iscsi_openiscsi_alloc_node(iscsi_initiator_data_t *data,
 
 
 /**
- * See iscsi_initiator.h and iscsi_initator_conn_request_thread()
+ * See iscsi_initiator.h and iscsi_initiator_conn_request_thread()
  * for a complete description of the state machine involved.
  */
 int

@@ -438,7 +438,7 @@ pppoe_server_start(te_pppoe_server *pppoe)
 }
 
 /**
- * Get method forthat returns Stop pppoe-server process
+ * Get method for that returns Stop pppoe-server process
  *
  * @param gid           group identifier (unused)
  * @param oid           full identifier of the father instance

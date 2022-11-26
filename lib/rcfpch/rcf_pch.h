@@ -38,7 +38,7 @@ extern "C" {
 /**
  * Start Portable Command Handler.
  *
- * Caller is blocked until shutdown command is recieved or error occur.
+ * Caller is blocked until shutdown command is received or error occur.
  * Custom and default command handlers are called when commands via
  * Test Protocol are received.
  *
@@ -109,7 +109,7 @@ extern void rcf_pch_cfg_init(void);
 
 
 /**
- * Default configure command hadler.
+ * Default configure command handler.
  *
  * @param conn          connection handle
  * @param cbuf          command buffer
@@ -356,7 +356,7 @@ extern te_errno rcf_pch_del_node(rcf_pch_cfg_object *node);
  * 2. Grab the resource from the test or during initialization
  *    adding /agent/rsrc instance via confapi or in cs.conf.
  *
- * RCFPCH automatically creates the lock for thre resource in TE_TMP
+ * RCFPCH automatically creates the lock for the resource in TE_TMP
  * directory. Name of the lock file containing TA PID is constructed as:
  *     `${te_lockdir}/te_ta_lock_<converted name>`
  *
@@ -389,7 +389,7 @@ typedef te_errno (* rcf_pch_rsrc_release_callback)(const char *name);
 
 
 /**
- * Specify callbacks for dynamically registarable resource.
+ * Specify callbacks for dynamically registerable resource.
  *
  * @param name          resource generic name
  * @param grab          grabbing callback

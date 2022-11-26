@@ -371,7 +371,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
         /* Some data from previous message should be returned */
         if (rnc->bytes_to_read <= *pbytes)
         {
-            /* Enought space */
+            /* Enough space */
             *pbytes = rnc->bytes_to_read;
             rnc->bytes_to_read = 0;
             return read_socket(rnc->socket, buffer, *pbytes);
@@ -380,7 +380,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
         {
             /* Buffer is too small for the attachment */
             if ((ret = read_socket(rnc->socket, buffer, *pbytes)) != 0)
-                return ret; /* Some error occured */
+                return ret; /* Some error occurred */
 
             {
                 int tmp = *pbytes;
@@ -448,7 +448,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
 
                 if (*pbytes >= l + attach_size)
                 {
-                    /* Buffer is enought to write attachment */
+                    /* Buffer is enough to write attachment */
                     *pbytes = l + attach_size;
                     return read_socket(rnc->socket, buffer + l,
                                        attach_size);
@@ -461,7 +461,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
                     ret = read_socket(rnc->socket, buffer + l, to_read);
                     if (ret != 0)
                     {
-                        return ret; /* Some error occured */
+                        return ret; /* Some error occurred */
                     }
 
                     rnc->bytes_to_read = attach_size - to_read;
@@ -552,7 +552,7 @@ find_attach(char *buf, size_t len)
     while (isspace(*tmp))
     {
         tmp--;
-        if (tmp == buf) /* Begining of the buf */
+        if (tmp == buf) /* Beginning of the buf */
             return -1;
     }
 
@@ -566,7 +566,7 @@ find_attach(char *buf, size_t len)
     while (isdigit(*tmp))
     {
         tmp--;
-        if (tmp == buf) /* Begining of the buf */
+        if (tmp == buf) /* Beginning of the buf */
             return -1;
     }
 
@@ -576,7 +576,7 @@ find_attach(char *buf, size_t len)
         return -1;
     }
 
-    /* Make a number point to the begining of the group of numbers */
+    /* Make a number point to the beginning of the group of numbers */
     number = tmp+1;
 
     tmp--;
@@ -585,7 +585,7 @@ find_attach(char *buf, size_t len)
     while (isspace(*tmp))
     {
         tmp--;
-        if (tmp == buf) /* Begining of the buf */
+        if (tmp == buf) /* Beginning of the buf */
             return -1;
     }
 

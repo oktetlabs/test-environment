@@ -104,7 +104,7 @@ typedef enum {
     TE_ENOANO,        /**< No anode */
     TE_EBADRQC,       /**< Invalid request code */
     TE_EBADSLT,       /**< Invalid slot */
-    TE_EDEADLOCK,     /**< Synomym of EDEADLK */
+    TE_EDEADLOCK,     /**< Synonym of EDEADLK */
     TE_EBFONT,        /**< Bad font file  */
     TE_ENOSTR,        /**< Device not a stream */
     TE_ENODATA,       /**< No data available */
@@ -190,7 +190,7 @@ typedef enum {
     TE_WSANOTINITIALISED, /**< WSAStartup() not called */
 
     TE_E_SHARING_VIOLATION, /**< Problem with share attributes
-                                 while openning a file */
+                                 while opening a file */
     TE_E_INVALID_NAME,     /**< The file name, directory name or
                                 volume label syntax is incorrect */
     TE_E_BAD_PATHNAME,     /**< Invalid pathname */
@@ -243,7 +243,7 @@ typedef enum {
     TE_EASNWRONGLABEL,    /**< Wrong ASN label or out-of-range index */
     TE_EASNTXTPARSE,      /**< General ASN.1 text parse error */
     TE_EASNDERPARSE,      /**< DER decode error */
-    TE_EASNINCOMPLVAL,    /**< Imcomplete ASN.1 value */
+    TE_EASNINCOMPLVAL,    /**< Incomplete ASN.1 value */
     TE_EASNOTHERCHOICE,   /**< CHOICE in type is differ then asked */
     TE_EASNWRONGTYPE,     /**< Passed value has wrong type */
     TE_EASNWRONGSIZE,     /**< Passed value has wrong size */

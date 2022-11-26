@@ -15,7 +15,7 @@
 #include "te_defs.h"
 
 
-/** TCP interval between successfull keep-alive probes */
+/** TCP interval between successful keep-alive probes */
 #define TE_COMM_NET_ENGINE_KEEPIDLE     15
 /** TCP interval between failed keep-alive probes */
 #define TE_COMM_NET_ENGINE_KEEPINTVL    1

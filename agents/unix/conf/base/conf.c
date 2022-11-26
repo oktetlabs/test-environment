@@ -1926,7 +1926,7 @@ ipforward_bsd(te_bool ip6, int *p_val)
  * Obtain value of the IPv4 forwarding sustem variable.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  *
  * @return              Status code
@@ -1984,7 +1984,7 @@ ip4_fw_get(unsigned int gid, const char *oid, char *value)
  * Enable/disable IPv4 forwarding.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         pointer to new value of IPv4 forwarding system
  *                      variable
  *
@@ -2719,7 +2719,7 @@ vlan_ifname_get_internal(const char *ifname, int vlan_id,
  * Get VLAN ifname
  *
  * @param gid           request group identifier (unused)
- * @param oid           full object instence identifier
+ * @param oid           full object instance identifier
  * @param value         location for interface name
  * @param ifname        name of the interface
  * @param vid           name of the vlan (decimal integer)
@@ -2804,7 +2804,7 @@ vlans_list(unsigned int gid, const char *oid,
  * Add VLAN Ethernet device.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier
+ * @param oid           full object instance identifier
  * @param value         value string
  * @param ifname        device name, over it VLAN should be added
  * @param vid_str       VLAN id string, decimal notation
@@ -2977,7 +2977,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
  * Delete VLAN Ethernet device.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param ifname        parent interface name
  * @param vid_str       VLAN ID
  *
@@ -3268,7 +3268,7 @@ aliases_list()
  * Get index of the interface.
  *
  * @param gid           request group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         location for interface index
  * @param ifname        name of the interface (like "eth0")
  *
@@ -3806,7 +3806,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid,
  * If the address does not exist, alias interface is created.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value string (unused)
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
@@ -4644,7 +4644,7 @@ ta_unix_conf_netaddr2ifname(const struct sockaddr *addr, char *ifname)
  * Get prefix of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         prefix location (prefix is presented in dotted
  *                      notation)
  * @param ifname        name of the interface (like "eth0")
@@ -4783,7 +4783,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
  * Change prefix of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         pointer to the new network mask in dotted notation
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
@@ -4919,7 +4919,7 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
  * Get broadcast of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         broadcast address location (in dotted notation)
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IP address in human notation
@@ -5058,7 +5058,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
  * Change broadcast of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         pointer to the new broadcast address in dotted
  *                      notation
  * @param ifname        name of the interface (like "eth0")
@@ -5264,7 +5264,7 @@ link_addr_a2n(uint8_t *lladdr, int len, const char *str)
  * Only MAC addresses are supported now.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         location for hardware address (address is returned
  *                      as XX:XX:XX:XX:XX:XX)
  * @param ifname        name of the interface (like "eth0")
@@ -5368,7 +5368,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
  * Only MAC addresses are supported now.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         hardware address (address should be
  *                      provided as XX:XX:XX:XX:XX:XX)
  * @param ifname        name of the interface (like "eth0")
@@ -5418,7 +5418,7 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
  * Only MAC addresses are supported now.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         broadcast hardware address (it should be
  *                      provided as XX:XX:XX:XX:XX:XX string)
  * @param ifname        name of the interface (like "eth0")
@@ -5470,7 +5470,7 @@ bcast_link_addr_set(unsigned int gid, const char *oid,
  * Only MAC addresses are supported now.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         broadcast hardware address (it should be
  *                      provided as XX:XX:XX:XX:XX:XX string)
  * @param ifname        name of the interface (like "eth0")
@@ -5518,7 +5518,7 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
  * Get MTU of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -5606,7 +5606,7 @@ change_mtu(const char *ifname, int mtu)
  * Change MTU of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
  *
@@ -5642,7 +5642,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
  * ("0" - arp disable, "1" - arp enable).
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -5672,7 +5672,7 @@ arp_get(unsigned int gid, const char *oid, char *value, const char *ifname)
  * ("0" - arp disable, "1" - arp enable).
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -5811,7 +5811,7 @@ ta_interface_status_set(const char *ifname, te_bool status)
  * Get oper status of the interface ("1" - RUNNING).
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -5839,7 +5839,7 @@ oper_status_get(unsigned int gid, const char *oid, char *value,
  * Get status of the interface ("0" - down or "1" - up).
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -5869,7 +5869,7 @@ status_get(unsigned int gid, const char *oid, char *value,
  * of down interfaces.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
  *
@@ -5898,7 +5898,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
  * Get IP4 forwarding state of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -5942,7 +5942,7 @@ iface_ip4_fw_get(unsigned int gid, const char *oid, char *value,
  * Change IP4 forwarding state of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
  *
@@ -5987,7 +5987,7 @@ iface_ip4_fw_set(unsigned int gid, const char *oid, const char *value,
  * Get IP6 forwarding state of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -6031,7 +6031,7 @@ iface_ip6_fw_get(unsigned int gid, const char *oid, char *value,
  * Change IP6 forwarding state of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
  *
@@ -6076,7 +6076,7 @@ iface_ip6_fw_set(unsigned int gid, const char *oid, const char *value,
  * Get IP6 'accept_ra' state of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -6123,7 +6123,7 @@ iface_ip6_accept_ra_get(unsigned int gid, const char *oid, char *value,
  * Change IP6 'accept_ra' state of the interface.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
  *
@@ -6181,7 +6181,7 @@ iface_ip6_accept_ra_set(unsigned int gid, const char *oid,
  * Get RPF filtering value
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -6212,7 +6212,7 @@ rp_filter_get(unsigned int gid, const char *oid, char *value,
  * Set RPF filtering value
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
  *
@@ -6246,7 +6246,7 @@ rp_filter_set(unsigned int gid, const char *oid, const char *value,
  * Get RPF filtering value for interface "all"
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  *
  * @return              Status code
@@ -6261,7 +6261,7 @@ rp_filter_all_get(unsigned int gid, const char *oid, char *value)
  * Set RPF filtering value for interface "all"
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         new value pointer
  *
  * @return              Status code
@@ -6371,7 +6371,7 @@ arp_ignore_all_set(unsigned int gid, const char *oid, const char *value)
  * Get promiscuous mode of the interface ("0" - normal or "1" - promiscuous)
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
@@ -6402,7 +6402,7 @@ promisc_get(unsigned int gid, const char *oid, char *value,
  * ("1" - enable, "0" - disable)
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
  *
@@ -6614,7 +6614,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
  * Get neighbour entry state.
  *
  * @param gid            group identifier (unused)
- * @param oid            full object instence identifier (unused)
+ * @param oid            full object instance identifier (unused)
  * @param value          location for the value
  *                       (XX:XX:XX:XX:XX:XX is returned)
  * @param ifname         interface name
@@ -8534,7 +8534,7 @@ update_buf(char const *fmt, ...)
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    /* Check whether truncation has occured */
+    /* Check whether truncation has occurred */
     if (num >= buf + sizeof(buf) - ptr)
     {
         ERROR("Buffer size (%u) is too small", sizeof(buf));

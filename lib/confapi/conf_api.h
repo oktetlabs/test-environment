@@ -8,7 +8,7 @@
  * - @cmd{Add} new object instances;
  * - @cmd{Delete} existing object instances;
  * - change the value of an object instance;
- * - @cmd{Get} the value of an object instace.
+ * - @cmd{Get} the value of an object instance.
  * .
  */
 
@@ -386,7 +386,7 @@ extern te_errno cfg_get_brother(cfg_handle handle, cfg_handle *brother);
 extern te_errno cfg_get_father(cfg_handle handle, cfg_handle *father);
 /**@}*/
 
-/** @defgroup confapi_base_access Contriguration tree access operations
+/** @defgroup confapi_base_access Configuration tree access operations
  * @ingroup confapi_base
  * @{
  */
@@ -400,7 +400,7 @@ extern te_errno cfg_get_father(cfg_handle handle, cfg_handle *father);
  * @param  ...      value to be assigned to the new instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
- *                    for addreses: struct sockaddr *
+ *                    for addresses: struct sockaddr *
  *
  * @return Status code (see te_errno.h)
  */
@@ -417,7 +417,7 @@ extern te_errno cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
  * @param  ...      value to be assigned to the new instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
- *                    for addreses: struct sockaddr *
+ *                    for addresses: struct sockaddr *
  *
  * @return Status code (see te_errno.h)
  */
@@ -446,7 +446,7 @@ extern te_errno cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
  * @param  ...      value to be assigned to the new instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
- *                    for addreses: struct sockaddr *
+ *                    for addresses: struct sockaddr *
  *
  * @return Status code (see te_errno.h)
  */
@@ -464,7 +464,7 @@ extern te_errno cfg_add_instance_local(const cfg_oid *oid,
  * @param  ...      value to be assigned to the new instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
- *                    for addreses: struct sockaddr *
+ *                    for addresses: struct sockaddr *
  *
  * @return Status code (see te_errno.h)
  */
@@ -554,7 +554,7 @@ extern te_errno cfg_del_instance_local_fmt(te_bool with_children,
  * @param  ...      new value to be assigned to the instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
- *                    for addreses: struct sockaddr *
+ *                    for addresses: struct sockaddr *
  *
  * @return Status code (see te_errno.h)
  */
@@ -594,7 +594,7 @@ extern te_errno cfg_set_instance_str(cfg_val_type type, const void *val,
  * @param ...       new value to be assigned to the instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
- *                    for addreses: struct sockaddr *
+ *                    for addresses: struct sockaddr *
  *
  * @return Status code (see te_errno.h)
  */
@@ -629,7 +629,7 @@ extern te_errno cfg_commit_fmt(const char *oid_fmt, ...)
  * @param ...       OUT: location for the value
  *                    for integer values: int *
  *                    for strings: char **
- *                    for addreses: struct sockaddr **
+ *                    for addresses: struct sockaddr **
  *
  * @return Status code (see te_errno.h)
  */
@@ -645,7 +645,7 @@ extern te_errno cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
  * Type-safe version of cfg_get_instance_fmt() for values of int type.
  *
  * In reality it looks for int32 values and converts it to int. It is only
- * for backward compability.
+ * for backward compatibility.
  */
 extern te_errno cfg_get_int(int *val, const char *oid_fmt, ...)
                             __attribute__((format(printf, 2, 3)));
@@ -730,7 +730,7 @@ extern te_errno cfg_get_instance_str(cfg_val_type *p_type, void *val,
  * @param  ...      OUT: location for the value
  *                    for integer values: int *
  *                    for strings: char **
- *                    for addreses: struct sockaddr **
+ *                    for addresses: struct sockaddr **
  *
  * @return Status code (see te_errno.h)
  */
@@ -746,7 +746,7 @@ extern te_errno cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
  * Type-safe version of cfg_get_instance_sync_fmt() for values of int type.
  *
  * In reality it looks for int32 values and converts it to int. It is only
- * for backward compability.
+ * for backward compatibility.
  */
 extern te_errno cfg_get_int_sync(int *val,
                                  const char *oid_fmt, ...)
@@ -964,7 +964,7 @@ extern te_errno cfg_create_config(const char *name, te_bool history);
 /**
  * Process a history configuration file.
  *
- * @param filename      history configuratin file name
+ * @param filename      history configuration file name
  * @param expand_vars   List of key-value pairs for expansion in file,
  *                      @c NULL if environment variables are used for
  *                      substitutions
@@ -996,7 +996,7 @@ extern te_errno cfg_wait_changes(void);
 
 /**
  * Notify the Configurator that instances matching OID template are
- * touched by non-CS means (necesary for subsequent correct
+ * touched by non-CS means (necessary for subsequent correct
  * cfg_wait_changes() processing).
  *
  * @param oid_tmpl      instance identifier format string (may contain

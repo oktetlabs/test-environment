@@ -20,7 +20,7 @@
          clients and resources really distributed within clients.
          Thus CM for DHCP server requires three kind of subtrees:
          client-oriented, configuration-oriented (hosts & groupt)
-         and lease-oriented to make CM more convinient for particular
+         and lease-oriented to make CM more convenient for particular
          purposes.
 
          Name:  empty
@@ -258,7 +258,7 @@
 
                  For options, which values consist of sub-values of
                  same of different types all sub-values are concatenated
-                 and sparated using commas: 1.2.3.4,25,45:a1:C0.
+                 and separated using commas: 1.2.3.4,25,45:a1:C0.
 
           Limit: any
 

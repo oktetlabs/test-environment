@@ -133,7 +133,7 @@ find_rpcserver_plugin(const char *name)
  * Create RPC server plugin.
  *
  * @param gid       Group identifier (unused)
- * @param oid       Full object instence identifier (unused)
+ * @param oid       Full object instance identifier (unused)
  * @param value     Value of RPC server plugin (empty string, unused)
  * @param name      RPC server plugin name
  *
@@ -176,7 +176,7 @@ rpcserver_plugin_add(unsigned int gid, const char *oid, const char *value,
  * Delete RPC server plugin.
  *
  * @param gid       Group identifier (unused)
- * @param oid       Full object instence identifier (unused)
+ * @param oid       Full object instance identifier (unused)
  * @param name      RPC server plugin name
  *
  * @return Status code
@@ -340,7 +340,7 @@ RPCSERVER_PLUGIN_COMMON_SET(uninstall)
  * Get the field @b enable of specified RPC server plugin.
  *
  * @param gid       Group identifier (unused)
- * @param oid       Full object instence identifier (unused)
+ * @param oid       Full object instance identifier (unused)
  * @param value     Value of field @b enable in RPC server plugin
  * @param name      RPC server plugin name
  *
@@ -507,7 +507,7 @@ rpcserver_plugin_update(struct rpcserver_plugin *plugin)
  * Set the field @b enable of specified RPC server plugin.
  *
  * @param gid       Group identifier (unused)
- * @param oid       Full object instence identifier (unused)
+ * @param oid       Full object instance identifier (unused)
  * @param value     Value of field @b enable in RPC server plugin
  * @param name      RPC server plugin name
  *

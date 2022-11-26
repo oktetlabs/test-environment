@@ -2,7 +2,7 @@
 /** @file
  * @brief Wrapper for net/if.h
  *
- * Wrapper for net/if.h need for resolve confict with linux/if.h and net/if.h
+ * Wrapper for net/if.h need for resolve conflict with linux/if.h and net/if.h
  *
  * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */

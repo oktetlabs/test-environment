@@ -612,7 +612,7 @@ mark_rp_changes(radius_parameter *rp)
 }
 
 /**
- * Recursively marks as deleted all descendands of a given node
+ * Recursively marks as deleted all descendants of a given node
  */
 static void
 wipe_rp_section(radius_parameter *rp)
@@ -688,7 +688,7 @@ update_rp(radius_parameter *top, enum radius_parameters kind,
  * FreeRADIUS user authentication rules are configured via the separate
  * file, e.g. /etc/radiusd/users, with the following syntax:
  *
- * Usename  Attr1 == Value1, Attr2 == Value2, Auth-Type := Reject
+ * Username  Attr1 == Value1, Attr2 == Value2, Auth-Type := Reject
  *      Attr3 := Value3
  *      Attr4 := Value4
  *
@@ -703,7 +703,7 @@ update_rp(radius_parameter *top, enum radius_parameters kind,
  * For each user we create two rules - separately for outgoing
  * Access-Challenge and Access-Accept packets. (This feature requires
  * patched version of FreeRADIUS server, because it needs to check
- * Response-Packet-Type pseudoattribute, that is not provided to user
+ * Response-Packet-Type pseudo attribute, that is not provided to user
  * rules checking function in original code.)
  */
 
@@ -918,7 +918,7 @@ radius_parse_attr_value_pair(const char **string, char **attr, char **value)
 
     if ((*value = (char *)calloc(len + 1, 1)) == NULL)
     {
-        ERROR("%s(): failed to alocate memory", __FUNCTION__);
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
         free(*attr);
         *attr = NULL;
         return TE_ENOMEM;

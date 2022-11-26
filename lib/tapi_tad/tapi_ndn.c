@@ -1898,7 +1898,7 @@ tapi_ndn_eth_read_vlan_tci(const asn_value *eth, size_t *n_tags,
     }
     else
     {
-        ERROR("Error occured during VLAN tag get");
+        ERROR("Error occurred during VLAN tag get");
         return rc;
     }
 

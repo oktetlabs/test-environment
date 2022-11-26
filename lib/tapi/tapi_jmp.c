@@ -71,9 +71,9 @@ tapi_jmp_ctx_free_garbage(tapi_jmp_ctx *ctx)
 }
 
 /**
- * Destructor of resources assosiated with thread.
+ * Destructor of resources associated with thread.
  *
- * @param handle    Handle assosiated with thread
+ * @param handle    Handle associated with thread
  */
 static void
 tapi_jmp_thread_ctx_destroy(void *handle)
@@ -120,7 +120,7 @@ tapi_jmp_key_create(void)
 /**
  * Find thread context handle or initialize a new one.
  *
- * @return Context handle or NULL if some error occured
+ * @return Context handle or NULL if some error occurred
  */
 static tapi_jmp_ctx *
 tapi_jmp_get_ctx(te_bool create)

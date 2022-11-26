@@ -228,7 +228,7 @@
       d: |
          Diffie-Hellman parameter size (server only)
          Name: empty
-         Value: any power of two, preferrably >= 2048 (some SSL backends have
+         Value: any power of two, preferably >= 2048 (some SSL backends have
                 such a limitation due to crackability of keys with lower key
                 side)
 

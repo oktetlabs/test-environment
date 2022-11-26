@@ -35,7 +35,7 @@ cfg_db_find_son(cfg_instance *father, const char *subid, const char *name)
 }
 
 
-/** rcfunix parameters to string convertion rules */
+/** rcfunix parameters to string conversion rules */
 struct cfg_rcfunix_conf_param {
     const char *name;       /**< Parameter name */
     te_bool required;       /**< Is parameter required? */

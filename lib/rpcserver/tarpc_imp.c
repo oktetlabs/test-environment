@@ -6467,7 +6467,7 @@ finish:
 )
 
 /*-------------- copy_ta_libs ---------------------------*/
-/** Maximum shell command lenght */
+/** Maximum shell command length */
 #define MAX_CMD 1000
 
 /**
@@ -11066,9 +11066,9 @@ TARPC_FUNC(ta_dlsym_call, {},
 /*-------------- dlerror() --------------------------*/
 /**
  * Returns a human readable string describing the most recent error
- * that occured from dlopen(), dlsym() or dlclose().
+ * that occurred from dlopen(), dlsym() or dlclose().
  *
- * @return a pointer to string or NULL if no errors occured.
+ * @return a pointer to string or NULL if no errors occurred.
  */
 char *
 ta_dlerror(tarpc_ta_dlerror_in *in)

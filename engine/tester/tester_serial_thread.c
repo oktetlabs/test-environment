@@ -43,7 +43,7 @@
 #define SERIAL_WAIT_LOCAL_SEQ_TIMEOUT 10000
 
 /*
- * Attemtions limit to avoid infinity loop
+ * Attention limit to avoid infinity loop
  */
 #define SERIAL_WAIT_LOCAL_SEQ_LIMIT 1000
 

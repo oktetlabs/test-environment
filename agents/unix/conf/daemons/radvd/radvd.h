@@ -128,7 +128,7 @@
 #define ADVAUTONOMOUS_DFLT      "on"
 
 /*
- * Contents of confguration file used to start radvd with no
+ * Contents of configuration file used to start radvd with no
  * configuration settings defined in configuration tree.
  * Use as configuration string in functions like printf/sprintf.
  */

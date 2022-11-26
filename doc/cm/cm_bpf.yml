@@ -53,7 +53,7 @@
          Name:  map name
 
     # The next four entries: type, key_size, value_size and max_entries
-    # are readed from BPF object when it is loaded.
+    # are read from BPF object when it is loaded.
 
     - oid: "/agent/bpf/map/type"
       access: read_only

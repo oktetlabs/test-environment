@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /** @file
- * @brief Unix Test Agent: IPv6 router advertsement daemon radvd
+ * @brief Unix Test Agent: IPv6 router advertisement daemon radvd
  *
  * IPv6 router advertisement daemon radvd control code
  *
@@ -32,18 +32,18 @@ static te_bool radvd_changed = FALSE;
 static TAILQ_HEAD(te_radvd_interfaces, te_radvd_interface) interfaces;
 
 /*
- * 1) Return current value of global flad 'radvd_initilaized',
- * 2) initialize queue 'interfaces' and modify flag 'radvd_initilaized'
+ * 1) Return current value of global flag 'radvd_initialized',
+ * 2) initialize queue 'interfaces' and modify flag 'radvd_initialized'
  *    if required;
  */
 static te_bool
-radvd_init_check(te_bool initilaize)
+radvd_init_check(te_bool initialize)
 {
     static te_bool  radvd_initialized = FALSE;
     te_bool         retval;
 
     retval = radvd_initialized;
-    if (initilaize && !radvd_initialized)
+    if (initialize && !radvd_initialized)
     {
         TAILQ_INIT(&interfaces);
 
@@ -1704,7 +1704,7 @@ ds_rdnss_list(unsigned int gid, const char *oid,
  * or list of IPv6 addresses in string format).
  * In structure te_radvd_interface this value is keeped in the
  * field 'clients'. It looks like list of of structures
- * te_radvd_ip6_addr. Functions get/set makes convertion between
+ * te_radvd_ip6_addr. Functions get/set makes conversion between
  * string and list
  */
 static te_errno
@@ -2332,7 +2332,7 @@ ds_rdnss_option_list(unsigned int gid, const char *oid,
 /*** Configuration subtree ***/
 /* radvd subtree layout relations: left - son, down - brother
  *
- * radvd - inteface - option
+ * radvd - interface - option
  *                      |
  *                    prefix - option
  *                      |
@@ -2376,7 +2376,7 @@ static rcf_pch_cfg_object node_ds_##_name =                         \
     OPTIONS_NODE(interface, &node_ds_prefix);
 /*** interface node ***/
 /*
- * radvd configuration looks like sequence of uniformal records
+ * radvd configuration looks like sequence of uniform records
  *
  * interface <ifname>
  * {
@@ -2386,7 +2386,7 @@ static rcf_pch_cfg_object node_ds_##_name =                         \
  * Each record represents interface being served with its specific
  * service settings. Strictly one record per one interface.
  *
- * Functions ds_radvd_inteface_* do not parse radvd configuration file.
+ * Functions ds_radvd_interface_* do not parse radvd configuration file.
  * configuration records are represented in the list named 'iterfaces'
  * (see above). Configuration file is created/modified with given contents
  * of the list 'interfaces' when function radvd_commit is called.

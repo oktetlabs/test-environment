@@ -427,7 +427,7 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     family = SA(&rt_info->dst)->sa_family;
     if ((family != AF_INET) && (family != AF_INET6))
     {
-        ERROR("%s(): Unsupported destinaton address specified",
+        ERROR("%s(): Unsupported destination address specified",
               __FUNCTION__);
         return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
     }

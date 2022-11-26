@@ -205,7 +205,7 @@ typedef struct ta_reboot_context {
 /** Structure for one Test Agent */
 struct ta {
     struct ta          *next;               /**< Link to the next TA */
-    rcf_talib_handle    handle;             /**< Test Agent handle returted
+    rcf_talib_handle    handle;             /**< Test Agent handle returned
                                                  by start() method */
     char               *name;               /**< Test Agent name */
     char               *type;               /**< Test Agent type */
@@ -360,7 +360,7 @@ extern te_bool rcf_ta_reboot_before_req(ta *agent, usrreq *req);
  *
  * @param agent  Test Agent structure
  * @param opcode Request operation code
- * @return @c FLASE if the waiting requests should be processed
+ * @return @c FALSE if the waiting requests should be processed
  */
 extern te_bool rcf_ta_reboot_on_req_reply(ta *agent, rcf_op_t opcode);
 

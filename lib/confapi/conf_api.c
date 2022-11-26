@@ -75,7 +75,7 @@
         }                                                           \
     } while (0)
 
-/** Begining of all agents oid */
+/** Beginning of all agents oid */
 #define AGENT_BOID       "/agent"
 #define BOID_LEN         strlen("/agent")
 
@@ -975,7 +975,7 @@ cfg_get_father(cfg_handle handle, cfg_handle *father)
  * @param list      value to be assigned to the instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
- *                    for addreses: struct sockaddr *
+ *                    for addresses: struct sockaddr *
  *
  * @return status code (see te_errno.h)
  */
@@ -1439,7 +1439,7 @@ cfg_del_instance_local_fmt(te_bool with_children, const char *oid_fmt, ...)
  * @param list      new value to be assigned to the instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
- *                    for addreses: struct sockaddr *
+ *                    for addresses: struct sockaddr *
  *
  * @return status code (see te_errno.h)
  */

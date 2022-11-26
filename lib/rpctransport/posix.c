@@ -460,7 +460,7 @@ rpc_transport_is_readable(rpc_transport_handle handle)
     return FD_ISSET((int)handle, &rset);
 }
 
-/** Recieve exact number of bytes from the stream */
+/** Receive exact number of bytes from the stream */
 static te_errno
 recv_from_stream(int handle, uint8_t *buf, size_t len, int timeout)
 {

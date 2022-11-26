@@ -141,12 +141,12 @@ extern ASN_type_p ndn_Raw_Packet;
 
 /*
  * Function NDN_parse_packet
- *      Parses NDS of packet, recevied from TA.
+ *      Parses NDS of packet, received from TA.
  * Parameters:
  *      filename - name of file where RCF saved NDS attachment.
  * Return code:
  *      pointer ot ASN_value structure with type "Raw-Packet"
- *      (see NDN ASN.1 definitions about it) or zero if error occured.
+ *      (see NDN ASN.1 definitions about it) or zero if error occurred.
  */
 
 ASN_value_p NDN_parse_packet(const char *filename);
@@ -215,7 +215,7 @@ universal_handling_usage_example(void)
         raw_packet = NDN_parse_packet ("received_packet.asn");
         Find_Ethernet_Header_in_Raw_Packet(raw_packet, &eth_pkt);
 
-        /* use eth_pkt, for example to constract new Traffic-Template */
+        /* use eth_pkt, for example to construct new Traffic-Template */
 
         ASN_value_p tmpl = ASN_parse_file(ndn_Traffic_Pattern,
                                           "eth_template.asn");

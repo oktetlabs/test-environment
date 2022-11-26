@@ -115,14 +115,14 @@ extern unsigned int te_pci_subclass_str2id(const char *label);
  * If @p progintf is not defined, the function will return
  * a label for a subclass part as per te_pci_subclass_id2str().
  *
- * @param  progintf   programming interface ID (see te_pci_prog_inteface)
+ * @param  progintf   programming interface ID (see te_pci_prog_interface)
  *
  * @return the subclass label
  */
 extern const char *te_pci_progintf_id2str(unsigned int progintf);
 
 /**
- * Provide a PCI prog inteface ID matching a given @p label.
+ * Provide a PCI prog interface ID matching a given @p label.
  *
  * The function may be passed any label accepted by te_pci_subclass_str2id(),
  * then the shifted value of a subclass ID will be returned.
@@ -174,7 +174,7 @@ te_pci_progintf2subclass(unsigned int progintf)
 }
 
 /**
- * Get a default PCI programming inteface ID from a PCI subclass ID.
+ * Get a default PCI programming interface ID from a PCI subclass ID.
  *
  * @param subclass   PCI subclass ID
  *

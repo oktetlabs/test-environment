@@ -410,7 +410,7 @@ waiting_state_handler(ta *agent)
 }
 
 /**
- * @c TA_REBOOT_STATE_WAITING_ACK handeler for @c TA_REBOOT_TYPE_HOST
+ * @c TA_REBOOT_STATE_WAITING_ACK handler for @c TA_REBOOT_TYPE_HOST
  *
  * Check that response from TA is received and set the next reboot state
  * for the agent.
@@ -438,7 +438,7 @@ waiting_ack_state_host_reboot_handler(ta *agent)
 }
 
 /**
- * @c TA_REBOOT_STATE_WAITING_ACK handeler for @c TA_REBOOT_TYPE_COLD
+ * @c TA_REBOOT_STATE_WAITING_ACK handler for @c TA_REBOOT_TYPE_COLD
  *
  * Check that response from power TA is received and set the next reboot state
  * for the agent.
@@ -476,14 +476,14 @@ waiting_ack_state_cold_reboot_handler(ta *agent)
 }
 
 /**
- * @c TA_REBOOT_STATE_WAITING_ACK handeler.
+ * @c TA_REBOOT_STATE_WAITING_ACK handler.
  *
  * For @c TA_REBOOT_TYPE_HOST:
  *     check that response from TA is received and set the next reboot state
  *     for the agent.
  *
  * For @c TA_REBOOT_TYPE_COLD:
- *     check that response from power controll TA associated with @p agent
+ *     check that response from power control TA associated with @p agent
  *     is received and set the next reboot state for the @p agent.
  *
  * @note When restarting the TA process @c TA_REBOOT_STATE_WAITING_ACK in

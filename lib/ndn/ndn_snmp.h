@@ -95,7 +95,7 @@ extern const asn_type * const ndn_snmp_obj_syntax_big_counter;
 extern const asn_type * const ndn_snmp_obj_syntax_unsigned;
 
 /**
- * Convers NDN SNMP Message types from numeric to string format
+ * Converse NDN SNMP Message types from numeric to string format
  *
  * @param msg_type  Message type in numeric format
  *

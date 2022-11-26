@@ -168,7 +168,7 @@ Or easy way, you can install meta package **oktetlabs-te-dev** from OKTET Labs r
 
 Optional libraries and packages:
 
-* perl-Time-HiRes - package on Redhat/Fedora is very usefull (it allows to avoid mixture in log because of unprecise timestamps in messages logged by Dispatcher (via logging script)).
+* perl-Time-HiRes - package on Redhat/Fedora is very useful (it allows to avoid mixture in log because of unprecise timestamps in messages logged by Dispatcher (via logging script)).
 
 
 
@@ -290,7 +290,7 @@ You should have two folders: Test Environment sources folder; test suite sources
 
 Before building you **must** export TE_BASE environment variable that points to the root directory of Test Environment sources.
 
-As you usually work with one copy of Test Environment it is usefull to add
+As you usually work with one copy of Test Environment it is useful to add
 
 .. ref-code-block:: cpp
 

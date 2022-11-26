@@ -109,7 +109,7 @@ extern te_errno listener_add_msg(log_listener *listener,
 extern te_errno listener_dump(log_listener *listener);
 
 /**
- * Handler listener's reponse.
+ * Handler listener's response.
  *
  * @param listener          listener description
  * @param result            CURL status code

@@ -279,7 +279,7 @@ extern int tapi_iscsi_send_pkt_last(const char   *ta_name,
  *
  * @param ta            TA name
  * @param sid           RCF session id
- * @param csap_rcv      identifier of recieve CSAP
+ * @param csap_rcv      identifier of receive CSAP
  * @param csap_fwd      identifier of CSAP which should obtain data
  * @param timeout       timeout to wait data, in milliseconds
  * @param forwarded     number of forwarded PDUs (OUT)
@@ -385,7 +385,7 @@ extern te_errno tapi_iscsi_prepare_pattern_unit(iscsi_bit_spec_t i_bit,
  *
  * @param segment_data iSCSI PDU Segment Data in asn format
  *
- * @return number of keys ot -1 if error occured.
+ * @return number of keys ot -1 if error occurred.
  */
 extern int tapi_iscsi_get_key_num(iscsi_segment_data segment_data);
 
@@ -395,7 +395,7 @@ extern int tapi_iscsi_get_key_num(iscsi_segment_data segment_data);
  * @param segment_data iSCSI PDU Segment Data in asn format
  * @param key_index    key index in iSCSI PDU Segment Data
  *
- * @return key name or NULL if error occured.
+ * @return key name or NULL if error occurred.
  */
 extern char * tapi_iscsi_get_key_name(iscsi_segment_data segment_data,
                                       int key_index);
@@ -406,7 +406,7 @@ extern char * tapi_iscsi_get_key_name(iscsi_segment_data segment_data,
  * @param segment_data iSCSI PDU Segment Data in asn format
  * @param name         key name
  *
- * @return key index or TAPI_ISCSI_KEY_INVALID if error occured.
+ * @return key index or TAPI_ISCSI_KEY_INVALID if error occurred.
  */
 extern int tapi_iscsi_get_key_index_by_name(
                iscsi_segment_data segment_data,
@@ -418,7 +418,7 @@ extern int tapi_iscsi_get_key_index_by_name(
  * @param segment_data  iSCSI PDU Segment Data in asn format
  * @param key_index     key index
  *
- * @return key values in asn format or NULL if error occured.
+ * @return key values in asn format or NULL if error occurred.
  */
 extern iscsi_key_values tapi_iscsi_get_key_values(
                             iscsi_segment_data segment_data,
@@ -429,7 +429,7 @@ extern iscsi_key_values tapi_iscsi_get_key_values(
  *
  * @param values key values in asn format
  *
- * @return number of values or -1 if error occured.
+ * @return number of values or -1 if error occurred.
  */
 extern int tapi_iscsi_get_key_values_num(iscsi_key_values values);
 
@@ -458,7 +458,7 @@ extern int tapi_iscsi_get_key_value(iscsi_key_values values,
  *                        then key is to be inserted to the end
  *                        of key list
  *
- * @return key index or -1 if error occured.
+ * @return key index or -1 if error occurred.
  */
 extern int tapi_iscsi_add_new_key(iscsi_segment_data segment_data,
                                   char *name, int key_index);
@@ -471,7 +471,7 @@ extern int tapi_iscsi_add_new_key(iscsi_segment_data segment_data,
  *                 is iscsi_key_value_type_xxx, and value is
  *                 an appropriate type value
  *
- * @return list of values or NULL if error occured.
+ * @return list of values or NULL if error occurred.
  */
 extern iscsi_key_values tapi_iscsi_key_values_create(int num, ...);
 
@@ -513,7 +513,7 @@ extern int tapi_iscsi_delete_key(iscsi_segment_data segment_data,
  * @param ...           list of keys names
  *
  * @return              iSCSI PDU Segment Data in  asn format
- *                      or NULL if error occured
+ *                      or NULL if error occurred
  */
 extern iscsi_segment_data tapi_iscsi_keys_create(int num, ...);
 
@@ -539,7 +539,7 @@ extern int tapi_iscsi_find_key_and_value(
  * @param segment_data    iSCSI PDU Segment Data in asn format
  * @param key_name        the name of key (according to RFC3720)
  * @param buf             Location to return values of the key
- * @param buf_len         The lenght of the buf
+ * @param buf_len         The length of the buf
  *
  * @return 0 or error code.
  */

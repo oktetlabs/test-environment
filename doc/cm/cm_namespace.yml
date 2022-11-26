@@ -29,6 +29,6 @@
       access: read_create
       type: none
       d: |
-         Interfaces wich are moved from the current agent namespace to the
+         Interfaces which are moved from the current agent namespace to the
          specified.
          Name: Name of the interface.

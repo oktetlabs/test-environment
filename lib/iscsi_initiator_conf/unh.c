@@ -220,7 +220,7 @@ static const char *conf_iscsi_unh_force_flag_fmt =
     } while (0)
 
 /**
- * See iscsi_initiator.h and iscsi_initator_conn_request_thread()
+ * See iscsi_initiator.h and iscsi_initiator_conn_request_thread()
  * for a complete description of the state machine involved.
  */
 te_errno
@@ -257,7 +257,7 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
     else
     {
         /* We should open new connection */
-        /* 1: configurating the Initiator */
+        /* 1: configuring the Initiator */
 
         CHECK_SHELL_CONFIG_RC(
             iscsi_unix_cli("iscsi_manage init restore target=%d host=%d",

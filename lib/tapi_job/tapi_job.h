@@ -346,7 +346,7 @@ extern te_errno tapi_job_wait(tapi_job_t *job, int timeout_ms,
 /**
  * Check whether a job is running
  *
- * @param      job        Job instace handle
+ * @param      job        Job instance handle
  *
  * @return                @c TRUE if @p job is running
  * @exception TEST_FAIL
@@ -360,7 +360,7 @@ extern te_bool tapi_job_is_running(tapi_job_t *job);
  *
  * @note This function supports only jobs created by RPC factory
  *
- * @param      job        Job instace handle
+ * @param      job        Job instance handle
  * @param      n_channels Number of channels
  * @param[out] channels   A vector of obtained channel handles
  *
@@ -384,7 +384,7 @@ extern te_errno tapi_job_alloc_input_channels(tapi_job_t *job,
  *       to/from them (see tapi_job_attach_filter(),
  *       tapi_job_filter_add_channels(), and tapi_job_filter_remove_channels())
  *
- * @param      job        Job instace handle
+ * @param      job        Job instance handle
  * @param      n_channels Number of channels
  * @param[out] channels   A vector of obtained channel handles
  *

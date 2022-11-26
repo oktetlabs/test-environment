@@ -1188,7 +1188,7 @@ main(int argc, const char *argv[])
         perror("fopen() failure");
         return EXIT_FAILURE;
     }
-    /* Futher we must goto 'exit' in the case of failure */
+    /* Further we must goto 'exit' in the case of failure */
 
     /* Initialize IPC before any servers creation */
     if (ipc_init() != 0)

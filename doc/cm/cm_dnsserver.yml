@@ -24,7 +24,7 @@
       d: |
          DNS server forwarder
          Name: empty
-         Value: forwader's address
+         Value: forwarder's address
          Limit: 1
 
     - oid: "/agent/dnsserver/directory"

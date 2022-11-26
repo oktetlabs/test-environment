@@ -49,7 +49,7 @@ typedef struct ndn_kprobes_info_s {
     int intercept_count;
     int retval;                               /**< Value to which will be
                                                     replaced returned value
-                                                    of funcion_name function;
+                                                    of function_name function;
                                                     unused if action is not
                                                     equals to "fail" */
     int block_timeout;

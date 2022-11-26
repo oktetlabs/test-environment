@@ -2,7 +2,7 @@
 /** @file
  * @brief Creating RCF listener before running TA
  *
- * Auxuliary program creating RCF listener before TA
+ * Auxiliary program creating RCF listener before TA
  * is run. It can be used when TA is run in a different
  * network namespace to which RCF cannot connect. Listener
  * created before moving to the namespace can still

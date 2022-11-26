@@ -78,7 +78,7 @@
          Remaining PCI device identification codes (revision ID, subsystem
          vendor, subsystem id, device class), as defined by PCI spec.
          All are provided as integers, mapping between names and numbers
-         should be done by the test if ever neeeded.
+         should be done by the test if ever needed.
 
     - oid: "/agent/hardware/pci/device/subsystem_vendor"
       access: read_only
@@ -123,7 +123,7 @@
          OID (/agent/hardware/node) of a NUMA node where the device is local
 
          Name: none
-         Value: OID of a node or empty string if unknonw
+         Value: OID of a node or empty string if unknown
 
     - oid: "/agent/hardware/pci/device/driver"
       access: read_write
@@ -468,7 +468,7 @@
          The second consideration is that we want to reserve PCI devices
          using the configurator /agent/rsrc. It is not convenient to specify
          direct PCI address, because it makes configuration too fragile.
-         It would be preferrable to specify just "the first function of a
+         It would be preferable to specify just "the first function of a
          certain NIC" etc.
 
          On the other hand, using vendor+device+ordinal as a sole identifier
@@ -487,7 +487,7 @@
 
          All levels of the hierarchy may be used for locking. That is,
          assigning /agent/hardware/pci to /agent/rsrc would lock the whole
-         PCI tree (which is only possible if nobody else is helding any PCI
+         PCI tree (which is only possible if nobody else is holding any PCI
          device locks), and the whole PCI tree will be made accessible
          Locking /agent/hardware/pci/vendor and
          /agent/hardware/pci/vendor/device will, in the same manner, result

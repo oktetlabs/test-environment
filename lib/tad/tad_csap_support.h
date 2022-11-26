@@ -91,7 +91,7 @@ typedef te_errno (*csap_layer_destroy_cb_t)(csap_p       csap,
  *
  * @return
  *     String with textual presentation of parameter value, or NULL
- *     if error occured. User have to free memory at returned pointer.
+ *     if error occurred. User have to free memory at returned pointer.
  */
 typedef char *(*csap_layer_get_param_cb_t)(csap_p        csap,
                                            unsigned int  layer,
@@ -197,7 +197,7 @@ typedef csap_layer_match_pre_cb_t csap_layer_match_post_cb_t;
  * @param sdu           Rest upper layer payload (service data unit of
  *                      the layer)
  *
- * @param pkt           Recevied packet, may be list of fragments, which
+ * @param pkt           Received packet, may be list of fragments, which
  *                      all should be defragmented by this callback and
  *                      information should be put into single PDU
  * @param payload       Rest upper layer payload, if present (OUT)

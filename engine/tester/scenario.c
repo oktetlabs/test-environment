@@ -39,7 +39,7 @@
  * defined by testing_act:
  * L0: [1 AB 5] [ 8 B 13]  (A, B, etc. are flags-properties of intervals)
  * L1: [3 A  9] [11 A 15]
- * operation OR(merge) will produce the followint list:
+ * operation OR(merge) will produce the following list:
  * [1 AB 5] [6 A 7] [8 AB 9] [10 B 10] [11 AB 13] [14 A 15]
  * As one can see, the gaps are "implied" intervals with property 0;
  *
@@ -231,12 +231,12 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
      */
     next0 = get_next_with_gaps(&elm0, gap0, &the_end_0);
 
-    while (1) /* interate the fist set of intervals */
+    while (1) /* integrate the fist set of intervals */
     {
         if (next0 == NULL)
             break;
 
-        while (1) /* interate the second set of intervals */
+        while (1) /* integrate the second set of intervals */
         {
             if (!need_get_next1)
             {

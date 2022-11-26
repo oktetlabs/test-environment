@@ -26,7 +26,7 @@ extern char *cfg_get_buf;
  *
  * 1. It is not allowed to perform any command after local SET/ADD/DEL
  * command until COMMIT is performed. All non-local commands shall fail with
- * EACCESS error code notifying that there is open local-commnd sequence.
+ * EACCESS error code notifying that there is open local-command sequence.
  *
  * 2. It is not allowed to COMMIT only a part of local changes
  * in Configuration DB, instead user shall COMMIT all their changes in
@@ -35,13 +35,13 @@ extern char *cfg_get_buf;
 
 /**
  * Whether local commands sequence is terminated or not.
- * This variable is indended to solve the problem mentioned in note 1 above.
+ * This variable is intended to solve the problem mentioned in note 1 above.
  */
 extern te_bool local_cmd_seq;
 
 /**
  * Maximum allowed subtree value for commit operation.
- * This variable is indended to solve the problem mentioned in note 2 above.
+ * This variable is intended to solve the problem mentioned in note 2 above.
  */
 extern char max_commit_subtree[CFG_INST_NAME_MAX];
 

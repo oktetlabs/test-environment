@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /** @file
- * @brief Sniffer process defenition
+ * @brief Sniffer process definition
  *
- * Defenition of sniffer process function.
+ * Definition of sniffer process function.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */

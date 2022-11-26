@@ -452,7 +452,7 @@ test_var_arg_get_value(const run_item                   *ri,
     unsigned int                            n_values;
 
     /*
-     * Assume that request is corrent and try to find first.
+     * Assume that request is current and try to find first.
      */
 
     data.search = index;

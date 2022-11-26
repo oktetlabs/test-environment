@@ -42,7 +42,7 @@ static asn_named_entry_t _ndn_tag_header_ne_array[] = {
     /** TCI priority field */
     { "priority", &ndn_data_unit_int3_s,
       { PRIVATE, NDN_TAG_VLAN_TAG_HEADER_PRIO } },
-    /** TCI Cannonical Format Identifier (CFI) */
+    /** TCI Canonical Format Identifier (CFI) */
     { "cfi", &ndn_data_unit_int1_s,
       { PRIVATE, NDN_TAG_VLAN_TAG_HEADER_CFI } },
     /** TCI Virtual LAN (VLAN) identifier */

@@ -279,7 +279,7 @@
       access: read_write
       type: string
       d: |
-        Increment algorothm used by the NIC/driver for TSO IP ID edits.
+        Increment algorithm used by the NIC/driver for TSO IP ID edits.
         It's assumed that this applies both to outer and inner headers.
         In default mode, ip_id_i = ip_id_superframe + i. In mod15 mode,
         ip_id_i = (ip_id_superframe + i) % 0x8000 for i greater than 0.

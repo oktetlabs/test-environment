@@ -1020,7 +1020,7 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
  *                      preprocessing
  * @param meta_pkt      Receiver meta packet (the first raw packet
  *                      contains just received data)
- * @param pkt_len       Real length of usefull data in pkt
+ * @param pkt_len       Real length of useful data in pkt
  * @param no_report     If match, include in statistics but does not
  *                      report raw packet to the test
  *

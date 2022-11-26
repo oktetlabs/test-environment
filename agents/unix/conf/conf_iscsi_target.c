@@ -197,7 +197,7 @@ iscsi_target_chap_get(unsigned int gid, const char *oid,
 }
 
 /** Maps OIDs to iSCSI parameter names algorithmically.
- * The algoritm is as follows:
+ * The algorithm is as follows:
  *  -# The OID is truncated to the rightmost object name
  *  -# A list of special cases is looked up and the corresponding
  *  name is used, if an OID is found in the list.
@@ -359,7 +359,7 @@ iscsi_target_backstore_unmount(void)
     status = ta_system(cmd);
     if (status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
     {
-        WARN("Cannot unount backing store");
+        WARN("Cannot unmount backing store");
     }
     if (rmdir(backstore_mountpoint) != 0)
     {

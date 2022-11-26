@@ -120,7 +120,7 @@ static int cfg_all_inst_max = 1;
 /** Unique sequence number of the next instance */
 uint16_t cfg_inst_seq_num = 1;
 
-/** Delay for configuration changes accomodation */
+/** Delay for configuration changes accommodation */
 uint32_t cfg_conf_delay;
 
 /* Locals */
@@ -147,7 +147,7 @@ static cfg_orphan *orphaned_objects;
 
 /**
  * Ordered list of all objects such that a master object always
- * preceeds all its dependant objects
+ * precedes all its dependant objects
  */
 static cfg_object *topological_order;
 
@@ -1740,7 +1740,7 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     /*
      * It is a new instance in local DB, so that mark it as not
      * synchronized with Test Agent (not added to Test Agent).
-     * It is the deal of uper layer to update this field to 'TRUE',
+     * It is the deal of upper layer to update this field to 'TRUE',
      * when this object is added to the Test Agent.
      */
     inst->added = FALSE;

@@ -14,7 +14,7 @@
 #include "ndn_base.h"
 
 
-/* Auxiliary types for commitable items */
+/* Auxiliary types for committable items */
 const asn_type ndn_base_boolean_s =
 { "BOOLEAN",           {UNIVERSAL, 1}, BOOL, 0, {NULL} };
 const asn_type  ndn_base_sint8_s =
@@ -34,7 +34,7 @@ const asn_type ndn_base_octstring_s =
 const asn_type ndn_base_charstring_s =
 { "UniversalString",   {UNIVERSAL,28}, CHAR_STRING, 0, {NULL} };
 
-/* Auxiliary types for non-commitable items */
+/* Auxiliary types for non-committable items */
 const asn_type ndn_base_boolean_ro_s =
 { "BOOLEAN",           {UNIVERSAL, 1}, BOOL, 0, {NULL} };
 const asn_type  ndn_base_sint8_ro_s =

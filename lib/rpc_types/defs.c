@@ -36,7 +36,7 @@ bitmask2str(struct rpc_bit_map_entry *maps, unsigned int val)
     int   i;
 
     /*
-     * Firt time the function is called we start from the second buffer, but
+     * First time the function is called we start from the second buffer, but
      * then after a turn we'll use all N_BUFS buffer.
      */
     if (cur_buf == (char (*)[BUF_SIZE])buf[N_BUFS - 1])

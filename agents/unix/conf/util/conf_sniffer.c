@@ -97,7 +97,7 @@
 static te_errno sniffer_add(unsigned int gid, const char *oid, char *ssn,
                             const char *ifname, const char *snifname);
 
-/** Overfill handle methods constans. */
+/** Overfill handle methods constants. */
 typedef enum overfill_meth_t {
     ROTATION   = 0, /**< Overfill type rotation. */
     TAIL_DROP  = 1, /**< Overfill type tail drop. */

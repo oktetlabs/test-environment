@@ -1043,7 +1043,7 @@ extern void tarpc_generic_service(deferred_call_list *list,
  * Check that a RPC input parameter @p _inname is not NULL.
  * Intended to be used before MAKE_CALL() for system functions that
  * are declared `nonnull`.
- * @note This macro should be called from inside TARPC_FUNC() or similiar
+ * @note This macro should be called from inside TARPC_FUNC() or similar
  * macro
  */
 #define TARPC_ENSURE_NOT_NULL(_inname)                          \

@@ -25,7 +25,7 @@
       type: none
       d: |
          IP-tables Linux firewall chain
-         Name:  chain lable: "INPUT", "OUTPUT", "FORWARD", or user-defined.
+         Name:  chain label: "INPUT", "OUTPUT", "FORWARD", or user-defined.
 
     - oid: "/agent/iptables/chain/rule"
       access: read_create
@@ -33,7 +33,7 @@
       d: |
          IP-tables Linux firewall rule in chain
          Name: rule label in the chain, does not passed to 'iptables'
-               utility, used only as internal identifer.
-         Value: rule-speciication for 'iptables' utility;
+               utility, used only as internal identifier.
+         Value: rule-specification for 'iptables' utility;
                 e.g  "-s 192.168.0.10 -d 191.168.0.20"
 

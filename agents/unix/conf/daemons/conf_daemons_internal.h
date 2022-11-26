@@ -125,7 +125,7 @@ file_exists(char *file)
 
 /*--------------- Backup of configuration files --------------------*/
 
-/** Maximum number of services the implemntation supports */
+/** Maximum number of services the implementation supports */
 #define UNIX_SERVICE_MAX    16
 
 /** Directory where all TE temporary files are located */

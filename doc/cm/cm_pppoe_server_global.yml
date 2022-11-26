@@ -42,7 +42,7 @@
       d: |
          PPPoE server subnet address with prefix length
          Name: empty
-         Value: subnet IPv4 address with prefix lenght, in format: "1.2.3.0|24"
+         Value: subnet IPv4 address with prefix length, in format: "1.2.3.0|24"
 
     - oid: "/agent/pppoeserver/laddr"
       access: read_only

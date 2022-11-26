@@ -17,7 +17,7 @@ extern "C" {
 #include "asn_usr.h"
 #include "ndn.h"
 
-/* Commitable types macro to be used in NDN specification */
+/* Committable types macro to be used in NDN specification */
 #define NDN_BASE_BOOLEAN &ndn_base_boolean_s
 #define NDN_BASE_S8      &ndn_base_sint8_s
 #define NDN_BASE_U8      &ndn_base_uint8_s
@@ -31,7 +31,7 @@ extern "C" {
 #define NDN_BASE_OCTETS  &ndn_base_octstring_s
 #define NDN_BASE_LINK    &ndn_base_charstring_s
 
-/* Non-commitable types macro to be used in NDN specification */
+/* Non-committable types macro to be used in NDN specification */
 #define NDN_BASE_RO_BOOLEAN &ndn_base_boolean_ro_s
 #define NDN_BASE_RO_S8      &ndn_base_sint8_ro_s
 #define NDN_BASE_RO_U8      &ndn_base_uint8_ro_s
@@ -45,7 +45,7 @@ extern "C" {
 #define NDN_BASE_RO_OCTETS  &ndn_base_octstring_ro_s
 #define NDN_BASE_RO_LINK    &ndn_base_charstring_ro_s
 
-/* Auxiliary types for commitable items */
+/* Auxiliary types for committable items */
 extern const asn_type ndn_base_boolean_s;
 extern const asn_type ndn_base_sint8_s;
 extern const asn_type ndn_base_uint8_s;
@@ -56,7 +56,7 @@ extern const asn_type ndn_base_uint32_s;
 extern const asn_type ndn_base_octstring_s;
 extern const asn_type ndn_base_charstring_s;
 
-/* Auxiliary types for non-commitable items */
+/* Auxiliary types for non-committable items */
 extern const asn_type ndn_base_boolean_ro_s;
 extern const asn_type ndn_base_sint8_ro_s;
 extern const asn_type ndn_base_uint8_ro_s;

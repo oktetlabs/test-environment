@@ -703,7 +703,7 @@ db_get(const char *oid, char **answer, int *length)
 }
 
 /**
- * Initalizes the database.
+ * Initializes the database.
  */
 int
 db_init(char *db_file_name)

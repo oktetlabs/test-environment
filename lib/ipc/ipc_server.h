@@ -67,7 +67,7 @@ extern int ipc_register_server(const char *name, te_bool conn,
  * @return IPC server file descriptor.
  *
  * @bug
- *      It seems to be unusefull in the TCP implementation.
+ *      It seems to be unuseful in the TCP implementation.
  */
 extern int ipc_get_server_fd(const struct ipc_server *ipcs);
 

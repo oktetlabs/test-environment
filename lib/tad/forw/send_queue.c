@@ -216,7 +216,7 @@ tadf_sendq_entry_find(sendq_t *queue,
 #endif
 
 /**
- * This function initalizes the objects of the send queue:
+ * This function initializes the objects of the send queue:
  * 1) sendq parameters
  * 2) sendq mutex lock
  * 3) sending thread of the send queue
@@ -770,7 +770,7 @@ sleep:
 void
 tadf_sendq_list_create(void)
 {
-    /* all pointers are initalized to NULL */
+    /* all pointers are initialized to NULL */
     memset(sendq_list, 0, sizeof(sendq_list));
 
     pthread_mutex_init(&sendq_list_lock, NULL);

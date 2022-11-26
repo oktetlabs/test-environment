@@ -12,13 +12,13 @@ for each interface should be created.
   Each network interface is a resource of test agent and is not shared
 with other TAs. Thus operating with per-interface chains only will not
 affect other interfaces.
-  Сommon (built-in) chains for each table should be duplicated and
+  Common (built-in) chains for each table should be duplicated and
 corresponding jump rules added (inserted) with interface-only matching.
 
 For example:
   For NAT table and interface eth1 we should create chains: eth1_PREROUTING,
 eth1_POSTROUTING and eth1_OUTPUT, and add conditional jumps to PREROUTING,
-POSTROUTING and OUTPUT chains of NAT table with intarface matching
+POSTROUTING and OUTPUT chains of NAT table with interface matching
 (-i for incoming packets, or -o for outgoing)
 
 Configuration Tree Model:
@@ -44,7 +44,7 @@ Configuration Tree Model:
       grepping 'iptables -t <table> -S' output
     - Set operation adds/deletes to/from common chain jumping
       rule for per-interface chain.
-    - List operations returnes list of per-interface chains
+    - List operations returns list of per-interface chains
       in the corresponding table returned by 'iptables -S' command
       grepping lines started with '-N <interface>_'.
 

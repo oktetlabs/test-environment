@@ -66,7 +66,7 @@ typedef struct xml_app_data {
 /**
  * Conversion procedures for base data types.
  * These are analogs to SUN RPC base data types
- * convertion procedures, used in RPC XML.
+ * conversion procedures, used in RPC XML.
  */
 extern bool_t xmlxdr_uint8_t(XDR *xdrs, uint8_t *ip);
 extern bool_t xmlxdr_int(XDR *xdrs, int *ip);
@@ -91,7 +91,7 @@ extern void end_compound_data(void *data, const XML_Char *elem);
 
 /**
  * Initializes XDR structure to perform
- * further convertions.
+ * further conversions.
  *
  * @param xdrs      XDR structure
  * @param buf       buffer to contain xml document representing

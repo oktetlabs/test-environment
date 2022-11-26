@@ -254,7 +254,7 @@ CREATE TABLE test_results (
     session             INT,
     INDEX (iter, cfg, branch),
     FOREIGN KEY (iter) REFERENCES iterations(id),
-    FOREIGN KEY (cfg) REFERENCES configuraions(id),
+    FOREIGN KEY (cfg) REFERENCES configurations(id),
     FOREIGN KEY (branch) REFERENCES branches(id),
     FOREIGN KEY (result) REFERENCES result_types(id),
     FOREIGN KEY (session) REFERENCES test_results(id)

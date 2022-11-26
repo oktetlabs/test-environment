@@ -103,7 +103,7 @@ extern char **environ;
 /** Test Agent executable name */
 /**
  * This is done to avoid possible problems
- * with build conficts in test suites due to
+ * with build conflicts in test suites due to
  * changed definition of this variable.
  */
 char ta_execname_storage[RCF_MAX_PATH];

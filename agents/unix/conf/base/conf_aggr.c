@@ -38,7 +38,7 @@
 static char buf[4096];
 
 /**
- * Type of link aggregations. This enum should be syncronised with
+ * Type of link aggregations. This enum should be synchronized with
  * aggr_types_data array.
  */
 typedef enum aggr_type {
@@ -450,7 +450,7 @@ cleanup:
 
 /**
  * Array to be used in conversions to/from aggr_type and human-readable
- * values provided by users. This array should be syncronised with
+ * values provided by users. This array should be synchronized with
  * aggr_type enum.
  */
 static aggr_type_info aggr_types_data[] = {
@@ -534,7 +534,7 @@ aggregation_find(const char *name)
  * Get aggregation value (i.e. type of aggregation)
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         aggregation type to get
  * @param aggr_name     name of aggregation
  *
@@ -554,10 +554,10 @@ aggregation_get(unsigned int gid, const char *oid, char *value,
 }
 
 /**
- * Create a new aggreagtion
+ * Create a new aggregation
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         aggregation type to get
  * @param aggr_name     name of aggregation
  *
@@ -612,10 +612,10 @@ aggregation_add(unsigned int gid, const char *oid, char *value,
 }
 
 /**
- * Create a new aggreagtion
+ * Create a new aggregation
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param aggr_name      name of aggregation
  *
  * @return              Status code
@@ -695,7 +695,7 @@ aggregation_list(unsigned int gid, const char *oid,
  * Get interface name of the aggregation
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         name of interface to return
  * @param aggr_name     name of aggregation
  *
@@ -717,7 +717,7 @@ aggr_interface_get(unsigned int gid, const char *oid, char *value,
  * Add a member to the aggregation
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         unused value
  * @param aggr_name     name of aggregation
  * @param member_name   interface name to add
@@ -740,7 +740,7 @@ aggr_member_add(unsigned int gid, const char *oid, char *value,
  * Add a member to the aggregation
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param aggr_name     name of aggregation
  * @param member_name   interface name to add
  *

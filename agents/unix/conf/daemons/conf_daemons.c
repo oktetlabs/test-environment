@@ -154,7 +154,7 @@ ds_config_touch(int index)
  * Create a backup or rename unused backup.
  *
  * @param config        pathname of the configuration file
- * @param backup        patname of the backup without pid postfix
+ * @param backup        pathname of the backup without pid postfix
  *                      (updated by the routine)
  *
  * @return Status code
@@ -675,7 +675,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
  * @param value    IP address of interface to which server to be bound
  *
  * @alg This function reads service configuration file located
- * under XINETD_ETC_DIR directory and copies it into temorary file
+ * under XINETD_ETC_DIR directory and copies it into temporary file
  * string by string with one exception - strings that include "bind" and
  * "interface" words are not copied.
  * After all it appends "bind" attribute to the end of the temporay file and
@@ -1271,8 +1271,8 @@ ds_log_get_timestamp(const char *buf, struct tm *last_tm)
     }
 
     /*
-     * TFTP logs does not containt year stamp, so that we get current
-     * local time, and use extracted year for the log message timstamp.
+     * TFTP logs does not contain year stamp, so that we get current
+     * local time, and use extracted year for the log message timestamp.
      */
 
     /* Get current UTC time */
@@ -1282,7 +1282,7 @@ ds_log_get_timestamp(const char *buf, struct tm *last_tm)
     if (gmtime_r(&cur_time, &tm) == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    /* Use current year for the messsage */
+    /* Use current year for the message */
     last_tm->tm_year = tm.tm_year;
 
     return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -2891,7 +2891,7 @@ vncserver_exists(char *number)
  * Add a new VNC server with specified display number.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         unused
  * @param number        display number
  *
@@ -2942,7 +2942,7 @@ ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
  * Stop VNC server with specified display number.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param number        display number
  *
  * @return error code
@@ -3146,7 +3146,7 @@ sshd_exists(char *port)
  * Add a new SSH daemon with specified port.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         unused
  * @param addr          SSHD port
  *
@@ -3189,7 +3189,7 @@ ds_sshd_add(unsigned int gid, const char *oid, const char *value,
  * Stop SSHD with specified port.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param addr
  *
  * @return error code
@@ -3323,7 +3323,7 @@ xvfb_exists(char *number)
  * Add a new Xvfb daemon with specified display number.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         unused
  * @param number        display number
  *
@@ -3362,7 +3362,7 @@ ds_xvfb_add(unsigned int gid, const char *oid, const char *value,
  * Stop Xvfb with specified display number.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param number        display number
  *
  * @return error code

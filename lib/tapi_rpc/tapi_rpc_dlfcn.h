@@ -45,11 +45,11 @@ extern rpc_dlhandle rpc_dlopen(rcf_rpc_server *rpcs, const char *filename,
 
 /**
  * Returns a human readable string describing the most recent error
- * that occured from dlopen(), dlsym() or dlclose().
+ * that occurred from dlopen(), dlsym() or dlclose().
  *
  * @param rpcs      RPC server handle
  *
- * @return a pointer to string or NULL if no errors occured.
+ * @return a pointer to string or NULL if no errors occurred.
  */
 extern char *rpc_dlerror(rcf_rpc_server *rpcs);
 

@@ -14,7 +14,7 @@
       type: none
       d: |
          RCF (Remove Control Facility) configuration tree.
-         The configuration tree is handled by the Contfigurator itself and
+         The configuration tree is handled by the Configurator itself and
          makes rcf_add_ta() and rcf_del_ta() calls to add/delete test agents.
          Name: none
 
@@ -63,7 +63,7 @@
       access: read_create
       type: string
       d: |
-         Configuration paramters to be passed to RCF test agent library when
+         Configuration parameters to be passed to RCF test agent library when
          the test agent is started. These parameters are opaque to RCF itself,
          interpreted by corresponding test agent library. Set parameters
          supported by a test agent library is defined in it.

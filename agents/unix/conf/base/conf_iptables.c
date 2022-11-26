@@ -157,7 +157,7 @@ iptables_obtain_table_list(te_string *table_list)
  * Obtain list of built-in iptables tables.
  *
  * @param gid           group identifier (unused)
- * @param oid           full parent object instence identifier (unused)
+ * @param oid           full parent object instance identifier (unused)
  * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  * @param ifname        interface name (unused)

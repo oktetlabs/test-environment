@@ -58,7 +58,7 @@ Object ID                      Type     Description
 =============================  =======  ======================================================================================================
 /agent/namespace               RO none  Generic linux namespaces management subtree.
 /agent/namespace/net           RC none  Network namespaces list. This node can be used to create new network namespaces or grab existing ones.
-/agent/namespace/net/inteface  RC none  Interfaces which are moved from the current agent namespace to the specified.
+/agent/namespace/net/interface  RC none  Interfaces which are moved from the current agent namespace to the specified.
 =============================  =======  ======================================================================================================
 
 XML code to register objects:

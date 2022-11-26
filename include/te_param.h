@@ -38,7 +38,7 @@
  * Function converts name of test variable to name of environment variable
  * which holds it's actual value.
  *
- * actual prefixes are defind above.
+ * Actual prefixes are defined above.
  *
  * Rules: VAR.xxx.yyy ->> TE_TEST_VAR_xxx__yyy
  *
@@ -79,10 +79,10 @@ static inline void te_var_name2env(const char *name, char *env, int env_size)
 #define MAPPING_LIST_ENTRY(entry_val_) \
     { #entry_val_, (int)RPC_ ## entry_val_ }
 
-/** Entry for mapping parameter value from string to interger */
+/** Entry for mapping parameter value from string to integer */
 struct param_map_entry {
     const char *str_val; /**< value in string format */
-    int         num_val; /**< Value in native numberic format */
+    int         num_val; /**< Value in native numeric format */
 };
 
 #endif  /* __TE_PARAM_H__ */

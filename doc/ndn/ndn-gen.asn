@@ -20,7 +20,7 @@ Interval ::= SEQUENCE {
 
 --
 -- Function-ref ::= SEQUENCE {
---     name PrintableString; -- name of function, should be in sybmol table of TA.
+--     name PrintableString; -- name of function, should be in symbol table of TA.
 --     args SEQUENCE OF CHOICE { -- array of arguments, may be empty.
 --         int INTEGER;          -- simple integer
 --         str UniversalString;
@@ -63,7 +63,7 @@ DATA-UNIT { BaseFieldType } ::=  CHOICE
 
 CSAP-spec ::= SEQUENCE OF Generic-CSAP-Level
 
-Template-Parameter ::= CHOICE -- type for defingn of template argument.
+Template-Parameter ::= CHOICE -- type for defining of template argument.
             -- see "Traffic Application Domain Framework" document
             -- for full description.
 {

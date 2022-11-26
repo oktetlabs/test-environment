@@ -387,7 +387,7 @@ dnl           If empty, build.sh in sources directory is assumed.
 dnl           The following env variables are exported:
 dnl           - TE_PREFIX: the installation prefix of TE build
 dnl                        for the current platform
-dnl           - TE_CPPFLAGS: gcc preprocess flags to use TE-provided headers
+dnl           - TE_CPPFLAGS: gcc preprocessor flags to use TE-provided headers
 dnl           - TE_LDFLAGS: linker flags to use TE libraries
 dnl           - EXT_SOURCES: absolute path to the sources
 dnl           - TE_TA_TYPES: list of TA types

@@ -46,7 +46,7 @@ MI of type `measurement` consists of:
   * **data** : lives in `results` subtree,
   * **views** : ways to look at the data if you're a machine.
 
-NOTE: to some extend it's breaking the data/separatation rule. Said that
+NOTE: to some extend it's breaking the data/separation rule. Said that
 we're separating them as much as possible while keeping them within one
 measurement. Reason is that creating a separate object and association
 between those objects to mark that this 'view' is applicable to this specific

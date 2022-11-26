@@ -142,7 +142,7 @@ typedef struct te_l2tp_section {
     char                           *secname;     /**< Section name */
 } te_l2tp_section;
 
-/** Connected clients structrure */
+/** Connected clients structure */
 typedef struct te_l2tp_connected {
     SLIST_ENTRY(te_l2tp_connected)  list;  /**< Next element in list */
     char                           *cname; /**< Client name */
@@ -678,7 +678,7 @@ l2tp_secrets_tmp_open(const char *secrets_fname, char *fname, FILE **file)
  * @param[in]  file             File stream to close.
  * @param[in]  error            External error, @c 0 enables to apply custom
  *                              secrets. Note, it can be transfered as return value.
- * @param[out] secrets_changed  Whether secrets were applyed (global secrets
+ * @param[out] secrets_changed  Whether secrets were applied (global secrets
  *                              file was updated), or not.
  *
  * @return Status code in case of failure, or @p error.
@@ -2332,7 +2332,7 @@ l2tp_lns_range_add_routine(const char *lns_name, const char *option_name,
 }
 
 /**
- * Method for addding a range to /agent/l2tp/lns/ip_range
+ * Method for adding a range to /agent/l2tp/lns/ip_range
  *
  * @param gid                  group identifier
  * @param oid                  full identifier of the father instance
@@ -2361,7 +2361,7 @@ l2tp_lns_ip_range_add(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
- * Method for addding a range to /agent/l2tp/lns/lac_range
+ * Method for adding a range to /agent/l2tp/lns/lac_range
  *
  * @param gid                  group identifier
  * @param oid                  full identifier of the father instance

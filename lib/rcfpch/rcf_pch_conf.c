@@ -622,7 +622,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
  * Find postponed commit operation with specified parameters.
  *
  * @param f_commit    commit function
- * @param p_oid       configurator object identfier
+ * @param p_oid       configurator object identifier
  *
  * @return Pointer to found commit operation or NULL.
  */
@@ -836,7 +836,7 @@ get_object_value(rcf_pch_cfg_object *obj, const char *oid, char *value)
  * with empty values.
  *
  * @param[in]  object Object OID (Source value for substitution)
- * @param[in]  p_ids  Pointer to object instance identifer element
+ * @param[in]  p_ids  Pointer to object instance identifier element
  *                    for which the substitution is being made
  * @param[out] oid    The instance OID
  *
@@ -996,7 +996,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
 
     ENTRY("op=%d id='%s' val='%s'", op, (oid == NULL) ? "NULL" : oid,
                                         (val == NULL) ? "NULL" : val);
-    VERB("Default configuration hanlder is executed");
+    VERB("Default configuration handler is executed");
 
     if (oid != 0)
     {
@@ -1036,7 +1036,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
         if (p_oid->len == 0)
         {
             cfg_free_oid(p_oid);
-            ERROR("Zero length OIID");
+            ERROR("Zero length OID");
             SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EINVAL));
         }
 
@@ -1171,7 +1171,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
             break;
 
         default:
-            ERROR("Unknown congfigure operation: op=%d id='%s' val='%s'",
+            ERROR("Unknown configure operation: op=%d id='%s' val='%s'",
                   op, oid, val);
             SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EINVAL));
     }
@@ -1352,7 +1352,7 @@ rsrc_lookup(const char *name)
 }
 
 /**
- * Specify callbacks for dynamically registarable resource.
+ * Specify callbacks for dynamically registerable resource.
  *
  * @param name          resource generic name
  * @param reg           grabbing callback
@@ -1559,7 +1559,7 @@ free_rsrc_lock(rsrc_lock *lock)
     free(lock);
 }
 
-/*
+/**
  * Add a process with @p my_pid to a lock in the mode specified
  * by @p may_share.
  *
@@ -1611,8 +1611,8 @@ add_rsrc_lock(rsrc_lock *lock, te_bool may_share, pid_t my_pid)
     return 0;
 }
 
-/*
- * Remove a provess with @p my_pid from a lock
+/**
+ * Remove a process with @p my_pid from a lock
  *
  * @param lock          Existing lock
  * @param my_pid        PID
@@ -1677,7 +1677,7 @@ unlock_rsrc_lock_file(int fd)
     return set_lock_rsrc_lock_file(fd, F_UNLCK);
 }
 
-/*
+/**
  * Read resource lock file. PIDs of dead processes are excluded.
  *
  * @param fd        File descriptor of a lock file
@@ -1905,7 +1905,7 @@ rcf_pch_rsrc_check_locks(const char *rsrc_ptrn)
     }
 }
 
-/*
+/**
  * Update lock file for a resource.
  * The lock is first found, then dead TA PIDs are removed from lock,
  * then PID of current process is added/deleted (@p add_lock),
@@ -2118,7 +2118,7 @@ rsrc_list(unsigned int gid, const char *oid,
  * Get resource name.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         name location
  * @param id            resource instance name
  *
@@ -2174,7 +2174,7 @@ rsrc_gen_name(const char *name)
  * Lock/unlock resource.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         resource name
  * @param id            instance name
  *
@@ -2263,7 +2263,7 @@ rsrc_set(unsigned int gid, const char *oid, const char *value,
  * Delete resource.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param id            resource instance identifier
  *
  * @return Status code
@@ -2327,7 +2327,7 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
  * Add a resource.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         resource name
  * @param id            instance name
  *
@@ -2443,11 +2443,11 @@ rcf_pch_rsrc_accessible_may_share(const char *fmt, ...)
     return result;
 }
 
-/*
+/**
  * Get shared property of a resource.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         property location
  * @param id            resource instance name
  *
@@ -2471,11 +2471,11 @@ rsrc_shared_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
-/*
+/**
  * Set shared property of a resource.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         property value
  * @param id            instance name
  *

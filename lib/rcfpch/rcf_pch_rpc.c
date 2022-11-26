@@ -969,7 +969,7 @@ rcf_pch_rpc_get_provider(void)
  * Get RPC provider name
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param name          unused
  *
@@ -996,7 +996,7 @@ rpcprovider_get(unsigned int gid, const char *oid, char *value,
  * Change RPC provider name.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         executable path
  *                      (empty or absolute or relative to TA dir)
  * @param name          unused
@@ -1040,7 +1040,7 @@ rpcprovider_set(unsigned int gid, const char *oid, const char *value,
  * Get default RPC timeout for all RPC servers
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param name          unused
  *
@@ -1063,7 +1063,7 @@ rpc_default_timeout_get(unsigned int gid, const char *oid, char *value,
  * Set default RPC timeout for all RPC servers
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         Timeout to set in milliseconds, zero means unspecified
  * @param name          unused
  *
@@ -1093,7 +1093,7 @@ rpc_default_timeout_set(unsigned int gid, const char *oid, const char *value,
  * Get RPC server state.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param name          RPC server name
  *
@@ -1128,7 +1128,7 @@ rpcserver_dead_get(unsigned int gid, const char *oid, char *value,
  * Change RPC server state.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param name          RPC server name
  *
@@ -1181,7 +1181,7 @@ rpcserver_dead_set(unsigned int gid, const char *oid, char *value,
  * Get RPC server termination state.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param name          RPC server name
  *
@@ -1216,7 +1216,7 @@ rpcserver_finished_get(unsigned int gid, const char *oid, char *value,
  * Change RPC server termination state.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param name          RPC server name
  *
@@ -1384,7 +1384,7 @@ rpcserver_sid_set(unsigned int gid, const char *oid, const char *value,
  * Get RPC server value (father name).
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param name          RPC server name
  *
@@ -1420,7 +1420,7 @@ rpcserver_get(unsigned int gid, const char *oid, char *value,
  * Set RPC server value (father name).
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value location
  * @param name          RPC server name
  *
@@ -1455,7 +1455,7 @@ rpcserver_set(unsigned int gid, const char *oid, const char *value,
  * Create RPC server.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         fork_<father_name> or thread_<father_name> or
  *                      empty string
  * @param new_name      New RPC server name
@@ -1644,7 +1644,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
  * Delete RPC server.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param name          RPC server name
  *
  * @return Status code

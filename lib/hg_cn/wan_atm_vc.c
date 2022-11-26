@@ -3,7 +3,7 @@
  * @brief Home Gateway Configuration Notation
  *
  * ATM/DSL WAN side configuration ANS.1 syntax.
- * ATM virtual curcuits.
+ * ATM virtual circuits.
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
@@ -20,7 +20,7 @@
 #include "hg_cn_wan.h"
 
 
-/* ATM virtual curcuit */
+/* ATM virtual circuit */
 static asn_named_entry_t _hg_cn_wan_atm_vc_ne_array[] = {
     {
         .name   = "name",
@@ -93,7 +93,7 @@ static asn_type hg_cn_wan_atm_vc_s = {
 };
 
 
-/* ATM virtual curcuits */
+/* ATM virtual circuits */
 asn_type hg_cn_wan_atm_vcs_s = {
     .name   = "WAN ATM VCs",
     .tag    = { PRIVATE, 0 },

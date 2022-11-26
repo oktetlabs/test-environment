@@ -224,7 +224,7 @@ rpc_stream_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
                          rpc_socket_domain_by_addr(clnt_addr),
                          proto, clnt_addr)) < 0)
     {
-        ERROR("%s(): Cannot create clent socket of type SOCK_STREAM",
+        ERROR("%s(): Cannot create client socket of type SOCK_STREAM",
               __FUNCTION__);
         result = EXIT_FAILURE;
         goto cleanup;

@@ -29,7 +29,7 @@
 #include "logger_api.h"
 
 /*
- * Declaraions of local functions.
+ * Declarations of local functions.
  */
 size_t number_of_digits(int value);
 
@@ -585,7 +585,7 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
  * Parse textual presentation of single ASN.1 value of specified type and
  * create new instance of asn_value type with its internal presentation.
  * Type should be constraint with named components, i.e. SEQUENCE or SET.
- * Note: text should correspoind to the "Value" production label in ASN.1
+ * Note: text should correspond to the "Value" production label in ASN.1
  * specification.
  * internal implementation.
  *
@@ -686,7 +686,7 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
  * create new instance of asn_value type with its internal presentation.
  * Type should be constraint with same not-named components,
  * i.e. SEQUENCE_OF or SET_OF.
- * Note: text should correspoind to the "Value" production label in ASN.1
+ * Note: text should correspond to the "Value" production label in ASN.1
  * specification.
  *
  * @param text          text to be parsed;
@@ -759,7 +759,7 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
  * Parse textual presentation of single ASN.1 value of specified type and
  * create new instance of asn_value type with its internal presentation.
  * Type should be CHOICE.
- * Note: text should correspoind to the "Value" production label in ASN.1
+ * Note: text should correspond to the "Value" production label in ASN.1
  * specification.
  *
  * @param text          text to be parsed;
@@ -844,7 +844,7 @@ asn_impl_pt_choice(const char *txt, const asn_type *type,
 /**
  * Parse textual presentation of single ASN.1 value of specified type and
  * create new instance of asn_value type with its internal presentation.
- * Note: text should correspoind to the "Value" production label in ASN.1
+ * Note: text should correspond to the "Value" production label in ASN.1
  * specification.
  * internal implementation.
  *
@@ -909,7 +909,7 @@ asn_parse_value_text(const char *text, const asn_type *type,
 }
 
 /**
- * Count number of symbols required to deciamal notation of integer/
+ * Count number of symbols required to decimal notation of integer/
  *
  * @param value         integer number
  *
@@ -929,7 +929,7 @@ number_of_digits(int value)
 }
 
 /**
- * Count number of symbols required to deciamal notation of unsigned integer.
+ * Count number of symbols required to decimal notation of unsigned integer.
  *
  * @param value         unsigned integer number
  *
@@ -952,7 +952,7 @@ number_of_digits_unsigned(unsigned int value)
  *
  * @param value         ASN.1 value.
  *
- * @return length of requiered string.
+ * @return length of required string.
  */
 size_t
 asn_count_len_enum(const asn_value *value)
@@ -1002,7 +1002,7 @@ static char t_class[4][30] = {"UNIVERSAL ", "APPLICATION ", "", "PRIVATE "};
  * @param value         ASN.1 value.
  * @param indent        current indent
  *
- * @return length of requiered string.
+ * @return length of required string.
  */
 size_t
 asn_count_len_tagged(const asn_value *value, unsigned int indent)
@@ -1043,7 +1043,7 @@ asn_count_len_tagged(const asn_value *value, unsigned int indent)
  * @param value         ASN.1 value.
  * @param indent        current indent
  *
- * @return length of requiered string.
+ * @return length of required string.
  */
 size_t
 asn_count_len_choice(const asn_value *value, unsigned int indent)
@@ -1084,7 +1084,7 @@ asn_count_len_choice(const asn_value *value, unsigned int indent)
  *
  * @param value         ASN.1 value.
  *
- * @return length of requiered string.
+ * @return length of required string.
  */
 static size_t
 asn_count_len_objid(const asn_value *value)
@@ -1129,7 +1129,7 @@ asn_count_len_objid(const asn_value *value)
  * @param buf_len       length of buffer.
  * @param value         ASN.1 value to print, should have ENUMERATED type.
  *
- * @return number characters written to buffer or -1 if error occured.
+ * @return number characters written to buffer or -1 if error occurred.
  */
 static int
 asn_snprint_enum(char *buffer, size_t buf_len, const asn_value *value)
@@ -1173,7 +1173,7 @@ asn_snprint_enum(char *buffer, size_t buf_len, const asn_value *value)
  * @param buf_len       length of buffer.
  * @param value         ASN.1 value to be printed, should have INTEGER type.
  *
- * @return number characters written to buffer or -1 if error occured.
+ * @return number characters written to buffer or -1 if error occurred.
  */
 static int
 asn_snprint_charstring(char *buffer, size_t buf_len, const asn_value *value)
@@ -1232,7 +1232,7 @@ asn_snprint_charstring(char *buffer, size_t buf_len, const asn_value *value)
 finish:
     buffer[buf_len - 1] = '\0';
     return value->txt_len; /* assume, that for character string 'txt_len'
-                              is allways correct - it is updated when
+                              is always correct - it is updated when
                               value is changed */
 }
 
@@ -1244,7 +1244,7 @@ finish:
  * @param buf_len       length of buffer.
  * @param value         ASN.1 value to be printed, should have INTEGER type.
  *
- * @return number characters written to buffer or -1 if error occured.
+ * @return number characters written to buffer or -1 if error occurred.
  */
 static int
 asn_snprint_octstring(char *buffer, size_t buf_len, const asn_value *value)
@@ -1293,7 +1293,7 @@ finish:
  * @param value         ASN.1 value to be printed, should have INTEGER type.
  * @param indent        current indent
  *
- * @return number characters written to buffer or -1 if error occured.
+ * @return number characters written to buffer or -1 if error occurred.
  */
 static int
 asn_snprint_tagged(char *buffer, size_t buf_len, const asn_value *value,
@@ -1335,7 +1335,7 @@ asn_snprint_tagged(char *buffer, size_t buf_len, const asn_value *value,
  * @param value         ASN.1 value to be printed, should have INTEGER type.
  * @param indent        current indent
  *
- * @return number characters written to buffer or -1 if error occured.
+ * @return number characters written to buffer or -1 if error occurred.
  */
 static int
 asn_snprint_choice(char *buffer, size_t buf_len, const asn_value *value,
@@ -1383,7 +1383,7 @@ asn_snprint_choice(char *buffer, size_t buf_len, const asn_value *value,
  * @param buf_len       length of buffer.
  * @param value         ASN.1 value to be printed, should have INTEGER type.
  *
- * @return number characters written to buffer or -1 if error occured.
+ * @return number characters written to buffer or -1 if error occurred.
  */
 static int
 asn_snprint_objid(char *buffer, size_t buf_len, const asn_value *value)
@@ -1436,7 +1436,7 @@ error:
  * @param buf_len       length of buffer.
  * @param indent        current indent
  *
- * @return number characters written to buffer or -1 if error occured.
+ * @return number characters written to buffer or -1 if error occurred.
  */
 static int
 asn_snprint_array_fields(char *buffer, size_t buf_len, const asn_value *value,
@@ -1524,7 +1524,7 @@ error:
  * @param buf_len       length of buffer.
  * @param indent        current indent
  *
- * @return number characters written to buffer or -1 if error occured.
+ * @return number characters written to buffer or -1 if error occurred.
  */
 int
 asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
@@ -1589,7 +1589,7 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
  * @param value         ASN.1 value.
  * @param indent        current indent
  *
- * @return length of requiered string.
+ * @return length of required string.
  */
 size_t
 asn_count_txt_len(const asn_value *value, unsigned int indent)
@@ -1630,7 +1630,7 @@ asn_count_txt_len(const asn_value *value, unsigned int indent)
             return asn_count_len_objid(value);
 
         /* Due to some (not found) bugs in counting length, obtained value
-         * is a bit less then really need, so the folowing ugly hacks
+         * is a bit less then really need, so the following ugly hacks
          * are made.
          * TODO: found and fix bugs. */
         case CHOICE:
@@ -1657,7 +1657,7 @@ asn_count_txt_len(const asn_value *value, unsigned int indent)
  * @param value         ASN.1 value.
  * @param indent        current indent
  *
- * @return length of requiered string.
+ * @return length of required string.
  */
 size_t
 asn_count_len_array_fields(const asn_value *value, unsigned int indent)

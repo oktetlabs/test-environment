@@ -404,7 +404,7 @@ tcp_mem_get(const char *proc_file, int *par_array, int len)
         par_array[i] = strtol(next_token, &tmp, 10);
         if ((tmp == next_token) && (par_array[i] == 0))
         {
-            ERROR("%s(%d:%s): strtol convertation failure",
+            ERROR("%s(%d:%s): strtol conversion failure",
                   __FUNCTION__, i, next_token);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
@@ -522,7 +522,7 @@ proc_sys_get_value(const char *path, char *value)
  * Set TCP send buffer max size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be set as sndbuf max size
  *
  * @return              Status code
@@ -570,7 +570,7 @@ tcp_sndbuf_max_set(unsigned int gid, const char *oid,
  * Get TCP send buffer max size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be get as sndbuf max size
  *
  * @return              Status code
@@ -611,7 +611,7 @@ tcp_sndbuf_max_get(unsigned int gid, const char *oid,
  * Set TCP send buffer default size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be set as sndbuf default size
  *
  * @return              Status code
@@ -659,7 +659,7 @@ tcp_sndbuf_def_set(unsigned int gid, const char *oid,
  * Get TCP send buffer default size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be get as sndbuf default size
  *
  * @return              Status code
@@ -700,7 +700,7 @@ tcp_sndbuf_def_get(unsigned int gid, const char *oid,
  * Set TCP receive buffer max size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be set as rcvbuf max size
  *
  * @return              Status code
@@ -747,7 +747,7 @@ tcp_rcvbuf_max_set(unsigned int gid, const char *oid,
  * Get TCP receive buffer max size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be get as rcvbuf max size
  *
  * @return              Status code
@@ -788,7 +788,7 @@ tcp_rcvbuf_max_get(unsigned int gid, const char *oid,
  * Set TCP receive buffer default size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be set as rcvbuf default size
  *
  * @return              Status code
@@ -834,7 +834,7 @@ tcp_rcvbuf_def_set(unsigned int gid, const char *oid,
  * Get TCP receive buffer default size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be get as rcvbuf default size
  *
  * @return              Status code
@@ -878,7 +878,7 @@ tcp_rcvbuf_def_get(unsigned int gid, const char *oid,
  * tcp_max_syn_backlog,
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         string with a new value
  *
  * @return              Status code
@@ -949,7 +949,7 @@ proc_sys_common_set(unsigned int gid, const char *oid,
  * tcp_max_syn_backlog,
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         location for obtained value
  *
  * @return              Status code
@@ -1011,7 +1011,7 @@ proc_sys_common_get(unsigned int gid, const char *oid,
  * Set socket send buffer max size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be set as sndbuf max size
  *
  * @return              Status code
@@ -1056,7 +1056,7 @@ sndbuf_max_set(unsigned int gid, const char *oid,
  * Get socket send buffer max size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be get as sndbuf max size
  *
  * @return              Status code
@@ -1094,7 +1094,7 @@ sndbuf_max_get(unsigned int gid, const char *oid,
  * Set socket send buffer default size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be set as sndbuf default size
  *
  * @return              Status code
@@ -1139,7 +1139,7 @@ sndbuf_def_set(unsigned int gid, const char *oid,
  * Get socket send buffer default size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be get as sndbuf default size
  *
  * @return              Status code
@@ -1176,7 +1176,7 @@ sndbuf_def_get(unsigned int gid, const char *oid,
  * Set socket receive buffer max size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be set as rcvbuf max size
  *
  * @return              Status code
@@ -1220,7 +1220,7 @@ rcvbuf_max_set(unsigned int gid, const char *oid,
  * Get socket receive buffer max size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be get as rcvbuf max size
  *
  * @return              Status code
@@ -1257,7 +1257,7 @@ rcvbuf_max_get(unsigned int gid, const char *oid,
  * Set socket receive buffer default size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be set as rcvbuf default size
  *
  * @return              Status code
@@ -1302,7 +1302,7 @@ rcvbuf_def_set(unsigned int gid, const char *oid,
  * Get socket receive buffer default size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be get as rcvbuf default size
  *
  * @return              Status code
@@ -1339,7 +1339,7 @@ rcvbuf_def_get(unsigned int gid, const char *oid,
  * Set UDP send buffer max size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be set as sndbuf max size
  *
  * @return              Status code
@@ -1372,7 +1372,7 @@ udp_sndbuf_max_set(unsigned int gid, const char *oid,
  * Get UDP send buffer max size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be get as sndbuf max size
  *
  * @return              Status code
@@ -1406,7 +1406,7 @@ udp_sndbuf_max_get(unsigned int gid, const char *oid,
  * Set UDP send buffer default size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be set as sndbuf default size
  *
  * @return              Status code
@@ -1439,7 +1439,7 @@ udp_sndbuf_def_set(unsigned int gid, const char *oid,
  * Get UDP send buffer default size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be get as sndbuf default size
  *
  * @return              Status code
@@ -1472,7 +1472,7 @@ udp_sndbuf_def_get(unsigned int gid, const char *oid,
  * Set UDP receive buffer max size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be set as rcvbuf max size
  *
  * @return              Status code
@@ -1505,7 +1505,7 @@ udp_rcvbuf_max_set(unsigned int gid, const char *oid,
  * Get UDP receive buffer max size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be get as rcvbuf max size
  *
  * @return              Status code
@@ -1538,7 +1538,7 @@ udp_rcvbuf_max_get(unsigned int gid, const char *oid,
  * Set UDP receive buffer default size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be set as rcvbuf default size
  *
  * @return              Status code
@@ -1572,7 +1572,7 @@ udp_rcvbuf_def_set(unsigned int gid, const char *oid,
  * Get UDP receive buffer default size.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         to be get as rcvbuf default size
  *
  * @return              Status code

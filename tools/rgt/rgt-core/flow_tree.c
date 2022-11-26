@@ -2,7 +2,7 @@
 /** @file
  * @brief Test Environment: Interface for test execution flow.
  *
- * The module is responsible for keeping track of occured events and
+ * The module is responsible for keeping track of occurred events and
  * checking if new events are legal.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
@@ -1806,7 +1806,7 @@ set_info_callback(gpointer key, gpointer value, gpointer user_data)
  * @return  Status of operation.
  *
  * @retval  1  Operation has complited successfully.
- * @retval  0  Buffer overflow is occured.
+ * @retval  0  Buffer overflow is occurred.
  */
 int
 flow_tree_get_set(enum flow_tree_set_name set_name, char *buf, gint len)

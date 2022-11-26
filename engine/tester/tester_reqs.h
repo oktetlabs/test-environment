@@ -44,7 +44,7 @@ struct test_iter_arg;
  * Create a new target requirement and insert it using logical 'and'
  * with current target.
  *
- * @param targets   Location of the targer requirements expression
+ * @param targets   Location of the target requirements expression
  * @param req       String requirement
  *
  * @return Status code.

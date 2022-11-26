@@ -795,7 +795,7 @@ extern te_errno rcf_ta_trrecv_start(const char      *ta_name,
 
 /**
  * Blocks the caller until all the traffic, which is being captured,
- * is received by the CSAP or timeout occurres (timeout specified
+ * is received by the CSAP or timeout occurred (timeout specified
  * with rcf_ta_trrecv_start()).
  * If @a handler is specified, it is called for all received packets.
  * This function can only be called after rcf_ta_trrecv_start().
@@ -811,7 +811,7 @@ extern te_errno rcf_ta_trrecv_start(const char      *ta_name,
  * @return error code
  *
  * @retval 0            success
- * @retval TE_ETIMEDOUT timeout occured before all the requested traffic
+ * @retval TE_ETIMEDOUT timeout occurred before all the requested traffic
  *                      received - this means that TAD has captured less
  *                      than the number of packets specified with
  *                      rcf_ta_trrecv_start.
@@ -901,7 +901,7 @@ extern te_errno rcf_ta_trrecv_get(const char      *ta_name,
  * This function is used to send exactly one packet via CSAP and receive
  * an answer (it may be used for CLI, SNMP, ARP, ICMP, DNS, etc.)
  * This function blocks the caller until the packet is received by
- * traffic application domain or timeout occures.
+ * traffic application domain or timeout occurred.
  *
  * @param ta_name       Test Agent name
  * @param session       TA session or 0
@@ -919,7 +919,7 @@ extern te_errno rcf_ta_trrecv_get(const char      *ta_name,
  * @return error code
  *
  * @retval 0               success
- * @retval TE_ETIMEDOUT    timeout occured before a packet that matches
+ * @retval TE_ETIMEDOUT    timeout occurred before a packet that matches
  *                         the template received
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                         session identifier is provided or flag blocking
@@ -961,7 +961,7 @@ typedef struct rcf_trpoll_csap {
  * TE_ETADCSAPNOTEX is returned in @a status.
  *
  * @a status in rcf_trpoll_csap structure contains status code of the
- * request to Test Agent. The following values are expeted:
+ * request to Test Agent. The following values are expected:
  *  - TE_ETADCSAPNOTEX - CSAP does not exist;
  *  - TE_ETADCSAPSTATE - CSAP is idle, no send and/or receive operations
  *                       have been executed;

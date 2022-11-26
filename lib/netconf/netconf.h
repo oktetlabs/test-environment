@@ -3,7 +3,7 @@
  * @brief Linux network configuration support library
  *
  * This library provides access to Linux network configuration using
- * netlink protocol. It is similiar to libnetlink from iproute2 package
+ * netlink protocol. It is similar to libnetlink from iproute2 package
  * but has higher level interface and appropriate license. Following
  * information is covered: network devices, IP addresses, neighbour
  * tables, routing tables.
@@ -164,7 +164,7 @@ typedef struct netconf_route {
     unsigned char       dstlen;         /**< Prefix length of
                                              destination */
     unsigned char       srclen;         /**< Prefix length of
-                                             preffered source */
+                                             preferred source */
     unsigned char       tos;            /**< Type Of Service key */
     netconf_route_table table;          /**< Routing table id */
     netconf_route_prot  protocol;       /**< Protocol of this route */
@@ -173,7 +173,7 @@ typedef struct netconf_route {
     unsigned int        flags;          /**< Route flags */
     int                 oifindex;       /**< Output device index */
     uint8_t            *dst;            /**< Destination of the route */
-    uint8_t            *src;            /**< Preffered source */
+    uint8_t            *src;            /**< Preferred source */
     uint8_t            *gateway;        /**< Gateway address */
     int                 metric;         /**< Route priority */
     uint32_t            mtu;            /**< Route MTU */

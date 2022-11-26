@@ -114,7 +114,7 @@
 
 /**
  * Logging situations of some failed initialization of
- * the optional feature or some unexpect events that
+ * the optional feature or some unexpected events that
  * does not break operation
  *
  * @param _us log user name
@@ -124,7 +124,7 @@
 
 /**
  * Logging very important events in TE and tests required to
- * undestand testing results
+ * understand testing results
  *
  * @param _us log user name
  * @param _fs format string and arguments
@@ -239,7 +239,7 @@
 
 /**
  * Logging very important events in TE and tests required to
- * undestand testing results
+ * understand testing results
  *
  * @param _fs format string and arguments
  */

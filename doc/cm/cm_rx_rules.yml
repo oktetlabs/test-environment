@@ -209,7 +209,7 @@
       type: address
       d: |
          Name: none
-         Value: Source level 3 addressa (IPv4, IPv6)
+         Value: Source level 3 address (IPv4, IPv6)
 
     - oid: "/agent/interface/rx_rules/rule/flow_spec/src_l3_addr/mask"
       access: read_write

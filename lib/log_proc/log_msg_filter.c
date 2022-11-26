@@ -186,7 +186,7 @@ log_msg_filter_init(log_msg_filter *filter)
  *
  * @param filter        message filter
  * @param name          entity name or PCRE
- * @param rege          is name a PCRE?
+ * @param regex         is name a PCRE?
  */
 static log_entity_filter *
 log_msg_filter_get_entity(log_msg_filter *filter,
@@ -230,7 +230,7 @@ log_msg_filter_get_entity(log_msg_filter *filter,
     return entity;
 }
 
-/* See desctiption in raw_log_filter.h */
+/* See description in raw_log_filter.h */
 te_errno
 log_msg_filter_set_default(log_msg_filter *filter, te_bool include,
                            te_log_level level_mask)

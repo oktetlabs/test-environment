@@ -313,7 +313,7 @@ typedef struct olist {
     char          oid[CFG_OID_MAX];
 } olist;
 
-/** Insert the entry in lexico-graphical order */
+/** Insert the entry in lexicographical order */
 static int
 insert_entry(char *oid, olist **list)
 {
@@ -619,7 +619,7 @@ cfg_ta_sync_dependants(cfg_instance *inst)
     my_oid = cfg_convert_oid_str(inst->oid);
     if (do_log_syncing)
     {
-        RING("Syncing dependants for %s", inst->obj->oid);
+        RING("Syncing dependents for %s", inst->obj->oid);
     }
     for (dep = inst->obj->dependants; dep != NULL; dep = dep->next)
     {

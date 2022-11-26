@@ -187,7 +187,7 @@
       access: read_write
       type: string
       d: |
-         Wheter to allow multiple connections
+         Whether to allow multiple connections
          Name: empty
          Value: allow, deny, killold
 
@@ -253,14 +253,14 @@
       access: read_write
       type: string
       d: |
-         VTund Persist mode (try to recoonnect after connection)
+         VTund Persist mode (try to reconnect after connection)
          termination)
          Name: empty
          Value: yes|keep|no
                 If yes, the client will try to reconnect to the server
                 after connection termination. If keep, the  client will
                 not  remove and re-add the tunXX or tapXX device when
-                reconnectng.  If no, the client will exit (default).
+                reconnecting.  If no, the client will exit (default).
 
     - oid: "/agent/vtund/client/stats"
       access: read_write

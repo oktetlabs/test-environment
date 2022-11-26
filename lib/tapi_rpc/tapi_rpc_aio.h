@@ -135,7 +135,7 @@ extern int rpc_aio_error(rcf_rpc_server *rpcs, rpc_aiocb_p cb);
  * @retval AIO_CANCELED         all requests are successfully cancelled
  * @retval AIO_NOTCANCELED      at least one request is not cancelled
  * @retval AIO_ALLDONE          all requests are completed before this call
- * @retval -1                   error occured
+ * @retval -1                   error occurred
  */
 extern int rpc_aio_cancel(rcf_rpc_server *rpcs, int fd, rpc_aiocb_p cb);
 

@@ -118,7 +118,7 @@ extern int te_expand_kvpairs(const char *src, const char **posargs,
  *                      substitutions
  *
  * @return The expanded attribute value or NULL if no attribute
- * or an error occured while expanding.
+ * or an error occurred while expanding.
  *
  * @sa cfg_expand_env_vars
  */
@@ -162,7 +162,7 @@ xmlGetProp_exp_vars_or_env(xmlNodePtr node, const xmlChar *name,
  * @param name    XML attribute name
  *
  * @return The expanded attribute value or NULL if no attribute
- * or an error occured while expanding.
+ * or an error occurred while expanding.
  *
  * @sa cfg_expand_env_vars
  */

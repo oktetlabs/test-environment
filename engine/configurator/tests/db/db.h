@@ -229,7 +229,7 @@ extern int
 db_init(char *db_file_name);
 
 /**
- * Cleares database related structures.
+ * Clears database related structures.
  *
  * @return       0 - on success
  */

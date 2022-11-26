@@ -73,10 +73,10 @@ typedef enum rpc_network_event_bit {
 /** Convert RPC network event(s) to string */
 extern const char * network_event_rpc2str(rpc_network_event events);
 
-/** Convert RPC network evenet flags to native flags */
+/** Convert RPC network event flags to native flags */
 extern unsigned int network_event_rpc2h(rpc_network_event flags);
 
-/** Convert native network evenet flags to RPC flags */
+/** Convert native network event flags to RPC flags */
 extern rpc_network_event network_event_h2rpc(unsigned int flags);
 
 

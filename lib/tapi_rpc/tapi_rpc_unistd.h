@@ -140,7 +140,7 @@ extern int rpc_dup(rcf_rpc_server *rpcs,
  * @param oldfd   file descriptor to be duplicated
  * @param newfd   new file descriptor
  *
- * @return  New file descriptor or -1 when an error occured.
+ * @return  New file descriptor or -1 when an error occurred.
  */
 extern int rpc_dup2(rcf_rpc_server *rpcs,
                     int oldfd, int newfd);
@@ -155,7 +155,7 @@ extern int rpc_dup2(rcf_rpc_server *rpcs,
  * @param newfd   new file descriptor
  * @param flags   RPC_O_CLOEXEC flag
  *
- * @return  New file descriptor or -1 when an error occured.
+ * @return  New file descriptor or -1 when an error occurred.
  */
 extern int rpc_dup3(rcf_rpc_server *rpcs,
                     int oldfd, int newfd, int flags);
@@ -519,7 +519,7 @@ extern int rpc_pwritev2(rcf_rpc_server *rpcs, int fd,
  * @param riovcnt  real number of buffer
  *
  * @return Number of bytes read,otherwise -1 is returned when an
- *         error occured.
+ *         error occurred.
  * @note See @b readv manual page for more information
  */
 extern int rpc_readv_gen(rcf_rpc_server *rpcs,
@@ -536,7 +536,7 @@ extern int rpc_readv_gen(rcf_rpc_server *rpcs,
  * @param iovcnt   number of buffer to read
  *
  * @return Number of bytes read,otherwise -1 is returned when an
- *         error occured.
+ *         error occurred.
  * @note See @b readv manual page for more information
  */
 static inline int
@@ -558,7 +558,7 @@ rpc_readv(rcf_rpc_server *rpcs,
  * @param offset   Offset from the start of the @b fd.
  *
  * @return Number of bytes read,otherwise -1 is returned when an
- *         error occured.
+ *         error occurred.
  * @note See @b preadv manual page for more information.
  */
 extern int rpc_preadv(rcf_rpc_server *rpcs, int fd, const struct rpc_iovec *iov,
@@ -576,7 +576,7 @@ extern int rpc_preadv(rcf_rpc_server *rpcs, int fd, const struct rpc_iovec *iov,
  * @param flags    specifies bits for per-call operation
  *
  * @return Number of bytes read,otherwise -1 is returned when an
- *         error occured.
+ *         error occurred.
  * @note See @b preadv manual page for more information
  */
 extern int rpc_preadv2(rcf_rpc_server *rpcs, int fd,

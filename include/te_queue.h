@@ -11,7 +11,7 @@
  * such macros may be defined using remaining ones.
  *
  * The latest copy is obtained from FreeBSD CVS ToT. Mention of
- * _KERNEL is removed. Own defition of a list is made iff sys/queue.h
+ * _KERNEL is removed. Own definition of a list is made iff sys/queue.h
  * does not present or it does not provide corresponding list.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

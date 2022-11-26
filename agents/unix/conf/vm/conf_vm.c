@@ -47,7 +47,7 @@
 #define VM_MACHINE_DEFAULT  \
     "pc-i440fx-2.8,usb=off,vmport=off,dump-guest-core=off"
 
-/** Default managment network device */
+/** Default management network device */
 #define VM_MGMT_NET_DEVICE_DEFAULT  "virtio-net-pci"
 
 typedef struct vm_cpu {

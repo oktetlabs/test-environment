@@ -26,7 +26,7 @@ Configurator features:
 
 * provides an API for traversing configuration tree;
 
-* provides an API to tests for the configuration reading and changing (See :ref:`Configuration tree traversal <doxid-group__confapi__base__traverse>` and :ref:`Contriguration tree access operations <doxid-group__confapi__base__access>`);
+* provides an API to tests for the configuration reading and changing (See :ref:`Configuration tree traversal <doxid-group__confapi__base__traverse>` and :ref:`Configuration tree access operations <doxid-group__confapi__base__access>`);
 
 * provides an API to tests and :ref:`Tester <doxid-group__te__engine__tester>` for backuping, verifying and restoring the configuration (See :ref:`Configuration backup manipulation <doxid-group__confapi__base__backup>`);
 
@@ -99,7 +99,7 @@ Moreover, :ref:`Configurator <doxid-group__te__engine__conf>` provides an API fo
 
 All operations requested in the configuration file and by the tests are stored in the history to allow quick configuration restoring.
 
-API to read and modify configuration tree can be found at :ref:`Contriguration tree access operations <doxid-group__confapi__base__access>` page.
+API to read and modify configuration tree can be found at :ref:`Configuration tree access operations <doxid-group__confapi__base__access>` page.
 
 
 
@@ -273,7 +273,7 @@ One useful feature of :ref:`Configurator <doxid-group__te__engine__conf>` config
 	  <instance oid="/local:Agt_B/libdir:" value="${TEST_LIBDIR:-/usr/lib}"/>
 	</set>
 	<!--
-	  Set the value of '/local:Agt_A/env:LOG_LEVEL' instace to the value of
+	  Set the value of '/local:Agt_A/env:LOG_LEVEL' instance to the value of
 	  TEST_LOG_LEVEL environment variable.
 	  --
 	<add>
@@ -286,7 +286,7 @@ Actually as object instance value you can use syntax of BASH Parameter Substitut
 |		:ref:`API: Configurator<doxid-group__confapi__base>`
 |			:ref:`Configuration backup manipulation<doxid-group__confapi__base__backup>`
 |			:ref:`Configuration tree traversal<doxid-group__confapi__base__traverse>`
-|			:ref:`Contriguration tree access operations<doxid-group__confapi__base__access>`
+|			:ref:`Configuration tree access operations<doxid-group__confapi__base__access>`
 |			:ref:`Synchronization configuration tree with Test Agent<doxid-group__confapi__base__sync>`
 |			:ref:`Test Agent reboot<doxid-group__confapi__base__reboot>`
 |		:ref:`TAPI: Test API for configuration nodes<doxid-group__tapi__conf>`

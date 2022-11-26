@@ -164,7 +164,7 @@ log_remote(void *ready, int argc, char *argv[])
     {
         int rc = errno;
 
-        ERROR("%s: failed to open socket for incomming logs: %s",
+        ERROR("%s: failed to open socket for incoming logs: %s",
               __FUNCTION__, strerror(rc));
         sem_post(ready);
 

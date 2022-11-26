@@ -132,7 +132,7 @@ te_test_result_free_verdict(te_test_verdict *verdict)
     free(verdict);
 }
 
-/** Free resourses allocated for test result verdicts. */
+/** Free resources allocated for test result verdicts. */
 static inline void
 te_test_result_free_verdicts(te_test_verdicts *verdicts)
 {

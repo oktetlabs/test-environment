@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /** @file
- * @brief ip rule configuratior objects processing
+ * @brief ip rule configurator objects processing
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

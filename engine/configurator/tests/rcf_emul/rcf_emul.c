@@ -45,7 +45,7 @@ char current_group[RCF_MAX_NAME];
 static agent agents_list[MAX_AGENTS_NUMBER];
 
 /**
- * Retreives configuration with the given ID from the
+ * Retrieves configuration with the given ID from the
  * configurations database.
  */
 request_handler *
@@ -460,7 +460,7 @@ rcf_emulate(void* param)
     rc = rcfrh_init((char *)param);
     if (rc != 0)
     {
-        ERROR("Failed to initalize database with the configuration file %s, "
+        ERROR("Failed to initialize database with the configuration file %s, "
               "rc = %d", (char *)param, rc);
         goto error;
     }
@@ -517,7 +517,7 @@ rcf_emulate(void* param)
             {
                 if (req->message->opcode == RCFOP_SHUTDOWN)
                 {
-                    VERB("Shutdown command is recieved");
+                    VERB("Shutdown command is received");
                     break;
                 }
                 process_user_request(req);
@@ -766,7 +766,7 @@ rcfrh_configuration_delete(int conf_id)
 }
 
 /**
- * Changes the crrent configuration.
+ * Changes the current configuration.
  */
 int
 rcfrh_configuration_set_current(int conf_id)

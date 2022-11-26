@@ -1338,7 +1338,7 @@ test_params_to_string(char *str, const unsigned int n_args,
         rest -= sprintf(v + (len - rest), " %s=\"", p->name);
 
         /*
-         * Add back slashes before '"' (quitation mark) and
+         * Add back slashes before '"' (quotation mark) and
          * "\" (back slash) characters.
          */
         {
@@ -1431,9 +1431,9 @@ test_params_to_json(const unsigned int n_args, const test_iter_arg *args)
 }
 
 /**
- * Normalise parameter value. Remove trailing spaces and newlines.
+ * Normalize parameter value. Remove trailing spaces and newlines.
  *
- * @param param   Parameter value to normalise
+ * @param param   Parameter value to normalize
  *
  * @return Allocated string or NULL.
  */
@@ -1469,7 +1469,7 @@ test_params_normalise(const char *param)
         }
     }
 
-    /* remove trainling space at the end, if any */
+    /* remove trailing space at the end, if any */
     if ((q > str) && (skip_spaces))
         q--;
 
@@ -2461,7 +2461,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
                     break;
                 case TE_EXIT_ERROR:
                     *status = TESTER_TEST_STOPPED;
-                    ERROR("Serious error occured during execution of "
+                    ERROR("Serious error occurred during execution of "
                           "the test, shut down");
                     break;
 
@@ -3495,7 +3495,7 @@ run_exception_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
         return TESTER_CFG_WALK_SKIP;
     }
 
-    /* Exceptin handler is always run in a new context */
+    /* Exception handler is always run in a new context */
     ctx = tester_run_more_ctx(gctx, FALSE);
     if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
@@ -3914,7 +3914,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         ctx->current_result.exp_result = NULL;
     }
-    /* Intialize as unknown by default */
+    /* Initialize as unknown by default */
     ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
 #endif
 
@@ -4253,7 +4253,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                                              &ctx->current_result.error,
                                              /* Verdicts in case of test
                                               * fails like segfault
-                                              * should be additionaly
+                                              * should be additionally
                                               * reported in log for test
                                               * scripts only */
                                              ri->type == RUN_ITEM_SCRIPT ?

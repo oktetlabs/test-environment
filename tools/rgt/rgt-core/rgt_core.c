@@ -330,7 +330,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
  * arriving SIGINT signal to the programm.
  *
  * @param  signo  Signal number by which the programm is terminated.
- *                If signo is equal to zero it means an error was occured
+ *                If signo is equal to zero it means an error was occurred
  *                during the programm operation. We use an assertion that
  *                no one signal has code equal to zero.
  *

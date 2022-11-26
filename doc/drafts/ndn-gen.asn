@@ -31,7 +31,7 @@ DATA-UNIT { BaseFieldType } ::=  CHOICE
     intervals   SEQUENCE OF Interval,
     env         PrintableString,   -- identifier of Config DB entry.
     function    PrintableString
-            -- name of function (which name shoulb be present
+            -- name of function (which name should be present
             -- in TA symbol table) for matching value (if used in
             -- filter pattern) or generating it (in templates)
 }

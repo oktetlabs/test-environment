@@ -166,7 +166,7 @@ extern void scenario_apply_to(testing_scenario *scenario,
                               unsigned int from);
 
 /**
- * Update testing scenario to have all items starting from the mininum
+ * Update testing scenario to have all items starting from the minimum
  * identifier up to the @a to identifier.
  *
  * @param scenario      Testing scenario

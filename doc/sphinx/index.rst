@@ -39,19 +39,19 @@ Few years of intensive usage the software in testing projects showed that a deep
 Conventions
 ~~~~~~~~~~~
 
-Throught the documentation the following conventions are used:
+Through the documentation the following conventions are used:
 
 * directory paths or file names marked as: ``/usr/bin/bash``, ``Makefile``;
 
 * program names (scripts or binary executables) marked as: ``gdb``, ``dispatcher.sh``;
 
-* program options are maked as: ``help``, ``-q``;
+* program options are marked as: ``help``, ``-q``;
 
 * environment variables are marked as: ``TE_BASE``, ``${PATH}``;
 
 * different directives in configuration files are marked as: ``TE_LIB_PARMS``, ``include``;
 
-* configuration pathes as maked as: ``/agent/interface``, ``/local:/net:A``;
+* configuration paths as marked as: ``/agent/interface``, ``/local:/net:A``;
 
 * names of different attributes (mainly names of XML element attributes) are marked as: ``type``, ``src``;
 
@@ -98,13 +98,13 @@ There are several kinds of Test Agents (see the diagram below):
 
 * Test Agent running on a NUT and controlling the NUT: Test Protocol is used over a network or over some other transport (for example, over a serial port or Ethernet) and all commands are applied to the NUT.
 
-Seletion of appropriate usage scenario depends on the object being tested. If it's a network device the Test Agent can run either on the device itself or (if black box testing is performed or device hardware is not capable of running the agent) on an auxiliary station. If a network library is tested then the agent should probably be running on the NUT itself (in such case NUT is the host on which the service that uses the library is running).
+Selection of appropriate usage scenario depends on the object being tested. If it's a network device the Test Agent can run either on the device itself or (if black box testing is performed or device hardware is not capable of running the agent) on an auxiliary station. If a network library is tested then the agent should probably be running on the NUT itself (in such case NUT is the host on which the service that uses the library is running).
 
 Apart from these three kinds of agents (or should they be called 'Test Agent usage scenarios') there can exist arbitrary number of agents running on other equipments which participates in the testing process. Examples include:
 
 * other hosts which are used for traffic generation;
 
-* proxy agents which are used to control various sevices used for network envrionment creation or DUT configuration via managemnt protocols;
+* proxy agents which are used to control various services used for network environment creation or DUT configuration via management protocols;
 
 * agents used for debug information collection, for instance serial logs.
 
@@ -143,7 +143,7 @@ Apart from main components, TE provides the following set of tools:
 |	:ref:`Common tools API<doxid-group__te__tools>`
 |		:ref:`Call shell commands<doxid-group__te__tools__te__shell__cmd>`
 |		:ref:`Date, time<doxid-group__te__tools__te__time>`
-|		:ref:`Dymanic array<doxid-group__te__tools__te__vec>`
+|		:ref:`Dynamic array<doxid-group__te__tools__te__vec>`
 |		:ref:`Dynamic buffers<doxid-group__te__tools__te__dbuf>`
 |		:ref:`Dynamic strings<doxid-group__te__tools__te__string>`
 |		:ref:`Execute a program in a child process<doxid-group__te__tools__te__exec__child>`
@@ -178,7 +178,7 @@ Apart from main components, TE provides the following set of tools:
 |		:ref:`Test Agents: Command Handler<doxid-group__rcf__ch>`
 |			:ref:`Command Handler: Configuration support<doxid-group__rcf__ch__cfg>`
 |				:ref:`Configuration node definition macros<doxid-group__rcf__ch__cfg__node__def>`
-|			:ref:`Command Handler: File maniputation support<doxid-group__rcf__ch__file>`
+|			:ref:`Command Handler: File manipulation support<doxid-group__rcf__ch__file>`
 |			:ref:`Command Handler: Function call support<doxid-group__rcf__ch__func>`
 |			:ref:`Command Handler: Process/thread support<doxid-group__rcf__ch__proc>`
 |			:ref:`Command Handler: Reboot and shutdown support<doxid-group__rcf__ch__reboot>`
@@ -197,7 +197,7 @@ Apart from main components, TE provides the following set of tools:
 |				:ref:`API: Configurator<doxid-group__confapi__base>`
 |					:ref:`Configuration backup manipulation<doxid-group__confapi__base__backup>`
 |					:ref:`Configuration tree traversal<doxid-group__confapi__base__traverse>`
-|					:ref:`Contriguration tree access operations<doxid-group__confapi__base__access>`
+|					:ref:`Configuration tree access operations<doxid-group__confapi__base__access>`
 |					:ref:`Synchronization configuration tree with Test Agent<doxid-group__confapi__base__sync>`
 |					:ref:`Test Agent reboot<doxid-group__confapi__base__reboot>`
 |				:ref:`TAPI: Test API for configuration nodes<doxid-group__tapi__conf>`

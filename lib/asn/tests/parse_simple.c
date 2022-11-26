@@ -47,7 +47,7 @@ test_string_parse(const char *string, const asn_type *type)
     rc = asn_parse_value_text(buffer, type, &new_val, &s_parsed);
     if (rc != 0)
     {
-        printf ("parse of printed byffer type %s: \n"
+        printf ("parse of printed buffer type %s: \n"
                 "  rc %6x, syms: %d\n",
                 type->name, rc, s_parsed);
         result = 1;

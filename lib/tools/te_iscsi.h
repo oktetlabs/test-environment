@@ -128,7 +128,7 @@ typedef enum {
 } iscsi_login_stage_t;
 
 
-/** RFC 3720, Section 10.3.1 Flags and Task Attibutes (byte 1) */
+/** RFC 3720, Section 10.3.1 Flags and Task Attributes (byte 1) */
 /** SCSI Command ATTR value */
 
 enum iscsi_command_attr_values {

@@ -22,7 +22,7 @@ extern "C" {
 /** Test run status. */
 typedef enum {
     TE_TEST_RUN_STATUS_OK = 0,  /**< Test execution is OK. */
-    TE_TEST_RUN_STATUS_FAIL,    /**< Some critical error occured
+    TE_TEST_RUN_STATUS_FAIL,    /**< Some critical error occurred
                                      during test execution. */
 } te_test_run_status;
 

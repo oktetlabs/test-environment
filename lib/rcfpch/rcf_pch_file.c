@@ -108,7 +108,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             }
             /*
              * If buffer is not sufficient, total amount of pending
-             * data is returned.  Actual number of retured bytes is
+             * data is returned.  Actual number of returned bytes is
              * never greater than specified on input.
              */
             if (rw_len > reply_buflen)

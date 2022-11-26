@@ -134,7 +134,7 @@ ta_unix_conf_get_mib(unsigned int mib_level, unsigned int mib_name,
      * It is located just after the control message header.
      */
     hdr = (struct opthdr *)(ack + 1);
-    /* Maximum control bufffer length may be set only once */
+    /* Maximum control buffer length may be set only once */
     ctrl.maxlen = sizeof(ctrlbuf);
 
     for (;;)
@@ -153,7 +153,7 @@ ta_unix_conf_get_mib(unsigned int mib_level, unsigned int mib_name,
             ack->MGMT_flags == T_SUCCESS &&
             hdr->len == 0)
         {
-            /* Successfull */
+            /* Successful */
             VERB("%s(): getmsg() returned end-of-data "
                  "(level %u, name %u) - read %u", __FUNCTION__,
                  (unsigned)hdr->level, (unsigned)hdr->name,

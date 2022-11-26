@@ -111,7 +111,7 @@ extern void rpc_rte_free_flow_rule(rcf_rpc_server *rpcs,
                                    rpc_rte_flow_action_p actions);
 
 /**
- * Insert RTE flow rule items provided in ASN.1 representaton into
+ * Insert RTE flow rule items provided in ASN.1 representation into
  * RTE flow rule pattern starting at specified index.
  *
  * @param[in,out] pattern   RTE flow item pointer to the array of items,

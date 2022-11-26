@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /** @file
  *
- * Catches changes of IP on network intefaces from netlink socket.
+ * Catches changes of IP on network interfaces from netlink socket.
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */

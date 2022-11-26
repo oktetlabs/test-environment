@@ -81,7 +81,7 @@
  *     See rcf.h
  *
  * RCF shutdown:
- *     send a shutdown command to TA with first free SID to all Test Aents;
+ *     send a shutdown command to TA with first free SID to all Test Agents;
  *     shutdown_num = ta_num;
  *     wait until time(NULL) - ta.reboot_timestamp > RCF_SHUTDOWN_TIMESTAMP
  *     or response from all TA is received (set flag TA_DOWN and decrement
@@ -640,7 +640,7 @@ parse_config(const char *filename)
 
     if ((doc = xmlParseFile(filename)) == NULL)
     {
-        ERROR("error occured during parsing configuration file %s\n",
+        ERROR("error occurred during parsing configuration file %s\n",
                   filename);
         return -1;
     }
@@ -1224,7 +1224,7 @@ send_all_pending_commands(ta *agent)
 
 
 /**
- * Read string value from the answer strippong off quotes and escape
+ * Read string value from the answer stripping off quotes and escape
  * sequences.
  *
  * @param ptr           answer pointer
@@ -2891,7 +2891,7 @@ process_cmd_line_opts(int argc, const char **argv)
     struct poptOption options_table[] = {
         { "foreground", 'f', POPT_ARG_NONE | POPT_BIT_SET, &flags,
           RCF_FOREGROUND,
-          "Run in foreground (usefull for debugging).", NULL },
+          "Run in foreground (useful for debugging).", NULL },
         { "tce-conf", '\0', POPT_ARG_STRING, &tce_conf_file, 0,
           "Specify file with TCE configuration.", NULL },
 
@@ -3104,7 +3104,7 @@ main(int argc, const char *argv[])
 
             if (req->message->opcode == RCFOP_SHUTDOWN)
             {
-                INFO("Shutdown command is recieved");
+                INFO("Shutdown command is received");
                 break;
             }
             process_user_request(req);

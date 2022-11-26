@@ -57,7 +57,7 @@ static struct debug_msg {
 };
 
 /**
- * Set index of the error event that can be occured during the operation
+ * Set index of the error event that can be occurred during the operation
  * to be performed or just to output an error message.
  */
 #define LOG_FORMAT_DEBUG_SET(err_index) \

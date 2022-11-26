@@ -225,8 +225,8 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
         ERROR("First target is not configured");
         return TE_RC(ISCSI_AGENT_TYPE, TE_ENOENT);
     }
-    /** NOTE: L5 Initator seems to be unable
-     *  to have different Initator names for
+    /** NOTE: L5 Initiator seems to be unable
+     *  to have different Initiator names for
      *  different Targets/Connections.
      *  So we just using the first one
      */
@@ -310,7 +310,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
 }
 
 /**
- * See iscsi_initiator.h and iscsi_initator_conn_request_thread()
+ * See iscsi_initiator.h and iscsi_initiator_conn_request_thread()
  * for a complete description of the state machine involved.
  */
 int

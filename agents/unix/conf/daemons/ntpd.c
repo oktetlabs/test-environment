@@ -193,7 +193,7 @@ do {                                                                    \
             return 0;
         }
 
-        ERROR("Srvice command returned unexpected code %d", res);
+        ERROR("Service command returned unexpected code %d", res);
         return TE_RC(TE_TA_UNIX, TE_EFAIL);
     }
 

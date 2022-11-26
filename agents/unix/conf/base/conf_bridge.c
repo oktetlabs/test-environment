@@ -73,7 +73,7 @@ port_list(unsigned int gid, const char *oid,
  * @param oid       Full object instance identifier (unused)
  * @param if_oid    Buffer for port interface OID
  * @param brname    The bridge name (unused)
- * @param ifname    The inteface name
+ * @param ifname    The interface name
  *
  * @return      Status code
  */
@@ -104,7 +104,7 @@ port_get(unsigned int gid, char *oid, char *if_oid, char *brname, char *ifname)
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
  * @param data      Unused
- * @param brname    The bridge inteface name
+ * @param brname    The bridge interface name
  * @param ifname    The interface name
  *
  * @return      Status code
@@ -162,7 +162,7 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_port, "port", NULL, NULL,
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
  * @param data      Unused
- * @param ifname    The inteface name
+ * @param ifname    The interface name
  *
  * @return      Status code
  */

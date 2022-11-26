@@ -122,7 +122,7 @@ tester_interactive_open_prompt(const tester_cfgs *cfgs,
         }
         else if (strcmp(argv[0], "stop") == 0)
         {
-            printf("Finaliazing testing...\n");
+            printf("Finalizing testing...\n");
             return TESTER_INTERACTIVE_STOP;
         }
         else
@@ -143,7 +143,7 @@ tester_interactive_open_prompt(const tester_cfgs *cfgs,
     UNUSED(scenario);
 
     printf("Can't run in interactive mode: "
-           "readline library is not availiable.\n");
+           "readline library is not available.\n");
 
     return TESTER_INTERACTIVE_STOP;
 

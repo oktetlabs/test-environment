@@ -1132,7 +1132,7 @@ prepare_unicast(unsigned int af, tapi_env_addr *env_addr,
         cfg_handle     *ip_addrs;
         cfg_val_type    val_type;
 
-        /* Handle of the assosiated network node */
+        /* Handle of the associated network node */
         handle = cfg_nets->nets[env_addr->iface->net->i_net].
                      nodes[env_addr->iface->i_node].handle;
 
@@ -1291,7 +1291,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
 
         iface = env_addr->iface;
 
-        /* Handle of the assosiated network node */
+        /* Handle of the associated network node */
         handle = cfg_nets->nets[iface->net->i_net].
                      nodes[iface->i_node].handle;
 

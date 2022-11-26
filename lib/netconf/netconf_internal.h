@@ -98,7 +98,7 @@ uint16_t netconf_cmd_to_flags(netconf_cmd cmd);
  * @param nh            Netconf handle
  * @param type          Type of dump as in nlmsg_type field
  * @param family        Address family to dump
- * @param recv_cb       Handler of one responce entity
+ * @param recv_cb       Handler of one response entity
  * @param cookie        Parameters for recv_cb
  *
  * @return List of information nodes, or NULL in case of error.
@@ -249,7 +249,7 @@ extern uint32_t netconf_get_rta_u32(struct rtattr *rta);
 /**
  * Duplicate a data of rtattr. The memory is allocated using malloc().
  *
- * @param rta           Routing atribute
+ * @param rta           Routing attribute
  *
  * @return Address of duplicated data, or NULL in case of error.
  */
@@ -421,7 +421,7 @@ extern void netconf_devlink_param_node_free(netconf_node *node);
  * @param nh            Neconf handle
  * @param req           Request data
  * @param len           Request length
- * @param recv_cb       Handler of one responce entity
+ * @param recv_cb       Handler of one response entity
  * @param cookie        Parameters for recv_cb
  * @param list          Argument of callback
  */

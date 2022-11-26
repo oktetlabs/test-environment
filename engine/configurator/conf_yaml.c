@@ -264,7 +264,7 @@ parse_config_yaml_cmd_add_dependency_attribute(yaml_node_t    *k,
     if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0 ||
         (v->type != YAML_SCALAR_NODE && v->type != YAML_SEQUENCE_NODE))
     {
-        ERROR(CS_YAML_ERR_PREFIX "found the dependce attribute node to be "
+        ERROR(CS_YAML_ERR_PREFIX "found the dependence attribute node to be "
               "badly formatted");
         return TE_EINVAL;
     }
@@ -276,7 +276,7 @@ parse_config_yaml_cmd_add_dependency_attribute(yaml_node_t    *k,
             if (dep_ctx->oid != NULL)
             {
                 ERROR(CS_YAML_ERR_PREFIX "detected multiple OID specifiers "
-                      "of the dependce node: only one can be present");
+                      "of the dependence node: only one can be present");
                 return TE_EINVAL;
             }
 
@@ -287,7 +287,7 @@ parse_config_yaml_cmd_add_dependency_attribute(yaml_node_t    *k,
             if (dep_ctx->scope != NULL)
             {
                 ERROR(CS_YAML_ERR_PREFIX "detected multiple scope specifiers "
-                      "of the dependce node: only one can be present");
+                      "of the dependence node: only one can be present");
                 return TE_EINVAL;
             }
 
@@ -423,7 +423,7 @@ parse_config_yaml_dependency(yaml_document_t            *d,
     }
     else
     {
-        ERROR(CS_YAML_ERR_PREFIX "found the dependce node to be "
+        ERROR(CS_YAML_ERR_PREFIX "found the dependence node to be "
               "badly formatted");
         return TE_EINVAL;
     }
@@ -510,7 +510,7 @@ parse_config_yaml_cmd_add_target_attribute(yaml_document_t        *d,
             rc = parse_config_yaml_dependency(d, v, c);
             if (rc != 0)
             {
-                ERROR(CS_YAML_ERR_PREFIX "failed to process the dependce "
+                ERROR(CS_YAML_ERR_PREFIX "failed to process the dependence "
                       "node of the object");
                 return rc;
             }

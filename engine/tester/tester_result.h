@@ -2,7 +2,7 @@
 /** @file
  * @brief Tester Subsystem
  *
- * Test execution result representation and auxiluary routes
+ * Test execution result representation and auxiliary routes
  * declaration.
  *
  *

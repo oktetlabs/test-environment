@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /** @file
- * @brief BPF defenition
+ * @brief BPF definition
  *
  * Auxilliary functions and structures for BPF programs.
  *

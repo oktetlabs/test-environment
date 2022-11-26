@@ -81,7 +81,7 @@
         free(_opt);             \
     } while (0)
 
-/*** Macro definitions for uniformal configuring methods ***/
+/*** Macro definitions for uniform configuring methods ***/
 /** Definition of list method for host and groups */
 #define LIST_METHOD(_gh) \
 static te_errno                                                 \
@@ -496,7 +496,7 @@ static const char *dhcp_server_confs[] = {
 
 #ifdef TA_UNIX_ISC_DHCPS_NATIVE_CFG
 /**
- * List of known possible locations of DHCP server auxilury
+ * List of known possible locations of DHCP server auxiliary
  * configuration file
  */
 static const char *dhcp_server_aux_confs[] = {
@@ -521,7 +521,7 @@ static unsigned int dhcp_server_n_confs =
 
 #ifdef TA_UNIX_ISC_DHCPS_NATIVE_CFG
 /**
- * Number of known possible locations of DHCP server auxilury
+ * Number of known possible locations of DHCP server auxiliary
  * configuration file
  */
 static unsigned int dhcp_server_n_aux_confs =
@@ -551,10 +551,10 @@ static int dhcp_server_conf_backup = -1;
 #endif /* !TA_UNIX_ISC_DHCPS_NATIVE_CFG || __sun__ */
 
 #ifdef TA_UNIX_ISC_DHCPS_NATIVE_CFG
-/** DHCP server auxilury configuration file name */
+/** DHCP server auxiliary configuration file name */
 static const char *dhcp_server_aux_conf = NULL;
 
-/** Index of the DHCP server auxilury configuration file backup */
+/** Index of the DHCP server auxiliary configuration file backup */
 static int dhcp_server_aux_conf_backup = -1;
 #else
 /** Was DHCP server enabled at TA start up? */
@@ -569,7 +569,7 @@ static te_bool dhcp_server_changed = FALSE;
 
 #if defined __linux__
 /**
- * List of options, which should be quoted automatilally; for other
+ * List of options, which should be quoted automatically; for other
  * option quotes should be specified in value, if necessary.
  */
 static char *isc_dhcp_quoted_options[] = {
@@ -695,7 +695,7 @@ dhcpserver_init(void)
     snprintf(buf, sizeof(buf), "%s -q -t -T", dhcp_server_exec);
     if (ta_system(buf) != 0)
     {
-        ERROR("Bad found DHCP server configution file '%s'"
+        ERROR("Bad found DHCP server configuration file '%s'"
              " - DHCP will not be available", dhcp_server_conf);
         rcf_pch_del_node(&node_ds_dhcpserver);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -2202,7 +2202,7 @@ ds_lease_client_id_get(unsigned int gid, const char *oid, char *value,
 
     /*
      * Very bad hack to know the type of the particular
-     * dhcp-client-identifier: srting or binary.
+     * dhcp-client-identifier: string or binary.
      */
     {
         omapi_value_t *tv = (omapi_value_t *)0;
@@ -2623,7 +2623,7 @@ RCF_PCH_CFG_NODE_RW(node_ds_subnet_range, "range",
 
 /*** Node /agent/dhcpserver children ***/
 #ifdef TA_UNIX_ISC_DHCPS_LEASES_SUPPORTED
-/*** List of /agent/dhcpserver children is teminated here ***/
+/*** List of /agent/dhcpserver children is terminated here ***/
 static rcf_pch_cfg_object node_ds_lease =
     { "lease", 0, &node_ds_lease_state, NULL,
       (rcf_ch_cfg_get)ds_lease_get, NULL, NULL, NULL,
@@ -2639,7 +2639,7 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ds_group, "group",
                             ds_group_add, ds_group_del,
                             ds_group_list, NULL);
 #else /* TA_UNIX_ISC_DHCPS_LEASES_SUPPORTED */
-/*** List of /agent/dhcpserver children is teminated here ***/
+/*** List of /agent/dhcpserver children is terminated here ***/
 RCF_PCH_CFG_NODE_COLLECTION(node_ds_group, "group",
                             &node_ds_group_next, NULL,
                             ds_group_add, ds_group_del,

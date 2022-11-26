@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API - RPC
  *
- * Definition of TAPI for auxilury remote calls
+ * Definition of TAPI for auxiliary remote calls
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
@@ -1137,7 +1137,7 @@ extern int rpc_iomux_create_state(rcf_rpc_server *rpcs, iomux_func iomux,
  *                  or @c -1
  * @param exp_rc    Expected return value
  * @param number    If not @c NULL, will be set to the number
- *                  of iomux calls before timeout occured or
+ *                  of iomux calls before timeout occurred or
  *                  an error was returned.
  * @param last_rc   If not @c NULL, will be set to the last
  *                  return value of an iomux function.
@@ -1175,7 +1175,7 @@ extern int rpc_iomux_close_state(rcf_rpc_server *rpcs, iomux_func iomux,
  *                  or @c -1
  * @param exp_rc    Expected return value
  * @param number    If not @c NULL, will be set to the number
- *                  of iomux calls before timeout occured or
+ *                  of iomux calls before timeout occurred or
  *                  an error was returned.
  * @param last_rc   If not @c NULL, will be set to the last
  *                  return value of an iomux function.

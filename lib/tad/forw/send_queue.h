@@ -183,7 +183,7 @@ extern int tadf_sendq_get_param(int sendq_id,
 
 /* sendq interface */
 /**
- * This function initalizes the objects of the send queue:
+ * This function initializes the objects of the send queue:
  * 1) sendq parameters
  * 2) sendq mutex lock
  * 3) sending thread of the send queue

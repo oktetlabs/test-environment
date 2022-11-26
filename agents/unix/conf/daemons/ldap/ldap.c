@@ -90,7 +90,7 @@ ds_slapd_get(unsigned int gid, const char *oid, char *value,
  * Add a new slapd with specified port.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         unused
  * @param port          slapd port
  *
@@ -128,7 +128,7 @@ ds_slapd_add(unsigned int gid, const char *oid, const char *value,
  * Stop slapd with specified port.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param port          slapd port
  *
  * @return error code

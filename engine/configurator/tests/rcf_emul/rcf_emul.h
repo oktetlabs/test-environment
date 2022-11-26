@@ -274,7 +274,7 @@ extern int rcfrh_reboot_default(char *ta_name, int *result);
  * @param ta_name   Name of the agent on which the request
  *                  should be handled. By default there
  *                  is only one agent with name Agt_T.
- * @param oid       Description of the information to be retreived
+ * @param oid       Description of the information to be retrieved
  *                  from the database.
  * @param answer    Answer to the request. If the @p oid is not
  *                  wildcard the answer is sent to the configurator
@@ -343,11 +343,11 @@ extern int rcfrh_conf_del_default(char *ta_name, char *oid);
  * Conf group start default request handler.
  *
  * @param ta_name   Name of the agent on which the command
- *                  group shold be started. By default there is
+ *                  group should be started. By default there is
  *                  only one agent with name Agt_T.
  * @param grp_name  Name of the group to start.
  *
- * @return          0 - if the functon ends correctly
+ * @return          0 - if the function ends correctly
  * @retval          TE_EINVAL - ta_name is not Agt_T
  */
 extern int rcfrh_conf_grp_start_default(char *ta_name, char *grp_name);
@@ -356,11 +356,11 @@ extern int rcfrh_conf_grp_start_default(char *ta_name, char *grp_name);
  * Conf group end default request handler.
  *
  * @param ta_name   Name of the agent on which the command
- *                  group shold be ended. By default there is
+ *                  group should be ended. By default there is
  *                  only one agent with name Agt_T.
  * @param grp_name  Name of the group to end.
  *
- * @return          0 - if the functon ends correctly
+ * @return          0 - if the function ends correctly
  * @retval          TE_EINVAL - ta_name is not Agt_T
  */
 extern int rcfrh_conf_grp_end_default(char *ta_name, char *grp_name);
@@ -369,7 +369,7 @@ extern int rcfrh_conf_grp_end_default(char *ta_name, char *grp_name);
  * Function create request handlers configuration.
  *
  * @return          Configuration ID if the configuration
- *                  was successfuly created.
+ *                  was successfully created.
  * @retval          -TE_ENOMEM - no more configurations is
  *                            allowed or failed to allocate
  *                            configuration structure
@@ -385,7 +385,7 @@ extern int rcfrh_configuration_create(void);
  * @param conf_id   ID of the configuration to delete.
  *
  * @return          0 - if the configuration was deleted
- *                      successfuly
+ *                      successfully
  * @retval          TE_EINVAL - if there is no configuration
  *                           with such ID
  */
@@ -409,7 +409,7 @@ extern int rcfrh_configuration_set_current(int conf_id);
  *
  * @param conf_     Configuration to be updated
  * @param opcode_   Request type
- * @param handler_  Hander so set for that type of request.
+ * @param handler_  Handler so set for that type of request.
  *
  */
 #define RCFRH_SET_CONF_HANDLER_CONF(conf_, opcode_, handler_) \
@@ -454,7 +454,7 @@ extern int rcfrh_configuration_set_current(int conf_id);
  *
  * @param conf_id_  Identifier of the configuration to be updated
  * @param opcode_   Request type
- * @param handler_  Hander so set for that type of request.
+ * @param handler_  Handler so set for that type of request.
  *
  */
 #define RCFRH_SET_CONF_HANDLER(conf_id_, opcode_, handler_) \
@@ -470,7 +470,7 @@ extern int rcfrh_configuration_set_current(int conf_id);
  * given type of request.
  *
  * @param opcode_   Request type
- * @param handler_  Hander so set for that type of request.
+ * @param handler_  Handler so set for that type of request.
  *
  */
 #define RCFRH_SET_HANDLER(opcode_, handler_) \
@@ -587,11 +587,11 @@ typedef struct agent_s
     agent_type type;                         /**< Type of the agent */
 } agent_t;
 
-/** Pointerr to the agents structure. */
+/** Pointer to the agents structure. */
 typedef agent_t *agent;
 
 /**
- * Adds the agent with the given name of the specified tyep.
+ * Adds the agent with the given name of the specified type.
  *
  * @param agents_name  Name of the agent to add.
  * @param type         Type of the agent to add.
