@@ -282,7 +282,7 @@ extern te_errno te_string_append_shell_arg_as_is(te_string *str,
 
 /**
  * Append the elements of @p vec (which must be C strings),
- * separated by @p sep.
+ * separated by @p sep. @c NULL elements are ignored.
  *
  * @param str     TE string
  * @param strvec  Vector of C strings

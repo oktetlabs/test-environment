@@ -307,12 +307,20 @@ te_string_join_vec(te_string *str, const te_vec *strvec,
 {
     te_bool need_sep = FALSE;
     const char * const *item;
+    te_errno rc;
 
     TE_VEC_FOREACH(strvec, item)
     {
-        te_errno rc = te_string_append(str, "%s%s",
-                                       need_sep ? sep : "",
-                                       *item);
+        /*
+         * Seems meaningless to add "(null)" to TE string
+         * for NULL pointers.
+         */
+        if (*item == NULL)
+            continue;
+
+        rc = te_string_append(str, "%s%s",
+                              need_sep ? sep : "",
+                              *item);
         if (rc != 0)
             return rc;
         need_sep = TRUE;
