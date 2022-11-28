@@ -128,7 +128,8 @@
     - oid: "/agent/hardware/pci/device/driver"
       access: read_write
       type: string
-      depends: "/agent/module"
+      depends:
+        - oid: "/agent/module"
       d: |
          Driver managing the device
 
@@ -254,6 +255,7 @@
                 PCIe capability, or empty string if not defined
 
     - oid: "/agent/hardware/pci/device/power"
+      access: read_create
       d: |
          @todo Power management
 
