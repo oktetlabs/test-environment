@@ -552,6 +552,9 @@ te_errno tapi_job_opt_create_enum_bool(const void *value, const void *priv,
       TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                       \
                                      struct sockaddr *), NULL }
 
+/** Undefined value for enum option */
+#define TAPI_JOB_OPT_ENUM_UNDEF INT_MIN
+
 /**
  * Bind an enumeration argument using a custom mapping @p _map from values
  * to strings.

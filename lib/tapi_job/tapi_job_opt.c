@@ -190,6 +190,9 @@ tapi_job_opt_create_enum(const void *value, const void *priv, te_vec *args)
 {
     int ival = *(const int *)value;
 
+    if (ival == TAPI_JOB_OPT_ENUM_UNDEF)
+        return TE_ENOENT;
+
     return te_vec_append_str_fmt(args, "%s",
                                  te_enum_map_from_value(priv, ival));
 }
