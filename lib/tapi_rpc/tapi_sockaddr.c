@@ -53,6 +53,13 @@
 #define MAX_AVAILABLE_PORT  30000
 
 /* See description in tapi_sockaddr.h */
+uint16_t
+tapi_get_random_port(void)
+{
+    return rand_range(MIN_AVAILABLE_PORT, MAX_AVAILABLE_PORT);
+}
+
+/* See description in tapi_sockaddr.h */
 te_errno
 tapi_allocate_port(struct rcf_rpc_server *pco, uint16_t *p_port)
 {

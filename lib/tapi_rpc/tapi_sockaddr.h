@@ -61,6 +61,17 @@ do {                                                                \
 } while (0)
 
 /**
+ * Get a random port number from a range where conflicts with
+ * other applications are unlikely.
+ *
+ * @note You should check for yourself whether retrieved port is
+ *       free on your host.
+ *
+ * @return Port number in host byte order.
+ */
+extern uint16_t tapi_get_random_port(void);
+
+/**
  * Retrieve unused in system port in host order.
  *
  * @param pco       RPC server to check that port is free
