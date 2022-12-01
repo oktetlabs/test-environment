@@ -30,8 +30,6 @@ while test "${1#-}" != "$1" ; do
             opts="$opts $1"
             ;;
 
-        --ignore-unknown-id) trc_log_opts+=("--ignore-unknown-id") ;;
-
         *)
             opts="$opts $1"
             ;;

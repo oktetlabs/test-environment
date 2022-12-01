@@ -1391,15 +1391,15 @@ flow_tree_attach_message(log_msg *msg)
     if ((p_cur_node = (node_t **)
                 g_hash_table_lookup(close_set, &(msg->id))) == NULL)
     {
-        fprintf(stderr, "Cannot find test with ID equals to %d\n", msg->id);
-
-        if (rgt_ctx.ignore_unknown_id)
-        {
-            free_log_msg(msg);
-            return;
-        }
-
-        THROW_EXCEPTION;
+        /*
+         * This actually can happen when testing terminates abnormally;
+         * let's not break log processing because of it.
+         */
+        fprintf(stderr, "Message encountered with ID=%u not "
+                "matching any opened test/session/package\n", msg->id);
+        flow_tree_attach_from_node(root, log_msg_ref(msg));
+        free_log_msg(msg);
+        return;
     }
     cur_node = *p_cur_node;
 

@@ -27,7 +27,6 @@ OPTIONS:
   -o <output-file>          Specify output file name
   -z                        Compress output using gzip
   -j                        Compress output using bzip2
-  --ignore-unknown-id       Ignore log messages with unknown ID
 
   --help                    Show this help message
 
@@ -55,8 +54,6 @@ while test -z "$end_of_options" -a -n "$1" ; do
         -o)     shift 1
                 output_file="$1"
                 ;;
-
-        --ignore-unknown-id) rgt_opts+=("--ignore-unknown-id") ;;
 
         --)     end_of_options=yes
                 ;;
