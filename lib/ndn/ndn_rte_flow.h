@@ -52,6 +52,7 @@ typedef enum {
     NDN_FLOW_ACTION_TYPE_PORT_REPRESENTOR,
     NDN_FLOW_ACTION_TYPE_REPRESENTED_PORT,
     NDN_FLOW_ACTION_TYPE_JUMP,
+    NDN_FLOW_ACTION_TYPE_DEC_TTL,
 } ndn_rte_flow_action_type_t;
 
 typedef enum {
