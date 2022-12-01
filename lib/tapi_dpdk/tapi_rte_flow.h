@@ -139,6 +139,15 @@ extern void tapi_rte_flow_add_ndn_action_jump(asn_value *ndn_actions,
                                               uint32_t group);
 
 /**
+ * Add a TTL decrease action to an action list at specified index.
+ *
+ * @param[in,out] ndn_actions       Action list
+ * @param[in]     action_index      Index at which the action is put to list
+ */
+extern void tapi_rte_flow_add_ndn_action_dec_ttl(asn_value *ndn_actions,
+                                                 int action_index);
+
+/**
  * Add an item of type PORT_REPRESENTOR / REPRESENTED_PORT to the item list.
  *
  * @param[in]     type            The item type

@@ -1907,6 +1907,17 @@ rte_flow_action_drop_from_pdu(__rte_unused const asn_value *conf_pdu,
 }
 
 static te_errno
+rte_flow_action_dec_ttl_from_pdu(__rte_unused const asn_value *conf_pdu,
+                                 struct rte_flow_action *action)
+{
+    if (action == NULL)
+        return TE_EINVAL;
+
+    action->type = RTE_FLOW_ACTION_TYPE_DEC_TTL;
+    return 0;
+}
+
+static te_errno
 rte_flow_action_flag_from_pdu(__rte_unused const asn_value *conf_pdu,
                               struct rte_flow_action *action)
 {
@@ -2283,6 +2294,7 @@ static const struct rte_flow_action_types_mapping {
     { NDN_FLOW_ACTION_TYPE_REPRESENTED_PORT,
       rte_flow_action_represented_port_from_pdu },
     { NDN_FLOW_ACTION_TYPE_JUMP, rte_flow_action_jump_from_pdu },
+    { NDN_FLOW_ACTION_TYPE_DEC_TTL, rte_flow_action_dec_ttl_from_pdu },
 };
 
 static te_errno

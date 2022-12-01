@@ -59,6 +59,7 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"port-representor", NDN_FLOW_ACTION_TYPE_PORT_REPRESENTOR},
     {"represented-port", NDN_FLOW_ACTION_TYPE_REPRESENTED_PORT},
     {"jump", NDN_FLOW_ACTION_TYPE_JUMP},
+    {"dec-ttl", NDN_FLOW_ACTION_TYPE_DEC_TTL},
 };
 
 asn_type ndn_rte_flow_action_type_s = {
