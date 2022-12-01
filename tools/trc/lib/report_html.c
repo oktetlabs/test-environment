@@ -2050,12 +2050,17 @@ static unsigned int
 get_key_flags(const trc_report_test_iter_data *iter_data,
               const trc_report_test_iter_entry *iter_entry)
 {
-    te_bool is_exp = (iter_entry->is_exp);
-    te_bool has_key =
-        (iter_data->exp_result->key != NULL);
-    te_bool has_verdict =
-        (TAILQ_FIRST(&iter_entry->result.verdicts) != NULL);
+    te_bool is_exp;
+    te_bool has_key;
+    te_bool has_verdict;
     unsigned int flags = 0;
+
+    if (iter_data == NULL || iter_entry == NULL)
+        return 0;
+
+    is_exp = (iter_entry->is_exp);
+    has_key = (iter_data->exp_result->key != NULL);
+    has_verdict = (TAILQ_FIRST(&iter_entry->result.verdicts) != NULL);
 
     if (has_key && ((!is_exp) || has_verdict))
         flags |= TRC_REPORT_KEYS_SANITY;
