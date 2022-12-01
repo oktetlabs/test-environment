@@ -117,9 +117,9 @@ main(int argc, char **argv)
 
             rc = rpc_posix_memalign(pco_iut, &ptr, alignment, size);
             if (RPC_ERRNO(pco_iut) != TE_RC(TE_TA_UNIX, 0))
-                TEST_VERDICT("rpc_malloc_misaligned() failed via errno");
+                TEST_VERDICT("rpc_posix_memalign() failed via errno");
             if (rc != TE_RC(TE_TA_UNIX, 0))
-                TEST_VERDICT("rpc_malloc_misaligned() failed via rc");
+                TEST_VERDICT("rpc_posix_memalign() failed via rc");
             rpc_free(pco_iut, ptr);
         }
     }
@@ -133,7 +133,7 @@ main(int argc, char **argv)
     rc = rpc_posix_memalign(pco_iut, &ptr, alignment, size);
 
     if (rc != TE_RC(TE_TA_UNIX, EINVAL))
-        TEST_VERDICT("rpc_malloc_misaligned() should fail with another error");
+        TEST_VERDICT("rpc_posix_memalign() should fail with another error");
     rpc_free(pco_iut, ptr);
 
     TEST_SUCCESS;
