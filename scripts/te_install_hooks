@@ -1,0 +1,84 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+
+set -u
+
+INSTALLCMD="ln -s"
+FORCE=
+DRYRUN=
+
+function print_usage ()
+{
+    cat <<EOF
+Usage: $0 [--force] [--copy] [--dry-run]
+
+Installs TE Git hooks into the current working tree.
+
+  --force    Allows to replace an already existing hooks
+
+  --copy     Use copy, not symlinking to install hooks
+
+  --dry-run  Do not install anything, just print the commands
+
+
+A hook may be installed in the TE tree or in some testsuite
+or other project if they share the same Contributor's guidelines.
+
+Currently only a pre-push hook is implemented.
+
+EOF
+
+    sed -n 's/^[[:space:]]*### \?//p' \
+        "${src_repo}/scripts/hooks/git-prepush-hook"
+}
+
+dest_repo="$(git rev-parse --show-toplevel)" || exit 1
+pushd "$(dirname "$0")" >/dev/null || exit 1
+src_repo="$(git rev-parse --show-toplevel)" || exit 1
+popd >/dev/null || exit 1
+
+hook="${dest_repo}/.git/hooks/pre-push"
+src="scripts/hooks/git-prepush-hook"
+
+if [[ "${src_repo}" != "${dest_repo}" ]]; then
+    src="${src_repo}/${src}"
+else
+    src="../../${src}"
+fi
+
+for arg; do
+    case "${arg}" in
+        -h | --help)
+            print_usage
+            exit 0
+            ;;
+        --force)
+            FORCE=1
+            ;;
+        --copy)
+            INSTALLCMD="cp"
+            ;;
+        -n | --dry-run)
+            DRYRUN="echo"
+            ;;
+        *)
+            echo "Unknown option ${arg}" >&2
+            print_usage
+            exit 1
+            ;;
+    esac
+done
+
+${DRYRUN} cd "${dest_repo}/.git/hooks"
+if [[ -a "${hook}" ]]; then
+    if [[ -z "${FORCE}" ]]; then
+        echo "The pre-push hook already installed" >&2
+        exit 1
+    else
+        ${DRYRUN} rm -f "${hook}" || exit 1
+    fi
+fi
+
+#shellcheck disable=SC2248
+${DRYRUN} ${INSTALLCMD} "${src}" "${hook}"

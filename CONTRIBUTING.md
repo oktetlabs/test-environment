@@ -226,3 +226,10 @@ Changes that are generally breaking:
     OL-Redmine-Id: 12345
     Signed-off-by: John Doe <johnd@example.com>
     Reviewed-by: Jane Doe <janed@example.com>
+
+### Ensure compliance automatically
+
+It is strongly recommended to run `./scripts/te_install_hooks`
+right after the clone of TE. This would install hook that would
+prevent pushing the commits that do not comply with the present
+Guidelines.

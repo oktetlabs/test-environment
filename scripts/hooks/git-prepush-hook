@@ -1,0 +1,539 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+
+set -u
+
+# The lines starting with three hashes will be
+# output by te_install_hook --help.
+
+### If hooks.push-disable-checks option is set to YES
+### (mind the upper case!), then all checks are
+### disabled. Of course, this option shall only be specified
+### in a command line, not in any config file
+###
+### E.g. use it like this: git -c hooks.push-disable-checks=YES push
+###
+
+if [[ "$(git config --default "" --get hooks.push-disable-checks)" == "YES" ]];
+then
+    case "$(git config --show-origin --get hooks.push-disable-checks YES)" in
+        command\ line:*)
+            echo "WARNING: bypassing ALL the checks" >&2
+            exit 0
+            ;;
+        *)
+            echo "WARNING: cannot disable checks from config file" >&2
+            ;;
+    esac
+fi
+
+
+### If hooks.push-maintainer option is enabled,
+### then most errors are downgraded to warnings.
+### The affected checks are marked with M in the list below.
+###
+### The maintainer mode may only be enable via command line,
+### not from a config file.
+###
+### E.g. use it like this: git -c hooks.push-maintainer=true push
+###
+
+
+MAINTAINER_PUSH="$(git config --default false --type bool \
+                       --get hooks.push-maintainer)"
+if [[ "${MAINTAINER_PUSH}" == "true" ]]; then
+    case "$(git config --show-origin --get hooks.push-maintainer true)" in
+        command\ line:*)
+            echo "WARNING: enabled maintainer mode,"  \
+                 "some errors are downgraded to warnings" >&2
+            ;;
+        *)
+            echo "WARNING: cannot enable maintainer mode from config file" >&2
+            MAINTAINER_PUSH=false
+            ;;
+    esac
+fi
+
+Z40='0000000000000000000000000000000000000000'
+EMPTYTREE='4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+NOTOK=0
+ERRORS=
+WARNINGS=
+PRODUCTION_BRANCH=
+
+function get_trailer ()
+{
+    git log -1 --format="%(trailers:key=$1,valueonly)" "$2"
+}
+
+function extract_mail ()
+{
+    sed -n 's/^.*<\([^>]*\)>$/\1/p'
+}
+
+function get_parent ()
+{
+    local rev="$1"
+
+    if git rev-parse -q --verify "${rev}^" >/dev/null; then
+        echo "${rev}^"
+    else
+        echo "${EMPTYTREE}"
+    fi
+}
+
+function serious_error ()
+{
+    ERRORS+=$'\n\t'"$1"
+    NOTOK=1
+}
+
+function warning ()
+{
+    WARNINGS+=$'\n\tWARNING: '"$1"
+}
+
+### A push to a non-public branch uses less strict
+### checks: some errors are downgraded to warnings,
+### and some are disabled altogether.
+### Such checks are marked with P in the list below.
+###
+
+function production_error ()
+{
+    if [[ -n "${PRODUCTION_BRANCH}" ]]; then
+        serious_error "$1"
+    else
+        warning "$1"
+    fi
+}
+
+function nonmaintainer_error ()
+{
+    if [[ "${MAINTAINER_PUSH}" == "false" ]]; then
+        serious_error "$1"
+    else
+        warning "$1"
+    fi
+}
+
+### The following checks are performed:
+###
+
+### - the presence of Signed-off-by trailer;
+function check_signed_off ()
+{
+    local rev="$1"
+    local signed_off
+
+    signed_off="$(get_trailer Signed-off-by "${rev}")"
+    if [[ -z "${signed_off}" ]]; then
+        serious_error 'no Signed-off-by'
+    fi
+}
+
+### - the matching number of Co-developed-by and Signed-off-by
+###   trailers;
+###
+function check_co_developers ()
+{
+    local rev="$1"
+    local -a co_developers
+    local -a signed_off
+    local main_author
+    local committer
+    local i
+    local fmt="%(trailers:key=Reviewed-by,key=Acked-by,key=Tested-by,valueonly)"
+    local r
+    local found=
+
+    readarray -t co_developers < <(get_trailer Co-developed-by "${rev}" \
+                                    | extract_mail)
+    readarray -t signed_off < <(get_trailer Signed-off-by "${rev}" \
+                                    | extract_mail)
+    main_author="$(git log -1 --format='%ae' "${rev}")"
+    committer="$(git log -1 --format='%ce' "${rev}")"
+
+    # This is a special case for external patches, when the committer
+    # who pushed the patch to main, the formal author who published
+    # the patch on GitHub and the real author who actually wrote
+    # the patch are three different persons, and the formal author
+    # did not take part in the actual development.
+    # In this case the formal author must also be among reviewers.
+    #
+    # The simple case when the formal author is the same as the real
+    # author still works in this case, but some more complicated cases
+    # with multiple co-developers may confuse the check; we'll sort this
+    # out, should any real-world such commit be found.
+    if [[ "${committer}" != "${main_author}" ]]; then
+        if [[ "${#signed_off[@]}" -ge 2 ]]; then
+            co_developers[${#co_developers[@]}]="${signed_off[-2]}"
+            for r in $(git log -1 --format="${fmt}" | extract_mail); do
+                if [[ "${r}" == "${main_author}" ]]; then
+                    found="true"
+                    break
+                fi
+            done
+            if [[ -z "${found}" ]]; then
+                serious_error 'formal commit author is not among reviewers'
+            fi
+        fi
+    fi
+
+    co_developers[${#co_developers[@]}]="${main_author}"
+
+    if [[ "${#signed_off[@]}" -ne "${#co_developers[@]}" ]]; then
+        serious_error 'invalid number of Signed-off-by line'
+        return 1
+    fi
+
+    for i in "${!signed_off[@]}"; do
+        if [[ "${signed_off[${i}]}" != "${co_developers[${i}]}" ]]; then
+            serious_error \
+            "Signed-off-by ${signed_off[${i}]}, expected ${co_developers[${i}]}"
+        fi
+    done
+}
+
+### - the presence of at least one of Reviewed-by, Acked-by or Tested-by
+###   (M, P); the check is completely disabled for non-public branches;
+function check_reviewed_by ()
+{
+    local rev="$1"
+    local reviewed_by
+    local acked_by
+    local tested_by
+
+    if [[ -n "${PRODUCTION_BRANCH}" ]]; then
+        reviewed_by="$(get_trailer Reviewed-by "${rev}")"
+        acked_by="$(get_trailer Acked-by "${rev}")"
+        tested_by="$(get_trailer Tested-by "${rev}")"
+
+        if [[ -z "${reviewed_by}${acked_by}${tested_by}" ]]; then
+            nonmaintainer_error 'no Reviewed-by, Acked-by or Tested-by'
+        fi
+    fi
+}
+
+### - the absence of duplicate Reviewed-By, Tested-By and Acked-by trailers
+###   (mentioning the same person in different review trailers does not make
+###    any sense, so it must be an error);
+###
+function check_reviewed_by_dups ()
+{
+    local rev="$1"
+    local duplicates
+    local fmt="%(trailers:key=Reviewed-by,key=Acked-by,key=Tested-by,valueonly)"
+
+    duplicates="$(git log -1 --format="${fmt}" "${rev}" \
+                      | extract_mail | sort | uniq -d)"
+    if [[ -n "${duplicates}" ]]; then
+        nonmaintainer_error \
+            "the same reviewers are mentioned several times: ${duplicates}"
+    fi
+}
+
+### - proper capitalization of all trailers specified in
+###   the Contributor's Guideline (M);
+###
+function check_capitalization ()
+{
+    local rev="$1"
+    local trailer
+    local trailer0
+
+    for trailer in Signed-off-by Co-developed-by Reviewed-by Acked-by \
+                                 Tested-by Suggested-by Fixes \
+                                 OL-Redmine-Id GitHub-TE-Id Breaks; do
+        while IFS=: read -r trailer0 rest; do
+            [[ -z "${trailer0}" ]] && continue
+            if [[ "${trailer}" != "${trailer0}" ]]; then
+                nonmaintainer_error "${trailer0} miscapitalized"
+            fi
+        done < <(git log -1 \
+                     --format="%(trailers:key=${trailer},unfold)" \
+                     "${rev}")
+    done
+}
+
+### - proper format of Signed-off-by and similiar trailers:
+###   they must contain a lower-case e-mail;
+###
+function check_bylines ()
+{
+    local rev="$1"
+    local trailer0
+    local rest
+
+    for trailer in Signed-off-by Co-developed-by Reviewed-by Acked-by \
+                                 Tested-by Suggested-by; do
+        while IFS=: read -r trailer0 rest; do
+            [[ -z "${trailer0}" ]] && continue
+            case "${rest}" in
+                [[:space:]][A-Z]*[[:space:]]\<[a-z]*@[a-z]*.*\>)
+                ;;
+                *)
+                    nonmaintainer_error \
+                        "invalid format of ${trailer}: ${rest}"
+                    ;;
+            esac
+        done < <(git log -1 \
+                     --format="%(trailers:key=${trailer},unfold)" \
+                     "${rev}")
+    done
+}
+
+### - the correctness of Fixes trailers;
+###   in the maintainer mode only an invalid commit hash is reported
+###   as error;
+###
+function check_fixes ()
+{
+    local rev="$1"
+    local hash
+    local subject
+    local subject0
+
+    while read -r hash subject; do
+        [[ -z "${hash}" ]] && continue
+        if ! git rev-parse --verify -q "${hash}" >/dev/null; then
+            serious_error "invalid Fixes commit ${hash}"
+        else
+            subject0="$(git log -1 --abbrev=12 \
+                            --format='%h ("%s")' "${hash}")"
+            if [[ "${hash} ${subject}" != "${subject0}" ]]; then
+                nonmaintainer_error "malformatted Fixes line"
+            fi
+        fi
+    done < <(git log -1 \
+                 --format="%(trailers:key=Fixes,valueonly,unfold)" \
+                 "${rev}")
+}
+
+### - several checks for the summary:
+###
+function check_summary ()
+{
+    local rev="$1"
+    local subject
+
+    subject="$(git log -1 --format='%s' "${rev}")"
+    case "${subject}" in
+        \[*)
+            ###   + no series indicators (e.g. [1/5]) (P);
+            production_error 'summary contains series indicators'
+            ;;
+        [Bb]ug* | [Tt]ask* | [Ss]tory*)
+            ###   + no old-style Bug/Task/Story prefixes;
+            serious_error 'old-style summary with an issue id'
+            ;;
+        *:\ [[:upper:]]* | [[:upper:]]*)
+            ###   + no upper case letter at the start of the summary;
+            serious_error 'summary should not start with an upper case'
+            ;;
+        */*/*:*)
+            ###   + three or more levels in a component name;
+            serious_error 'component name too deep'
+            ;;
+        *:*)
+            ###   + not too long summary (P);
+            if [[ "${#subject}" -gt 60 ]]; then
+                production_error "too long summary (${#subject} characters)"
+            fi
+            ;;
+        *)
+            ###   + the absence of a component name (M);
+            nonmaintainer_error 'no component name'
+            ;;
+    esac
+}
+
+### - no lines longer than 72 characters except Fixes trailers (M);
+###
+function check_description ()
+{
+    local rev="$1"
+
+    if [[ -n "$(git log -1 --format=%b  "${rev}" \
+                              | sed '/^Fixes:/d; s/^.\{1,72\}//')" ]]; then
+        production_error 'overlong lines in description'
+    fi
+}
+
+# The following two checks are adapted from the default Git pre-commit hook
+
+### - the absence of whitespace errors in the patch (M);
+###   the kind of detected whitespace errors is controlled by core.whitespace
+###   option (see man git-config);
+###
+function check_whitespaces ()
+{
+    local rev="$1"
+    local parent
+    local whitespace
+
+    parent="$(get_parent "${rev}")"
+
+    if ! whitespace="$(git diff --check "${parent}" "${rev}")"; then
+        nonmaintainer_error "${whitespace}"
+    fi
+
+}
+
+### - the absence of non-printable and non-ASCII characters in filenames;
+###   the check may be disabled by setting hooks.allownonascii = true,
+###   just as with the Git default pre-commit hook (see man githooks);
+###
+function check_nonascii ()
+{
+    local rev="$1"
+    local parent
+    local allownonascii
+
+    allownonascii="$(git config --default false --type bool \
+                         --get hooks.allownonascii)"
+    [[ "${allownonascii}" == "true" ]] && return 0
+
+    parent="$(get_parent "${rev}")"
+
+    if git diff --name-only --diff-filter=A -z "${parent}" "${rev}" \
+            |  LC_CTYPE=C grep -z -q -E '[^[:graph:]]|[~#]'; then
+        nonmaintainer_error "invalid filenames found"
+    fi
+
+}
+
+### - the absence of non-ASCII characters in file bodies;
+###   this check may be disabled by setting hooks.allownonascii = true
+###   (which would also enable non-ASCII characters in file names, see
+###   above) or hooks.allownonascii-body = true (M);
+###
+function check_nonascii_body ()
+{
+    local rev="$1"
+    local parent
+    local allownonascii
+    local allownonascii_body
+    local invalid_files
+
+    allownonascii="$(git config --default false --type bool \
+                         --get hooks.allownonascii)"
+    allownonascii_body="$(git config --default false --type bool \
+                                 --get hooks.allownonascii-body)"
+    [[ "${allownonascii}" == "true"
+       || "${allownonascii_body}" == "true" ]] && return 0
+
+    parent="$(get_parent "${rev}")"
+
+    invalid_files="$(git diff "${parent}" "${rev}" \
+                       | LC_CTYPE=C LC_COLLATE=C \
+                                    sed -n '/^+++/ { s/^+++ b\///; h; n };
+                                            /^+.*[^\n\f\t -~]/ { g; p }')"
+    if [[ -n "${invalid_files}" ]]; then
+        invalid_files="$(echo "${invalid_files}" | sort -u)"
+        nonmaintainer_error "invalid characters in: ${invalid_files}"
+    fi
+}
+
+###
+### The following checks are optional and need to be explicitly enabled
+### by setting Git options:
+###
+
+### - the approval by specific people; their emails should be listed
+###   in hooks.push-require-approval option; the check is always skipped
+###   in maintainer mode and for non-production branches;
+
+function check_required_review ()
+{
+    local rev="${rev}"
+    local emails
+    local fmt="%(trailers:key=Reviewed-by,key=Acked-by,key=Tested-by,valueonly)"
+    local required
+
+    emails="$(git log -1 --format="${fmt}" "${rev}" | extract_mail)"
+
+    [[ "${MAINTAINER_PUSH}" == "true" || -z "${PRODUCTION_BRANCH}" ]] \
+        && return 0
+
+    [[ -z "$(git config --default '' --get hooks.push-require-approval)" ]] \
+        && return 0
+
+    for required in ${emails}; do
+        [[ -n "$(git config --get hooks.push-require-approval \
+                    "${required}")" ]] && return 0
+    done
+
+    serious_error 'no required reviewer is present'
+}
+
+### - the absence of any trailer listed in hooks.push-prohibit-trailer
+###   option (such trailers may contain service information, e.g.
+###   a Reviewboard id which must be cleaned up before pushing);
+###
+function check_prohibited_trailers ()
+{
+    local rev="$1"
+    local notrailer
+    local trailer
+
+    for notrailer in $(git config --get-all hooks.push-prohibit-trailer); do
+        trailer="$(get_trailer "${notrailer}" "${rev}")"
+        if [[ -n "${trailer}" ]]; then
+            serious_error "${notrailer} is prohibited"
+        fi
+    done
+}
+
+#shellcheck disable=SC2034
+while read -r localref localsha remoteref remotesha; do
+    # Local branch is deleted, nothing to do
+    [[ "${localsha}" == "${Z40}" ]] && continue
+
+    # If a new branch is created, we should check
+    # all
+    if test "${remotesha}" = "${Z40}"; then
+        range="@{u}..${localsha}"
+    else
+        range="${remotesha}..${localsha}"
+    fi
+
+    case "${remoteref}" in
+        */main | */master | */public-main | */billets )
+            PRODUCTION_BRANCH=1
+        ;;
+        *)
+            if [[ "${MAINTAINER_PUSH}" != "true" ]]; then
+                echo "NOTICE: checking a push to a non-production branch" >&2
+            fi
+            PRODUCTION_BRANCH=
+        ;;
+    esac
+
+    for rev in $(git rev-list "${range}"); do
+        header="$(git log -1 --oneline "${rev}")"
+        ERRORS=""
+        WARNINGS=""
+
+        check_signed_off "${rev}"
+        check_co_developers "${rev}"
+        check_reviewed_by "${rev}"
+        check_reviewed_by_dups "${rev}"
+        check_capitalization "${rev}"
+        check_bylines "${rev}"
+        check_fixes "${rev}"
+        check_summary "${rev}"
+        check_description "${rev}"
+        check_whitespaces "${rev}"
+        check_nonascii "${rev}"
+        check_nonascii_body "${rev}"
+        check_required_review "${rev}"
+        check_prohibited_trailers "${rev}"
+
+        if [[ -n "${ERRORS}${WARNINGS}" ]]; then
+            echo "${header}${ERRORS}${WARNINGS}" >&2
+        fi
+    done
+done
+exit "${NOTOK}"
