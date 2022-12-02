@@ -153,7 +153,9 @@ function check_co_developers ()
     readarray -t signed_off < <(get_trailer Signed-off-by "${rev}" \
                                     | extract_mail)
     main_author="$(git log -1 --format='%ae' "${rev}")"
+    main_author="${main_author,,}"
     committer="$(git log -1 --format='%ce' "${rev}")"
+    committer="${committer,,}"
 
     # This is a special case for external patches, when the committer
     # who pushed the patch to main, the formal author who published
