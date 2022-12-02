@@ -2664,7 +2664,7 @@ rpc_malloc_misaligned(rcf_rpc_server *rpcs, size_t alignment,
 }
 
 /* See description in 'tapi_rpc_unistd.h' */
-extern int
+int
 rpc_posix_memalign(rcf_rpc_server *rpcs, rpc_ptr *ptr,
                    size_t alignment, size_t size)
 {
@@ -2689,7 +2689,7 @@ rpc_posix_memalign(rcf_rpc_server *rpcs, rpc_ptr *ptr,
     TAPI_RPC_LOG(rpcs, posix_memalign, "%p{%u} ""%" TE_PRINTF_SIZE_T "u "
                  "%" TE_PRINTF_SIZE_T "u", "%u",
                  ptr, ptr == NULL ? 0 : *ptr, alignment, size, out.retval);
-    RETVAL_RPC_PTR(posix_memalign, out.retval);
+    RETVAL_INT(posix_memalign, out.retval);
 }
 
 int
