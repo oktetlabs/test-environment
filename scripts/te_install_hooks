@@ -7,6 +7,7 @@ set -u
 INSTALLCMD="ln -s"
 FORCE=
 DRYRUN=
+QUIET=
 
 function print_usage ()
 {
@@ -20,6 +21,8 @@ Installs TE Git hooks into the current working tree.
   --copy     Use copy, not symlinking to install hooks
 
   --dry-run  Do not install anything, just print the commands
+
+  --quiet    Do not print informational messages
 
 
 A hook may be installed in the TE tree or in some testsuite
@@ -59,6 +62,9 @@ for arg; do
         --copy)
             INSTALLCMD="cp"
             ;;
+        -q | --quiet)
+            QUIET="yes"
+            ;;
         -n | --dry-run)
             DRYRUN="echo"
             ;;
@@ -81,4 +87,5 @@ if [[ -a "${hook}" ]]; then
 fi
 
 #shellcheck disable=SC2248
-${DRYRUN} ${INSTALLCMD} "${src}" "${hook}"
+${DRYRUN} ${INSTALLCMD} "${src}" "${hook}" || exit 1
+[[ -z "${QUIET}" ]] && echo "The pre-push hook installed in ${dest_repo}" >&2
