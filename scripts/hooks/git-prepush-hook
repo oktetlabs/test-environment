@@ -246,7 +246,7 @@ function check_capitalization ()
     local trailer0
 
     for trailer in Signed-off-by Co-developed-by Reviewed-by Acked-by \
-                                 Tested-by Suggested-by Fixes \
+                                 Tested-by Suggested-by Reported-by Fixes \
                                  OL-Redmine-Id GitHub-TE-Id Breaks; do
         while IFS=: read -r trailer0 rest; do
             [[ -z "${trailer0}" ]] && continue
@@ -269,7 +269,7 @@ function check_bylines ()
     local rest
 
     for trailer in Signed-off-by Co-developed-by Reviewed-by Acked-by \
-                                 Tested-by Suggested-by; do
+                                 Tested-by Suggested-by Reported-by; do
         while IFS=: read -r trailer0 rest; do
             [[ -z "${trailer0}" ]] && continue
             case "${rest}" in
