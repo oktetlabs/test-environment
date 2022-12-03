@@ -91,6 +91,24 @@ extern "C" {
     LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP_POP, _fs)
 
 /**
+ * Same as TEST_STEP_PUSH() but uses INFO log level instead of RING.
+ * This results in hiding messages between TEST_STEP_PUSH_INFO() and
+ * corresponding TEST_STEP_POP_INFO() in HTML log by default. Such
+ * hidden messages can be viewed by clicking on "+".
+ *
+ * @param _fs - format string and arguments
+ */
+#define TEST_STEP_PUSH_INFO(_fs...) \
+    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_INFO, TE_USER_STEP_PUSH, _fs)
+
+/**
+ * Same as TEST_STEP_POP() but uses INFO log level instead of RING.
+ * Should be used together with TEST_STEP_PUSH_INFO().
+ */
+#define TEST_STEP_POP_INFO(_fs...) \
+    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_INFO, TE_USER_STEP_POP, _fs)
+
+/**
  * Logging of nesting level step next.
  *
  * Keep current nesting level, but log the message with previous nesting level.

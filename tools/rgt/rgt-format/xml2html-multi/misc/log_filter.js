@@ -166,17 +166,32 @@ function update_nested_filter_buttons(nest_lvl) {
   }
 }
 
-function process_nested_rows(nest_lvl) {
+// This function is called when depth filter is initialized or
+// changed.
+//
+// @param nest_lvl        Messages with greater depth level are
+//                        hidden (ignored if negative).
+// @param collapse_info   if true, also hide descendants of messages
+//                        with INFO logging level.
+function process_nested_rows(nest_lvl, collapse_info) {
   for (var row_id = 0; row_id < log_tables_rows.length; row_id++) {
     show_nested_row(log_tables_rows[row_id]);
   }
 
   for (var row_id = 0; row_id < log_tables_rows.length - 1; row_id++) {
     var nested_rows = get_nested_rows(row_id);
+    var row = log_tables_rows[row_id];
     if (nested_rows.length > 0) {
       show_collapse_button(row_id);
-      if ((nest_lvl >= 0) &&
-          (nest_lvl == get_row_nest_lvl(log_tables_rows[row_id]))) {
+
+      // When this function is called during initialization, descendants
+      // of messages with INFO logging level are hidden by default (see
+      // TEST_STEP_PUSH_INFO/TEST_STEP_POP_INFO).
+      // When this function is called after user changes depth filter
+      // by clicking at 0/1/2/ALL at the top, logging level is no
+      // longer taken into account so that user gets expected result.
+      if ((nest_lvl >= 0 && nest_lvl <= get_row_nest_lvl(row)) ||
+          (collapse_info && row.getAttribute('data-level') == 'INFO')) {
         collapse_nested_rows(row_id);
       }
     }
@@ -674,5 +689,5 @@ function init_entity_user_filter() {
 
 function init_log_filter() {
   init_entity_user_filter();
-  process_nested_rows(-1);
+  process_nested_rows(-1, true);
 }
