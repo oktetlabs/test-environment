@@ -291,3 +291,9 @@ foreach t : flow_spec_types
         c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
     endif
 endforeach
+
+t = 'struct ethtool_rxnfc'
+m = 'rss_context'
+if cc.has_member(t, m, prefix: '#include <linux/ethtool.h>')
+    c_args += [ '-DHAVE_' + (t + '_' + m).to_upper().underscorify() ]
+endif

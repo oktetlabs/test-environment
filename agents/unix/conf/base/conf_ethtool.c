@@ -1933,9 +1933,11 @@ rule_h2ta(const struct ethtool_rxnfc *h_rule,
 
     ta_rule->rx_queue = h_rule->fs.ring_cookie;
 
+#ifdef HAVE_STRUCT_ETHTOOL_RXNFC_RSS_CONTEXT
     if (h_rule->fs.flow_type & FLOW_RSS)
         ta_rule->rss_context = h_rule->rss_context;
     else
+#endif
         ta_rule->rss_context = -1;
 
     rc = rule_fields_h2ta(ta_rule->flow_type, &h_rule->fs.h_u,
@@ -2224,8 +2226,14 @@ rule_ta2h(const ta_ethtool_rx_cls_rule *ta_rule,
 
     if (ta_rule->rss_context >= 0)
     {
+#ifdef HAVE_STRUCT_ETHTOOL_RXNFC_RSS_CONTEXT
         h_rule->fs.flow_type |= FLOW_RSS;
         h_rule->rss_context = ta_rule->rss_context;
+#else
+        ERROR("%s(): setting RSS context for Rx rules is not supported",
+              __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
     }
 
     rc = rule_fields_ta2h(ta_rule->flow_type, FALSE, &ta_rule->field_values,
