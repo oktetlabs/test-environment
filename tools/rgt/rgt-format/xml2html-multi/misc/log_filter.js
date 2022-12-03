@@ -102,8 +102,23 @@ function collapse_nested_rows(row_id) {
 
 function expand_nested_rows(row_id) {
   var nested_rows = get_nested_rows(row_id);
+  var hide_lvl = -1;
+
   for (var idx = 0; idx < nested_rows.length; idx++) {
-    show_nested_row(nested_rows[idx]);
+    var cur_row = nested_rows[idx];
+    var cur_nl = get_row_nest_lvl(cur_row);
+
+    if (hide_lvl < 0 || cur_nl <= hide_lvl) {
+      var collapsed;
+
+      show_nested_row(cur_row);
+
+      hide_lvl = -1;
+      collapsed = cur_row.getAttribute('data-nest-collapsed');
+      if (collapsed == 'yes') {
+        hide_lvl = cur_nl;
+      }
+    }
   }
   show_collapse_button(row_id);
 }
@@ -122,6 +137,8 @@ function show_collapse_button(row_id) {
   holder.innerHTML =
       '<input type="button" class="btn btn-default btn-sm te_fold" value="-" onclick="collapse_nested_rows(' +
       row_id + ');">';
+
+  log_tables_rows[row_id].setAttribute('data-nest-collapsed', 'no');
 }
 
 function show_expand_button(row_id) {
@@ -129,6 +146,8 @@ function show_expand_button(row_id) {
   holder.innerHTML =
       '<input type="button" class="btn btn-success btn-sm te_fold" value="+" onclick="expand_nested_rows(' +
       row_id + ');">';
+
+  log_tables_rows[row_id].setAttribute('data-nest-collapsed', 'yes');
 }
 
 // Update style of buttons of the nested filter, showing in "on" state those
