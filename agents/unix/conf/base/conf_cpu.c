@@ -932,6 +932,9 @@ insert_cache_info(cpu_item_list *root, const char *name)
     cache_location data = {root, name};
 
     TE_SPRINTF(buf, SYSFS_SYSTEM_TREE "/cpu/%s/cache", name);
+    if (access(buf, R_OK) != 0)
+        return 0;
+
     rc = te_file_scandir(buf, add_index_name, &data, "index*");
 
     if (rc != 0)
