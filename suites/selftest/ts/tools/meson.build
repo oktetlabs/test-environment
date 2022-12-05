@@ -7,6 +7,7 @@ tests = [
     'extract_glob',
     'hexdump',
     'intset',
+    'json',
     'make_bufs',
     'readlink',
     'resolvepath',

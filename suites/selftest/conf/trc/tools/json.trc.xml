@@ -1,0 +1,6 @@
+<test name="json" type="script">
+    <objective>Testing JSON generating routines.</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>
