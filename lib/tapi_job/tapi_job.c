@@ -1626,3 +1626,31 @@ tapi_job_get_silent_pass(const tapi_job_t *job)
 
     return job->silent_pass;
 }
+
+/* See description in tapi_job.h */
+void
+tapi_job_set_tracing(tapi_job_t *job, te_bool trace)
+{
+    channel_entry *entry;
+    tapi_job_channel_t *channel;
+    channel_entry *filter_entry;
+
+    if (job == NULL)
+        TEST_FAIL("Job is NULL");
+
+    if (job->factory->type != TAPI_JOB_FACTORY_RPC)
+        TEST_FAIL("Job was not created by RPC factory");
+
+    job->silent_pass = !trace;
+
+    SLIST_FOREACH(entry, &job->channel_entries, next)
+    {
+        channel = entry->channel;
+        channel->silent_pass = !trace;
+
+        SLIST_FOREACH(filter_entry, &channel->filter_entries, next)
+        {
+            filter_entry->channel->silent_pass = !trace;
+        }
+    }
+}

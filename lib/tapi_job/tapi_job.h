@@ -892,6 +892,19 @@ extern te_errno tapi_job_set_autorestart(tapi_job_t *job, unsigned int value);
 extern te_errno tapi_job_get_autorestart(tapi_job_t *job, unsigned int *value);
 
 /**
+ * Control RPC calls tracing.
+ *
+ * @note This function supports only jobs created by RPC factory and
+ *       has to be called after creation of the job.
+ *
+ * @param  job              Job instance handle.
+ * @param  trace            If @c TRUE, turns on the RPC calls logging,
+ *                          othervise turns it off, anyway error log still
+ *                          will be logged.
+ */
+extern void tapi_job_set_tracing(tapi_job_t *job, te_bool trace);
+
+/**
  * @page tapi-job-factory Creating tapi_job_t instances
  *
  * Before a job can be created, a job factory must be initialized.
