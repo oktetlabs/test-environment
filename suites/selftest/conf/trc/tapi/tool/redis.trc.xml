@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2022 OKTET Labs Ltd. All rights reserved. -->
+
+<test name="redis" type="package">
+    <objective>TAPI redis-server implementation</objective>
+    <iter result="PASSED">
+        <test name="redis_srv">
+            <objective/>
+            <iter result="PASSED">
+                <arg name="env"/>
+            </iter>
+        </test>
+    </iter>
+</test>
