@@ -9,6 +9,7 @@ FORCE=
 DRYRUN=
 QUIET=
 CHAIN=
+UNINSTALL=
 
 function print_usage ()
 {
@@ -25,6 +26,8 @@ Installs TE Git hooks into the current working tree.
   --copy     Use copy, not symlinking to install hooks
 
   --dry-run  Do not install anything, just print the commands
+
+  --uninstall Remove installed hooks
 
   --quiet    Do not print informational messages
 
@@ -69,6 +72,9 @@ for arg; do
         --copy)
             INSTALLCMD="cp"
             ;;
+        --uninstall)
+            UNINSTALL=1
+            ;;
         -q | --quiet)
             QUIET="yes"
             ;;
@@ -84,6 +90,34 @@ for arg; do
 done
 
 ${DRYRUN} cd "${dest_repo}/.git/hooks"
+
+if [[ -n "${UNINSTALL}" ]]; then
+    if [[ ! -a "${hook}" ]]; then
+        [[ -z "${QUIET}" ]] && \
+            echo "WARNING: a hook is not installed, nothing to do" >&2
+        exit 0
+    fi
+
+    if ! cmp -s "${hook}" "${src}"; then
+        if [[ -z "${FORCE}" ]]; then
+            echo "The installed hook is not ours, refusing to uninstall" >&2
+            exit 1
+        fi
+    fi
+
+    if [[ -a "${hook}.chain" ]]; then
+        [[ -z "${QUIET}" ]] \
+            && echo "Restoring old ${hook}" >&2
+        ${DRYRUN} mv -f "${hook}.chain" "${hook}" || exit 1
+    else
+        rm -f "${hook}" || exit 1
+        [[ -z "${QUIET}" ]] \
+            && echo "The pre-push hook uninstalled from ${dest_repo}" >&2
+    fi
+
+    exit 0
+fi
+
 if [[ -a "${hook}" ]]; then
     if [[ -n "${CHAIN}" ]]; then
         if [[ -a "${hook}.chain" ]]; then
