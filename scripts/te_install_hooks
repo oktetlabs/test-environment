@@ -8,6 +8,7 @@ INSTALLCMD="ln -s"
 FORCE=
 DRYRUN=
 QUIET=
+CHAIN=
 
 function print_usage ()
 {
@@ -15,6 +16,9 @@ function print_usage ()
 Usage: $0 [--force] [--copy] [--dry-run]
 
 Installs TE Git hooks into the current working tree.
+
+  --chain    Chain an already installed hook, so that
+             it would run after this one
 
   --force    Allows to replace an already existing hooks
 
@@ -56,6 +60,9 @@ for arg; do
             print_usage
             exit 0
             ;;
+        --chain)
+            CHAIN=1
+            ;;
         --force)
             FORCE=1
             ;;
@@ -78,7 +85,16 @@ done
 
 ${DRYRUN} cd "${dest_repo}/.git/hooks"
 if [[ -a "${hook}" ]]; then
-    if [[ -z "${FORCE}" ]]; then
+    if [[ -n "${CHAIN}" ]]; then
+        if [[ -a "${hook}.chain" ]]; then
+            echo "a user hook is already chained" >&2
+            exit 1
+        else
+            [[ -z "${QUIET}" ]] \
+                && echo "Moving existing ${hook} to ${hook}.chain" >&2
+            ${DRYRUN} mv "${hook}" "${hook}.chain" || exit 1
+        fi
+    elif [[ -z "${FORCE}" ]]; then
         echo "The pre-push hook already installed" >&2
         exit 1
     else

@@ -4,6 +4,18 @@
 
 set -u
 
+NOTOK=0
+
+reflist="$(mktemp)"
+cat >"${reflist}"
+trap 'rm "${reflist}"' EXIT
+
+# Run a user chain hook if it is present
+if [[ -x "${0}.chain" ]]; then
+    "${0}.chain" "$@" < "${reflist}"
+    NOTOK="$?"
+fi
+
 # The lines starting with three hashes will be
 # output by te_install_hook --help.
 
@@ -20,7 +32,7 @@ then
     case "$(git config --show-origin --get hooks.push-disable-checks YES)" in
         command\ line:*)
             echo "WARNING: bypassing ALL the checks" >&2
-            exit 0
+            exit "${NOTOK}"
             ;;
         *)
             echo "WARNING: cannot disable checks from config file" >&2
@@ -57,7 +69,6 @@ fi
 
 Z40='0000000000000000000000000000000000000000'
 EMPTYTREE='4b825dc642cb6eb9a060e54bf8d69288fbee4904'
-NOTOK=0
 ERRORS=
 WARNINGS=
 PRODUCTION_BRANCH=
@@ -537,5 +548,6 @@ while read -r localref localsha remoteref remotesha; do
             echo "${header}${ERRORS}${WARNINGS}" >&2
         fi
     done
-done
+done < "${reflist}"
+
 exit "${NOTOK}"
