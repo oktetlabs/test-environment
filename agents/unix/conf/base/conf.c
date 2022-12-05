@@ -497,6 +497,9 @@ static const char * const env_prefix_hidden[] = {
 };
 
 static te_errno uname_get(unsigned int, const char *, char *);
+static te_errno uname_version_get(unsigned int, const char *, char *);
+static te_errno uname_release_get(unsigned int, const char *, char *);
+static te_errno uname_machine_get(unsigned int, const char *, char *);
 
 static te_errno ip4_fw_get(unsigned int, const char *, char *);
 static te_errno ip4_fw_set(unsigned int, const char *, const char *);
@@ -962,7 +965,17 @@ RCF_PCH_CFG_NODE_RW_COLLECTION_WITH_SUBST(node_env, "env", NULL, &node_ip6_fw,
                                           env_get, env_set, env_add, env_del,
                                           env_list, NULL, env_subst);
 
-RCF_PCH_CFG_NODE_RO(node_uname, "uname", NULL, &node_env, uname_get);
+RCF_PCH_CFG_NODE_RO(node_uname_machine, "machine", NULL, NULL,
+                    uname_machine_get);
+
+RCF_PCH_CFG_NODE_RO(node_uname_release, "release", NULL, &node_uname_machine,
+                    uname_release_get);
+
+RCF_PCH_CFG_NODE_RO(node_uname_version, "version", NULL, &node_uname_release,
+                    uname_version_get);
+
+RCF_PCH_CFG_NODE_RO(node_uname, "uname", &node_uname_version, &node_env,
+                    uname_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
                             NULL, &node_uname,
@@ -7517,40 +7530,72 @@ env_subst_underscore_process(te_string *value, const char *subst,
 }
 
 /**
- * Get agent uname value.
+ * Retrieve an uname string.
  *
- * @param gid       Request's group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param value     Location for the value (OUT)
- * @param name      Variable name
+ * @param[out] value  resulting buffer
+ * @param[in]  field  the offset of a field in `struct utsname`
+ *                    (expected to be a string pointer field)
  *
- * @return Status code
+ * @return status code
  */
+static te_errno
+uname_string_get(char *value, size_t field)
+{
+#if HAVE_SYS_UTSNAME_H
+    struct utsname uts;
+
+    if (uname(&uts) < 0)
+    {
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+        ERROR("cannot call uname(): %r", rc);
+        return rc;
+    }
+
+    return te_strlcpy_safe(value, (char *)&uts + field, RCF_MAX_VAL);
+#else
+    /* In this extremely unlikely case just return empty string */
+    UNUSED(field);
+    *value = '\0';
+
+    return 0;
+#endif /* HAVE_SYS_UTSNAME_H */
+}
+
 static te_errno
 uname_get(unsigned int gid, const char *oid, char *value)
 {
-#ifdef HAVE_SYS_UTSNAME_H
-    struct utsname val;
-
     UNUSED(gid);
     UNUSED(oid);
 
-    if (uname(&val) >= 0)
-    {
-        if (strlen(val.sysname) >= RCF_MAX_VAL)
-            ERROR("System uname '%s' truncated", val.sysname);
-        snprintf(value, RCF_MAX_VAL, "%s", val.sysname);
-        return 0;
-    }
-    else
-    {
-        ERROR("Failed to call uname()");
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-#else
-#warning "uname access method is not implemented"
-    return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#endif
+    return uname_string_get(value, offsetof(struct utsname, sysname));
+}
+
+static te_errno
+uname_version_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return uname_string_get(value, offsetof(struct utsname, version));
+}
+
+static te_errno
+uname_release_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return uname_string_get(value, offsetof(struct utsname, release));
+}
+
+static te_errno
+uname_machine_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return uname_string_get(value, offsetof(struct utsname, machine));
 }
 
 /**
