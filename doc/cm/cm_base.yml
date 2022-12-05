@@ -1544,6 +1544,30 @@
          Name:  empty
          Value: Linux, SunOS, "Microsoft Windows", etc
 
+    - oid: "/agent/uname/version"
+      access: read_only
+      type: string
+      d: |
+         version of the system as reported by uname
+         Name:  empty
+         Value: a kernel version string as output by uname -v
+
+    - oid: "/agent/uname/release"
+      access: read_only
+      type: string
+      d: |
+         release of the system as reported by uname
+         Name:  empty
+         Value: a kernel release string as output by uname -r
+
+    - oid: "/agent/uname/machine"
+      access: read_only
+      type: string
+      d: |
+         machine hardware name of the system as report by uname
+         Name:  empty
+         Value: a machine HW arch name (e.g. x86_64, armv71, ppc64 etc)
+
     - oid: "/agent/user"
       access: read_create
       type: none
