@@ -4,6 +4,7 @@
 install_headers('redis_srv.h')
 
 tests = [
+    'redis_benchmark',
     'redis_srv',
 ]
 

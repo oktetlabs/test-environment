@@ -3,12 +3,25 @@
 <!-- Copyright (C) 2022 OKTET Labs Ltd. All rights reserved. -->
 
 <test name="redis" type="package">
-    <objective>TAPI redis-server implementation</objective>
+    <objective>TAPI redis implementation</objective>
     <iter result="PASSED">
         <test name="redis_srv">
             <objective/>
             <iter result="PASSED">
                 <arg name="env"/>
+            </iter>
+        </test>
+         <test name="redis_benchmark">
+            <objective/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="clients"/>
+                <arg name="requests"/>
+                <arg name="size"/>
+                <arg name="keyspacelen"/>
+                <arg name="pipelines"/>
+                <arg name="threads"/>
+                <arg name="tests"/>
             </iter>
         </test>
     </iter>

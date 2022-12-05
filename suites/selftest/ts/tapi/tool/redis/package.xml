@@ -15,5 +15,35 @@
                 <value>{{{'iut_rpcs':IUT},addr:'iut_addr':inet:unicast}}</value>
             </arg>
         </run>
+        <run>
+            <script name="redis_benchmark"/>
+            <arg name="env">
+                <value>{{{'iut_rpcs':IUT},addr:'iut_addr':inet:unicast}}</value>
+            </arg>
+            <arg name="clients">
+                <value>200</value>
+            </arg>
+            <arg name="requests">
+                <value>100000</value>
+            </arg>
+            <arg name="size">
+                <value>128</value>
+            </arg>
+            <arg name="keyspacelen">
+                <value>100000</value>
+            </arg>
+            <arg name="pipelines">
+                <value>128</value>
+            </arg>
+            <arg name="threads">
+                <value>1</value>
+            </arg>
+            <arg name="tests">
+                <value>GET</value>
+                <value>SET</value>
+                <!-- do not pass any test name -->
+                <value>-</value>
+            </arg>
+        </run>
     </session>
 </package>
