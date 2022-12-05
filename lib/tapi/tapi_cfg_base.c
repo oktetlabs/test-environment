@@ -83,6 +83,64 @@ tapi_cfg_base_get_ta_dir(const char *ta, tapi_cfg_base_ta_dir kind)
 
 /* See the description in tapi_cfg_base.h */
 te_errno
+tapi_cfg_base_get_ta_uname(const char *ta, struct utsname *uts)
+{
+    static struct {
+        const char *subid;
+        size_t offset;
+        size_t size;
+    } fields[] = {
+        {
+            "", offsetof(struct utsname, sysname),
+            TE_SIZEOF_FIELD(struct utsname, sysname)
+        },
+        {
+            "/version:", offsetof(struct utsname, version),
+            TE_SIZEOF_FIELD(struct utsname, version),
+        },
+        {
+            "/release:", offsetof(struct utsname, release),
+            TE_SIZEOF_FIELD(struct utsname, release),
+        },
+        {
+            "/machine:", offsetof(struct utsname, machine),
+            TE_SIZEOF_FIELD(struct utsname, machine),
+        }
+    };
+    te_errno rc = 0;
+    unsigned int i;
+    char *value = NULL;
+
+    memset(uts, 0, sizeof(*uts));
+
+    for (i = 0; i < TE_ARRAY_LEN(fields); i++)
+    {
+        rc = cfg_get_instance_string_fmt(&value, "/agent:%s/uname:%s",
+                                         ta, fields[i].subid);
+        if (rc != 0)
+        {
+            ERROR("Cannot get /agent:%s/uname:%s: %r", ta,
+                  fields[i].subid, rc);
+            return rc;
+        }
+        rc = te_strlcpy_safe((char *)uts + fields[i].offset, value,
+                             fields[i].size);
+        if (rc != 0)
+        {
+            ERROR("Value of /agent:%s/uname:%s is too long", ta,
+                  fields[i].subid);
+            rc = TE_RC_UPSTREAM(TE_TAPI, rc);
+            free(value);
+            return rc;
+        }
+        free(value);
+    }
+
+    return 0;
+}
+
+/* See the description in tapi_cfg_base.h */
+te_errno
 tapi_cfg_base_ipv4_fw(const char *ta, te_bool enable)
 {
     return tapi_cfg_sys_set_int(ta, enable, NULL, "net/ipv4/ip_forward");

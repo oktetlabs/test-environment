@@ -119,5 +119,12 @@
             <script name="process_ping"/>
         </run>
 
+        <run>
+            <script name="uname"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+        </run>
+
     </session>
 </package>

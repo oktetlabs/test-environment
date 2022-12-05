@@ -13,6 +13,7 @@ tests = [
     'process_autorestart',
     'process_ping',
     'set_restore',
+    'uname',
     'vlans',
     'vm',
 ]

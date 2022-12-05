@@ -19,6 +19,8 @@
 #include <sys/socket.h>
 #endif
 
+#include <sys/utsname.h>
+
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -48,6 +50,17 @@ typedef enum tapi_cfg_base_ta_dir {
  */
 extern char *tapi_cfg_base_get_ta_dir(const char *ta,
                                       tapi_cfg_base_ta_dir kind);
+
+/**
+ * Get uname info from TA.
+ *
+ * @param[in]  ta   agent name
+ * @param[out] uts  UTS structure to hold TA values
+ *
+ * @return status code
+ */
+extern te_errno tapi_cfg_base_get_ta_uname(const char *ta,
+                                           struct utsname *uts);
 
 /**
  * @defgroup tapi_conf_base_net Network Base configuration

@@ -114,5 +114,14 @@
                 <notes/>
             </iter>
         </test>
+
+        <test name="uname" type="script">
+            <objective>Check that TA reports its uname info properly.</objective>
+
+            <iter result="PASSED">
+                <arg name="env" />
+                <notes/>
+            </iter>
+        </test>
     </iter>
 </test>
