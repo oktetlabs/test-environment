@@ -44,6 +44,7 @@ function print_usage ()
     cat <<EOF
 Usage: $0 [--target=BRANCH] [-1 | --single] [--maintainer]
           [--option-NAME=VALUE] [--enable-NAME] [--disable-NAME]
+          [--user-hooks]
           [REVISION | START-REV..END-REV]
 
 This script checks the specified revisions against the same set of checks
@@ -90,6 +91,9 @@ The revision range may be specified in the following ways:
  --disable-NAME        Locally set a Git option hooks.NAME = false
                       $(require_git_notice)
 
+ --user-hooks          Run user-defined chained hooks as well
+                       (may also be enabled with hooks.check-user-hooks option)
+
  --list-checks         List all available checks
 EOF
 }
@@ -102,6 +106,8 @@ function list_checks ()
 
 FROM=
 TO=
+USERHOOKS="$(git config --type bool --default false \
+                        --get hooks.check-user-hooks)"
 
 for arg; do
     case "${arg}" in
@@ -136,6 +142,9 @@ for arg; do
             require_modern_git "${arg}"
             git_hook_option "${arg#--enable-}" false
             ;;
+        --user-hooks)
+            USERHOOKS=true
+            ;;
         -*)
             echo "Unknown option ${arg}" >&2
             print_usage
@@ -163,5 +172,10 @@ done
 
 [[ -z "${FROM}" ]] && FROM="${TO}${SINGLE}"
 
-echo "fake ${TO} refs/branches/${TARGET_BRANCH} ${FROM}" \
-    | "$(dirname "$0")/hooks/git-prepush-hook"
+if [[ "$USERHOOKS" == "true" ]]; then
+    checker="$(git rev-parse --show-toplevel)/.git/hooks/pre-push"
+else
+    checker="$(dirname "$0")/hooks/git-prepush-hook"
+fi
+
+echo "fake ${TO} refs/branches/${TARGET_BRANCH} ${FROM}" | "${checker}"
