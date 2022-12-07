@@ -1,0 +1,130 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+//
+// Helper pipeline to publish Test Environment logs on dedicated storage.
+//
+// Uses node with 'ts-logs' label to run the job. It should be either
+// file storage server itself or an intermediate node used to upload
+// files to artifactory.
+//
+// Required plugins:
+//  - Artifactory (if artifactory backend is used)
+//  - Copy Artifact Plugin
+//  - Pipeline: Stage Step
+//  - Timestamper
+
+pipeline {
+    parameters {
+        string(name: 'job_to_copy_from', defaultValue: '',
+               description: 'Job to copy artifacts from')
+        string(name: 'publish_to', defaultValue: '',
+               description: 'Path to publish logs to')
+        string(name: 'log_files',
+               defaultValue: 'meta_data.json, raw_log_bundle.tpxz, trc-brief.html, trc-full.html.bz2, trc-stats.txt, tce_log_*, tce_log_*/**',
+               description: 'Which files (filter) to publish')
+        booleanParam(name: 'publish_done', defaultValue: true,
+               description: 'If false: do not publish .done file')
+
+        // These parameters should be used to copy logs to Artifactory
+        string(name: 'art_srv_id', defaultValue: '',
+               description: 'Artifactory Server ID, as it is named in Jenkins/JFrog options')
+        string(name: 'art_repo_name', defaultValue: '',
+               description: 'The name of Artifactory repository (i.e. dpdk-logs)')
+    }
+
+    options {
+        buildDiscarder(logRotator(daysToKeepStr:'15', numToKeepStr:'100'))
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    agent {
+        label "ts-logs"
+    }
+
+    stages {
+        stage("Validate parameters") {
+            steps {
+                script {
+                    if (params.job_to_copy_from == '') {
+                        error 'Job to copy logs from is not specified'
+                    }
+                    if (params.publish_to == '') {
+                        error 'Path publish to is not specified'
+                    }
+                    if (params.log_files == '') {
+                        error 'Filter log_files is not specified'
+                    }
+                    if (params.art_srv_id != '' && params.art_repo_name == '') {
+                        error 'Artifactory repo name is not specified'
+                    }
+                }
+            }
+        }
+        stage("Copy logs from upstream job to file storage") {
+            when { expression { params.art_srv_id == '' } }
+            steps {
+                script {
+                    def logs_path = env.HOME + '/private_html/' +
+                                    params.publish_to
+
+                    // Make sure that target directory exists
+                    sh "mkdir -p ${logs_path}"
+
+                    copyArtifacts(projectName: params.job_to_copy_from,
+                                  selector: upstream(),
+                                  filter: params.log_files,
+                                  target: logs_path)
+
+                    if (params.publish_done) {
+                        // Add marker for Bublik that run is fully uploaded
+                        sh "touch ${logs_path}/.done"
+                    }
+
+                    // Allow CGI run under the user with the group
+                    // membership to write generated logs to the
+                    // directory
+                    sh "chmod g+rw ${logs_path}"
+                }
+            }
+        }
+        stage("Copy logs from upstream job to Artifactory") {
+            when { expression { params.art_srv_id != '' } }
+            steps {
+                script {
+                    def artsrv = Artifactory.server(params.art_srv_id)
+                    def run_path = 'tmp_run'
+
+                    // Make sure that directory exists and empty
+                    sh "rm -fr ${run_path} && mkdir ${run_path}"
+
+                    copyArtifacts(projectName: params.job_to_copy_from,
+                                  selector: upstream(),
+                                  filter: params.log_files,
+                                  target: run_path)
+
+                    String log_files = params.log_files
+                    if (params.publish_done) {
+                        // Add marker for Bublik that run is fully uploaded
+                        sh "touch ${run_path}/.done"
+                        log_files += ', .done'
+                    }
+
+                    def uplspec = '{ "files": ['
+                    String comma = ''
+                    for (String pattern in log_files.split(',')) {
+                        String file_path = run_path + '/' + pattern.trim()
+                        uplspec += """${comma}{"pattern": "${file_path}","""
+                        uplspec += """ "target": "${params.art_repo_name}/${params.publish_to}/"}"""
+                        comma = ','
+                    }
+                    uplspec += ']}'
+
+                    artsrv.upload spec: uplspec
+
+                    sh "rm -rf ${run_path}"
+                }
+            }
+        }
+    }
+}
