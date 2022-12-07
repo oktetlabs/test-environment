@@ -1,0 +1,101 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+//
+// Build test environment documentation.
+//
+// Uses node with 'te-doc' label to run the job.
+//
+// Required plugins:
+//  - Email Extension Plugin (if want to send reports)
+//  - Pipeline: Stage Step
+//  - Timestamper
+
+def DOXYREST_VER = '2.1.2'
+def DOXYREST_BUILD = '-linux-amd64'
+def DOXYREST = 'doxyrest-' + DOXYREST_VER + DOXYREST_BUILD
+def DOXYREST_FILE = DOXYREST + '.tar.xz'
+def DOXYREST_DL = 'https://github.com/vovkos/doxyrest/releases/download'
+
+pipeline {
+    parameters {
+        string(name: 'mail_to', trim: true,
+               description: 'E-Mail addresses where to send reports',
+               defaultValue: '')
+    }
+
+    options {
+        buildDiscarder(logRotator(daysToKeepStr:'15', numToKeepStr:'100'))
+        checkoutToSubdirectory('te')
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    triggers {
+        pollSCM('H * * * *')
+    }
+
+    agent {
+        label "te-doc"
+    }
+
+    stages {
+        stage("Get DoxyRest") {
+            steps {
+                script {
+                    sh """
+                        if ! test -d ${DOXYREST} ; then
+                            wget ${DOXYREST_DL}/doxyrest-${DOXYREST_VER}/${DOXYREST_FILE}
+                            tar -xf ${DOXYREST_FILE}
+                        fi
+                    """
+                    dir(DOXYREST) {
+                        env.DOXYREST_PREFIX = pwd()
+                    }
+                }
+            }
+        }
+        stage("Build documentation") {
+            steps {
+                script {
+                    dir('te') {
+                        sh "./gen_docs -s"
+                    }
+                }
+            }
+        }
+        stage("Archive") {
+            steps {
+                script {
+                    dir('te') {
+                        archiveArtifacts artifacts: 'doc/generated/**, doxygen.warn'
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        unsuccessful {
+            script {
+                if (params.mail_to != '') {
+                    emailext (
+                        to: params.mail_to,
+                        subject: "[CI TE] ${env.JOB_NAME} job ${env.BUILD_NUMBER} unsuccessful",
+                        body: "Check console output at: ${env.BUILD_URL}",
+                    )
+                }
+            }
+        }
+        fixed {
+            script {
+                if (params.mail_to != '') {
+                    emailext (
+                        to: params.mail_to,
+                        subject: "[CI TE] ${env.JOB_NAME} job ${env.BUILD_NUMBER} fixed",
+                        body: "Check console output at: ${env.BUILD_URL}",
+                    )
+                }
+            }
+        }
+    }
+}
