@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+//
+// Helper pipeline to import Test Environment logs to Bublik
+//
+// Uses node with 'bublik-import' label to run the job.
+//
+// Required plugins:
+//  - Pipeline: Stage Step
+//  - Timestamper
+
+pipeline {
+    parameters {
+        string(name: 'bublik_url', description: 'Bublik URL')
+        string(name: 'logs_url', description: 'Import test run to bublik')
+    }
+
+    options {
+        buildDiscarder(logRotator(daysToKeepStr:'15', numToKeepStr:'100'))
+        timestamps()
+    }
+
+    agent {
+        label "bublik-import"
+    }
+
+    stages {
+        stage("Validate parameters") {
+            steps {
+                script {
+                    if (params.bublik_url == '') {
+                        error 'Bublik URL is not specified'
+                    }
+                    if (params.logs_url == '') {
+                        error 'Logs URL is not specified'
+                    }
+                }
+            }
+        }
+        stage("Initiate logs import to Bublik") {
+            steps {
+                sh 'curl --negotiate -u : ' + params.bublik_url +
+                   'importruns/source/?url=' + params.logs_url
+            }
+        }
+    }
+}
