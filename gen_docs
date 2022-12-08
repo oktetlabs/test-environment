@@ -24,6 +24,8 @@ Usage:
                             generate only html documentation based on rst pages
                             in doc/sphinx
   -e, --exclude-global    - Do not generate global namespace
+  -c, --check-only        - Run only doxygen, no doxyrest and sphinx, produce
+                            no output but list all warnings
   -h, --help              - Print this help and exit
 
 Documentation will be located at doc/generated/html/
@@ -43,6 +45,9 @@ while [ $# -gt 0 ]; do
             ;;
         -s|--sphinx-only)
             SPHINX_ONLY=true
+            ;;
+        -c|--check-only)
+            CHECK_ONLY=true
             ;;
         *)
             echo "Unknown option '$1'">&2
@@ -110,6 +115,35 @@ function check_sphinx_binary()
     fi
 }
 
+function doxygen_check_only()
+{
+    # Doxygen warnings are a bit messy,
+    # because warnings related to the same file
+    # may not come together, and there may be
+    # multiple copies of the same message.
+    # The pipeline below fixes that.
+    { cat Doxyfile ;
+      echo "GENERATE_XML=YES" ;
+      echo "GENERATE_HTML=NO";
+      echo "WARN_LOGFILE=";
+      echo "QUIET=YES";
+    } | doxygen - 2>&1 |
+        awk '/^ / {
+               if (in_list)
+                  buffer = buffer ","
+               buffer = buffer $0;
+               in_list = 1;
+               next
+            }
+            {
+               if (buffer) print buffer;
+               buffer = $0;
+               in_list = 0;
+            }
+            END { print buffer }' |
+        sort -u
+    exit 0
+}
 
 function generate_sphinx_only()
 {
@@ -153,6 +187,8 @@ function generate_sphinx_doc()
 
     generate_sphinx_only
 }
+
+[[ -n "$CHECK_ONLY" ]] && doxygen_check_only
 
 $SPHINX_ONLY && generate_sphinx_only || generate_sphinx_doc
 

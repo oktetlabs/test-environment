@@ -73,6 +73,16 @@ This is equivalent to
     rm -rf doc/generated/html
     sphinx-build -j auto -q doc/sphinx doc/generated/html
 
+If you just want to check the source for apparent Doxygen errors, such
+as misspelled keywords, dangling symbol references etc, you may use:
+
+.. code:: shell
+
+    ./gen_docs -c
+
+It does not generate any documentation, does
+not run Sphinx, just prints a list of warnings to stdout.
+
 .. _doxyrest: https://github.com/vovkos/doxyrest
 .. _RST: https://www.sphinx-doc.org/es/master/usage/restructuredtext/basics.html
 .. _here: https://github.com/vovkos/doxyrest/releases
