@@ -381,7 +381,9 @@ extern te_errno tapi_nvme_initiator_get_feature(tapi_nvme_host_ctrl *host_ctrl,
 /**
  * Submit flush command
  *
+ * @code
  * nvme flush /dev/nvme0n1 [-n <namespace>]
+ * @endcode
  *
  * @param host_ctrl     handle of host ctrl on initiator side
  * @param namespace     NULL (all) or namespace name

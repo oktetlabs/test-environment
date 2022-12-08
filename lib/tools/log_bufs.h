@@ -199,7 +199,7 @@ extern const char *te_args2log_buf(te_log_buf *buf,
  *
  * @param buf       Pointer to the buffer
  * @param bit_mask  Bit mask
- * @param map       Bit to string map terminated by the element with #NULL
+ * @param map       Bit to string map terminated by the element with @c NULL
  *                  string
  *
  * @return te_log_buf_get() value.
@@ -218,10 +218,10 @@ extern const char *te_bit_mask2log_buf(te_log_buf *buf,
  *
  * @param buf       Pointer to the buffer
  * @param bit_mask  Bit mask
- * @param bm        Bit to string map terminated by the element with #NULL
+ * @param bm        Bit to string map terminated by the element with @c NULL
  *                  string
  * @param fm        Flag within some mask to string map terminated by the
- *                  element with #NULL string
+ *                  element with @c NULL string
  *
  * @return te_log_buf_get() value.
  */

@@ -62,9 +62,9 @@ typedef struct tapi_memcached_opt {
     te_bool                             enable_ascii_shutdown;
     /** Permissions (in octal form) for Unix socket created with -s option. */
     tapi_job_opt_uint_t                 unix_mask;
-    /** Listen on <ip_addr>. */
+    /** Listen on @c ip_addr. */
     const struct sockaddr              *listen_ipaddr;
-    /** Assume the identity of <username>. */
+    /** Assume the identity of @c username. */
     const char                         *username;
     /** Memory usage in MB. */
     tapi_job_opt_uint_t                 memory_limit;
@@ -106,7 +106,7 @@ typedef struct tapi_memcached_opt {
      */
     tapi_job_opt_double_t               slab_growth_factor;
     /**
-     * Allocate a minimum of <size> bytes for the item key, value,
+     * Allocate a minimum of @c size bytes for the item key, value,
      * and flags.
      */
     tapi_job_opt_uint_t                 slab_min_size;

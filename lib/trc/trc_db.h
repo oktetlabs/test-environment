@@ -362,7 +362,7 @@ extern te_errno trc_exp_result_to_xml(trc_exp_result *exp_result,
  *
  * @param exp_results   TRC expected results
  * @param node          XML node pointer
- * @param insert_after  Whether to insert <results> nodes
+ * @param insert_after  Whether to insert `<results>` nodes
  *                      after @p node or into it.
  *
  * @return

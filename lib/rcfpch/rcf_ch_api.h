@@ -6,7 +6,7 @@
  * Portable Commands Handler.
  * Functions declared in this header should be defined
  * for each type of supported Test Agent (find definitions of these
- * functions under agent/<type> subdirectory).
+ * functions under `agent/<type>` subdirectory).
  *
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

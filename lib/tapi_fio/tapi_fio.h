@@ -196,8 +196,9 @@ typedef struct tapi_fio_numjobs_t {
 
 /**
  * Get the value of parameter of type 'tapi_fio_numjobs_t'
- * @note Support format [number]n | <number>, where n - count of cores on TA,
- * input example: 2n, n, 42
+ * @note Support format `[number]n | <number>`,
+ * where @c n - count of cores on TA,
+ * input example: @c 2n, @c n, @c 42
  *
  * @param var_name_  Name of the parameter
  *
@@ -353,8 +354,9 @@ typedef struct tapi_fio {
 
 /**
  * Get parameters of type 'tapi_fio_numjobs_t'
- * @note Support format [number]n | <number>, where n - count of cores on TA,
- * input example: 2n, n, 42
+ * @note Support format `[number]n | <number>`,
+ * where @c n - count of cores on TA,
+ * input example: @c 2n, @c n, @c 42
  *
  * @param argc       Count of arguments
  * @param argv       List of arguments

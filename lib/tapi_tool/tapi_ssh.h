@@ -64,7 +64,9 @@ typedef struct tapi_ssh_client_opt {
      * Allow remote hosts to connect to
      * local forwarded ports.
      *
+     * @code
      * ssh -g
+     * @endcode
      */
     te_bool gateway_ports;
 
@@ -76,7 +78,9 @@ typedef struct tapi_ssh_client_opt {
      * host and port, or Unix socket, on the
      * remote side.
      *
+     * @code
      * ssh -L <local_port_forwarding>
+     * @endcode
      */
     char *local_port_forwarding;
 
@@ -84,7 +88,9 @@ typedef struct tapi_ssh_client_opt {
      * Do not execute a remote command.
      * @note This is useful for just forwarding ports.
      *
+     * @code
      * ssh -N
+     * @endcode
      */
     te_bool forbid_remote_commands_execution;
 
@@ -92,14 +98,18 @@ typedef struct tapi_ssh_client_opt {
      * File with identity (private key) for public key
      * authentication
      *
+     * @code
      * ssh -i <identity_file>
+     * @endcode
      */
     char *identity_file;
 
     /**
      * The user to log in on the remote machine
      *
+     * @code
      * ssh -l <login_name>
+     * @endcode
      */
     char *login_name;
 
@@ -114,7 +124,10 @@ typedef struct tapi_ssh_client_opt {
      * "Are you sure you want to continue connecting
      * (yes/no/[fingerprint])?"
      *
+     * @code
      * ssh -o StrictHostKeyChecking=<strict_host_key_checking>
+     * @endcode
+     *
      * May be @c yes , @c no , @c accept-new
      */
     tapi_ssh_strict_host_key_checking_t strict_host_key_checking;
@@ -122,14 +135,18 @@ typedef struct tapi_ssh_client_opt {
     /**
      * File to store known hosts keys
      *
+     * @code
      * ssh -o UserKnownHostsFile=<user_known_hosts_file>
+     * @endcode
      */
     char *user_known_hosts_file;
 
     /**
      * Remote host port to connect
      *
+     * @code
      *  ssh -p <port>
+     * @endcode
      */
     unsigned int port;
 
@@ -139,7 +156,9 @@ typedef struct tapi_ssh_client_opt {
      * or Unix socket on the remote (server)
      * host has to be forwarded to the local side.
      *
+     * @code
      * ssh -R <remote_port_forwarding>
+     * @endcode
      */
     char *remote_port_forwarding;
 
@@ -160,28 +179,37 @@ typedef struct tapi_ssh_server_opt {
 
     /** File to configure sshd
      *
+     * @code
      * sshd -f <config_file>
+     * @endcode
      */
     char *config_file;
 
     /**
      * File to read a host key from
      *
+     * @code
      * sshd -h <host_key_file>
+     * @endcode
      */
     char *host_key_file;
 
     /**
      * File with public keys for users authentication
      *
+     * @code
      * sshd -o AuthorizedKeysFile=<authorized_keys_file>
+     * @endcode
      */
     char *authorized_keys_file;
 
     /**
      * Specifies whether root login is allowed
      *
+     * @code
      * sshd -o PermitRootLogin=<permit_root_login>
+     * @endcode
+     *
      * May be @c yes , @c no , @c forced-commands-only or @c prohibit-password
      */
     tapi_ssh_permit_root_login_t permit_root_login;
@@ -189,14 +217,19 @@ typedef struct tapi_ssh_server_opt {
     /**
      * File to store SSHD process ID
      *
+     * @code
      * sshd -o PidFile=<pid_file>
+     * @endcode
      */
     char *pid_file;
 
     /**
      * Specifies whether public key authentication is allowed
      *
+     * @code
      * sshd -o PubkeyAuthentication=<pub_key_authentication>
+     * @endcode
+     *
      * May be @c yes or @c no
      */
     te_bool pub_key_authentication;
@@ -210,7 +243,10 @@ typedef struct tapi_ssh_server_opt {
      * users pubkeys from such authorized_keys file, we should set the option
      * value on @c no
      *
+     * @code
      * sshd -o StrictModes=<strict_modes>
+     * @endcode
+     *
      * May be @c yes or @c no
      */
     te_bool strict_modes;
@@ -218,7 +254,9 @@ typedef struct tapi_ssh_server_opt {
     /**
      * Port to listen on
      *
+     * @code
      * sshd -p <port>
+     * @endcode
      */
     unsigned int port;
 } tapi_ssh_server_opt;

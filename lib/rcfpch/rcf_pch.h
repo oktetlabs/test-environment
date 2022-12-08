@@ -358,7 +358,7 @@ extern te_errno rcf_pch_del_node(rcf_pch_cfg_object *node);
  *
  * RCFPCH automatically creates the lock for thre resource in TE_TMP
  * directory. Name of the lock file containing TA PID is constructed as:
- *     $(te_lockdir}/te_ta_lock_<converted name>
+ *     `${te_lockdir}/te_ta_lock_<converted name>`
  *
  * "converted name" is resource name with '/' replaced by '%'.
  * te_lock_dir should be exported by the TA.

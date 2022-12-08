@@ -62,7 +62,7 @@ typedef enum {
     SYNTAX_UNDEFINED = 0,  /**< Undefined syntax, used as error mark. */
     BOOL = 1,       /**< Boolean syntax          */
     INTEGER,        /**< Integer syntax          */
-    PR_ASN_NULL,    /**< ASN_NULL syntax         */
+    PR_ASN_NULL,    /**< `ASN_NULL` syntax         */
     ENUMERATED,     /**< Enum syntax             */
     UINTEGER,       /**< Unsigned integer syntax (not a ASN.1 native type) */
 
@@ -70,16 +70,16 @@ typedef enum {
                                    to determine primitive syntax
                                    with variable length           */
     LONG_INT    = PRIMITIVE_VAR_LEN | 1, /**< This syntax differs from
-                                             "long int" in C! length of its
+                                             `long int` in C! length of its
                                               data in octets is specified
                                               by asn_type field 'size'.     */
-    BIT_STRING  = PRIMITIVE_VAR_LEN | 2, /**< ASN.1 "BIT STRING" type       */
-    OCT_STRING  = PRIMITIVE_VAR_LEN | 3, /**< ASN.1 "OCTET STRING" type     */
-    CHAR_STRING = PRIMITIVE_VAR_LEN | 4, /**< ASN.1 "GeneralString" type    */
-    REAL        = PRIMITIVE_VAR_LEN | 5, /**< ASN.1 "REAL" type             */
-    OID         = PRIMITIVE_VAR_LEN | 6, /**< ASN.1 "OBJECT IDENTIFIER" type*/
+    BIT_STRING  = PRIMITIVE_VAR_LEN | 2, /**< ASN.1 `BIT STRING` type       */
+    OCT_STRING  = PRIMITIVE_VAR_LEN | 3, /**< ASN.1 `OCTET STRING` type     */
+    CHAR_STRING = PRIMITIVE_VAR_LEN | 4, /**< ASN.1 `GeneralString` type    */
+    REAL        = PRIMITIVE_VAR_LEN | 5, /**< ASN.1 `REAL` type             */
+    OID         = PRIMITIVE_VAR_LEN | 6, /**< ASN.1 `OBJECT IDENTIFIER` type*/
 
-    COMPOUND = 0x20, /**< flag of COMPOUND syntax */
+    COMPOUND = 0x20, /**< flag of `COMPOUND` syntax */
     TAGGED      = COMPOUND,
     CHOICE      = COMPOUND | ASN_SYN_NAMED,
 
@@ -136,7 +136,7 @@ typedef struct asn_tag_t {
  *
  * @param type       ASN.1 type which name is interested
  *
- * @return plain string with type name or NULL if error occurred.
+ * @return plain string with type name or @c NULL if error occurred.
  */
 extern const char *asn_get_type_name(const asn_type *type);
 
@@ -184,8 +184,8 @@ extern te_errno asn_get_child_type(const asn_type *type,
 /**
  * Find ASN.1 tag value by textual label.
  *
- * @param type          ASN.1 type descriptor, must have SEQUENCE, SET
- *                      or CHOICE syntax
+ * @param type          ASN.1 type descriptor, must have `SEQUENCE`, `SET`
+ *                      or `CHOICE` syntax
  * @param label         textual label of desired field
  * @param tag           location for ASN.1 tag (OUT)
  *
@@ -198,46 +198,46 @@ extern te_errno asn_label_to_tag(const asn_type *type, const char *label,
  * Declaration of structures which describes basic ASN.1 types.
  */
 
-extern const asn_type * const asn_base_boolean;  /**< BOOLEAN    */
-extern const asn_type * const asn_base_integer;  /**< INTEGER    */
-extern const asn_type * const asn_base_uinteger; /**< UINTEGER   */
-extern const asn_type * const asn_base_enum;     /**< ENUMERATED */
-extern const asn_type * const asn_base_charstring; /**< UniversalString */
-extern const asn_type * const asn_base_octstring;  /**< OCTET STRING    */
-extern const asn_type * const asn_base_bitstring;  /**< BIT STRING      */
-extern const asn_type * const asn_base_real;    /**< REAL */
-extern const asn_type * const asn_base_null;    /**< NULL */
-extern const asn_type * const asn_base_objid;   /**< OBJECT IDENTIFIER */
+extern const asn_type * const asn_base_boolean;  /**< `BOOLEAN`    */
+extern const asn_type * const asn_base_integer;  /**< `INTEGER`    */
+extern const asn_type * const asn_base_uinteger; /**< `UINTEGER`   */
+extern const asn_type * const asn_base_enum;     /**< `ENUMERATED` */
+extern const asn_type * const asn_base_charstring; /**< `UniversalString` */
+extern const asn_type * const asn_base_octstring;  /**< `OCTET STRING`    */
+extern const asn_type * const asn_base_bitstring;  /**< `BIT STRING`      */
+extern const asn_type * const asn_base_real;    /**< `REAL` */
+extern const asn_type * const asn_base_null;    /**< `NULL` */
+extern const asn_type * const asn_base_objid;   /**< `OBJECT IDENTIFIER` */
 
-extern const asn_type * const asn_base_int4;    /**< INTEGER (0..15)    */
-extern const asn_type * const asn_base_int8;    /**< INTEGER (0..255)   */
-extern const asn_type * const asn_base_int16;   /**< INTEGER (0..65535) */
+extern const asn_type * const asn_base_int4;    /**< `INTEGER (0..15)`    */
+extern const asn_type * const asn_base_int8;    /**< `INTEGER (0..255)`   */
+extern const asn_type * const asn_base_int16;   /**< `INTEGER (0..65535)` */
 
-extern const asn_type  asn_base_boolean_s;      /**< BOOLEAN           */
-extern const asn_type  asn_base_integer_s;      /**< INTEGER           */
-extern const asn_type  asn_base_enum_s;         /**< ENUMERATED        */
-extern const asn_type  asn_base_charstring_s;   /**< UniversalString   */
-extern const asn_type  asn_base_octstring_s;    /**< OCTET STRING      */
-extern const asn_type  asn_base_bitstring_s;    /**< BIT STRING        */
-extern const asn_type  asn_base_real_s;         /**< REAL              */
-extern const asn_type  asn_base_null_s;         /**< NULL              */
-extern const asn_type  asn_base_objid_s;        /**< OBJECT IDENTIFIER */
+extern const asn_type  asn_base_boolean_s;      /**< `BOOLEAN`           */
+extern const asn_type  asn_base_integer_s;      /**< `INTEGER`           */
+extern const asn_type  asn_base_enum_s;         /**< `ENUMERATED`        */
+extern const asn_type  asn_base_charstring_s;   /**< `UniversalString`   */
+extern const asn_type  asn_base_octstring_s;    /**< `OCTET STRING`      */
+extern const asn_type  asn_base_bitstring_s;    /**< `BIT STRING`        */
+extern const asn_type  asn_base_real_s;         /**< `REAL`              */
+extern const asn_type  asn_base_null_s;         /**< `NULL`              */
+extern const asn_type  asn_base_objid_s;        /**< `OBJECT IDENTIFIER` */
 
-extern const asn_type  asn_base_int1_s;  /**< INTEGER (0..1)           */
-extern const asn_type  asn_base_int2_s;  /**< INTEGER (0..3)           */
-extern const asn_type  asn_base_int3_s;  /**< INTEGER (0..7)           */
-extern const asn_type  asn_base_int4_s;  /**< INTEGER (0..15)          */
-extern const asn_type  asn_base_int5_s;  /**< INTEGER (0..31)          */
-extern const asn_type  asn_base_int6_s;  /**< INTEGER (0..63)          */
-extern const asn_type  asn_base_int7_s;  /**< INTEGER (0..127)         */
-extern const asn_type  asn_base_int8_s;  /**< INTEGER (0..255)         */
-extern const asn_type  asn_base_int9_s;  /**< INTEGER (0..511)         */
-extern const asn_type  asn_base_int12_s; /**< INTEGER (0..4095)        */
-extern const asn_type  asn_base_int16_s; /**< INTEGER (0..65535)       */
-extern const asn_type  asn_base_int24_s; /**< INTEGER (0..16777215)    */
-extern const asn_type  asn_base_int32_s; /**< INTEGER (0..4294967295)  */
+extern const asn_type  asn_base_int1_s;  /**< `INTEGER (0..1)`           */
+extern const asn_type  asn_base_int2_s;  /**< `INTEGER (0..3)`           */
+extern const asn_type  asn_base_int3_s;  /**< `INTEGER (0..7)`           */
+extern const asn_type  asn_base_int4_s;  /**< `INTEGER (0..15)`          */
+extern const asn_type  asn_base_int5_s;  /**< `INTEGER (0..31)`          */
+extern const asn_type  asn_base_int6_s;  /**< `INTEGER (0..63)`          */
+extern const asn_type  asn_base_int7_s;  /**< `INTEGER (0..127)`         */
+extern const asn_type  asn_base_int8_s;  /**< `INTEGER (0..255)`         */
+extern const asn_type  asn_base_int9_s;  /**< `INTEGER (0..511)`         */
+extern const asn_type  asn_base_int12_s; /**< `INTEGER (0..4095)`        */
+extern const asn_type  asn_base_int16_s; /**< `INTEGER (0..65535)`       */
+extern const asn_type  asn_base_int24_s; /**< `INTEGER (0..16777215)`    */
+extern const asn_type  asn_base_int32_s; /**< `INTEGER (0..4294967295)`  */
 
-extern const asn_type asn_base_uint32_s; /**< UINTEGER (0..4294967295) */
+extern const asn_type asn_base_uint32_s; /**< `UINTEGER (0..4294967295)` */
 
 
 
@@ -266,7 +266,7 @@ typedef struct asn_child_desc asn_child_desc_t;
  *
  * @param type       ASN.1 type to which value should belong
  *
- * @return pointer to new asn_value instance or NULL if error occurred.
+ * @return pointer to new asn_value instance or @c NULL if error occurred.
  */
 extern asn_value *asn_init_value(const asn_type *type);
 
@@ -296,7 +296,7 @@ extern asn_value *asn_init_value_tagged(const asn_type *type,
  *
  * @param value       ASN.1 value to be copied
  *
- * @return pointer to new asn_value instance or NULL if error occurred.
+ * @return pointer to new asn_value instance or @c NULL if error occurred.
  */
 extern asn_value *asn_copy_value(const asn_value *value);
 
@@ -326,7 +326,7 @@ extern void asn_free_value(asn_value *value);
  *
  * @param value       ASN.1 value which type is interested
  *
- * @return pointer to asn_type instance or NULL if error occurred.
+ * @return pointer to asn_type instance or @c NULL if error occurred.
  */
 extern const asn_type *asn_get_type(const asn_value *value);
 
@@ -444,7 +444,7 @@ extern te_errno asn_encode(void *buf, size_t *buf_len, asn_value *value);
  *
  * @param data          pointer to data to be decoded
  *
- * @return pointer to new asn_value instance or NULL if error occurred.
+ * @return pointer to new asn_value instance or @c NULL if error occurred.
  */
 extern asn_value *asn_decode(const void *data);
 
@@ -459,8 +459,8 @@ extern asn_value *asn_decode(const void *data);
 
 
 /**
- * Find ASN.1 CHOICE values identified by the given tag value from
- * child ASN.1 values inside the given SEQUENCE_OF ASN.1 container
+ * Find ASN.1 `CHOICE` values identified by the given tag value from
+ * child ASN.1 values inside the given `SEQUENCE_OF` ASN.1 container
  *
  * @param container     ASN.1 container
  * @param tag_value     ASN.1 tag value
@@ -477,21 +477,21 @@ extern te_errno asn_find_child_choice_values(const asn_value   *container,
                                              unsigned int      *nb_items_out);
 
 /**
- * Dedicated wrapper for @b asn_find_child_choice_values()
+ * Dedicated wrapper for @p asn_find_child_choice_values()
  * to get the first matching choice value in the container
  */
 extern asn_value *asn_find_child_choice_value(const asn_value *container,
                                               asn_tag_value    tag_value);
 
 /**
- * Given an ASN.1 CHOICE array and a tag, look up the first element
+ * Given an ASN.1 `CHOICE` array and a tag, look up the first element
  * which, when unfolded, resolves to a value matching the given tag.
  *
- * @param nb_values The number of elements in ASN.1 CHOICE array
- * @param values    ASN.1 CHOICE array
+ * @param nb_values The number of elements in ASN.1 `CHOICE` array
+ * @param values    ASN.1 `CHOICE` array
  * @param tag       ASN.1 tag
  *
- * @return First matching ASN.1 CHOICE unfolded value or @c NULL
+ * @return First matching ASN.1 `CHOICE` unfolded value or @c NULL
  */
 extern asn_value *asn_choice_array_look_up_value(unsigned int    nb_values,
                                                  asn_value     **values,
@@ -499,7 +499,7 @@ extern asn_value *asn_choice_array_look_up_value(unsigned int    nb_values,
 
 /**
  * Free one-level subvalue of constraint ASN.1 value instance by tag.
- * For CHOICE syntax value tag is ignored.
+ * For `CHOICE` syntax value tag is ignored.
  *
  * @param value       ASN.1 value which subvalue should be destroyed
  * @param tag_class   class of ASN.1 tag
@@ -518,10 +518,10 @@ extern te_errno asn_free_child(asn_value *value,
  * @param value       ASN.1 value which subvalue should be destroyed
  * @param labels      string with dot-separated sequence of textual field
  *                    labels, specifying subvalue in ASN.1 value tree with
- *                    'container' as a root. Label for 'SEQUENCE OF' and
- *                    'SET OF' subvalues is decimal notation of its integer
+ *                    'container' as a root. Label for `SEQUENCE OF` and
+ *                    `SET OF` subvalues is decimal notation of its integer
  *                    index in array. Choice labels shouls be prepended by
- *                    symbol '#'
+ *                    symbol `#`
  *
  * @return zero on success, otherwise error code.
  */
@@ -531,9 +531,9 @@ extern te_errno asn_free_descendant(asn_value *value, const char *labels);
 
 /**
  * Find descendant value in ASN.1 value tree by textual labels specifier.
- * This method fails and return NULL if specified subvalue does not
+ * This method fails and return @c NULL if specified subvalue does not
  * exists in 'value'.
- * Besides, if some CHOICE specifier is absent, this methods
+ * Besides, if some `CHOICE` specifier is absent, this methods
  * silently go down to specific value.
  *
  * NOTE for user: do not change got subvalue, if you are not sure,
@@ -541,7 +541,7 @@ extern te_errno asn_free_descendant(asn_value *value, const char *labels);
  *
  * @param value         Root of ASN.1 value tree.
  * @param status        Location of status of operation,
- *                      allways changed unless NULL (OUT).
+ *                      allways changed unless @c NULL (OUT).
  * @param labels_fmt    Format (*printf-like) string for labels string.
  * @param ...           Respective parameters for format string.
  *
@@ -556,8 +556,8 @@ extern asn_value *asn_find_descendant(const asn_value *value,
  * Find descendant value in ASN.1 value tree by textual labels specifier.
  * This method creates subvalue, respective to labels, if it is absent
  * in 'value'.
- * If some CHOICE specifier is absent, but there is specific subvalue
- * at that node, this methods fails and set 'status' to TE_EASNWRONGLABEL.
+ * If some `CHOICE` specifier is absent, but there is specific subvalue
+ * at that node, this methods fails and set 'status' to #TE_EASNWRONGLABEL.
  *
  * NOTE for user: do not change got subvalue, if you are not sure,
  * what are you doing. Especially - do not free it!
@@ -577,10 +577,10 @@ extern asn_value *asn_retrieve_descendant(asn_value *value,
 
 
 /**
- * Get descendent subvalue of some ASN.1 value with COMPOUND syntax.
+ * Get descendent subvalue of some ASN.1 value with `COMPOUND` syntax.
  * Got subvalue should NOT be freed!
  *
- * This method is much faster then "asn_read_component_value' because
+ * This method is much faster then asn_read_component_value() because
  * it does not make external copy of subvalue.
  *
  * @param container     root of ASN.1 value tree which subvalue is interested
@@ -597,13 +597,13 @@ extern te_errno asn_get_descendent(const asn_value *container,
 
 
 /**
- * Put descendent subvalue to some ASN.1 value with COMPOUND syntax.
+ * Put descendent subvalue to some ASN.1 value with `COMPOUND` syntax.
  * Passed ASN.1 value simply inserted into tree without copy, old
  * value on respective place is freed!
  *
  * @param container     Root of ASN.1 value tree.
  * @param subval        ASN.1 sub-value which should be inserted, may
- *                      be NULL, if respecive part of 'container'
+ *                      be @c NULL, if respecive part of 'container'
  *                      just should be cleared.
  * @param labels        Textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description.
@@ -616,7 +616,7 @@ extern te_errno asn_put_descendent(asn_value *container,
 
 
 /**
- * Insert array element in indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF')
+ * Insert array element in indexed syntax (i.e. `SEQUENCE OF` or `SET OF`)
  * subvalue of root ASN.1 value container.
  * Passed subvalue will NOT copied, do not free it after this method!
  *
@@ -635,7 +635,7 @@ extern te_errno asn_insert_indexed(asn_value *container,
                                    int index, const char *labels);
 
 /**
- * Remove array element from indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF')
+ * Remove array element from indexed syntax (i.e. `SEQUENCE OF` or `SET OF`)
  * subvalue of root ASN.1 value container.
  *
  * @param container     root of ASN.1 value tree which subvalue is interested
@@ -649,7 +649,7 @@ extern te_errno asn_remove_indexed(asn_value *container,
                                    int index, const char *labels);
 
 /**
- * Get subvalue of ASN.1 value with indexed ('SEQUENCE OF' or 'SET OF')
+ * Get subvalue of ASN.1 value with indexed (`SEQUENCE OF` or `SET OF`)
  * syntax. Got subvalue should NOT be freed!
  *
  * This method does not make external copy of subvalue.
@@ -674,9 +674,9 @@ extern te_errno asn_get_indexed(const asn_value *container,
  * @param data          Data to be written, should be in nature
  *                      C format for data type respective to leaf syntax.
  * @param d_len         Length of the data.
- *                      Measured in octets for all types except OID and
- *                      BIT_STRING; for OID measured in sizeof(int);
- *                      for BIT_STRING measured in bits.
+ *                      Measured in octets for all types except `OID` and
+ *                      `BIT_STRING`; for `OID` measured in `sizeof(int)`;
+ *                      for `BIT_STRING` measured in bits.
  *
  * @return zero on success or error code.
  */
@@ -687,11 +687,11 @@ extern te_errno asn_write_primitive(asn_value *value,
 
 
 /**
- * Put 'value' as CHOICE of 'container'. Free other subvalue of
+ * Put 'value' as `CHOICE` of 'container'. Free other subvalue of
  * 'container', if there is one.
  * Check that type of 'value' is one of possible choices in 'container'.
  *
- * @param container     ASN.1 value of CHOICE syntax, which subvalue
+ * @param container     ASN.1 value of `CHOICE` syntax, which subvalue
  *                      should be changed.
  * @param value         ASN.1 value to be put into 'container'.
  *
@@ -706,12 +706,12 @@ extern te_errno asn_put_choice(asn_value *container, asn_value *value);
  *
  * Extended ASN.1 path could have search expression instead of one (or
  * several) labels. Only index labels could be replaced (i.e. it is
- * possible only for SEQUENCE_OF and SET_OF types) and subtype has to be
- * SEQUENCE or SET. The syntax is following:
- *   <optional labels>.[<label>:<asn text value>].<other optional labels>
+ * possible only for `SEQUENCE_OF` and `SET_OF` types) and subtype has to be
+ * `SEQUENCE` or `SET`. The syntax is following:
+ *   `<optional labels>.[<label>:<asn text value>].<other optional labels>`
  * Square brackets are part of format. The asn_value corresponding to
- * <optional labels> is iterated and for each member the <label> value is
- * compared to <asn text value>. If comparison is successful, then whole
+ * `<optional labels>` is iterated and for each member the `<label>` value is
+ * compared to `<asn text value>`. If comparison is successful, then whole
  * search expression is replaced by index. There could be several labels in
  * the search expression, they are separated by ',' then.
  *
@@ -731,11 +731,11 @@ te_errno asn_path_from_extended(asn_value *node, const char *ext_path,
  * Inserts 'value' into root_node ASN.1 value.
  *
  * ext_path must be of format
- *   <labels>.[<label>:<asn text value>]
+ *   `<labels>.[<label>:<asn text value>]`
  *
- * 'value' will be inserted as a subvalue of '<labels>' value, its index
- * will be stored in 'index' variable and after that <asn text value> will
- * be assigned to field named <label> of newly inserted ASN.1 value. Several
+ * 'value' will be inserted as a subvalue of `<labels>` value, its index
+ * will be stored in 'index' variable and after that `<asn text value>` will
+ * be assigned to field named `<label>` of newly inserted ASN.1 value. Several
  * labels could be specified in [], separate with ','.
  *
  * @param root_node  Root ASN.1 value to start searching for labels
@@ -780,10 +780,10 @@ asn_check_value_contains(asn_value *container, asn_value *value);
  * @param value       ASN.1 value which subvalue should be destroyed
  * @param labels      string with dot-separated sequence of textual field
  *                    labels, specifying subvalue in ASN.1 value tree with
- *                    'container' as a root. Label for 'SEQUENCE OF' and
- *                    'SET OF' subvalues is decimal notation of its integer
+ *                    'container' as a root. Label for `SEQUENCE OF` and
+ *                    `SET OF` subvalues is decimal notation of its integer
  *                    index in array. Choice labels shouls be prepended by
- *                    symbol '#'
+ *                    symbol `#`
  *
  * @return zero on success, otherwise error code.
  */
@@ -823,7 +823,7 @@ extern te_errno asn_free_child_value(asn_value *value,
  * Subvalue is not copied, but inserted into ASN.1 tree of 'container' as is.
  *
  * @param container     ASN.1 value which child should be updated,
- *                      have to be of syntax SEQUENCE, SET, or CHOICE
+ *                      have to be of syntax `SEQUENCE`, `SET`, or `CHOICE`
  * @param subvalue      new ASN.1 value for child
  * @param tag_class     class of ASN.1 tag
  * @param tag_val       value of ASN.1 tag
@@ -840,7 +840,7 @@ extern te_errno asn_put_child_value(asn_value *container,
  * its character label instead of tag.
  *
  * @param container     ASN.1 value which child should be updated,
- *                      have to be of syntax SEQUENCE, SET, or CHOICE
+ *                      have to be of syntax `SEQUENCE`, `SET`, or `CHOICE`
  * @param subvalue      new ASN.1 value for child
  * @param label         character label of child
  *
@@ -858,9 +858,9 @@ extern te_errno asn_put_child_value_by_label(asn_value *container,
  * @param data          data to be written, should be in nature C format for
  *                      data type respective to leaf syntax
  * @param d_len         length of the data
- *                      Measured in octets for all types except OID and
- *                      BIT_STRING; for OID measured in sizeof(int)
- *                      for BIT_STRING measured in bits
+ *                      Measured in octets for all types except `OID` and
+ *                      `BIT_STRING`; for `OID` measured in `sizeof(int)`
+ *                      for `BIT_STRING` measured in bits
  * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
@@ -886,9 +886,9 @@ extern te_errno asn_write_value_field_fmt(asn_value  *container,
  * @param container     pointer to ASN.1 value which leaf field is interested
  * @param data          pointer to buffer for read data (OUT)
  * @param d_len         length of available buffer / read data (IN/OUT).
- *                      Measured in octets for all types except OID and
- *                      BIT_STRING; for OID measured in sizeof(int),
- *                      for BIT_STRING measured in bits
+ *                      Measured in octets for all types except `OID` and
+ *                      `BIT_STRING`; for `OID` measured in `sizeof(int)`,
+ *                      for `BIT_STRING` measured in bits
  * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
@@ -1072,7 +1072,7 @@ extern te_errno asn_read_component_value(const asn_value *container,
 
 
 /**
- * Replace array element in indexed ('SEQUENCE OF' or 'SET OF') subvalue
+ * Replace array element in indexed (`SEQUENCE OF` or `SET OF`) subvalue
  * of root ASN.1 value container.
  *
  * @param container     root of ASN.1 value tree which subvalue is interested
@@ -1090,7 +1090,7 @@ extern te_errno asn_write_indexed(asn_value *container,
                                   const char *labels);
 
 /**
- * Read array element in indexed ('SEQUENCE OF' or 'SET OF') subvalue
+ * Read array element in indexed (`SEQUENCE OF` or `SET OF`) subvalue
  * of root ASN.1 value 'container'.
  *
  * @param container     root of ASN.1 value tree which subvalue is interested
@@ -1107,17 +1107,17 @@ extern asn_value *asn_read_indexed(const asn_value *container,
  * Get length of subvalue of root ASN.1 value container.
  * Semantic of length value depends on the ASN.1 syntax.
  *    primitive syntax:
- *        INTEGER --
- *            zero for usual native 'int' or number of bits used.
- *        LONG_INT, CHAR_STRING, OCT_STRING, REAL --
+ *        `INTEGER` --
+ *            zero for usual native `int` or number of bits used.
+ *        `LONG_INT`, `CHAR_STRING`, `OCT_STRING`, `REAL` --
  *            number of octets;
- *        OBJECT IDENTIFIER --
+ *        `OBJECT IDENTIFIER` --
  *            number of sub-ids, which sub-id has usual for
- *            current architecture size of 'int';
- *        BIT_STRING -- number of bits;
+ *            current architecture size of `int`;
+ *        `BIT_STRING` -- number of bits;
  *    constraint syntax:
  *          number of sub-values; should be one or zero (for non-complete
- *          values) for CHOICE and TAGGED syntacies.
+ *          values) for `CHOICE` and `TAGGED` syntacies.
  *
  * @param container     root of ASN.1 value tree which subvalue is interested
  * @param labels        textual ASN.1 labels of subvalue; see
@@ -1172,15 +1172,15 @@ extern te_errno asn_get_choice(const asn_value *container,
  *
  * @param container     value which name is interested
  *
- * @return value's name or NULL.
+ * @return value's name or @c NULL.
  */
 extern const char *asn_get_name(const asn_value *container);
 
 
 /**
- * Get constant pointer to subvalue of some ASN.1 value with COMPOUND
+ * Get constant pointer to subvalue of some ASN.1 value with `COMPOUND`
  * syntax.
- * User may to try discard 'const' qualifier of obtained subvalue only
+ * User may to try discard `const` qualifier of obtained subvalue only
  * if he (she) knows very well what he doing with ASN.1 value.
  * In particular, got subvalue should NOT be freed!
  *
@@ -1201,10 +1201,10 @@ extern te_errno asn_get_subvalue(const asn_value *container,
 
 /**
  * Get constant pointer to direct subvalue of ASN.1 value with named syntax
- * ('SEQUENCE' or 'SET') by its tag. If there are more then one
+ * (`SEQUENCE` or `SET`) by its tag. If there are more then one
  * child with specified tag, method return first found.
  *
- * User may try to discard 'const' qualifier of obtained subvalue only
+ * User may try to discard `const` qualifier of obtained subvalue only
  * if he (she) knows very well what he doing with ASN.1 value.
  * In particular, got subvalue should NOT be freed!
  *
@@ -1225,9 +1225,9 @@ extern te_errno asn_get_child_value(const asn_value *container,
 
 
 /**
- * Get constant pointer to direct subvalue of ASN.1 value with CHOICE syntax.
+ * Get constant pointer to direct subvalue of ASN.1 value with `CHOICE` syntax.
  *
- * User may try to discard 'const' qualifier of obtained subvalue only
+ * User may try to discard `const` qualifier of obtained subvalue only
  * if he (she) knows very well what he doing with ASN.1 value.
  * In particular, got subvalue should NOT be freed!
  *
@@ -1263,8 +1263,8 @@ extern te_errno asn_get_choice_value(const asn_value *container,
  *
  * @param container     root of ASN.1 value tree which subvalue is interested
  * @param data_ptr      pointer to location for plain data pointer;
- *                      usually it should be something like '&str', where
- *                      'srt' has type 'const char *' (OUT)
+ *                      usually it should be something like `&str`, where
+ *                      `str` has type `const char *` (OUT)
  * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
@@ -1280,7 +1280,7 @@ extern te_errno asn_get_field_data(const asn_value *container,
  *
  * @param container     value which name is intereseted
  *
- * @return value's name or NULL.
+ * @return value's name or @c NULL.
  */
 extern asn_tag_value asn_get_tag(const asn_value *container);
 
@@ -1337,7 +1337,7 @@ typedef te_errno (* walk_method)(asn_value *value, void *user_ptr);
  *
  * @param container     Pointer to the ASN.1 value which subvalues
  *                      should be iterated.
- * @param only_leafs    Boolean flag, if TRUE, user callback will
+ * @param only_leafs    Boolean flag, if @c TRUE, user callback will
  *                      will be called only for the leafs, i.e.
  *                      for nodes without sub-values: either
  *                      primitive or empty compound.
@@ -1362,7 +1362,7 @@ extern te_errno asn_walk_depth(asn_value *container, te_bool only_leafs,
  *
  * @param container     Pointer to the ASN.1 value which subvalues
  *                      should be iterated.
- * @param only_leafs    Boolean flag, if TRUE, user callback will
+ * @param only_leafs    Boolean flag, if @c TRUE, user callback will
  *                      will be called only for the leafs, i.e.
  *                      for nodes without sub-values: either
  *                      primitive or empty compound.

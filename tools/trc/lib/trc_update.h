@@ -60,11 +60,11 @@ enum trc_update_log_parse_flags {
                                                  unexpected results from
                                                  logs only */
     TRC_UPDATE_COPY_OLD     = (1LLU << 8),  /**< Copy results from
-                                                 current TRC DB in <new>
+                                                 current TRC DB in `<new>`
                                                  section of updating
                                                  rule */
     TRC_UPDATE_COPY_CONFLS  = (1LLU << 9),  /**< Copy conflicting results
-                                                 from logs in <new>
+                                                 from logs in `<new>`
                                                  section of updating
                                                  rule */
     TRC_UPDATE_COPY_OLD_FIRST
@@ -75,7 +75,7 @@ enum trc_update_log_parse_flags {
                                                  are specified.
                                                  If this flag is set,
                                                  then when copying results
-                                                 to <new> section, firstly
+                                                 to `<new>` section, firstly
                                                  results from current TRC DB
                                                  should be processed;
                                                  otherwise firstly
@@ -88,7 +88,7 @@ enum trc_update_log_parse_flags {
                                                  are specified. If this
                                                  flag is set, then both
                                                  types of results are
-                                                 copied to <new>, in
+                                                 copied to `<new>`, in
                                                  order specified by
                                                  TRC_UPDATE_COPY_OLD_FIRST
                                                  flag. If it is not
@@ -110,7 +110,7 @@ enum trc_update_log_parse_flags {
                                                  different ones,
                                                  do not replace them
                                                  but treat results
-                                                 from '<new>' section
+                                                 from `<new>` section
                                                  of rule as conflicting
                                                  results from logs */
     TRC_UPDATE_RRESULTS    = (1LLU << 16),  /**< Generate updating
@@ -140,10 +140,10 @@ enum trc_update_log_parse_flags {
                                                  results */
     TRC_UPDATE_NO_SKIP_ONLY
                            = (1LLU << 24),  /**< Do not create rules with
-                                                 <conflicts/> containing
+                                                 `<conflicts/>` containing
                                                  skipped only results */
     TRC_UPDATE_NO_EXP_ONLY = (1LLU << 25),  /**< Do not create rules with
-                                                 <conflicts/> containing
+                                                 `<conflicts/>` containing
                                                  expected only results
                                                  if CONFLS_ALL is turned
                                                  on */
@@ -189,7 +189,7 @@ enum trc_update_log_parse_flags {
                                                  for filtering out
                                                  iterations not
                                                  appearing in it */
-    TRC_UPDATE_RULE_ARGS   = (1LLU << 40),  /**< Generate <args>
+    TRC_UPDATE_RULE_ARGS   = (1LLU << 40),  /**< Generate `<args>`
                                                  tags for generated
                                                  rules */
     TRC_UPDATE_TAGS_GATHER = (1LLU << 41),  /**< Gather tags from
@@ -235,11 +235,11 @@ typedef enum trc_update_rtype {
     TRC_UPDATE_RULE_RESULTS,    /**< Applicable to all iteration
                                      results as a whole */
     TRC_UPDATE_RULE_RESULT,     /**< Applicable to content of single
-                                     <results> tags */
+                                     `<results>` tags */
     TRC_UPDATE_RULE_ENTRY,     /**< Applicable to content of single
-                                    <result> tags */
+                                    `<result>` tags */
     TRC_UPDATE_RULE_VERDICT,    /**< Applicable to content of single
-                                     <verdict> tags */
+                                     `<verdict>` tags */
     TRC_UPDATE_RULE_UNKNOWN,    /**< Unknown */
 } trc_update_rtype;
 
@@ -248,10 +248,10 @@ typedef struct trc_update_rule {
     TAILQ_ENTRY(trc_update_rule)    links;       /**< Queue links */
     trc_exp_result                 *def_res;     /**< Default results */
     trc_exp_results                *old_res;     /**< Results in TRC */
-    trc_exp_result_entry           *old_re;      /**< Content of a <result>
+    trc_exp_result_entry           *old_re;      /**< Content of a `<result>`
                                                       tag in TRC */
     char                           *old_v;       /**< Content of a
-                                                      <verdict> tag in
+                                                      `<verdict>` tag in
                                                       TRC */
 
     trc_exp_results                *confl_res;   /**< Not-matching TRC
@@ -260,11 +260,11 @@ typedef struct trc_update_rule {
     trc_exp_results                *new_res;     /**< Results to replace
                                                       results in TRC */
     trc_exp_result_entry           *new_re;      /**< Replacement for
-                                                      content of a <result>
+                                                      content of a `<result>`
                                                       tag in TRC */
     char                           *new_v;       /**< Replacement for
                                                       content of a
-                                                      <verdict> tag in
+                                                      `<verdict>` tag in
                                                       TRC */
 
     trc_update_wilds_list          *wilds;       /**< Wildcards */
@@ -563,7 +563,7 @@ extern int te_test_result_cmp(te_test_result *p,
 
 /**
  * Compare test iteration result entries (content of single
- * <result> tags).
+ * `<result>` tags).
  *
  * @param p     The first result
  * @param q     The second result

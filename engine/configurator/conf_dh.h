@@ -21,7 +21,7 @@ extern "C" {
  * and add them to dynamic history.
  * Note: this routine does not reboot Test Agents.
  *
- * @param node          <history> node pointer
+ * @param node          `<history>` node pointer
  * @param expand_vars   List of key-value pairs for expansion in file,
  *                      @c NULL if environment variables are used for
  *                      substitutions

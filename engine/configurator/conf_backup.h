@@ -19,7 +19,7 @@ extern "C" {
 /**
  * Process "backup" configuration file or backup file.
  *
- * @param node     <backup> node pointer
+ * @param node     `<backup>` node pointer
  * @param restore  if TRUE, the configuration should be restored after
  *                 unsuccessful dynamic history restoring
  * @param subtrees Vector of the subtrees to restore. May be @c NULL for
