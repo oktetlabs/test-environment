@@ -1364,6 +1364,18 @@ extern int rpc_symlink(rcf_rpc_server *rpcs,
                        const char *path1, const char *path2);
 
 /**
+ * Resolve a symbolic link.
+ *
+ * @param rpcs      RPC server handle.
+ * @param path      Path to symbolic link.
+ * @param buf       Buffer for the resolved link.
+ * @param bufsize   Length of the buffer.
+ *
+ * @return Number of bytes put in the buffer.
+ */
+extern ssize_t rpc_readlink(rcf_rpc_server *rpcs, const char *path, char *buf,
+                            size_t bufsize);
+/**
  * Remove a directory entry.
  *
  * @param rpcs      RPC server

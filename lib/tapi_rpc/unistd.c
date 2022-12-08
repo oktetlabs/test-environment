@@ -2980,6 +2980,32 @@ rpc_symlink(rcf_rpc_server *rpcs,
     RETVAL_INT(symlink, out.retval);
 }
 
+ssize_t
+rpc_readlink(rcf_rpc_server *rpcs, const char *path, char *buf, size_t bufsize)
+{
+    tarpc_readlink_in  in;
+    tarpc_readlink_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.bufsize = bufsize;
+    in.path = strdup(path);
+
+    rcf_rpc_call(rpcs, "readlink", &in, &out);
+    free(in.path);
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(readlink, out.retval);
+
+    TAPI_RPC_LOG(rpcs, readlink, "%s, %zu", "%s, %d", path, bufsize,
+                 out.resolved_path, out.retval);
+
+    if (out.retval >= 0)
+        te_strlcpy(buf, out.resolved_path, bufsize);
+
+    TAPI_RPC_OUT(readlink, out.retval < 0);
+    return out.retval;
+}
+
 int
 rpc_unlink(rcf_rpc_server *rpcs, const char *path)
 {

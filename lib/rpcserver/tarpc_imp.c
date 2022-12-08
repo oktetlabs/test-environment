@@ -1881,6 +1881,27 @@ TARPC_FUNC(statvfs, {},
 )
 #endif /* HAVE_SYS_STATVFS_H */
 
+/*-------------- readlink() --------------------------------*/
+TARPC_FUNC(readlink, {},
+{
+    char *buf;
+
+    if (in->path == NULL || in->path[0] == '\0')
+    {
+        ERROR("Input path to readlink cannot be NULL or empty");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return;
+    }
+
+    buf = TE_ALLOC(in->bufsize);
+    if (buf == NULL)
+        TE_FATAL_ERROR("Failed to allocate readlink input buffer");
+
+    MAKE_CALL(out->retval = func(in->path, buf, in->bufsize));
+    out->resolved_path = buf;
+}
+)
+
 #ifdef HAVE_DIRENT_H
 /* struct_dirent_props */
 unsigned int
