@@ -795,6 +795,14 @@ struct tarpc_symlink_out {
     tarpc_int            retval;
 };
 
+/* readlink () */
+struct tarpc_readlink_in {
+    struct tarpc_in_arg common;
+
+    tarpc_size_t        bufsize;
+    string              path<>;
+};
+
 /* unlink() */
 struct tarpc_unlink_in {
     struct tarpc_in_arg common;
@@ -889,6 +897,13 @@ struct tarpc_statvfs_out {
 
     tarpc_int            retval;
     struct tarpc_statvfs buf;
+};
+
+struct tarpc_readlink_out {
+    struct tarpc_out_arg common;
+
+    string              resolved_path<>;
+    tarpc_ssize_t       retval;
 };
 
 /* struct_dirent_props() */
@@ -5567,6 +5582,7 @@ program tarpc
 
         RPC_DEF(link)
         RPC_DEF(symlink)
+        RPC_DEF(readlink)
         RPC_DEF(unlink)
         RPC_DEF(rename)
         RPC_DEF(mkdir)
