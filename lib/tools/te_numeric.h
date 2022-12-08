@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 /**
- * Safely converts a double @val to an integer.
+ * Safely converts a double @p val to an integer.
  *
  * The value is truncated towards zero, as with the regular conversion,
  * but non-finite values and overflows are taken care of.

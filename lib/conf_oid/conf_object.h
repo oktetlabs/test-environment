@@ -56,9 +56,9 @@ typedef enum te_conf_obj_compare_result {
 /**
  * Transform a specific structure to a structure @b te_string
  *
- * @param [in,out]str   String with data
- * @param [in]name      Field name
- * @param [in]arg       Pointer to a value of specific structure
+ * @param [in,out] str  String with data
+ * @param [in] name     Field name
+ * @param [in] arg      Pointer to a value of specific structure
  *
  * @return              Status code
  */
@@ -68,10 +68,10 @@ typedef te_errno (*te_conf_obj_func_to_str)(
 /**
  * Transform a string @b char * to a specific structure
  *
- * @param [in] value    Input value
- * @param [out]arg      Pointer to a value of specific structure
- * @param [in] options  User options (field @p opts from
- *                      structure @b te_conf_obj)
+ * @param [in]  value    Input value
+ * @param [out] arg      Pointer to a value of specific structure
+ * @param [in]  options  User options (field @p opts from
+ *                       structure @b te_conf_obj)
  *
  * @return              Status code
  */
@@ -81,8 +81,8 @@ typedef te_errno (*te_conf_obj_func_from_str)(
 /**
  * Compare two specific structures
  *
- * @param [in]a     First structure
- * @param [in]b     Second structure
+ * @param [in] a     First structure
+ * @param [in] b     Second structure
  *
  * @return          Result of the comparison
  * @retval ==0      Values are not equal

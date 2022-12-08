@@ -175,7 +175,7 @@ extern int logic_expr_int_lex_destroy(void);
  * @param expr      Logical expression
  * @param comp_func Function comparing logical expressions
  *
- * @retrurn 0 on success or error code
+ * @return 0 on success or error code
  */
 extern te_errno logic_expr_dnf(logic_expr **expr,
                                int (*comp_func)(logic_expr *,

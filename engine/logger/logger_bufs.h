@@ -96,7 +96,7 @@ extern void msg_buffer_init(msg_buffer *buf);
  * @param buf           message buffer
  * @param msg           message
  *
- * @param Status code
+ * @return status code
  */
 extern te_errno msg_buffer_add(msg_buffer *buf, const refcnt_buffer *msg);
 

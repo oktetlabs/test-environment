@@ -96,7 +96,7 @@ te_enum_map_from_value(const te_enum_map map[], int value)
  * The purpose of the function is to bridge te_enum API and pre-existing
  * value-to-string functions such as used in RPC libraries
  *
- * @param map[out]  An array of sufficient size (@p maxval - @p minval + 2)
+ * @param[out] map  An array of sufficient size (@p maxval - @p minval + 2)
  *                  to be filled.
  *                  The terminating TE_ENUM_MAP_END will be appended
  * @param minval    Minimal enum value
@@ -150,12 +150,12 @@ extern int te_enum_translate(const te_enum_trn trn[],
  * The purpose of the function is to bridge te_enum API and pre-existing
  * value-to-value conversion functions such as used in RPC libraries
  *
- * @param trn[out]  An array of sufficient size (@p maxval - @p minval + 2)
+ * @param[out] trn  An array of sufficient size (@p maxval - @p minval + 2)
  *                  to be filled.
  *                  The terminating TE_ENUM_TRN_END will be appended
  * @param minval    Minimal source enum value
  * @param maxval    Maximum source enum value
- * @param val2str   Conversion function
+ * @param val2val   Conversion function
  */
 extern void te_enum_trn_fill_by_conversion(te_enum_trn trn[],
                                            int minval, int maxval,

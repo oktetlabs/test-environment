@@ -49,10 +49,10 @@
  * Macro configures the Initiator. The configured parameter
  * will be advertized by the Initiator during the Login State.
  *
- * @param ta_         Agent on which the Initiator is configured
- * @param target_id_  ID of the Target for which the parameter is configured
- * @param param_name_ Name of the parameter to configure
- * @param value_      New value of the parameter (in string form)
+ * @param _ta_         Agent on which the Initiator is configured
+ * @param _target_id_  ID of the Target for which the parameter is configured
+ * @param _param_name_ Name of the parameter to configure
+ * @param _value_      New value of the parameter (in string form)
  */
 #define ISCSI_INITIATOR_SET_ADVERTIZE(_ta_, _target_id_, _cid_, \
                                       _param_name_, _value_)            \
@@ -78,10 +78,10 @@
  * Macro configures the Initiator. The configured parameter
  * will NOT be advertized by the Initiator during the Login State.
  *
- * @param ta_         Agent on which the Initiator is configured
- * @param target_id_  ID of the Target for which the parameter is configured
- * @param param_name_ Name of the parameter to configure
- * @param value_      New value of the parameter (in string form)
+ * @param _ta_         Agent on which the Initiator is configured
+ * @param _target_id_  ID of the Target for which the parameter is configured
+ * @param _param_name_ Name of the parameter to configure
+ * @param _value_      New value of the parameter (in string form)
  */
 #define ISCSI_INITIATOR_SET_NOT_ADVERTIZE(_ta_, _target_id_, _cid_, \
                                           _param_name_, _value_)        \

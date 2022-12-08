@@ -311,10 +311,10 @@ extern te_errno cfg_find_object_by_instance(cfg_handle  instance,
 /**
  * Find all objects or object instances matching a pattern.
  *
- * @param pattern       string object identifier possibly containing '*'
+ * @param[in] pattern   string object identifier possibly containing '*'
  *                      (see Configurator documentation for details)
- * @param p_nmatches    OUT: number of found objects or object instances
- * @param p_matches     OUT: array of object/(object instance) handles;
+ * @param[out] p_num    number of found objects or object instances
+ * @param[out] p_set    array of object/(object instance) handles;
  *                      memory for the array is allocated using malloc()
  *
  * @return  0 or

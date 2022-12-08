@@ -140,7 +140,7 @@ extern te_errno tapi_cfg_if_fc_tx_set_local(const char *ta,
  * Commit all local flow control parameter changes.
  *
  * @param ta        Test agent name
- * @param ifname    Interface name
+ * @param if_name   Interface name
  *
  * @return Status code.
  */

@@ -91,7 +91,7 @@ extern te_errno tapi_atm_aal5_add_csap_layer(asn_value     **csap_spec,
  * @param payload_type  Pointer to payload type or NULL (default
  *                      value is zero or'ed with congestion bit
  *                      specified during CSAP creation)
- * @parma clp           Pointer to CLP or NULL (default value is
+ * @param clp           Pointer to CLP or NULL (default value is
  *                      specified during CSAP creation or 0)
  *
  * @return Status code.

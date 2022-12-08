@@ -30,7 +30,7 @@
  *                          substitutions
  * @param xn_history_root   XML node containing translated yaml file content,
  *                          @c NULL if yaml file is not being included
- * @param conf_dir          Directories where additionally Configurator should
+ * @param conf_dirs         Directories where additionally Configurator should
  *                          search files via include directive
  *                          @c NULL if there are no configuration directories.
  *

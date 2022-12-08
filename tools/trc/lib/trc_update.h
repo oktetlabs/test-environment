@@ -749,7 +749,7 @@ extern te_errno trc_update_process_iter(trc_update_ctx *ctx,
 /**
  * Process TE log file with obtained results of fake tester run.
  *
- * @param ctx           TRC update context
+ * @param gctx           TRC update context
  *
  * @return Status code.
  */

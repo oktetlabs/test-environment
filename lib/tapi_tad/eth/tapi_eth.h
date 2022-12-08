@@ -257,7 +257,7 @@ extern tapi_tad_trrecv_cb_data *tapi_eth_trrecv_cb_data(
  * @param len_type      Pointer to default EtherType.
  *                      See description in IEEE 802.3.
  *
- * @retrun Status code.
+ * @return Status code.
  */
 extern te_errno tapi_eth_set_csap_layer(asn_value       *csap_spec,
                                         const char      *device,

@@ -526,7 +526,7 @@ extern int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint16_t port_id,
  * @param name        Name that will be used as the key
  *                    for MAC address
  *
- * @retrun Status code
+ * @return Status code
  */
 extern te_errno tapi_rpc_add_mac_as_octstring2kvpair(rcf_rpc_server *rpcs,
                                                      uint16_t port_id,

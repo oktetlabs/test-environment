@@ -270,7 +270,7 @@ extern te_errno tad_cli_gen_pattern_cb(csap_p            csap,
 /**
  * Free all memory allocated by cli csap specific data
  *
- * @param cli_csap_specific_data_p poiner to structure
+ * @param spec_data poiner to structure
  *
  */
 extern void free_cli_csap_data(cli_csap_specific_data_p spec_data);

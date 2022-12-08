@@ -253,7 +253,7 @@ extern te_errno tapi_rte_get_dev_args_by_pci_addr(const char *ta,
  *
  * @param[in]  env          Test environment
  * @param[in]  rpcs         RPC server
- * @param[out] nb_cores     Assigned NUMA node
+ * @param[out] numa_node    Assigned NUMA node
  *
  * @return Status code
  */

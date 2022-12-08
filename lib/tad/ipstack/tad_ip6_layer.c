@@ -399,7 +399,7 @@ tad_ip6_nds_to_data_and_confirm(tad_bps_pkt_frag_def *def, asn_value *nds,
  * @param proto_data  layer-specific context
  * @param hdr_data    options header context to be filled in
  *                    with option-specific values
- * @parma opts        ASN sequence of options
+ * @param opts        ASN sequence of options
  *
  * @return Status of the operation
  */

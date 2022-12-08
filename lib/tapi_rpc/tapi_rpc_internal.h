@@ -683,7 +683,7 @@ extern te_errno mmsghdrs_rpc2tarpc(const struct rpc_mmsghdr *rpc_mmsgs,
 /**
  * Release memory allocated by @b mmsghdrs_rpc2tarpc() for converted values.
  *
- * @param taprc_mmsgs       Pointer to array of tarpc_mmsghdr structures.
+ * @param tarpc_mmsgs       Pointer to array of tarpc_mmsghdr structures.
  * @param num               Number of elements in the array.
  *
  * @return Status code.

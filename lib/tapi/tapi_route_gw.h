@@ -262,7 +262,7 @@ extern te_errno tapi_route_gateway_init(
 /**
  * Configure connection via gateway.
  *
- * @param gateway       Gateway description.
+ * @param gw       Gateway description.
  *
  * @return Status code.
  */
@@ -271,7 +271,7 @@ extern te_errno tapi_route_gateway_configure(tapi_route_gateway *gw);
 /**
  * Enable or disable IPv4 or IPv6 forwarding on gateway.
  *
- * @param gateway       Gateway description.
+ * @param gw       Gateway description.
  *
  * @return Status code.
  */
@@ -281,7 +281,7 @@ extern te_errno tapi_route_gateway_set_forwarding(tapi_route_gateway *gw,
 /**
  * Break connection from gateway to IUT.
  *
- * @param gateway       Gateway description.
+ * @param gw       Gateway description.
  *
  * @return Status code.
  */
@@ -290,7 +290,7 @@ extern te_errno tapi_route_gateway_break_gw_iut(tapi_route_gateway *gw);
 /**
  * Repair connection from gateway to IUT.
  *
- * @param gateway       Gateway description.
+ * @param gw       Gateway description.
  *
  * @return Status code.
  */
@@ -299,7 +299,7 @@ extern te_errno tapi_route_gateway_repair_gw_iut(tapi_route_gateway *gw);
 /**
  * Break connection from gateway to Tester.
  *
- * @param gateway       Gateway description.
+ * @param gw       Gateway description.
  *
  * @return Status code.
  */
@@ -308,7 +308,7 @@ extern te_errno tapi_route_gateway_break_gw_tst(tapi_route_gateway *gw);
 /**
  * Repair connection from gateway to Tester.
  *
- * @param gateway       Gateway description.
+ * @param gw       Gateway description.
  *
  * @return Status code.
  */
@@ -317,7 +317,7 @@ extern te_errno tapi_route_gateway_repair_gw_tst(tapi_route_gateway *gw);
 /**
  * Break connection from IUT to gateway.
  *
- * @param gateway       Gateway description.
+ * @param gw       Gateway description.
  *
  * @return Status code.
  */
@@ -326,7 +326,7 @@ extern te_errno tapi_route_gateway_break_iut_gw(tapi_route_gateway *gw);
 /**
  * Repair connection from IUT to gateway.
  *
- * @param gateway       Gateway description.
+ * @param gw       Gateway description.
  *
  * @return Status code.
  */
@@ -335,7 +335,7 @@ extern te_errno tapi_route_gateway_repair_iut_gw(tapi_route_gateway *gw);
 /**
  * Break connection from Tester to gateway.
  *
- * @param gateway       Gateway description.
+ * @param gw       Gateway description.
  *
  * @return Status code.
  */
@@ -344,7 +344,7 @@ extern te_errno tapi_route_gateway_break_tst_gw(tapi_route_gateway *gw);
 /**
  * Repair connection from Tester to gateway.
  *
- * @param gateway       Gateway description.
+ * @param gw       Gateway description.
  *
  * @return Status code.
  */
@@ -353,7 +353,7 @@ extern te_errno tapi_route_gateway_repair_tst_gw(tapi_route_gateway *gw);
 /**
  * Down up all interfaces that were in gateway connection.
  *
- * @param gateway       Gateway description.
+ * @param gw       Gateway description.
  *
  * @note Caller should take care about wait for the interfaces to be raised.
  *

@@ -445,7 +445,7 @@ extern void te_substring_limit(te_substring_t *substr,
 /**
  * Replace all the substrings in a string
  *
- * @param src The string in which to replace.
+ * @param str The string in which to replace.
  * @param new The new substring to replace.
  * @param old The substring to be replaced.
  *
@@ -458,7 +458,7 @@ extern te_errno te_string_replace_all_substrings(te_string *str,
 /**
  * Replace the substring in a string
  *
- * @param src The string in which to replace.
+ * @param str The string in which to replace.
  * @param new The new substring to replace.
  * @param old The substring to be replaced.
  *

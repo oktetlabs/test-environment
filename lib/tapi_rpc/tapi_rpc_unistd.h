@@ -1014,7 +1014,7 @@ extern int rpc_pthread_cancel(rcf_rpc_server *rpcs,
  *
  * @param rpcs           RPC server handle
  * @param state          State to set
- * @param oldstate[out]  Old state of the thread cancelability,
+ * @param[out] oldstate  Old state of the thread cancelability,
  *                       can be NULL if does not matter
  *
  * @return 0 is returned upon successful completion, otherwise
@@ -1029,7 +1029,7 @@ extern int rpc_pthread_setcancelstate(rcf_rpc_server *rpcs,
  *
  * @param rpcs          RPC server handle
  * @param type          Type to set
- * @param oldtype[out]  Old type of the thread cancelability,
+ * @param[out] oldtype  Old type of the thread cancelability,
  *                      can be NULL if does not matter
  *
  * @return 0 is returned upon successful completion, otherwise
@@ -1044,7 +1044,7 @@ extern int rpc_pthread_setcanceltype(rcf_rpc_server *rpcs,
  *
  * @param rpcs          RPC server handle
  * @param tid           The thread ID
- * @param retval[out]   Exit status of the target thread,
+ * @param[out] retval   Exit status of the target thread,
  *                      can be NULL if does not matter
  *
  * @return 0 is returned upon successful completion, otherwise
@@ -1343,7 +1343,7 @@ extern int rpc_stat_func(rcf_rpc_server *rpcs,
  * Create a new link for existing file.
  *
  * @param rpcs   RPC server
- * @parma path1  Pathname naming an existing file
+ * @param path1  Pathname naming an existing file
  * @param path2  Pathname naming the new directory entry to be created
  *
  * @return  -1 in the case of failure or 0 on success
@@ -1355,7 +1355,7 @@ extern int rpc_link(rcf_rpc_server *rpcs,
  * Create a symbolic link to a file.
  *
  * @param rpcs   RPC server
- * @parma path1  String contained in the symbolic link
+ * @param path1  String contained in the symbolic link
  * @param path2  Name of the symbolic link created
  *
  * @return  -1 in the case of failure or 0 on success
@@ -1367,7 +1367,7 @@ extern int rpc_symlink(rcf_rpc_server *rpcs,
  * Remove a directory entry.
  *
  * @param rpcs      RPC server
- * @parma path      Path of the file to be removed
+ * @param path      Path of the file to be removed
  *
  * @return  -1 in the case of failure or 0 on success
  */
@@ -1377,7 +1377,7 @@ extern int rpc_unlink(rcf_rpc_server *rpcs, const char *path);
  * Create a directory.
  *
  * @param rpcs      RPC server
- * @parma path      Path of the directory to be created
+ * @param path      Path of the directory to be created
  * @param mode      The permission bits to assign to a new directory
  *
  * @return  -1 in the case of failure or 0 on success
@@ -1401,7 +1401,7 @@ extern int rpc_mkdirp(rcf_rpc_server *rpcs,
  * Remove a directory.
  *
  * @param rpcs      RPC server
- * @parma path      Path of the directory to be removed
+ * @param path      Path of the directory to be removed
  *
  * @return  -1 in the case of failure or 0 on success
  */

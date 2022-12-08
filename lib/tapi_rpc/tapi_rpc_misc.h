@@ -234,7 +234,7 @@ extern te_bool rpc_find_func(rcf_rpc_server *rpcs,
 /**
  * Return parent network interface name of vlan interface.
  *
- * @param handle        RPC server handle
+ * @param rpcs          RPC server handle
  * @param vlan_ifname   VLAN interface name
  * @param parent_ifname Pointer to the parent network interface name
  *                      with at least @c IF_NAMESIZE bytes size.
@@ -264,7 +264,7 @@ extern int rpc_bond_get_slaves(rcf_rpc_server *rpcs,
 /**
  * Get host value of sizeof(type_name).
  *
- * @param handle      RPC server
+ * @param rpcs        RPC server
  * @param type_name   Name of the type
  *
  * @return          Size of the type or
@@ -298,7 +298,7 @@ extern te_bool rpc_protocol_info_cmp(rcf_rpc_server *rpcs,
 /**
  * Get address of the variable known on RPC server.
  *
- * @param handle RPC server
+ * @param rpcs   RPC server
  * @param name   variable name
  *
  * @return RPC address pointer or NULL is variable is not found
@@ -308,7 +308,7 @@ extern rpc_ptr rpc_get_addrof(rcf_rpc_server *rpcs, const char *name);
 /**
  * Get value of the integer variable.
  *
- * @param handle  RPC server
+ * @param rpcs    RPC server
  * @param name    variable name
  * @param size    variable size (1, 2, 4, 8)
  *
@@ -323,7 +323,7 @@ extern uint64_t rpc_get_var(rcf_rpc_server *rpcs,
 /**
  * Change value of the integer variable.
  *
- * @param handle  RPC server
+ * @param rpcs    RPC server
  * @param name    variable name
  * @param size    variable size (1, 2, 4, 8)
  * @param val     variable value
@@ -588,7 +588,7 @@ extern int rpc_iomux_echoer(rcf_rpc_server *handle,
 /**
  * Routine which calls I/O multiplexing function and then calls splice.
  *
- * @param handle        RPC server
+ * @param rpcs          RPC server
  * @param iomux         type of I/O Multiplexing function
  *                      (@b select(), @b pselect(), @b poll())
  * @param fd_in         file descriptor opened for writing
@@ -922,7 +922,7 @@ rpc_set_buf_off(rcf_rpc_server *rpcs, const uint8_t *src_buf,
  *                 should be filled by random data)
  * @param len      length of data to be copied
  * @param dst_buf  pointer to the destination buffer
- * @param offset   displacement in the destination buffer
+ * @param dst_off  displacement in the destination buffer
  */
 extern void rpc_set_buf_pattern_gen(rcf_rpc_server *rpcs, int pattern,
                                     size_t len,
@@ -947,7 +947,7 @@ rpc_set_buf_pattern_off(rcf_rpc_server *rpcs, int pattern,
  *
  * @param rpcs     RPC server handle
  * @param src_buf  source buffer
- * @param offset   displacement in the source buffer
+ * @param src_off  displacement in the source buffer
  * @param len      length of data to be copied
  * @param dst_buf  destination buffer
  */
@@ -1012,10 +1012,12 @@ extern te_errno tapi_sigaction_simple(rcf_rpc_server *rpcs,
  * @param  mcast_addr multicast address (IPv4 or IPv6).
  * @param  if_index   interface index
  * @param  how        joining method:
- *
- *    @value TARPC_MCAST_ADD_DROP     sockopt IP_ADD/DROP_MEMBERSHIP
- *    @value TARPC_MCAST_JOIN_LEAVE   sockopt MCAST_JOIN/LEAVE_GROUP
- *    @value TARPC_MCAST_WSA          WSAJoinLeaf(), no leave
+ *                    - @c TARPC_MCAST_ADD_DROP
+ *                      sockopt IP_ADD/DROP_MEMBERSHIP
+ *                    - @c TARPC_MCAST_JOIN_LEAVE
+ *                      sockopt MCAST_JOIN/LEAVE_GROUP
+ *                    - @c TARPC_MCAST_WSA
+ *                      WSAJoinLeaf(), no leave
  *
  * @return 0 on success, -1 on failure
  */
@@ -1042,11 +1044,10 @@ extern int rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
  * @param  source_addr source address
  * @param  if_index    interface index
  * @param  how         joining method:
- *
- * @value TARPC_MCAST_SOURCE_ADD_DROP
- *          sockopt IP_ADD/DROP_SOURCE_MEMBERSHIP
- * @value TARPC_MCAST_SOURCE_JOIN_LEAVE
- *          sockopt MCAST_JOIN/LEAVE_SOURCE_GROUP
+ *                     - @c TARPC_MCAST_SOURCE_ADD_DROP
+ *                       sockopt IP_ADD/DROP_SOURCE_MEMBERSHIP
+ *                     - @c TARPC_MCAST_SOURCE_JOIN_LEAVE
+ *                       sockopt MCAST_JOIN/LEAVE_SOURCE_GROUP
  *
  * @return 0 on success, -1 on failure
  */
@@ -1432,7 +1433,7 @@ extern void rpc_release_rpc_ptr(
  * Remove a directory with all files.
  *
  * @param rpcs      RPC server
- * @parma path      Path of the directory to be removed
+ * @param path      Path of the directory to be removed
  *
  * @return  -1 in the case of failure or 0 on success
  */

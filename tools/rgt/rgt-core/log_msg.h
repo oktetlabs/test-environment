@@ -306,7 +306,7 @@ extern void free_log_msg(log_msg *msg);
  * If the latter is not NULL, the function does nothing,
  * assuming immutable fmt_str and args.
  *
- * @param Log message
+ * @param msg Log message
  */
 extern void rgt_expand_log_msg(log_msg *msg);
 

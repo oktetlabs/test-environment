@@ -235,9 +235,9 @@ extern void rcf_pch_rpc_init(const char *tmp_path);
  * Cleanup RCF RPC server structures. Close all sockets. Release all
  * allocated memory. Do NOT kill any RPC servers.
  *
- * @param This function is intended to be used after fork in child
- *        process to release all resources allocated by RCF PCH RPC
- *        support.
+ * @note This function is intended to be used after fork in child
+ *       process to release all resources allocated by RCF PCH RPC
+ *       support.
  */
 extern void rcf_pch_rpc_atfork(void);
 

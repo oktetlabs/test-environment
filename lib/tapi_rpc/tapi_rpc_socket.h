@@ -431,8 +431,8 @@ extern struct cmsghdr *rpc_cmsg_firsthdr(rpc_msghdr *rpc_msg);
  * Get the next cmsghdr from control data stored in
  * rpc_msghdr.
  *
- * @param _rpc_msg     Pointer to rpc_msghdr structure.
- * @param _cmsg        Pointer to the current cmsghdr structure.
+ * @param rpc_msg     Pointer to rpc_msghdr structure.
+ * @param cmsg        Pointer to the current cmsghdr structure.
  *
  * @return Pointer to the next cmsghdr.
  */
@@ -443,8 +443,8 @@ extern struct cmsghdr *rpc_cmsg_nxthdr(rpc_msghdr *rpc_msg,
  * Get the next cmsghdr from control data stored in
  * rpc_msghdr.
  *
- * @param rpc_msg     Pointer to rpc_msghdr structure.
- * @param cmsg        Pointer to the current cmsghdr structure.
+ * @param _rpc_msg     Pointer to rpc_msghdr structure.
+ * @param _cmsg        Pointer to the current cmsghdr structure.
  */
 #define RPC_CMSG_NXTHDR(_rpc_msg, _cmsg) rpc_cmsg_nxthdr(_rpc_msg, _cmsg)
 
@@ -614,15 +614,15 @@ extern ssize_t rpc_send_one_byte_many(rcf_rpc_server *rpcs, int s,
  * This operation takes place on RPC server side and buffer is stored on
  * the same side.
  *
- * @param rpcs  RPC server handle
- * @param s     socket descriptor
- * @param buf   RPC pointer to buffer which store received messages
- * @param len   size of the buffer @b buf
- * @param flags bitwise OR of zero or more of the following flags:
- *               - RPC_MSG_OOB send out-of-band data if supported.
- *               - RPC_MSG_DONTWAIT enable non-blocking operation.
- *               Other supported flags can be found in
- *               te_rpc_sys_socket.h
+ * @param rpcs      RPC server handle
+ * @param fd        socket descriptor
+ * @param buf       RPC pointer to buffer which store received messages
+ * @param buf_off   size of the buffer @b buf
+ * @param flags     bitwise OR of zero or more of the following flags:
+ *                  - RPC_MSG_OOB send out-of-band data if supported.
+ *                  - RPC_MSG_DONTWAIT enable non-blocking operation.
+ *                  Other supported flags can be found in
+ *                  te_rpc_sys_socket.h
  *
  * @return Number of bytes received, otherwise -1 when error occured
  */
@@ -901,20 +901,20 @@ typedef union rpc_sockopt_value {
  * @note For more information about supported option level,
  * see te_rpc_sys_socket.h.
  *
- * @param rpcs     RPC server handle
- * @param s        socket descriptor
- * @param level    protocol level at which the option resides.
- *                 Following values can be specified:
- *                  - @b RPC_SOL_SOCKET  socket level
- *                  - @b RPC_SOL_IP      IPPROTO_IP level
- *                  - @b RPC_SOL_IPV6    IPPROTO_IPV6 level
- *                  - @b RPC_SOL_TCP     IPPROTO_TCP level
- * @param optname  option name
- * @param optval   pointer to a buffer containing the value associated
- *                 with the selected option.
- * @param optlen   initially points to the length of supplied buffer.
- *                 On return contain the actual size of the buffer.
- * @param roptlen  maximal length of the buffer or zero
+ * @param rpcs         RPC server handle
+ * @param s            socket descriptor
+ * @param level        protocol level at which the option resides.
+ *                     Following values can be specified:
+ *                     - @b RPC_SOL_SOCKET  socket level
+ *                     - @b RPC_SOL_IP      IPPROTO_IP level
+ *                     - @b RPC_SOL_IPV6    IPPROTO_IPV6 level
+ *                     - @b RPC_SOL_TCP     IPPROTO_TCP level
+ * @param optname      option name
+ * @param optval       pointer to a buffer containing the value associated
+ *                     with the selected option.
+ * @param raw_optlen   initially points to the length of supplied buffer.
+ *                     On return contain the actual size of the buffer.
+ * @param raw_roptlen  maximal length of the buffer or zero
  *
  * @return 0 on success or -1 on failure
  */

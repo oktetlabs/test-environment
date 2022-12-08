@@ -145,7 +145,7 @@ extern int rgt_read_cap_prefix(FILE *f, uint32_t *file_id,
  * Copy data from one file to another.
  *
  * @param out_f       Destination file pointer
- * @param in_ f       Source file pointer
+ * @param in_f        Source file pointer
  * @param out_offset  At which offset to write data in
  *                    destination file (if < 0, then at
  *                    current positon)
@@ -231,7 +231,8 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
  * command line options.
  *
  * @param _opt_con    poptContext used when parsing options.
- * @param _fmt...     Error message format and arguments.
+ * @param _fmt        Error message format.
+ * @param ...         Error message arguments.
  */
 #define USAGE_ERROR_JUMP(_opt_con, _fmt...) \
     do {                                        \

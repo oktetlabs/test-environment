@@ -610,7 +610,7 @@ cleanup_specific:                                                   \
 /**
  * Obtain the value of an 'unsigned int' parameter
  *
- * @param _parameter    The name to denote both the
+ * @param var_name_     The name to denote both the
  *                      target 'unsigned int' variable
  *                      and the parameter of interest
  * @return unsigned int parameter
@@ -982,7 +982,7 @@ cleanup_specific:                                                   \
  *                   parameter we get the value
  *
  * @return full filename allocated from heap and should be freed by caller
- * @retval @c NULL  If relative path is empty
+ * @retval NULL If relative path is empty
  */
 #define TEST_FILENAME_PARAM(var_name_) \
     test_get_filename_param(argc, argv, #var_name_)
@@ -1204,7 +1204,7 @@ extern uint8_t *test_get_octet_string_param(const char *str_val,
  * Generic way to return mapped value of a parameter: string -> enum
  *
  * @param argc       Count of arguments
- * @param argc       List of arguments
+ * @param argv       List of arguments
  * @param name       Name of parameter
  * @param maps       An array of mappings: string -> enum
  */
@@ -1217,7 +1217,7 @@ extern int test_get_enum_param(int argc, char **argv,
  * string value of the parameter
  *
  * @param argc       Count of arguments
- * @param argc       List of arguments
+ * @param argv       List of arguments
  * @param name       Name of parameter
  */
 extern const char * test_get_string_param(int argc, char **argv,
@@ -1242,7 +1242,7 @@ extern char *test_get_filename_param(int argc, char **argv, const char *name);
  * Return parameters of type 'int'
  *
  * @param argc       Count of arguments
- * @param argc       List of arguments
+ * @param argv       List of arguments
  * @param name       Name of parameter
  */
 extern int test_get_int_param(int argc, char **argv,
@@ -1255,7 +1255,7 @@ extern int test_get_int_param(int argc, char **argv,
  * the log message with the test).
  *
  * @param argc        Count of arguments
- * @param argc        List of arguments
+ * @param argv        List of arguments
  *
  * @return TE test ID
  */
@@ -1265,7 +1265,7 @@ extern unsigned int test_get_test_id(int argc, char **argv);
  * Return parameters of type 'uint'
  *
  * @param argc       Count of arguments
- * @param argc       List of arguments
+ * @param argv       List of arguments
  * @param name       Name of parameter
  */
 extern unsigned int test_get_uint_param(int argc, char **argv,
@@ -1297,7 +1297,7 @@ extern uint64_t test_get_uint64_param(int argc, char **argv,
  * Return parameters of type 'double'
  *
  * @param argc       Count of arguments
- * @param argc       List of arguments
+ * @param argv       List of arguments
  * @param name       Name of parameter
  */
 extern double test_get_double_param(int argc, char **argv,
@@ -1407,7 +1407,7 @@ extern te_optional_uint_t test_get_opt_uint_param(int argc, char **argv,
  * Same as test_get_uint64_param(), but the return type is optional.
  *
  * @param argc       count of arguments
- * @param argc       list of arguments
+ * @param argv       list of arguments
  * @param name       name of parameter
  *
  * @return an optional long unsigned value

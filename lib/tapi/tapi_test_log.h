@@ -254,7 +254,7 @@ extern "C" {
 /**
  * Macro should be used to output artifact from tests.
  *
- * @param fmt  the content of the artifact as format string with arguments
+ * @param _fmt  the content of the artifact as format string with arguments
  */
 #define RING_ARTIFACT(_fmt...) \
     REGISTER_ARTIFACT(TE_LL_RING, _fmt)
@@ -262,7 +262,7 @@ extern "C" {
 /**
  * Macro should be used to output artifact with WARN log level from tests.
  *
- * @param fmt  the content of the artifact as format string with arguments
+ * @param _fmt  the content of the artifact as format string with arguments
  */
 #define WARN_ARTIFACT(_fmt...) \
     REGISTER_ARTIFACT(TE_LL_WARN, _fmt)
@@ -270,7 +270,7 @@ extern "C" {
 /**
  * Macro should be used to output artifact with ERROR log level from tests.
  *
- * @param fmt  the content of the artifact as format string with arguments
+ * @param _fmt  the content of the artifact as format string with arguments
  */
 #define ERROR_ARTIFACT(_fmt...) \
     REGISTER_ARTIFACT(TE_LL_ERROR, _fmt)
@@ -278,7 +278,7 @@ extern "C" {
 /**
  * Macro should be used to output artifact with MI log level from tests.
  *
- * @param fmt  the content of the artifact as format string with arguments
+ * @param _fmt  the content of the artifact as format string with arguments
  */
 #define MI_ARTIFACT(_fmt...) \
     REGISTER_ARTIFACT(TE_LL_MI, _fmt)

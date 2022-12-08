@@ -136,7 +136,7 @@ extern int cfg_dh_release_backup(char *filename);
  * compared with current state and TA will be restore using the attached
  * file. Processed commands are not removed from the history.
  *
- * @param ta Test agent name
+ * @param ta_list Test agent names
  *
  * @return Status code
  */

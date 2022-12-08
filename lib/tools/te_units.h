@@ -155,9 +155,9 @@ typedef struct te_unit_list {
 /**
  * Read value from the string and convert it to double using given unit list
  *
- * @param str[in]           String representation of value
- * @param type[in]          Unit type
- * @param value[out]        Value to store result in
+ * @param[in]  str           String representation of value
+ * @param[in]  type          Unit type
+ * @param[out] value         Value to store result in
  *
  * @note    The API is independent and if the returned value is used
  *          in te_unit_*pack calls, the resulting `te_unit` will not be

@@ -48,7 +48,7 @@ extern void tq_strings_free(tqh_strings *head, void (*value_free)(void *));
  * second queue.
  *
  * @param s1        The first tail queue
- * @param s1        The second tail queue
+ * @param s2        The second tail queue
  *
  * @retval TRUE     Equal
  * @retval FALSE    Not equal

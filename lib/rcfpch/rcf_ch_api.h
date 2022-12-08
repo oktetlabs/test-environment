@@ -304,7 +304,7 @@ extern int rcf_ch_vwrite(struct rcf_comm_connection *handle,
  *                      attachment is provided
  * @param cmdlen        full length of the command including binary
  *                      attachment
- * @param opt           RCFOP_FGET, RCFOP_FPUT or RCFOP_FDEL
+ * @param op            RCFOP_FGET, RCFOP_FPUT or RCFOP_FDEL
  * @param filename      full name of the file in TA or NUT file system
  *
  *

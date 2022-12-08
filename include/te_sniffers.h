@@ -62,8 +62,8 @@ typedef struct te_pcap_pkthdr {
 /**
  * Safe copy of the time stamp
  *
- * @param dest  32-bits struct of the time stamp
- * @param src   32/64-bits struct of the timestamp
+ * @param _dest  32-bits struct of the time stamp
+ * @param _src   32/64-bits struct of the timestamp
  */
 #define SNIFFER_TS_CPY(_dest, _src)\
 {\

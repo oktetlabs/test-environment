@@ -511,7 +511,6 @@ typedef te_errno (* test_entity_value_enum_error_cb)(
  *
  * @param ri            Run item or NULL
  * @param context       Test session or NULL
- * @param vars          Variables context or NULL
  * @param values        List of values
  * @param callback      Function to be called for each singleton value
  * @param opaque        Data to be passed in callback function

@@ -36,7 +36,7 @@ extern "C" {
  * @param ta        Test agent name.
  * @param val       Where to save value.
  * @param fmt       Format string of the path.
- * @param ap        List of arguments for format string.
+ * @param ...       List of arguments for format string.
  *
  * @return Status code.
  */
@@ -52,7 +52,7 @@ extern te_errno tapi_cfg_sys_get_int(const char *ta, int *val,
  * @param val       Value to set.
  * @param old_val   Where to save previous value (may be @c NULL).
  * @param fmt       Format string of the path.
- * @param ap        List of arguments for format string.
+ * @param ...       List of arguments for format string.
  *
  * @return Status code.
  */
@@ -98,7 +98,7 @@ extern te_errno tapi_cfg_sys_set_uint64(const char *ta, uint64_t val,
  * @param val       Where to save pointer to allocated string
  *                  containing requested value.
  * @param fmt       Format string of the path.
- * @param ap        List of arguments for format string.
+ * @param ...       List of arguments for format string.
  *
  * @return Status code.
  */
@@ -114,7 +114,7 @@ extern te_errno tapi_cfg_sys_get_str(const char *ta, char **val,
  * @param old_val   Where to save pointer to allocated string
  *                  containing the previous value (may be @c NULL).
  * @param fmt       Format string of the path.
- * @param ap        List of arguments for format string.
+ * @param ...       List of arguments for format string.
  *
  * @return Status code.
  */
@@ -138,7 +138,7 @@ extern te_errno tapi_cfg_sys_set_str(const char *ta, const char *val,
  * @param ta        Test agent name.
  * @param val       Where to save value.
  * @param fmt       Format string of the path.
- * @param ap        List of arguments for format string.
+ * @param ...       List of arguments for format string.
  *
  * @return Status code.
  */
@@ -155,7 +155,7 @@ extern te_errno tapi_cfg_sys_ns_get_int(const char *ta, int *val,
  * @param val       Value to set.
  * @param old_val   Where to save previous value (may be @c NULL).
  * @param fmt       Format string of the path.
- * @param ap        List of arguments for format string.
+ * @param ...       List of arguments for format string.
  *
  * @return Status code.
  */
@@ -204,7 +204,7 @@ extern te_errno tapi_cfg_sys_ns_set_uint64(const char *ta, uint64_t val,
  * @param val       Where to save pointer to allocated string
  *                  containing requested value.
  * @param fmt       Format string of the path.
- * @param ap        List of arguments for format string.
+ * @param ...       List of arguments for format string.
  *
  * @return Status code.
  */
@@ -221,7 +221,7 @@ extern te_errno tapi_cfg_sys_ns_get_str(const char *ta, char **val,
  * @param old_val   Where to save pointer to allocated string
  *                  containing the previous value (may be @c NULL).
  * @param fmt       Format string of the path.
- * @param ap        List of arguments for format string.
+ * @param ...       List of arguments for format string.
  *
  * @return Status code.
  */

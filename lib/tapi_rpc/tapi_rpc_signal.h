@@ -285,8 +285,8 @@ extern int rpc_siginfo_received(rcf_rpc_server *rpcs,
  * Compare two signal masks.
  *
  * @param rpcs          RPC server handle
- * @param sig_first     The first signal mask
- * @param sig_second    The second signal mask
+ * @param first_set     The first signal mask
+ * @param second_set    The second signal mask
  *
  * @return -1, 0 or 1 as a result of comparison
  */

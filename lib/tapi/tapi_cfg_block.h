@@ -21,7 +21,7 @@ extern "C" {
  * Initialize loop block devices subsystem on the agent @p ta.
  * In particular, it implies loading the required kernel modules.
  *
- * @param agent  agent name
+ * @param ta  agent name
  *
  * @return status code
  */

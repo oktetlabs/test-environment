@@ -2574,7 +2574,7 @@ l2tp_lns_ip_range_list(unsigned int gid, const char *oid,
  * Delete method routine
  *
  * @param lns_name             name of the lns instance
- * @paran option_name          option name
+ * @param option_name          option name
  * @param range                range to delete
  *                             like "192.168.37.38-192.168.37.40"
  *

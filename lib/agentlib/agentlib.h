@@ -179,7 +179,7 @@ extern int ta_kill_and_wait(pid_t pid, int sig, unsigned int timeout_s);
  * @param mode      The permission bits to assign to a new directory(ies)
  *
  * @return Status code
- * @retval @c 0     The directory has been created successfully or existing
+ * @retval  0       The directory has been created successfully or existing
  */
 extern te_errno mkdirp(const char *path, int mode);
 
@@ -320,7 +320,7 @@ extern te_bool agent_check_l4_port_is_free(int socket_family, int socket_type,
  *                          with fallback to IPv4 if IPv6 is not supported.
  * @param socket_type       Socket type to use, @c SOCK_STREAM, @c SOCK_DGRAM,
  *                          or @c 0 to check both.
- * @param port[out]         Port number in host endian
+ * @param[out] port         Port number in host endian
  *
  * @return                  Status code
  */

@@ -77,7 +77,7 @@ extern void test_requirements_free(test_requirements *reqs);
  * Determine whether running of the test required.
  *
  * @param targets       Target requirements expression
- * @parma sticky_reqs   List of collected sticky requirements
+ * @param sticky_reqs   List of collected sticky requirements
  * @param test          Test to be checked
  * @param args          Array with test iteration arguments (run item
  *                      has fixed number of arguments)

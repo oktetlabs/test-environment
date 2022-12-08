@@ -116,7 +116,7 @@ extern te_errno tapi_cfg_nginx_config_path_get(const char *ta,
  *
  * @param ta                Test Agent
  * @param inst_name         Nginx instance name
- * @param error_log_path    Location for error log file path
+ * @param error_log         Location for error log file path
  *
  * @return Status code
  */
@@ -413,7 +413,7 @@ extern te_errno tapi_cfg_nginx_http_server_del(const char *ta,
  * @param ta                Test Agent
  * @param inst_name         Nginx instance name
  * @param srv_name          Nginx server name
- * @param access_log_path   Location for error log file path
+ * @param access_log        Location for error log file path
  *
  * @return Status code
  */
@@ -916,7 +916,7 @@ extern te_errno tapi_cfg_nginx_http_server_proxy_buf_num_set(
  * @param ta                    Test Agent
  * @param inst_name             Nginx instance name
  * @param srv_name              Nginx server name
- * @param proxy_buf_size        Location for buffer size
+ * @param proxy_buf_def_size    Location for buffer size
  *
  * @return Status code
  */
@@ -932,7 +932,7 @@ extern te_errno tapi_cfg_nginx_http_server_proxy_buf_def_size_get(
  * @param ta                    Test Agent
  * @param inst_name             Nginx instance name
  * @param srv_name              Nginx server name
- * @param proxy_buf_size        Buffer size
+ * @param proxy_buf_def_size    Buffer size
  *
  * @return Status code
  */
@@ -2112,7 +2112,7 @@ extern te_errno tapi_cfg_nginx_ssl_protocols_set(const char *ta,
  * @param ta            Test Agent
  * @param inst_name     Nginx instance name
  * @param ssl_name      Nginx ssl settings name
- * @param cache         Location for session cache
+ * @param session_cache Location for session cache
  *
  * @return Status code
  */
@@ -2129,7 +2129,7 @@ extern te_errno tapi_cfg_nginx_ssl_session_cache_get(const char *ta,
  * @param ta            Test Agent
  * @param inst_name     Nginx instance name
  * @param ssl_name      Nginx ssl settings name
- * @param cache         Session cache
+ * @param session_cache Session cache
  *
  * @return Status code
  */

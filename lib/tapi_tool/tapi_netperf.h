@@ -180,7 +180,7 @@ extern te_errno tapi_netperf_create_client(tapi_job_factory_t *factory,
  *
  * @param[in]  factory           Job factory.
  * @param[in]  opt               Command line options.
- * @param[out] app               netserver app handle.
+ * @param[out] app_server        netserver app handle.
  *
  * @return Status code.
  */
@@ -292,7 +292,7 @@ extern te_errno tapi_netperf_kill_server(tapi_netperf_app_server_t *app, int sig
 /**
  * Send a signal to netperf and netserver.
  *
- * @param[in]  clinet       netperf app hande.
+ * @param[in]  client       netperf app hande.
  * @param[in]  server       netserver app handle.
  * @param[in]  signo        Signal to send to netperf.
  *

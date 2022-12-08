@@ -250,7 +250,7 @@ extern te_errno tapi_cfg_net_remove_empty(void);
  *
  * @param net           Network the node belongs to
  * @param node          Node itself
- * @param oid_str       Node OID value in string format
+ * @param str           Node OID value in string format
  * @param oid           Parsed node OID
  * @param cookie        Callback opaque data
  *

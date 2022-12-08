@@ -982,7 +982,7 @@ cleanup:
  *
  * @param sets          Compared sets
  * @param parent        Parent test entry
- * @parma entry         Test iteration entry
+ * @param entry         Test iteration entry
  * @param stats         Grand total statistics to update
  *
  * @return Comparison status.

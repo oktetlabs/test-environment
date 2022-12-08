@@ -94,7 +94,7 @@ extern te_errno tapi_bttrack_wait(tapi_bttrack_app *app, int timeout_ms);
  *
  * @return     Status code.
  */
-extern te_errno tapi_bttrack_kill(tapi_bttrack_app *bttrack,
+extern te_errno tapi_bttrack_kill(tapi_bttrack_app *app,
                                   int signum);
 
 /**
@@ -104,7 +104,7 @@ extern te_errno tapi_bttrack_kill(tapi_bttrack_app *bttrack,
  *
  * @return     Status code.
  */
-extern te_errno tapi_bttrack_stop(tapi_bttrack_app *bttrack);
+extern te_errno tapi_bttrack_stop(tapi_bttrack_app *app);
 
 /**
  * Destroy bttrack app (free memory, etc.).
@@ -113,7 +113,7 @@ extern te_errno tapi_bttrack_stop(tapi_bttrack_app *bttrack);
  *
  * @return     Status code.
  */
-extern te_errno tapi_bttrack_destroy(tapi_bttrack_app *bttrack);
+extern te_errno tapi_bttrack_destroy(tapi_bttrack_app *app);
 
 
 #ifdef __cplusplus

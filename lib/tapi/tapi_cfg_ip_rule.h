@@ -28,10 +28,10 @@ typedef struct tapi_rt_ip_rule_entry {
 /**
  * Get routing policy database by the specified Test Agent
  *
- * @param [in] ta           Test Agent name
- * @param [in] addr_family  Address family of the rules (@c AF_INET)
- * @param [out]tbl          Pointer to the routing policy database
- * @param [out]n            The number of entries in the @p tbl
+ * @param[in]  ta           Test Agent name
+ * @param[in]  addr_family  Address family of the rules (@c AF_INET)
+ * @param[out] tbl          Pointer to the routing policy database
+ * @param[out] n            The number of entries in the @p tbl
  *
  * @return  Status code
  *
@@ -45,9 +45,9 @@ extern te_errno tapi_cfg_get_rule_table(const char *ta, int addr_family,
 /**
  * Add new rule into routing policy database
  *
- * @param [in]ta            Test Agent name
- * @param [in]addr_family   Address family of the rules (@c AF_INET)
- * @param [in]ip_rule       Rule for adding
+ * @param[in] ta            Test Agent name
+ * @param[in] addr_family   Address family of the rules (@c AF_INET)
+ * @param[in] ip_rule       Rule for adding
  *
  * @return  Status code
  */
@@ -57,10 +57,10 @@ extern te_errno tapi_cfg_add_rule(const char *ta, int addr_family,
 /**
  * Delete the first existing rule from routing policy database
  *
- * @param [in]ta            Test Agent name
- * @param [in]addr_family   Address family of the rules (@c AF_INET)
- * @param [in]required      Required fields for a rule search
- * @param [in]ip_rule       Data to find and delete rule
+ * @param[in] ta            Test Agent name
+ * @param[in] addr_family   Address family of the rules (@c AF_INET)
+ * @param[in] required      Required fields for a rule search
+ * @param[in] ip_rule       Data to find and delete rule
  *
  * @return  Status code
  */

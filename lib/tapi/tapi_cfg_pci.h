@@ -151,7 +151,7 @@ extern te_errno tapi_cfg_pci_addr_by_oid_array(unsigned int n_devices,
 /**
  * Allocate a string with resource name for grabbing a PCI instance.
  *
- * @param[in]  pci_device       PCI instance OID
+ * @param[in]  pci_instance     PCI instance OID
  *                              (/agent/hardware/pci/vendor/device/instance)
  *
  * @return Allocated resource name string or @c NULL
@@ -161,7 +161,7 @@ extern char * tapi_cfg_pci_rsrc_name(const cfg_oid *pci_instance);
 /**
  * Grab a PCI device as a resource.
  *
- * @param[in]  pci_device       PCI instance OID
+ * @param[in]  pci_instance     PCI instance OID
  *                              (/agent/hardware/pci/vendor/device/instance)
  *
  * @return Status code
@@ -198,7 +198,7 @@ extern te_errno tapi_cfg_pci_get_ta_driver(const char *ta,
  * Get character or block devices names list of a PCI device
  *
  * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device)
- * @param[out] size         Count of @p device_names
+ * @param[out] count        Count of @p device_names
  * @param[out] device_names Character or block devices names
  *
  * @return Status code

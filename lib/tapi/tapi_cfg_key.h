@@ -137,7 +137,7 @@ extern unsigned tapi_cfg_key_get_bitsize(const char *ta, const char *key_name);
  * @param key_name  Key name
  *
  * @return Private key path (should be free()'d)
- * @retval @c NULL  An error happened
+ * @retval NULL  An error happened
  */
 extern char *tapi_cfg_key_get_private_key_path(const char *ta,
                                                const char *key_name);
@@ -152,7 +152,7 @@ extern char *tapi_cfg_key_get_private_key_path(const char *ta,
  * @param key_name  Key name
  *
  * @return Public key string (should be free()'d)
- * @retval @c NULL  An error happened
+ * @retval NULL  An error happened
  */
 extern char *tapi_cfg_key_get_public_key(const char *ta, const char *key_name);
 

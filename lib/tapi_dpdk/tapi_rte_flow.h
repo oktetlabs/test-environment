@@ -63,7 +63,7 @@ extern void tapi_rte_flow_add_ndn_action_count(asn_value *ndn_actions,
  *
  * @param[in,out] ndn_actions       Action list
  * @param[in]     action_index      Index at which the action is put to list
- * @paran[in]     type              Type of the encapsulation
+ * @param[in]     type              Type of the encapsulation
  * @param[in]     encap_hdr         Flow rule pattern that is used as a
  *                                  encapsulated packet's header definition
  */
@@ -77,7 +77,7 @@ extern void tapi_rte_flow_add_ndn_action_encap(asn_value *ndn_actions,
  *
  * @param[in,out] ndn_actions       Action list
  * @param[in]     action_index      Index at which the action is put to list
- * @paran[in]     type              Type of the encapsulation
+ * @param[in]     type              Type of the encapsulation
  */
 extern void tapi_rte_flow_add_ndn_action_decap(asn_value *ndn_actions,
                                                int action_index,
@@ -97,7 +97,7 @@ extern void tapi_rte_flow_add_ndn_action_of_pop_vlan(asn_value *ndn_actions,
  *
  * @param[in,out] ndn_actions       Action list
  * @param[in]     action_index      Index at which the action is put to list
- * @paran[in]     ethertype         VLAN EtherType
+ * @param[in]     ethertype         VLAN EtherType
  */
 extern void tapi_rte_flow_add_ndn_action_of_push_vlan(asn_value *ndn_actions,
                                                       int action_index,
@@ -108,7 +108,7 @@ extern void tapi_rte_flow_add_ndn_action_of_push_vlan(asn_value *ndn_actions,
  *
  * @param[in,out] ndn_actions       Action list
  * @param[in]     action_index      Index at which the action is put to list
- * @paran[in]     vlan_vid          VLAN ID
+ * @param[in]     vlan_vid          VLAN ID
  */
 extern void tapi_rte_flow_add_ndn_action_of_set_vlan_vid(asn_value *ndn_actions,
                                                          int action_index,

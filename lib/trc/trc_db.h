@@ -196,7 +196,7 @@ extern trc_test *trc_db_new_test(trc_tests *tests, trc_test_iter *parent,
 /**
  * Allocate and initialize control structure for a new test iteration.
  *
- * @param parent          Test a new iteration belongs to
+ * @param test            Test a new iteration belongs to
  * @param n_args          Number of arguments
  * @param args            Array with arguments
  * @param insert_before   If not @c NULL, insert the new iteration
@@ -251,7 +251,7 @@ extern const trc_exp_result *exp_defaults_get(te_test_status status);
 /**
  * Duplicate expected results.
  *
- * @param result        Results to be duplicated.
+ * @param results       Results to be duplicated.
  *
  * @return
  *      Duplicate results.
@@ -398,7 +398,7 @@ extern te_errno get_expected_rentry(xmlNodePtr node,
  * Get expected results from XML.
  *
  * @param node          Location of the node of the test result
- * @param results       Location for the expected result data
+ * @param result        Location for the expected result data
  * @param tags_tolerate Whether to allow absence of tags attribute or
  *                      void string as its value or not
  *
@@ -557,7 +557,7 @@ extern void trc_exp_result_free(trc_exp_result *result);
 /**
  * Free resources allocated for the list of expected results.
  *
- * @param iters     List of expected results to be freed
+ * @param results       List of expected results to be freed
  */
 extern void trc_exp_results_free(trc_exp_results *results);
 
@@ -654,9 +654,8 @@ extern te_errno trc_db_test_set_user_data(trc_test *test,
  * Match TRC database arguments vs arguments specified by caller.
  *
  * @param db_args       List with TRC database arguments
- * @parma n_args        Number of elements in @a names and @a values
- *                      arrays
- * @param names         Array with names of arguments
+ * @param n_args        Number of elements in the @p args array
+ * @param args          Array of arguments
  * @param is_strict     Can arguments be omitted in wildcard or not?
  *
  * @retval ITER_NO_MATCH        No matching

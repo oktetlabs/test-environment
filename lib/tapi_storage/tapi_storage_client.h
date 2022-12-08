@@ -366,7 +366,6 @@ tapi_storage_client_rm(tapi_storage_client *client,
  *
  * @param client            Client handle.
  * @param directory_name    Directory name to create on remote storage.
- * @param recursive         Make parent directories as needed if @c TRUE.
  *
  * @return Status code.
  */

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /** @file
- * @breaf TE TAD Forwarder additional module internal declarations
+ * @brief TE TAD Forwarder additional module internal declarations
  *
  * Copyright (C) 2010-2022 OKTET Labs Ltd. All rights reserved.
  */
@@ -204,7 +204,7 @@ extern int tadf_sendq_init(sendq_t **queue, csap_p csap,
 /**
  * This function destroyes the send queue and all related objects.
  *
- * @param sendq        The send queue to be destroyed.
+ * @param queue        The send queue to be destroyed.
  *
  * @return              0 - if the function ends correctly
  *                     errno - otherwise

@@ -98,8 +98,8 @@ te_usleep(unsigned int to_sleep)
 /**
  * Substract tv1 to tv2 of type struct timeval.
  *
- * @param tv1
- * @param tv2
+ * @param _tv1
+ * @param _tv2
  *
  * @return Diff in microseconds
  */

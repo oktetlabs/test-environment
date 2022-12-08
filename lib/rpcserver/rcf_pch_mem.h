@@ -34,10 +34,10 @@ extern void rcf_pch_mem_init(void);
 /**
  * Assign the identifier to memory.
  *
- * @param [in] mem          Location of real memory address
- * @param [in] ns           Namespace
- * @param [in] caller_func  Name of function (for more detailed error messages)
- * @param [in] caller_line  Line in file (for more detailed error messages)
+ * @param[in] mem          Location of real memory address
+ * @param[in] ns           Namespace
+ * @param[in] caller_func  Name of function (for more detailed error messages)
+ * @param[in] caller_line  Line in file (for more detailed error messages)
  *
  * @return Memory identifier or @c 0 in the case of failure
  */
@@ -56,7 +56,7 @@ extern rpc_ptr rcf_pch_mem_index_alloc(
  * Mark the memory identifier corresponding to the pointer ID with
  * the offset (it is asserted to be zero before the start).
  *
- * @param      p_id         Pointer ID
+ * @param      id           Pointer ID
  * @param      offset       The offset that should be set
  */
 extern void rcf_pch_mem_alloc_set_offset(tarpc_int id, size_t offset);
@@ -65,10 +65,10 @@ extern void rcf_pch_mem_alloc_set_offset(tarpc_int id, size_t offset);
  * Mark the memory identifier corresponding to the memory address with
  * the @b ns as "unused".
  *
- * @param [in] id           Memory id returned by @b rcf_pch_mem_index_alloc
- * @param [in] ns           Namespace
- * @param [in] caller_func  Name of function (for more detailed error messages)
- * @param [in] caller_line  Line in file (for more detailed error messages)
+ * @param[in] id           Memory id returned by @b rcf_pch_mem_index_alloc
+ * @param[in] ns           Namespace
+ * @param[in] caller_func  Name of function (for more detailed error messages)
+ * @param[in] caller_line  Line in file (for more detailed error messages)
  *
  * @return Status code
  */
@@ -87,10 +87,10 @@ extern te_errno rcf_pch_mem_index_free(
  * Mark the memory identifier corresponding to memory address @p mem and
  * namespace @p ns as "unused".
  *
- * @param [in] mem          Memory address
- * @param [in] ns           Namespace
- * @param [in] caller_func  Name of function (for more detailed error messages)
- * @param [in] caller_line  Line in file (for more detailed error messages)
+ * @param[in] mem          Memory address
+ * @param[in] ns           Namespace
+ * @param[in] caller_func  Name of function (for more detailed error messages)
+ * @param[in] caller_line  Line in file (for more detailed error messages)
  *
  * @return Status code
  */
@@ -111,10 +111,10 @@ extern te_errno rcf_pch_mem_index_free_mem(
 /**
  * Obtain address of the real memory by its identifier and namespace.
  *
- * @param [in] id           Memory id returned by @b rcf_pch_mem_index_alloc
- * @param [in] ns           Namespace
- * @param [in] caller_func  Name of function (for more detailed error messages)
- * @param [in] caller_line  Line in file (for more detailed error messages)
+ * @param[in] id           Memory id returned by @b rcf_pch_mem_index_alloc
+ * @param[in] ns           Namespace
+ * @param[in] caller_func  Name of function (for more detailed error messages)
+ * @param[in] caller_line  Line in file (for more detailed error messages)
  *
  * @return Memory address or @c NULL
  */
@@ -179,9 +179,9 @@ do {                                                            \
 /**
  * Find memory identifier by memory address and namespace.
  *
- * @param [in] mem  Memory address
- * @param [in] ns   Namespace
- * @param [out] id  RPC pointer identifier
+ * @param[in] mem  Memory address
+ * @param[in] ns   Namespace
+ * @param[out] id  RPC pointer identifier
  *
  * @return Status code
  */
@@ -193,10 +193,10 @@ extern te_errno rcf_pch_mem_index_ptr_to_mem_gen(void *mem,
  * Find memory identifier by memory address and namespace. Reports an error
  * if identifier is not found.
  *
- * @param [in] mem          Memory address
- * @param [in] ns           Namespace
- * @param [in] caller_func  Name of function (for more detailed error messages)
- * @param [in] caller_line  Line in file (for more detailed error messages)
+ * @param[in] mem          Memory address
+ * @param[in] ns           Namespace
+ * @param[in] caller_func  Name of function (for more detailed error messages)
+ * @param[in] caller_line  Line in file (for more detailed error messages)
  *
  * @return memory identifier or @c 0
  */
@@ -228,8 +228,8 @@ extern rpc_ptr_id_namespace rcf_pch_mem_ns_generic(void);
 /**
  * Determine a namespace id by the string of namespace
  *
- * @param [in]  ns_string   Namespace as string
- * @param [out] ns_id       Namespace id
+ * @param[in]  ns_string   Namespace as string
+ * @param[out] ns_id       Namespace id
  *
  * @return Status code
  */
@@ -239,8 +239,8 @@ extern te_errno rcf_pch_mem_ns_get_index(
 /**
  * Determine a string of namespace by the namespace id
  *
- * @param [in]  ns_id       Namespace id
- * @param [out] ns_string   Namespace as string
+ * @param[in]  ns_id       Namespace id
+ * @param[out] ns_string   Namespace as string
  *
  * @return Status code
  */
@@ -251,11 +251,11 @@ extern te_errno rcf_pch_mem_ns_get_string(
 /**
  * Associate a variable with the namespace id.
  *
- * @param [out] ns_id           Variable name for namespace id
- * @param [in]  ns_str          Namespace as string
- * @param [in]  caller_func     Name of function (for more detailed error
- *                              messages)
- * @param [in]  caller_line     Line in file (for more detailed error messages)
+ * @param[out] ns_id           Variable name for namespace id
+ * @param[in]  ns_str          Namespace as string
+ * @param[in]  caller_func     Name of function (for more detailed error
+ *                             messages)
+ * @param[in]  caller_line     Line in file (for more detailed error messages)
  */
 static inline te_errno
 rcf_pch_mem_ns_create_if_needed(
@@ -302,9 +302,9 @@ do {                                                                    \
 /**
  * Performs @p _actions with a defined namespace
  *
- * @param [in] _ns_id       Variable name for namespace id
- * @param [in] _ns_str      Namespace as string
- * @param [in] _actions     Some actions
+ * @param[in] _ns_id       Variable name for namespace id
+ * @param[in] _ns_str      Namespace as string
+ * @param[in] _actions     Some actions
  *
  * @note In case of an error this macro changes the @b errno for processing
  *       outside

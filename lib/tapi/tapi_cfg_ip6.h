@@ -40,7 +40,7 @@ extern "C" {
  * Get link-local address of the interface.
  *
  * @param ta        Test Agent name
- * @parma iface     Interface name
+ * @param iface     Interface name
  * @param p_addr    Location for pointer to sockaddr with IPv6
  *                  link-local address
  *
@@ -55,7 +55,7 @@ extern te_errno tapi_cfg_ip6_get_linklocal_addr(const char *ta,
  * Get multicast all link-local address of the interface.
  *
  * @param ta        Test Agent name
- * @parma iface     Interface name
+ * @param iface     Interface name
  * @param p_addr    Location for pointer to sockaddr with IPv6
  *                  multicast address
  *

@@ -137,7 +137,7 @@ extern te_errno ta_job_create(ta_job_manager_t *manager, const char *spawner,
  *
  * @return     Status code
  */
-extern te_errno ta_job_start(ta_job_manager_t *manger, unsigned int id);
+extern te_errno ta_job_start(ta_job_manager_t *manager, unsigned int id);
 
 /**
  * Allocate @p n_channels channels.
@@ -178,7 +178,7 @@ extern void ta_job_deallocate_channels(ta_job_manager_t *manager,
  *
  * @param[in]  manager         Job manager handle
  * @param[in]  filter_name     Name of the filter, may be @c NULL
- * @param[in]  n_channel       Number of channels to attach the filter to
+ * @param[in]  n_channels      Number of channels to attach the filter to
  * @param[in]  channels        IDs of output channels to attach the filter to
  * @param[in]  readable        Whether or not it will be possible to get
  *                             an output of the filter via ta_job_receive()
@@ -221,7 +221,7 @@ extern te_errno ta_job_filter_add_regexp(ta_job_manager_t *manager,
  *
  * @param      manager         Job manager handle
  * @param      filter_id       ID of the filter to attach
- * @param      n_channel       Number of channels to attach the filter to
+ * @param      n_channels      Number of channels to attach the filter to
  * @param      channels        IDs of output channels to attach the filter to
  *
  * @return     Status code
@@ -412,7 +412,7 @@ extern te_errno ta_job_wait(ta_job_manager_t *manager, unsigned int job_id,
  * the function will send @c SIGKILL.
  *
  * @param      manager         Job manager handle
- * @param      job             ID of the job to stop
+ * @param      job_id          ID of the job to stop
  * @param      signo           Number of the signal to send. If @p signo is
  *                             @c SIGKILL, it will be sent only once.
  * @param      term_timeout_ms The timeout of graceful termination of a job,
@@ -454,7 +454,7 @@ extern te_errno ta_job_destroy(ta_job_manager_t *manager, unsigned int job_id,
  * @param[in]  manager         Job manager handle
  * @param[in]  tool            Path to the wrapper tool
  * @param[in]  argv            Wrapper arguments (last item must be @c NULL)
- * @param[id]  job_id          ID of the job to add the wrapper to
+ * @param[in]  job_id          ID of the job to add the wrapper to
  * @param[in]  priority        Wrapper priority
  * @param[out] wrapper_id      ID of the added wrapper
  *

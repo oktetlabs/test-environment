@@ -51,7 +51,7 @@ extern "C" {
  *
  * @return Descriptor of created socket
  *
- * @retval @c -1 Creating or binding socket failed
+ * @retval -1 Creating or binding socket failed
  *
  * @note When the function returns @c -1 it reports the reason of the
  * failure with ERROR() macro.
@@ -84,7 +84,6 @@ extern int rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
  * Create a listening socket of type @c SOCK_STREAM on a particular PCO.
  *
  * @param srvr          PCO
- * @param domain        Domain for the socket
  * @param proto         Protocol for the socket
  * @param srvr_wild     Whether to bind server to wildcard address or not
  * @param srvr_addr     Server address to be used as a template
@@ -180,8 +179,8 @@ extern int rpc_stream_client(rcf_rpc_server *clnt,
  *
  * @return Status of the operation
  *
- * @retval @c  0 Connection successfully created
- * @retval @c -1 Creating connection failed
+ * @retval 0  Connection successfully created
+ * @retval -1 Creating connection failed
  *
  * @note When the function returns @c -1 it reports the reason of the
  * failure with ERROR() macro.
@@ -236,8 +235,8 @@ extern int rpc_stream_connection(rcf_rpc_server *srvr,
  *
  * @return Status of the operation
  *
- * @retval @c  0 Connection successfully created
- * @retval @c -1 Creating connection failed
+ * @retval 0  Connection successfully created
+ * @retval -1 Creating connection failed
  *
  * @note When the function returns @c -1 it reports the reason of the
  * failure with ERROR() macro.
@@ -321,8 +320,8 @@ rpc_dgram_connection_gen(rcf_rpc_server *srvr,
  *
  * @return Status of the operation
  *
- * @retval @c  0 Connection successfully created
- * @retval @c -1 Creating connection failed
+ * @retval 0  Connection successfully created
+ * @retval -1 Creating connection failed
  *
  * @note When the function returns @c -1 it reports the reason of the
  * failure with ERROR() macro.
@@ -336,7 +335,7 @@ extern int rpc_dgram_connection(rcf_rpc_server *srvr,
 
 /** @page lib-gen_connection Create a connection of an arbitrary type
  *
- * @objective Provide a generic way to create a connection of an arbitrary
+ * Provide a generic way to create a connection of an arbitrary
  * type and from a particular domain
  *
  * @param srvr          PCO where server socket is created
@@ -370,8 +369,8 @@ extern int rpc_dgram_connection(rcf_rpc_server *srvr,
  *
  * @return Status of the operation
  *
- * @retval @c  0 Connection successfully created
- * @retval @c -1 Creating connection failed
+ * @retval 0  Connection successfully created
+ * @retval -1 Creating connection failed
  *
  * @note When the function returns @c -1 it reports the reason of the
  * failure with ERROR() macro.

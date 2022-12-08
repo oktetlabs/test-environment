@@ -264,7 +264,7 @@ extern te_errno tapi_cfg_l2tp_lns_bit_del(const char *ta, const char *lns,
  *
  * @param ta            Test Agent.
  * @param lns           The name of the section.
- * @param bit           Name of the parameter(e.g. hidden, length, flow).
+ * @param bit_name      Name of the parameter(e.g. hidden, length, flow).
  * @param selector      Returned pointer to the current bit parameter value.
  *
  * @return Status code

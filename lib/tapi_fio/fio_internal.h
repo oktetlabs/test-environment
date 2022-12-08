@@ -50,7 +50,7 @@ extern te_errno fio_app_wait(tapi_fio_app *app, int16_t timeout_sec);
  * Receive fio report in JSON format.
  *
  * @param      app          App context.
- * @param[out] reoirt       Fio report
+ * @param[out] report       Fio report
  *
  * @return Status code
  */

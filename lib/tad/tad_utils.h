@@ -200,9 +200,9 @@ extern uint64_t tad_ntohll(uint64_t n);
  * @param arg_specs_num Length of array.
  * @param arg_iterated  Array of template arguments (OUT).
  *
- * @retval      - positive on success itertaion.
- * @retval      - zero if iteration finished.
- * @retval      - negative if invalid arguments passed.
+ * @retval      positive on success itertaion.
+ * @retval      zero if iteration finished.
+ * @retval      negative if invalid arguments passed.
  */
 extern int tad_init_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                               size_t arg_specs_num,
@@ -215,9 +215,9 @@ extern int tad_init_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
  * @param arg_specs_num Length of array.
  * @param arg_iterated  Array of template arguments (OUT).
  *
- * @retval      - positive on success itertaion.
- * @retval      - zero if iteration finished.
- * @retval      - negative if invalid arguments passed.
+ * @retval      positive on success itertaion.
+ * @retval      zero if iteration finished.
+ * @retval      negative if invalid arguments passed.
  */
 extern int tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                                  size_t arg_specs_num,
@@ -356,7 +356,7 @@ extern int tad_univ_match_field(const tad_data_unit_t *pattern,
  *
  * @param du_tmpl       data unit template structure
  * @param args          Array with arguments.
- * @param num_args      Length of arguments array.
+ * @param arg_num       Length of arguments array.
  * @param data_place    location for generated binary data (OUT)
  * @param d_len         length of data field to be generated
  *
@@ -425,7 +425,7 @@ extern te_errno tad_common_write_read_cb(csap_p csap, unsigned int timeout,
  * @param pkt_len       Location for received packet length
  * @param msg_flags     Location for flags returned by recvmsg() or @c NULL
  * @param cmsg_buf      Buffer to put ancillary data (or @c NULL)
- * @param cmsg_len      Ancillary data buffer length, in/out (or @c NULL)
+ * @param cmsg_buf_len  Ancillary data buffer length, in/out (or @c NULL)
  *
  * @return Status code.
  */

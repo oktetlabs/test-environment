@@ -67,7 +67,7 @@ extern te_errno cfg_backup_create_filter_file(const char *filename,
  * Verify backup configuration file
  *
  * @param filename Name of the backup file
- * @param subtree  Vector of subtrees
+ * @param subtrees Vector of subtrees
  *
  * @return Status code
  */
@@ -78,7 +78,7 @@ extern te_errno cfg_backup_verify(const char *filename,
  * Restore backup configuration file
  *
  * @param filename Name of the backup file
- * @param subtree  Vector of subtrees
+ * @param subtrees Vector of subtrees
  *
  * @return Status code
  */
@@ -89,7 +89,7 @@ extern te_errno cfg_backup_restore_nohistory(const char *filename,
  * Verify backup and try to restore by backup
  *
  * @param filename Name of the backup file
- * @param subtree  Vector of subtrees
+ * @param subtrees Vector of subtrees
  *
  * @return Status code
  */

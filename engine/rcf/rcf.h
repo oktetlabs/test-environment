@@ -77,8 +77,8 @@ typedef struct usrreq usrreq;
  * The prototype of the function that is called when receiving
  * a response from the agent.
  *
- * @param ta  Test Agent
- * @param req Request
+ * @param agent Test Agent
+ * @param req   Request
  *
  * @return Status code
  */

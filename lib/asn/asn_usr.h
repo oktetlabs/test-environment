@@ -155,8 +155,6 @@ extern asn_syntax asn_get_syntax_of_type(const asn_type *type);
  *
  * @param type          ASN.1 type
  * @param subtype       location for pointer to ASN.1 sub-type (OUT)
- * @param labels        textual ASN.1 labels of subvalue; see
- *                      asn_free_subvalue method for more description
  * @param labels        string with dot-separated sequence of textual field
  *                      labels, specifying interested sub-type
  *
@@ -693,7 +691,7 @@ extern te_errno asn_write_primitive(asn_value *value,
  * 'container', if there is one.
  * Check that type of 'value' is one of possible choices in 'container'.
  *
- * @param value         ASN.1 value of CHOICE syntax, which subvalue
+ * @param container     ASN.1 value of CHOICE syntax, which subvalue
  *                      should be changed.
  * @param value         ASN.1 value to be put into 'container'.
  *

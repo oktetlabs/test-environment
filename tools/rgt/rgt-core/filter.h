@@ -50,9 +50,9 @@ extern void rgt_filter_destroy(void);
  * user name and timestamp) passes through user defined filter.
  * The function updates message flags.
  *
- * @param level      Log level
  * @param entity     Entity name
- * @param user_name  User name
+ * @param user       User name
+ * @param level      Log level
  * @param timestamp  Timestamp
  * @param flags      Log message flags (OUT)
  *

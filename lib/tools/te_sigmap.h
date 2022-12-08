@@ -31,7 +31,7 @@ extern int map_name_to_signo(const char *name);
 /**
  * Map signal number to the name
  *
- * @param name  Number of the signal
+ * @param signo  Number of the signal
  *
  * @return Signal name or NULL
  */

@@ -616,8 +616,7 @@ extern void iscsi_append_to_buf(void *destination, char *what);
  *
  * @return TRUE if target authentication is requested
  *
- * @param param         Parameter description
- * @param tgt_data      Target-wide parameters
+ * @param target_data   Target-wide parameters
  * @param conn_data     iSCSI operational parameters
  * @param auth_data     iSCSI security parameters
  */
@@ -630,8 +629,7 @@ extern te_bool iscsi_when_tgt_auth(iscsi_target_data_t *target_data,
  *
  * @return TRUE if target authentication is not requested
  *
- * @param param         Parameter description
- * @param tgt_data      Target-wide parameters
+ * @param target_data   Target-wide parameters
  * @param conn_data     iSCSI operational parameters
  * @param auth_data     iSCSI security parameters
  */
@@ -644,8 +642,7 @@ extern te_bool iscsi_when_not_tgt_auth(iscsi_target_data_t *target_data,
  *
  * @return TRUE if any authentication is requested
  *
- * @param param         Parameter description
- * @param tgt_data      Target-wide parameters
+ * @param target_data   Target-wide parameters
  * @param conn_data     iSCSI operational parameters
  * @param auth_data     iSCSI security parameters
  */

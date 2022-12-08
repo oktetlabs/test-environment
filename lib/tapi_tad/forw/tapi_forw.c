@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /** @file
- * @breaf TE TAPI for Forwarder additional module implementations
+ * @brief TE TAPI for Forwarder additional module implementations
  *
  * Copyright (C) 2010-2022 OKTET Labs Ltd. All rights reserved.
  */

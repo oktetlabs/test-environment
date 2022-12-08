@@ -106,7 +106,7 @@ typedef struct te_xdp_frame {
  * Check whether packet processing function succeeded,
  * return error (@c -1) if it did not.
  *
- * @param _exp    Expression to check.
+ * @param _expr    Expression to check.
  */
 #define TE_BPF_CHECK_RC(_expr) \
     do {                      \

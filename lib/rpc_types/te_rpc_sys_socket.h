@@ -111,7 +111,7 @@ extern size_t tarpc_cmsg_data_len(tarpc_cmsghdr *rpc_cmsg);
  * Get length of control data required to store @ref cmsghdr structures
  * corresponding to array of @ref tarpc_cmsghdr structures.
  *
- * @param rpc_cmsghdr       Pointer to the first element of the array.
+ * @param rpc_cmsg          Pointer to the first element of the array.
  * @param num               Number of elements in the array.
  *
  * @return Length of control data.
@@ -1147,7 +1147,7 @@ extern struct sockaddr * sockaddr_to_te_af(const struct sockaddr  *addr,
  * length.
  *
  * @param buf           Buffer (may be NULL)
- * @param len           Length of the buffer (have to be @c 0, if @buf
+ * @param len           Length of the buffer (have to be @c 0, if @p buf
  *                      is @c NULL)
  * @param rpc           Pointer to the structure to be filled in
  */

@@ -103,7 +103,7 @@ port_get(unsigned int gid, char *oid, char *if_oid, char *brname, char *ifname)
  *
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
- * @paran data      Unused
+ * @param data      Unused
  * @param brname    The bridge inteface name
  * @param ifname    The interface name
  *

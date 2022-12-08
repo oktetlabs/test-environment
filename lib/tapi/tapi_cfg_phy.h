@@ -384,7 +384,7 @@ extern char *tapi_cfg_phy_duplex_id2str(int duplex);
  * be not convenient.
  *
  * @param ta            Test agent
- * @param ifname        Interface name
+ * @param if_name       Interface name
  * @param advert_speed  Speed to advertise (Mbit/sec)
  * @param advert_duplex Duplex to advertise
  *

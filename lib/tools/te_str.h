@@ -346,9 +346,9 @@ extern te_errno te_strtoui(const char   *str,
  * allowed.
  *
  * @param input        String to convert
- * @param [out]endptr  Pointer to the end of parsed int
+ * @param[out] endptr  Pointer to the end of parsed int
  * @param base         Base to be used
- * @param [out]result  Storage for result
+ * @param[out] result  Storage for result
  *
  * @return 0 or error
  */
@@ -362,7 +362,7 @@ extern te_errno te_strtol_raw(const char *input, char **endptr, int base,
  *
  * @param input        String to convert
  * @param base         Base to be used
- * @param [out]result  Storage for result
+ * @param[out] result  Storage for result
  *
  * @return 0 or error
  */
@@ -374,7 +374,7 @@ extern te_errno te_strtol_silent(const char *input, int base, long int *result);
  *
  * @param input        String to convert
  * @param base         Base to be used
- * @param [out]result  Storage for result
+ * @param[out] result  Storage for result
  *
  * @return 0 or error
  */
@@ -384,7 +384,7 @@ extern te_errno te_strtol(const char *input, int base, long int *result);
  * Convert string to bool meaning 0 - FALSE, not 0 - TRUE
  *
  * @param input        String to convert
- * @param [out]bresult Storage for result
+ * @param[out] bresult Storage for result
  *
  * @return 0 or error
  */
@@ -409,9 +409,9 @@ extern te_errno te_strtoi_range_raw(const char *input, int minval, int maxval,
 /**
  * Convert string to double. Following characters are allowed.
  *
- * @param str          String to convert
- * @param endptr       Pointer to the end of parsed double
- * @param [out]result  Storage for result
+ * @param[in]  str     String to convert
+ * @param[out] endptr  Pointer to the end of parsed double
+ * @param[out] result  Storage for result
  *
  * @return Status code.
  */
@@ -421,8 +421,8 @@ extern te_errno te_strtod_raw(const char *str, char **endptr, double *result);
  * Convert string to double. Should be used to avoid creating extra vars
  * for 'end' parameter in the code.
  *
- * @param str          String to convert
- * @param [out]result  Storage for result
+ * @param[in]  str     String to convert
+ * @param[out] result  Storage for result
  *
  * @return Status code.
  */

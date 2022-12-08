@@ -121,12 +121,12 @@ extern te_errno tad_bridge_gen_pattern_cb(csap_p            csap,
 /**
  * Free all memory allocated by eth csap specific data.
  *
- * @param csap_data     Poiner to structure
+ * @param spec_data     Poiner to structure
  * @param is_complete   If not 0 the final free() will be called
  *                      on passed pointer
  */
 extern void free_bridge_csap_data(bridge_csap_specific_data_p spec_data,
-                                  char is_colmplete);
+                                  char is_complete);
 
 #ifdef __cplusplus
 } /* extern "C" */

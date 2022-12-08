@@ -226,8 +226,7 @@ extern te_errno trc_diff_set_name(trc_diff_sets *sets,
  *
  * @param sets  List of compared sets
  * @param id    Identifier of the set
- * @param log   Log filename
- for the set
+ * @param log   Log filename for the set
  *
  * @return Status code.
  */
@@ -241,8 +240,7 @@ extern te_errno trc_diff_set_log(trc_diff_sets *sets,
  *
  * @param sets  List of compared sets
  * @param id    Identifier of the set
- * @param log   Log filename
- for the set
+ * @param url   HTML log URL
  *
  * @return Status code.
  */
@@ -333,7 +331,6 @@ extern te_errno trc_diff_do(trc_diff_ctx *ctx);
  *                      report should be generated to stdout
  * @param header        HTML header file name to include into the report
  * @param title         Title of the report
- * @param summary_only  Generate only summary report
  *
  * @return Status code.
  */

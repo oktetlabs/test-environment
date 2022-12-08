@@ -419,7 +419,7 @@ extern const char *te_sockaddr2str(const struct sockaddr *sa);
  * @param buf     Where to save a string representation.
  * @param len     Number of bytes available for a string.
  *
- * @reutnr Status code.
+ * @return Status code.
  */
 extern te_errno te_sockaddr_h2str_buf(const struct sockaddr *sa,
                                       char *buf, size_t len);
@@ -427,8 +427,8 @@ extern te_errno te_sockaddr_h2str_buf(const struct sockaddr *sa,
 /**
  * Convert a @b sockaddr to a string or return an error.
  *
- * @param [in]sa        source @b sockaddr
- * @param [out]string   result of conversion
+ * @param[in]  sa       source @b sockaddr
+ * @param[out] string   result of conversion
  *
  * @return                      status code
  * @retval 0                    successful
@@ -443,8 +443,8 @@ extern te_errno te_sockaddr_h2str(const struct sockaddr *sa,
 /**
  * Convert a string to a @b sockaddr or return an error.
  *
- * @param [in]string    source string
- * @param [out]sa       result @b sockaddr
+ * @param[in]  string   source string
+ * @param[out] sa       result @b sockaddr
  *
  * @return                      status code
  * @retval 0                    successful

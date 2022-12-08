@@ -1684,7 +1684,7 @@ tad_recv_op(csap_p csap, tad_recv_op_context *op_context)
 /**
  * Free traffic receive stop/wait/get operation context.
  *
- * @parma context       Context pointer
+ * @param context       Context pointer
  */
 static void
 tad_recv_op_free(tad_recv_op_context *context)

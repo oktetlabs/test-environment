@@ -29,7 +29,7 @@ extern "C" {
  *                                 will be set.
  * @param[in]    spawner           Spawner plugin name
  *                                 (may be @c NULL for the default plugin)
- * @param[in]    tool              Program path to run
+ * @param[in]    program           Program path to run
  * @param[in]    argv              Program arguments (last item is @c NULL)
  * @param[in]    env               Program environment (last item is @c NULL).
  *                                 May be @c NULL to keep the current

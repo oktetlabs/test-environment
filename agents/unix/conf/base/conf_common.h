@@ -51,7 +51,7 @@ extern te_errno write_sys_value(const char *value, const char *format, ...);
  *
  * @param value           Where to save the value.
  * @param len             Expected length, including null byte.
- * @param ignore_eacces   If @c TRUE, return success saving
+ * @param ignore_eaccess  If @c TRUE, return success saving
  *                        empty string in @p value if the file
  *                        cannot be opened due to @c EACCES error.
  * @param format          Format string for path to the system file.
@@ -76,7 +76,7 @@ typedef te_bool (*include_callback_func)(const char *name, void *data);
  * @param path              Filesystem path.
  * @param buffer            Where to save the list.
  * @param length            Available space in @p buffer.
- * @param ignore_abscence   If @c TRUE, return success and
+ * @param ignore_absence    If @c TRUE, return success and
  *                          save empty string to @p buffer
  *                          if @p path does not exist.
  * @param include_callback  If not @c NULL, will be called for

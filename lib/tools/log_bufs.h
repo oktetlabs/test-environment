@@ -166,7 +166,7 @@ extern const char *te_log_buf_get(te_log_buf *buf);
 /**
  * Release buffer allocated by te_log_buf_alloc()
  *
- * @param ptr  Pointer to the buffer
+ * @param buf  Pointer to the buffer
  *
  * @note This is thread safe function
  */
@@ -236,8 +236,8 @@ extern const char *te_extended_bit_mask2log_buf(te_log_buf *buf,
  * @note This function is deprecated. te_mac_addr2te_str() can be used with
  *       TE string instead.
  *
- * @param buf   Pointer to the buffer allocated with @b te_log_buf_alloc()
- * @param argc  Pointer to the ether address
+ * @param buf       Pointer to the buffer allocated with @b te_log_buf_alloc()
+ * @param mac_addr  Pointer to the ether address
  *
  * @return @b te_log_buf_get() return value after addition
  */

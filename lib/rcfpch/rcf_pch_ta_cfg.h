@@ -349,7 +349,7 @@ typedef enum ta_route_type {
 /**
  * Converts a route type id to a string representation
  *
- * @param   Route type id
+ * @param type Route type id
  *
  * @return  A pointer to static buffer holding the type name
  */

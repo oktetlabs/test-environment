@@ -76,7 +76,7 @@ extern te_errno trc_test_iter_args_to_html(FILE                     *f,
  *
  * @param f             File stream to write
  * @param args          Arguments
- * @param n_args        Number of arguments
+ * @param args_n        Number of arguments
  * @param max_len       Maximum length of string (to split too long lines)
  * @param flags         Processing flags
  *

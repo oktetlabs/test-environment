@@ -162,7 +162,7 @@ extern te_bool tapi_dpdk_mtu_by_pkt_size(unsigned int packet_size,
  * mbuf size should be specified explicitly in the parameters.
  *
  * @param packet_size       Size of a packet
- * @param mbuf_size[out]    Required mbuf size (set when the function
+ * @param[out] mbuf_size    Required mbuf size (set when the function
  *                          returns @c TRUE)
  *
  * @return          @c TRUE - mbuf size should be set, @c FALSE - should not be
@@ -188,9 +188,9 @@ extern void tapi_dpdk_append_argument(const char *argument,
  * @param rpcs              RPC server to run job on
  * @param env               Test environment
  * @param n_cpus            Number of job forwarding CPUs
- * @param cpu_ids[in]       Indices of job forwarding CPUs
+ * @param cpu_ids           Indices of job forwarding CPUs
  * @param program_name      Full path to the binary job
- * @param argc_p            Pointer to the number of arguments
+ * @param argc_out          Pointer to the number of arguments
  * @param argv_out          Pointer to the arguments
  *
  * @return          Status code
@@ -200,7 +200,7 @@ extern te_errno tapi_dpdk_build_eal_arguments(rcf_rpc_server *rpcs,
                                               unsigned int n_cpus,
                                               tapi_cpu_index_t *cpu_ids,
                                               const char *program_name,
-                                              int *argc_c, char ***argv_out);
+                                              int *argc_out, char ***argv_out);
 
 /*
  * Grab CPUs with required properties

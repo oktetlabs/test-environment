@@ -34,10 +34,10 @@ typedef struct te_toeplitz_hash_cache te_toeplitz_hash_cache;
 /**
  * Calculate a Toeplitz hash of input data
  *
- * @param cache        Pre-constructed cache
- * @param input        Pointer to input data
- * @param pos          Position of input data
- * @param datalen      Length of input data in bytes
+ * @param toeplitz_hash_cache Pre-constructed cache
+ * @param input               Pointer to input data
+ * @param pos                 Position of input data
+ * @param datalen             Length of input data in bytes
  *
  * @retval RSS hash value of input data
  */
@@ -49,12 +49,12 @@ extern uint32_t te_toeplitz_hash_data(
 /**
  * Calculate a RSS hash using pre-calculated cache
  *
- * @param cache        Pre-constructed cache
- * @param addr_size    IPv4 / IPv6 address length
- * @param src_addr     Pointer to source address
- * @param src_port     Source port number in network byte order
- * @param dst_addr     Pointer to destination address
- * @param dst_port     Desination port number in network byte order
+ * @param toeplitz_hash_cache Pre-constructed cache
+ * @param addr_size           IPv4 / IPv6 address length
+ * @param src_addr            Pointer to source address
+ * @param src_port            Source port number in network byte order
+ * @param dst_addr            Pointer to destination address
+ * @param dst_port            Desination port number in network byte order
  *
  * @retval RSS hash value
  */
@@ -72,11 +72,11 @@ typedef enum te_toeplitz_hash_variant {
 /**
  * Calculate a RSS hash for address/port pairs using pre-calculated cache.
  *
- * @param cache        Pre-constructed cache
- * @param src_addr     Source address/port
- * @param dst_addr     Destination address/port
- * @param hash_var     Hash variant
- * @param hash_out     Where to save computed hash
+ * @param toeplitz_hash_cache  Pre-constructed cache
+ * @param src_addr             Source address/port
+ * @param dst_addr             Destination address/port
+ * @param hash_var             Hash variant
+ * @param hash_out             Where to save computed hash
  *
  * @return Status code
  */
@@ -91,12 +91,12 @@ extern te_errno te_toeplitz_hash_sa(
  * Calculate a RSS hash using pre-calculated cache and symmetric
  * algorithm with OR and XOR.
  *
- * @param cache        Pre-constructed cache
- * @param addr_size    IPv4 / IPv6 address length
- * @param src_addr     Pointer to source address
- * @param src_port     Source port number in network byte order
- * @param dst_addr     Pointer to destination address
- * @param dst_port     Desination port number in network byte order
+ * @param toeplitz_hash_cache  Pre-constructed cache
+ * @param addr_size            IPv4 / IPv6 address length
+ * @param src_addr             Pointer to source address
+ * @param src_port             Source port number in network byte order
+ * @param dst_addr             Pointer to destination address
+ * @param dst_port             Desination port number in network byte order
  *
  * @return RSS hash value.
  */
@@ -108,7 +108,7 @@ extern uint32_t te_toeplitz_hash_sym_or_xor(
 /**
  * Free pre-constructed cache
  *
- * @param cache          Pointer to cache
+ * @param toeplitz_hash_cache  Pointer to cache
  */
 extern void te_toeplitz_hash_fini(
     te_toeplitz_hash_cache *toeplitz_hash_cache);

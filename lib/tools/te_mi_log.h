@@ -566,21 +566,21 @@ static inline void te_mi_logger_meas_graph_axis_add_type(
  *
  * @endcode
  *
- * @param logger[in]    MI logger.
- * @param retval[out]   Return code. If @c NULL is passed, @p logger
+ * @param[in] logger    MI logger.
+ * @param[out] retval   Return code. If @c NULL is passed, @p logger
  *                      is not @c NULL and error occurs, error flag
  *                      is stored in @p logger, which will fail the
  *                      next te_mi_logger_flush().
- * @param view_name[in] Name of the point view.
- * @param meas_type[in] Measurement type. Using @c TE_MI_MEAS_END means
+ * @param[in] view_name Name of the point view.
+ * @param[in] meas_type Measurement type. Using @c TE_MI_MEAS_END means
  *                      that no type is specified; in that case measurement
  *                      name must be unique (i.e. used only for a single
  *                      type).
- * @param meas_name[in] Name of the measurement. May be empty or @c NULL
+ * @param[in] meas_name Name of the measurement. May be empty or @c NULL
  *                      if @p meas_type is specified, in which case
  *                      there should be the single parameter of a given
  *                      type.
- * @param meas_aggr[in] Type of a measurement aggregation. Using @c
+ * @param[in] meas_aggr Type of a measurement aggregation. Using @c
  *                      TE_MI_MEAS_AGGR_SF_UNPECIFIED means that aggr is not
  *                      specified, in that case the measurement that is
  *                      descibed by @p meas_name and @p meas_type must contain

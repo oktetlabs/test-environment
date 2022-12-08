@@ -156,8 +156,8 @@ te_vec_size(const te_vec *vec)
 /**
  * Access to a pointer of element in array
  *
- * @param vec       Dynamic vector
- * @param index     Index of element
+ * @param _vec       Dynamic vector
+ * @param _index     Index of element
  *
  * @return Pointer to element
  */
@@ -193,9 +193,9 @@ te_vec_get_mutable(te_vec *vec, size_t index)
 /**
  * Safe version of @ref te_vec_get
  *
- * @param vec              Dynamic vector
- * @param index            Index of element
- * @param element_size     Expected size of type in array
+ * @param _vec              Dynamic vector
+ * @param _index            Index of element
+ * @param _element_size     Expected size of type in array
  *
  * @return Pointer to element
  */

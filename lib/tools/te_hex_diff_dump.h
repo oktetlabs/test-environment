@@ -84,15 +84,15 @@ void te_hex_diff_dump(const void *expected, size_t exp_len,
  * Usually the function shall not be used directly, but through
  * the macro LOG_HEX_DIFF_DUMP_AT() or LOG_HEX_DIFF_DUMP().
  *
- * @param expected  Buffer with the expected data.
- * @param exp_len   Length of the expected buffer.
- * @param actual    Buffer with the actual data.
- * @param size      Size of the buffers.
- * @param offset    The offset of the buffers
- *                  (only affects logging).
- * @param level     Log level
- * @param entity    Log entity
- * @param user      Log user
+ * @param expected   Buffer with the expected data.
+ * @param exp_len    Length of the expected buffer.
+ * @param actual     Buffer with the actual data.
+ * @param actual_len Length of the actual buffer.
+ * @param offset     The offset of the buffers
+ *                   (only affects logging).
+ * @param level      Log level
+ * @param entity     Log entity
+ * @param user       Log user
  */
 void te_hex_diff_log(const void *expected, size_t exp_len,
                      const void *actual, size_t actual_len,

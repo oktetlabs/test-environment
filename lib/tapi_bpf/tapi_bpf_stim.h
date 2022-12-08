@@ -116,7 +116,7 @@ extern te_errno tapi_bpf_stim_drop(tapi_bpf_stim_hdl *handle,
  * Activate "duplicate" stimulus. Duplicate next packet @p num times.
  *
  * @param handle    BPF stimulus handle.
- * @param int       Number of copies to made.
+ * @param num       Number of copies to made.
  *
  * @return Status code
  */

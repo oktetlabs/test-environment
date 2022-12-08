@@ -29,8 +29,8 @@ extern te_errno ta_unix_conf_rule_init(void);
 /**
  * Find a rule and fill the optional fields.
  *
- * @param [in]   required   Required fields for comparison
- * @param [in,out]rule      Rule related information
+ * @param [in]     required   Required fields for comparison
+ * @param [in,out] rule       Rule related information
  *
  * @return Status code.
  */
@@ -40,7 +40,7 @@ extern te_errno ta_unix_conf_rule_find(
 /**
  * Get instances list for object "/agent/rule".
  *
- * @param [out]list         Location for the list pointer
+ * @param [out] list         Location for the list pointer
  *
  * @return Status code.
  */

@@ -44,7 +44,7 @@ struct tapi_nvme_target;
  * @param tgt   Target for init
  * @param opts  Options for init target
  *
- * @retrun Status code
+ * @return Status code
  */
 typedef te_errno (*tapi_nvme_target_method_init)(
     struct tapi_nvme_target *tgt, void *opts);
@@ -54,7 +54,7 @@ typedef te_errno (*tapi_nvme_target_method_init)(
  *
  * @param tgt   Target for setup
  *
- * @retrun Status code
+ * @return Status code
  */
 typedef te_errno (*tapi_nvme_target_method_setup)(
     struct tapi_nvme_target *tgt);
@@ -64,7 +64,7 @@ typedef te_errno (*tapi_nvme_target_method_setup)(
  *
  * @param tgt   Target for cleanup
  *
- * @retrun Status code
+ * @return Status code
  */
 typedef void (*tapi_nvme_target_method_cleanup)(
     struct tapi_nvme_target *tgt);
@@ -74,7 +74,7 @@ typedef void (*tapi_nvme_target_method_cleanup)(
  *
  * @param tgt   Target for setup
  *
- * @retrun Status code
+ * @return Status code
  */
 typedef void (*tapi_nvme_target_method_fini)(
     struct tapi_nvme_target *tgt);
@@ -233,7 +233,7 @@ extern te_errno tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl);
 /**
  * Disconnect all devices matched by regexp
  *
- * @param rpc_host_ctrl RPC server
+ * @param rpcs          RPC server
  * @param regexp        Regular expression
  *
  * @return TE error code
@@ -244,7 +244,7 @@ extern te_errno tapi_nvme_initiator_disconnect_match(rcf_rpc_server *rpcs,
 /**
  * Disconnect from all connected NVMeoF subsystems
  *
- * @param rpc_host_ctrl RPC server
+ * @param rpcs RPC server
  *
  * @return TE error code
  */

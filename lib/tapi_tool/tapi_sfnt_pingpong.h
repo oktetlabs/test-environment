@@ -155,7 +155,6 @@ typedef struct tapi_sfnt_pp_app_client_t tapi_sfnt_pp_app_client_t;
  *
  * @param[in]  factory           Job factory.
  * @param[in]  opt               Command line options.
- * @param[in]  path_to_sfnt_pp   Path to sfnt-pingpong tool.
  * @param[out] app               Clinet app handle.
  *
  * @return Status code.
@@ -171,7 +170,6 @@ extern te_errno tapi_sfnt_pp_create_client(tapi_job_factory_t *factory,
  *
  * @param[in]  factory           Job factory.
  * @param[in]  opt               Command line options.
- * @param[in]  path_to_sfnt_pp   Path to sfnt-pingpong tool.
  * @param[out] app               Clinet app handle.
  *
  * @return Status code.
@@ -186,7 +184,6 @@ extern te_errno tapi_sfnt_pp_create_server(tapi_job_factory_t *factory,
  * @param[in]  client_factory    Client job factory.
  * @param[in]  server_factory    Server job factory.
  * @param[in]  opt               Command line options.
- * @param[in]  path_to_sfnt_pp   Path to sfnt-pingpong tool.
  * @param[out] client            Client app handle.
  * @param[out] server            Server app handle.
  *

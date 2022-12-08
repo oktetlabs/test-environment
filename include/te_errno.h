@@ -395,7 +395,7 @@ typedef enum {
 
 
 /**
- * Update \i main return code, if it's OK, otherwise keep it.
+ * Update main return code, if it's OK, otherwise keep it.
  *
  * @param _rc         main return code to be updated
  * @param _rc_new     new return code to be assigned to main, if
@@ -471,7 +471,7 @@ te_rc_mod2str(te_errno err)
 /**
  * Convert code from integer to readable string.
  *
- * @param src   integer source
+ * @param err   integer source
  *
  * @return string literal pointer
  *
