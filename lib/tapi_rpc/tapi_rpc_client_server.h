@@ -91,7 +91,7 @@ extern int rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
  *
  * @return Created socket or -1.
  *
- * @copydoc lib-stream_server-alg
+ * @copydetails lib-stream_server-alg
  */
 extern int rpc_stream_server(rcf_rpc_server *srvr,
                              rpc_socket_proto proto, te_bool srvr_wild,
@@ -118,7 +118,7 @@ extern int rpc_stream_server(rcf_rpc_server *srvr,
  *
  * @return Created socket or -1.
  *
- * @copydoc lib-stream_client-alg
+ * @copydetails lib-stream_client-alg
  */
 extern int rpc_stream_client(rcf_rpc_server *clnt,
                              rpc_socket_domain domain,
@@ -147,10 +147,10 @@ extern int rpc_stream_client(rcf_rpc_server *clnt,
  * @param clnt_addr     address to bind client to or @c NULL
  *
  * @par Step 1: Open @c SOCK_STREAM server socket
- * @copydoc lib-stream_server-alg
+ * @copydetails lib-stream_server-alg
  *
  * @par Step 2: Open @c SOCK_STREAM client socket
- * @copydoc lib-stream_client-alg
+ * @copydetails lib-stream_client-alg
  *
  * @par Step 3: Open connection
  * -# Initiate @b accept() for @p srvr_s socket;
@@ -365,7 +365,7 @@ extern int rpc_dgram_connection(rcf_rpc_server *srvr,
 /**
  * Create a connection of an arbitrary type between two PCO.
  *
- * @copydoc lib-gen_connection
+ * @copydetails lib-gen_connection
  *
  * @return Status of the operation
  *
