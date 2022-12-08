@@ -243,7 +243,9 @@ ALIASES                = tdt_start=<table><tr><td><b>Term</b></td><td><b>Definit
                          "cmd{1}=<span style='color: #000000;font-weight:bold'>\1</span>" \
                          "attr_name{1}=<span style='color: #990033;font-weight:bold;font-style:italic'>\1</span>" \
                          "attr_val{1}=<span style='color: #990033;font-weight:bold;font-style:italic'>\1</span>" \
-                         "lib_name{1}=<span style='color: #000000;font-weight:bold'>\1</span>"
+                         "lib_name{1}=<span style='color: #000000;font-weight:bold'>\1</span>" \
+                         "alg=@par Algorithm^^" \
+                         "se=@par Side effects^^"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources
 # only. Doxygen will then generate output that is more tailored for C. For
