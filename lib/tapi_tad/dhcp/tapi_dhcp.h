@@ -31,7 +31,7 @@
 #define CONST_STRING_LENGTH(str_) (sizeof(str_) - 1)
 
 
-/** @name Type of DHCP Options */
+/** Type of DHCP Options */
 typedef enum dhcp_option_type {
     DHCP_OPT_INVALID                    = -1,   /**< Invalid option */
     DHCP_OPT_SUBNET                     = 1,    /**< Subnet mask */
@@ -70,7 +70,6 @@ typedef enum dhcp_option_type {
                                                      routes */
     DHCP_OPT_END                        = 255,  /**< End option */
 } dhcp_option_type;
-/*@}*/
 
 /**
  * Value used in DHCP 'htype' field for Ethernet (10Mb) hardware type
@@ -78,7 +77,7 @@ typedef enum dhcp_option_type {
  */
 #define DHCP_HW_TYPE_ETHERNET_10MB  1
 
-/** @name Type of the DHCP message (It is used as a value of Option 53) */
+/** Type of the DHCP message (It is used as a value of Option 53) */
 typedef enum {
     DHCPDISCOVER = 1,
     DHCPOFFER,
@@ -88,12 +87,12 @@ typedef enum {
     DHCPNAK,
     DHCPRELEASE,
 } dhcp_message_type;
-/*@}*/
 
 /** @name Values of message op code */
+/**@{*/
 #define DHCP_OP_CODE_BOOTREQUEST    1
 #define DHCP_OP_CODE_BOOTREPLY      2
-/*@}*/
+/**@}*/
 
 /** BROADCAST flag */
 #define FLAG_BROADCAST 0x8000
@@ -171,6 +170,7 @@ typedef struct dhcp_message {
              ((msg_)->field_))
 
 /** @name Get field macros */
+/**@{*/
 #define dhcpv4_message_get_op(msg_) \
             dhcpv4_message_get_field(msg_, op)
 #define dhcpv4_message_get_htype(msg_) \
@@ -191,7 +191,7 @@ typedef struct dhcp_message {
             dhcpv4_message_get_field(msg_, giaddr)
 #define dhcpv4_message_get_chaddr(msg_) \
             dhcpv4_message_get_field(msg_, chaddr)
-/*@}*/
+/**@}*/
 
 /**
  * Sets a new value in dhcp_message structure
@@ -218,6 +218,7 @@ typedef struct dhcp_message {
              memcpy(((msg_)->field_), value_, sizeof((msg_)->field_)))
 
 /** @name Set field macros */
+/**@{*/
 #define dhcpv4_message_set_op(msg_, value_) \
             dhcpv4_message_set_simple_field(msg_, op, value_)
 #define dhcpv4_message_set_htype(msg_, value_) \
@@ -240,7 +241,7 @@ typedef struct dhcp_message {
             dhcpv4_message_set_simple_field(msg_, siaddr, value_)
 #define dhcpv4_message_set_giaddr(msg_, value_) \
             dhcpv4_message_set_simple_field(msg_, giaddr, value_)
-/*@}*/
+/**@}*/
 
 /**
  * Note that 'value_' MUST be a pointer to a buffer with at

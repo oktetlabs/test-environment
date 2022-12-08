@@ -29,7 +29,8 @@
 extern "C" {
 #endif
 
-/** @group Logs nesting controls */
+/** @name Logs nesting controls */
+/**@{*/
 
 /**
  * Logging of nesting level step.
@@ -109,26 +110,25 @@ extern "C" {
 #define TEST_STEP_RESET() \
     LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP_RESET, "")
 
-/*@}*/
-
-/** @addtogroup te_ts_tapi_test
- * @{
- */
+/**@}*/
 
 /**
  * Terminate a test with success status.
+ * @ingroup te_ts_tapi_test
  */
 #define TEST_SUCCESS    (TAPI_JMP_DO(0))
 
 /**
  * Terminate a test with failure status. It is assumed that error is
  * already reported.
+ * @ingroup te_ts_tapi_test
  */
 #define TEST_STOP       (TAPI_JMP_DO(TE_EFAIL))
 
 /**
  * Terminate a test with skip status, optionally reporting the reason as
  * a verdict.
+ * @ingroup te_ts_tapi_test
  */
 #define TEST_SKIP(...) \
     do {                                                \
@@ -143,6 +143,7 @@ extern "C" {
  * Terminate a test with failure status, report an error.
  *
  * @param fmt       error message format string with parameters
+ * @ingroup te_ts_tapi_test
  */
 #define TEST_FAIL(fmt...) \
     do {                                                            \
@@ -161,6 +162,7 @@ extern "C" {
  * Should be used instead of TEST_FAIL in the cleanup section.
  *
  * @param fmt       error message format string with parameters
+ * @ingroup te_ts_tapi_test
  */
 #define CLEANUP_TEST_FAIL(fmt...) \
     do {                                                            \
@@ -172,8 +174,6 @@ extern "C" {
             ERROR(fmt);                                             \
         result = EXIT_FAILURE;                                      \
     } while (0)
-
-/**@} <!-- END te_ts_tapi_test --> */
 
 /**
  * A string used to identify per-iteration objectives,

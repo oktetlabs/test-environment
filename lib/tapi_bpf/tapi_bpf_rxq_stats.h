@@ -181,3 +181,5 @@ extern te_errno tapi_bpf_rxq_stats_check_single(const char *ta,
 #endif
 
 #endif /* !__TE_TAPI_BPF_RXQ_STATS_H__ */
+
+/**@} <!-- END tapi_bpf_rxq_stats --> */

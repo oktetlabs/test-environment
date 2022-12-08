@@ -113,4 +113,4 @@ extern void tapi_job_set_name(tapi_job_t *job, const char *name);
 
 #endif /* __TAPI_JOB_INTERNAL_H__ */
 
-/** @{ <!-- END tapi_job_internal --> */
+/** @} <!-- END tapi_job_internal --> */

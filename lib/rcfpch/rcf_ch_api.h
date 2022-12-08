@@ -1204,7 +1204,7 @@ typedef struct rcf_pch_cfg_object {
         }
 
 
-/* @} */
+/** @} */
 
 /**
  * Initialize configuration support of Command Handler
@@ -1232,13 +1232,13 @@ extern void rcf_ch_conf_fini(void);
  */
 extern const char *rcf_ch_conf_agent(void);
 
-/*@}*/
+/**@}*/
 
 /** A convenience constructor to define substitutions */
 #define RCF_PCH_CFG_SUBST_SET(...) \
     { __VA_ARGS__, {NULL, NULL, NULL} }
 
-/*@} <!-- END rcf_ch --> */
+/**@} <!-- END rcf_ch --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

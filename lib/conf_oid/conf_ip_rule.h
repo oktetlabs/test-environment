@@ -51,6 +51,7 @@ typedef struct te_conf_ip_rule {
 } te_conf_ip_rule;
 
 /** @name Flags to determine fields in structure @b te_conf_ip_rule */
+/** @{ */
 #define TE_IP_RULE_FLAG_NONE        0
 #define TE_IP_RULE_FLAG_FAMILY      (1u <<  0)
 #define TE_IP_RULE_FLAG_TYPE        (1u <<  1)

@@ -82,3 +82,5 @@ extern void tapi_nvme_kern_target_fini(struct tapi_nvme_target *target);
 #endif
 
 #endif /* __TAPI_NVME_KERN_TARGET_H__ */
+
+/**@} <!-- END tapi_nvme --> */

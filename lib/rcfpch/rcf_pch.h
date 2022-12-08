@@ -64,6 +64,7 @@ void rcf_pch_get_id(char *id);
  * when corresponding custom handler returns no support. Also default
  * command handlers may be called from custom.
  */
+/**@{*/
 
 /**
  * Default vread command handler.
@@ -276,6 +277,7 @@ extern te_errno rpcserver_plugin_enable(
  * @return Status code
  */
 extern te_errno rpcserver_plugin_disable(void);
+/**@}*/
 
 /** @addtogroup rcf_pch
  * @{

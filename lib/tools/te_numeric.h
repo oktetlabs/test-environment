@@ -3,7 +3,7 @@
 /** @file
  * @brief Numeric operations.
  *
- * @defgroup te_tools_te_enum Numeric operations.
+ * @defgroup te_tools_te_numeric Numeric operations.
  * @ingroup te_tools
  * @{
  *

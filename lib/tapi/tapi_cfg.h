@@ -130,6 +130,7 @@ typedef struct tapi_rt_entry {
 } tapi_rt_entry_t;
 
 /** @name TAPI Route flags */
+/**@{*/
 /** Route is indirect and has gateway address */
 #define TAPI_RT_GW      0x0001
 /** Route is direct, so interface name is specified */
@@ -142,7 +143,7 @@ typedef struct tapi_rt_entry {
 #define TAPI_RT_SRC     0x0010
 /** Table ID for the route */
 #define TAPI_RT_TABLE   0x0020
-/*@}*/
+/**@}*/
 
 /** Default table for normal rules */
 #define TAPI_RT_TABLE_MAIN 254

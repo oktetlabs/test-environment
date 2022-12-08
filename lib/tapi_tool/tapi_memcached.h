@@ -154,8 +154,7 @@ typedef struct tapi_memcached_opt {
     /** Disable watch commands (live logging). */
     te_bool                             disable_watch;
     /**
-     * @defgroup tapi_memcached_extended_opts
-     * @ingroup tapi_memcached
+     * @name Extended options
      * @{
      */
     /** Immediately close new connections after limit. */

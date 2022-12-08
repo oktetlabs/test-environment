@@ -18,6 +18,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup tapi_conf_block Block devices subtree
+ * @ingroup tapi_conf
+ * @{
+ */
+
+/**
  * Initialize loop block devices subsystem on the agent @p ta.
  * In particular, it implies loading the required kernel modules.
  *
