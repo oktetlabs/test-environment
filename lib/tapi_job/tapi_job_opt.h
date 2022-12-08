@@ -267,6 +267,11 @@ te_errno tapi_job_opt_create_enum(const void *value, const void *priv,
 te_errno tapi_job_opt_create_enum_bool(const void *value, const void *priv,
                                        te_vec *args);
 
+/** value type: te_bool3 */
+extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
+                                               const void *priv,
+                                               te_vec *args);
+
 /**@} <!-- END tapi_job_opt_formatting --> */
 
 /**
@@ -597,6 +602,26 @@ te_errno tapi_job_opt_create_enum_bool(const void *value, const void *priv,
     { tapi_job_opt_create_enum_bool, _prefix, _concat_prefix, NULL,            \
       TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field, te_bool), (_map) }
 
+/**
+ * Bind a ternary boolean argument using a custom mapping @p _map from values
+ * to strings.
+ *
+ * @param[in]   _prefix         Argument prefix.
+ * @param[in]   _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in]   _struct         Option struct.
+ * @param[in]   _field          Field name of the boolean in option struct.
+ *                              The field must have the same size as int.
+ *                              In most (if not all) standard ABIs this
+ *                              means `enum`-typed fields may be freely used.
+ *                              There is a compile-check for that constraint.
+ * @param[in]   _map            Enumeration mapping (te_enum_map array).
+ *                              The map shall contain two elements for
+ *                              `TE_BOOL3_TRUE` and `TE_BOOL3_FALSE`.
+ *
+ */
+#define TAPI_JOB_OPT_ENUM_BOOL3(_prefix, _concat_prefix, _struct, _field, _map)\
+    { tapi_job_opt_create_enum_bool3, _prefix, _concat_prefix, NULL,           \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field, te_bool3), (_map) }
 
 /**@} <!-- END tapi_job_opt_bind_constructors --> */
 

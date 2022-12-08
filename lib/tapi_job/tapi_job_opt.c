@@ -206,6 +206,20 @@ tapi_job_opt_create_enum_bool(const void *value, const void *priv, te_vec *args)
                                  te_enum_map_from_value(priv, bval));
 }
 
+/** See description in tapi_job_opt.h */
+te_errno
+tapi_job_opt_create_enum_bool3(const void *value, const void *priv,
+                               te_vec *args)
+{
+    te_bool3 val = *(const te_bool3 *)value;
+
+    if (val == TE_BOOL3_UNKNOWN)
+        return TE_ENOENT;
+
+    return te_vec_append_str_fmt(args, "%s",
+                                 te_enum_map_from_value(priv, val));
+}
+
 /**
  * Append an argument @p arg that was processed by a formatting function
  * to arguments array @p args, with suffix/prefix if present.
