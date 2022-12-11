@@ -23,23 +23,53 @@
 
 #define TE_TEST_NAME    "prologue"
 
+#ifndef TEST_START_VARS
+#define TEST_START_VARS TEST_START_ENV_VARS
+#endif
+
+#ifndef TEST_START_SPECIFIC
+#define TEST_START_SPECIFIC TEST_START_ENV
+#endif
+
+#ifndef TEST_END_SPECIFIC
+#define TEST_END_SPECIFIC TEST_END_ENV
+#endif
+
 #include "te_config.h"
+#include "te_string.h"
+#include "tapi_cfg_memory.h"
+#include "tapi_env.h"
 #include "tapi_test.h"
 #include "tapi_tags.h"
 
 int
 main(int argc, char **argv)
 {
-    TEST_START;
+    rcf_rpc_server *iut_rpcs = NULL;
+    uint64_t memory;
+    te_string str = TE_STRING_INIT;
 
-    TEST_STEP("Start dummy prologue");
+    TEST_START;
+    TEST_GET_PCO(iut_rpcs);
+
+    TEST_STEP("Start prologue");
 
     TEST_STEP("Add TRC tag");
     CHECK_RC(tapi_tags_add_tag("tag_set_by_prologue", NULL));
 
+    /* Total memory in MB */
+    CHECK_RC(tapi_cfg_get_memory(iut_rpcs->ta, 0, &memory));
+    memory /= (1024 * 1024); /* Bytes to Megabytes */
+    te_string_append(&str, "%u", memory);
+    CHECK_RC(tapi_tags_add_tag("total_memory_mb", str.ptr));
+
+    /* Print /local: subtree to see which TRC tags have been added */
+    CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/local:%s", ""));
+
     TEST_SUCCESS;
 
 cleanup:
+    te_string_free(&str);
     TEST_END;
 }
 

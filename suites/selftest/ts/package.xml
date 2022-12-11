@@ -8,6 +8,9 @@
     <session track_conf="silent">
         <prologue>
             <script name="prologue"/>
+            <arg name="env">
+                <value>{{{'iut_rpcs':IUT}}}</value>
+            </arg>
         </prologue>
 
         <run>

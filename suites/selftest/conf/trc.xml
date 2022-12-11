@@ -12,6 +12,7 @@
                 <objective>Initial setup of testing environment</objective>
                 <notes/>
                 <iter result="PASSED">
+                    <arg name="env"/>
                     <notes/>
                 </iter>
             </test>
