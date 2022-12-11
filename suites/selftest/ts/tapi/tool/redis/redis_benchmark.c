@@ -10,6 +10,7 @@
 #define TE_TEST_NAME "redis_benchmark"
 
 #include "redis_srv.h"
+#include "tapi_cfg_memory.h"
 #include "tapi_job_factory_rpc.h"
 #include "tapi_redis_srv.h"
 #include "tapi_redis_benchmark.h"
@@ -19,6 +20,9 @@
 
 /* How long test checks that redis is running in seconds. */
 #define REDIS_SRV_WAIT_TIMEOUT 5
+
+/* Benchmarking ALL tests requires about 2GB of memory  */
+#define REDIS_BENCHMARK_ALL_REQUIRED_MEMORY_MB 2048
 
 int
 main(int argc, char **argv)
@@ -57,6 +61,21 @@ main(int argc, char **argv)
     TEST_GET_UINT_PARAM(pipelines);
     TEST_GET_UINT_PARAM(threads);
     TEST_GET_STRING_PARAM(tests);
+
+    if (strcmp(tests, "-") == 0)
+    {
+        uint64_t memory;
+
+        TEST_STEP("Check if there is enough RAM to run all benchmark tests.");
+        CHECK_RC(tapi_cfg_get_memory(iut_rpcs->ta, 0, &memory));
+        memory /= (1024 * 1024);
+        if (memory < REDIS_BENCHMARK_ALL_REQUIRED_MEMORY_MB)
+        {
+            ERROR("Total memory %luMB, while is required %luMB",
+                  memory, REDIS_BENCHMARK_ALL_REQUIRED_MEMORY_MB);
+            TEST_SKIP("Not enough RAM to run all benchmark tests");
+        }
+    }
 
     TEST_STEP("Configure and start redis-server on IUT.");
     redis_srv_opt.server = (const struct sockaddr *)iut_addr;
