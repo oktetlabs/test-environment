@@ -76,6 +76,7 @@ deps_names_deb = {
     'openssl': 'libssl-dev',
     'pcap': 'libpcap-dev',
     'popt': 'libpopt-dev',
+    'sensors': 'libsensors-dev',
     'yaml-0.1': 'libyaml-dev'
 }
 deps_names_rpm = {
@@ -90,6 +91,7 @@ deps_names_rpm = {
     'openssl': 'openssl-devel',
     'pcap': 'libpcap-devel',
     'popt': 'popt-devel',
+    'sensors': 'lm_sensors-devel',
     'yaml-0.1': 'libyaml-devel'
 }
 

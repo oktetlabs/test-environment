@@ -91,6 +91,18 @@ if get_option('sniffers')
         missed_deps += 'pcap'
     endif
 endif
+if conf.contains('sensors')
+    dep_sensors = cc.find_library('libsensors', required: false)
+    if dep_sensors.found() and cc.has_function('sensors_init',
+                                               args: te_cflags,
+                                               dependencies: dep_sensors)
+        deps += [ dep_sensors ]
+        c_args += [ '-DWITH_SENSORS' ]
+        sources += files('base/conf_sensor.c')
+    else
+        missed_deps += 'sensors'
+    endif
+endif
 if conf.contains('serial-parser')
     c_args += [ '-DWITH_SERIALPARSE' ]
     sources += files('util/conf_serial_parser.c')

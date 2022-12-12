@@ -378,17 +378,51 @@
 
     - oid: "/agent/hardware/sensor"
       access: read_only
-      type: none
+      type: string
       d: |
-         The conceptual problem with sensors, as well as with performance
-         counters: the set of available counters/sensors varies greatly
-         across systems, and the raw data are often meaningless, requiring
-         some sort of calibration.
-         So there are two ways:
-           - provide low-level access to everything the system may provide
-             and let the test or some other entity interpret the data,
-           - identify some set of important parameters and make a bona fide
-             effort to provide platform-independent way to access them.
+         Sensor chip name
+
+    - oid: "/agent/hardware/sensor/data"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Sensor feature name, underscore, feature number
+
+    - oid: "/agent/hardware/sensor/data/threshold"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Sensor threshold type ("low"/"high"/"crit")
+
+    - oid: "/agent/hardware/sensor/data/threshold/value"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Sensor threshold value
+
+    - oid: "/agent/hardware/sensor/data/value"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Sensor latest obtained sample
+
+    - oid: "/agent/hardware/sensor/data/max"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Sensor maximum observed value
+
+    - oid: "/agent/hardware/sensor/data/min"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Sensor minimum observed value
 
     - oid: "/agent/hardware/iommu"
       access: read_only
