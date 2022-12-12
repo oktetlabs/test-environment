@@ -301,6 +301,11 @@ extern te_errno ta_unix_conf_memory_cleanup(void);
 
 extern te_errno ta_unix_conf_cpu_init(void);
 
+#ifdef WITH_SENSORS
+extern te_errno ta_unix_conf_sensor_init(void);
+extern te_errno ta_unix_conf_sensor_cleanup(void);
+#endif
+
 #ifdef WITH_SOCKS
 extern te_errno ta_unix_conf_socks_init(void);
 #endif
@@ -1401,6 +1406,10 @@ rcf_ch_conf_init(void)
 #ifdef WITH_SERIAL
         ta_unix_serial_console_init();
 #endif
+#ifdef WITH_SENSORS
+        if (ta_unix_conf_sensor_init() != 0)
+            ERROR("Failed to add sensor configuration tree");
+#endif
 #ifdef WITH_SNIFFERS
         if (ta_unix_conf_sniffer_init() != 0)
             ERROR("Failed to add sniffer configuration tree");
@@ -1556,6 +1565,9 @@ rcf_ch_conf_fini(void)
 #endif
 #ifdef WITH_SERIAL
     ta_unix_serial_console_cleanup();
+#endif
+#ifdef WITH_SENSORS
+    ta_unix_conf_sensor_cleanup();
 #endif
 #ifdef WITH_SNIFFERS
     ta_unix_conf_sniffer_cleanup();
