@@ -607,6 +607,7 @@ te_serial_parser(serial_parser_t *parser)
     time_t  now;
     time_t  last_alive = 0;
     te_bool rcf;
+    te_bool is_netconsole = FALSE;
 
 #define MAYBE_DO_LOG \
 do {                                                            \
@@ -655,7 +656,8 @@ do {                                                            \
 
     if (pthread_mutex_lock(&parser->mutex) != 0)
     {
-        ERROR("Couldn't to lock the mutex");
+        LGR_MESSAGE(TE_LL_ERROR, parser->log_user,
+                    "Couldn't to lock the mutex");
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
@@ -681,10 +683,15 @@ do {                                                            \
             bind(poller.fd, (struct sockaddr *)&local_addr,
                  sizeof(local_addr)) < 0)
         {
-            ERROR("netconsole init socket() or bind() failed: %s",
-                  strerror(errno));
-            return TE_OS_RC(TE_TA_UNIX, errno);
+            int rc = errno;
+
+            LGR_MESSAGE(TE_LL_ERROR, parser->log_user,
+                        "netconsole init socket() or bind(port=%d) "
+                        "failed: %s",
+                        parser->port, strerror(rc));
+            return TE_OS_RC(TE_TA_UNIX, rc);
         }
+        is_netconsole = TRUE;
     }
     else if (*parser->c_name != '/')
     {
@@ -730,7 +737,8 @@ do {                                                            \
             if (func_system(tmp) == 0)
             {
                 pthread_mutex_unlock(&parser->mutex);
-                ERROR("%s is already is use, won't log", parser->c_name);
+                LGR_MESSAGE(TE_LL_ERROR, parser->log_user,
+                            "%s is already is use, won't log", parser->c_name);
                 return TE_RC(TE_TA_UNIX, TE_EBUSY);
             }
         }
@@ -738,18 +746,22 @@ do {                                                            \
         {
             sprintf(tmp, "fuser -s -k %s", parser->c_name);
             if (func_system(tmp) == 0)
-                WARN("%s was in use, killing the process", parser->c_name);
+                LGR_MESSAGE(TE_LL_WARN, parser->log_user,
+                            "%s was in use, killing the process",
+                            parser->c_name);
         }
         else if (strcmp(parser->mode, "shared") == 0)
         {
             sprintf(tmp, "fuser -s %s", parser->c_name);
             if (func_system(tmp) == 0)
-                WARN("%s is in use, logging anyway", parser->c_name);
+                LGR_MESSAGE(TE_LL_WARN, parser->log_user,
+                            "%s is in use, logging anyway", parser->c_name);
         }
         else
         {
             pthread_mutex_unlock(&parser->mutex);
-            ERROR("Invalid sharing mode '%s'", parser->mode);
+            LGR_MESSAGE(TE_LL_ERROR, parser->log_user,
+                        "Invalid sharing mode '%s'", parser->mode);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
@@ -759,7 +771,8 @@ do {                                                            \
             int rc = errno;
 
             pthread_mutex_unlock(&parser->mutex);
-            ERROR("Cannot open %s: %d", parser->c_name, rc);
+            LGR_MESSAGE(TE_LL_ERROR, parser->log_user,
+                        "Cannot open %s: %d", parser->c_name, rc);
             return TE_OS_RC(TE_TA_UNIX, rc);
         }
         pthread_mutex_unlock(&parser->mutex);
@@ -799,14 +812,25 @@ do {                                                            \
             if (len < 0)
             {
                 MAYBE_DO_LOG;
-                ERROR("Error reading from terminal: %d", errno);
+                LGR_MESSAGE(TE_LL_ERROR, parser->log_user,
+                            "Error reading from terminal: %d", errno);
                 break;
             }
             else if (len == 0)
             {
                 MAYBE_DO_LOG;
-                WARN("Terminal is closed");
-                break;
+                if (!is_netconsole)
+                {
+                    LGR_MESSAGE(TE_LL_WARN, parser->log_user,
+                                "Terminal is closed");
+                    break;
+                }
+                else
+                {
+                    LGR_MESSAGE(TE_LL_WARN, parser->log_user,
+                                "Empty message, possible rate-limiting");
+                    continue;
+                }
             }
             current += len;
             *current = '\0';
@@ -825,13 +849,14 @@ do {                                                            \
         else if (poller.revents & POLLERR)
         {
             MAYBE_DO_LOG;
-            ERROR("Error condition signaled on terminal");
+            LGR_MESSAGE(TE_LL_ERROR, parser->log_user,
+                        "Error condition signaled on terminal");
             break;
         }
         else if (poller.revents & POLLHUP)
         {
             MAYBE_DO_LOG;
-            RING("Terminal hung up");
+            LGR_MESSAGE(TE_LL_RING, parser->log_user, "Terminal hung up");
             rc = 0;
             break;
         }
@@ -841,6 +866,7 @@ do {                                                            \
             MAYBE_DO_LOG;
         }
     }
+    close(poller.fd);
     pthread_cleanup_pop(1); /* free buffer */
     return rc;
 #undef MAYBE_DO_LOG
