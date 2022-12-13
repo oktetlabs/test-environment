@@ -135,7 +135,35 @@ static const tapi_job_opt_bind memcached_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_UINT_T("-oworker_logbuf_size=", TRUE, NULL, tapi_memcached_opt,
                         worker_logbuf_size),
     TAPI_JOB_OPT_BOOL("-otrack_sizes", tapi_memcached_opt, track_sizes),
-    TAPI_JOB_OPT_BOOL("-ono_hashexpand", tapi_memcached_opt, no_hashexpand)
+    TAPI_JOB_OPT_BOOL("-ono_hashexpand", tapi_memcached_opt, no_hashexpand),
+    TAPI_JOB_OPT_UINT_T("-oext_page_size=", TRUE, NULL, tapi_memcached_opt,
+                        ext_page_size),
+    TAPI_JOB_OPT_STRUCT("-oext_path=", TRUE, ":", NULL,
+                        TAPI_JOB_OPT_STRING(NULL, FALSE, tapi_memcached_opt,
+                                            ext_path.path),
+                        TAPI_JOB_OPT_UINT_T(NULL, FALSE, "G", tapi_memcached_opt,
+                                            ext_path.size)),
+    TAPI_JOB_OPT_UINT_T("-oext_wbuf_size=", TRUE, NULL, tapi_memcached_opt,
+                        ext_wbuf_size),
+    TAPI_JOB_OPT_UINT_T("-oext_threads=", TRUE, NULL, tapi_memcached_opt,
+                        ext_threads),
+    TAPI_JOB_OPT_UINT_T("-oext_item_size=", TRUE, NULL, tapi_memcached_opt,
+                        ext_item_size),
+    TAPI_JOB_OPT_UINT_T("-oext_item_age=", TRUE, NULL, tapi_memcached_opt,
+                        ext_item_age),
+    TAPI_JOB_OPT_UINT_T("-oext_low_ttl=", TRUE, NULL, tapi_memcached_opt,
+                        ext_low_ttl),
+    TAPI_JOB_OPT_BOOL("-oext_drop_unread", tapi_memcached_opt, ext_drop_unread),
+    TAPI_JOB_OPT_UINT_T("-oext_recache_rate=", TRUE, NULL, tapi_memcached_opt,
+                        ext_recache_rate),
+    TAPI_JOB_OPT_UINT_T("-oext_compact_under=", TRUE, NULL, tapi_memcached_opt,
+                        ext_compact_under),
+    TAPI_JOB_OPT_UINT_T("-oext_drop_under=", TRUE, NULL, tapi_memcached_opt,
+                        ext_drop_under),
+    TAPI_JOB_OPT_DOUBLE("-oext_max_frag=", TRUE, NULL, tapi_memcached_opt,
+                        ext_max_frag),
+    TAPI_JOB_OPT_DOUBLE("-oslab_automove_freeratio=", TRUE, NULL,
+                        tapi_memcached_opt, slab_automove_freeratio)
 );
 
 /* Default values of memcached command line arguments. */
@@ -186,6 +214,22 @@ const tapi_memcached_opt tapi_memcached_default_opt = {
     .worker_logbuf_size         = TAPI_JOB_OPT_UINT_UNDEF,
     .track_sizes                = FALSE,
     .no_hashexpand              = FALSE,
+    .ext_path                   = {
+                                    .path = NULL,
+                                    .size = TAPI_JOB_OPT_UINT_UNDEF
+                                  },
+    .ext_page_size              = TAPI_JOB_OPT_UINT_UNDEF,
+    .ext_wbuf_size              = TAPI_JOB_OPT_UINT_UNDEF,
+    .ext_threads                = TAPI_JOB_OPT_UINT_UNDEF,
+    .ext_item_size              = TAPI_JOB_OPT_UINT_UNDEF,
+    .ext_item_age               = TAPI_JOB_OPT_UINT_UNDEF,
+    .ext_low_ttl                = TAPI_JOB_OPT_UINT_UNDEF,
+    .ext_drop_unread            = FALSE,
+    .ext_recache_rate           = TAPI_JOB_OPT_UINT_UNDEF,
+    .ext_compact_under          = TAPI_JOB_OPT_UINT_UNDEF,
+    .ext_drop_under             = TAPI_JOB_OPT_UINT_UNDEF,
+    .ext_max_frag               = TAPI_JOB_OPT_DOUBLE_UNDEF,
+    .slab_automove_freeratio    = TAPI_JOB_OPT_DOUBLE_UNDEF,
     .memcached_path             = NULL
 };
 

@@ -207,6 +207,78 @@ typedef struct tapi_memcached_opt {
     te_bool                             track_sizes;
     /** Disables hash table expansion. Dangerous! */
     te_bool                             no_hashexpand;
+
+    /**
+     * @name External storage options
+     * @{
+     */
+    /**
+     * File to write to for external storage.
+     *
+     * Example: @c "ext_path=/mnt/d1/extstore:1G".
+     * This initializes extstore with up to 5 gigabytes of storage.
+     * Storage is split internally into pages size of @p ext_page_size.
+     */
+    struct
+    {
+        const char *path;
+        tapi_job_opt_uint_t size;
+    } ext_path;
+    /** Size of storage pages, in megabytes. */
+    tapi_job_opt_uint_t                 ext_page_size;
+    /** Size of page write buffers, in megabytes. */
+    tapi_job_opt_uint_t                 ext_wbuf_size;
+    /**
+     * Number of IO threads to run.
+     *
+     * If you have a high read latency but the drive is idle,
+     * you can increase this number.
+     * Stick to low values; no more than 8 threads.
+     */
+    tapi_job_opt_uint_t                 ext_threads;
+    /**
+     * Store items larger than this, in bytes.
+     *
+     * Items larger than this can be flushed.
+     * You can lower this value if you want to save a little extra RAM
+     * and your keys are short. You can also raise this value if you
+     * only wish to flush very large objects, which is a good place to start.
+     */
+    tapi_job_opt_uint_t                 ext_item_size;
+    /**
+     * Store items idle at least this long, in seconds.
+     * If not used then no age limit.
+     */
+    tapi_job_opt_uint_t                 ext_item_age;
+    /** Consider TTLs lower than this specially. */
+    tapi_job_opt_uint_t                 ext_low_ttl;
+    /** Don't re-write unread values during compaction. */
+    te_bool                             ext_drop_unread;
+    /**
+     * Recache an item every N accesses.
+     *
+     * If an item stored on flash has been accessed more than once in the last
+     * minute, it has a one in N chance of being recached into RAM and removed
+     * from flash. It's good to keep this value high; recaches into RAM cause
+     * fragmentation on disk, and it's rare for objects in flash to become
+     * frequently accessed. If they do, they will eventually be recached.
+     */
+    tapi_job_opt_uint_t                 ext_recache_rate;
+    /** Compact when fewer than this many free pages. */
+    tapi_job_opt_uint_t                 ext_compact_under;
+    /** Drop COLD items when fewer than this many free pages. */
+    tapi_job_opt_uint_t                 ext_drop_under;
+    /**
+     * Max page fragmentation to tolerate.
+     *
+     * Example: "ext_max_frag=0.5"
+     * This will rewrite pages which are at least half empty.
+     * If no pages are half empty, the oldest page will be evicted.
+     */
+    tapi_job_opt_double_t               ext_max_frag;
+    /** Ratio of memory to hold free as buffer. */
+    tapi_job_opt_double_t               slab_automove_freeratio;
+    /** @} */
     /** @} */
     /** Path to memcached exec (if @c NULL then "memcached"). */
     const char                         *memcached_path;
