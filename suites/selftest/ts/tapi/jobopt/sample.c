@@ -89,6 +89,11 @@ main(int argc, char **argv)
         te_bool flag2;
         size_t n_array;
         const char *array[8];
+        struct {
+            tapi_job_opt_uint_t opt_uint;
+            tapi_job_opt_double_t opt_double;
+            const char *opt_str;
+        } structure;
 #ifdef HAVE_NETINET_IN_H
         const struct sockaddr *addr;
 #endif
@@ -133,6 +138,13 @@ main(int argc, char **argv)
                                      TAPI_JOB_OPT_STRING(NULL, TRUE,
                                                          data_sample,
                                                          array[0])),
+            TAPI_JOB_OPT_STRUCT("--struct={", TRUE, ":", "}",
+                    TAPI_JOB_OPT_UINT_T(NULL, FALSE, NULL, data_sample,
+                                        structure.opt_uint),
+                    TAPI_JOB_OPT_DOUBLE(NULL, FALSE, NULL, data_sample,
+                                        structure.opt_double),
+                    TAPI_JOB_OPT_STRING(NULL, FALSE, data_sample,
+                                        structure.opt_str)),
             TAPI_JOB_OPT_DUMMY("--dummy"),
 #ifdef HAVE_NETINET_IN_H
             TAPI_JOB_OPT_SOCKADDR_PTR("--ip", FALSE, data_sample, addr),
@@ -169,6 +181,11 @@ main(int argc, char **argv)
             "value2",
             "value3",
         },
+        .structure = {
+            .opt_uint = TAPI_JOB_OPT_UINT_VAL(123),
+            .opt_double = TAPI_JOB_OPT_DOUBLE_VAL(45.67),
+            .opt_str = "struct_string"
+        },
 #ifdef HAVE_NETINET_IN_H
         .addr = (const struct sockaddr *)&sample_addr,
 #endif
@@ -189,6 +206,7 @@ main(int argc, char **argv)
         "--flag1",
         "--item=value1", "--item=value2", "--item=value3",
         "--items={value1,value2,value3}",
+        "--struct={123:45.670000:struct_string}",
         "--dummy",
 #ifdef HAVE_NETINET_IN_H
         "--ip", "127.0.0.1",

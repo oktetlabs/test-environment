@@ -77,6 +77,18 @@ typedef struct tapi_job_opt_array {
     tapi_job_opt_bind bind;
 } tapi_job_opt_array;
 
+/**
+ * The descriptor for an struct-typed field.
+ * This structure shall *never* be used directly,
+ * see TAPI_JOB_OPT_STRUCT()
+ */
+typedef struct tapi_job_opt_struct {
+    /** Separator between array elements */
+    const char *sep;
+    /** Options bind for all elements in the structure */
+    tapi_job_opt_bind *binds;
+} tapi_job_opt_struct;
+
 /** A convenience vector constructor to define option binds */
 #define TAPI_JOB_OPT_SET(...)                                              \
     {__VA_ARGS__, {NULL, NULL, NULL, FALSE, 0, NULL}}
@@ -242,6 +254,10 @@ te_errno tapi_job_opt_create_array(const void *value, const void *priv,
 /** Value type: an inline array */
 te_errno tapi_job_opt_create_embed_array(const void *value, const void *priv,
                                          te_vec *args);
+
+/** Value type: an inline struct */
+te_errno tapi_job_opt_create_struct(const void *value, const void *priv,
+                                    te_vec *args);
 
 /** value type: none */
 te_errno tapi_job_opt_create_dummy(const void *value, const void *priv,
@@ -506,6 +522,33 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
           .element_size = TE_SIZEOF_FIELD(_struct, _arrfield[0]),           \
           .sep = (_sep),                                                    \
           .bind = __VA_ARGS__ } }
+
+/**
+ * Bind `tapi_job_opt_struct` argument.
+ *
+ * Unlike TAPI_JOB_OPT_ARRAY() and TAPI_JOB_OPT_EMBED_ARRAY(),
+ * it allows to create structures with different types of variables
+ * and output them using a separator @p _sep. This combined argument
+ * may have a @p _prefix and a @p _suffix, like e.g. TAPI_JOB_OPT_UINT().
+ *
+ * @param[in]     _prefix           Argument prefix.
+ * @param[in]     _concat_prefix    Concatenate the prefix with an argument
+ *                                  if @c TRUE.
+ * @param[in]     _sep              Array element separator.
+ * @param[in]     _suffix           Argument suffix.
+ * @param         ...               Bindings for elements
+ *                                  (must be a valid initializer list for
+ *                                  tapi_job_opt_bind, e.g as provided
+ *                                  by convenience macros; the argument is
+ *                                  a vararg because members of the list
+ *                                  are treated by the preprocessor as
+ *                                  individual macro arguments).
+ */
+#define TAPI_JOB_OPT_STRUCT(_prefix, _concat_prefix, _sep, _suffix, ...) \
+    { tapi_job_opt_create_struct, _prefix, _concat_prefix, _suffix, 0,   \
+      &(tapi_job_opt_struct){                                            \
+          .sep = (_sep),                                                 \
+          .binds = (tapi_job_opt_bind[])TAPI_JOB_OPT_SET(__VA_ARGS__) } }
 
 /**
  * Bind none argument.

@@ -424,3 +424,47 @@ tapi_job_opt_create_embed_array(const void *value, const void *priv,
 
     return rc;
 }
+
+te_errno
+tapi_job_opt_create_struct(const void *value, const void *priv, te_vec *args)
+{
+    te_vec sub_args = TE_VEC_INIT(char *);
+    te_string combined = TE_STRING_INIT;
+
+    const tapi_job_opt_struct *data = priv;
+    tapi_job_opt_bind *bind;
+
+    te_errno rc;
+
+    for (bind = data->binds; bind->fmt_func != NULL; bind++)
+    {
+        rc = tapi_job_opt_bind2str(bind, value, &sub_args);
+        if (rc != 0)
+        {
+            te_vec_deep_free(&sub_args);
+            te_string_free(&combined);
+            return rc;
+        }
+    }
+
+    rc = te_string_join_vec(&combined, &sub_args, data->sep);
+    te_vec_deep_free(&sub_args);
+    if (rc != 0)
+    {
+        te_string_free(&combined);
+        return rc;
+    }
+
+    if (combined.ptr == NULL)
+        return TE_ENOENT;
+
+    /*
+     * Transfer ownership of the string buffer into the vector,
+     * so combined is *not* freed in a successful case
+     */
+    rc = TE_VEC_APPEND(args, combined.ptr);
+    if (rc != 0)
+        te_string_free(&combined);
+
+    return rc;
+}
