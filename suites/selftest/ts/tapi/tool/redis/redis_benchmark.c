@@ -41,7 +41,8 @@ main(int argc, char **argv)
 
     tapi_redis_benchmark_app *redis_bm_app = NULL;
     tapi_redis_benchmark_opt redis_bm_opt = tapi_redis_benchmark_default_opt;
-    tapi_redis_benchmark_report redis_bm_report;
+    tapi_redis_benchmark_report redis_bm_report =
+                                    SLIST_HEAD_INITIALIZER(redis_bm_report);
 
     unsigned int clients;
     unsigned int requests;
