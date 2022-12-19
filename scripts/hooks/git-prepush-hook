@@ -150,63 +150,86 @@ function check_signed_off ()
 function check_co_developers ()
 {
     local rev="$1"
-    local -a co_developers
-    local -a signed_off
+    local -a participants
     local main_author
     local committer
-    local i
-    local fmt="%(trailers:key=Reviewed-by,key=Acked-by,key=Tested-by,valueonly)"
-    local r
-    local found=
+    local line
+    local email
+    local codev=
+    local signed_author=
+    local need_signed_committer=
+    local duplicates
 
-    readarray -t co_developers < <(get_trailer Co-developed-by "${rev}" \
-                                    | extract_mail)
-    readarray -t signed_off < <(get_trailer Signed-off-by "${rev}" \
-                                    | extract_mail)
+    readarray -t participants < <(git log -1 --format="%(trailers)" "${rev}")
+
     main_author="$(git log -1 --format='%ae' "${rev}")"
     main_author="${main_author,,}"
     committer="$(git log -1 --format='%ce' "${rev}")"
     committer="${committer,,}"
 
-    # This is a special case for external patches, when the committer
-    # who pushed the patch to main, the formal author who published
-    # the patch on GitHub and the real author who actually wrote
-    # the patch are three different persons, and the formal author
-    # did not take part in the actual development.
-    # In this case the formal author must also be among reviewers.
-    #
-    # The simple case when the formal author is the same as the real
-    # author still works in this case, but some more complicated cases
-    # with multiple co-developers may confuse the check; we'll sort this
-    # out, should any real-world such commit be found.
-    if [[ "${committer}" != "${main_author}" ]]; then
-        if [[ "${#signed_off[@]}" -ge 2 ]]; then
-            co_developers[${#co_developers[@]}]="${signed_off[-2]}"
-            for r in $(git log -1 --format="${fmt}" | extract_mail); do
-                if [[ "${r}" == "${main_author}" ]]; then
-                    found="true"
-                    break
+    # The guidelines of kernel.org are followed:
+    # - each Co-developed-by must be immediately followed by Signed-off-by;
+    # - there must be a Signed-off-by from the commit author;
+    # - there may be additional Signed-off-by from people not mentioned;
+    #   elsewhere; this is possible if a patch passes through several stages;
+    # - if there are co-developers after the author, the last Signed-off-by
+    #   should be by the actual committer.
+    for line in "${participants[@]}"; do
+        [[ -z "${line}" ]] && continue
+
+        shopt -s nocasematch
+        case "${line}" in
+            co-developed-by:*)
+                email="$(echo "${line}" | extract_mail)"
+                if [[ -n "${codev}" ]]; then
+                    serious_error \
+                    "Co-developed-by ${codev} is not followed by Signed-off-by"
                 fi
-            done
-            if [[ -z "${found}" ]]; then
-                serious_error 'formal commit author is not among reviewers'
-            fi
-        fi
-    fi
-
-    co_developers[${#co_developers[@]}]="${main_author}"
-
-    if [[ "${#signed_off[@]}" -ne "${#co_developers[@]}" ]]; then
-        serious_error 'invalid number of Signed-off-by line'
-        return 1
-    fi
-
-    for i in "${!signed_off[@]}"; do
-        if [[ "${signed_off[${i}]}" != "${co_developers[${i}]}" ]]; then
-            serious_error \
-            "Signed-off-by ${signed_off[${i}]}, expected ${co_developers[${i}]}"
-        fi
+                codev="${email}"
+                ;;
+            signed-off-by:*)
+                email="$(echo "${line}" | extract_mail)"
+                if [[ -n "${codev}" ]]; then
+                    if [[ "${codev}" != "${email}" ]]; then
+                        serious_error \
+                            "Expected Signed-off-by ${codev}, got ${email}"
+                    fi
+                    codev=
+                fi
+                if [[ -n "${signed_author}" ]]; then
+                    need_signed_committer=yes
+                fi
+                if [[ "${email}" == "${main_author}" ]]; then
+                    signed_author=yes
+                fi
+                ;;
+            *)
+                if [[ -n "${codev}" ]]; then
+                    serious_error \
+                    "Co-developed-by ${codev} is not followed by Signed-off-by"
+                fi
+                codev=
+                ;;
+        esac
+        shopt -u nocasematch
     done
+    if [[ -n "${codev}" ]]; then
+        serious_error \
+            "Co-developed-by ${codev} is not followed by Signed-off-by"
+    fi
+    if [[ -z "${signed_author}" ]]; then
+        serious_error "No Signed-off-by from the main author ${main_author}"
+    fi
+    if [[ -n "${need_signed_committer}" && "${email}" != "${committer}" ]]; then
+        nonmaintainer_error "The last Signed-off-by should be from ${committer}"
+    fi
+
+    duplicates="$(get_trailer Signed-off-by "${rev}" | extract_mail \
+                              | sort | uniq -d)"
+    if [[ -n "${duplicates}" ]]; then
+        serious_error \
+            "the same developers are mentioned several times: ${duplicates}"
+    fi
 }
 
 ### - the presence of at least one of Reviewed-by, Acked-by or Tested-by
