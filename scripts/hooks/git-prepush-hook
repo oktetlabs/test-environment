@@ -98,6 +98,16 @@ BYLINE_TRAILERS=(Signed-off-by Co-developed-by Reviewed-by Acked-by \
                               Tested-by Suggested-by Reported-by)
 KNOWN_TRAILERS=("${BYLINE_TRAILERS[@]}" OL-Redmine-Id GitHub-TE-Id Fixes Breaks)
 
+function strip_known_trailers ()
+{
+    local filter=
+
+    for trailer in "${KNOWN_TRAILERS[@]}"; do
+        filters+="/^${trailer}:/Id;"
+    done
+    git interpret-trailers --unfold | sed "${filters}"
+}
+
 function serious_error ()
 {
     ERRORS+=$'\n\t'"$1"
@@ -393,7 +403,9 @@ function check_description ()
     local rev="$1"
 
     if [[ -n "$(git log -1 --format=%b  "${rev}" \
-                              | sed '/^Fixes:/d; s/^.\{1,72\}//')" ]]; then
+                    | strip_known_trailers \
+                    | sed 's/^.\{1,72\}//')" ]];
+    then
         production_error 'overlong lines in description'
     fi
 }
