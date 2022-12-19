@@ -96,7 +96,8 @@ function get_parent ()
 
 BYLINE_TRAILERS=(Signed-off-by Co-developed-by Reviewed-by Acked-by \
                               Tested-by Suggested-by Reported-by)
-KNOWN_TRAILERS=("${BYLINE_TRAILERS[@]}" OL-Redmine-Id GitHub-TE-Id Fixes Breaks)
+KNOWN_TRAILERS=("${BYLINE_TRAILERS[@]}" OL-Redmine-Id GitHub-TE-Id AMD-Jira-Id \
+                                        Fixes Breaks)
 
 function strip_known_trailers ()
 {
