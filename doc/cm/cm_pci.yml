@@ -245,6 +245,8 @@
     - oid: "/agent/hardware/pci/device/serialno"
       access: read_only
       type: string
+      depends:
+        - oid: "/agent/hardware/pci/device/driver"
       d: |
          PCIe device serial number. Note that this is not the same as
          /agent/hardware/pci/device/vpd:SN,
