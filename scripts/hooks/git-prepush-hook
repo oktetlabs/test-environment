@@ -94,6 +94,10 @@ function get_parent ()
     fi
 }
 
+BYLINE_TRAILERS=(Signed-off-by Co-developed-by Reviewed-by Acked-by \
+                              Tested-by Suggested-by Reported-by)
+KNOWN_TRAILERS=("${BYLINE_TRAILERS[@]}" OL-Redmine-Id GitHub-TE-Id Fixes Breaks)
+
 function serious_error ()
 {
     ERRORS+=$'\n\t'"$1"
@@ -279,9 +283,7 @@ function check_capitalization ()
     local trailer
     local trailer0
 
-    for trailer in Signed-off-by Co-developed-by Reviewed-by Acked-by \
-                                 Tested-by Suggested-by Reported-by Fixes \
-                                 OL-Redmine-Id GitHub-TE-Id Breaks; do
+    for trailer in "${KNOWN_TRAILERS[@]}"; do
         while IFS=: read -r trailer0 rest; do
             [[ -z "${trailer0}" ]] && continue
             if [[ "${trailer}" != "${trailer0}" ]]; then
@@ -302,8 +304,7 @@ function check_bylines ()
     local trailer0
     local rest
 
-    for trailer in Signed-off-by Co-developed-by Reviewed-by Acked-by \
-                                 Tested-by Suggested-by Reported-by; do
+    for trailer in "${BYLINE_TRAILERS[@]}"; do
         while IFS=: read -r trailer0 rest; do
             [[ -z "${trailer0}" ]] && continue
             case "${rest}" in
