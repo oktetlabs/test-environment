@@ -339,6 +339,8 @@ process_agent_unix_parms() {
             --with-sniffers=no|--without-sniffers)
                 set_sniffers false
                 ;;
+            --with-sensors=yes|--with-sensors)
+                conf="${conf} sensors" ;;
             --with-tc)
                 conf="${conf} tc" ;;
             --with-tirpc)
