@@ -458,6 +458,97 @@ indir_set(unsigned int gid, const char *oid,
 #endif
 }
 
+/* Get value of indir_default node */
+static te_errno
+indir_default_get(unsigned int gid, const char *oid,
+                  char *value, const char *if_name,
+                  const char *unused1, const char *rss_ctx)
+{
+#ifndef ETHTOOL_SRSSH
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(if_name);
+    UNUSED(unused1);
+    UNUSED(rss_ctx);
+
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#else
+    struct ethtool_rxfh *rxfh;
+    unsigned int rss_ctx_id;
+    te_errno rc;
+
+    UNUSED(oid);
+    UNUSED(unused1);
+
+    rc = te_strtoui(rss_ctx, 0, &rss_ctx_id);
+    if (rc != 0)
+        return rc;
+
+    /* Resetting works only for default context */
+    if (rss_ctx_id != 0)
+        return TE_RC(TE_TAPI, TE_ENOENT);
+
+    rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
+    if (rc != 0)
+        return rc;
+
+    TE_STRLCPY(value, "0", RCF_MAX_VAL);
+    return 0;
+#endif
+}
+
+/* Set value of indir_default node */
+static te_errno
+indir_default_set(unsigned int gid, const char *oid,
+                  const char *value, const char *if_name,
+                  const char *unused1, const char *rss_ctx)
+{
+#ifndef ETHTOOL_SRSSH
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(if_name);
+    UNUSED(unused1);
+    UNUSED(rss_ctx);
+
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#else
+    struct ethtool_rxfh *rxfh;
+    unsigned int rss_ctx_id;
+    unsigned int value_int;
+    te_errno rc;
+
+    UNUSED(oid);
+    UNUSED(unused1);
+
+    rc = te_strtoui(rss_ctx, 0, &rss_ctx_id);
+    if (rc != 0)
+        return rc;
+
+    if (rss_ctx_id != 0)
+    {
+        ERROR("%s(): indirection table can be reset to default only for "
+              "default context", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    rc = te_strtoui(value, 0, &value_int);
+    if (rc != 0)
+        return rc;
+    if (value_int == 0)
+        return 0;
+
+    rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
+    if (rc != 0)
+        return rc;
+
+    /* This causes reset to default for RSS indirection table */
+    rxfh->indir_size = 0;
+    return 0;
+#endif
+}
+
 /* Commit all changes to hash_indir object (via ETHTOOL_SRSSH) */
 static te_errno
 hash_indir_commit(unsigned int gid, const cfg_oid *p_oid)
@@ -531,8 +622,16 @@ rss_ctx_list(unsigned int gid,
 
 static rcf_pch_cfg_object node_hash_indir;
 
+static rcf_pch_cfg_object node_indir_default = {
+    .sub_id = "indir_default",
+    .get = (rcf_ch_cfg_get)indir_default_get,
+    .set = (rcf_ch_cfg_set)indir_default_set,
+    .commit_parent = &node_hash_indir
+};
+
 static rcf_pch_cfg_object node_indir = {
     .sub_id = "indir",
+    .brother = &node_indir_default,
     .get = (rcf_ch_cfg_get)indir_get,
     .set = (rcf_ch_cfg_set)indir_set,
     .list = (rcf_ch_cfg_list)indir_list,

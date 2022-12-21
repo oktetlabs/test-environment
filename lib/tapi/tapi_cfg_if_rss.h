@@ -120,6 +120,33 @@ extern te_errno tapi_cfg_if_rss_indir_set_local(
                                           int val);
 
 /**
+ * Request resetting indirection table of default RSS context
+ * to default state (reset will happen after
+ * tapi_cfg_if_rss_hash_indir_commit() is called).
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Network interface name
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_rss_indir_default_set_local(
+                                              const char *ta,
+                                              const char *if_name);
+
+/**
+ * Request resetting indirection table of default RSS context
+ * to default state.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Network interface name
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_rss_indir_default_set(
+                                              const char *ta,
+                                              const char *if_name);
+
+/**
  * Commit changes related to hash key, hash functions and
  * indirection table.
  *

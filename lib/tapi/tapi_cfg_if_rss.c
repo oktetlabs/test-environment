@@ -144,6 +144,27 @@ tapi_cfg_if_rss_indir_set_local(const char *ta,
 
 /* See description in tapi_cfg_if_rss.h */
 te_errno
+tapi_cfg_if_rss_indir_default_set_local(const char *ta,
+                                        const char *if_name)
+{
+    return cfg_set_instance_local_fmt(
+            CFG_VAL(BOOL, 1),
+            "/agent:%s/interface:%s/rss:/context:0/hash_indir:/indir_default:",
+            ta, if_name);
+}
+
+/* See description in tapi_cfg_if_rss.h */
+te_errno
+tapi_cfg_if_rss_indir_default_set(const char *ta, const char *if_name)
+{
+    return cfg_set_instance_fmt(
+            CFG_VAL(BOOL, 1),
+            "/agent:%s/interface:%s/rss:/context:0/hash_indir:/indir_default:",
+            ta, if_name);
+}
+
+/* See description in tapi_cfg_if_rss.h */
+te_errno
 tapi_cfg_if_rss_hash_indir_commit(const char *ta,
                                   const char *if_name,
                                   unsigned int rss_context)

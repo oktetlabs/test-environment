@@ -74,9 +74,18 @@
       type: int32
       depends:
         - oid: "/agent/interface/channels"
+        - oid: "/agent/interface/rss/context/hash_indir/indir_default"
       d: |
          Indirection table entry
          Name: Hash function value
          Value: RX queue number (zero-based)
 
-
+    - oid: "/agent/interface/rss/context/hash_indir/indir_default"
+      access: read_write
+      type: bool
+      volatile: true
+      d: |
+         Reset indirection table to default state
+         Name: none
+         Value: If set to nonzero, indirection table is reset.
+                TA always returns zero as value of this node.
