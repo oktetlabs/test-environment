@@ -24,88 +24,292 @@
 #include "te_defs.h"
 #include "logger_api.h"
 #include "te_alloc.h"
+#include "te_intset.h"
+#include "te_bufs.h"
 #include "te_hex_diff_dump.h"
 
-/* See description in te_bufs.h */
-void
-te_fill_buf(void *buf, size_t len)
-{
-    size_t  i;
+#define FILL_SPEC_ESC_CHAR '`'
 
-    for (i = 0; i < len / sizeof(int); ++i)
+static te_errno
+parse_byte_set(const char **spec, te_charset *set)
+{
+    const char *iter = *spec;
+
+    te_charset_clear(set);
+
+    if (*iter == FILL_SPEC_ESC_CHAR)
     {
-        ((int *)buf)[i] = rand();
+        iter++;
+        te_charset_add_range(set, (uint8_t)*iter, (uint8_t)*iter);
     }
-    for (i = (len / sizeof(int)) * sizeof(int); i < len; ++i)
+    else if (*iter != '[')
     {
-        ((unsigned char *)buf)[i] = rand();
+        te_charset_add_range(set, (uint8_t)*iter, (uint8_t)*iter);
+    }
+    else
+    {
+        te_bool except = FALSE;
+        te_bool empty_range = TRUE;
+
+        for (iter++; *iter != ']'; iter++)
+        {
+            uint8_t minch = 0;
+            uint8_t maxch = 0;
+
+            switch (*iter)
+            {
+                case '^':
+                    if (empty_range)
+                    {
+                        te_charset_add_range(set, 0, UINT8_MAX);
+                        empty_range = FALSE;
+                    }
+                    except = !except;
+                    continue;
+                case FILL_SPEC_ESC_CHAR:
+                    iter++;
+                    minch = maxch = *iter;
+                    break;
+                case '\0':
+                    ERROR("Unterminated ']'");
+                    return TE_EILSEQ;
+                default:
+                    if (iter[1] == '-' && iter[2] != ']' && iter[2] != '\0')
+                    {
+                        minch = (uint8_t)*iter;
+                        maxch = (uint8_t)iter[2];
+                        iter += 2;
+                    }
+                    else
+                    {
+                        minch = maxch = (uint8_t)*iter;
+                    }
+                    break;
+            }
+
+            if (except)
+                te_charset_remove_range(set, minch, maxch);
+            else
+                te_charset_add_range(set, minch, maxch);
+            empty_range = FALSE;
+        }
+
+        if (empty_range)
+            te_charset_add_range(set, 0, UINT8_MAX);
+    }
+
+    *spec = iter + 1;
+    return 0;
+}
+
+te_errno
+te_compile_buf_pattern(const char *spec, uint8_t *storage,
+                       size_t max_size,
+                       te_buf_pattern *pattern)
+{
+    size_t remaining = max_size;
+
+    pattern->start = storage;
+    pattern->suffix_len = 0;
+    pattern->repeat = pattern->suffix = pattern->end = NULL;
+
+    while (*spec != '\0')
+    {
+        te_errno rc = 0;
+        te_charset cset;
+        size_t need_space;
+
+        if (*spec == '(')
+        {
+            spec++;
+
+            if (pattern->repeat != NULL)
+            {
+                ERROR("Multiple repeat sections");
+                return TE_EINVAL;
+            }
+            pattern->repeat = storage;
+        }
+        else if (*spec == ')' &&
+                 pattern->repeat != NULL &&
+                 pattern->suffix == NULL)
+        {
+            spec++;
+            pattern->suffix = storage;
+            continue;
+        }
+
+        rc = parse_byte_set(&spec, &cset);
+        if (rc != 0)
+            return rc;
+
+        need_space = cset.n_items;
+        if (need_space == UINT8_MAX + 1)
+            need_space = 1;
+        else
+            need_space++;
+        if (remaining < need_space)
+        {
+            ERROR("Not enough space for compiled pattern, needed %zu",
+                  need_space);
+            return TE_ENOBUFS;
+        }
+
+        *storage++ = (uint8_t)cset.n_items;
+        if (cset.n_items != UINT8_MAX + 1)
+        {
+            te_charset_get_bytes(&cset, storage);
+            storage += cset.n_items;
+        }
+        remaining -= need_space;
+        if (pattern->suffix != NULL)
+            pattern->suffix_len++;
+    }
+
+    pattern->end = storage;
+    if (pattern->repeat == NULL)
+    {
+        pattern->repeat = pattern->start;
+        pattern->suffix = pattern->end;
+    }
+    else if (pattern->suffix == NULL)
+    {
+        ERROR("Unterminated '('");
+        return TE_EILSEQ;
+    }
+
+    if (pattern->end == pattern->start)
+    {
+        ERROR("Empty pattern");
+        return TE_ENODATA;
+    }
+    return 0;
+}
+
+static uint8_t
+fill_pattern_byte(uint8_t **pattern)
+{
+    uint8_t byte;
+
+    if (**pattern == 0)
+    {
+        byte = rand_range(0, UINT8_MAX);
+        (*pattern)++;
+    }
+    else
+    {
+        byte = rand_range(0, **pattern - 1);
+        byte = (*pattern)[byte + 1];
+        (*pattern) += **pattern + 1;
+    }
+
+    return byte;
+}
+
+void
+te_fill_pattern_buf(void *buf, size_t len, const te_buf_pattern *pattern)
+{
+    static uint8_t any_byte[1] = {0};
+    static const te_buf_pattern any_byte_pattern = {
+        .start = any_byte,
+        .end = any_byte + 1,
+        .repeat = any_byte,
+        .suffix = any_byte + 1,
+        .suffix_len = 0,
+    };
+    uint8_t *buf_ptr;
+    uint8_t *pat_ptr;
+    size_t remain;
+
+    assert(buf != NULL);
+
+    if (pattern == NULL)
+        pattern = &any_byte_pattern;
+
+    if (len == 0)
+        return;
+
+    pat_ptr = pattern->start;
+    buf_ptr = buf;
+    for (remain = len; remain > pattern->suffix_len; remain--)
+    {
+        assert(pat_ptr < pattern->end);
+
+        *buf_ptr++ = fill_pattern_byte(&pat_ptr);
+
+        if (pat_ptr == pattern->suffix)
+            pat_ptr = pattern->repeat;
+    }
+    pat_ptr = pattern->suffix;
+    for (; remain > 0; remain--)
+    {
+        assert(pat_ptr < pattern->end);
+
+        *buf_ptr++ = fill_pattern_byte(&pat_ptr);
     }
 }
 
-
-/* See description in te_bufs.h */
 void *
-te_make_buf(size_t min, size_t max, size_t *p_len)
+te_make_pattern_buf(size_t min, size_t max, size_t *p_len,
+                    const te_buf_pattern *pattern)
 {
+    size_t len;
     void *buf;
 
     assert(min <= max);
-    *p_len = rand_range(min, max);
+    len = rand_range(min, max);
 
     /*
      * There is nothing wrong with asking for a zero-length buffer.
      * However, ISO C and POSIX allow NULL or non-NULL to be returned
      * in this case, so we allocate a single-byte buffer instead.
      */
-    buf = TE_ALLOC(*p_len == 0 ? 1 : *p_len);
+    buf = TE_ALLOC(len == 0 ? 1 : len);
     if (buf == NULL)
-    {
-        /* FIXME: see issue #12079 for a consisent solution */
-        ERROR("Memory allocation failure - EXIT");
-        exit(1);
-    }
-    te_fill_buf(buf, *p_len);
-    return buf;
-}
+        TE_FATAL_ERROR("No memory");
 
-/* See description in te_bufs.h */
-void
-te_fill_printable_buf(void *buf, size_t len)
-{
-    size_t i;
+    te_fill_pattern_buf(buf, len, pattern);
 
-    assert(len > 0);
-    for (i = 0; i < len - 1; i++)
-    {
-        /* the range of ASCII printable characters */
-        ((char *)buf)[i] = rand_range(' ', '~');
-    }
-    ((char *)buf)[len - 1] = '\0';
-}
-
-
-/* See description in te_bufs.h */
-char *
-te_make_printable_buf(size_t min, size_t max, size_t *p_len)
-{
-    size_t len;
-    void *buf;
-
-    assert(min > 0);
-    assert(min <= max);
-    len = rand_range(min, max);
-
-    buf = TE_ALLOC(len);
-    if (buf == NULL)
-        TE_FATAL_ERROR("Memory allocation failure");
-
-    te_fill_printable_buf(buf, len);
     if (p_len != NULL)
         *p_len = len;
 
     return buf;
 }
 
+te_errno
+te_fill_spec_buf(void *buf, size_t len, const char *spec)
+{
+    uint8_t pat_storage[1024];
+    te_buf_pattern pattern;
+    te_errno rc;
+
+    rc = te_compile_buf_pattern(spec, pat_storage, sizeof(pat_storage),
+                                &pattern);
+    if (rc != 0)
+        return rc;
+
+    te_fill_pattern_buf(buf, len, &pattern);
+
+    return 0;
+}
+
+void *
+te_make_spec_buf(size_t min, size_t max, size_t *p_len, const char *spec)
+{
+    uint8_t pat_storage[1024];
+    te_buf_pattern pattern;
+    te_errno rc;
+
+    rc = te_compile_buf_pattern(spec, pat_storage, sizeof(pat_storage),
+                                &pattern);
+    if (rc != 0)
+    {
+        ERROR("Invalid pattern spec: %r", rc);
+        return NULL;
+    }
+
+    return te_make_pattern_buf(min, max, p_len, &pattern);
+}
 
 te_bool
 te_compare_bufs(const void *exp_buf, size_t exp_len,
