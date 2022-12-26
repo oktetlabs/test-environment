@@ -38,6 +38,8 @@ typedef struct te_intset_ops {
     void (*clear)(void *val);
     /** Method to add an integer @p v to the set @p val. */
     void (*set)(int v, void *val);
+    /** Method to remove an integer @p v from the set @p val. */
+    void (*unset)(int v, void *val);
     /** Method to check whether @p v is in @p val. */
     te_bool (*check)(int v, const void *val);
 } te_intset_ops;
@@ -99,6 +101,28 @@ extern te_bool te_intset_generic_is_subset(const te_intset_ops *ops,
                                            int minval, int maxval,
                                            const void *subset,
                                            const void *superset);
+
+/**
+ * Add a contiguous range of integers to the set @p val.
+ *
+ * @param ops     intset type description
+ * @param val     intset
+ * @param first   start of the range
+ * @param last    end of the range
+ */
+extern void te_intset_generic_add_range(const te_intset_ops *ops,
+                                        void *val, int first, int last);
+
+/**
+ * Remove a contiguous range of integers from the set @p val.
+ *
+ * @param ops     intset type description
+ * @param val     intset
+ * @param first   start of the range
+ * @param last    end of the range
+ */
+extern void te_intset_generic_remove_range(const te_intset_ops *ops,
+                                           void *val, int first, int last);
 
 /** A description of 64-bit integer as a bit set */
 extern const te_intset_ops te_bits_intset;

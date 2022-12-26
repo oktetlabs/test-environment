@@ -123,6 +123,26 @@ te_intset_generic_is_subset(const te_intset_ops *ops,
     return TRUE;
 }
 
+void
+te_intset_generic_add_range(const te_intset_ops *ops, void *val,
+                            int first, int last)
+{
+    int i;
+
+    for (i = first; i <= last; i++)
+        ops->set(i, val);
+}
+
+void
+te_intset_generic_remove_range(const te_intset_ops *ops, void *val,
+                               int first, int last)
+{
+    int i;
+
+    for (i = first; i <= last; i++)
+        ops->unset(i, val);
+}
+
 static void
 clear_uint64(void *val)
 {
@@ -135,6 +155,12 @@ set_uint64_bit(int v, void *val)
     *(uint64_t *)val |= 1ull << v;
 }
 
+static void
+unset_uint64_bit(int v, void *val)
+{
+    *(uint64_t *)val &= ~(1ull << v);
+}
+
 static te_bool
 check_uint64_bit(int v, const void *val)
 {
@@ -144,6 +170,7 @@ check_uint64_bit(int v, const void *val)
 const te_intset_ops te_bits_intset = {
     .clear = clear_uint64,
     .set = set_uint64_bit,
+    .unset = unset_uint64_bit,
     .check = check_uint64_bit,
 };
 
@@ -159,6 +186,12 @@ fd_set_set(int v, void *val)
     FD_SET(v, (fd_set *)val);
 }
 
+static void
+fd_set_unset(int v, void *val)
+{
+    FD_CLR(v, (fd_set *)val);
+}
+
 static te_bool
 fd_set_check(int v, const void *val)
 {
@@ -168,6 +201,7 @@ fd_set_check(int v, const void *val)
 const te_intset_ops te_fdset_intset = {
     .clear = fd_set_clear,
     .set = fd_set_set,
+    .unset = fd_set_unset,
     .check = fd_set_check,
 };
 
@@ -185,6 +219,12 @@ cpu_set_set(int v, void *val)
     CPU_SET(v, (cpu_set_t *)val);
 }
 
+static void
+cpu_set_unset(int v, void *val)
+{
+    CPU_CLR(v, (cpu_set_t *)val);
+}
+
 static te_bool
 cpu_set_check(int v, const void *val)
 {
@@ -194,6 +234,7 @@ cpu_set_check(int v, const void *val)
 const te_intset_ops te_cpuset_intset = {
     .clear = cpu_set_clear,
     .set = cpu_set_set,
+    .unset = cpu_set_unset,
     .check = cpu_set_check,
 };
 
