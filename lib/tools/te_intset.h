@@ -168,6 +168,69 @@ te_bits2string(uint64_t val)
                                     &val);
 }
 
+/**
+ * Character set or class.
+ */
+typedef struct te_charset {
+    /** Bitmask of characters in the set */
+    uint64_t items[(UINT8_MAX + 1) / TE_BITSIZE(uint64_t)];
+    /** Number of character in the set */
+    unsigned int n_items;
+} te_charset;
+
+/** Static initialiser for te_charset. */
+#define TE_CHARSET_INIT {{0, 0, 0, 0}, 0}
+
+/** Description of a te_charset as an intset. */
+extern const te_intset_ops te_charset_intset;
+
+/** Clear the character set @p cset. */
+static inline void
+te_charset_clear(te_charset *cset)
+{
+    te_charset_intset.clear(cset);
+}
+
+/**
+ * Add a contiguous range of characters to a charset.
+ *
+ * @param cset      character set
+ * @param minbyte   starting character
+ * @param maxbyte   end character
+ */
+static inline void
+te_charset_add_range(te_charset *cset, uint8_t minbyte, uint8_t maxbyte)
+{
+    te_intset_generic_add_range(&te_charset_intset, cset, minbyte, maxbyte);
+}
+
+/**
+ * Remove a contiguous range of characters from a charset.
+ *
+ * @param cset      character set
+ * @param minbyte   starting character
+ * @param maxbyte   end character
+ */
+static inline void
+te_charset_remove_range(te_charset *cset, uint8_t minbyte, uint8_t maxbyte)
+{
+    te_intset_generic_remove_range(&te_charset_intset, cset, minbyte, maxbyte);
+}
+
+/**
+ * Check whether a @p byte is in a charset @p cset.
+ *
+ * @param cset  character set
+ * @param byte  a byte to check
+ *
+ * @return @c TRUE iff @p byte is in @p cset
+ */
+static inline te_bool
+te_charset_check(const te_charset *cset, uint8_t byte)
+{
+    return te_charset_intset.check(byte, cset);
+}
+
 /** Description of POSIX fd_set as an integral set. */
 extern const te_intset_ops te_fdset_intset;
 

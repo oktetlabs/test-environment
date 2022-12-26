@@ -175,6 +175,54 @@ const te_intset_ops te_bits_intset = {
 };
 
 static void
+clear_charset(void *val)
+{
+    memset(val, 0, sizeof(te_charset));
+}
+
+static te_bool
+check_charset_byte(int v, const void *val)
+{
+    const te_charset *cs = val;
+
+    return (cs->items[v / TE_BITSIZE(uint64_t)] &
+            (1ull << (v % TE_BITSIZE(uint64_t)))) != 0;
+}
+
+static void
+set_charset_byte(int v, void *val)
+{
+    te_charset *cs = val;
+
+    if (!check_charset_byte(v, val))
+    {
+        cs->items[v / TE_BITSIZE(uint64_t)] |=
+            1ull << (v % TE_BITSIZE(uint64_t));
+        cs->n_items++;
+    }
+}
+
+static void
+unset_charset_byte(int v, void *val)
+{
+    te_charset *cs = val;
+
+    if (check_charset_byte(v, val))
+    {
+        cs->items[v / TE_BITSIZE(uint64_t)] &=
+            ~(1ull << (v % TE_BITSIZE(uint64_t)));
+        cs->n_items--;
+    }
+}
+
+const te_intset_ops te_charset_intset = {
+    .clear = clear_charset,
+    .set = set_charset_byte,
+    .unset = unset_charset_byte,
+    .check = check_charset_byte,
+};
+
+static void
 fd_set_clear(void *val)
 {
     FD_ZERO((fd_set *)val);

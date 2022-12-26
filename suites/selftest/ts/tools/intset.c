@@ -62,6 +62,80 @@ check_subset(uint64_t sub, uint64_t super)
                      result ? "" : " not");
     }
 }
+
+static void
+check_charset_add(unsigned int n_ranges, ...)
+{
+    unsigned int minval = UINT_MAX;
+    unsigned int maxval = 0;
+    te_charset cset;
+    va_list args;
+
+    te_charset_clear(&cset);
+    va_start(args, n_ranges);
+    while (n_ranges-- > 0)
+    {
+        unsigned int start = va_arg(args, unsigned int);
+        unsigned int end = va_arg(args, unsigned int);
+
+        /*
+         * We assume that there would be no holes between
+         * minval and maxval at the end, otherwise there is
+         * no simple way to check that the cardinality of
+         * the resulting set is correct. Other than that,
+         * individual ranges may overlap arbitrary or not
+         * overlap at all.
+         */
+        if (start < minval)
+            minval = start;
+        if (end > maxval)
+            maxval = end;
+
+        te_charset_add_range(&cset, minval, maxval);
+    }
+    va_end(args);
+
+    if (cset.n_items != maxval - minval + 1)
+    {
+        TEST_VERDICT("Expected %u items in charset, got %u",
+                     maxval - minval + 1, cset.n_items);
+    }
+}
+
+static void
+check_charset_exclude(unsigned int n_ranges, ...)
+{
+    unsigned int minval = UINT_MAX;
+    unsigned int maxval = 0;
+    te_charset cset;
+    va_list args;
+
+    te_charset_clear(&cset);
+    te_charset_add_range(&cset, 0, UINT8_MAX);
+
+    va_start(args, n_ranges);
+    while (n_ranges-- > 0)
+    {
+        unsigned int start = va_arg(args, unsigned int);
+        unsigned int end = va_arg(args, unsigned int);
+
+        if (start < minval)
+            minval = start;
+        if (end > maxval)
+            maxval = end;
+
+        te_charset_remove_range(&cset, minval, maxval);
+    }
+    va_end(args);
+
+    if (cset.n_items != UINT8_MAX + 1 - (maxval - minval + 1))
+    {
+        TEST_VERDICT("Expected %u items in charset, got %u",
+                     UINT8_MAX + 1 - (maxval - minval + 1),
+                     cset.n_items);
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -118,6 +192,27 @@ main(int argc, char **argv)
     check_subset(1, 0);
     check_subset(UINT64_MAX, 1);
     check_subset((1 << 2) | (1 << 0), (1 << 1) | (1 << 0));
+
+    TEST_STEP("Checking charset range addition");
+    check_charset_add(1, ' ', ' ');
+    check_charset_add(1, ' ', '~');
+    check_charset_add(2, ' ', '~', ' ' , '~');
+    check_charset_add(2, ' ', '@', 'A', '~');
+    check_charset_add(2, ' ', '@', 'A', '~');
+    check_charset_add(2, ' ', 'z', 'A', '~');
+    check_charset_add(2, ' ', '~', 'A', 'Z');
+    check_charset_add(3, ' ', '?', 'a', '~', '@', 'a');
+
+    TEST_STEP("Checking charset range exclusion");
+    check_charset_exclude(1, ' ', ' ');
+    check_charset_exclude(1, ' ', '~');
+    check_charset_exclude(1, 0, UINT8_MAX);
+    check_charset_exclude(2, ' ', '~', ' ' , '~');
+    check_charset_exclude(2, ' ', '@', 'A', '~');
+    check_charset_exclude(2, ' ', '@', 'A', '~');
+    check_charset_exclude(2, ' ', 'z', 'A', '~');
+    check_charset_exclude(2, ' ', '~', 'A', 'Z');
+    check_charset_exclude(3, ' ', '?', 'a', '~', '@', 'a');
 
     TEST_SUCCESS;
 
