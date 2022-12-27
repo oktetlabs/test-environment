@@ -135,12 +135,18 @@ typedef struct bpf_perf_map_entry {
     int poll_timeout;               /**< Polling timeout in ms */
     int page_cnt;                   /**< Number of pages to allocate
                                          when reading event data */
+
+#if LIBBPF_MAJOR_VERSION == 0
     bpf_xdp_perf_cpu_buf *cpu_bufs; /**< Array for per-CPU data */
     int epoll_fd;                   /**< Epoll descriptor */
     struct epoll_event *epoll_evts; /**< Events array passed to epoll_wait() */
     size_t page_size;               /**< Size of one mmap() page */
     size_t mmap_size;               /**< Total mmap()'ed size */
     int cpus_num;                   /**< Total number of CPUs in the system */
+#else
+    struct perf_buffer *perf_buffer; /**< Perf buffer */
+#endif
+
     perf_event_handler_t ev_hdl;    /**< Event handler pointer */
 } bpf_perf_map_entry;
 
@@ -315,17 +321,29 @@ bpf_init_prog_info(struct bpf_program *prog, struct bpf_prog_entry *prog_info)
  * Initialize information of the loaded BPF map.
  *
  * @param map           The BPF map.
- * @param def           The BPF map definition.
  * @param[out] map_info The BPF map info.
  *
  * @return Status code.
  */
 static te_errno
-bpf_init_map_info(struct bpf_map *map, const struct bpf_map_def *def,
-                  struct bpf_map_entry *map_info)
+bpf_init_map_info(struct bpf_map *map, struct bpf_map_entry *map_info)
 {
     int      fd;
     te_errno rc = 0;
+
+#if LIBBPF_MAJOR_VERSION == 0
+    const struct bpf_map_def *def = bpf_map__def(map);
+
+    map_info->type = def->type;
+    map_info->key_size = def->key_size;
+    map_info->value_size = def->value_size;
+    map_info->max_entries = def->max_entries;
+#else
+    map_info->type = bpf_map__type(map);
+    map_info->key_size = bpf_map__key_size(map);
+    map_info->value_size = bpf_map__value_size(map);
+    map_info->max_entries = bpf_map__max_entries(map);
+#endif
 
     fd = bpf_map__fd(map);
     if (fd <= 0)
@@ -335,16 +353,13 @@ bpf_init_map_info(struct bpf_map *map, const struct bpf_map_def *def,
     }
 
     map_info->fd = fd;
-    map_info->type = def->type;
     te_strlcpy(map_info->name, bpf_map__name(map), sizeof(map_info->name));
 
-    map_info->key_size = def->key_size;
-    map_info->value_size = def->value_size;
     /*
      * In case BPF_MAP_TYPE_PERCPU_ARRAY the array cell stores values
      * for each CPU, so need allocated (value_size * number of CPU) memory.
      */
-    if (def->type == BPF_MAP_TYPE_PERCPU_ARRAY)
+    if (map_info->type == BPF_MAP_TYPE_PERCPU_ARRAY)
     {
         rc = bpf_num_possible_cpu(&(map_info->n_values));
         if (rc != 0)
@@ -354,7 +369,6 @@ bpf_init_map_info(struct bpf_map *map, const struct bpf_map_def *def,
     {
         map_info->n_values = 1;
     }
-    map_info->max_entries = def->max_entries;
     map_info->writable = FALSE;
 
     return 0;
@@ -390,12 +404,18 @@ bpf_init_perf_map_info(struct bpf_map *map,
     map_info->events = TE_VEC_INIT(bpf_perf_map_event);
     map_info->poll_timeout = BPF_PERF_EVENT_DEF_POLL_TIMEOUT;
     map_info->page_cnt = BPF_PERF_EVENT_DEF_PAGE_CNT;
+
+#if LIBBPF_MAJOR_VERSION == 0
     map_info->cpu_bufs = NULL;
     map_info->epoll_fd = -1;
     map_info->epoll_evts = NULL;
     map_info->page_size = getpagesize();
     map_info->mmap_size = map_info->page_size * map_info->page_cnt;
     map_info->cpus_num = get_nprocs();
+#else
+    map_info->perf_buffer = NULL;
+#endif
+
     map_info->ev_hdl = bpf_xdp_perf_event_handler;
 
     return 0;
@@ -412,7 +432,6 @@ bpf_init_perf_map_info(struct bpf_map *map,
 static te_errno
 bpf_load(struct bpf_entry *bpf)
 {
-    int prog_fd;
     struct bpf_program *prog;
     struct bpf_map *map;
     unsigned int prog_number = 0;
@@ -423,12 +442,40 @@ bpf_load(struct bpf_entry *bpf)
     if (bpf->state == BPF_STATE_LOADED)
         return 0;
 
+#if LIBBPF_MAJOR_VERSION == 0
+    int prog_fd;
+
     rc = bpf_prog_load(bpf->filepath, bpf->prog_type, &bpf->obj, &prog_fd);
     if (rc != 0)
     {
         ERROR("BPF object file cannot be loaded.");
         return TE_RC(TE_TA_UNIX, TE_EFAIL);
     }
+#else
+    te_errno err;
+
+    bpf->obj = bpf_object__open(bpf->filepath);
+    if (bpf->obj == NULL)
+    {
+        err = te_rc_os2te(errno);
+        ERROR("BPF object file cannot be opened, error=%r", err);
+        return TE_RC(TE_TA_UNIX, err);
+    }
+
+    if (bpf->prog_type != BPF_PROG_TYPE_UNSPEC)
+    {
+        bpf_object__for_each_program(prog, bpf->obj)
+            bpf_program__set_type(prog, bpf->prog_type);
+    }
+
+    rc = bpf_object__load(bpf->obj);
+    if (rc != 0)
+    {
+        err = te_rc_os2te(errno);
+        ERROR("BPF object file cannot be loaded, error=%r", err);
+        return TE_RC(TE_TA_UNIX, err);
+    }
+#endif
 
     bpf_object__for_each_program(prog, bpf->obj)
     {
@@ -447,7 +494,7 @@ bpf_load(struct bpf_entry *bpf)
 
     bpf_object__for_each_map(map, bpf->obj)
     {
-        const struct bpf_map_def *def;
+        unsigned int map_type;
 
         if (map_number == BPF_MAX_ENTRIES ||
             perf_map_number == BPF_MAX_ENTRIES)
@@ -456,16 +503,20 @@ bpf_load(struct bpf_entry *bpf)
             return TE_RC(TE_TA_UNIX, TE_EFBIG);
         }
 
-        def = bpf_map__def(map);
+#if LIBBPF_MAJOR_VERSION == 0
+        map_type = bpf_map__def(map)->type;
+#else
+        map_type = bpf_map__type(map);
+#endif
 
-        if (def->type == BPF_MAP_TYPE_PERF_EVENT_ARRAY)
+        if (map_type == BPF_MAP_TYPE_PERF_EVENT_ARRAY)
         {
             rc = bpf_init_perf_map_info(map, &bpf->perf_maps[perf_map_number]);
             perf_map_number++;
         }
         else
         {
-            rc = bpf_init_map_info(map, def, &bpf->maps[map_number]);
+            rc = bpf_init_map_info(map, &bpf->maps[map_number]);
             map_number++;
         }
 
@@ -1128,7 +1179,7 @@ bpf_list_map_kv_pair(unsigned int gid, const char *oid, const char *sub_id,
     }
 
     i = 0;
-    while (bpf_map_get_next_key(map->fd, (i == 0) ? NULL : prev_key, key) != -1)
+    while (bpf_map_get_next_key(map->fd, (i == 0) ? NULL : prev_key, key) == 0)
     {
         te_string buf_str = TE_STRING_INIT_STATIC(RCF_MAX_VAL);
 
@@ -1359,16 +1410,17 @@ fail_free_key:
  * The function makes a generic processing of an event and calls
  * user defined handler.
  *
+ * @param ctx   User data (pointer to @ref bpf_perf_map_entry)
+ * @param cpu   CPU number
  * @param e     Perf event data header
- * @param ctx   User data (pointer to @ref bpf_xdp_perf_cpu_buf)
  *
  * @return libbpf status code
  */
 static enum bpf_perf_event_ret
-perf_event_process(struct perf_event_header *e, void *ctx)
+perf_event_process(void *ctx, int cpu, struct perf_event_header *e)
 {
-    bpf_xdp_perf_cpu_buf       *cpu_buf = ctx;
-    enum bpf_perf_event_ret     rc = LIBBPF_PERF_EVENT_CONT;
+    bpf_perf_map_entry *map = ctx;
+    enum bpf_perf_event_ret rc = LIBBPF_PERF_EVENT_CONT;
 
     switch (e->type)
     {
@@ -1379,10 +1431,10 @@ perf_event_process(struct perf_event_header *e, void *ctx)
                 uint32_t size;
                 char data[];
             } *sample = (void *) e;
-            if (cpu_buf->map->ev_hdl != NULL)
+            if (map->ev_hdl != NULL)
             {
-                rc = cpu_buf->map->ev_hdl(cpu_buf->map, cpu_buf->cpu,
-                                          sample->data, sample->size);
+                rc = map->ev_hdl(map, cpu,
+                                 sample->data, sample->size);
             }
             break;
         }
@@ -1405,6 +1457,20 @@ perf_event_process(struct perf_event_header *e, void *ctx)
     return rc;
 }
 
+#if LIBBPF_MAJOR_VERSION == 0
+/*
+ * Wrapper for perf_event_process() suitable for using with
+ * libbpf versions preceding 1.0.
+ */
+static enum bpf_perf_event_ret
+perf_event_process_old(struct perf_event_header *e, void *ctx)
+{
+    bpf_xdp_perf_cpu_buf *cpu_buf = ctx;
+
+    return perf_event_process(cpu_buf->map, cpu_buf->cpu, e);
+}
+#endif
+
 /**
  * Return number of pending perf events.
  * The function polls perf events via epoll_wait() and calls
@@ -1418,11 +1484,12 @@ perf_event_process(struct perf_event_header *e, void *ctx)
 static unsigned int
 bpf_perf_events_num(bpf_perf_map_entry *map)
 {
-    int                 cnt = -1;
-    int                 i = 0;
-
     if (!map->events_enabled)
         return 0;
+
+#if LIBBPF_MAJOR_VERSION == 0
+    int cnt = -1;
+    int i = 0;
 
     cnt = epoll_wait(map->epoll_fd,
                      map->epoll_evts,
@@ -1445,9 +1512,13 @@ bpf_perf_events_num(bpf_perf_map_entry *map)
                                    map->mmap_size,
                                    map->page_size,
                                    buf, &len,
-                                   perf_event_process, cpu_buf);
+                                   perf_event_process_old, cpu_buf);
+
         free(buf);
     }
+#else
+    perf_buffer__poll(map->perf_buffer, map->poll_timeout);
+#endif
 
     return map->num_events;
 }
@@ -1528,6 +1599,7 @@ bpf_xdp_perf_event_handler(void *ctx, int cpu, void *data, uint32_t size)
     return LIBBPF_PERF_EVENT_CONT;
 }
 
+#if LIBBPF_MAJOR_VERSION == 0
 /**
  * Enable perf events for a single CPU.
  *
@@ -1575,6 +1647,7 @@ bpf_xdp_perf_cpu_buf_init(bpf_perf_map_entry *map, int cpu)
 
     return 0;
 }
+#endif
 
 /**
  * Enable perf events processing on a specified perf map.
@@ -1586,9 +1659,10 @@ bpf_xdp_perf_cpu_buf_init(bpf_perf_map_entry *map, int cpu)
 static te_errno
 bpf_xdp_perf_buf_init(bpf_perf_map_entry *map)
 {
+    te_errno rc = 0;
+#if LIBBPF_MAJOR_VERSION == 0
     int         i;
     int         cpus_num = map->cpus_num;
-    te_errno    rc = 0;
 
     map->epoll_fd = epoll_create1(EPOLL_CLOEXEC);
     if (map->epoll_fd < 0)
@@ -1645,6 +1719,27 @@ bpf_xdp_perf_buf_init(bpf_perf_map_entry *map)
             return TE_OS_RC(TE_TA_UNIX, errno);
         }
     }
+#else
+    LIBBPF_OPTS(perf_buffer_raw_opts, opts);
+    struct perf_event_attr attr = {
+        .sample_type = PERF_SAMPLE_RAW,
+        .type = PERF_TYPE_SOFTWARE,
+        .config = PERF_COUNT_SW_BPF_OUTPUT,
+        .wakeup_events = 1,
+    };
+
+    map->perf_buffer = perf_buffer__new_raw(map->fd, map->page_cnt, &attr,
+                                            &perf_event_process, map,
+                                            &opts);
+
+    if (map->perf_buffer == NULL)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("%s(): perf_buffer__new_raw() failed, error=%r",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+#endif
 
     return 0;
 }
@@ -1663,6 +1758,7 @@ bpf_xdp_perf_buf_free(bpf_perf_map_entry *map)
         free(event->data);
     te_vec_free(&map->events);
 
+#if LIBBPF_MAJOR_VERSION == 0
     if (map->cpu_bufs != NULL)
     {
         int i;
@@ -1690,6 +1786,10 @@ bpf_xdp_perf_buf_free(bpf_perf_map_entry *map)
     if (map->epoll_fd >= 0)
         close(map->epoll_fd);
     free(map->epoll_evts);
+#else
+    perf_buffer__free(map->perf_buffer);
+    map->perf_buffer = NULL;
+#endif
 }
 
 /**
@@ -2125,7 +2225,11 @@ bpf_add_and_link_xdp(cfg_oid *prog_oid, unsigned int ifindex,
         goto fail;
     }
 
+#if LIBBPF_MAJOR_VERSION == 0
     if (bpf_set_link_xdp_fd(ifindex, prog->fd, xdp_flags) != 0)
+#else
+    if (bpf_xdp_attach(ifindex, prog->fd, xdp_flags, NULL) != 0)
+#endif
     {
         ERROR("Failed to link XDP program.");
         rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
@@ -2170,7 +2274,11 @@ bpf_set_if_xdp(unsigned int gid, const char *oid, const char *value,
 
     if (*value == '\0')
     {
+#if LIBBPF_MAJOR_VERSION == 0
         if (bpf_set_link_xdp_fd(ifindex, -1, xdp_flags) != 0)
+#else
+        if (bpf_xdp_detach(ifindex, xdp_flags, NULL) != 0)
+#endif
         {
             ERROR("Failed to unlink XDP program.");
             return TE_RC(TE_TA_UNIX, TE_EFAIL);
@@ -2220,11 +2328,18 @@ ta_unix_conf_if_xdp_cleanup(void)
 {
     struct xdp_entry *xdp;
     struct xdp_entry *tmp;
+    int rc;
 
     LIST_FOREACH_SAFE(xdp, &xdp_list_h, next, tmp)
     {
-        if (bpf_set_link_xdp_fd(xdp->ifindex, -1,
-                                XDP_FLAGS_UPDATE_IF_NOEXIST) != 0)
+#if LIBBPF_MAJOR_VERSION == 0
+        rc = bpf_set_link_xdp_fd(xdp->ifindex, -1,
+                                 XDP_FLAGS_UPDATE_IF_NOEXIST);
+#else
+        rc = bpf_xdp_detach(xdp->ifindex, XDP_FLAGS_UPDATE_IF_NOEXIST,
+                            NULL);
+#endif
+        if (rc != 0)
         {
             ERROR("Failed to unlink XDP program.");
             return TE_RC(TE_TA_UNIX, TE_EFAIL);

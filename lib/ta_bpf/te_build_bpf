@@ -199,7 +199,9 @@ END
 int
 main(int argc, const char **argv)
 {
+#if LIBBPF_MAJOR_VERSION == 0
     struct bpf_object_open_attr attr;
+#endif
     struct bpf_object *obj = NULL;
     long err;
     char err_str[1024] = "";
@@ -207,10 +209,14 @@ main(int argc, const char **argv)
     if (argc < 2)
         return EXIT_FAILURE;
 
+#if LIBBPF_MAJOR_VERSION == 0
     attr.file = argv[1];
     attr.prog_type = BPF_PROG_TYPE_XDP;
 
     obj = bpf_object__open_xattr(&attr);
+#else
+    obj = bpf_object__open_file(argv[1], NULL);
+#endif
     err = libbpf_get_error(obj);
     if (err != 0)
     {
