@@ -13,6 +13,7 @@ tests = [
     'scandir',
     'string',
     'units',
+    'uri',
     'vector',
     'vector_search',
 ]

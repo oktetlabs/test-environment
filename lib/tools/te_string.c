@@ -20,6 +20,7 @@
 #include "logger_api.h"
 
 #include "te_string.h"
+#include "te_intset.h"
 #include "te_defs.h"
 
 void
@@ -301,6 +302,49 @@ te_string_append_shell_args_as_is(te_string *str, ...)
     return rc;
 }
 
+static void
+make_uri_unescaped_charset(te_charset *cset, te_string_uri_escape_mode mode)
+{
+#define SUB_DELIMS "!$&'()*+,;="
+    static const char *mode_specific[] = {
+        [TE_STRING_URI_ESCAPE_BASE] = NULL,
+        [TE_STRING_URI_ESCAPE_USER] = SUB_DELIMS ":",
+        [TE_STRING_URI_ESCAPE_HOST] = SUB_DELIMS "[]:",
+        [TE_STRING_URI_ESCAPE_PATH_SEGMENT] = SUB_DELIMS ":@",
+        [TE_STRING_URI_ESCAPE_PATH] = SUB_DELIMS ":@/",
+        [TE_STRING_URI_ESCAPE_QUERY] = SUB_DELIMS ":@/?" ,
+        [TE_STRING_URI_ESCAPE_QUERY_VALUE] = "!$'()*,:@/?",
+        [TE_STRING_URI_ESCAPE_FRAG] = SUB_DELIMS ":@/?",
+    };
+#undef SUB_DELIMS
+
+    te_charset_clear(cset);
+
+    /* RFC 3986 unreserved characters */
+    te_charset_add_range(cset, '0', '9');
+    te_charset_add_range(cset, 'a', 'z');
+    te_charset_add_range(cset, 'A', 'Z');
+    te_charset_add_from_string(cset, "_-.~");
+
+    te_charset_add_from_string(cset, mode_specific[mode]);
+}
+
+void
+te_string_append_escape_uri(te_string *str, te_string_uri_escape_mode mode,
+                            const char *arg)
+{
+    te_charset unescaped;
+
+    make_uri_unescaped_charset(&unescaped, mode);
+    for (; *arg != '\0'; arg++)
+    {
+        if (te_charset_check(&unescaped, *arg))
+            te_string_append(str, "%c", *arg);
+        else
+            te_string_append(str, "%%%2.2X", (unsigned int)(uint8_t)*arg);
+    }
+}
+
 te_errno
 te_string_join_vec(te_string *str, const te_vec *strvec,
                    const char *sep)
@@ -328,6 +372,23 @@ te_string_join_vec(te_string *str, const te_vec *strvec,
 
     return 0;
 }
+
+void
+te_string_join_uri_path(te_string *str, const te_vec *strvec)
+{
+    te_bool need_sep = FALSE;
+    const char * const *item;
+
+    TE_VEC_FOREACH(strvec, item)
+    {
+        if (need_sep)
+            te_string_append(str, "/");
+        te_string_append_escape_uri(str, TE_STRING_URI_ESCAPE_PATH_SEGMENT,
+                                    *item);
+        need_sep = TRUE;
+    }
+}
+
 
 char *
 te_string_fmt_va(const char *fmt,

@@ -279,6 +279,56 @@ extern te_errno te_string_append_shell_args_as_is(te_string *str, ...)
 extern te_errno te_string_append_shell_arg_as_is(te_string *str,
                                                  const char *arg);
 
+/** URI escaping modes suitable for various parts of URI. */
+typedef enum te_string_uri_escape_mode {
+    /**
+     * Basic escaping.
+     *
+     * Only RFC3986 "unreserved" characters are allowed.
+     */
+    TE_STRING_URI_ESCAPE_BASE,
+    /** Escaping for the userinfo part. */
+    TE_STRING_URI_ESCAPE_USER,
+    /** Escaping for the host part. */
+    TE_STRING_URI_ESCAPE_HOST,
+    /**
+     * Escaping for the path segment.
+     *
+     * This means that a path separator @c / would be escaped.
+     */
+    TE_STRING_URI_ESCAPE_PATH_SEGMENT,
+    /** Escaping for the path component as a whole. */
+    TE_STRING_URI_ESCAPE_PATH,
+    /** Escaping for the query string as a whole. */
+    TE_STRING_URI_ESCAPE_QUERY,
+    /**
+     * Escaping for the query keys and values.
+     *
+     * This means that @c =, ampersands and semicolons are escaped.
+     */
+    TE_STRING_URI_ESCAPE_QUERY_VALUE,
+    /** Escaping for the fragment component. */
+    TE_STRING_URI_ESCAPE_FRAG,
+} te_string_uri_escape_mode;
+
+/**
+ * Append a part of an URI escaping all the characters that are not
+ * acceptable in given @p mode.
+ *
+ * The unacceptable characters are percent-encoded as per RFC3986.
+ *
+ * @param str   TE string
+ * @param mode  escaping mode
+ * @param arg   source value
+ *
+ * @note The exact escaping rules of RFC3987 are a bit more subtle,
+ *       so in theory it is possible to construct an invalid URI
+ *       using this function, however, it is very unlikely for any
+ *       practical usecase.
+ */
+extern void te_string_append_escape_uri(te_string *str,
+                                        te_string_uri_escape_mode mode,
+                                        const char *arg);
 
 /**
  * Append the elements of @p vec (which must be C strings),
@@ -295,6 +345,19 @@ extern te_errno te_string_append_shell_arg_as_is(te_string *str,
  */
 extern te_errno te_string_join_vec(te_string *str, const te_vec *strvec,
                                    const char *sep);
+
+/**
+ * Append the elements of @p vec (which must be C strings),
+ * escaped as URI path segments, separated by @c /.
+ *
+ * @param str     TE string
+ * @param strvec  vector of C strings
+ *
+ * @note The leading @c / is not added, to allow building relative URIs.
+ *
+ * @sa TE_STRING_URI_ESCAPE_PATH_SEGMENT
+ */
+extern void te_string_join_uri_path(te_string *str, const te_vec *strvec);
 
 /**
  * Return a char * that is a result of sprintf into allocated memory.

@@ -120,6 +120,10 @@
         </run>
 
         <run>
+            <script name="uri"/>
+        </run>
+
+        <run>
             <script name="vector"/>
         </run>
 

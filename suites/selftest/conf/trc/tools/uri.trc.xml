@@ -1,0 +1,6 @@
+<test name="uri" type="script">
+    <objective>Testing URI-handling routines.</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>

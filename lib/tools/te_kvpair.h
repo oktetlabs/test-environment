@@ -110,6 +110,19 @@ extern const char *te_kvpairs_get(const te_kvpair_h *head, const char *key);
 extern te_errno te_kvpair_to_str(const te_kvpair_h *head, te_string *str);
 
 /**
+ * Convert a list of kv pairs to a valid URI query string.
+ *
+ * If @p str is not empty, @c & separator is added, so that a query
+ * string may be assembled incrementally from several kvpairs.
+ *
+ * @param[in]  head  Head of the list
+ * @param[out] str   TE string
+ *
+ * @sa TE_STRING_URI_ESCAPE_QUERY_VALUE
+ */
+extern void te_kvpair_to_uri_query(const te_kvpair_h *head, te_string *str);
+
+/**
  * Convert string to list of kv_pairs,
  * @sa TE_KVPAIR_STR_DELIMITER
  *

@@ -173,6 +173,27 @@ te_kvpair_to_str(const te_kvpair_h *head, te_string *str)
 }
 
 /* See the description in te_kvpair.h */
+void
+te_kvpair_to_uri_query(const te_kvpair_h *head, te_string *str)
+{
+    te_kvpair *p;
+
+    assert(head != NULL);
+    assert(str != NULL);
+
+    TAILQ_FOREACH(p, head, links)
+    {
+        if (str->len > 0)
+            te_string_append(str, "&");
+        te_string_append_escape_uri(str, TE_STRING_URI_ESCAPE_QUERY_VALUE,
+                                    p->key);
+        te_string_append(str, "=");
+        te_string_append_escape_uri(str, TE_STRING_URI_ESCAPE_QUERY_VALUE,
+                                    p->value);
+    }
+}
+
+/* See the description in te_kvpair.h */
 te_errno
 te_kvpair_from_str(const char *str, te_kvpair_h *head)
 {
