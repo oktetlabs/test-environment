@@ -785,6 +785,8 @@ get_cache_dim(const char *cpu_name, const char *index_name,
     te_unit unit;
     te_errno rc = 0;
 
+    *dim = 0;
+
     rc = read_sys_value(result, sizeof(result), FALSE, SYSFS_SYSTEM_TREE
                         "/cpu/%s/cache/%s/%s", cpu_name,
                         index_name, item_name);
@@ -874,17 +876,11 @@ get_cache_info(const char *cpu_name, const char *index_name,
     if (rc != 0)
         return rc;
 
-    rc = get_cache_dim(cpu_name, index_name, "coherency_line_size", &linesize);
-    if (rc != 0)
-        return rc;
+    get_cache_dim(cpu_name, index_name, "coherency_line_size", &linesize);
 
-    rc = get_cache_dim(cpu_name, index_name, "size", &size);
-    if (rc != 0)
-        return rc;
+    get_cache_dim(cpu_name, index_name, "size", &size);
 
-    rc = get_cache_dim(cpu_name, index_name, "ways_of_associativity", &assoc);
-    if (rc != 0)
-        return rc;
+    get_cache_dim(cpu_name, index_name, "ways_of_associativity", &assoc);
 
     *cache = init_cache_item(sys_id, type, level, linesize, size, assoc);
 
@@ -908,11 +904,11 @@ add_index_name(const char *pattern, const char *pathname, void *data)
     te_errno rc = 0;
 
     rc = get_cache_info(name, index_name, &cache);
-    if (cache == NULL)
+    if (rc != 0)
     {
         ERROR("Could not get information about cache %s for %s", index_name,
               name);
-        return rc;
+        return 0;
     }
 
     rc = read_shared_cpu_list(name, index_name, &cache->shared_cpu_set);
