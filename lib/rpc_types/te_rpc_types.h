@@ -96,7 +96,7 @@ typedef uint32_t rpc_ptr_id_namespace;
 
 /** The amount of bits for index in @b ids in a pointer id */
 #define RPC_PTR_ID_INDEX_BITCOUNT   (           \
-        sizeof(rpc_ptr_id_index) * CHAR_BIT -   \
+        TE_BITSIZE(rpc_ptr_id_index) -          \
         RPC_PTR_ID_NS_BITCOUNT                  \
     )
 

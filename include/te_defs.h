@@ -270,6 +270,13 @@ typedef enum te_bool3 {
 #define TE_ARRAY_LEN(_array)    (sizeof(_array) / sizeof(_array[0]))
 
 /**
+ * The size of @p _typeobj in bits.
+ *
+ * @param _typeobj  type or object
+ */
+#define TE_BITSIZE(_typeobj) (sizeof(_typeobj) * CHAR_BIT)
+
+/**
  * Swap two pointers.
  *
  * @param _p1       one pointer

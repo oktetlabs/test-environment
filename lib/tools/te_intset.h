@@ -120,7 +120,7 @@ static inline te_errno
 te_bits_parse(const char *str, uint64_t *val)
 {
     return te_intset_generic_parse(&te_bits_intset,
-                                   0, sizeof(uint64_t) * CHAR_BIT - 1,
+                                   0, TE_BITSIZE(uint64_t) - 1,
                                    str, val);
 }
 
@@ -140,7 +140,7 @@ static inline char *
 te_bits2string(uint64_t val)
 {
     return te_intset_generic2string(&te_bits_intset,
-                                    0, sizeof(uint64_t) * CHAR_BIT - 1,
+                                    0, TE_BITSIZE(uint64_t) - 1,
                                     &val);
 }
 
