@@ -112,6 +112,10 @@
       access: read_write
       type: int32
 
+    - oid: "/agent/sys/net/core/busy_poll"
+      access: read_write
+      type: int32
+
     - oid: "/agent/sys/net/core/somaxconn"
       access: read_write
       type: int32

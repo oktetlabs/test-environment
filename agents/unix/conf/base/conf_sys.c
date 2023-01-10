@@ -181,7 +181,8 @@ SYSTEM_WIDE_PARAM(tcp_sndbuf_max, tcp_sndbuf_def);
 SYSTEM_WIDE_PARAM_COMMON(tcp_max_syn_backlog, tcp_sndbuf_max);
 SYSTEM_WIDE_PARAM_COMMON(neigh_gc_thresh3, tcp_max_syn_backlog);
 SYSTEM_WIDE_PARAM_COMMON(busy_read, neigh_gc_thresh3);
-SYSTEM_WIDE_PARAM_COMMON(somaxconn, busy_read);
+SYSTEM_WIDE_PARAM_COMMON(busy_poll, busy_read);
+SYSTEM_WIDE_PARAM_COMMON(somaxconn, busy_poll);
 SYSTEM_WIDE_PARAM_COMMON(optmem_max, somaxconn);
 SYSTEM_WIDE_PARAM_COMMON(igmp_max_memberships, optmem_max);
 SYSTEM_WIDE_PARAM_COMMON(tcp_synack_retries, igmp_max_memberships);
@@ -906,6 +907,9 @@ proc_sys_common_set(unsigned int gid, const char *oid,
     else if (strstr(oid, "/busy_read:") != NULL)
         return proc_sys_set_value("/proc/sys/net/core/busy_read",
                                   value);
+    else if (strstr(oid, "/busy_poll:") != NULL)
+        return proc_sys_set_value("/proc/sys/net/core/busy_poll",
+                                  value);
     else if (strstr(oid, "/somaxconn:") != NULL)
         return proc_sys_set_value("/proc/sys/net/core/somaxconn",
                                   value);
@@ -973,6 +977,8 @@ proc_sys_common_get(unsigned int gid, const char *oid,
                                   value);
     else if (strstr(oid, "/busy_read:") != NULL)
         return proc_sys_get_value("/proc/sys/net/core/busy_read", value);
+    else if (strstr(oid, "/busy_poll:") != NULL)
+        return proc_sys_get_value("/proc/sys/net/core/busy_poll", value);
     else if (strstr(oid, "/somaxconn:") != NULL)
         return proc_sys_get_value("/proc/sys/net/core/somaxconn", value);
     else if (strstr(oid, "/optmem_max:") != NULL)
