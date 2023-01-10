@@ -360,6 +360,39 @@ extern te_errno te_string_join_vec(te_string *str, const te_vec *strvec,
 extern void te_string_join_uri_path(te_string *str, const te_vec *strvec);
 
 /**
+ * Build an URI of parts and append it to @p str.
+ *
+ * If any of the components is @c NULL (including @p scheme), it is
+ * omitted together with a corresponding separator.
+ *
+ * @param str      TE string
+ * @param scheme   URI scheme
+ * @param userinfo user info (escaped)
+ * @param host     host (escaped)
+ * @param port     port (@c 0 meaning no port)
+ * @param path     path (not escaped)
+ * @param query    query (not escaped)
+ * @param frag     escaped
+ *
+ * @exception TE_FATAL_ERROR if @p scheme, @p path or @p query contains
+ *            invalid characters.
+ *
+ * @note @p path and @p query are *not* automatically escaped, because
+ *       the exact escaping rules depend on whether they are treated as
+ *       monolithic strings or compound objects. Therefore the caller is
+ *       responsible for providing correct escaping e.g by using
+ *       te_string_append_escape_uri(), te_string_join_vec(),
+ *       te_kvpair_to_uri_query() or in some other way.
+ *
+ * @note Leading @c / is added to @p path if @p host is present, and
+ *       @p path does not already start with @c /.
+ */
+extern void te_string_build_uri(te_string *str, const char *scheme,
+                                const char *userinfo, const char *host,
+                                uint16_t port, const char *path,
+                                const char *query, const char *frag);
+
+/**
  * Return a char * that is a result of sprintf into allocated memory.
  *
  * @param fmt       Format string

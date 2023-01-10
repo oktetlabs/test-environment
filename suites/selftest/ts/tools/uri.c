@@ -188,6 +188,28 @@ check_join_uri_path(const char *expected, ...)
     te_string_free(&result);
 }
 
+static void
+check_uri_build(const char *scheme, const char *userinfo, const char *host,
+                unsigned int port, const char *path, const char *query,
+                const char *frag, const char *expected)
+{
+    te_string str = TE_STRING_INIT;
+
+    te_string_build_uri(&str, scheme, userinfo, host, port, path, query, frag);
+    if (strcmp(str.ptr, expected) != 0)
+    {
+        ERROR("Expected scheme: %s + userinfo: %s + host: %s:%u + path: %s + "
+              "query: %s + frag: %s = '%s', got '%s'",
+              te_str_empty_if_null(scheme), te_str_empty_if_null(userinfo),
+              te_str_empty_if_null(host), port, te_str_empty_if_null(path),
+              te_str_empty_if_null(query), te_str_empty_if_null(frag),
+              expected, str.ptr);
+        te_string_free(&str);
+        TEST_VERDICT("URI improperly constructed");
+    }
+    te_string_free(&str);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -226,6 +248,23 @@ main(int argc, char **argv)
 
     TEST_STEP("Checking kvpair-to-query conversion");
     check_kvpair("a=b&c=d%3De&e=f%26", "a", "b", "c", "d=e", "e", "f&", NULL);
+
+    TEST_STEP("Check URI build");
+    check_uri_build("http", "user", "example.com", 80, "/path", "query",
+                    "fragment",
+                    "http://user@example.com:80/path?query#fragment");
+    check_uri_build("http", "user 1", "strange/host.com", 0,
+                    "path%2Fsubpath", "key=%3F", "fragment 2",
+                    "http://user%201@strange%2Fhost.com/path%2Fsubpath?key=%3F"
+                    "#fragment%202");
+    check_uri_build(NULL, NULL, "example.com", 0, NULL, NULL, NULL,
+                    "//example.com");
+    check_uri_build("mailto", NULL, NULL, 0, "user@domain.com", NULL, NULL,
+                    "mailto:user@domain.com");
+    check_uri_build(NULL, NULL, NULL, 0, "../../path", NULL, NULL,
+                    "../../path");
+    check_uri_build(NULL, NULL, NULL, 0, NULL, "query", NULL, "?query");
+    check_uri_build(NULL, NULL, NULL, 0, NULL, NULL, "frag", "#frag");
 
     TEST_SUCCESS;
 

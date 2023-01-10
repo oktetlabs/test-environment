@@ -389,6 +389,73 @@ te_string_join_uri_path(te_string *str, const te_vec *strvec)
     }
 }
 
+void
+te_string_build_uri(te_string *str, const char *scheme,
+                    const char *userinfo, const char *host, uint16_t port,
+                    const char *path, const char *query, const char *frag)
+{
+    te_charset valid_chars = TE_CHARSET_INIT;
+
+    if (scheme != NULL)
+    {
+        te_charset_add_range(&valid_chars, 'A', 'Z');
+        te_charset_add_range(&valid_chars, 'a', 'z');
+        te_charset_add_range(&valid_chars, '0', '9');
+        te_charset_add_from_string(&valid_chars, "+-.");
+
+        if (!te_charset_check_bytes(&valid_chars, strlen(scheme),
+                                    (const uint8_t *)scheme))
+            TE_FATAL_ERROR("Invalid URI scheme: %s", scheme);
+
+        te_string_append(str, "%s:", scheme);
+    }
+
+    if (host != NULL)
+    {
+        te_string_append(str, "//");
+        if (userinfo != NULL)
+        {
+            te_string_append_escape_uri(str, TE_STRING_URI_ESCAPE_USER,
+                                        userinfo);
+            te_string_append(str, "@");
+        }
+        te_string_append_escape_uri(str, TE_STRING_URI_ESCAPE_HOST, host);
+        if (port != 0)
+            te_string_append(str, ":%" PRIu16, port);
+    }
+
+    if (path != NULL)
+    {
+        make_uri_unescaped_charset(&valid_chars, TE_STRING_URI_ESCAPE_PATH);
+        te_charset_add_range(&valid_chars, '%', '%');
+
+        if (!te_charset_check_bytes(&valid_chars, strlen(path),
+                                    (const uint8_t *)path))
+            TE_FATAL_ERROR("Invalid URI path: %s", path);
+
+        if (*path != '/' && host != NULL)
+            te_string_append(str, "/");
+        te_string_append(str, "%s", path);
+    }
+
+    if (query != NULL)
+    {
+        make_uri_unescaped_charset(&valid_chars, TE_STRING_URI_ESCAPE_QUERY);
+        te_charset_add_range(&valid_chars, '%', '%');
+
+        if (!te_charset_check_bytes(&valid_chars, strlen(query),
+                                    (const uint8_t *)query))
+            TE_FATAL_ERROR("Invalid URI query: %s", query);
+
+        te_string_append(str, "?%s", query);
+    }
+
+    if (frag != NULL)
+    {
+        te_string_append(str, "#");
+        te_string_append_escape_uri(str, TE_STRING_URI_ESCAPE_FRAG, frag);
+    }
+}
 
 char *
 te_string_fmt_va(const char *fmt,
