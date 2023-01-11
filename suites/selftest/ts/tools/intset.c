@@ -136,6 +136,37 @@ check_charset_exclude(unsigned int n_ranges, ...)
     }
 }
 
+static void
+check_charset_add_string(const char *add, const char *expected)
+{
+    te_charset cset;
+    uint8_t unfolded[UINT8_MAX + 2] = {};
+
+    te_charset_clear(&cset);
+    te_charset_add_from_string(&cset, add);
+
+    if (cset.n_items != strlen(expected))
+    {
+        TEST_VERDICT("Expected %zu items in charset, got %u",
+                     strlen(expected), cset.n_items);
+    }
+
+    te_charset_get_bytes(&cset, unfolded);
+
+    /*
+     * `unfolded` will always be zero terminated due to an extra byte
+     * at the end
+     */
+    if (strcmp((const char *)unfolded, expected) != 0)
+    {
+        ERROR("Expected '%s', got '%s'", expected, (const char *)unfolded);
+        TEST_VERDICT("Unexpected sequence of characters");
+    }
+
+    if (!te_charset_check_bytes(&cset, cset.n_items, unfolded))
+        TEST_VERDICT("Charset bytes are not in charset");
+}
+
 int
 main(int argc, char **argv)
 {
@@ -213,6 +244,12 @@ main(int argc, char **argv)
     check_charset_exclude(2, ' ', 'z', 'A', '~');
     check_charset_exclude(2, ' ', '~', 'A', 'Z');
     check_charset_exclude(3, ' ', '?', 'a', '~', '@', 'a');
+
+    TEST_STEP("Checking adding and unfolding char sequences");
+    check_charset_add_string("", "");
+    check_charset_add_string("abcdef", "abcdef");
+    check_charset_add_string("ffedcbaa", "abcdef");
+    check_charset_add_string("\x80\xFF", "\x80\xFF");
 
     TEST_SUCCESS;
 

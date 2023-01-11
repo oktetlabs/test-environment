@@ -222,6 +222,41 @@ const te_intset_ops te_charset_intset = {
     .check = check_charset_byte,
 };
 
+void
+te_charset_add_from_string(te_charset *cset, const char *str)
+{
+    if (str == NULL)
+        return;
+
+    for (; *str != '\0'; str++)
+        te_charset_intset.set((uint8_t)*str, cset);
+}
+
+void
+te_charset_get_bytes(const te_charset *cset,
+                     uint8_t buf[static UINT8_MAX + 1])
+{
+    unsigned int i;
+
+    for (i = 0; i <= UINT8_MAX; i++)
+    {
+        if (te_charset_check(cset, i))
+            *buf++ = i;
+    }
+}
+
+te_bool
+te_charset_check_bytes(const te_charset *cset, size_t len, const uint8_t *bytes)
+{
+    for (; len > 0; len--, bytes++)
+    {
+        if (!te_charset_check(cset, *bytes))
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
 static void
 fd_set_clear(void *val)
 {

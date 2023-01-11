@@ -231,6 +231,43 @@ te_charset_check(const te_charset *cset, uint8_t byte)
     return te_charset_intset.check(byte, cset);
 }
 
+/**
+ * Add all characters from @p str to a charset @p cset.
+ *
+ * The terminating zero character is *not* added.
+ *
+ * @param[in,out] cset  character set
+ * @param[in]     str   characters to add
+ */
+extern void te_charset_add_from_string(te_charset *cset, const char *str);
+
+/**
+ * Get all bytes set in @p cset as a contiguous array.
+ *
+ * The number of stores bytes is equal to te_charset::n_items.
+ * Essentially, it is an inverse of te_charset_add_from_string(), however,
+ * it does *not* produce a zero-terminated string.
+ *
+ * @param[in]  cset  character set
+ * @param[out] buf   buffer for resulting bytes
+ *                   (should be at least 256 bytes long)
+ */
+extern void te_charset_get_bytes(const te_charset *cset,
+                                 uint8_t buf[static UINT8_MAX + 1]);
+
+
+/**
+ * Check that all @p bytes belong to a charset @p cset.
+ *
+ * @param cset   character set
+ * @param len    length of @p bytes
+ * @param bytes  data to check
+ *
+ * @return @c TRUE if all @p bytes are in @p cset.
+ */
+extern te_bool te_charset_check_bytes(const te_charset *cset,
+                                      size_t len, const uint8_t *bytes);
+
 /** Description of POSIX fd_set as an integral set. */
 extern const te_intset_ops te_fdset_intset;
 
