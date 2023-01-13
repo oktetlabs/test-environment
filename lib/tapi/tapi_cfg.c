@@ -743,16 +743,6 @@ tapi_cfg_add_blocking_routes(const char *ta, int addr_family,
     return 0;
 }
 
-static int
-tapi_cfg_add_blackhole(const char *ta, int addr_family,
-                       const void *dst_addr, int prefix,
-                       cfg_handle *handle)
-{
-    return tapi_cfg_add_blocking_routes(ta, addr_family,
-                                        dst_addr, prefix,
-                                        handle, "blackhole");
-}
-
 /* See the description in tapi_cfg.h */
 int
 tapi_cfg_add_full_route(const char *ta, int addr_family,
