@@ -115,12 +115,12 @@ DEFINE_API_FUNC_TA_ONLY(tcp_syn_retries,
                         "/agent:%s/sys:/tcp_syn_retries:")
 DEFINE_API_FUNC_TA_ONLY(tcp_fin_timeout,
                         "/agent:%s/sys:/tcp_fin_timeout:")
-DEFINE_API_FUNC_TA_ONLY(core_somaxconn, "/agent:%s/sys:/somaxconn:")
+DEFINE_API_FUNC_TA_ONLY(core_somaxconn, "/agent:%s/sys:/net:/core:/somaxconn:")
 DEFINE_API_FUNC_TA_ONLY(neigh_gc_thresh3,
                         "/agent:%s/sys:/neigh_gc_thresh3:")
 DEFINE_API_FUNC_TA_ONLY(igmp_max_memberships,
                         "/agent:%s/sys:/igmp_max_memberships:")
-DEFINE_API_FUNC_TA_ONLY(core_optmem_max, "/agent:%s/sys:/optmem_max:")
+DEFINE_API_FUNC_TA_ONLY(core_optmem_max, "/agent:%s/sys:/net:/core:/optmem_max:")
 DEFINE_API_FUNC_TA_ONLY(tcp_max_syn_backlog,
                         "/agent:%s/sys:/tcp_max_syn_backlog:")
 DEFINE_API_FUNC_TA_ONLY(tcp_timestamps,
