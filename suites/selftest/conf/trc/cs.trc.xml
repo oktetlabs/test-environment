@@ -52,6 +52,39 @@
             </iter>
         </test>
 
+        <test name="set_restore" type="script">
+            <objective>Check configurator set and rollback by accessing /proc/sys</objective>
+            <notes/>
+            <iter result="FAILED">
+                <arg name="env">{{{'pco_iut':IUT}}}</arg>
+                <arg name="oid_name"/>
+                <arg name="restore">FALSE</arg>
+                <arg name="rollback">none</arg>
+                <notes/>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env">{{{'pco_iut':IUT}}}</arg>
+                <arg name="oid_name"/>
+                <arg name="restore">TRUE</arg>
+                <arg name="rollback">none</arg>
+                <notes/>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env">{{{'pco_iut':IUT}}}</arg>
+                <arg name="oid_name"/>
+                <arg name="restore"/>
+                <arg name="rollback">backup</arg>
+                <notes/>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env">{{{'pco_iut':IUT}}}</arg>
+                <arg name="oid_name"/>
+                <arg name="restore"/>
+                <arg name="rollback">nohistory</arg>
+                <notes/>
+            </iter>
+        </test>
+
         <test name="vm" type="script">
             <objective>Check that virtual machine may be created and test agent started on it.</objective>
             <notes/>

@@ -51,6 +51,25 @@
         </run>
 
         <run>
+            <script name="set_restore" track_conf="yes"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+            <arg name="oid_name">
+                <value>/sys:/net:/core:/somaxconn</value>
+                <value>/sys:/net:/core:/busy_read</value>
+                <value>/sys:/net:/core:/busy_poll</value>
+                <value>/sys:/net:/core:/optmem_max</value>
+            </arg>
+            <arg name="restore" type="boolean"/>
+            <arg name="rollback">
+                <value>none</value>
+                <value>backup</value>
+                <value>nohistory</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="vlans">
                 <req id="CS_VLAN"/>
                 <req id="BROKEN"/>
