@@ -115,6 +115,7 @@ DEFINE_API_FUNC_TA_ONLY(tcp_syn_retries,
                         "/agent:%s/sys:/tcp_syn_retries:")
 DEFINE_API_FUNC_TA_ONLY(tcp_fin_timeout,
                         "/agent:%s/sys:/tcp_fin_timeout:")
+DEFINE_API_FUNC_TA_ONLY(core_busy_read, "/agent:%s/sys:/net:/core:/busy_read:")
 DEFINE_API_FUNC_TA_ONLY(core_somaxconn, "/agent:%s/sys:/net:/core:/somaxconn:")
 DEFINE_API_FUNC_TA_ONLY(neigh_gc_thresh3,
                         "/agent:%s/sys:/neigh_gc_thresh3:")

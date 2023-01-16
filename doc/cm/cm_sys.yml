@@ -108,6 +108,10 @@
          System settings from /proc/sys/net/core/.
          Name: empty
 
+    - oid: "/agent/sys/net/core/busy_read"
+      access: read_write
+      type: int32
+
     - oid: "/agent/sys/net/core/somaxconn"
       access: read_write
       type: int32

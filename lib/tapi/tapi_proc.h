@@ -399,6 +399,30 @@ extern te_errno tapi_cfg_tcp_syn_retries_get(const char *ta,
                                              int *value);
 
 /**
+ * Set a new busy_read value.
+ *
+ * @param ta        Test agent name.
+ * @param value     Value to be set.
+ * @param old_value Location for previous value, or @c NULL.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_core_busy_read_set(const char *ta,
+                                            int value,
+                                            int *old_value);
+
+/**
+ * Get busy_read value.
+ *
+ * @param ta        Test agent name.
+ * @param value     Location for the value.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_core_busy_read_get(const char *ta,
+                                            int *value);
+
+/**
  * Set a new somaxconn value.
  *
  * @param ta        Test agent name
