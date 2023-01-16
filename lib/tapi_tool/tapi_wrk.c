@@ -27,6 +27,11 @@
 #define TAPI_WRK_TERM_TIMEOUT_MS 1000
 #define TAPI_WRK_PARSE_BUF_SIZE 128
 #define TAPI_WRK_SCRIPT_FILE_NAME_SUFFIX "wrk_script.lua"
+/*
+ * The allowable argument length that remains after
+ * its truncation on the command line of the wrk tool.
+ */
+#define TAPI_WRK_TRUNCATED_ARG_LEN 256
 
 const tapi_wrk_opt tapi_wrk_default_opt = {
     .connections = 1,
@@ -55,13 +60,25 @@ static const tapi_job_opt_bind wrk_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_STRING("--affinity", FALSE, tapi_wrk_opt, affinity)
 );
 
+/**
+ * Get string representation of wrk arguments from dynamic vector.
+ *
+ * @param  vec              Dynamic vector of pointers to arguments.
+ * @param  max_arg_len      The maximum kept length of an argument.
+ *
+ * @return String address.
+ *
+ * @note If an argument length > @p max_arg_len, it will be truncated.
+ */
 static char *
-tapi_wrk_args2str(te_vec *vec)
+tapi_wrk_args2str(te_vec *vec, size_t max_arg_len)
 {
     void **arg;
+    te_bool is_trunc;
     te_string str = TE_STRING_INIT;
     te_errno rc = 0;
     const char *separator = " ";
+    const char *trunc_str = "...TRUNCATED!";
 
     if (te_vec_size(vec) == 0)
         return strdup("");
@@ -69,7 +86,17 @@ tapi_wrk_args2str(te_vec *vec)
     TE_VEC_FOREACH(vec, arg)
     {
         if (rc == 0 && *arg != NULL)
-            rc = te_string_append(&str, "%s%s", *arg, separator);
+        {
+            is_trunc = FALSE;
+            if (strlen((char*)(*arg)) > max_arg_len)
+            {
+                ((char*)(*arg))[max_arg_len - 1] = '\0';
+                is_trunc = TRUE;
+            }
+
+            rc = te_string_append(&str, "%s%s%s",
+                                  *arg, is_trunc ? trunc_str : "", separator);
+        }
     }
 
     if (rc != 0)
@@ -476,8 +503,11 @@ tapi_wrk_get_report(tapi_wrk_app *app, tapi_wrk_report *report)
         te_string_reset(&buf.data);
     }
 
-    result.arguments = tapi_wrk_args2str(&app->wrk_args);
-    if (result.arguments == NULL)
+    result.arguments = tapi_wrk_args2str(&app->wrk_args, SIZE_MAX);
+    result.truncated_arguments = tapi_wrk_args2str(&app->wrk_args,
+                                                   TAPI_WRK_TRUNCATED_ARG_LEN);
+
+    if (result.arguments == NULL || result.truncated_arguments == NULL)
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
     *report = result;
@@ -509,7 +539,8 @@ tapi_wrk_report_mi_log(te_mi_logger *logger, const tapi_wrk_report *report)
     /*
      * Since the first argument contains the executable file name, string with
      * all arguments will represent the command that was used to run the tool.
+     * To keep mi log neat, add only truncated arguments.
      */
     te_mi_logger_add_comment(logger, NULL, "command", "%s",
-                             report->arguments);
+                             report->truncated_arguments);
 }

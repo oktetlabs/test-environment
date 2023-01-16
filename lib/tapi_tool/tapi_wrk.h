@@ -103,6 +103,8 @@ typedef struct tapi_wrk_report {
     double bps;
     /** Wrk arguments used */
     char *arguments;
+    /** Truncated wrk arguments */
+    char *truncated_arguments;
 } tapi_wrk_report;
 
 /** Information of a wrk tool */
