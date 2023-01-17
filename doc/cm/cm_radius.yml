@@ -82,7 +82,7 @@
       type: string
       d: |
          A set of attributes that should be included into
-        Access-Challenge RADIUS message sent to this user.
+         Access-Challenge RADIUS message sent to this user.
          Name: empty
          Value: a list of attributes in format:
                 [AttributeName=Value[,AttributeName=Value]*]
