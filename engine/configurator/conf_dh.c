@@ -13,7 +13,8 @@
 #include "te_expand.h"
 
 /* defined in conf_backup.c */
-extern int cfg_register_dependency(xmlNodePtr node, const char *dependant);
+extern int cfg_register_dependency(object_type *object,
+                                       const char *dependant);
 
 /** Backup descriptor */
 typedef struct cfg_backup {
@@ -69,84 +70,13 @@ free_dh_entry(cfg_dh_entry *entry)
     free(entry);
 }
 
-/**
- * Skip 'comment' nodes.
- *
- * @param node      XML node
- *
- * @return Current, one of next or NULL.
- */
-static xmlNodePtr
-xmlNodeSkipExtra(xmlNodePtr node)
-{
-    while ((node != NULL) &&
-           ((xmlStrcmp(node->name, (const xmlChar *)("comment")) == 0) ||
-            (xmlStrcmp(node->name, (const xmlChar *)("text")) == 0)))
-    {
-        node = node->next;
-    }
-    return node;
-}
-
-/**
- * Go to the next XML node, skip 'comment' nodes.
- *
- * @param node      XML node
- *
- * @return The next XML node.
- */
-static xmlNodePtr
-xmlNodeChildren(xmlNodePtr node)
-{
-    assert(node != NULL);
-    return xmlNodeSkipExtra(node->children);
-}
-
-/**
- * Go to the next XML node, skip 'comment' nodes.
- *
- * @param node      XML node
- *
- * @return The next XML node.
- */
-static xmlNodePtr
-xmlNodeNext(xmlNodePtr node)
-{
-    assert(node != NULL);
-    return xmlNodeSkipExtra(node->next);
-}
-
-/**
- * Get the value of the attribute @b "cond"
- *
- * @param node      XML node
- *
- * @return @c FALSE in case attribute @b cond exists and it equals
- *         @b "false" or empty line. @c TRUE in other cases.
- */
-static te_bool
-xmlNodeCond(xmlNodePtr node)
-{
-    te_bool result = TRUE;
-    char *cond = xmlGetProp_exp(node, (xmlChar *)"cond");
-
-    if (cond == NULL)
-        return TRUE;
-
-    if (strcmp(cond, "false") == 0 || strcmp(cond, "") == 0)
-        result = FALSE;
-    xmlFree((xmlChar *)cond);
-
-    return result;
-}
-
 #define RETERR(_rc, _str...)    \
     do {                        \
         int _err = _rc;         \
                                 \
         ERROR(_str);            \
-        xmlFree(oid);           \
-        xmlFree(val_s);         \
+        free(oid);              \
+        free(val_s);            \
         free(msg);              \
         return _err;            \
     } while (0)
@@ -155,7 +85,7 @@ xmlNodeCond(xmlNodePtr node)
  * Parse handle, oid and object of instance
  * and check that object instance has value
  *
- * @param node          XML node
+ * @param inst          instance
  * @param handle        instance handle
  * @oaram oid           instance OID
  * @param obj           object of instance
@@ -166,20 +96,13 @@ xmlNodeCond(xmlNodePtr node)
  * @return  Status code
  */
 static te_errno
-cfg_dh_get_instance_info(xmlNodePtr node, cfg_handle *handle,
-                          char **oid, cfg_object **obj,
-                          const te_kvpair_h *expand_vars)
+cfg_dh_get_instance_info(instance_type *inst, cfg_handle *handle,
+                         char **oid, cfg_object **obj,
+                         const te_kvpair_h *expand_vars)
 {
     te_errno rc = 0;
 
-    *oid = xmlGetProp_exp_vars_or_env(node,
-          (xmlChar *)"oid", expand_vars);
-    if (*oid == NULL)
-    {
-        ERROR("Incorrect command format");
-        rc = TE_EINVAL;
-        goto cleanup;
-    }
+    *oid = strdup(inst->oid);
     if (cfg_db_find(*oid, handle) != 0)
     {
         ERROR("Cannot find instance %s", *oid);
@@ -215,7 +138,7 @@ cleanup:
  * Get value from instance and store it in either list of kvpairs or
  * environmental variable.
  *
- * @param node          XML node with get command children
+ * @param inst          instance to get value from
  * @param expand_vars   List of key-value pairs for expansion in file
  *                      NULL if environmental variables used for
  *                      substitutions
@@ -223,7 +146,7 @@ cleanup:
  * @return Status code.
  */
 static te_errno
-cfg_dh_get_value_from_instance(xmlNodePtr node, te_kvpair_h *expand_vars)
+cfg_dh_get_value_from_instance(instance_type *inst, te_kvpair_h *expand_vars)
 {
     te_errno     rc;
     int          ret;
@@ -237,19 +160,17 @@ cfg_dh_get_value_from_instance(xmlNodePtr node, te_kvpair_h *expand_vars)
     cfg_object  *obj;
 
 
-    rc = cfg_dh_get_instance_info(node, &handle, &oid,
-                                   &obj, expand_vars);
+    rc = cfg_dh_get_instance_info(inst, &handle, &oid, &obj, expand_vars);
     if (rc != 0)
         return rc;
 
-    var_name = xmlGetProp_exp_vars_or_env(node,
-            (const xmlChar *)"value", expand_vars);
-    if (var_name == NULL)
+    if (inst->value == NULL)
     {
         ERROR("Value is required for %s", oid);
         rc = TE_EINVAL;
         goto cleanup;
     }
+    var_name = strdup(inst->value);
 
     len = sizeof(cfg_get_msg) + CFG_MAX_INST_VALUE;
     if ((msg = TE_ALLOC(len)) == NULL)
@@ -316,45 +237,9 @@ cleanup:
 }
 
 /**
- * Process 'get' command.
- *
- * @param node          XML node with get command children
- * @param expand_vars   List of key-value pairs for expansion in file
- *                      NULL if environmental variables used for
- *                      substitutions
- *
- * @return Status code.
- */
-static te_errno
-cfg_dh_process_get(xmlNodePtr node, te_kvpair_h *expand_vars)
-{
-    te_errno rc = 0;
-
-    while (node != NULL &&
-           xmlStrcmp(node->name , (const xmlChar *)"instance") == 0)
-    {
-        if (xmlNodeCond(node))
-        {
-            rc = cfg_dh_get_value_from_instance(node, expand_vars);
-            if (rc != 0)
-                return rc;
-        }
-        node = xmlNodeNext(node);
-    }
-
-    if (node != NULL)
-    {
-        rc = TE_EINVAL;
-        ERROR("Incorrect get command format");
-    }
-
-    return rc;
-}
-
-/**
  * Process 'copy' command.
  *
- * @param node          XML node with get command children
+ * @param inst          instance to get
  * @param expand_vars   List of key-value pairs for expansion in file
  *                      NULL if environmental variables used for
  *                      substitutions
@@ -362,7 +247,7 @@ cfg_dh_process_get(xmlNodePtr node, te_kvpair_h *expand_vars)
  * @return Status code.
  */
 static te_errno
-cfg_dh_process_copy(xmlNodePtr node, te_kvpair_h *expand_vars)
+cfg_dh_process_copy_instance(instance_type *inst, te_kvpair_h *expand_vars)
 {
     te_errno      rc;
     size_t        len;
@@ -372,75 +257,56 @@ cfg_dh_process_copy(xmlNodePtr node, te_kvpair_h *expand_vars)
     cfg_copy_msg *msg = NULL;
     cfg_handle    src_handle;
 
-    while (node != NULL &&
-           xmlStrcmp(node->name , (const xmlChar *)"instance") == 0)
+    if (inst->oid == NULL)
     {
-        if (!xmlNodeCond(node))
-        {
-            node = xmlNodeNext(node);
-            continue;
-        }
-
-        oid = xmlGetProp_exp_vars_or_env(node,
-               (xmlChar *)"oid", expand_vars);
-        if (oid == NULL)
-        {
-            ERROR("Incorrect command format");
-            rc = TE_EINVAL;
-            goto cleanup;
-        }
-
-        oid_len = strlen(oid);
-
-        len = sizeof(cfg_copy_msg) + oid_len + 1;
-        if ((msg = calloc(1, len)) == NULL)
-        {
-            ERROR("Cannot allocate memory");
-            rc = TE_ENOMEM;
-            goto cleanup;
-        }
-
-        memcpy(msg->dst_oid, oid, oid_len + 1);
-        msg->is_obj = (strchr(oid, ':') == NULL) ? TRUE : FALSE;
-
-        msg->type = CFG_COPY;
-        msg->len = sizeof(cfg_copy_msg) + oid_len + 1;
-
-        val_s = xmlGetProp_exp_vars_or_env(node,
-                (const xmlChar *)"value", expand_vars);
-        if (val_s == NULL)
-        {
-            ERROR("Value is required for %s to copy from", oid);
-            rc = TE_EINVAL;
-            goto cleanup;
-        }
-
-        if ((rc = cfg_db_find(val_s, &src_handle)) != 0)
-            goto cleanup;
-
-        msg->src_handle = src_handle;
-
-        cfg_process_msg((cfg_msg **)&msg, TRUE);
-        if (msg->rc != 0)
-        {
-            ERROR("Failed to execute the copy command for instance %s", oid);
-            rc = msg->rc;
-            goto cleanup;
-        }
-        free(val_s);
-        val_s = NULL;
-        free(msg);
-        msg = NULL;
-        free(oid);
-        oid = NULL;
-
-        node = xmlNodeNext(node);
-    }
-    if (node != NULL)
-    {
-        ERROR("Incorrect copy command format");
+        ERROR("Incorrect command format");
         rc = TE_EINVAL;
+        goto cleanup;
     }
+    oid = strdup(inst->oid);
+
+    oid_len = strlen(oid);
+
+    len = sizeof(cfg_copy_msg) + oid_len + 1;
+    if ((msg = calloc(1, len)) == NULL)
+    {
+        ERROR("Cannot allocate memory");
+        rc = TE_ENOMEM;
+        goto cleanup;
+    }
+
+    memcpy(msg->dst_oid, oid, oid_len + 1);
+    msg->is_obj = (strchr(oid, ':') == NULL) ? TRUE : FALSE;
+
+    msg->type = CFG_COPY;
+    msg->len = sizeof(cfg_copy_msg) + oid_len + 1;
+
+    if (inst->value == NULL)
+    {
+        ERROR("Value is required for %s to copy from", oid);
+        rc = TE_EINVAL;
+        goto cleanup;
+    }
+    val_s = strdup(inst->value);
+
+    if ((rc = cfg_db_find(val_s, &src_handle)) != 0)
+        goto cleanup;
+
+    msg->src_handle = src_handle;
+
+    cfg_process_msg((cfg_msg **)&msg, TRUE);
+    if (msg->rc != 0)
+    {
+        ERROR("Failed to execute the copy command for instance %s", oid);
+        rc = msg->rc;
+        goto cleanup;
+    }
+    free(val_s);
+    val_s = NULL;
+    free(msg);
+    msg = NULL;
+    free(oid);
+    oid = NULL;
 
 cleanup:
     free(oid);
@@ -449,92 +315,78 @@ cleanup:
 
     return rc;
 }
+
 /**
  * Process 'add' command.
  *
- * @param node          XML node with add command children
- * @param expand_vars   List of key-value pairs for expansion in file,
+ * @param inst          instance that should be added
+ * @param expand_vars   list of key-value pairs for expansion in file,
  *                      @c NULL if environment variables are used for
  *                      substitutions
  *
  * @return Status code.
  */
-static int
-cfg_dh_process_add(xmlNodePtr node, const te_kvpair_h *expand_vars)
+static te_errno
+cfg_dh_process_add_instance(instance_type *inst, const te_kvpair_h *expand_vars)
 {
-    int          rc;
-    size_t       len;
+    te_errno rc;
+    size_t len;
     cfg_add_msg *msg = NULL;
     cfg_inst_val val;
-    cfg_object  *obj;
-    xmlChar     *oid = NULL;
-    xmlChar     *val_s = NULL;
+    cfg_object *obj;
+    char *oid = NULL;
+    char *val_s = NULL;
 
-    while (node != NULL &&
-           xmlStrcmp(node->name, (const xmlChar *)"instance") == 0)
-    {
-        if (!xmlNodeCond(node))
-            goto next;
-
-        oid = (xmlChar *)xmlGetProp_exp_vars_or_env(node,
-              (const xmlChar *)"oid", expand_vars);
-        if (oid == NULL)
-            RETERR(TE_EINVAL, "Incorrect add command format");
-
-        if ((obj = cfg_get_object((char *)oid)) == NULL)
-            RETERR(TE_EINVAL, "Cannot find object for instance %s", oid);
-
-        len = sizeof(cfg_add_msg) + CFG_MAX_INST_VALUE +
-              strlen((char *)oid) + 1;
-        if ((msg = (cfg_add_msg *)calloc(1, len)) == NULL)
-            RETERR(TE_ENOMEM, "Cannot allocate memory");
-
-        msg->type = CFG_ADD;
-        msg->len = sizeof(cfg_add_msg);
-        msg->val_type = obj->type;
-        msg->rc = 0;
-
-        val_s = (xmlChar *)xmlGetProp_exp_vars_or_env(node,
-                (const xmlChar *)"value", expand_vars);
-        if (val_s != NULL && strlen((char *)val_s) >= CFG_MAX_INST_VALUE)
-            RETERR(TE_ENOMEM, "Too long value");
-
-        if (obj->type == CVT_NONE && val_s != NULL)
-            RETERR(TE_EINVAL, "Value is prohibited for %s", oid);
-
-        if (val_s == NULL)
-            msg->val_type = CVT_NONE; /* Default will be assigned */
-
-        if (val_s != NULL)
-        {
-            if ((rc = cfg_types[obj->type].str2val((char *)val_s, &val))
-                   != 0)
-                RETERR(rc, "Value conversion error for %s", oid);
-
-            cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
-            cfg_types[obj->type].free(val);
-            free(val_s);
-            val_s = NULL;
-        }
-
-        msg->oid_offset = msg->len;
-        msg->len += strlen((char *)oid) + 1;
-        strcpy((char *)msg + msg->oid_offset, (char *)oid);
-        cfg_process_msg((cfg_msg **)&msg, TRUE);
-        if (msg->rc != 0)
-            RETERR(msg->rc, "Failed(%r) to execute the add command "
-                            "for instance %s", msg->rc, oid);
-
-        free(msg);
-        msg = NULL;
-        free(oid);
-        oid = NULL;
-
-next:
-        node = xmlNodeNext(node);
-    }
-    if (node != NULL)
+    if (inst->oid == NULL)
         RETERR(TE_EINVAL, "Incorrect add command format");
+    oid = strdup(inst->oid);
+
+    if ((obj = cfg_get_object(oid)) == NULL)
+        RETERR(TE_EINVAL, "Cannot find object for instance %s", oid);
+
+    len = sizeof(cfg_add_msg) + CFG_MAX_INST_VALUE +
+          strlen(oid) + 1;
+    if ((msg = (cfg_add_msg *)calloc(1, len)) == NULL)
+        RETERR(TE_ENOMEM, "Cannot allocate memory");
+
+    msg->type = CFG_ADD;
+    msg->len = sizeof(cfg_add_msg);
+    msg->val_type = obj->type;
+    msg->rc = 0;
+
+    val_s = inst->value;
+    if (val_s != NULL && strlen(val_s) >= CFG_MAX_INST_VALUE)
+        RETERR(TE_ENOMEM, "Too long value");
+
+    if (obj->type == CVT_NONE && val_s != NULL)
+        RETERR(TE_EINVAL, "Value is prohibited for %s", oid);
+
+    if (val_s == NULL)
+        msg->val_type = CVT_NONE;
+
+    if (val_s != NULL)
+    {
+        if ((rc = cfg_types[obj->type].str2val(val_s, &val)) != 0)
+            RETERR(rc, "Value conversion error for %s", oid);
+
+        cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
+        cfg_types[obj->type].free(val);
+        free(val_s);
+        val_s = NULL;
+    }
+
+    msg->oid_offset = msg->len;
+    msg->len += strlen((char *)oid) + 1;
+    strcpy((char *)msg + msg->oid_offset, oid);
+    cfg_process_msg((cfg_msg **)&msg, TRUE);
+    if (msg->rc != 0)
+        RETERR(msg->rc, "Failed(%r) to execute the add command "
+                        "for instance %s", msg->rc, oid);
+
+    free(msg);
+    msg = NULL;
+    free(oid);
+    oid = NULL;
 
     return 0;
 }
@@ -544,7 +396,7 @@ next:
  * and add them to dynamic history.
  * Note: this routine does not reboot Test Agents.
  *
- * @param node          <history> node pointer
+ * @param history       history structure
  * @param expand_vars   List of key-value pairs for expansion in file,
  *                      @c NULL if environment variables are used for
  *                      substitutions
@@ -553,121 +405,39 @@ next:
  * @return status code (errno.h)
  */
 int
-cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
+cfg_dh_process_file(history_seq *history, te_kvpair_h *expand_vars,
                     te_bool postsync)
 {
-    xmlNodePtr cmd;
-    int        len;
-    int        rc;
+    int len;
+    int rc;
+    int i, j;
 
-    if (node == NULL)
+
+    if (history == NULL)
         return 0;
 
-    for (cmd = xmlNodeChildren(node); cmd != NULL; cmd = xmlNodeNext(cmd))
+    for (i = 0; i < history->entries_count; i++)
     {
-        xmlNodePtr tmp = xmlNodeChildren(cmd);
-        xmlChar   *oid   = NULL;
-        xmlChar   *val_s = NULL;
-        char      *attr = NULL;
+        char *oid = NULL;
+        char *val_s = NULL;
 
-        if (!xmlNodeCond(cmd))
-            continue;
 
-        if (xmlStrcmp(cmd->name, (const xmlChar *)"include") == 0)
-            continue;
-
-        if (xmlStrcmp(cmd->name, (const xmlChar *)"history") == 0)
+        if (!postsync)
         {
-            rc = cfg_dh_process_file(cmd, expand_vars, postsync);
-            if (rc != 0)
+            /* register */
+            for (j = 0; j < history->entries[i].reg_count; j++)
             {
-                ERROR("Processing of embedded history failed %r", rc);
-                return rc;
-            }
-            continue;
-        }
+                cfg_register_msg *msg = NULL;
 
-        if (xmlStrcmp(cmd->name , (const xmlChar *)"reboot") == 0)
-        {
-            cfg_reboot_msg *msg = NULL;
-
-            if (!postsync)
-                continue;
-
-            if ((attr = (char *)xmlGetProp(cmd,
-                                           (const xmlChar *)"ta")) == NULL)
-                RETERR(TE_EINVAL, "Incorrect reboot command format");
-
-            if ((msg = (cfg_reboot_msg *)calloc(1, sizeof(*msg) +
-                                                strlen(attr) + 1))
-                    == NULL)
-                RETERR(TE_ENOMEM, "Cannot allocate memory");
-
-            msg->type = CFG_REBOOT;
-            msg->len = sizeof(*msg) + strlen(attr) + 1;
-            msg->rc = 0;
-            msg->restore = FALSE;
-            strcpy(msg->ta_name, attr);
-
-            cfg_process_msg((cfg_msg **)&msg, TRUE);
-            if (msg->rc != 0)
-                RETERR(msg->rc, "Failed to execute the reboot command");
-
-            xmlFree((xmlChar *)attr);
-            free(msg);
-            continue;
-        }
-
-        if (xmlStrcmp(cmd->name , (const xmlChar *)"register") != 0 &&
-            xmlStrcmp(cmd->name , (const xmlChar *)"unregister") != 0 &&
-            xmlStrcmp(cmd->name , (const xmlChar *)"add") != 0 &&
-            xmlStrcmp(cmd->name , (const xmlChar *)"set") != 0 &&
-            xmlStrcmp(cmd->name , (const xmlChar *)"get") != 0 &&
-            xmlStrcmp(cmd->name , (const xmlChar *)"delete") != 0 &&
-            xmlStrcmp(cmd->name , (const xmlChar *)"copy") != 0)
-        {
-            ERROR("Unknown command %s", cmd->name);
-            return TE_EINVAL;
-        }
-
-        if (xmlStrcmp(cmd->name , (const xmlChar *)"register") == 0)
-        {
-            cfg_register_msg *msg = NULL;
-
-            if (postsync)
-                continue;
-
-            while (tmp != NULL &&
-                   xmlStrcmp(tmp->name , (const xmlChar *)"object") == 0)
-            {
-                const xmlChar *parent_dep;
-
-                attr = xmlGetProp_exp_vars_or_env(tmp,
-                      (xmlChar *)"cond", expand_vars);
-                if (attr != NULL)
-                {
-                    /* in case add condition is specified */
-                    if (strcmp(attr, "false") == 0 || strcmp(attr, "") == 0)
-                    {
-                        xmlFree((xmlChar *)attr);
-                        tmp = xmlNodeNext(tmp);
-                        continue;
-                    }
-                    xmlFree((xmlChar *)attr);
-                }
-
-                oid = (xmlChar *)xmlGetProp_exp_vars_or_env(tmp,
-                      (xmlChar *)"oid", expand_vars);
+                oid = (char *)history->entries[i].reg[j].oid;
                 if (oid == NULL)
-                    RETERR(TE_EINVAL, "Incorrect %s command format",
-                           cmd->name);
+                    RETERR(TE_EINVAL,
+                           "Incorrect register command format (oid)");
 
-                val_s = xmlGetProp(tmp, (const xmlChar *)"default");
+                val_s = (char *)history->entries[i].reg[j].def_val;
 
-                parent_dep = xmlGetProp(tmp, (const xmlChar *)"parent-dep");
-
-                len = sizeof(cfg_register_msg) + strlen((char *)oid) + 1 +
-                      (val_s == NULL ? 0 : strlen((char *)val_s) + 1);
+                len = sizeof(cfg_register_msg) + strlen(oid) + 1 +
+                      (val_s == NULL ? 0 : strlen(val_s) + 1);
 
                 if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
                     RETERR(TE_ENOMEM, "Cannot allocate memory");
@@ -675,54 +445,29 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 msg->type = CFG_REGISTER;
                 msg->len = len;
                 msg->rc = 0;
-                msg->access = CFG_READ_CREATE;
-                msg->no_parent_dep = (parent_dep != NULL &&
-                              xmlStrcmp(parent_dep,
-                                        (const xmlChar *)"no") == 0);
-                msg->val_type = CVT_NONE;
-                msg->substitution = FALSE;
-                msg->unit = FALSE;
+                msg->access = history->entries[i].reg[j].access;
 
-                strcpy(msg->oid, (char *)oid);
+                /* parent-dep is currently not used */
+                msg->no_parent_dep = history->entries[i].reg[j].no_parent_dep;
+
+                msg->val_type = history->entries[i].reg[j].type;
+                msg->substitution = history->entries[i].reg[j].substitution;
+                msg->unit = history->entries[i].reg[j].unit;
+
+                strcpy(msg->oid, oid);
                 if (val_s != NULL)
                 {
                     msg->def_val = strlen(msg->oid) + 1;
-                    strcpy(msg->oid + msg->def_val, (char *)val_s);
+                    strcpy(msg->oid + msg->def_val, val_s);
                 }
 
-                attr = (char *)xmlGetProp(tmp, (const xmlChar *)"type");
-                if (attr != NULL)
-                {
-                    int mapped;
-
-                    mapped = te_enum_map_from_str(cfg_cvt_mapping,
-                                                  (const char *)attr,
-                                                  CVT_UNSPECIFIED);
-                    if (mapped == CVT_UNSPECIFIED)
-                        RETERR(TE_EINVAL, "Unsupported object type %s", attr);
-                    else
-                        msg->val_type = (cfg_val_type)mapped;
-                    xmlFree((xmlChar *)attr);
-                    attr = NULL;
-                }
-
-                attr = (char *)xmlGetProp(tmp, (const xmlChar *)"volatile");
-                if (attr != NULL)
-                {
-                    if (strcmp(attr, "true") == 0)
-                        msg->vol = TRUE;
-                    else if (strcmp(attr, "false") != 0)
-                        RETERR(TE_EINVAL, "Volatile should be specified "
-                                          "using \"true\" or \"false\"");
-                    xmlFree((xmlChar *)attr);
-                    attr = NULL;
-                }
+                msg->vol = history->entries[i].reg[j].volat;
 
                 if (val_s != NULL)
                 {
                     cfg_inst_val val;
 
-                    if (cfg_types[msg->val_type].str2val((char *)val_s,
+                    if (cfg_types[msg->val_type].str2val(val_s,
                                                          &val) != 0)
                         RETERR(TE_EINVAL, "Incorrect default value %s",
                                val_s);
@@ -730,153 +475,92 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                     cfg_types[msg->val_type].free(val);
                 }
 
-                attr = (char *)xmlGetProp(tmp, (const xmlChar *)"access");
-                if (attr != NULL)
-                {
-                    if (strcmp(attr, "read_write") == 0)
-                        msg->access = CFG_READ_WRITE;
-                    else if (strcmp(attr, "read_only") == 0)
-                        msg->access = CFG_READ_ONLY;
-                    else if (strcmp(attr, "read_create") != 0)
-                        RETERR(TE_EINVAL,
-                               "Wrong value %s of 'access' attribute",
-                               attr);
-                    xmlFree((xmlChar *)attr);
-                    attr = NULL;
-                }
-
-                attr = (char *)xmlGetProp(tmp, (const xmlChar *)"substitution");
-                if (attr != NULL)
-                {
-                    if (strcmp(attr, "true") == 0)
-                    {
-                        msg->substitution = TRUE;
-                    }
-                    else if (strcmp(attr, "false") != 0)
-                    {
-                        RETERR(TE_EINVAL, "substitution should be specified "
-                                          "using \"true\" or \"false\"");
-                    }
-                    xmlFree((xmlChar *)attr);
-                    attr = NULL;
-                }
-
-                attr = (char *)xmlGetProp(tmp, (const xmlChar *)"unit");
-                if (attr != NULL)
-                {
-                    if (strcmp(attr, "true") == 0)
-                    {
-                        msg->unit = TRUE;
-                    }
-                    else if (strcmp(attr, "false") != 0)
-                    {
-                        RETERR(TE_EINVAL, "unit property can be either "
-                              "\"true\" or \"false\"");
-                    }
-
-                    xmlFree((xmlChar *)attr);
-                    attr = NULL;
-                }
-
                 cfg_process_msg((cfg_msg **)&msg, TRUE);
                 if (msg->rc != 0)
                     RETERR(msg->rc, "Failed to execute register command "
                                     "for object %s", oid);
 
-                cfg_register_dependency(tmp->children, msg->oid);
-
-                free(val_s);
-                val_s = NULL;
+                cfg_register_dependency(&(history->entries[i].reg[j]),
+                                        msg->oid);
                 free(msg);
                 msg = NULL;
-                free(oid);
                 oid = NULL;
-
-                tmp = xmlNodeNext(tmp);
             }
-            if (tmp != NULL)
-                RETERR(TE_EINVAL,
-                       "Unexpected node '%s' in register command",
-                       tmp->name);
-        }   /* register */
-        else if (xmlStrcmp(cmd->name , (const xmlChar *)"unregister") == 0)
-        {
-            cfg_msg *msg = NULL; /* dummy for RETERR to work */
-
-            if (postsync)
-                continue;
-
-            while (tmp != NULL)
+            /* unregister */
+            for (j = 0; j < history->entries[i].unreg_count; j++)
             {
-                if (xmlStrcmp(tmp->name , (const xmlChar *)"object") != 0)
-                    RETERR(TE_EINVAL,
-                           "Unexpected node '%s' in 'unregister' command",
-                           tmp->name);
+                cfg_msg *msg = NULL;  /* dummy for RETERR to work */
 
-                oid = (xmlChar *)xmlGetProp_exp_vars_or_env(tmp,
-                      (xmlChar *)"oid", expand_vars);
-                if (oid == NULL)
-                    RETERR(TE_EINVAL, "Incorrect %s command format",
-                           cmd->name);
+                oid = (char *)history->entries[i].unreg[j].oid;
 
                 rc = cfg_db_unregister_obj_by_id_str((char *)oid,
                                                      TE_LL_WARN);
                 if (rc != 0)
                     RETERR(rc, "Failed to execute 'unregister' command "
                            "for object %s", oid);
-
-                free(oid);
                 oid = NULL;
-
-                tmp = xmlNodeNext(tmp);
-            }
-        }   /* unregister */
-        else if (xmlStrcmp(cmd->name , (const xmlChar *)"add") == 0)
-        {
-
-            if (!postsync)
-                continue;
-
-            rc = cfg_dh_process_add(tmp, expand_vars);
-            if (rc != 0)
-            {
-                ERROR("Failed to process add command");
-                return rc;
             }
         }
-        else if (xmlStrcmp(cmd->name , (const xmlChar *)"get") == 0)
+        else /* i.e (postsync) */
         {
-            if (!postsync)
-                continue;
-
-            rc = cfg_dh_process_get(tmp, expand_vars);
-            if (rc != 0)
+            if (history->entries[i].reboot_ta != NULL)
             {
-                ERROR("Failed to process get command");
-                return rc;
+                cfg_reboot_msg *msg = NULL;
+                char *ta = history->entries[i].reboot_ta;
+
+                if (ta == NULL)
+                    RETERR(TE_EINVAL, "Incorrect reboot command format");
+
+                if ((msg = (cfg_reboot_msg *)calloc(1, sizeof(*msg) +
+                                                    strlen(ta) + 1))
+                        == NULL)
+                    RETERR(TE_ENOMEM, "Cannot allocate memory");
+
+                msg->type = CFG_REBOOT;
+                msg->len = sizeof(*msg) + strlen(ta) + 1;
+                msg->rc = 0;
+                msg->restore = FALSE;
+                strcpy(msg->ta_name, ta);
+
+                cfg_process_msg((cfg_msg **)&msg, TRUE);
+                if (msg->rc != 0)
+                    RETERR(msg->rc, "Failed to execute the reboot command");
+
+                free(msg);
             }
-        }
-        else if (xmlStrcmp(cmd->name , (const xmlChar *)"set") == 0)
-        {
-            cfg_set_msg *msg = NULL;
-            cfg_inst_val val;
-            cfg_handle   handle;
-            cfg_object  *obj;
-
-            if (!postsync)
-                continue;
-
-            while (tmp != NULL &&
-                   xmlStrcmp(tmp->name , (const xmlChar *)"instance") == 0)
+            /* add */
+            for (j = 0; j < history->entries[i].add_count; j++)
             {
-                if (!xmlNodeCond(tmp))
+                rc = cfg_dh_process_add_instance(&history->entries[i].add[j],
+                                                 expand_vars);
+                if (rc != 0)
                 {
-                    tmp = xmlNodeNext(tmp);
-                    continue;
+                    ERROR("Failed to process add command");
+                    return rc;
                 }
+            }
+            /* get */
+            for (j = 0; j < history->entries[i].get_count; j++)
+            {
+                rc = cfg_dh_get_value_from_instance(&history->entries[i].get[j],
+                                                    expand_vars);
+                if (rc != 0)
+                {
+                    ERROR("Failed to process add command");
+                    return rc;
+                }
+            }
+            /* set */
+            for (j = 0; j < history->entries[i].set_count; j++)
+            {
+                cfg_set_msg *msg = NULL;
+                cfg_inst_val val;
+                cfg_handle   handle;
+                cfg_object  *obj;
 
-                rc = cfg_dh_get_instance_info(tmp, &handle, (char **)&oid,
-                                               &obj, expand_vars);
+                rc = cfg_dh_get_instance_info(&history->entries[i].set[j],
+                                              &handle, &oid,
+                                              &obj, expand_vars);
                 if (rc != 0)
                     return rc;
 
@@ -890,17 +574,14 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 msg->rc = 0;
                 msg->val_type = obj->type;
 
-                val_s = (xmlChar *)xmlGetProp_exp_vars_or_env(tmp,
-                        (const xmlChar *)"value", expand_vars);
+                val_s = history->entries[i].set[j].value;
                 if (val_s == NULL)
                     RETERR(TE_EINVAL, "Value is required for %s", oid);
 
-                if ((rc = cfg_types[obj->type].str2val((char *)val_s, &val))
-                       != 0)
+                if ((rc = cfg_types[obj->type].str2val(val_s, &val)) != 0)
                     RETERR(rc, "Value conversion error for %s", oid);
 
                 cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
-                free(val_s);
                 val_s = NULL;
                 cfg_types[obj->type].free(val);
                 cfg_process_msg((cfg_msg **)&msg, TRUE);
@@ -913,28 +594,16 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 msg = NULL;
                 free(oid);
                 oid = NULL;
-
-                tmp = xmlNodeNext(tmp);
             }
-            if (tmp != NULL)
-                RETERR(TE_EINVAL, "Incorrect set command format");
-        }
-        else if (xmlStrcmp(cmd->name , (const xmlChar *)"delete") == 0)
-        {
-            cfg_del_msg *msg = NULL;
-            cfg_handle   handle;
-
-            if (!postsync)
-                continue;
-
-            while (tmp != NULL &&
-                   xmlStrcmp(tmp->name, (const xmlChar *)"instance") == 0)
+            /* delete */
+            for (j = 0; j < history->entries[i].delete_count; j++)
             {
-                oid = (xmlChar *)xmlGetProp_exp_vars_or_env(tmp,
-                       (xmlChar *)"oid", expand_vars);
+                cfg_del_msg *msg = NULL;
+                cfg_handle   handle;
+
+                oid = history->entries[i].delete[j].oid;
                 if (oid == NULL)
-                    RETERR(TE_EINVAL, "Incorrect %s command format",
-                           cmd->name);
+                    RETERR(TE_EINVAL, "Incorrect delete command format (oid)");
 
                 if ((rc = cfg_db_find((char *)oid, &handle)) != 0)
                     RETERR(rc, "Cannot find instance %s", oid);
@@ -957,40 +626,27 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
 
                 free(msg);
                 msg = NULL;
-                free(oid);
                 oid = NULL;
-
-                tmp = xmlNodeNext(tmp);
             }
-            if (tmp != NULL)
-                RETERR(TE_EINVAL, "Incorrect delete command format");
-        }
-        else if (xmlStrcmp(cmd->name , (const xmlChar *)"copy") == 0)
-        {
-            if (!postsync)
-                continue;
-
-            rc = cfg_dh_process_copy(tmp, expand_vars);
-            if (rc != 0)
+            /* copy */
+            for (j = 0; j < history->entries[i].copy_count; j++)
             {
-                ERROR("Failed to process copy command: %r", rc);
-                return rc;
+                rc = cfg_dh_process_copy_instance(&history->entries[i].copy[j],
+                                                  expand_vars);
+                if (rc != 0)
+                {
+                    ERROR("Failed to process copy command: %r", rc);
+                    return rc;
+                }
             }
         }
-        else
-        {
-            assert(FALSE);
-        }
-        free(val_s);
-        val_s = NULL;
     }
-
     return 0;
 #undef RETERR
 }
 
 /**
- * Create "history" configuration file with specified name.
+ * Create YAML "history" configuration file with specified name.
  *
  * @param filename      name of the file to be created
  *
@@ -999,10 +655,12 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
 int
 cfg_dh_create_file(char *filename)
 {
-    FILE *f= fopen(filename, "w");
 
     cfg_dh_entry *tmp;
-    xmlChar      *str;
+
+    history_seq *history = malloc(sizeof(history_seq));
+    unsigned int i;
+    te_errno rc = 0;
 
     cfg_dh_optimize();
 
@@ -1013,13 +671,33 @@ cfg_dh_create_file(char *filename)
         return _err;       \
     } while (0)
 
-    if (f == NULL)
-        return TE_OS_RC(TE_CS, errno);
-
-    fprintf(f, "<?xml version=\"1.0\"?>\n");
-    fprintf(f, "<history>\n");
-
+    history->entries_count = 0;
     for (tmp = first; tmp != NULL; tmp = tmp->next)
+    {
+        history->entries_count++;
+    }
+    history->entries = malloc(sizeof(history_entry) *
+                              history->entries_count);
+    for (i = 0; i < history->entries_count; i++)
+    {
+        history->entries[i].reg = NULL;
+        history->entries[i].reg_count = 0;
+        history->entries[i].unreg = NULL;
+        history->entries[i].unreg_count = 0;
+        history->entries[i].add = NULL;
+        history->entries[i].add_count = 0;
+        history->entries[i].get = NULL;
+        history->entries[i].get_count = 0;
+        history->entries[i].delete = NULL;
+        history->entries[i].delete_count = 0;
+        history->entries[i].copy = NULL;
+        history->entries[i].copy_count = 0;
+        history->entries[i].set = NULL;
+        history->entries[i].set_count = 0;
+        history->entries[i].reboot_ta = NULL;
+    }
+
+    for (tmp = first, i = 0; tmp != NULL; tmp = tmp->next, i++)
     {
         switch (tmp->cmd->type)
         {
@@ -1027,95 +705,118 @@ cfg_dh_create_file(char *filename)
             {
                 cfg_register_msg *msg = (cfg_register_msg *)(tmp->cmd);
 
-                fprintf(f, "\n  <register>\n");
-                fprintf(f, "    <object oid=\"%s\" "
-                        "access=\"%s\" type=\"%s\"%s",
-                        msg->oid,
-                        msg->access == CFG_READ_CREATE ?
-                            "read_create" :
-                        msg->access == CFG_READ_WRITE ?
-                            "read_write" : "read_only",
-                        msg->val_type == CVT_NONE ?    "none" :
-                        msg->val_type == CVT_INT32 ? "int32" :
-                        msg->val_type == CVT_UINT64 ? "uint64" :
-                        msg->val_type == CVT_ADDRESS ? "address" :
-                                                       "string",
-                        (msg->no_parent_dep ? " parent-dep=\"no\"" : ""));
-                if (msg->def_val)
+                history->entries[i].reg_count = 1;
+                history->entries[i].reg = malloc(sizeof(object_type));
+
+                history->entries[i].reg[0].oid = strdup(msg->oid);
+                history->entries[i].reg[0].access = msg->access;
+                history->entries[i].reg[0].type = msg->val_type;
+                history->entries[i].reg[0].no_parent_dep = msg->no_parent_dep;
+                history->entries[i].reg[0].def_val = NULL;
+
+                if (msg->def_val != 0)
                 {
-                    str = xmlEncodeEntitiesReentrant(NULL,
-                              (xmlChar *)(msg->oid + msg->def_val));
-                    if (str == NULL)
-                        RETERR(TE_RC(TE_CS, TE_ENOMEM));
-                    fprintf(f, " default=\"%s\"", str);
-                    xmlFree(str);
+                    history->entries[i].reg[0].def_val =
+                                               strdup(msg->oid + msg->def_val);
                 }
-                fprintf(f, "/>\n  </register>\n");
+
+                history->entries[i].reg[0].unit = false;
+                history->entries[i].reg[0].volat = false;
+                history->entries[i].reg[0].substitution = false;
+                history->entries[i].reg[0].depends = NULL;
+                history->entries[i].reg[0].depends_count = 0;
                 break;
             }
 
             case CFG_ADD:
-            case CFG_SET:
             {
-                cfg_val_type t = tmp->cmd->type == CFG_ADD ?
-                                 ((cfg_add_msg *)(tmp->cmd))->val_type :
-                                 ((cfg_set_msg *)(tmp->cmd))->val_type;
+                cfg_val_type t = ((cfg_add_msg *)(tmp->cmd))->val_type;
 
-                fprintf(f, "\n  <%s>\n",
-                        tmp->cmd->type == CFG_ADD ? "add" : "set");
-                fprintf(f, "    <instance oid=\"%s\" ",
-                        tmp->cmd->type == CFG_ADD ?
-                        (char *)(tmp->cmd) +
-                        ((cfg_add_msg *)(tmp->cmd))->oid_offset :
-                        tmp->old_oid);
+                history->entries[i].add_count = 1;
+                history->entries[i].add = malloc(sizeof(instance_type));
+
+                history->entries[i].add[0].oid = strdup((char *)(tmp->cmd) +
+                                    ((cfg_add_msg *)(tmp->cmd))->oid_offset);
+                history->entries[i].add[0].value = NULL;
 
                 if (t != CVT_NONE)
                 {
                     cfg_inst_val val;
-                    char        *val_str = NULL;
-                    int          rc;
+                    char *val_str = NULL;
 
                     rc = cfg_types[t].get_from_msg(tmp->cmd, &val);
                     if (rc != 0)
-                        RETERR(rc);
+                        goto cleanup;
 
                     rc = cfg_types[t].val2str(val, &val_str);
+                    history->entries[i].add[0].value = strdup(val_str);
                     cfg_types[t].free(val);
-                    if (rc != 0)
-                        RETERR(rc);
-
-                    str = xmlEncodeEntitiesReentrant(NULL,
-                                                     (xmlChar *)val_str);
                     free(val_str);
-                    if (str == NULL)
-                        RETERR(TE_RC(TE_CS, TE_ENOMEM));
-                    fprintf(f, "value=\"%s\"", str);
-                    xmlFree(str);
-                 }
-                 fprintf(f, "/>\n  </%s>\n",
-                         tmp->cmd->type == CFG_ADD ? "add" : "set");
-                 break;
+                    if (rc != 0)
+                        goto cleanup;
+                }
+                break;
+            }
+
+            case CFG_SET:
+            {
+                cfg_val_type t = ((cfg_set_msg *)(tmp->cmd))->val_type;
+
+                history->entries[i].set_count = 1;
+                history->entries[i].set = malloc(sizeof(instance_type));
+
+                history->entries[i].set[0].oid = strdup(tmp->old_oid);
+                history->entries[i].set[0].value = NULL;
+
+                if (t != CVT_NONE)
+                {
+                    cfg_inst_val val;
+                    char *val_str = NULL;
+                    te_errno rc;
+
+                    rc = cfg_types[t].get_from_msg(tmp->cmd, &val);
+                    if (rc != 0)
+                        goto cleanup;
+
+                    rc = cfg_types[t].val2str(val, &val_str);
+                    history->entries[i].add[0].value = strdup(val_str);
+                    cfg_types[t].free(val);
+                    free(val_str);
+                    if (rc != 0)
+                        goto cleanup;
+                }
+                break;
             }
 
             case CFG_DEL:
             {
-                fprintf(f, "\n  <delete>\n    <instance oid=\"%s\"/>\n"
-                           "  </delete>\n",
-                        tmp->old_oid);
+                history->entries[i].delete_count = 1;
+                history->entries[i].delete = malloc(sizeof(instance_type));
+
+                history->entries[i].delete[0].oid = strdup(tmp->old_oid);
+                history->entries[i].delete[0].value = NULL;
                 break;
             }
 
             case CFG_REBOOT:
             {
-                fprintf(f, "\n  <reboot ta=%s/>\n",
-                       ((cfg_reboot_msg *)(tmp->cmd))->ta_name);
+                history->entries[i].reboot_ta =
+                    strdup(((cfg_reboot_msg *)(tmp->cmd))->ta_name);
                 break;
+            }
+            default:
+            {
+                /* do nothing */
             }
         }
     }
-    fprintf(f, "\n</history>\n");
-    fclose(f);
-    return 0;
+    history->entries_count = i;
+
+    rc = cfg_yaml_save_history_file(filename, history);
+
+cleanup:
+    cfg_yaml_free_hist_seq(history);
+    return rc;
 
 #undef RETERR
 }

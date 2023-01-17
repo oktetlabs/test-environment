@@ -20,15 +20,16 @@
  * for the objects maintained by the primary configuration file. The
  * instances may come with logical expressions either per individual
  * entry or per a bunch of entries to indicate conditions which must
- * be true for the instances to hit the XML document being generated.
+ * be true for the instances to hit the structure being generated.
  *
- * The XML document will be consumed directly by cfg_dh_process_file().
+ * The structure will be consumed directly by cfg_dh_process_file().
  *
  * @param filename          The input file path
  * @param expand_vars       List of key-value pairs for expansion in file,
  *                          @c NULL if environment variables are used for
  *                          substitutions
- * @param xn_history_root   XML node containing translated yaml file content,
+ * @param history_root      The structure containing translated yaml file
+ *                          content,
  *                          @c NULL if yaml file is not being included
  * @param conf_dirs         Directories where additionally Configurator should
  *                          search files via include directive
@@ -38,7 +39,6 @@
  */
 extern te_errno parse_config_yaml(const char *filename,
                                   te_kvpair_h *expand_vars,
-                                  xmlNodePtr xn_history_root,
+                                  history_seq *history_root,
                                   const char *conf_dirs);
-
 #endif /* __TE_CONF_YAML_H__ */

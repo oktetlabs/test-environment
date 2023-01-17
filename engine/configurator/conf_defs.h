@@ -40,9 +40,6 @@
 #endif
 #include <sys/socket.h>
 
-#include <libxml/xmlmemory.h>
-#include <libxml/parser.h>
-
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -68,17 +65,17 @@ cfg_instance_volatile(cfg_instance *inst)
 }
 
 /**
- * Process XML document containing dynamic history and
+ * Process structure containing dynamic history and
  * synchronise resulting database with Test Agents.
  *
- * @param root_node     Root node of the input document
- * @param expand_vars   List of key-value pairs for expansion in file,
+ * @param history       history structure
+ * @param expand_vars   list of key-value pairs for expansion in file
  *                      @c NULL if environment variables are used for
  *                      substitutions
  *
  * @return Status code.
  */
-extern te_errno parse_config_dh_sync(xmlNodePtr root_node,
+extern te_errno parse_config_dh_sync(history_seq *history,
                                      te_kvpair_h *expand_vars);
 
 #endif /* !__TE_CONF_DEFS_H__ */

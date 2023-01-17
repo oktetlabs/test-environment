@@ -12,11 +12,11 @@
 #include "conf_defs.h"
 #if WITH_CONF_YAML
 #include "conf_yaml.h"
+#include "conf_cyaml.h"
 #endif /* WITH_CONF_YAML */
 #include "conf_rcf.h"
 #include "conf_ipc.h"
 
-#include <libxml/xinclude.h>
 #include "te_kvpair.h"
 #include "te_alloc.h"
 #include "te_str.h"
@@ -28,16 +28,16 @@
 #endif
 
 /** Format for backup file name */
-#define CONF_BACKUP_NAME         "%s/te_cfg_backup_%d_%llu.xml"
+#define CONF_BACKUP_NAME         "%s/te_cfg_backup_%d_%llu.yml"
 
 /** Format for backup file name for subtree*/
-#define CONF_SUBTREE_BACKUP_NAME "%s/te_cfg_subree_backup_%d_%llu.xml"
+#define CONF_SUBTREE_BACKUP_NAME "%s/te_cfg_subree_backup_%d_%llu.yml"
 
 /** Name of the XSL filter file for generation subtree backup */
 #define CONF_SUBTREE_BACKUP_FILTER_NAME "subtree_backup.xsl"
 
 /** Name of the file to store a list of the subtrees */
-#define CONF_FILTERS_FILE_NAME  "%s/te_cfg_filter_%d_%llu.xml"
+#define CONF_FILTERS_FILE_NAME  "%s/te_cfg_filter_%d_%llu.yml"
 
 static char  buf[CFG_BUF_LEN];
 static char  tmp_buf[1024];
@@ -374,7 +374,7 @@ print_otree(cfg_object *obj, int indent)
 
 /* See description in 'conf_defs.h' */
 te_errno
-parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
+parse_config_dh_sync(history_seq *history, te_kvpair_h *expand_vars)
 {
     te_errno rc = 0;
     char *backup = NULL;
@@ -384,13 +384,13 @@ parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
         ERROR("Failed to create a backup");
         return rc;
     }
-    rc = cfg_dh_process_file(root_node, expand_vars, FALSE);
+    rc = cfg_dh_process_file(history, expand_vars, FALSE);
     if (rc == 0 && (rc = cfg_ta_sync("/:", TRUE)) != 0)
     {
         ERROR("Cannot synchronise database with Test Agents");
         cfg_dh_restore_backup(backup, FALSE);
     }
-    if (rc == 0 && (rc = cfg_dh_process_file(root_node, expand_vars, TRUE)) != 0)
+    if (rc == 0 && (rc = cfg_dh_process_file(history, expand_vars, TRUE)) != 0)
     {
         ERROR("Failed to modify database after synchronisation: %r", rc);
         cfg_dh_restore_backup(backup, FALSE);
@@ -416,94 +416,48 @@ parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
  *
  * @return status code (see te_errno.h)
  */
-static int
-parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool history,
-                 const te_vec *subtrees)
+static te_errno
+parse_config_file(const char *file, te_kvpair_h *expand_vars, te_bool history,
+                  const te_vec *subtrees)
 {
-    xmlDocPtr   doc;
-    xmlNodePtr  root;
-    int         rc;
-    int         subst;
+    te_errno rc;
 
     if (file == NULL)
         return 0;
 
-    RING("Parsing %s", file);
-
-    if ((doc = xmlParseFile(file)) == NULL)
+    if (history)
     {
-#if HAVE_XMLERROR
-        xmlError *err = xmlGetLastError();
+        history_seq conf_history;
 
-        ERROR("Error occurred during parsing configuration file:\n"
-              "    %s:%d\n    %s", file, err->line, err->message);
-#else
-        ERROR("Error occurred during parsing configuration file:\n"
-              "    %s", file);
-#endif
-        xmlCleanupParser();
-        return TE_RC(TE_CS, TE_EINVAL);
-    }
+        RING("Parsing history file %s", file);
 
-    VERB("Do XInclude substitutions in the document");
-    subst = xmlXIncludeProcess(doc);
-    if (subst < 0)
-    {
-#if HAVE_XMLERROR
-        xmlError *err = xmlGetLastError();
-
-        ERROR("XInclude processing failed: %s", err->message);
-#else
-        ERROR("XInclude processing failed");
-#endif
-        xmlCleanupParser();
-        return TE_RC(TE_CS, TE_EINVAL);
-    }
-    VERB("XInclude made %d substitutions", subst);
-
-    if ((root = xmlDocGetRootElement(doc)) == NULL)
-    {
-        VERB("Empty configuration file is provided");
-        xmlFreeDoc(doc);
-        xmlCleanupParser();
-        return 0;
-    }
-
-    rcf_log_cfg_changes(TRUE);
-    if (xmlStrcmp(root->name, (const xmlChar *)"backup") == 0)
-    {
-        if (history)
+        rc = parse_config_yaml(file, expand_vars, &conf_history, cs_dirs_cfg);
+        if (rc != 0)
         {
-            ERROR("File '%s' is a backup, not history as expected", file);
-            rc = TE_RC(TE_CS, TE_EINVAL);
+            ERROR("Couldn't parse yaml to the structure");
+            return rc;
         }
-        else
-        {
-            rc = cfg_backup_process_file(root, TRUE, subtrees);
-        }
-    }
-    else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
-    {
-        if (!history)
-        {
-            ERROR("File '%s' is a history, not backup as expected", file);
-            rc = TE_RC(TE_CS, TE_EINVAL);
-        }
-        else
-        {
-            rc = parse_config_dh_sync(root, expand_vars);
-        }
+
+        rcf_log_cfg_changes(TRUE);
+        rc = parse_config_dh_sync(&conf_history, expand_vars);
     }
     else
     {
-        ERROR("Incorrect root node '%s' in the configuration file",
-              root->name);
-        rc = TE_RC(TE_CS, TE_EINVAL);
+        backup_seq *backup;
+
+        RING("Parsing backup file %s", file);
+        rc = cfg_yaml_parse_backup_file(file, &backup);
+        if (rc != 0)
+        {
+            ERROR("Couldn't parse yaml file %s", file);
+            return rc;
+        }
+
+        rcf_log_cfg_changes(TRUE);
+        rc = cfg_backup_process_structure(backup, TRUE, subtrees);
     }
     rcf_log_cfg_changes(FALSE);
 
-    xmlFreeDoc(doc);
-    xmlCleanupParser();
     return rc;
 }
 
@@ -2038,22 +1992,6 @@ subtrees_str2vec(const char *str, te_vec *vec, unsigned int subtrees_num)
     return rc;
 }
 
-static te_errno
-get_path_to_xslt_filter(te_string *path)
-{
-    char *dir_name = NULL;
-
-    dir_name = getenv("TE_INSTALL");
-    if (dir_name == NULL)
-    {
-        ERROR("Failed to get TE_INSTALL");
-        return TE_ENOENT;
-    }
-
-    return te_string_append(path, "%s/default/share/xsl/%s", dir_name,
-                            CONF_SUBTREE_BACKUP_FILTER_NAME);
-}
-
 /**
  * Filter the backup file by the specified subtree and
  * save the result
@@ -2068,48 +2006,67 @@ static te_errno
 filter_backup_by_subtrees(const char *current_backup, const te_vec *subtrees,
                           te_string *target_backup)
 {
-    te_string filter_cmd = TE_STRING_INIT;
-    te_string xslt_file = TE_STRING_INIT;
-    te_string filter_filename = TE_STRING_INIT;
+    backup_seq *backup;
     te_errno rc;
+    unsigned int i, j;
+    char *const *subtree;
+    te_bool need_to_delete;
+
 
     if (subtrees == NULL || te_vec_size(subtrees) == 0)
         return te_string_append(target_backup, "%s", current_backup);
 
-    rc = te_string_append(&filter_filename, CONF_FILTERS_FILE_NAME,
-                          tmp_dir, getpid(), get_time_ms());
-    if (rc != 0)
-        goto out;
-
-    rc = cfg_backup_create_filter_file(filter_filename.ptr, subtrees);
-    if (rc != 0)
-        goto out;
-
     rc = te_string_append(target_backup, CONF_SUBTREE_BACKUP_NAME,
                           tmp_dir, getpid(), get_time_ms());
     if (rc != 0)
-        goto out;
+        return rc;
 
-    rc = get_path_to_xslt_filter(&xslt_file);
+    rc = cfg_yaml_parse_backup_file(current_backup, &backup);
+
     if (rc != 0)
-        goto out;
+    {
+        ERROR("Couldn't parse yaml file %s", current_backup);
+        return rc;
+    }
+    for (i = 0; i < backup->entries_count; i++)
+    {
+        char *oid = NULL;
 
-    rc = te_string_append(&filter_cmd,
-                          "xsltproc --stringparam filters %s %s %s > %s",
-                          filter_filename.ptr, xslt_file.ptr,
-                          current_backup, target_backup->ptr);
-    if (rc != 0)
-        goto out;
+        if (backup->entries[i].object != NULL)
+            oid = strdup(backup->entries[i].object->oid);
+        else if(backup->entries[i].instance != NULL)
+            oid = strdup(backup->entries[i].instance->oid);
 
-    rc = system(filter_cmd.ptr);
-    if (rc != 0)
-        ERROR("Failed to extract subtrees from the backup file");
+        need_to_delete = true;
+        TE_VEC_FOREACH(subtrees, subtree)
+        {
+            if (strstr(oid, *subtree) == oid)
+            {
+                need_to_delete = false;
+                break;
+            }
+        }
 
-out:
-    te_string_free(&filter_cmd);
-    te_string_free(&xslt_file);
-    te_string_free(&filter_filename);
+        if (need_to_delete)
+        {
+            if (backup->entries[i].object != NULL)
+                cfg_yaml_free_obj(backup->entries[i].object);
+            if (backup->entries[i].instance != NULL)
+                cfg_yaml_free_inst(backup->entries[i].instance);
+        }
+        else
+        {
+            backup->entries[j].object = backup->entries[i].object;
+            backup->entries[j].instance = backup->entries[i].instance;
+            j++;
+        }
+        free(oid);
+    }
+    backup->entries_count = j;
 
+    rc = cfg_yaml_save_backup_file(target_backup->ptr, backup);
+
+    cfg_yaml_free_backup_seq(backup);
     return rc;
 }
 
@@ -2365,7 +2322,7 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
                 break;
             }
 
-            msg->rc = parse_config_xml(backup.ptr, NULL, FALSE, &subtrees_vec);
+            msg->rc = parse_config_file(backup.ptr, NULL, FALSE, &subtrees_vec);
             rcf_log_cfg_changes(FALSE);
 
             if (release_dh)
@@ -2913,8 +2870,7 @@ cfg_sigpipe_handler(int signum)
 }
 
 /**
- * Figure out configuration file type (XML or YAML)
- * and proceed with parsing.
+ * Wrapper of the YAML parser.
  *
  * @param fname         Name of the configuration file
  * @param expand_vars   List of key-value pairs for expansion in file
@@ -2924,49 +2880,12 @@ cfg_sigpipe_handler(int signum)
 static te_errno
 parse_config(const char *fname, te_kvpair_h *expand_vars)
 {
-    FILE *f;
-    int   ret;
-    char  str[6];
+    history_seq history;
 
-    f = fopen(fname, "r");
-    if (f == NULL)
-    {
-        ERROR("Failed to open configuration file '%s'", fname);
-        return TE_OS_RC(TE_CS, errno);
-    }
+    history.entries = NULL;
+    history.entries_count = 0;
 
-    if (fseek(f, 0, SEEK_SET) < 0)
-    {
-        ERROR("Failed to set position in configuration file '%s'", fname);
-        fclose(f);
-        return TE_OS_RC(TE_CS, errno);
-    }
-
-    ret = fscanf(f, " %5s", str);
-    if (ret == EOF)
-    {
-        int error_code_set = ferror(f);
-
-        ERROR("Failed to read the first non-whitespace characters "
-              "from configuration file '%s'", fname);
-        fclose(f);
-        if (error_code_set != 0)
-                return TE_OS_RC(TE_CS, errno);
-        else
-                return TE_RC(TE_CS, TE_ENODATA);
-    }
-
-    fclose(f);
-
-    if (strcmp(str, "<?xml") == 0)
-        return parse_config_xml(fname, expand_vars, TRUE, NULL);
-#if WITH_CONF_YAML
-    else if (strcmp(str, "---") == 0)
-        return parse_config_yaml(fname, expand_vars, NULL, cs_dirs_cfg);
-#endif /* !WITH_CONF_YAML */
-
-    ERROR("Failed to recognise the format of configuration file '%s'", fname);
-    return TE_RC(TE_CS, TE_EOPNOTSUPP);
+    return parse_config_yaml(fname, expand_vars, &history, cs_dirs_cfg);
 }
 
 /**
@@ -3023,12 +2942,12 @@ main(int argc, char **argv)
     }
 
     if ((filename = (char *)malloc(strlen(tmp_dir) +
-                                   strlen("/te_cfg_tmp.xml") + 1)) == NULL)
+                                   strlen("/te_cfg_tmp.yml") + 1)) == NULL)
     {
         ERROR("No enough memory");
         goto exit;
     }
-    sprintf(filename, "%s/te_cfg_tmp.xml", tmp_dir);
+    sprintf(filename, "%s/te_cfg_tmp.yml", tmp_dir);
 
     if ((rc = cfg_db_init()) != 0)
     {
@@ -3051,7 +2970,7 @@ main(int argc, char **argv)
     }
 
     if (cs_sniff_cfg_file != NULL &&
-        (rc = parse_config_xml(cs_sniff_cfg_file, NULL, TRUE, NULL)) != 0)
+        (rc = parse_config_file(cs_sniff_cfg_file, NULL, TRUE, NULL)) != 0)
     {
         ERROR("Fatal error during sniffer configuration file parsing");
         goto exit;

@@ -18,7 +18,6 @@
 #include "te_file.h"
 
 #include <ctype.h>
-#include <libxml/xinclude.h>
 #include <libgen.h>
 #include <yaml.h>
 
@@ -28,21 +27,128 @@
 #define YAML_NODE_LINE_COLUMN(_n)   \
     (_n)->start_mark.line + 1, (_n)->start_mark.column + 1
 
-#define YAML_TARGET_CONTEXT_INIT \
-    { .oid = NULL, \
-      .value = NULL, \
-      .access = NULL, \
-      .type = NULL, \
-      .xmlvolatile = NULL, \
-      .substitution = NULL, \
-      .unit = NULL, \
-      .deps = SLIST_HEAD_INITIALIZER(deps), \
-      .cond = TRUE }
+typedef enum cs_yaml_node_type {
+    CS_YAML_NODE_TYPE_COMMENT,
+    CS_YAML_NODE_TYPE_INCLUDE,
+    CS_YAML_NODE_TYPE_COND,
+    CS_YAML_NODE_TYPE_REGISTER,
+    CS_YAML_NODE_TYPE_UNREGISTER,
+    CS_YAML_NODE_TYPE_ADD,
+    CS_YAML_NODE_TYPE_GET,
+    CS_YAML_NODE_TYPE_DELETE,
+    CS_YAML_NODE_TYPE_COPY,
+    CS_YAML_NODE_TYPE_SET,
+    CS_YAML_NODE_TYPE_REBOOT,/* Should it be added? */
+} cs_yaml_node_type;
+
+const te_enum_map cs_yaml_node_type_mapping[] = {
+    {.name = "comment",    .value = CS_YAML_NODE_TYPE_COMMENT},
+    {.name = "include",    .value = CS_YAML_NODE_TYPE_INCLUDE},
+    {.name = "cond",       .value = CS_YAML_NODE_TYPE_COND},
+    {.name = "register",   .value = CS_YAML_NODE_TYPE_REGISTER},
+    {.name = "unregister", .value = CS_YAML_NODE_TYPE_UNREGISTER},
+    {.name = "add",        .value = CS_YAML_NODE_TYPE_ADD},
+    {.name = "get",        .value = CS_YAML_NODE_TYPE_GET},
+    {.name = "delete",     .value = CS_YAML_NODE_TYPE_DELETE},
+    {.name = "copy",       .value = CS_YAML_NODE_TYPE_COPY},
+    {.name = "set",        .value = CS_YAML_NODE_TYPE_SET},
+    {.name = "reboot_ta",  .value = CS_YAML_NODE_TYPE_REBOOT},
+    TE_ENUM_MAP_END
+};
+
+typedef enum cs_yaml_instance_field {
+    CS_YAML_INSTANCE_IF_COND,
+    CS_YAML_INSTANCE_OID,
+    CS_YAML_INSTANCE_VALUE,
+} cs_yaml_instance_field;
+
+const te_enum_map cs_yaml_instance_fields_mapping[] = {
+    {.name = "if",      .value = CS_YAML_INSTANCE_IF_COND},
+    {.name = "oid",     .value = CS_YAML_INSTANCE_OID},
+    {.name = "value",   .value = CS_YAML_INSTANCE_VALUE},
+    TE_ENUM_MAP_END
+};
+
+typedef enum cs_yaml_cond_field {
+    CS_YAML_COND_IF_COND,
+    CS_YAML_COND_THEN_COND,
+    CS_YAML_COND_ELSE_COND,
+} cs_yaml_cond_field;
+
+const te_enum_map cs_yaml_cond_fields_mapping[] = {
+    {.name = "if",      .value = CS_YAML_COND_IF_COND},
+    {.name = "then",    .value = CS_YAML_COND_THEN_COND},
+    {.name = "else",    .value = CS_YAML_COND_ELSE_COND},
+    TE_ENUM_MAP_END
+};
+
+typedef enum cs_yaml_object_field {
+    CS_YAML_OBJECT_D,
+    CS_YAML_OBJECT_OID,
+    CS_YAML_OBJECT_ACCESS,
+    CS_YAML_OBJECT_TYPE,
+    CS_YAML_OBJECT_UNIT,
+    CS_YAML_OBJECT_DEF_VAL,
+    CS_YAML_OBJECT_VOLAT,
+    CS_YAML_OBJECT_SUBSTITUTION,
+    CS_YAML_OBJECT_NO_PARENT_DEP,
+    CS_YAML_OBJECT_DEPENDS,
+} cs_yaml_object_field;
+
+const te_enum_map cs_yaml_object_fields_mapping[] = {
+    {.name = "d",             .value = CS_YAML_OBJECT_D},
+    {.name = "oid",           .value = CS_YAML_OBJECT_OID},
+    {.name = "access",        .value = CS_YAML_OBJECT_ACCESS},
+    {.name = "type",          .value = CS_YAML_OBJECT_TYPE},
+    {.name = "unit",          .value = CS_YAML_OBJECT_UNIT},
+    {.name = "default",       .value = CS_YAML_OBJECT_DEF_VAL},
+    {.name = "volatile",      .value = CS_YAML_OBJECT_VOLAT},
+    {.name = "substitution",  .value = CS_YAML_OBJECT_SUBSTITUTION},
+    {.name = "parent_dep",    .value = CS_YAML_OBJECT_NO_PARENT_DEP},
+    {.name = "depends",       .value = CS_YAML_OBJECT_DEPENDS},
+    TE_ENUM_MAP_END
+};
+
+const te_enum_map cs_yaml_object_access_fields_mapping[] = {
+    {.name = "read_write",    .value = CFG_READ_WRITE},
+    {.name = "read_only",     .value = CFG_READ_ONLY},
+    {.name = "read_create",   .value = CFG_READ_CREATE},
+    TE_ENUM_MAP_END
+};
+
+const te_enum_map cs_yaml_bool_mapping[] = {
+    {.name = "false",     .value = FALSE},
+    {.name = "true",      .value = TRUE},
+    TE_ENUM_MAP_END
+};
+
+const te_enum_map cs_yaml_object_no_parent_dep_mapping[] = {
+    {.name = "yes",     .value = FALSE},
+    {.name = "no",      .value = TRUE},
+    TE_ENUM_MAP_END
+};
+
+typedef enum cs_yaml_object_depends_field {
+    CS_YAML_OBJECT_DEPENDS_OID,
+    CS_YAML_OBJECT_DEPENDS_SCOPE,
+} cs_yaml_object_depends_field;
+
+const te_enum_map cs_yaml_object_depends_fields_mapping[] = {
+    {.name = "oid",    .value = CS_YAML_OBJECT_DEPENDS_OID},
+    {.name = "scope",  .value = CS_YAML_OBJECT_DEPENDS_SCOPE},
+    TE_ENUM_MAP_END
+};
+
+const te_enum_map cs_yaml_object_depends_scope_mapping[] = {
+    {.name = "object",        .value = TRUE},
+    {.name = "instance",      .value = FALSE},
+    TE_ENUM_MAP_END
+};
 
 typedef struct parse_config_yaml_ctx {
     char            *file_path;
     yaml_document_t *doc;
-    xmlNodePtr       xn_history;
+    history_seq     *history;
     te_kvpair_h     *expand_vars;
     const char      *conf_dirs;
 } parse_config_yaml_ctx;
@@ -52,30 +158,6 @@ typedef struct config_yaml_target_s {
     const char *target_name;
 } config_yaml_target_t;
 
-static const config_yaml_target_t config_yaml_targets[] = {
-    { "add", "instance" },
-    { "get", "instance" },
-    { "set", "instance" },
-    { "delete", "instance" },
-    { "copy", "instance" },
-    { "register", "object" },
-    { "unregister", "object" },
-    { NULL, NULL}
-};
-
-static const char *
-get_yaml_cmd_target(const char *cmd)
-{
-    const config_yaml_target_t *target = config_yaml_targets;
-
-    for (; target->command_name != NULL; ++target)
-    {
-        if (strcmp(cmd, target->command_name) == 0)
-            break;
-    }
-
-    return target->target_name;
-}
 
 static te_errno
 get_val(const logic_expr *parsed, void *expand_vars, logic_expr_res *res)
@@ -153,167 +235,231 @@ out:
 }
 
 static te_errno
-parse_config_if_expr(yaml_node_t *n, te_bool *if_expr, te_kvpair_h *expand_vars)
+parse_config_str(yaml_node_t *n, char **str)
 {
-    const char *str = NULL;
-    te_errno    rc = 0;
+    te_errno rc = 0;
 
     if (n->type == YAML_SCALAR_NODE)
     {
-        str = (const char *)n->data.scalar.value;
-
-        if (n->data.scalar.length == 0)
-        {
-            ERROR(CS_YAML_ERR_PREFIX "found the if-expression node to be "
-                  "badly formatted");
-            return TE_EINVAL;
-        }
-
-        rc = parse_logic_expr_str(str, if_expr, expand_vars);
-        if (rc != 0)
-        {
-            ERROR(CS_YAML_ERR_PREFIX "failed to evaluate the expression "
-                  "contained in the condition node");
-            return rc;
-        }
+        *str = strdup((char *)n->data.scalar.value);
     }
     else
     {
-        ERROR(CS_YAML_ERR_PREFIX "found the if-expression node to be "
-              "badly formatted");
+        ERROR(CS_YAML_ERR_PREFIX
+              "the expected scalar node is not a scalar node");
         return TE_EINVAL;
     }
 
     return rc;
 }
 
-typedef enum cs_yaml_node_attribute_type_e {
-    CS_YAML_NODE_ATTRIBUTE_CONDITION = 0,
-    CS_YAML_NODE_ATTRIBUTE_OID,
-    CS_YAML_NODE_ATTRIBUTE_VALUE,
-    CS_YAML_NODE_ATTRIBUTE_ACCESS,
-    CS_YAML_NODE_ATTRIBUTE_TYPE,
-    CS_YAML_NODE_ATTRIBUTE_VOLATILE,
-    CS_YAML_NODE_ATTRIBUTE_DEPENDENCE,
-    CS_YAML_NODE_ATTRIBUTE_SCOPE,
-    CS_YAML_NODE_ATTRIBUTE_DESCRIPTION,
-    CS_YAML_NODE_ATTRIBUTE_SUBSTITUTION,
-    CS_YAML_NODE_ATTRIBUTE_UNIT,
-    CS_YAML_NODE_ATTRIBUTE_UNKNOWN,
-} cs_yaml_node_attribute_type_t;
-
-static struct {
-    const char                    *label;
-    cs_yaml_node_attribute_type_t  type;
-} const cs_yaml_node_attributes[] = {
-    { "if",       CS_YAML_NODE_ATTRIBUTE_CONDITION },
-    { "oid",      CS_YAML_NODE_ATTRIBUTE_OID },
-    { "value",    CS_YAML_NODE_ATTRIBUTE_VALUE },
-    { "access",   CS_YAML_NODE_ATTRIBUTE_ACCESS },
-    { "type",     CS_YAML_NODE_ATTRIBUTE_TYPE },
-    { "volatile", CS_YAML_NODE_ATTRIBUTE_VOLATILE },
-    { "depends",  CS_YAML_NODE_ATTRIBUTE_DEPENDENCE },
-    { "scope",    CS_YAML_NODE_ATTRIBUTE_SCOPE },
-    { "d",        CS_YAML_NODE_ATTRIBUTE_DESCRIPTION },
-    { "substitution", CS_YAML_NODE_ATTRIBUTE_SUBSTITUTION },
-    { "unit", CS_YAML_NODE_ATTRIBUTE_UNIT },
-};
-
-static cs_yaml_node_attribute_type_t
-parse_config_yaml_node_get_attribute_type(yaml_node_t *k)
+static te_errno
+parse_config_str_by_mapping(yaml_node_t *n, uint8_t *num,
+                            const te_enum_map mapping[])
 {
-    const char   *k_label = (const char *)k->data.scalar.value;
-    unsigned int  i;
+    te_errno rc = 0;
+    char *str = NULL;
+    int i;
 
-    for (i = 0; i < TE_ARRAY_LEN(cs_yaml_node_attributes); ++i)
+    rc = parse_config_str(n, &str);
+    if (rc == 0)
     {
-        if (strcasecmp(k_label, cs_yaml_node_attributes[i].label) == 0)
-            return cs_yaml_node_attributes[i].type;
+        i = te_enum_map_from_str(mapping, str, -1);
+        if (i == -1)
+            rc = TE_EINVAL;
+        else
+            *num = i;
     }
-
-    return CS_YAML_NODE_ATTRIBUTE_UNKNOWN;
+    free(str);
+    return rc;
 }
 
-typedef struct cytc_dep_entry {
-    SLIST_ENTRY(cytc_dep_entry)  links;
-    const xmlChar               *scope;
-    const xmlChar               *oid;
-} cytc_dep_entry;
-
-typedef SLIST_HEAD(cytc_dep_list_t, cytc_dep_entry) cytc_dep_list_t;
-
-typedef struct cs_yaml_target_context_s {
-    const xmlChar   *oid;
-    const xmlChar   *value;
-    const xmlChar   *access;
-    const xmlChar   *type;
-    const xmlChar   *xmlvolatile;
-    const xmlChar   *substitution;
-    const xmlChar   *unit;
-    cytc_dep_list_t  deps;
-    te_bool          cond;
-} cs_yaml_target_context_t;
-
 static te_errno
-parse_config_yaml_cmd_add_dependency_attribute(yaml_node_t    *k,
-                                               yaml_node_t    *v,
-                                               cytc_dep_entry *dep_ctx)
+parse_config_inst(parse_config_yaml_ctx *ctx, yaml_node_t *n,
+                  instance_type *inst)
 {
-    cs_yaml_node_attribute_type_t attribute_type;
+    yaml_document_t *d = ctx->doc;
+    te_errno rc = 0;
 
-    if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0 ||
-        (v->type != YAML_SCALAR_NODE && v->type != YAML_SEQUENCE_NODE))
+    if (n->type == YAML_MAPPING_NODE)
     {
-        ERROR(CS_YAML_ERR_PREFIX "found the dependence attribute node to be "
-              "badly formatted");
+        yaml_node_pair_t *pair = n->data.mapping.pairs.start;
+
+        do {
+            yaml_node_t *k = yaml_document_get_node(d, pair->key);
+            yaml_node_t *v = yaml_document_get_node(d, pair->value);
+            int inst_field_name;
+
+            if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
+            {
+                ERROR(CS_YAML_ERR_PREFIX
+                      "the target attribute node is badly formatted");
+                return TE_EINVAL;
+            }
+            inst_field_name = te_enum_map_from_str(
+                                            cs_yaml_instance_fields_mapping,
+                                            (const char *)k->data.scalar.value,
+                                            -1);
+
+            switch (inst_field_name)
+            {
+                case CS_YAML_INSTANCE_IF_COND:
+                    rc = parse_config_str(v, &inst->if_cond);
+                    break;
+
+                case CS_YAML_INSTANCE_OID:
+                    rc = parse_config_str(v, &inst->oid);
+                    break;
+
+                case CS_YAML_INSTANCE_VALUE:
+                    rc = parse_config_str(v, &inst->value);
+                    break;
+
+                default:
+                    ERROR(CS_YAML_ERR_PREFIX
+                          "failed to recognise the command '%s'",
+                          (const char *)k->data.scalar.value);
+                    rc = TE_EINVAL;
+            }
+            if (rc != 0)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "failed to process %s "
+                      "attribute at " YAML_NODE_LINE_COLUMN_FMT "",
+                      (const char *)k->data.scalar.value,
+                      YAML_NODE_LINE_COLUMN(k));
+                return rc;
+            }
+        } while (++pair < n->data.mapping.pairs.top);
+    }
+    else
+    {
+        ERROR(CS_YAML_ERR_PREFIX "the 'instance' node is not a mapping node");
+        return TE_EINVAL;
+    }
+    if (inst->oid == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX
+              "the 'oid' field is absent in 'instance' node");
         return TE_EINVAL;
     }
 
-    attribute_type = parse_config_yaml_node_get_attribute_type(k);
-    switch (attribute_type)
+    return rc;
+}
+
+static te_errno
+parse_config_yaml_dependency(yaml_document_t *d, yaml_node_t *n,
+                             object_type *obj);
+
+static te_errno
+parse_config_obj(parse_config_yaml_ctx *ctx, yaml_node_t *n, object_type *obj)
+{
+    yaml_document_t *d = ctx->doc;
+    te_errno rc = 0;
+
+    if (n->type == YAML_MAPPING_NODE)
     {
-        case CS_YAML_NODE_ATTRIBUTE_OID:
-            if (dep_ctx->oid != NULL)
+        yaml_node_pair_t *pair = n->data.mapping.pairs.start;
+
+        do {
+            yaml_node_t *k = yaml_document_get_node(d, pair->key);
+            yaml_node_t *v = yaml_document_get_node(d, pair->value);
+            int obj_field_name;
+            uint8_t temp;
+
+            if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
             {
-                ERROR(CS_YAML_ERR_PREFIX "detected multiple OID specifiers "
-                      "of the dependence node: only one can be present");
+                ERROR(CS_YAML_ERR_PREFIX
+                      "the target attribute node is badly formatted");
                 return TE_EINVAL;
             }
+            obj_field_name = te_enum_map_from_str(
+                                            cs_yaml_object_fields_mapping,
+                                            (const char *)k->data.scalar.value,
+                                            -1);
 
-            dep_ctx->oid  = (const xmlChar *)v->data.scalar.value;
-            break;
-
-        case CS_YAML_NODE_ATTRIBUTE_SCOPE:
-            if (dep_ctx->scope != NULL)
+            switch (obj_field_name)
             {
-                ERROR(CS_YAML_ERR_PREFIX "detected multiple scope specifiers "
-                      "of the dependence node: only one can be present");
-                return TE_EINVAL;
+                case CS_YAML_OBJECT_D:
+                    rc = parse_config_str(v, &obj->d);
+                    break;
+
+                case CS_YAML_OBJECT_OID:
+                    rc = parse_config_str(v, &obj->oid);
+                    break;
+
+                case CS_YAML_OBJECT_ACCESS:
+                    rc = parse_config_str_by_mapping(v, &obj->access,
+                                        cs_yaml_object_access_fields_mapping);
+                    break;
+
+                case CS_YAML_OBJECT_TYPE:
+                    rc = parse_config_str_by_mapping(v, &obj->type,
+                                                     cfg_cvt_mapping);
+                    if (rc == 0 && obj->type == CVT_UNSPECIFIED)
+                        rc = TE_EINVAL;
+                    break;
+
+                case CS_YAML_OBJECT_UNIT:
+                    rc = parse_config_str_by_mapping(v, &temp,
+                                                     cs_yaml_bool_mapping);
+                    obj->unit = temp;
+                    break;
+
+                case CS_YAML_OBJECT_DEF_VAL:
+                    rc = parse_config_str(v, &obj->def_val);
+                    break;
+
+                case CS_YAML_OBJECT_VOLAT:
+                    rc = parse_config_str_by_mapping(v, &temp,
+                                                     cs_yaml_bool_mapping);
+                    obj->volat = temp;
+                    break;
+
+                case CS_YAML_OBJECT_SUBSTITUTION:
+                    rc = parse_config_str_by_mapping(v, &temp,
+                                                     cs_yaml_bool_mapping);
+                    obj->substitution = temp;
+                    break;
+
+                case CS_YAML_OBJECT_NO_PARENT_DEP:
+                    rc = parse_config_str_by_mapping(v, &temp,
+                                          cs_yaml_object_no_parent_dep_mapping);
+                    obj->type = temp;
+                    break;
+
+                case CS_YAML_OBJECT_DEPENDS:
+                    rc = parse_config_yaml_dependency(ctx->doc, v, obj);
+                    break;
+
+                default:
+                    ERROR(CS_YAML_ERR_PREFIX "failed to recognise the command '%s'",
+                          (const char *)k->data.scalar.value);
+                    rc = TE_EINVAL;
             }
-
-            dep_ctx->scope = (const xmlChar *)v->data.scalar.value;
-            break;
-
-        case CS_YAML_NODE_ATTRIBUTE_DESCRIPTION:
-            /* Ignore the description */
-            break;
-
-        default:
-            if (v->type == YAML_SCALAR_NODE && v->data.scalar.length == 0)
+            if (rc != 0)
             {
-                dep_ctx->oid = (const xmlChar *)k->data.scalar.value;
+                ERROR(CS_YAML_ERR_PREFIX "failed to process %s "
+                      "attribute at " YAML_NODE_LINE_COLUMN_FMT "",
+                      (const char *)k->data.scalar.value,
+                      YAML_NODE_LINE_COLUMN(k));
+                return rc;
             }
-            else
-            {
-                ERROR(CS_YAML_ERR_PREFIX "failed to recognise the "
-                      "attribute type in the target '%s'",
-                      (const char *)k->data.scalar.value);
-                return TE_EINVAL;
-            }
-            break;
+        } while (++pair < n->data.mapping.pairs.top);
+    }
+    else
+    {
+        ERROR(CS_YAML_ERR_PREFIX
+              "the 'instance' node is not a mapping node");
+        return TE_EINVAL;
+    }
+    if (obj->oid == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX
+              "the 'oid' field is absent in 'instance' node");
+        return TE_EINVAL;
     }
 
-    return 0;
+    return rc;
 }
 
 /**
@@ -327,10 +473,10 @@ parse_config_yaml_cmd_add_dependency_attribute(yaml_node_t    *k,
  */
 static te_errno
 parse_config_yaml_dependency_entry(yaml_document_t *d,
-                                   yaml_node_t     *n,
-                                   cytc_dep_entry  *dep_ctx)
+                                   yaml_node_t *n,
+                                   depends_entry *dep)
 {
-    te_errno rc;
+    te_errno rc = 0;
 
     if (n->type == YAML_MAPPING_NODE)
     {
@@ -339,8 +485,37 @@ parse_config_yaml_dependency_entry(yaml_document_t *d,
         do {
             yaml_node_t *k = yaml_document_get_node(d, pair->key);
             yaml_node_t *v = yaml_document_get_node(d, pair->value);
+            int depends_field_name;
 
-            rc = parse_config_yaml_cmd_add_dependency_attribute(k, v, dep_ctx);
+            if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
+            {
+                ERROR(CS_YAML_ERR_PREFIX
+                      "the 'depends' node to be badly formatted");
+                return TE_EINVAL;
+            }
+            depends_field_name = te_enum_map_from_str(
+                                        cs_yaml_object_depends_fields_mapping,
+                                        (const char *)k->data.scalar.value,
+                                        -1);
+
+            switch (depends_field_name)
+            {
+                case CS_YAML_OBJECT_DEPENDS_OID:
+                    rc = parse_config_str(v, &dep->oid);
+                    break;
+
+                case CS_YAML_OBJECT_DEPENDS_SCOPE:
+                    rc = parse_config_str_by_mapping(v, &dep->scope,
+                                        cs_yaml_object_depends_scope_mapping);
+                    break;
+
+                default:
+                    ERROR(CS_YAML_ERR_PREFIX
+                          "failed to recognise the command '%s'",
+                          (const char *)k->data.scalar.value);
+                    rc = TE_EINVAL;
+            }
+
             if (rc != 0)
             {
                 ERROR(CS_YAML_ERR_PREFIX "failed to process "
@@ -349,15 +524,21 @@ parse_config_yaml_dependency_entry(yaml_document_t *d,
                 return TE_EINVAL;
             }
         } while (++pair < n->data.mapping.pairs.top);
+
+        if (dep->oid == NULL)
+        {
+            ERROR(CS_YAML_ERR_PREFIX
+                  "the 'oid' field is absent in 'depends' node");
+            return TE_EINVAL;
+        }
     }
     else
     {
-        ERROR(CS_YAML_ERR_PREFIX "found the dependency node to be "
-              "badly formatted");
+        ERROR(CS_YAML_ERR_PREFIX "the dependency node is badly formatted");
         return TE_EINVAL;
     }
 
-    return 0;
+    return rc;
 }
 
 /**
@@ -370,489 +551,58 @@ parse_config_yaml_dependency_entry(yaml_document_t *d,
  * @return Status code.
  */
 static te_errno
-parse_config_yaml_dependency(yaml_document_t            *d,
-                             yaml_node_t                *n,
-                             cs_yaml_target_context_t   *c)
+parse_config_yaml_dependency(yaml_document_t *d, yaml_node_t *n,
+                             object_type *obj)
 {
-    cytc_dep_entry *dep_entry;
     te_errno        rc;
 
-    if (n->type == YAML_SCALAR_NODE)
+    if (n->type == YAML_SCALAR_NODE) /* Is it really used? */
     {
         if (n->data.scalar.length == 0)
         {
-            ERROR(CS_YAML_ERR_PREFIX "found the dependency node to be "
-                  "badly formatted");
+            ERROR(CS_YAML_ERR_PREFIX "the dependency node is badly formatted");
             return TE_EINVAL;
         }
 
-        dep_entry = TE_ALLOC(sizeof(*dep_entry));
-        if (dep_entry == NULL) {
+        obj->depends_count = 1;
+        obj->depends = TE_ALLOC(sizeof(depends_entry));
+
+        if (obj->depends == NULL) {
             ERROR(CS_YAML_ERR_PREFIX "failed to allocate memory");
             return TE_ENOMEM;
         }
 
-        dep_entry->oid = (const xmlChar *)n->data.scalar.value;
-
-        /* Error path resides in parse_config_yaml_cmd_process_target(). */
-        SLIST_INSERT_HEAD(&c->deps, dep_entry, links);
+        obj->depends->oid = strdup((char *)n->data.scalar.value);
     }
     else if (n->type == YAML_SEQUENCE_NODE)
     {
         yaml_node_item_t *item = n->data.sequence.items.start;
+        unsigned int i = 0;
 
+        obj->depends_count = 0;
+        do {
+            obj->depends_count++;
+        } while (++item < n->data.sequence.items.top);
+        obj->depends = TE_ALLOC(obj->depends_count * sizeof(depends_entry));
+
+        item = n->data.sequence.items.start;
         do {
             yaml_node_t *in = yaml_document_get_node(d, *item);
 
-            dep_entry = TE_ALLOC(sizeof(*dep_entry));
-            if (dep_entry == NULL) {
-                ERROR(CS_YAML_ERR_PREFIX "failed to allocate memory");
-                return TE_ENOMEM;
-            }
-
-            rc = parse_config_yaml_dependency_entry(d, in, dep_entry);
+            rc = parse_config_yaml_dependency_entry(d, in, &obj->depends[i]);
             if (rc != 0)
-            {
-                free(dep_entry);
                 return rc;
-            }
 
-            /* Error path resides in parse_config_yaml_cmd_process_target(). */
-            SLIST_INSERT_HEAD(&c->deps, dep_entry, links);
+            i++;
         } while (++item < n->data.sequence.items.top);
     }
     else
     {
-        ERROR(CS_YAML_ERR_PREFIX "found the dependence node to be "
-              "badly formatted");
+        ERROR(CS_YAML_ERR_PREFIX "the dependency node is badly formatted");
         return TE_EINVAL;
     }
 
     return 0;
-}
-
-static te_errno
-parse_config_yaml_cmd_add_target_attribute(yaml_document_t        *d,
-                                       yaml_node_t                *k,
-                                       yaml_node_t                *v,
-                                       cs_yaml_target_context_t   *c,
-                                       te_kvpair_h                *expand_vars)
-{
-    cs_yaml_node_attribute_type_t attribute_type;
-    te_errno                      rc = 0;
-
-    if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0 ||
-        (v->type != YAML_SCALAR_NODE && v->type != YAML_SEQUENCE_NODE))
-    {
-        ERROR(CS_YAML_ERR_PREFIX "found the target attribute node to be "
-              "badly formatted");
-        return TE_EINVAL;
-    }
-
-    attribute_type = parse_config_yaml_node_get_attribute_type(k);
-    switch (attribute_type)
-    {
-        case CS_YAML_NODE_ATTRIBUTE_CONDITION:
-            rc = parse_config_if_expr(v, &c->cond, expand_vars);
-            if (rc != 0)
-            {
-              ERROR(CS_YAML_ERR_PREFIX "failed to process the condition "
-                    "attribute node of the target");
-              return rc;
-            }
-            break;
-
-        case CS_YAML_NODE_ATTRIBUTE_OID:
-            if (c->oid != NULL)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "detected multiple OID specifiers "
-                      "of the target: only one can be present");
-                return TE_EINVAL;
-            }
-
-            c->oid = (const xmlChar *)v->data.scalar.value;
-            break;
-
-        case CS_YAML_NODE_ATTRIBUTE_VALUE:
-            if (c->value != NULL)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "detected multiple value specifiers "
-                      "of the target: only one can be present");
-                return TE_EINVAL;
-            }
-
-            c->value = (const xmlChar *)v->data.scalar.value;
-            break;
-
-        case CS_YAML_NODE_ATTRIBUTE_ACCESS:
-            if (c->access != NULL)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "detected multiple access specifiers "
-                      "of the target: only one can be present");
-                return TE_EINVAL;
-            }
-
-            c->access = (const xmlChar *)v->data.scalar.value;
-            break;
-
-        case CS_YAML_NODE_ATTRIBUTE_TYPE:
-            if (c->type != NULL)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "detected multiple type specifiers "
-                      "of the target: only one can be present");
-                return TE_EINVAL;
-            }
-
-            c->type = (const xmlChar *)v->data.scalar.value;
-            break;
-
-        case CS_YAML_NODE_ATTRIBUTE_DEPENDENCE:
-            rc = parse_config_yaml_dependency(d, v, c);
-            if (rc != 0)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "failed to process the dependence "
-                      "node of the object");
-                return rc;
-            }
-            break;
-
-        case CS_YAML_NODE_ATTRIBUTE_VOLATILE:
-            if (c->xmlvolatile != NULL)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "detected multiple volatile specifiers "
-                      "of the target: only one can be present");
-                return TE_EINVAL;
-            }
-
-            c->xmlvolatile = (const xmlChar *)v->data.scalar.value;
-            break;
-
-        case CS_YAML_NODE_ATTRIBUTE_DESCRIPTION:
-            /* Ignore the description */
-            break;
-
-        case CS_YAML_NODE_ATTRIBUTE_SUBSTITUTION:
-            if (c->substitution != NULL)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "detected multiple substitution "
-                      "specifiers of the target: only one can be present");
-                return TE_EINVAL;
-            }
-
-            c->substitution = (const xmlChar *)v->data.scalar.value;
-            break;
-
-        case CS_YAML_NODE_ATTRIBUTE_UNIT:
-            if (c->unit != NULL)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "detected multiple unit "
-                      "specifiers of the target: only one can be present");
-                return TE_EINVAL;
-            }
-
-            c->unit = (const xmlChar *)v->data.scalar.value;
-            break;
-
-        default:
-            if (v->type == YAML_SCALAR_NODE && v->data.scalar.length == 0)
-            {
-                c->oid = (const xmlChar *)k->data.scalar.value;
-            }
-            else
-            {
-                ERROR(CS_YAML_ERR_PREFIX "failed to recognise the "
-                      "attribute type in the target '%s'",
-                      (const char *)k->data.scalar.value);
-                return TE_EINVAL;
-            }
-            break;
-    }
-
-    return 0;
-}
-
-static te_errno
-embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
-                         cs_yaml_target_context_t *c)
-{
-    const xmlChar  *prop_name_oid = (const xmlChar *)"oid";
-    const xmlChar  *prop_name_value = (const xmlChar *)"value";
-    const xmlChar  *prop_name_access = (const xmlChar *)"access";
-    const xmlChar  *prop_name_type = (const xmlChar *)"type";
-    const xmlChar  *prop_name_scope = (const xmlChar *)"scope";
-    const xmlChar  *prop_name_volatile = (const xmlChar *)"volatile";
-    const xmlChar  *prop_name_substitution = (const xmlChar *)"substitution";
-    const xmlChar  *prop_name_unit = (const xmlChar *)"unit";
-
-    xmlNodePtr      dependency_node;
-    cytc_dep_entry *dep_entry;
-
-    if (c->oid == NULL)
-    {
-        ERROR(CS_YAML_ERR_PREFIX "failed to find target OID specifier");
-        return TE_EINVAL;
-    }
-
-    if (!c->cond)
-        return 0;
-
-    if (xmlNewProp(xn_target, prop_name_oid, c->oid) == NULL)
-    {
-        ERROR(CS_YAML_ERR_PREFIX "failed to set OID for the target"
-              "node in XML output");
-        return TE_ENOMEM;
-    }
-
-    if (c->value != NULL &&
-        xmlNewProp(xn_target, prop_name_value, c->value) == NULL)
-    {
-        ERROR(CS_YAML_ERR_PREFIX "failed to embed the target value "
-              "attribute in XML output");
-        return TE_ENOMEM;
-    }
-
-    if (c->access != NULL &&
-        xmlNewProp(xn_target, prop_name_access, c->access) == NULL)
-    {
-        ERROR(CS_YAML_ERR_PREFIX "failed to embed the target access"
-              "attribute in XML output");
-        return TE_ENOMEM;
-    }
-
-    if (c->type != NULL &&
-        xmlNewProp(xn_target, prop_name_type, c->type) == NULL)
-    {
-        ERROR(CS_YAML_ERR_PREFIX "failed to embed the target type "
-              "attribute in XML output");
-        return TE_ENOMEM;
-    }
-
-    if (c->xmlvolatile != NULL &&
-        xmlNewProp(xn_target, prop_name_volatile, c->xmlvolatile) == NULL)
-    {
-        ERROR(CS_YAML_ERR_PREFIX "failed to embed the target volatile "
-              "attribute in XML output");
-        return TE_ENOMEM;
-    }
-
-    if (c->substitution != NULL &&
-        xmlNewProp(xn_target, prop_name_substitution, c->substitution) == NULL)
-    {
-        ERROR(CS_YAML_ERR_PREFIX "failed to embed the target substitution"
-              "attribute in XML output");
-        return TE_ENOMEM;
-    }
-
-    if (c->unit != NULL &&
-        xmlNewProp(xn_target, prop_name_unit, c->unit) == NULL)
-    {
-        ERROR(CS_YAML_ERR_PREFIX "failed to embed the target unit "
-              "attribute in XML output");
-        return TE_ENOMEM;
-    }
-
-    SLIST_FOREACH(dep_entry, &c->deps, links)
-    {
-        dependency_node = xmlNewNode(NULL, BAD_CAST "depends");
-        if (dependency_node == NULL)
-        {
-            ERROR(CS_YAML_ERR_PREFIX "failed to allocate dependency "
-                  "node for XML output");
-            return TE_ENOMEM;
-        }
-
-        if (xmlNewProp(dependency_node, prop_name_oid, dep_entry->oid) ==
-            NULL)
-        {
-            ERROR(CS_YAML_ERR_PREFIX "failed to set OID for the dependency "
-                  "node in XML output");
-            xmlFreeNode(dependency_node);
-            return TE_ENOMEM;
-        }
-
-        if (dep_entry->scope != NULL &&
-            xmlNewProp(dependency_node, prop_name_scope,
-                       dep_entry->scope) == NULL)
-        {
-            ERROR(CS_YAML_ERR_PREFIX "failed to embed the target scope "
-                  "attribute in XML output");
-            xmlFreeNode(dependency_node);
-            return TE_ENOMEM;
-        }
-
-        if (xmlAddChild(xn_target, dependency_node) != dependency_node)
-        {
-            ERROR(CS_YAML_ERR_PREFIX "failed to embed dependency node in "
-                  "XML output");
-            xmlFreeNode(dependency_node);
-            return TE_EINVAL;
-        }
-    }
-
-    if (xmlAddChild(xn_cmd, xn_target) == xn_target)
-    {
-        return 0;
-    }
-    else
-    {
-        ERROR(CS_YAML_ERR_PREFIX "failed to embed the target in "
-              "XML output");
-        return TE_EINVAL;
-    }
-}
-
-static te_errno
-parse_config_yaml_include_doc(parse_config_yaml_ctx *ctx, yaml_node_t *n)
-{
-    char *file_name;
-    te_errno rc = 0;
-    te_errno rc_resolve_pathname = 0;
-    char *resolved_file_name = NULL;
-
-    if (n->data.scalar.length == 0)
-    {
-        ERROR(CS_YAML_ERR_PREFIX "found include node to be badly formatted");
-        return TE_EINVAL;
-    }
-
-    file_name = (char *)n->data.scalar.value;
-    rc_resolve_pathname = te_file_resolve_pathname(file_name, ctx->conf_dirs,
-                                                   F_OK, ctx->file_path,
-                                                   &resolved_file_name);
-    if (rc_resolve_pathname == 0)
-    {
-        rc = parse_config_yaml(resolved_file_name, ctx->expand_vars,
-                               ctx->xn_history, ctx->conf_dirs);
-    }
-    else
-    {
-        ERROR(CS_YAML_ERR_PREFIX "document %s specified in "
-              "include node is not found. "
-              "te_file_resolve_pathname() produce error %d",
-              file_name, rc_resolve_pathname);
-        rc = TE_EINVAL;
-    }
-    free(resolved_file_name);
-    return rc;
-}
-
-/**
- * Free memory allocated for the needs of the given YAML target context
- *
- * @param c The context
- */
-static void
-cytc_cleanup(cs_yaml_target_context_t *c)
-{
-    cytc_dep_entry *dep_entry_tmp;
-    cytc_dep_entry *dep_entry;
-
-    SLIST_FOREACH_SAFE(dep_entry, &c->deps, links, dep_entry_tmp)
-    {
-        SLIST_REMOVE(&c->deps, dep_entry, cytc_dep_entry, links);
-        free(dep_entry);
-    }
-}
-
-/**
- * Process the given target node in the given YAML document.
- *
- * @param ctx               Current doc context
- * @param n                 Handle of the target node in the given YAML document
- * @param xn_cmd            Handle of command node in the XML document being
- *                          created
- * @param cmd               String representation of command
- *
- * @return Status code.
- */
-static te_errno
-parse_config_yaml_cmd_process_target(parse_config_yaml_ctx *ctx, yaml_node_t *n,
-                                     xmlNodePtr xn_cmd, const char *cmd)
-{
-    yaml_document_t            *d = ctx->doc;
-    te_kvpair_h                *expand_vars = ctx->expand_vars;
-    xmlNodePtr                  xn_target = NULL;
-    cs_yaml_target_context_t    c = YAML_TARGET_CONTEXT_INIT;
-    const char                 *target;
-    te_errno                    rc = 0;
-
-    /*
-     * Case of several included files, e.g.
-     * - include:
-     *      - filename1
-     *      ...
-     *      - filenameN
-     */
-    if (strcmp(cmd, "include") == 0)
-    {
-        rc = parse_config_yaml_include_doc(ctx, n);
-        goto out;
-    }
-
-    target = get_yaml_cmd_target(cmd);
-    if (target == NULL)
-        return TE_EINVAL;
-
-    xn_target = xmlNewNode(NULL, BAD_CAST target);
-    if (xn_target == NULL)
-    {
-        ERROR(CS_YAML_ERR_PREFIX "failed to allocate %s"
-              "node for XML output", target);
-        return TE_ENOMEM;
-    }
-
-    if (n->type == YAML_SCALAR_NODE)
-    {
-        if (n->data.scalar.length == 0)
-        {
-            ERROR(CS_YAML_ERR_PREFIX "found the %s node to be "
-                  "badly formatted", target);
-            rc = TE_EINVAL;
-            goto out;
-        }
-
-        c.oid = (const xmlChar *)n->data.scalar.value;
-    }
-    else if (n->type == YAML_MAPPING_NODE)
-    {
-        yaml_node_pair_t *pair = n->data.mapping.pairs.start;
-
-        do {
-            yaml_node_t *k = yaml_document_get_node(d, pair->key);
-            yaml_node_t *v = yaml_document_get_node(d, pair->value);
-
-            rc = parse_config_yaml_cmd_add_target_attribute(d, k, v, &c,
-                                                            expand_vars);
-            if (rc != 0)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "failed to process %s"
-                      "attribute at " YAML_NODE_LINE_COLUMN_FMT "",
-                      target, YAML_NODE_LINE_COLUMN(k));
-                goto out;
-            }
-        } while (++pair < n->data.mapping.pairs.top);
-    }
-    else
-    {
-        ERROR(CS_YAML_ERR_PREFIX "found the %s node to be "
-              "badly formatted", target);
-        rc = TE_EINVAL;
-        goto out;
-    }
-
-    rc = embed_yaml_target_in_xml(xn_cmd, xn_target, &c);
-    if (rc != 0)
-        goto out;
-
-    cytc_cleanup(&c);
-
-    return 0;
-
-out:
-    xmlFreeNode(xn_target);
-    cytc_cleanup(&c);
-
-    return rc;
 }
 
 /**
@@ -870,38 +620,183 @@ out:
  */
 static te_errno
 parse_config_yaml_cmd_process_targets(parse_config_yaml_ctx *ctx,
-                                      yaml_node_t *n, xmlNodePtr xn_cmd,
-                                      const char *cmd)
+                                      yaml_node_t *n, history_entry *h_entry,
+                                      cs_yaml_node_type node_type)
 {
     yaml_document_t *d = ctx->doc;
     yaml_node_item_t *item = n->data.sequence.items.start;
+    unsigned int count = 0;
+    unsigned int i = 0;
 
     if (n->type != YAML_SEQUENCE_NODE)
     {
-        ERROR(CS_YAML_ERR_PREFIX "found the %s command's list of targets "
-              "to be badly formatted", cmd);
+        ERROR(CS_YAML_ERR_PREFIX
+              "the %s command's list of targets is badly formatted",
+              te_enum_map_from_any_value(cs_yaml_node_type_mapping, node_type,
+                                         "unknown"));
         return TE_EINVAL;
     }
+    do {
+        count++;
+    } while (++item < n->data.sequence.items.top);
+/* should I deal with with count = 0 also? */
+    switch (node_type)
+    {
 
+#define CASE_INITIATE(enum_part_, struct_part_, type_) \
+        case CS_YAML_NODE_TYPE_ ## enum_part_:                          \
+            h_entry-> struct_part_ ## _count = count;                   \
+            h_entry-> struct_part_ = TE_ALLOC(count * sizeof(type_));   \
+            break
+
+        CASE_INITIATE(INCLUDE, incl, char *);
+        CASE_INITIATE(REGISTER, reg, object_type);
+        CASE_INITIATE(UNREGISTER, unreg, object_type);
+        CASE_INITIATE(ADD, add, instance_type);
+        CASE_INITIATE(GET, get, instance_type);
+        CASE_INITIATE(DELETE, delete, instance_type);
+        CASE_INITIATE(COPY, copy, instance_type);
+        CASE_INITIATE(SET, set, instance_type);
+
+#undef CASE_INITIATE
+
+        default:
+           assert(0);
+    }
+
+    item = n->data.sequence.items.start;
     do {
         yaml_node_t *in = yaml_document_get_node(d, *item);
         te_errno     rc = 0;
 
-        rc = parse_config_yaml_cmd_process_target(ctx, in, xn_cmd, cmd);
+        /*
+         * Calling parse_config_str(),
+         * parse_config_obj(),
+         * parse_config_inst().
+         */
+        switch (node_type)
+        {
+
+#define CASE_PARSE(enum_part_, struct_part_, target_) \
+            case CS_YAML_NODE_TYPE_ ## enum_part_:                          \
+                rc = parse_config_ ## target_(ctx, in,                      \
+                                              &h_entry-> struct_part_[i]);  \
+                break
+
+            case CS_YAML_NODE_TYPE_INCLUDE:
+                rc = parse_config_str(in, &h_entry->incl[i]);
+                break;
+            CASE_PARSE(REGISTER, reg, obj);
+            CASE_PARSE(UNREGISTER, unreg, obj);
+            CASE_PARSE(ADD, add, inst);
+            CASE_PARSE(GET, get, inst);
+            CASE_PARSE(DELETE, delete, inst);
+            CASE_PARSE(COPY, copy, inst);
+            CASE_PARSE(SET, set, inst);
+
+#undef CASE_PARSE
+
+            default:
+               assert(0);
+        }
         if (rc != 0)
         {
             ERROR(CS_YAML_ERR_PREFIX "failed to process the target in the "
                   "%s command's list at " YAML_NODE_LINE_COLUMN_FMT "",
-                  cmd, YAML_NODE_LINE_COLUMN(in));
+                  te_enum_map_from_any_value(cs_yaml_node_type_mapping,
+                                             node_type,
+                                             "unknown"),
+                  YAML_NODE_LINE_COLUMN(in));
             return rc;
         }
+        i++;
     } while (++item < n->data.sequence.items.top);
 
     return 0;
 }
 
-static te_errno parse_config_yaml_cmd(parse_config_yaml_ctx *ctx,
-                                      yaml_node_t           *parent);
+static te_errno
+parse_config_root_seq(parse_config_yaml_ctx *ctx, history_seq *history,
+                          yaml_node_t *parent);
+
+static te_errno
+parse_config_yaml_only(const char *filename, te_kvpair_h *expand_vars,
+                       history_seq *history_root, const char *conf_dirs);
+
+static te_errno
+parse_config_yaml_cond(parse_config_yaml_ctx *ctx, yaml_node_t *n,
+                       history_entry *h_entry)
+{
+    yaml_document_t *d = ctx->doc;
+    te_errno rc = 0;
+
+    h_entry->cond = TE_ALLOC(sizeof(cond_entry));
+    yaml_node_pair_t *pair = n->data.mapping.pairs.start;
+    do {
+        yaml_node_t *k = yaml_document_get_node(d, pair->key);
+        yaml_node_t *v = yaml_document_get_node(d, pair->value);
+        int cond_field_name;
+
+        if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX
+                  "the target attribute node is badly formatted");
+            return TE_EINVAL;
+        }
+
+        cond_field_name = te_enum_map_from_str(cs_yaml_cond_fields_mapping,
+                                           (const char *)k->data.scalar.value,
+                                           -1);
+
+        switch (cond_field_name)
+        {
+            case CS_YAML_COND_IF_COND:
+                rc = parse_config_str(v, &h_entry->cond->if_cond);
+                if (rc != 0)
+                {
+                    ERROR(CS_YAML_ERR_PREFIX
+                          "the 'if' node in 'cond' node is badly formatted");
+                }
+                break;
+
+            case CS_YAML_COND_THEN_COND:
+                h_entry->cond->then_cond = TE_ALLOC(sizeof(history_seq));
+                rc = parse_config_root_seq(ctx, h_entry->cond->then_cond, v);
+                if (rc != 0)
+                {
+                    ERROR(CS_YAML_ERR_PREFIX
+                          "the 'then' node in 'cond' node is badly formatted");
+                }
+                break;
+
+            case CS_YAML_COND_ELSE_COND:
+                h_entry->cond->else_cond = TE_ALLOC(sizeof(history_seq));
+                rc = parse_config_root_seq(ctx, h_entry->cond->else_cond, v);
+                if (rc != 0)
+                {
+                    ERROR(CS_YAML_ERR_PREFIX
+                          "the 'else' node in 'cond' node is badly formatted");
+                }
+                break;
+
+            default:
+                ERROR(CS_YAML_ERR_PREFIX
+                      "failed to recognize 'cond' command's child '%s'",
+                      (const char *)k->data.scalar.value);
+                rc = TE_EINVAL;
+        }
+
+        if (rc != 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the 'cond' "
+                  "command's nested node at " YAML_NODE_LINE_COLUMN_FMT "",
+                  YAML_NODE_LINE_COLUMN(k));
+            return rc;
+        }
+    } while (++pair < n->data.mapping.pairs.top);
+
+    return rc;
+}
 
 /**
  * Process dynamic history specified command in the given YAML document.
@@ -914,167 +809,114 @@ static te_errno parse_config_yaml_cmd(parse_config_yaml_ctx *ctx,
  */
 static te_errno
 parse_config_yaml_specified_cmd(parse_config_yaml_ctx *ctx, yaml_node_t *n,
-                                const char *cmd)
+                                history_entry *h_entry,
+                                cs_yaml_node_type node_type)
 {
-    yaml_document_t *d = ctx->doc;
-    te_kvpair_h     *expand_vars = ctx->expand_vars;
-    xmlNodePtr       xn_history = ctx->xn_history;
-
-    xmlNodePtr  xn_cmd = NULL;
     te_errno    rc = 0;
-    te_bool     cond = FALSE;
-
-    xn_cmd = xmlNewNode(NULL, BAD_CAST cmd);
-    if (xn_cmd == NULL)
-    {
-        ERROR(CS_YAML_ERR_PREFIX "failed to allocate %s command "
-              "node for XML output", cmd);
-        return TE_ENOMEM;
-    }
 
     if (n->type == YAML_SEQUENCE_NODE)
     {
-        if (strcmp(cmd, "cond") == 0)
+        if (node_type == CS_YAML_NODE_TYPE_COMMENT ||
+            node_type == CS_YAML_NODE_TYPE_COND ||
+            node_type == CS_YAML_NODE_TYPE_REBOOT)
         {
-            ERROR(CS_YAML_ERR_PREFIX "found the %s command node to be "
-                  "badly formatted", cmd);
             rc = TE_EINVAL;
             goto out;
         }
-
-        rc = parse_config_yaml_cmd_process_targets(ctx, n, xn_cmd, cmd);
+        rc = parse_config_yaml_cmd_process_targets(ctx, n, h_entry, node_type);
         if (rc != 0)
         {
-            ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the %s "
+            ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the '%s' "
                   "command's nested node at " YAML_NODE_LINE_COLUMN_FMT "",
-                  cmd, YAML_NODE_LINE_COLUMN(n));
+                  te_enum_map_from_any_value(cs_yaml_node_type_mapping,
+                                             node_type,
+                                             "unknown"),
+                  YAML_NODE_LINE_COLUMN(n));
             goto out;
         }
     }
     else if (n->type == YAML_MAPPING_NODE)
     {
-        if (strcmp(cmd, "cond") != 0)
+        if (node_type != CS_YAML_NODE_TYPE_COND)
         {
-            ERROR(CS_YAML_ERR_PREFIX "found the %s command node to be "
-                  "badly formatted", cmd);
             rc = TE_EINVAL;
             goto out;
         }
-
-        yaml_node_pair_t *pair = n->data.mapping.pairs.start;
-        do {
-            yaml_node_t *k = yaml_document_get_node(d, pair->key);
-            yaml_node_t *v = yaml_document_get_node(d, pair->value);
-            const char  *k_label = (const char *)k->data.scalar.value;
-
-            if (strcmp(k_label, "if") == 0)
-            {
-                rc = parse_config_if_expr(v, &cond, expand_vars);
-            }
-            else if (strcmp(k_label, "then") == 0)
-            {
-                if (cond)
-                    rc = parse_config_yaml_cmd(ctx, v);
-            }
-            else if (strcmp(k_label, "else") == 0)
-            {
-                if (!cond)
-                    rc = parse_config_yaml_cmd(ctx, v);
-            }
-            else
-            {
-                ERROR(CS_YAML_ERR_PREFIX "failed to recognise %s "
-                      "command's child", cmd);
-                rc = TE_EINVAL;
-            }
-
-            if (rc != 0)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the %s "
-                      "command's nested node at " YAML_NODE_LINE_COLUMN_FMT "",
-                      cmd, YAML_NODE_LINE_COLUMN(k));
-                goto out;
-            }
-        } while (++pair < n->data.mapping.pairs.top);
+        rc = parse_config_yaml_cond(ctx, n, h_entry);
     }
-    /*
-     * Case of single included file, e.g.
-     * - include: filename
-     */
     else if (n->type == YAML_SCALAR_NODE)
     {
-        if (strcmp(cmd, "include") != 0)
+        switch (node_type)
         {
-            ERROR(CS_YAML_ERR_PREFIX "found the %s command node to be "
-            "badly formatted", cmd);
-            rc = TE_EINVAL;
-            goto out;
-        }
+            /*
+             * Case of single included file, e.g.
+             * - include: filename
+             * And also comment and reboot.
+             */
+            case CS_YAML_NODE_TYPE_INCLUDE:
+                h_entry->incl_count = 1;
+                h_entry->incl = TE_ALLOC(sizeof(char *));
+                rc = parse_config_str(n, h_entry->incl);
+                if (rc != 0)
+                    goto out;
+                break;
 
-        rc = parse_config_yaml_include_doc(ctx, n);
-        if (rc != 0)
-            goto out;
+            case CS_YAML_NODE_TYPE_COMMENT:
+                rc = parse_config_str(n, &h_entry->comment);
+                if (rc != 0)
+                    goto out;
+                break;
+
+            case CS_YAML_NODE_TYPE_REBOOT:
+                rc = parse_config_str(n, &h_entry->reboot_ta);
+                if (rc != 0)
+                    goto out;
+                break;
+
+            default:
+                rc = TE_EINVAL;
+                goto out;
+        }
     }
     else
     {
-        ERROR(CS_YAML_ERR_PREFIX "found the %s command node to be "
-              "badly formatted", cmd);
         rc = TE_EINVAL;
         goto out;
     }
-
-    if (xn_cmd->children != NULL)
-    {
-        if (xmlAddChild(xn_history, xn_cmd) == xn_cmd)
-        {
-            return 0;
-        }
-        else
-        {
-            ERROR(CS_YAML_ERR_PREFIX "failed to embed %s command "
-                  "to XML output", cmd);
-            rc = TE_EINVAL;
-        }
-    }
-
 out:
-    xmlFreeNode(xn_cmd);
+    if (rc != 0)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "the '%s' command node is badly formatted",
+              te_enum_map_from_any_value(cs_yaml_node_type_mapping,
+                                         node_type,
+                                         "unknown"));
+    }
 
     return rc;
 }
 
 static te_errno
-parse_config_root_commands(parse_config_yaml_ctx *ctx,
-                           yaml_node_t           *n)
+parse_config_root_commands(parse_config_yaml_ctx *ctx, history_entry *h_entry,
+                           yaml_node_t *n)
 {
     yaml_document_t *d = ctx->doc;
     yaml_node_pair_t *pair = n->data.mapping.pairs.start;
     yaml_node_t *k = yaml_document_get_node(d, pair->key);
     yaml_node_t *v = yaml_document_get_node(d, pair->value);
     te_errno rc = 0;
+    int node_type = te_enum_map_from_str(cs_yaml_node_type_mapping,
+                                         (const char *)k->data.scalar.value,
+                                         -1);
 
-    if ((strcmp((const char *)k->data.scalar.value, "add") == 0) ||
-        (strcmp((const char *)k->data.scalar.value, "get") == 0) ||
-        (strcmp((const char *)k->data.scalar.value, "set") == 0) ||
-        (strcmp((const char *)k->data.scalar.value, "register") == 0) ||
-        (strcmp((const char *)k->data.scalar.value, "unregister") == 0) ||
-        (strcmp((const char *)k->data.scalar.value, "delete") == 0) ||
-        (strcmp((const char *)k->data.scalar.value, "copy") == 0) ||
-        (strcmp((const char *)k->data.scalar.value, "include") == 0) ||
-        (strcmp((const char *)k->data.scalar.value, "cond") == 0))
-    {
-         rc = parse_config_yaml_specified_cmd(ctx, v,
-                                        (const char *)k->data.scalar.value);
-    }
-    else if (strcmp((const char *)k->data.scalar.value, "comment") == 0)
-    {
-        /* Ignore comments */
-    }
-    else
+    if (node_type == -1)
     {
         ERROR(CS_YAML_ERR_PREFIX "failed to recognise the command '%s'",
               (const char *)k->data.scalar.value);
         rc = TE_EINVAL;
+    }
+    else
+    {
+         rc = parse_config_yaml_specified_cmd(ctx, v, h_entry, node_type);
     }
 
     if (rc != 0)
@@ -1097,12 +939,14 @@ parse_config_root_commands(parse_config_yaml_ctx *ctx,
  * @return Status code.
  */
 static te_errno
-parse_config_yaml_cmd(parse_config_yaml_ctx *ctx,
-                      yaml_node_t           *parent)
+parse_config_root_seq(parse_config_yaml_ctx *ctx, history_seq *history,
+                      yaml_node_t *parent)
 {
     yaml_document_t  *d = ctx->doc;
     yaml_node_item_t *item = NULL;
     te_errno          rc = 0;
+
+    unsigned int i = 0;
 
     if (parent->type != YAML_SEQUENCE_NODE)
     {
@@ -1110,38 +954,404 @@ parse_config_yaml_cmd(parse_config_yaml_ctx *ctx,
         return TE_EFMT;
     }
 
+    history->entries_count = 0;
     item = parent->data.sequence.items.start;
     do {
+    history->entries_count++;
+    } while (++item < parent->data.sequence.items.top);
+
+    if (history->entries_count > 0)
+        history->entries = TE_ALLOC(history->entries_count *
+                                  sizeof(history_entry));
+    else
+        history->entries = NULL;
+
+    item = parent->data.sequence.items.start;
+    for (i = 0; i < history->entries_count; i++)
+    {
         yaml_node_t *n = yaml_document_get_node(d, *item);
 
         if (n->type != YAML_MAPPING_NODE)
         {
-            ERROR(CS_YAML_ERR_PREFIX "found the command node to be "
-                  "badly formatted");
+            ERROR(CS_YAML_ERR_PREFIX "the command node is badly formatted");
             rc = TE_EINVAL;
         }
-
-        rc = parse_config_root_commands(ctx, n);
+        rc = parse_config_root_commands(ctx, &history->entries[i], n);
         if (rc != 0)
             break;
-    } while (++item < parent->data.sequence.items.top);
+        item++;
+    };
 
     return rc;
 }
 
-/* See description in 'conf_yaml.h' */
 te_errno
 parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
-                  xmlNodePtr xn_history_root, const char *conf_dirs)
+                  history_seq *history_root, const char *conf_dirs);
+
+static te_errno
+resolve_exp_vars_or_env(char **str, const te_kvpair_h *kvpairs)
+{
+    te_errno rc = 0;
+    char **result = TE_ALLOC(sizeof(char *));
+
+    if (*str != NULL)
+    {
+        if (kvpairs == NULL)
+            rc = te_expand_env_vars(*str, NULL, result);
+        else
+            rc = te_expand_kvpairs(*str, NULL, kvpairs, result);
+        if (rc == 0)
+        {
+            free(*str);
+            *str = *result;
+        }
+        else
+        {
+            ERROR("Error substituting variables in %s : %s",
+                  *str, strerror(rc));
+            free(*str);
+            *str = NULL;
+        }
+    }
+    free(result);
+
+    return rc;
+}
+
+static te_errno
+reparse_instance_seq(parse_config_yaml_ctx *ctx, instance_type *a_inst,
+                     unsigned int *count)
+{
+    te_errno rc = 0;
+    unsigned int i = 0;
+    unsigned int j = 0;
+    te_bool if_expr;
+
+    for (i = 0; i < *count; i++)
+    {
+        if (a_inst[i].if_cond != NULL)
+        {
+            rc = parse_logic_expr_str(a_inst[i].if_cond, &if_expr,
+                                      ctx->expand_vars);
+            if (rc != 0)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "failed to evaluate the expression "
+                      "contained in the condition node");
+                return rc;
+            }
+            if (!if_expr)
+            {
+                cfg_yaml_free_inst(&a_inst[i]);
+            }
+            else
+            {
+                free(a_inst[i].if_cond);
+                a_inst[i].if_cond = NULL;
+            }
+        }
+        else
+        {
+            if_expr = TRUE;
+        }
+
+        if (if_expr)
+        {
+            te_errno rc_resolve;
+
+            rc_resolve = resolve_exp_vars_or_env(&a_inst[i].oid,
+                                                 ctx->expand_vars);
+            if (rc_resolve != 0)
+            {
+                ERROR("couldn't expand vars or env in oid");
+                rc = te_rc_os2te(rc_resolve);
+                return rc;
+            }
+            rc_resolve = resolve_exp_vars_or_env(&a_inst[i].value,
+                                                 ctx->expand_vars);
+            if (rc_resolve != 0)
+            {
+                ERROR("couldn't expand vars or env in value");
+                rc = te_rc_os2te(rc_resolve);
+                return rc;
+            }
+            a_inst[j] = a_inst[i];
+            j++;
+        }
+    }
+    *count = j;
+
+    return rc;
+}
+
+/*
+ * The value of *count doesn't changed. The pointer is used for uniformity
+ * and to be used in one macro with instances.
+ */
+static te_errno
+reparse_object_seq(parse_config_yaml_ctx *ctx, object_type *a_obj,
+                   unsigned int *count)
+{
+    te_errno rc = 0;
+    unsigned int i = 0;
+
+    for (i = 0; i < *count; i++)
+    {
+        te_errno rc_resolve;
+
+        rc_resolve = resolve_exp_vars_or_env(&a_obj[i].oid, ctx->expand_vars);
+        if (rc_resolve != 0)
+        {
+            ERROR("couldn't expand vars or env in oid");
+            rc = te_rc_os2te(rc_resolve);
+            return rc;
+        }
+    }
+
+    return rc;
+}
+
+static te_errno
+parse_included_docs_to_array(parse_config_yaml_ctx *ctx, char *file_name,
+                             history_seq *new_history)
+{
+    te_errno rc = 0;
+    te_errno rc_resolve_pathname = 0;
+    char *resolved_file_name = NULL;
+
+    rc_resolve_pathname = te_file_resolve_pathname(file_name, ctx->conf_dirs,
+                                                   F_OK, ctx->file_path,
+                                                   &resolved_file_name);
+    if (rc_resolve_pathname == 0)
+    {
+        rc = parse_config_yaml_only(resolved_file_name, ctx->expand_vars,
+                                    new_history, ctx->conf_dirs);
+    }
+    else
+    {
+        ERROR(CS_YAML_ERR_PREFIX
+              "document %s specified in 'include' node is not found. "
+              "te_file_resolve_pathname() produce error %d",
+              file_name, rc_resolve_pathname);
+        rc = TE_EINVAL;
+    }
+    free(resolved_file_name);
+    return rc;
+}
+
+static te_errno
+add_hist_seq_to_hist_seq(parse_config_yaml_ctx *ctx, unsigned int i,
+                         history_seq *array_h_seq, unsigned int array_size)
+{
+    te_errno rc = 0;
+    history_entry *tail = NULL;
+    unsigned int j;
+    unsigned int counter = ctx->history->entries_count - 1;
+    unsigned int tail_count = ctx->history->entries_count - 1 - i;
+
+    if (tail_count > 0)
+    {
+        tail = TE_ALLOC(tail_count * sizeof(history_entry));
+        memcpy(tail, ctx->history->entries + i + 1,
+               tail_count * sizeof(history_entry));
+    }
+
+    for (j = 0; j< array_size; j++)
+        counter += array_h_seq[j].entries_count;
+
+    ctx->history->entries_count = counter;
+    if (counter > 0)
+    {
+        ctx->history->entries = realloc(ctx->history->entries,
+                                        sizeof(history_entry) * counter);
+        if (ctx->history->entries == NULL)
+        {
+            ERROR("Failed to reallocate memory");
+            return TE_ENOMEM;
+        }
+    }
+    else
+    {
+        cfg_yaml_free_hist_seq(ctx->history);
+    }
+
+    counter = i;
+
+    for (j = 0; j < array_size; j++)
+    {
+        memcpy(ctx->history->entries + counter, array_h_seq[j].entries,
+               (array_h_seq[j].entries_count) * sizeof(history_entry));
+        free(array_h_seq[j].entries);
+        counter += array_h_seq[j].entries_count;
+    }
+    free(array_h_seq);
+    if (tail_count > 0)
+    {
+        memcpy(ctx->history->entries + counter, tail,
+               (tail_count) * sizeof(history_entry));
+        free(tail);
+    }
+
+    return rc;
+}
+
+static te_errno
+reparse_include(parse_config_yaml_ctx *ctx, unsigned int i)
+{
+    te_errno rc = 0;
+    unsigned int j;
+    history_seq *history = ctx->history;
+    history_seq *array_h_seq;
+    unsigned int num_incl = history->entries[i].incl_count;
+
+    array_h_seq = TE_ALLOC(sizeof(history_seq) * num_incl);
+
+    for (j = 0; j< num_incl; j++)
+    {
+        rc = parse_included_docs_to_array(ctx, history->entries[i].incl[j],
+                                          &array_h_seq[j]);
+        if (rc != 0)
+        {
+            ERROR("Failed to include files");
+            return rc;
+        }
+    }
+
+    rc = add_hist_seq_to_hist_seq(ctx, i, array_h_seq, num_incl);
+
+    return rc;
+}
+
+static te_errno
+reparse_cond(parse_config_yaml_ctx *ctx, history_seq *history, unsigned int i)
+{
+    te_errno rc = 0;
+    te_bool if_expr;
+    cond_entry *cond = history->entries[i].cond;
+
+    rc = parse_logic_expr_str(cond->if_cond, &if_expr,
+                              ctx->expand_vars);
+    if (rc != 0)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to evaluate the expression "
+              "contained in the condition node");
+        return rc;
+    }
+    free(cond->if_cond);
+
+    if (if_expr)
+    {
+        if (cond->else_cond != NULL)
+        {
+            cfg_yaml_free_hist_seq(cond->else_cond);
+            free(cond->else_cond);
+        }
+        if (cond->then_cond != NULL)
+        {
+            add_hist_seq_to_hist_seq(ctx, i, cond->then_cond, 1);
+        }
+        else
+        {
+            add_hist_seq_to_hist_seq(ctx, i, NULL, 0);
+        }
+    }
+    else
+    {
+        if (history->entries[i].cond->then_cond != NULL)
+        {
+            cfg_yaml_free_hist_seq(cond->then_cond);
+            free(cond->then_cond);
+        }
+        if (cond->else_cond != NULL)
+        {
+            add_hist_seq_to_hist_seq(ctx, i, cond->else_cond, 1);
+        }
+        else
+        {
+            add_hist_seq_to_hist_seq(ctx, i, NULL, 0);
+        }
+    }
+    free(cond);
+
+    return rc;
+}
+
+static te_errno
+reparse_config_history_entry(parse_config_yaml_ctx *ctx,
+                                 unsigned int *p_i)
+{
+    te_errno rc = 0;
+    history_seq *history = ctx->history;
+    unsigned int i = *p_i;
+
+    if (history->entries[i].comment != NULL)
+    {
+        free(history->entries[i].comment);
+        history->entries[i].comment = NULL;
+    }
+    else if (history->entries[i].incl != NULL)
+    {
+        rc = reparse_include(ctx, i);
+        (*p_i)--;
+    }
+    else if (history->entries[i].cond != NULL)
+    {
+        rc = reparse_cond(ctx, history, i);
+        (*p_i)--;
+    }
+    /* reparse_instance_seq() and reparse_object_seq() */
+#define PROCESS_SEQUENCE(scope_, cmd_) \
+    else if (history->entries[i]. cmd_ != NULL)                              \
+    {                                                                        \
+        rc = reparse_ ## scope_ ##_seq(ctx, history->entries[i]. cmd_ ,      \
+                                &history->entries[i]. cmd_ ## _count);       \
+        if (rc != 0)                                                         \
+        {                                                                    \
+            ERROR("Failed to process one of the " #scope_ " in " #cmd_);     \
+            return rc;                                                       \
+        }                                                                    \
+    }
+
+    PROCESS_SEQUENCE(instance, add)
+    PROCESS_SEQUENCE(instance, get)
+    PROCESS_SEQUENCE(instance, delete)
+    PROCESS_SEQUENCE(instance, copy)
+    PROCESS_SEQUENCE(instance, set)
+    PROCESS_SEQUENCE(object, reg)
+    PROCESS_SEQUENCE(object, unreg)
+
+#undef PROCESS_INSTANCE_SEQ
+
+    return rc;
+}
+
+
+static te_errno
+reparse_config_root_seq(parse_config_yaml_ctx *ctx)
+{
+    te_errno rc = 0;
+    unsigned int i;
+
+    for (i = 0; i< ctx->history->entries_count; i++)
+    {
+        if (rc == 0)
+            rc = reparse_config_history_entry(ctx, &i);
+    }
+
+    return rc;
+}
+
+static te_errno
+parse_config_yaml_file_to_seq(parse_config_yaml_ctx *ctx)
 {
     FILE                   *f = NULL;
     yaml_parser_t           parser;
     yaml_document_t         dy;
-    xmlNodePtr              xn_history = NULL;
     yaml_node_t            *root = NULL;
     te_errno                rc = 0;
     char                   *current_yaml_file_path;
-    parse_config_yaml_ctx   ctx;
+    const char *filename = ctx->file_path;
+    history_seq *history = ctx->history;
 
     f = fopen(filename, "rb");
     if (f == NULL)
@@ -1163,22 +1373,6 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
         goto out;
     }
 
-    if (xn_history_root == NULL)
-    {
-        xn_history = xmlNewNode(NULL, BAD_CAST "history");
-        if (xn_history == NULL)
-        {
-            ERROR(CS_YAML_ERR_PREFIX "failed to allocate "
-                  "main history node for XML output");
-            rc = TE_ENOMEM;
-            goto out;
-        }
-    }
-    else
-    {
-        xn_history = xn_history_root;
-    }
-
     root = yaml_document_get_root_node(&dy);
     if (root == NULL)
     {
@@ -1196,13 +1390,9 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
         goto out;
     }
 
-    memset(&ctx, 0, sizeof(ctx));
-    ctx.file_path = current_yaml_file_path;
-    ctx.doc = &dy;
-    ctx.xn_history = xn_history;
-    ctx.expand_vars = expand_vars;
-    ctx.conf_dirs = conf_dirs;
-    rc = parse_config_yaml_cmd(&ctx, root);
+    ctx->doc = &dy;
+
+    rc = parse_config_root_seq(ctx, history, root);
     if (rc != 0)
     {
         ERROR(CS_YAML_ERR_PREFIX
@@ -1211,16 +1401,7 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
         goto out;
     }
 
-    if (xn_history_root == NULL && xn_history->children != NULL)
-    {
-        rcf_log_cfg_changes(TRUE);
-        rc = parse_config_dh_sync(xn_history, expand_vars);
-        rcf_log_cfg_changes(FALSE);
-    }
-
 out:
-    if (xn_history_root == NULL)
-        xmlFreeNode(xn_history);
     yaml_document_delete(&dy);
     yaml_parser_delete(&parser);
     free(current_yaml_file_path);
@@ -1228,3 +1409,71 @@ out:
     return rc;
 }
 
+static te_errno
+parse_config_yaml_only(const char *filename, te_kvpair_h *expand_vars,
+                       history_seq *history_root, const char *conf_dirs)
+{
+    te_errno rc = 0;
+    char *current_yaml_file_path;
+
+    parse_config_yaml_ctx ctx;
+
+    current_yaml_file_path = strdup(filename);
+    if (current_yaml_file_path == NULL)
+    {
+        TE_FATAL_ERROR();
+        goto out;
+    }
+
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.file_path = current_yaml_file_path;
+    ctx.history = history_root;
+    ctx.expand_vars = expand_vars;
+    ctx.conf_dirs = conf_dirs;
+    rc = parse_config_yaml_file_to_seq(&ctx);
+    if (rc != 0)
+    {
+        ERROR(CS_YAML_ERR_PREFIX
+              "encountered some error(s) on file '%s' processing",
+              filename);
+        goto out;
+    }
+
+    rc = reparse_config_root_seq(&ctx);
+    history_root = ctx.history;
+    if (rc != 0)
+    {
+        ERROR(CS_YAML_ERR_PREFIX
+              "encountered some error(s) on file '%s' reparse processing",
+              filename);
+        goto out;
+    }
+
+out:
+    free(current_yaml_file_path);
+
+    return rc;
+}
+
+/* See description in 'conf_yaml.h' */
+te_errno
+parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
+                  history_seq *history_root, const char *conf_dirs)
+{
+    te_errno rc = 0;
+
+    rc = parse_config_yaml_only(filename, expand_vars, history_root, conf_dirs);
+    if (rc != 0)
+    {
+        ERROR(CS_YAML_ERR_PREFIX
+              "encountered some error(s) on file '%s' parse/reparse processing",
+              filename);
+        return rc;
+    }
+
+    rcf_log_cfg_changes(TRUE);
+    rc = parse_config_dh_sync(history_root, expand_vars);
+    rcf_log_cfg_changes(FALSE);
+
+    return rc;
+}
