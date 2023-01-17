@@ -15,6 +15,7 @@ sources = [
     'conf_backup.c',
     'conf_rcf.c',
     'conf_ta.c',
+    'conf_cyaml.c',
     'conf_print.c'
 ]
 
