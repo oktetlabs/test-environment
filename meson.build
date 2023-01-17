@@ -76,7 +76,8 @@ deps_names_deb = {
     'openssl': 'libssl-dev',
     'pcap': 'libpcap-dev',
     'popt': 'libpopt-dev',
-    'yaml-0.1': 'libyaml-dev'
+    'yaml-0.1': 'libyaml-dev',
+    'libcyaml': 'libcyaml-dev'
 }
 deps_names_rpm = {
     'expect': 'expect-devel',
@@ -90,7 +91,8 @@ deps_names_rpm = {
     'openssl': 'openssl-devel',
     'pcap': 'libpcap-devel',
     'popt': 'popt-devel',
-    'yaml-0.1': 'libyaml-devel'
+    'yaml-0.1': 'libyaml-devel',
+    'libcyaml': 'libcyaml-devel'
 }
 
 missed_deps = []

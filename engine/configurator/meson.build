@@ -46,6 +46,14 @@ if get_option('cs-conf-yaml')
     else
         missed_deps += 'yaml-0.1'
     endif
+
+    dep_cyaml = dependency('libcyaml', required: false)
+    required_deps += 'libcyaml'
+    if dep_cyaml.found()
+        te_cs_deps += dep_cyaml
+    else
+        missed_deps += 'libcyaml'
+    endif
 endif
 
 executable('te_cs', sources, install: true,
