@@ -14,6 +14,7 @@
 
 #include "tapi_memaslap.h"
 #include "tapi_job_opt.h"
+#include "tapi_file.h"
 #include "te_mi_log.h"
 #include "te_alloc.h"
 #include "te_str.h"
@@ -65,6 +66,7 @@ static const tapi_job_opt_bind memaslap_binds[] = TAPI_JOB_OPT_SET(
                         expected_tps),
     TAPI_JOB_OPT_UINT_T("--rep_write=", TRUE, NULL, tapi_memaslap_opt,
                         rep_write),
+    TAPI_JOB_OPT_STRING("--cfg_cmd=", TRUE, tapi_memaslap_opt, cfg_cmd),
     TAPI_JOB_OPT_BOOL("--verbose", tapi_memaslap_opt, verbose)
 );
 
@@ -94,15 +96,23 @@ const tapi_memaslap_opt tapi_memaslap_default_opt = {
     .memaslap_path      = NULL
 };
 
+/* Default values of memaslap configuration file options */
+const tapi_memaslap_cfg_opt tapi_memaslap_default_cfg_opt = {
+    .set_share = 0.1
+};
+
 /* See description in tapi_memaslap.h */
 te_errno
 tapi_memaslap_create(tapi_job_factory_t *factory,
-                     const tapi_memaslap_opt *opt,
+                     tapi_memaslap_opt *opt,
                      tapi_memaslap_app **app)
 {
     te_errno            rc;
     tapi_memaslap_app  *new_app;
     const char         *exec_path = memaslap_path;
+
+    const char *ta = NULL;
+    char *tmp_fn = NULL;
 
     if (factory == NULL)
     {
@@ -125,6 +135,13 @@ tapi_memaslap_create(tapi_job_factory_t *factory,
         return TE_RC(TE_TAPI, rc);
     }
 
+    ta = tapi_job_factory_ta(factory);
+    if (ta == NULL)
+    {
+        ERROR("Failed to get TA of memaslap app");
+        return TE_RC(TE_TAPI, TE_ENOENT);
+    }
+
     new_app = TE_ALLOC(sizeof(tapi_memaslap_app));
     if (new_app == NULL)
     {
@@ -133,15 +150,61 @@ tapi_memaslap_create(tapi_job_factory_t *factory,
         return TE_RC(TE_TAPI, rc);
     }
 
+    new_app->ta = ta;
+
     if (opt->memaslap_path != NULL)
         exec_path = opt->memaslap_path;
 
+    if (opt->cfg_opts != NULL)
+    {
+        te_string cfg_txt = TE_STRING_INIT;
+
+        tmp_fn = tapi_file_make_name(NULL);
+        new_app->tmp_cfg_fn = tmp_fn;
+
+        /*
+         * Here default values are added for key and value
+         * sections; these sections must be filled, or memaslap
+         * will not run correctly.
+         */
+        te_string_append(&cfg_txt,
+                         "key\n"
+                         "64 64 1\n"
+                         "value\n"
+                         "1024 1024 1\n"
+                         "cmd\n"
+                         "0    %.2f\n"
+                         "1    %.2f\n",
+                         opt->cfg_opts->set_share,
+                         1.0 - opt->cfg_opts->set_share);
+        RING("The following contents will be passed "
+             "in configuration file %s to memaslap:\n%s",
+             tmp_fn, te_string_value(&cfg_txt));
+
+        rc = tapi_file_create_ta(ta, tmp_fn, "%s",
+                                 te_string_value(&cfg_txt));
+        te_string_free(&cfg_txt);
+        if (rc != 0)
+        {
+            ERROR("Failed to create file %s on TA %s for memaslap: %r",
+                  tmp_fn, ta, rc);
+            free(tmp_fn);
+            free(new_app);
+            return TE_RC(TE_TAPI, rc);
+        }
+
+        opt->cfg_cmd = tmp_fn;
+    }
+
     rc = tapi_job_opt_build_args(exec_path, memaslap_binds,
                                  opt, &new_app->cmd);
+    if (opt->cfg_opts != NULL)
+        opt->cfg_cmd = NULL;
     if (rc != 0)
     {
         ERROR("Failed to build memaslap job command line arguments: %r", rc);
         te_vec_deep_free(&new_app->cmd);
+        free(tmp_fn);
         free(new_app);
         return rc;
     }
@@ -186,6 +249,7 @@ tapi_memaslap_create(tapi_job_factory_t *factory,
     {
         ERROR("Failed to create %s job: %r", exec_path, rc);
         te_vec_deep_free(&new_app->cmd);
+        free(tmp_fn);
         free(new_app);
         return rc;
     }
@@ -286,6 +350,20 @@ tapi_memaslap_destroy(tapi_memaslap_app *app)
     }
 
     te_vec_deep_free(&app->cmd);
+
+    if (app->tmp_cfg_fn != NULL)
+    {
+        rc = tapi_file_ta_unlink_fmt(app->ta, "%s", app->tmp_cfg_fn);
+        if (rc != 0)
+        {
+            ERROR("Failed to remove memaslap configuration file %s "
+                  "on TA %s: %r", app->tmp_cfg_fn, app->ta, rc);
+            return TE_RC(TE_TAPI, rc);
+        }
+
+        free(app->tmp_cfg_fn);
+        app->tmp_cfg_fn = NULL;
+    }
     free(app);
     return 0;
 }

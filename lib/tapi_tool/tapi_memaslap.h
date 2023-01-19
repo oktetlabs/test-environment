@@ -32,6 +32,8 @@ extern "C" {
 typedef struct tapi_memaslap_app {
     /** TAPI job handle. */
     tapi_job_t             *job;
+    /** Test agent name. */
+    const char *ta;
     /** Output channel handles: one for stdout, second for stderr. */
     tapi_job_channel_t     *out_chs[2];
     /** Command line used to start the memaslap job. */
@@ -41,6 +43,9 @@ typedef struct tapi_memaslap_app {
     tapi_job_channel_t     *tps_filter;
     /** Net rate filter. */
     tapi_job_channel_t     *net_rate_filter;
+
+    /** Name of temporary configuration file. */
+    char *tmp_cfg_fn;
 } tapi_memaslap_app;
 
 /** memaslap information from the stdout. */
@@ -52,6 +57,12 @@ typedef struct tapi_memaslap_report {
     /** Command line used to start the memaslap job. */
     char                   *cmd;
 } tapi_memaslap_report;
+
+/** Contents of memaslap configuration file. */
+typedef struct tapi_memaslap_cfg_opt {
+    /** Share of set commands. Should be within range [0, 1]. */
+    double set_share;
+} tapi_memaslap_cfg_opt;
 
 /** memaslap specific options. */
 typedef struct tapi_memaslap_opt {
@@ -122,12 +133,25 @@ typedef struct tapi_memaslap_opt {
     tapi_job_opt_uint_t     rep_write;
     /** Output detailed information when verification fails. */
     te_bool                 verbose;
+
+    /** Path to configuration file */
+    const char *cfg_cmd;
+    /**
+     * If not @c NULL, temporary configuration file will be created and
+     * filled according to fields of this structure. After job termination
+     * it will be automatically removed. cfg_cmd field is ignored and reset
+     * to @c NULL if this field is set.
+     */
+    tapi_memaslap_cfg_opt *cfg_opts;
+
     /** Path to memaslap exec. */
     const char             *memaslap_path;
 } tapi_memaslap_opt;
 
 /** Default memaslap options initializer. */
 extern const tapi_memaslap_opt tapi_memaslap_default_opt;
+/** Default memaslap configuration file options initializer. */
+extern const tapi_memaslap_cfg_opt tapi_memaslap_default_cfg_opt;
 
 /**
  * Create memaslap app.
@@ -139,7 +163,7 @@ extern const tapi_memaslap_opt tapi_memaslap_default_opt;
  * @return Status code.
  */
 extern te_errno tapi_memaslap_create(tapi_job_factory_t *factory,
-                                     const tapi_memaslap_opt *opt,
+                                     tapi_memaslap_opt *opt,
                                      tapi_memaslap_app **app);
 
 /**
