@@ -2941,13 +2941,7 @@ main(int argc, char **argv)
         goto exit;
     }
 
-    if ((filename = (char *)malloc(strlen(tmp_dir) +
-                                   strlen("/te_cfg_tmp.yml") + 1)) == NULL)
-    {
-        ERROR("No enough memory");
-        goto exit;
-    }
-    sprintf(filename, "%s/te_cfg_tmp.yml", tmp_dir);
+    filename = te_string_fmt("%s/te_cfg_tmp.yml", tmp_dir);
 
     if ((rc = cfg_db_init()) != 0)
     {
