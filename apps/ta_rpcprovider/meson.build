@@ -34,7 +34,7 @@ ld_args += [ '-Wl,-Bdynamic', '-Wl,--as-needed' ]
 deps = []
 extra_deps = get_option('extra_deps')
 foreach d : extra_deps
-    deps += [ dependency(d) ]
+    deps += [ dependency(d, required: false) ]
 endforeach
 
 deps += [ dependency('threads', required: false) ]
