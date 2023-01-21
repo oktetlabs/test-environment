@@ -170,7 +170,9 @@ do {                                                            \
                     (_id), (_ns), __FUNCTION__, __LINE__);      \
         if ((_mem) == NULL)                                     \
         {                                                       \
-            out->common._errno = TE_RC(TE_RCF_PCH, TE_EFAULT);  \
+            te_rpc_error_set(TE_RC(TE_RCF_PCH, TE_EFAULT),      \
+                             "rcf_pch_mem_index_mem_to_ptr() "  \
+                             "failed");                         \
             return _rc;                                         \
         }                                                       \
     }                                                           \
@@ -291,10 +293,14 @@ rcf_pch_mem_ns_create_if_needed(
  */
 #define RCF_PCH_MEM_NS_CREATE_IF_NEEDED_RETURN(_ns_id, _ns_str, _rc) \
 do {                                                                    \
-    if (rcf_pch_mem_ns_create_if_needed((_ns_id), (_ns_str),            \
-                                        __FUNCTION__, __LINE__) != 0)   \
+    te_errno _ret;                                                      \
+    _ret = rcf_pch_mem_ns_create_if_needed((_ns_id), (_ns_str),         \
+                                           __FUNCTION__, __LINE__);     \
+    if (_ret != 0)                                                      \
     {                                                                   \
-        errno = ENOENT;                                                 \
+        te_rpc_error_set(TE_RC(TE_RCF_PCH, _ret),                       \
+                         "rcf_pch_mem_ns_create_if_needed() "           \
+                         "failed");                                     \
         return _rc;                                                     \
     }                                                                   \
 } while (0)
@@ -315,8 +321,11 @@ do {                                                                    \
         {                                                               \
             te_errno rc = rcf_pch_mem_ns_create_if_needed(              \
                         &(_ns_id), (_ns_str), __FUNCTION__, __LINE__);  \
-            if (rc != 0) {                                              \
-                errno = ENOENT;                                         \
+            if (rc != 0)                                                \
+            {                                                           \
+                te_rpc_error_set(TE_RC(TE_RCF_PCH, rc),                 \
+                                 "rcf_pch_mem_ns_create_if_needed() "   \
+                                 "failed");                             \
                 break;                                                  \
             }                                                           \
         }                                                               \
