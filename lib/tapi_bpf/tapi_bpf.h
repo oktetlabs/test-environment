@@ -463,6 +463,41 @@ extern te_errno tapi_bpf_map_get_key_list(const char *ta,
                                           unsigned int *count);
 
 /**
+ * Pin BPF map to a file that can be then opened from another process to
+ * obtain map descriptor and use it from there.
+ *
+ * @param[in] ta            Test Agent name
+ * @param[in] bpf_id        BPF ID
+ * @param[in] map           Map name
+ * @param[in] pin_path      Path to the file. It must be inside BPF file
+ *                          system (usually mounted at /sys/fs/bpf/).
+ *                          If empty, map is unpinned from the currently
+ *                          assigned file.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_bpf_map_set_pin(const char *ta,
+                                     unsigned int bpf_id,
+                                     const char *map,
+                                     const char *pin_path);
+
+/**
+ * Get path to a file to which a BPF map is currently pinned.
+ *
+ * @param[in] ta            Test Agent name
+ * @param[in] bpf_id        BPF ID
+ * @param[in] map           Map name
+ * @param[out] pin_path     Path to the file (@c NULL if the map is not
+ *                          pinned) - should be released by caller
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_bpf_map_get_pin(const char *ta,
+                                     unsigned int bpf_id,
+                                     const char *map,
+                                     char **pin_path);
+
+/**
  * Initialize perf_event XDP map. Set size of event data and
  * enable event processing.
  *

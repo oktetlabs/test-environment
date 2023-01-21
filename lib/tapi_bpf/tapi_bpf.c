@@ -19,6 +19,7 @@
 #include "tapi_bpf.h"
 #include "tapi_cfg_qdisc.h"
 #include "te_sockaddr.h"
+#include "te_str.h"
 
 static const char *tapi_bpf_states[] =
 {
@@ -1036,6 +1037,37 @@ cleanup:
         free(k_keys);
     }
     return rc;
+}
+
+/* See description in tapi_bpf.h */
+te_errno
+tapi_bpf_map_set_pin(const char *ta, unsigned int bpf_id,
+                     const char *map, const char *pin_path)
+{
+    return cfg_set_instance_fmt(CFG_VAL(STRING, pin_path),
+                                "/agent:%s/bpf:%u/map:%s/pin:",
+                                ta, bpf_id, map);
+}
+
+/* See description in tapi_bpf.h */
+te_errno
+tapi_bpf_map_get_pin(const char *ta, unsigned int bpf_id,
+                     const char *map, char **pin_path)
+{
+    te_errno rc;
+
+    rc = cfg_get_string(pin_path, "/agent:%s/bpf:%u/map:%s/pin:",
+                        ta, bpf_id, map);
+    if (rc != 0)
+        return rc;
+
+    if (te_str_is_null_or_empty(*pin_path))
+    {
+        free(*pin_path);
+        *pin_path = NULL;
+    }
+
+    return 0;
 }
 
 /* See description in tapi_bpf.h */

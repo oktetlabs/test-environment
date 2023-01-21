@@ -131,6 +131,16 @@
          Name:  hex-string
          Value: hex-string
 
+    - oid: "/agent/bpf/map/pin"
+      access: read_write
+      type: string
+      d: |
+         File to which the map is pinned.
+         Must be located in BPF file system. Allows to share the same map
+         between processes.
+         Name: none
+         Value: file path
+
     - oid: "/agent/bpf/perf_map"
       access: read_only
       type: none

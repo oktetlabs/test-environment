@@ -87,6 +87,7 @@ typedef struct bpf_prog_entry {
 
 /** Structure for the BPF map description */
 typedef struct bpf_map_entry {
+    struct bpf_map *map;
     int fd;
     char name[BPF_OBJ_NAME_LEN + 1];
     enum bpf_map_type type;
@@ -344,6 +345,8 @@ bpf_init_map_info(struct bpf_map *map, struct bpf_map_entry *map_info)
     map_info->value_size = bpf_map__value_size(map);
     map_info->max_entries = bpf_map__max_entries(map);
 #endif
+
+    map_info->map = map;
 
     fd = bpf_map__fd(map);
     if (fd <= 0)
@@ -1260,6 +1263,114 @@ bpf_set_map_writable(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+/*
+ * Set pin property of a BPF map. If value is not empty, the map is
+ * pinned to the provided location. If value is empty, current pinning
+ * is removed.
+ */
+static te_errno
+bpf_set_map_pin(unsigned int gid, const char *oid, const char *value,
+                const char *bpf_id, const char *map_name)
+{
+    struct bpf_map_entry *map;
+    const char *cur_path = NULL;
+    te_errno rc = 0;
+    int ret = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    map = bpf_find_map(bpf_id, map_name);
+    if (map == NULL)
+    {
+        ERROR("%s(): map %s isn't found", __FUNCTION__, map_name);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (bpf_map__is_pinned(map->map))
+        cur_path = bpf_map__get_pin_path(map->map);
+
+    if (cur_path != NULL &&
+        (*value == '\0' || strcmp(cur_path, value) != 0))
+    {
+        ret = bpf_map__unpin(map->map, NULL);
+        if (ret < 0)
+        {
+            rc = te_rc_os2te(-ret);
+            ERROR("%s(): failed to unpin a map %s: %r",
+                  __FUNCTION__, map_name, rc);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        /*
+         * Without this call, the next attept to pin
+         * to a different path will fail even after
+         * unpinning from a previous one.
+         */
+        ret = bpf_map__set_pin_path(map->map, NULL);
+        if (ret < 0)
+        {
+            rc = te_rc_os2te(-ret);
+            ERROR("%s(): failed to remove pin path for a map %s: %r",
+                  __FUNCTION__, map_name, rc);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+    }
+
+    if (*value != '\0')
+    {
+        ret = bpf_map__pin(map->map, value);
+        if (ret < 0)
+        {
+            rc = te_rc_os2te(-ret);
+            ERROR("%s(): failed to pin a map %s to '%s': %r",
+                  __FUNCTION__, map_name, value, rc);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+    }
+
+    return 0;
+}
+
+/*
+ * Get path to a file to which BPF map is pinned currently.
+ */
+static te_errno
+bpf_get_map_pin(unsigned int gid, const char *oid, char *value,
+                const char *bpf_id, const char *map_name)
+{
+    struct bpf_map_entry *map;
+    te_errno rc = 0;
+    te_string pin_path = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    map = bpf_find_map(bpf_id, map_name);
+    if (map == NULL)
+    {
+        ERROR("%s(): map %s isn't found", __FUNCTION__, map_name);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (!bpf_map__is_pinned(map->map))
+    {
+        *value = '\0';
+        return 0;
+    }
+
+    rc = te_string_append_chk(&pin_path, "%s",
+                              bpf_map__get_pin_path(map->map));
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to append pin path for a map %s: %r",
+              __FUNCTION__, map_name, rc);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return 0;
+}
+
 /**
  * Delete key/value pair from the BPF map. For ARRAY map it removes only value
  * because keys are just indexes and can not be added or deleted.
@@ -2003,7 +2114,11 @@ RCF_PCH_CFG_NODE_RO(node_bpf_map_key_size, "key_size", NULL,
 RCF_PCH_CFG_NODE_RO(node_bpf_map_type, "type", NULL,
                     &node_bpf_map_key_size, bpf_get_map_params);
 
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_bpf_map, "map", &node_bpf_map_type,
+RCF_PCH_CFG_NODE_RW(node_bpf_map_pin, "pin",
+                    NULL, &node_bpf_map_type,
+                    bpf_get_map_pin, bpf_set_map_pin);
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_bpf_map, "map", &node_bpf_map_pin,
                                NULL, NULL, bpf_prog_map_list);
 
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_bpf_perf_map_events_id, "id",
