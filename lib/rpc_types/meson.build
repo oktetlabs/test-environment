@@ -29,6 +29,7 @@ headers += files(
     'te_rpc_types.h',
     'te_rpc_uio.h',
     'te_rpc_wsa.h',
+    'te_rpc_bpf.h',
 )
 
 sources += files('defs.c')
