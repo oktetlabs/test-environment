@@ -23,6 +23,12 @@
 extern "C" {
 #endif
 
+/**
+ * Name of the XSK map that can be used to redirect packets to
+ * AF_XDP sockets.
+ */
+#define TAPI_BPF_RXQ_STATS_XSK_MAP "xsocks"
+
 /** Per-queue received packets count */
 typedef struct tapi_bpf_rxq_stats {
     unsigned int rx_queue; /**< Rx queue ID */

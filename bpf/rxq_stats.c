@@ -24,6 +24,9 @@ TE_BPF_MAP_DEF(queue_stats, BPF_MAP_TYPE_HASH, MAX_QUEUES,
 TE_BPF_MAP_DEF(params, BPF_MAP_TYPE_HASH, 1,
                __u32, te_bpf_rxq_stats_params);
 
+TE_BPF_MAP_DEF(xsocks, BPF_MAP_TYPE_XSKMAP, MAX_QUEUES,
+               __u32, __u32);
+
 SEC("prog")
 int
 rxq_stats(struct xdp_md *ctx)
@@ -58,6 +61,8 @@ rxq_stats(struct xdp_md *ctx)
             new_count = 1;
 
         bpf_map_update_elem(&queue_stats, &key, &new_count, BPF_ANY);
+
+        return bpf_redirect_map(&xsocks, ctx->rx_queue_index, XDP_PASS);
     }
 
     return XDP_PASS;
