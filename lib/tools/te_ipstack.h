@@ -98,6 +98,17 @@ extern te_errno te_ipstack_prepare_raw_tcpv4_packet(
     uint8_t *raw_packet, ssize_t *total_size,
     te_bool remove_vlan_hdr, struct sockaddr_ll *sadr_ll);
 
+/**
+ * Reverse addresses and ports of a RAW Ethernet/IP[4,6]/UDP packet,
+ * so that it can be echoed back.
+ *
+ * @param pkt     UDP packet.
+ * @param len     Packet length.
+ *
+ * @return Status code.
+ */
+extern te_errno te_ipstack_mirror_udp_packet(uint8_t *pkt, size_t len);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

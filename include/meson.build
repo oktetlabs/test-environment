@@ -55,6 +55,7 @@ check_headers = [
     'netinet/in_systm.h',
     'netinet/in.h',
     'netinet/ip.h',
+    'netinet/ip6.h',
     'netinet/ip_icmp.h',
     'netinet/udp.h',
     'netinet/tcp.h',

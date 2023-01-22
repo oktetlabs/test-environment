@@ -16,6 +16,7 @@
 #endif
 
 #include "te_ipstack.h"
+#include "te_sockaddr.h"
 #include "logger_api.h"
 #include "tad_common.h"
 #include "te_defs.h"
@@ -26,8 +27,14 @@
 #ifdef HAVE_NETINET_IP_H
 #include <netinet/ip.h>
 #endif
+#ifdef HAVE_NETINET_IP6_H
+#include <netinet/ip6.h>
+#endif
 #ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
+#endif
+#ifdef HAVE_NETINET_UDP_H
+#include <netinet/udp.h>
 #endif
 #ifdef HAVE_NET_ETHERNET_H
 #include <net/ethernet.h>
@@ -208,4 +215,122 @@ te_ipstack_prepare_raw_tcpv4_packet(uint8_t *raw_packet, ssize_t *total_size,
     }
 
     return 0;
+}
+
+/* Get 16bit value from a packet, converting it to host byte order */
+static uint16_t
+get_16bit(const uint8_t *buf)
+{
+    return ntohs(*(uint16_t *)buf);
+}
+
+/* See description in te_ipstack.h */
+te_errno
+te_ipstack_mirror_udp_packet(uint8_t *pkt, size_t len)
+{
+    uint8_t saved_eth_addr[ETH_ALEN];
+    size_t pos = 0;
+    uint16_t etype;
+
+    struct sockaddr_storage dst_addr_st;
+    struct sockaddr_storage src_addr_st;
+    struct sockaddr *dst_addr = SA(&dst_addr_st);
+    struct sockaddr *src_addr = SA(&src_addr_st);
+
+    struct udphdr *uh;
+    uint16_t saved_port;
+    uint16_t udp_len;
+
+    memset(&dst_addr_st, 0, sizeof(dst_addr_st));
+    memset(&src_addr_st, 0, sizeof(src_addr_st));
+
+    memcpy(saved_eth_addr, pkt, ETH_ALEN);
+    memcpy(pkt, pkt + ETH_ALEN, ETH_ALEN);
+    memcpy(pkt + ETH_ALEN, saved_eth_addr, ETH_ALEN);
+
+    /* Skip VLAN tags */
+    pos = 2 * ETH_ALEN;
+    if (get_16bit(pkt + pos) == ETH_P_8021AD)
+        pos += 4;
+    if (get_16bit(pkt + pos) == ETH_P_8021Q)
+        pos += 4;
+
+    etype = get_16bit(pkt + pos);
+    if (etype != ETH_P_IP && etype != ETH_P_IPV6)
+    {
+        ERROR("%s(): received packet is neither IPv4 nor IPv6",
+              __FUNCTION__);
+        return TE_EPFNOSUPPORT;
+    }
+
+    pos += 2;
+    if (etype == ETH_P_IP)
+    {
+        struct iphdr *ih = (struct iphdr *)(pkt + pos);
+        uint32_t saved_ip_addr;
+
+        saved_ip_addr = ih->saddr;
+        ih->saddr = ih->daddr;
+        ih->daddr = saved_ip_addr;
+
+        dst_addr->sa_family = AF_INET;
+        src_addr->sa_family = AF_INET;
+        te_sockaddr_set_netaddr(dst_addr, &ih->daddr);
+        te_sockaddr_set_netaddr(src_addr, &ih->saddr);
+
+        ih->check = 0;
+        ih->check = ~calculate_checksum(ih, ih->ihl * 4);
+
+        pos += ih->ihl * 4;
+    }
+    else
+    {
+        struct ip6_hdr *ih = (struct ip6_hdr *)(pkt + pos);
+        struct in6_addr saved_ip_addr;
+
+        memcpy(&saved_ip_addr, &ih->ip6_src, sizeof(ih->ip6_src));
+        memcpy(&ih->ip6_src, &ih->ip6_dst, sizeof(ih->ip6_src));
+        memcpy(&ih->ip6_dst, &saved_ip_addr, sizeof(ih->ip6_dst));
+
+        dst_addr->sa_family = AF_INET6;
+        src_addr->sa_family = AF_INET6;
+        te_sockaddr_set_netaddr(dst_addr, &ih->ip6_dst);
+        te_sockaddr_set_netaddr(src_addr, &ih->ip6_src);
+
+        pos += sizeof(*ih);
+
+        if (ih->ip6_nxt != IPPROTO_UDP)
+        {
+            ERROR("%s(): received IPv6 packet is not UDP or contains "
+                  "unexpected extension headers", __FUNCTION__);
+            return TE_EPROTONOSUPPORT;
+        }
+    }
+
+    uh = (struct udphdr *)&pkt[pos];
+
+    saved_port = uh->source;
+    uh->source = uh->dest;
+    uh->dest = saved_port;
+
+    te_sockaddr_set_port(dst_addr, uh->dest);
+    te_sockaddr_set_port(src_addr, uh->source);
+
+    /*
+     * Note: uh->len may be less than len - pos for small frames
+     * where some padding bytes are added at the end so that Ethernet
+     * frame is not shorter than 64 bytes.
+     */
+    udp_len = ntohs(uh->len);
+    if (udp_len > len - pos)
+    {
+        ERROR("%s(): UDP header has incorrect length field", __FUNCTION__);
+        return TE_EBADMSG;
+    }
+
+    uh->check = 0;
+    return te_ipstack_calc_l4_cksum(dst_addr, src_addr,
+                                    IPPROTO_UDP,
+                                    &pkt[pos], udp_len,
+                                    &uh->check);
 }
