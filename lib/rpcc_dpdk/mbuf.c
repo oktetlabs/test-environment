@@ -436,6 +436,30 @@ rpc_rte_pktmbuf_free(rcf_rpc_server *rpcs,
     RETVAL_VOID(rte_pktmbuf_free);
 }
 
+void
+rpc_rte_pktmbuf_free_array(rcf_rpc_server *rpcs,
+                           rpc_rte_mbuf_p *mbufs, unsigned int count)
+{
+    tarpc_rte_pktmbuf_free_array_in in;
+    tarpc_rte_pktmbuf_free_array_out out;
+    te_log_buf *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m.m_val = mbufs;
+    in.m.m_len = count;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_free_array", &in, &out);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_free_array, "%s, %u", "",
+                 rpc_rte_mbufs2str(tlbp, mbufs, count, rpcs), count);
+    te_log_buf_free(tlbp);
+
+    RETVAL_VOID(rte_pktmbuf_free_array);
+}
+
 int
 rpc_rte_pktmbuf_append_data(rcf_rpc_server *rpcs,
                             rpc_rte_mbuf_p m, const uint8_t *buf, size_t len)

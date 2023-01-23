@@ -96,6 +96,16 @@ extern void rpc_rte_pktmbuf_free(rcf_rpc_server *rpcs,
                                  rpc_rte_mbuf_p m);
 
 /**
+ * @b rte_pktmbuf_free_array() RPC
+ *
+ * @param mbufs           Pointer to array of RTE mbuf pointers
+ * @param count           Number of pointers in array
+ */
+extern void rpc_rte_pktmbuf_free_array(rcf_rpc_server *rpcs,
+                                       rpc_rte_mbuf_p *mbufs,
+                                       unsigned int count);
+
+/**
  * Append data to an mbuf
  *
  * @param m               RTE mbuf pointer

@@ -553,6 +553,28 @@ TARPC_FUNC_STATIC(rte_pktmbuf_free, {},
 }
 )
 
+TARPC_FUNC_STANDALONE(rte_pktmbuf_free_array, {},
+{
+    tarpc_rte_mbuf *mbufs = in->m.m_val;
+    unsigned int count = in->m.m_len;
+    unsigned int i;
+    struct rte_mbuf *m = NULL;
+
+    for (i = 0; i < count; ++i)
+    {
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+            m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(mbufs[i], ns);
+        });
+
+        MAKE_CALL(rte_pktmbuf_free(m));
+
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+            RCF_PCH_MEM_INDEX_FREE(mbufs[i], ns);
+        });
+    }
+}
+)
+
 TARPC_FUNC_STANDALONE(rte_pktmbuf_append_data, {},
 {
     struct rte_mbuf *m = NULL;
