@@ -48,7 +48,9 @@ typedef enum tapi_mamcached_proto {
 
 /** Representation of possible values for memcached::verbose option. */
 typedef enum tapi_mamcached_verbose {
-    TAPI_MEMCACHED_NONE_VERBOSE,
+    /** Option is omitted */
+    TAPI_MEMCACHED_NOT_VERBOSE = TAPI_JOB_OPT_ENUM_UNDEF,
+
     TAPI_MEMCACHED_VERBOSE,
     TAPI_MEMCACHED_MORE_VERBOSE,
     TAPI_MEMCACHED_EXTRA_VERBOSE,

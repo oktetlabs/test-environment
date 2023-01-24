@@ -43,7 +43,6 @@ static const te_enum_map tapi_mamcached_proto_mapping[] = {
 
 /** Mapping of possible values for memcached::verbose option. */
 static const te_enum_map tapi_mamcached_verbose_mapping[] = {
-    {.name = "",        .value = TAPI_MEMCACHED_NONE_VERBOSE},
     {.name = "-v",      .value = TAPI_MEMCACHED_VERBOSE},
     {.name = "-vv",     .value = TAPI_MEMCACHED_MORE_VERBOSE},
     {.name = "-vvv",    .value = TAPI_MEMCACHED_EXTRA_VERBOSE},
@@ -184,7 +183,7 @@ const tapi_memcached_opt tapi_memcached_default_opt = {
     .slab_growth_factor         = TAPI_JOB_OPT_DOUBLE_UNDEF,
     .slab_min_size              = TAPI_JOB_OPT_UINT_UNDEF,
     .disable_cas                = FALSE,
-    .verbose                    = TAPI_MEMCACHED_NONE_VERBOSE,
+    .verbose                    = TAPI_MEMCACHED_NOT_VERBOSE,
     .threads                    = TAPI_JOB_OPT_UINT_UNDEF,
     .napi_ids                   = TAPI_JOB_OPT_UINT_UNDEF,
     .delimiter                  = NULL,
