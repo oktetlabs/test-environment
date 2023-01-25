@@ -221,13 +221,13 @@ te_fill_pattern_buf(void *buf, size_t len, const te_buf_pattern *pattern)
     uint8_t *pat_ptr;
     size_t remain;
 
+    if (len == 0)
+        return;
+
     assert(buf != NULL);
 
     if (pattern == NULL)
         pattern = &any_byte_pattern;
-
-    if (len == 0)
-        return;
 
     pat_ptr = pattern->start;
     buf_ptr = buf;
