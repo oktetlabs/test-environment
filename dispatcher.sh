@@ -89,6 +89,8 @@ Generic options:
 
   --opts=<filename>             Get additional command-line options from file
 
+  --export=<name=value>         Export an environment variable.
+
   --cs-print-trees              Print configurator trees.
   --cs-log-diff                 Log backup diff unconditionally.
 
@@ -479,6 +481,8 @@ process_opts()
             --daemon   )    SHUTDOWN= ;;
             --shutdown=* )  DAEMON="${1#--shutdown=}" ; SHUTDOWN=yes ;;
             --shutdown )    SHUTDOWN=yes ;;
+
+            --export=*=?* ) declare -gx ${1#--export=} ;;
 
             --opts=* )
                 EXT_OPTS_PROCESSED=yes
