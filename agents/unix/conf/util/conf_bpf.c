@@ -1112,7 +1112,15 @@ bpf_get_map_kv_pair(unsigned int gid, const char *oid, char *value_str,
 
     if (bpf_map_lookup_elem(map->fd, key, value) != 0)
     {
-        ERROR("Failed to lookup element.");
+        /*
+         * For XSK maps lookup from userspace is not implemented currently,
+         * do not print a lot of error messages on encountering this.
+         * See xsk_map_lookup_elem_sys_only() in net/xdp/xskmap.c in Linux
+         * kernel sources.
+         */
+        if (map->type != BPF_MAP_TYPE_XSKMAP)
+            ERROR("Failed to lookup element.");
+
         rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
         goto fail_free_key_value;
     }
