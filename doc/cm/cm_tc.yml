@@ -9,47 +9,6 @@
 
 - register:
 
-    - oid: "/agent/interface/supplicant"
-      access: read_write
-      type: int32
-      d: |
-         Root object of wpa_supplicant configuration for the interface.
-         Name: empty
-
-    - oid: "/agent/interface/supplicant/network"
-      access: read_write
-      type: string
-      d: |
-         Wireless network ESSID name
-
-    - oid: "/agent/interface/supplicant/identity"
-      access: read_write
-      type: string
-      d: |
-         EAP identity: Double-quoted ASCII
-         Name: empty
-
-    - oid: "/agent/interface/supplicant/cur_method"
-      access: read_write
-      type: string
-      d: |
-         EAP method: "eap-md5", "eap-tls" etc.
-         Name: empty
-
-    - oid: "/agent/interface/supplicant/proto"
-      access: read_write
-      type: string
-      d: |
-         Authentication protocol: "WPA", "WPA2" or "RSN"
-         Name: empty
-
-    - oid: "/agent/interface/supplicant/key_mgmt"
-      access: read_write
-      type: string
-      d: |
-         Key management: "WPA-PSK", "WPA-EAP" or "NONE"
-         Name: empty
-
     - oid: "/agent/interface/tc"
       access: read_only
       type: none
