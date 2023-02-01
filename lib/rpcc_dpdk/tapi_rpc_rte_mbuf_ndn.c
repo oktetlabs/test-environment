@@ -71,37 +71,27 @@ rpc_rte_mk_mbuf_from_template(rcf_rpc_server   *rpcs,
 }
 
 static int
-tapi_rte_mbuf_match_pattern(rcf_rpc_server    *rpcs,
-                            const asn_value   *pattern,
-                            te_bool            seq_match,
-                            rpc_rte_mbuf_p    *mbufs,
-                            unsigned int       count,
-                            asn_value       ***packets,
-                            unsigned int      *matched)
+tapi_rte_mbuf_match_pattern_call(rcf_rpc_server *rpcs,
+                                 char *ptrn,
+                                 rpc_rte_mbuf_p *mbufs,
+                                 unsigned int n_mbufs,
+                                 te_bool seq_match,
+                                 te_bool need_pkts,
+                                 asn_value ***packets,
+                                 unsigned int *n_packets)
 {
-    tarpc_rte_mbuf_match_pattern_in   in;
-    tarpc_rte_mbuf_match_pattern_out  out;
-    size_t                            pattern_len;
-    te_log_buf                       *tlbp;
-    unsigned int                      i;
+    tarpc_rte_mbuf_match_pattern_in in = {
+        .pattern = ptrn,
+        .mbufs.mbufs_len = n_mbufs,
+        .mbufs.mbufs_val = mbufs,
+        .return_matching_pkts = (tarpc_bool)need_pkts,
+        .seq_match = (tarpc_bool)seq_match,
+    };
+    tarpc_rte_mbuf_match_pattern_out out = {};
+    te_log_buf *tlbp;
 
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
-    if (matched == NULL)
-        TEST_FAIL("Location for the number of matching packets cannot be NULL");
-
-    pattern_len = asn_count_txt_len(pattern, 0) + 1;
-    in.pattern = tapi_calloc(1, pattern_len);
-
-    if (asn_sprint_value(pattern, in.pattern, pattern_len, 0) <= 0)
-        TEST_FAIL("Failed to prepare textual representation of ASN.1 pattern");
-
-    in.mbufs.mbufs_len = count;
-    in.mbufs.mbufs_val = tapi_memdup(mbufs, count * sizeof(*mbufs));
-
-    in.return_matching_pkts = (tarpc_bool)(packets != NULL);
-    in.seq_match = (tarpc_bool)seq_match;
+    *packets = NULL;
+    *n_packets = 0;
 
     rcf_rpc_call(rpcs, "rte_mbuf_match_pattern", &in, &out);
 
@@ -116,37 +106,97 @@ tapi_rte_mbuf_match_pattern(rcf_rpc_server    *rpcs,
     te_log_buf_free(tlbp);
 
     if (out.retval == 0)
-        *matched = out.matched;
+        *n_packets = out.matched;
 
-    if (out.retval == 0 && packets != NULL)
+    if (out.retval == 0 && need_pkts)
     {
-        asn_value **asn_pkts;
-        int         num_symbols_parsed;
-        te_errno    rc;
-
-        asn_pkts = *packets = tapi_calloc(out.matched, sizeof(**packets));
+        asn_value **pkts = tapi_malloc(out.matched * sizeof(*pkts));
+        unsigned int i;
+        int n_parsed;
+        te_errno rc;
 
         for (i = 0; i < out.matched; ++i)
         {
             rc = asn_parse_value_text(out.packets.packets_val[i].str,
-                                      ndn_raw_packet, &asn_pkts[i],
-                                      &num_symbols_parsed);
-
+                                      ndn_raw_packet, pkts + i, &n_parsed);
             if (rc != 0)
             {
-                do {
-                    asn_free_value(asn_pkts[i]);
-                } while (i-- > 0);
-                free(asn_pkts);
-                *packets = NULL;
                 TEST_FAIL("Failed to parse textual representation of "
                           "matching packets; rc = %d", rc);
             }
         }
+
+        *packets = pkts;
     }
 
     RETVAL_ZERO_INT(rte_mbuf_match_pattern, out.retval);
+}
 
+static int
+tapi_rte_mbuf_match_pattern(rcf_rpc_server *rpcs,
+                            const asn_value *pattern,
+                            te_bool seq_match,
+                            rpc_rte_mbuf_p *mbufs,
+                            unsigned int count,
+                            asn_value ***packets,
+                            unsigned int *matched)
+{
+/*
+ * The maximum number of mempool buffers processed at a time.
+ */
+#define MBUFS_PER_CALL 0x1000
+
+    char *ptrn;
+    unsigned int ptrn_len;
+    te_bool need_pkts = packets != NULL;
+    unsigned int mbufs_len = 0;
+    asn_value **pktbuf = NULL;
+    unsigned int pktbuf_size = 0;
+    unsigned int pktbuf_len = 0;
+
+    if (matched == NULL)
+        TEST_FAIL("Location for the number of matching packets cannot be NULL");
+
+    ptrn_len = asn_count_txt_len(pattern, 0) + 1;
+    ptrn = tapi_malloc(ptrn_len);
+    if (asn_sprint_value(pattern, ptrn, ptrn_len, 0) <= 0)
+        TEST_FAIL("Failed to prepare textual representation of ASN.1 pattern");
+
+    do {
+        unsigned int mbufs_num = MIN(count - mbufs_len, MBUFS_PER_CALL);
+        asn_value **pkts;
+        unsigned int pkts_len;
+
+        tapi_rte_mbuf_match_pattern_call(rpcs, ptrn,
+                                         mbufs + mbufs_len, mbufs_num,
+                                         seq_match, need_pkts,
+                                         &pkts, &pkts_len);
+
+        if (need_pkts)
+        {
+            if (pktbuf_len + pkts_len > pktbuf_size)
+            {
+                pktbuf_size += MAX(count, pkts_len);
+                pktbuf = tapi_realloc(pktbuf, pktbuf_size * sizeof(*pktbuf));
+            }
+
+            memcpy(pktbuf + pktbuf_len, pkts, pkts_len * sizeof(*pkts));
+            free(pkts);
+        }
+
+        pktbuf_len += pkts_len;
+        mbufs_len += mbufs_num;
+    } while (mbufs_len < count);
+
+    *matched = pktbuf_len;
+    if (need_pkts)
+        *packets = pktbuf;
+
+    free(ptrn);
+
+    return 0;
+
+#undef MBUFS_PER_CALL
 }
 
 int
