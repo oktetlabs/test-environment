@@ -49,6 +49,8 @@ main(int argc, char **argv)
     uint64_t memory;
     te_string str = TE_STRING_INIT;
 
+    const char *memtier_path = NULL;
+
     TEST_START;
     TEST_GET_PCO(iut_rpcs);
 
@@ -62,6 +64,13 @@ main(int argc, char **argv)
     memory /= (1024 * 1024); /* Bytes to Megabytes */
     te_string_append(&str, "%u", memory);
     CHECK_RC(tapi_tags_add_tag("total_memory_mb", str.ptr));
+
+    memtier_path = getenv("TE_IUT_MEMTIER_PATH");
+    if (te_str_is_null_or_empty(memtier_path))
+    {
+        WARN("No path to memtier_benchmark was provided");
+        CHECK_RC(tapi_tags_add_tag("no_memtier", ""));
+    }
 
     /* Print /local: subtree to see which TRC tags have been added */
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/local:%s", ""));

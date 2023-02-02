@@ -20,6 +20,11 @@
             <objective>Use memtier TAPI to run memtier_benchmark tool and test memcached server.</objective>
             <iter result="PASSED">
                 <arg name="env"/>
+                <results tags="no_memtier">
+                    <result value="SKIPPED">
+                        <verdict>Path to memtier_benchmark is not specified in environment</verdict>
+                    </result>
+                </results>
             </iter>
         </test>
     </iter>
