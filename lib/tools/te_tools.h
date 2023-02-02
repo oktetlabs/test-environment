@@ -17,6 +17,7 @@
 #include "te_alloc.h"
 #include "te_format.h"
 #include "te_str.h"
+#include "te_rand.h"
 #ifndef WINDOWS
 #include "te_shell_cmd.h"
 #include "te_exec_child.h"
