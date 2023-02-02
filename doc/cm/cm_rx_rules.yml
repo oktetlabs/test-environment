@@ -10,6 +10,8 @@
     - oid: "/agent/interface/rx_rules"
       access: read_only
       type: none
+      depends:
+        - oid: "/agent/interface/status"
       d: |
          Rx classification rules
          Name: none
