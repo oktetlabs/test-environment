@@ -738,6 +738,16 @@ enum tarpc_rte_mbuf_ol_status {
     TARPC_RTE_MBUF_OL__UNKNOWN
 };
 
+enum tarpc_rte_mbuf_match_tx_rx_status {
+    TARPC_RTE_MBUF_MATCH_TX_RX_MATCHED = 0,
+    TARPC_RTE_MBUF_MATCH_TX_RX_VLAN_MISMATCH,
+    TARPC_RTE_MBUF_MATCH_TX_RX_UNEXPECTED_PACKET,
+    TARPC_RTE_MBUF_MATCH_TX_RX_LESS_DATA,
+    TARPC_RTE_MBUF_MATCH_TX_RX_INCONISTENT_TSO_OFFSET,
+    TARPC_RTE_MBUF_MATCH_TX_RX_PAYLOAD_MISMATCH,
+    TARPC_RTE_MBUF_MATCH_TX_RX_HEADER_MISMATCH
+};
+
 struct tarpc_rte_mbuf_report {
     enum tarpc_rte_mbuf_ol_status ol_vlan;
     enum tarpc_rte_mbuf_ol_status ol_outer_ip_cksum;
@@ -745,6 +755,9 @@ struct tarpc_rte_mbuf_report {
     enum tarpc_rte_mbuf_ol_status ol_innermost_ip_cksum;
     enum tarpc_rte_mbuf_ol_status ol_innermost_l4_cksum;
     tarpc_size_t                  tso_cutoff_barrier;
+
+    enum tarpc_rte_mbuf_match_tx_rx_status match_status;
+    unsigned int                           mismatch_idx;
 };
 
 struct tarpc_rte_mbuf_match_tx_rx_out {

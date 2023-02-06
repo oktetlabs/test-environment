@@ -1208,6 +1208,8 @@ struct rte_mbuf_cmp_ctx {
     /* These 2 fields contain the original (superframe) IP ID values. */
     uint16_t         start_ip_id_outer;
     uint16_t         start_ip_id_inner;
+    /* Match status of rx_burst[rx_idx] buffer. */
+    tarpc_rte_mbuf_match_tx_rx_status match_status;
 };
 
 /* Fill in cmp_ctx->m_tx and cmp_ctx->m_rx (rx_burst[0]) before invocation. */
@@ -1357,10 +1359,12 @@ rte_mbuf_match_tx_rx_learn(struct rte_mbuf_parse_ctx     *parse_ctx,
 }
 
 static int
-rte_mbuf_match_tx_rx_cmp_vlan(const struct rte_mbuf_cmp_ctx      *cmp_ctx,
+rte_mbuf_match_tx_rx_cmp_vlan(struct rte_mbuf_cmp_ctx *cmp_ctx,
                               const struct tarpc_rte_mbuf_report *report)
 {
     uint64_t rx_vlan_strip = RTE_MBUF_F_RX_VLAN | RTE_MBUF_F_RX_VLAN_STRIPPED;
+
+    cmp_ctx->match_status = TARPC_RTE_MBUF_MATCH_TX_RX_VLAN_MISMATCH;
 
     if (report->ol_vlan == TARPC_RTE_MBUF_OL_DONE)
     {
@@ -1383,6 +1387,8 @@ rte_mbuf_match_tx_rx_cmp_vlan(const struct rte_mbuf_cmp_ctx      *cmp_ctx,
             return TE_ETADNOTMATCH;
         }
     }
+
+    cmp_ctx->match_status = TARPC_RTE_MBUF_MATCH_TX_RX_MATCHED;
 
     return 0;
 }
@@ -1419,6 +1425,7 @@ rte_mbuf_match_tx_rx_cmp_pld(const struct rte_mbuf_parse_ctx *parse_ctx,
         if (memcmp(m_tx_pld_part, m_rx_pld_part, cmp_size_part) != 0)
         {
             ERROR("rx_burst[%u]: payload mismatch", cmp_ctx->rx_idx);
+            cmp_ctx->match_status = TARPC_RTE_MBUF_MATCH_TX_RX_PAYLOAD_MISMATCH;
             return TE_ETADNOTMATCH;
         }
 
@@ -1658,7 +1665,7 @@ rte_mbuf_apply_edits(const struct rte_mbuf_parse_ctx    *parse_ctx,
  */
 static te_errno
 rte_mbuf_match_tx_rx_cmp_headers(const struct rte_mbuf_parse_ctx *parse_ctx,
-                                 const struct rte_mbuf_cmp_ctx   *cmp_ctx)
+                                 struct rte_mbuf_cmp_ctx *cmp_ctx)
 {
     const struct rte_mbuf *m_tx = cmp_ctx->m_tx;
     const struct rte_mbuf *m_rx = cmp_ctx->m_rx;
@@ -1680,6 +1687,8 @@ rte_mbuf_match_tx_rx_cmp_headers(const struct rte_mbuf_parse_ctx *parse_ctx,
                       cmp_ctx->rx_idx, i);
             }
         }
+
+        cmp_ctx->match_status = TARPC_RTE_MBUF_MATCH_TX_RX_HEADER_MISMATCH;
 
         return TE_ETADNOTMATCH;
     }
@@ -1723,6 +1732,7 @@ rte_mbuf_match_tx_rx_cmp(const struct rte_mbuf_parse_ctx *parse_ctx,
     if (m_rx_pld_size_exp == 0)
     {
         ERROR("rx_burst[%u]: unexpected (excess) packet", cmp_ctx->rx_idx);
+        cmp_ctx->match_status = TARPC_RTE_MBUF_MATCH_TX_RX_UNEXPECTED_PACKET;
         return TE_ETADNOTMATCH;
     }
 
@@ -1732,7 +1742,8 @@ rte_mbuf_match_tx_rx_cmp(const struct rte_mbuf_parse_ctx *parse_ctx,
               cmp_ctx->rx_idx, m_rx->pkt_len,
               (m_tx->tso_segsz != 0) ? " at least " : " ",
               parse_ctx->header_size + m_rx_pld_size_min);
-        return TE_ETADLESSDATA;
+        cmp_ctx->match_status = TARPC_RTE_MBUF_MATCH_TX_RX_LESS_DATA;
+        return TE_ETADNOTMATCH;
     }
 
     cmp_ctx->prev_m_rx_pld_size = cmp_ctx->m_rx_pld_size;
@@ -1753,6 +1764,7 @@ rte_mbuf_match_tx_rx_cmp(const struct rte_mbuf_parse_ctx *parse_ctx,
         {
             ERROR("rx_burst[%u]: inconsistent repeating TSO cutoff barrier",
                   cmp_ctx->rx_idx);
+            cmp_ctx->match_status = TARPC_RTE_MBUF_MATCH_TX_RX_PAYLOAD_MISMATCH;
             return TE_ETADNOTMATCH;
         }
     }
@@ -1862,8 +1874,16 @@ rte_mbuf_match_tx_rx(struct tarpc_rte_mbuf_match_tx_rx_in  *in,
 
         /* This also conducts necessary checks on the Rx mbuf internally. */
         rc = rte_mbuf_match_tx_rx_cmp(&parse_ctx, &cmp_ctx, &report);
-        if (rc != 0)
+        if (rc == TE_ETADNOTMATCH)
+        {
+            report.match_status = cmp_ctx.match_status;
+            report.mismatch_idx = cmp_ctx.rx_idx;
+            break;
+        }
+        else if (rc != 0)
+        {
             return -TE_RC(TE_RPCS, rc);
+        }
     }
 
     memcpy(&out->report, &report, sizeof(report));
