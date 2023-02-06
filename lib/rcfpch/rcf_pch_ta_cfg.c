@@ -67,20 +67,25 @@ extern int inet_pton(int af, const char *src, void *dst);
 
 #endif
 
-#define TA_OBJS_NUM 1000
-static ta_cfg_obj_t ta_objs[TA_OBJS_NUM];
+#define TA_OBJS_NUM_INC 100
+static ta_cfg_obj_t *ta_objs = NULL;
+static size_t ta_objs_num = 0;
+static size_t ta_objs_max_num = 0;
 
 /* See the description in rcf_pch_ta_cfg.h */
 void
 ta_obj_cleanup(void)
 {
-    unsigned int i;
+    size_t i;
 
-    for (i = 0; i < TA_OBJS_NUM; i++)
+    for (i = 0; i < ta_objs_num; i++)
     {
         if (ta_objs[i].in_use)
             ta_obj_free(&ta_objs[i]);
     }
+
+    free(ta_objs);
+    ta_objs = NULL;
 }
 
 /* See the description in rcf_pch_ta_cfg.h */
@@ -163,11 +168,11 @@ ta_cfg_obj_t *
 ta_obj_find(const char *type, const char *name,
             unsigned int gid)
 {
-    int i;
+    size_t i;
 
     assert(type != NULL && name != NULL);
 
-    for (i = 0; i < TA_OBJS_NUM; i++)
+    for (i = 0; i < ta_objs_num; i++)
     {
         if (ta_objs[i].in_use &&
             strcmp(ta_objs[i].type, type) == 0 &&
@@ -227,14 +232,14 @@ ta_obj_add(const char *type, const char *name, const char *value,
            unsigned int gid, void *user_data,
            ta_cfg_obj_data_free *user_free, ta_cfg_obj_t **new_obj)
 {
-    int           i;
+    size_t i;
     ta_cfg_obj_t *obj = ta_obj_find(type, name, gid);
 
     if (obj != NULL)
         return TE_EEXIST;
 
     /* Find a free slot */
-    for (i = 0; i < TA_OBJS_NUM; i++)
+    for (i = 0; i < ta_objs_num; i++)
     {
         if (!ta_objs[i].in_use)
             break;
@@ -252,8 +257,29 @@ ta_obj_add(const char *type, const char *name, const char *value,
         }
     }
 
-    if (i == TA_OBJS_NUM)
-        return TE_ENOMEM;
+    if (i == ta_objs_num)
+    {
+        if (ta_objs_num < ta_objs_max_num)
+        {
+            ta_objs_num++;
+        }
+        else
+        {
+            void *p;
+            size_t new_num;
+
+            new_num = ta_objs_max_num + TA_OBJS_NUM_INC;
+            p = realloc(ta_objs, new_num * sizeof(*ta_objs));
+            if (p == NULL)
+                TE_FATAL_ERROR("cannot reallocate array of objects");
+
+            ta_objs = p;
+            memset(&ta_objs[ta_objs_num], 0,
+                   TA_OBJS_NUM_INC * sizeof(*ta_objs));
+            ta_objs_max_num = new_num;
+            ta_objs_num++;
+        }
+    }
 
     ta_objs[i].in_use = TRUE;
     ta_objs[i].type = strdup(type);
