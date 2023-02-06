@@ -101,19 +101,35 @@ cfg_ta_add_agent_instances()
          ta < ta_list.list + ta_list.list_size;
          ta += strlen(ta) + 1, ++i)
     {
-        if ((cfg_all_inst[i] =
+        if (i > CFG_HANDLE_MAX_INDEX || i >= cfg_all_inst_size)
+        {
+            rc = TE_ETOOMANY;
+            i--;
+        }
+        else if (
+            (cfg_all_inst[i] =
                  (cfg_instance *)calloc(sizeof(cfg_instance), 1)) == NULL ||
             (cfg_all_inst[i]->oid = (char *)malloc(strlen(CFG_TA_PREFIX) +
                                                    strlen(ta) + 1)) == NULL)
+        {
+            rc = TE_ENOMEM;
+        }
+
+        if (rc != 0)
         {
             for (; i > 0; i--)
             {
                 free(cfg_all_inst[i]->oid);
                 free(cfg_all_inst[i]);
             }
-            ERROR("Out of memory");
             free(ta_list.list);
-            return TE_ENOMEM;
+
+            if (rc == TE_ETOOMANY)
+                ERROR("%s(): out of instance handles", __FUNCTION__);
+            else
+                ERROR("%s(): out of memory", __FUNCTION__);
+
+            return rc;
         }
 
         /** Avoiding treating instance as object after overfilling */

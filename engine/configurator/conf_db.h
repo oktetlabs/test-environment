@@ -24,6 +24,9 @@ extern "C" {
 
 #define CFG_INST_HANDLE_TO_INDEX(_handle)    (_handle & 0xFFFF)
 
+/** Maximum allowed value for index part of configuration handle */
+#define CFG_HANDLE_MAX_INDEX UINT16_MAX
+
 /** Configurator dependency item */
 typedef struct cfg_dependency {
     struct cfg_object     *depends;

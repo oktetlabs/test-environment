@@ -12,6 +12,7 @@
 #include "te_alloc.h"
 #include "te_string.h"
 
+/* These must not be greater than CFG_HANDLE_MAX_INDEX + 1 */
 #define CFG_OBJ_NUM     64      /**< Number of objects */
 #define CFG_INST_NUM    128     /**< Number of object instances */
 
@@ -657,6 +658,15 @@ cfg_process_msg_register(cfg_register_msg *msg)
 
     /* Now look for an empty slot in the objects array */
     for (i = 0; i < cfg_all_obj_size && cfg_all_obj[i] != NULL; i++);
+
+    if (i > CFG_HANDLE_MAX_INDEX)
+    {
+        ERROR("%s(): no more object indexes is available",
+              __FUNCTION__);
+        cfg_free_oid(oid);
+        msg->rc = TE_ETOOMANY;
+        return;
+    }
 
     if (i == cfg_all_obj_size)
     {
@@ -1425,6 +1435,14 @@ cfg_add_with_obj_and_parent(cfg_instance *par_inst, cfg_object *obj,
 
     for (i = 0; i < cfg_all_inst_size && cfg_all_inst[i] != NULL; i++);
 
+    if (i > CFG_HANDLE_MAX_INDEX)
+    {
+        ERROR("%s(): no more instance indexes is available",
+              __FUNCTION__);
+        free(oid_s);
+        return TE_ETOOMANY;
+    }
+
     if (i == cfg_all_inst_size)
     {
         void *tmp = realloc(cfg_all_inst,
@@ -1684,6 +1702,13 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
 
     /* Now look for empty slot in the object instances array */
     for (i = 0; i < cfg_all_inst_size && cfg_all_inst[i] != NULL; i++);
+
+    if (i > CFG_HANDLE_MAX_INDEX)
+    {
+        ERROR("%s(): no more instance indexes is available",
+              __FUNCTION__);
+        RET(TE_ETOOMANY);
+    }
 
     if (i == cfg_all_inst_size)
     {
