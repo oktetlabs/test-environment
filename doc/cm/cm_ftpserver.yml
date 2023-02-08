@@ -12,6 +12,8 @@
     - oid: "/agent/ftpserver"
       access: read_write
       type: int32
+      depends:
+        - oid: "/agent/rsrc"
       d: |
          FTP server enabling/disabling.
          Name:  empty
