@@ -88,13 +88,11 @@ extern "C" {
  * two most significant bytes contain unique number of the instance
  * and two other bytes contain index in the array of all existing
  * object instances.
- *
- * Invalid index is 0xFFFFFFFF.
  */
-typedef uint32_t cfg_handle;
+typedef uint64_t cfg_handle;
 
 /** Invalid Configurator object handle */
-#define CFG_HANDLE_INVALID      0xFFFFFFFF
+#define CFG_HANDLE_INVALID      UINT64_C(0xFFFFFFFFFFFFFFFF)
 
 /** @defgroup confapi_base_traverse Configuration tree traversal
  * @ingroup confapi_base
@@ -106,7 +104,7 @@ typedef uint32_t cfg_handle;
  *
  * @param _handle   Configurator handle
  */
-#define CFG_IS_INST(_handle)    (_handle & 0xFFFF0000)
+#define CFG_IS_INST(_handle)    ((_handle) & UINT64_C(0xFFFFFFFF00000000))
 
 /** Object properties description */
 typedef struct cfg_obj_descr {

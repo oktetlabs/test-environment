@@ -91,7 +91,7 @@ cfg_ta_add_agent_instances()
 {
     const char *ta;
     int         rc;
-    int         i = 1;
+    uint64_t    i = 1;
     ta_list_t   ta_list = TA_LIST_INITIALIZER;
 
     if ((rc = ta_list_get(&ta_list)) != 0)
@@ -132,13 +132,9 @@ cfg_ta_add_agent_instances()
             return rc;
         }
 
-        /** Avoiding treating instance as object after overfilling */
-        if (cfg_inst_seq_num == 0)
-            cfg_inst_seq_num = 1;
-
         strcpy(cfg_all_inst[i]->name, ta);
         sprintf(cfg_all_inst[i]->oid, CFG_TA_PREFIX"%s", ta);
-        cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;
+        CFG_NEW_INST_HANDLE(cfg_all_inst[i]->handle, i);
         cfg_all_inst[i]->obj = cfg_all_obj[1];
         if (i == 1)
             cfg_all_inst[0]->son = cfg_all_inst[i];
@@ -274,8 +270,8 @@ sync_ta_instance(const char *ta, const char *oid)
     if (handle == CFG_HANDLE_INVALID)
     {
         rc = cfg_db_add(oid, &handle, obj->type, val);
-        VERB("%s() cfg_db_add(%s) returns %r, handle %x",
-             __FUNCTION__, oid, rc, handle);
+        VERB("%s() cfg_db_add(%s) returns %r, handle %jx",
+             __FUNCTION__, oid, rc, (uintmax_t)handle);
     }
     else
     {
@@ -605,7 +601,7 @@ cfg_ta_sync(char *oid, te_bool subtree)
 void
 cfg_ta_sync_obj(cfg_object *obj, te_bool subtree)
 {
-    int      i;
+    uint64_t i;
 
     for (i = 0; i < cfg_all_inst_size && cfg_all_inst[i] != NULL; i++)
     {

@@ -1542,8 +1542,8 @@ cfg_dh_push_command(cfg_msg *msg, te_bool local, const cfg_inst_val *old_val)
 
             if (inst == NULL)
             {
-                ERROR("Failed to get instance by handle 0x%08x",
-                      ((cfg_del_msg *)msg)->handle);
+                ERROR("Failed to get instance by handle 0x%jx",
+                      (uintmax_t)((cfg_del_msg *)msg)->handle);
                 RETERR(TE_ENOENT);
             }
 

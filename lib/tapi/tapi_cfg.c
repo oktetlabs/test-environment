@@ -2102,8 +2102,8 @@ tapi_cfg_alloc_entry_by_handle(cfg_handle parent, cfg_handle *entry)
         rc = cfg_get_instance(handle, &type, &value);
         if (rc != 0)
         {
-            ERROR("%s: Failed to get integer value by handle 0x%x: %r",
-                  __FUNCTION__, handle, rc);
+            ERROR("%s: Failed to get integer value by handle 0x%jx: %r",
+                  __FUNCTION__, (uintmax_t)handle, rc);
             break;
         }
         if (value == 0)
@@ -2111,8 +2111,8 @@ tapi_cfg_alloc_entry_by_handle(cfg_handle parent, cfg_handle *entry)
             rc = cfg_set_instance(handle, type, 1);
             if (rc != 0)
             {
-                ERROR("%s: Failed to set value of handle 0x%x to 1: %r",
-                      __FUNCTION__, handle, rc);
+                ERROR("%s: Failed to set value of handle 0x%jx to 1: %r",
+                      __FUNCTION__, (uintmax_t)handle, rc);
             }
             break;
         }
@@ -2123,8 +2123,8 @@ tapi_cfg_alloc_entry_by_handle(cfg_handle parent, cfg_handle *entry)
         if (handle != CFG_HANDLE_INVALID)
         {
             *entry = handle;
-            INFO("Pool 0x%x entry with Cfgr handle 0x%x allocated",
-                 parent, *entry);
+            INFO("Pool 0x%jx entry with Cfgr handle 0x%jx allocated",
+                 (uintmax_t)parent, (uintmax_t)*entry);
         }
         else
         {
@@ -2183,11 +2183,12 @@ tapi_cfg_free_entry(cfg_handle *entry)
     rc = cfg_set_instance(*entry, CVT_INT32, 0);
     if (rc != 0)
     {
-    ERROR("Failed to free entry by handle 0x%x: %r", *entry, rc);
+        ERROR("Failed to free entry by handle 0x%jx: %r",
+              (uintmax_t)*entry, rc);
     }
     else
     {
-        INFO("Pool entry with Cfgr handle 0x%x freed", *entry);
+        INFO("Pool entry with Cfgr handle 0x%jx freed", (uintmax_t)*entry);
         *entry= CFG_HANDLE_INVALID;
     }
     return rc;
@@ -2260,8 +2261,8 @@ tapi_cfg_add_net(const char *net_pool, const struct sockaddr *net_addr,
                                     (cfg_inst_val *)&net_sa);
         if (rc != 0)
         {
-            ERROR("%s: Cannot get pool net name by handle 0x%x "
-                  "as address: %r", __FUNCTION__, net, rc);
+            ERROR("%s: Cannot get pool net name by handle 0x%jx "
+                  "as address: %r", __FUNCTION__, (uintmax_t)net, rc);
             return rc;
         }
         if (net_sa->sa_family != addr.ss_family)
@@ -2275,8 +2276,8 @@ tapi_cfg_add_net(const char *net_pool, const struct sockaddr *net_addr,
         rc = cfg_get_oid_str(net, &net_oid);
         if (rc != 0)
         {
-            ERROR("%s: Cannot get pool net OID by handle 0x%x: %r",
-                  __FUNCTION__, net, rc);
+            ERROR("%s: Cannot get pool net OID by handle 0x%jx: %r",
+                  __FUNCTION__, (uintmax_t)net, rc);
             free(net_sa);
             return rc;
         }
@@ -2375,7 +2376,8 @@ tapi_cfg_insert_net_addr(cfg_handle        net_pool_entry,
     rc = cfg_get_oid_str(net_pool_entry, &net_oid);
     if (rc != 0)
     {
-        ERROR("Failed to get OID by handle 0x%x: %r", net_pool_entry, rc);
+        ERROR("Failed to get OID by handle 0x%jx: %r",
+              (uintmax_t)net_pool_entry, rc);
         return rc;
     }
 

@@ -429,8 +429,8 @@ delete_with_children(cfg_instance *inst, te_bool *has_deps)
 static int
 topo_qsort_predicate(const void *arg1, const void *arg2)
 {
-    int idx1 = *(int *)arg1;
-    int idx2 = *(int *)arg2;
+    uint32_t idx1 = *(uint32_t *)arg1;
+    uint32_t idx2 = *(uint32_t *)arg2;
 
     return cfg_all_inst[idx2]->obj->ordinal_number -
            cfg_all_inst[idx1]->obj->ordinal_number;
@@ -481,10 +481,10 @@ static int
 remove_excessive(cfg_instance *list, te_bool *has_deps, const te_vec *subtrees)
 {
     int rc;
-    int n_deletable;
-    int i;
+    uint64_t n_deletable;
+    uint64_t i;
 
-    int *sorted = malloc(sizeof(*sorted) * cfg_all_inst_size);
+    uint32_t *sorted = malloc(sizeof(*sorted) * cfg_all_inst_size);
 
     if (sorted == NULL)
     {
@@ -1130,7 +1130,8 @@ cfg_backup_restore_ta(char *ta)
     cfg_instance  *tmp;
     char           buf[CFG_SUBID_MAX + CFG_INST_NAME_MAX + 1];
     int            rc;
-    int            i;
+
+    uint64_t i;
 
     sprintf(buf, CFG_TA_PREFIX"%s", ta);
 

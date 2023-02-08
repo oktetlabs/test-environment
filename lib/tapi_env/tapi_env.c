@@ -904,7 +904,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         }
 
         /* Get IPv4 subnet handle */
-        rc = cfg_get_inst_name_type(ip_nets[0], CVT_INT32,
+        rc = cfg_get_inst_name_type(ip_nets[0], CVT_UINT64,
                                     CFG_IVP(&env_net->ip4net));
         if (rc != 0)
         {
@@ -987,7 +987,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         }
 
         /* Get IPv6 subnet handle */
-        rc = cfg_get_inst_name_type(ip_nets[0], CVT_INT32,
+        rc = cfg_get_inst_name_type(ip_nets[0], CVT_UINT64,
                                     CFG_IVP(&env_net->ip6net));
         if (rc != 0)
         {
@@ -1086,8 +1086,8 @@ prepare_hosts(tapi_env *env)
             rc = cfg_get_instance(handle, &type, &host->libname);
             if (rc != 0)
             {
-                ERROR("Failed to get instance by handle 0x%x: %r",
-                      handle, rc);
+                ERROR("Failed to get instance by handle 0x%jx: %r",
+                      (uintmax_t)handle, rc);
                 break;
             }
         }
@@ -1596,8 +1596,8 @@ add_address(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
     rc = cfg_get_instance(handle, &val_type, &str);
     if (rc != 0)
     {
-        ERROR("Failed to get instance value by handle 0x%x: %r",
-              handle, rc);
+        ERROR("Failed to get instance value by handle 0x%jx: %r",
+              (uintmax_t)handle, rc);
         return rc;
     }
 
@@ -2619,14 +2619,15 @@ tapi_env_get_net_host_addr(const tapi_env          *env,
     }
 
     /* Get IPv4/IPv6 subnet address */
-    rc = cfg_get_instance_addr_fmt(addr, "%s/ip%d_address:%u",
-                                   node_oid, af == AF_INET6 ? 6 : 4,
-                                   assigned->entries[iface->i_node]);
+    rc = cfg_get_instance_addr_fmt(
+                             addr, "%s/ip%d_address:0x%jx",
+                             node_oid, af == AF_INET6 ? 6 : 4,
+                             (uintmax_t)assigned->entries[iface->i_node]);
     if (rc != 0)
     {
         ERROR("Failed to get IPv%d address assigned to the node '%s' "
-              "with handle 0x%x: %r", af == AF_INET6 ? 6 : 4, node_oid,
-              assigned->entries[iface->i_node], rc);
+              "with handle 0x%jx: %r", af == AF_INET6 ? 6 : 4, node_oid,
+              (uintmax_t)assigned->entries[iface->i_node], rc);
         free(node_oid);
         return rc;
     }

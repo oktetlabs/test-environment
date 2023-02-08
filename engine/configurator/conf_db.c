@@ -92,7 +92,7 @@ static cfg_object cfg_obj_conf_delay_ta =
 cfg_object **cfg_all_obj = NULL;
 
 /** Size of objects pool */
-int cfg_all_obj_size;
+uint64_t cfg_all_obj_size;
 
 /** Root of configuration instances */
 cfg_instance cfg_inst_root =
@@ -113,13 +113,13 @@ cfg_instance cfg_inst_root =
 cfg_instance **cfg_all_inst = NULL;
 
 /** Size of instances pool */
-int cfg_all_inst_size;
+uint64_t cfg_all_inst_size;
 
 /** Maximum index ever used in the cfg_all_inst */
-static int cfg_all_inst_max = 1;
+static uint64_t cfg_all_inst_max = 1;
 
 /** Unique sequence number of the next instance */
-uint16_t cfg_inst_seq_num = 1;
+uint32_t cfg_inst_seq_num = 1;
 
 /** Delay for configuration changes accommodation */
 uint32_t cfg_conf_delay;
@@ -516,7 +516,7 @@ cfg_db_init(void)
 void
 cfg_db_destroy(void)
 {
-    int i;
+    uint64_t i;
 
     if (cfg_all_obj == NULL)
         return;
@@ -594,7 +594,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
     cfg_object *father = &cfg_obj_root;
     cfg_object  *obj = NULL;
 
-    int i = 0;
+    uint64_t i = 0;
 
     if (oid == NULL)
     {
@@ -671,7 +671,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
     if (i == cfg_all_obj_size)
     {
         void *tmp = realloc(cfg_all_obj,
-                        sizeof(void *) * (cfg_all_obj_size + CFG_OBJ_NUM));
+                      sizeof(void *) * (cfg_all_obj_size + CFG_OBJ_NUM));
 
         if (tmp == NULL)
         {
@@ -1259,7 +1259,9 @@ cfg_db_find_pattern(const char *pattern,
     cfg_handle  *result_matches = NULL;
     int         nof_matches = 0;
     cfg_oid     *idsplit = NULL;
-    int         i, k;
+
+    uint64_t i;
+    int k;
 
     te_bool     all = FALSE;
     te_bool     inst;
@@ -1415,8 +1417,9 @@ cfg_add_with_obj_and_parent(cfg_instance *par_inst, cfg_object *obj,
     char  *oid_s;
     char  *par_oid;
     size_t oid_s_len;
-    int    i;
     int    ret;
+
+    uint64_t i;
 
     if (strcmp(par_inst->oid, "/:") != 0)
         par_oid = par_inst->oid;
@@ -1489,11 +1492,7 @@ cfg_add_with_obj_and_parent(cfg_instance *par_inst, cfg_object *obj,
         }
     }
 
-    /** Avoiding treating instance as object after overfilling */
-    if (cfg_inst_seq_num == 0)
-        cfg_inst_seq_num = 1;
-
-    cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;
+    CFG_NEW_INST_HANDLE(cfg_all_inst[i]->handle, i);
     cfg_all_inst[i]->name[0] = '\0';
     cfg_all_inst[i]->obj = obj;
     cfg_all_inst[i]->father = par_inst;
@@ -1509,7 +1508,7 @@ cfg_add_with_obj_and_parent(cfg_instance *par_inst, cfg_object *obj,
 te_errno
 cfg_add_all_inst_by_obj(cfg_object *obj)
 {
-    int           i;
+    uint64_t      i;
     te_errno      rc;
     cfg_instance *par_inst;
     cfg_instance *inst;
@@ -1563,7 +1562,7 @@ get_delay_by_oid(const char *oid)
 {
     char ta[RCF_MAX_NAME];
     char oid_obj[CFG_OID_MAX];
-    int  i;
+    uint64_t i;
 
     if (!cfg_get_ta_name(oid, ta))
          return 0;
@@ -1625,7 +1624,7 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     cfg_instance   *inst;
     cfg_instance   *prev;
     cfg_inst_subid *s;
-    int             i = 0;
+    uint64_t        i = 0;
 
     if (oid == NULL)
     {
@@ -1758,10 +1757,6 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
         }
     }
 
-    /** Avoiding treating instance as object after overfilling */
-    if (cfg_inst_seq_num == 0)
-        cfg_inst_seq_num = 1;
-
     /*
      * It is a new instance in local DB, so that mark it as not
      * synchronized with Test Agent (not added to Test Agent).
@@ -1769,7 +1764,7 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
      * when this object is added to the Test Agent.
      */
     inst->added = FALSE;
-    inst->handle = i | (cfg_inst_seq_num++) << 16;
+    CFG_NEW_INST_HANDLE(inst->handle, i);
     strcpy(inst->name, s->name);
     inst->obj = obj;
     inst->father = father;

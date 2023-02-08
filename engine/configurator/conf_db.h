@@ -22,10 +22,25 @@
 extern "C" {
 #endif
 
-#define CFG_INST_HANDLE_TO_INDEX(_handle)    (_handle & 0xFFFF)
+#define CFG_INST_HANDLE_TO_INDEX(_handle)    (_handle & 0xFFFFFFFF)
 
 /** Maximum allowed value for index part of configuration handle */
-#define CFG_HANDLE_MAX_INDEX UINT16_MAX
+#define CFG_HANDLE_MAX_INDEX UINT32_MAX
+
+/**
+ * Construct a new instance handle.
+ *
+ * @param _hnld     New handle
+ * @param _idx      Instance index
+ */
+#define CFG_NEW_INST_HANDLE(_hndl, _idx) \
+  do {                                                                  \
+      /* Avoid treating instance as object after overfilling */         \
+      if (cfg_inst_seq_num == 0)                                        \
+          cfg_inst_seq_num = 1;                                         \
+                                                                        \
+      _hndl = (_idx) | (uint64_t)(cfg_inst_seq_num++) << 32;            \
+  } while (0)
 
 /** Configurator dependency item */
 typedef struct cfg_dependency {
@@ -79,7 +94,7 @@ typedef struct cfg_object {
 
 extern cfg_object cfg_obj_root;
 extern cfg_object **cfg_all_obj;
-extern int cfg_all_obj_size;
+extern uint64_t cfg_all_obj_size;
 
 /** Check if object is /agent */
 static inline te_bool
@@ -90,7 +105,7 @@ cfg_object_agent(cfg_object *obj)
 }
 
 #define CFG_OBJ_HANDLE_VALID(_handle) \
-    (_handle < (uint32_t)cfg_all_obj_size && cfg_all_obj[_handle] != NULL)
+    (_handle < cfg_all_obj_size && cfg_all_obj[_handle] != NULL)
 
 #define CFG_GET_OBJ(_handle) \
     (CFG_OBJ_HANDLE_VALID(_handle) ? cfg_all_obj[_handle] : NULL)
@@ -124,8 +139,8 @@ typedef struct cfg_instance {
 
 extern cfg_instance cfg_inst_root;
 extern cfg_instance **cfg_all_inst;
-extern int cfg_all_inst_size;
-extern uint16_t cfg_inst_seq_num;
+extern uint64_t cfg_all_inst_size;
+extern uint32_t cfg_inst_seq_num;
 
 #define CFG_TA_PREFIX   "/agent:"
 #define CFG_RCF_PREFIX  "/rcf:"

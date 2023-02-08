@@ -1829,8 +1829,8 @@ tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
                                     CFG_IVP(&net_addr));
         if (rc != 0)
         {
-            ERROR("%s(): cfg_get_inst_name_type(0x%x) failed: %r",
-                  __FUNCTION__, net_hndl, rc);
+            ERROR("%s(): cfg_get_inst_name_type(0x%jx) failed: %r",
+                  __FUNCTION__, (uintmax_t)net_hndl, rc);
             break;
         }
 
@@ -1853,13 +1853,15 @@ tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
 
         /* Add the subnet to the list of subnets of the net */
         rc = cfg_add_instance_child_fmt(NULL, CVT_ADDRESS, net_addr,
-                                        net->handle, "/ip%u_subnet:%u",
-                                        af == AF_INET ? 4 : 6, net_hndl);
+                                        net->handle, "/ip%u_subnet:0x%jx",
+                                        af == AF_INET ? 4 : 6,
+                                        (uintmax_t)net_hndl);
         if (rc != 0)
         {
-            ERROR("Failed to add '/ip%u_subnet:%u' child to "
-                  "instance with handle 0x%x: %r",
-                  af == AF_INET ? 4 : 6, net_hndl, net->handle, rc);
+            ERROR("Failed to add '/ip%u_subnet:0x%jx' child to "
+                  "instance with handle 0x%jx: %r",
+                  af == AF_INET ? 4 : 6, (uintmax_t)net_hndl,
+                  (uintmax_t)net->handle, rc);
             break;
         }
 
@@ -1922,15 +1924,15 @@ tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
 
             rc = cfg_add_instance_child_fmt(NULL, CVT_ADDRESS, addr,
                                             net->nodes[i].handle,
-                                            "/ip%u_address:%u",
+                                            "/ip%u_address:0x%jx",
                                             af == AF_INET ? 4 : 6,
-                                            entry_hndl);
+                                            (uintmax_t)entry_hndl);
             if (rc != 0)
             {
-                ERROR("Failed to add 'ip%u_address:%u' child to "
-                      "instance with handle 0x%x: %r",
-                      af == AF_INET ? 4 : 6, entry_hndl,
-                      net->nodes[i].handle, rc);
+                ERROR("Failed to add 'ip%u_address:0x%jx' child to "
+                      "instance with handle 0x%jx: %r",
+                      af == AF_INET ? 4 : 6, (uintmax_t)entry_hndl,
+                      (uintmax_t)net->nodes[i].handle, rc);
                 free(addr);
                 break;
             }
@@ -2262,8 +2264,8 @@ tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
                                     CFG_IVP(&net_addr));
         if (rc != 0)
         {
-            ERROR("%s(): cfg_get_inst_name_type(0x%x) failed: %r",
-                  __FUNCTION__, net_hndl, rc);
+            ERROR("%s(): cfg_get_inst_name_type(0x%jx) failed: %r",
+                  __FUNCTION__, (uintmax_t)net_hndl, rc);
             break;
         }
 
@@ -2287,13 +2289,15 @@ tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
 
         /* Add the subnet to the list of IPv4 subnets of the net */
         rc = cfg_add_instance_child_fmt(NULL, CVT_ADDRESS, net_addr,
-                                        net->handle, "/ip%u_subnet:%u",
-                                        af == AF_INET ? 4 : 6, net_hndl);
+                                        net->handle, "/ip%u_subnet:0x%jx",
+                                        af == AF_INET ? 4 : 6,
+                                        (uintmax_t)net_hndl);
         if (rc != 0)
         {
-            ERROR("Failed to add '/ip%u_subnet:%u' child to "
-                  "instance with handle 0x%x: %r",
-                  af == AF_INET ? 4 : 6, net_hndl, net->handle, rc);
+            ERROR("Failed to add '/ip%u_subnet:0x%jx' child "
+                  "to instance with handle 0x%jx: %r",
+                  af == AF_INET ? 4 : 6, (uintmax_t)net_hndl,
+                  (uintmax_t)net->handle, rc);
             break;
         }
 
@@ -2350,15 +2354,15 @@ tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
             rc = cfg_add_instance_child_fmt(NULL, CVT_ADDRESS,
                                             SA(addr),
                                             net->nodes[i].handle,
-                                            "/ip%u_address:%u",
+                                            "/ip%u_address:0x%jx",
                                             af == AF_INET ? 4 : 6,
-                                            entry_hndl);
+                                            (uintmax_t)entry_hndl);
             if (rc != 0)
             {
-                ERROR("Failed to add 'ip%u_address:%u' child to "
-                      "instance with handle 0x%x: %r",
-                      af == AF_INET ? 4 : 6, entry_hndl,
-                      net->nodes[i].handle, rc);
+                ERROR("Failed to add 'ip%u_address:0x%jx' child to "
+                      "instance with handle 0x%jx: %r",
+                      af == AF_INET ? 4 : 6, (uintmax_t)entry_hndl,
+                      (uintmax_t)net->nodes[i].handle, rc);
                 free(addr);
                 break;
             }
