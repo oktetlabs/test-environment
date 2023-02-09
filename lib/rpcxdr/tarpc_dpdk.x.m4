@@ -755,15 +755,15 @@ struct tarpc_rte_mbuf_report {
     enum tarpc_rte_mbuf_ol_status ol_innermost_ip_cksum;
     enum tarpc_rte_mbuf_ol_status ol_innermost_l4_cksum;
     tarpc_size_t                  tso_cutoff_barrier;
-
-    enum tarpc_rte_mbuf_match_tx_rx_status match_status;
-    unsigned int                           mismatch_idx;
 };
 
 struct tarpc_rte_mbuf_match_tx_rx_out {
     struct tarpc_out_arg         common;
     struct tarpc_rte_mbuf_report report;
     tarpc_int                    retval;
+
+    enum tarpc_rte_mbuf_match_tx_rx_status match_status;
+    unsigned int                           match_idx;
 };
 
 /*

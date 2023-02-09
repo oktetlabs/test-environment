@@ -1875,20 +1875,17 @@ rte_mbuf_match_tx_rx(struct tarpc_rte_mbuf_match_tx_rx_in  *in,
         /* This also conducts necessary checks on the Rx mbuf internally. */
         rc = rte_mbuf_match_tx_rx_cmp(&parse_ctx, &cmp_ctx, &report);
         if (rc == TE_ETADNOTMATCH)
-        {
-            report.match_status = cmp_ctx.match_status;
-            report.mismatch_idx = cmp_ctx.rx_idx;
             break;
-        }
         else if (rc != 0)
-        {
             return -TE_RC(TE_RPCS, rc);
-        }
     }
 
     memcpy(&out->report, &report, sizeof(report));
 
-    return 0;
+    out->match_status = cmp_ctx.match_status;
+    out->match_idx = cmp_ctx.rx_idx;
+
+    return -TE_RC(TE_RPCS, rc);
 }
 
 TARPC_FUNC_STATIC(rte_mbuf_match_tx_rx, {},

@@ -263,6 +263,68 @@ tarpc_rte_mbuf_ol_status2str(enum tarpc_rte_mbuf_ol_status ol_status)
     }
 }
 
+static const char *
+rpc_rte_mbuf_match_tx_rx_match_status_str(
+        enum tarpc_rte_mbuf_match_tx_rx_status match_status)
+{
+#define STATUS_STR(status) \
+    case TARPC_RTE_MBUF_MATCH_TX_RX_##status: \
+        return #status;
+
+    switch (match_status)
+    {
+        STATUS_STR(MATCHED)
+        STATUS_STR(VLAN_MISMATCH)
+        STATUS_STR(UNEXPECTED_PACKET)
+        STATUS_STR(LESS_DATA)
+        STATUS_STR(INCONISTENT_TSO_OFFSET)
+        STATUS_STR(PAYLOAD_MISMATCH)
+        STATUS_STR(HEADER_MISMATCH)
+        default:
+            return "NA";
+    }
+
+#undef STATUS_STR
+}
+
+static void
+rpc_rte_mbuf_match_tx_rx_mismatch_verdict(
+        const tarpc_rte_mbuf_match_tx_rx_out *out)
+{
+    switch (out->match_status)
+    {
+        case TARPC_RTE_MBUF_MATCH_TX_RX_MATCHED:
+            break;
+        case TARPC_RTE_MBUF_MATCH_TX_RX_VLAN_MISMATCH:
+            ERROR_VERDICT("Packet #%u has mismatched VLAN ID",
+                         out->match_idx);
+            break;
+        case TARPC_RTE_MBUF_MATCH_TX_RX_UNEXPECTED_PACKET:
+            ERROR_VERDICT("Packet #%u is not expected",
+                         out->match_idx);
+            break;
+        case TARPC_RTE_MBUF_MATCH_TX_RX_LESS_DATA:
+            ERROR_VERDICT("Not enough data to match packet #%u",
+                         out->match_idx);
+            break;
+        case TARPC_RTE_MBUF_MATCH_TX_RX_INCONISTENT_TSO_OFFSET:
+            ERROR_VERDICT("Packet #%u has inconsistent TSO cutoff offset",
+                         out->match_idx);
+            break;
+        case TARPC_RTE_MBUF_MATCH_TX_RX_PAYLOAD_MISMATCH:
+            ERROR_VERDICT("Packet #%u has mismatched payload",
+                         out->match_idx);
+            break;
+        case TARPC_RTE_MBUF_MATCH_TX_RX_HEADER_MISMATCH:
+            ERROR_VERDICT("Packet #%u has mismatched header",
+                         out->match_idx);
+            break;
+        default:
+            ERROR_VERDICT("Failed to match packets for an unexpected reason");
+            break;
+    }
+}
+
 int
 rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
                          rpc_rte_mbuf_p                m_tx,
@@ -293,6 +355,7 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
                  "vlan = %s; outer_ip_cksum = %s; outer_udp_cksum = %s; "
                  "innermost_ip_cksum = %s; innermost_l4_cksum = %s }; "
                  "tso_cutoff_barrier = %u; "
+                 "match_status = %s; match_idx = %u; "
                  NEG_ERRNO_FMT, RPC_PTR_VAL(in.m_tx),
                  rpc_rte_mbufs2str(tlbp, in.rx_burst.rx_burst_val,
                                    in.rx_burst.rx_burst_len, rpcs),
@@ -303,8 +366,12 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
                  tarpc_rte_mbuf_ol_status2str(out.report.ol_outer_udp_cksum),
                  tarpc_rte_mbuf_ol_status2str(out.report.ol_innermost_ip_cksum),
                  tarpc_rte_mbuf_ol_status2str(out.report.ol_innermost_l4_cksum),
-                 out.report.tso_cutoff_barrier, NEG_ERRNO_ARGS(out.retval));
+                 out.report.tso_cutoff_barrier,
+                 rpc_rte_mbuf_match_tx_rx_match_status_str(out.match_status),
+                 out.match_idx, NEG_ERRNO_ARGS(out.retval));
     te_log_buf_free(tlbp);
+
+    rpc_rte_mbuf_match_tx_rx_mismatch_verdict(&out);
 
     free(in.rx_burst.rx_burst_val);
     free(in.tso_ip_id_inc_algo);
