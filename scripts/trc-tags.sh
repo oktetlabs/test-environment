@@ -72,6 +72,14 @@ while test 1 ; do
     test "$krel_part" = "$krel" && break
 done
 
+# Make major and minor version of the kernel comparable
+if test "$kname" = "linux" ; then
+    kmaj="$(echo $krel | sed -n "s/\([0-9]*\).*/\1/p")"
+    tags="${tags} linux:${kmaj}"
+    kmin="$(echo $krel | sed -n "s/[0-9]*\.\([0-9]*\).*/\1/p")"
+    tags="${tags} linux-${kmaj}:${kmin}"
+fi
+
 tags="${host} ${tags}"
 
 # Red Hat Linux kernel detection
