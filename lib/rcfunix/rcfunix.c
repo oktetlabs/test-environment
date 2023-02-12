@@ -235,6 +235,7 @@
 #define RCFUNIX_WAITPID_N_MAX       100
 #define RCFUNIX_WAITPID_SLEEP_US    10000
 
+#define RCFUNIX_DEF_CORE_PATTERN "/var/tmp/core.te.%h-%p-%t"
 
 /*
  * This library is appropriate for usual and proxy UNIX agents.
@@ -288,6 +289,12 @@ typedef struct unix_ta {
     unsigned int   *flags;      /**< Flags */
     pid_t           start_pid;  /**< PID of the SSH process which
                                      started the agent */
+
+    pid_t core_watcher_pid;     /**< PID of TA core watcher or its
+                                     SSH process */
+    int core_watcher_in;        /**< TA core watcher standard input
+                                     FD. It is used only to terminate
+                                     core watcher gracefully. */
 
     struct rcf_net_connection  *conn;   /**< Connection handle */
 
@@ -753,6 +760,123 @@ ta_conf_tce(unix_ta *ta, const rcf_talib_param *param)
     ta->tce_type = type;
 }
 
+/*
+ * Start ta_core_watcher on TA host. It will look for new core files
+ * in the specified location and print logs with backtraces when
+ * the new core file comes from one of the binaries in TA directory.
+ */
+static void
+start_core_watcher(unix_ta *ta, const char *core_pattern)
+{
+    int i;
+    long int len = 0;
+
+    static const int sleep_time = 10000;
+    static const int max_attempts = 500;
+
+    te_string cores_log = TE_STRING_INIT_STATIC(RCF_MAX_PATH);
+    te_string cmd = TE_STRING_INIT;
+
+    if (core_pattern == NULL)
+        core_pattern = "";
+
+    te_string_append(&cores_log, "ta_cores.%s", ta->ta_name);
+
+    te_string_append(&cmd, "%s%s%s/ta_core_watcher \"%s\" \"%s\" "
+                     " %s 2>&1 | te_tee %s %s 10 >%s",
+                     te_string_value(&ta->cmd_prefix),
+                     rcfunix_ta_sudo(ta),
+                     ta->run_dir, core_pattern, ta->run_dir,
+                     ta->cmd_suffix,
+                     TE_LGR_ENTITY, ta->ta_name,
+                     te_string_value(&cores_log));
+
+    RING("Command to start core_watcher: %s",
+         te_string_value(&cmd));
+
+    ta->core_watcher_pid = te_shell_cmd(te_string_value(&cmd), -1,
+                                        &ta->core_watcher_in,
+                                        NULL, NULL);
+    te_string_free(&cmd);
+
+    if (ta->core_watcher_pid < 0)
+    {
+        ERROR("Failed to start core watcher for agent %s", ta->ta_name);
+        return;
+    }
+
+    /*
+     * Wait until core watcher initializes, so that TA is started only
+     * after that.
+     */
+    for (i = 0; i < max_attempts; i++)
+    {
+        FILE *f = NULL;
+
+        usleep(sleep_time);
+
+        f = fopen(te_string_value(&cores_log), "r");
+        if (f == NULL)
+            continue;
+
+        fseek(f, 0, SEEK_END);
+        len = ftell(f);
+        fclose(f);
+
+        if (len > 0)
+            break;
+    }
+
+    if (len <= 0)
+    {
+        ERROR("Failed to wait until core watcher starts for %s",
+              ta->ta_name);
+    }
+}
+
+/*
+ * Terminate ta_core_watcher process; try to do it gracefully and
+ * wait for its termination to collect any remaining logs.
+ */
+static void
+stop_core_watcher(unix_ta *ta)
+{
+    te_bool terminated = FALSE;
+    int i;
+    static const int time2wait = 5;
+
+    if (ta->core_watcher_in >= 0)
+    {
+        write(ta->core_watcher_in, "q", 1);
+        close(ta->core_watcher_in);
+        ta->core_watcher_in = -1;
+
+        for (i = 0; i < TE_SEC2US(time2wait) / RCFUNIX_WAITPID_SLEEP_US; i++)
+        {
+            pid_t wait_rc;
+
+            wait_rc = waitpid(ta->core_watcher_pid, NULL, WNOHANG);
+            if (wait_rc > 0 || (wait_rc < 0 && errno == ECHILD))
+            {
+                terminated = TRUE;
+                break;
+            }
+
+            usleep(RCFUNIX_WAITPID_SLEEP_US);
+        }
+    }
+
+    if (!terminated)
+    {
+        WARN("Failed to wait until core watcher terminates for agent %s",
+             ta->ta_name);
+        killpg(getpgid(ta->core_watcher_pid), SIGTERM);
+        killpg(getpgid(ta->core_watcher_pid), SIGKILL);
+    }
+
+    ta->core_watcher_pid = -1;
+}
+
 /**
  * Start the Test Agent. Note that it's not necessary
  * to restart the proxy Test Agents after rebooting of
@@ -839,6 +963,9 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     ta->copy_timeout = RCFUNIX_COPY_TIMEOUT;
     ta->copy_tries = RCFUNIX_COPY_TRIES;
     ta->kill_timeout = RCFUNIX_KILL_TIMEOUT;
+
+    ta->core_watcher_pid = -1;
+    ta->core_watcher_in = -1;
 
     if (strcmp(ta_type + strlen(ta_type) - strlen("ctl"), "ctl") == 0)
         *flags |= TA_PROXY;
@@ -1228,6 +1355,10 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         return rc;
     }
 
+    val = te_kvpairs_get(conf, "core_watcher");
+    if (!te_str_is_null_or_empty(val) && strcasecmp(val, "yes") == 0)
+        start_core_watcher(ta, te_kvpairs_get(conf, "core_pattern"));
+
     RING("Command to start TA: %s", cmd.ptr);
     if (!(*flags & TA_FAKE) &&
         ((ta->start_pid =
@@ -1347,6 +1478,15 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
 
     ta_clean_tce(ta, TRUE);
 
+    if (ta->start_pid > 0)
+    {
+        killpg(getpgid(ta->start_pid), SIGTERM);
+        killpg(getpgid(ta->start_pid), SIGKILL);
+    }
+
+    if (ta->core_watcher_pid > 0)
+        stop_core_watcher(ta);
+
     rc = te_string_append(&cmd, "%srm -rf %s%s",
                        ta->cmd_prefix.ptr, ta->run_dir, ta->cmd_suffix);
     if (rc != 0)
@@ -1370,12 +1510,6 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
     rc = system_with_timeout(ta->copy_timeout, NULL, "%s", cmd.ptr);
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         goto done;
-
-    if (ta->start_pid > 0)
-    {
-        killpg(getpgid(ta->start_pid), SIGTERM);
-        killpg(getpgid(ta->start_pid), SIGKILL);
-    }
 
 done:
     te_string_free(&cmd);
