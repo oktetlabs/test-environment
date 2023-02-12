@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+
+option('te_cppflags', type: 'array', value: [],
+       description: 'Extra TE project CFLAGS')
+option('te_ldflags', type: 'array', value: [],
+       description: 'Extra TE project LDFLAGS')
+option('te_libdir', type: 'string', value: '',
+       description: 'Absolute path to TE libraries')
