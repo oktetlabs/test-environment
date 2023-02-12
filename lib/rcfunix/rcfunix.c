@@ -219,7 +219,7 @@
  * second one is a TCP port.
  */
 
-#define RCFUNIX_SSH         "ssh -qxTn -o BatchMode=yes"
+#define RCFUNIX_SSH         "ssh -qxT -o BatchMode=yes"
 #define NO_HKEY_CHK         "-o StrictHostKeyChecking=no"
 #define RCFUNIX_REDIRECT    ">/dev/null 2>&1"
 
@@ -341,7 +341,7 @@ system_with_timeout(int timeout, te_string *out, const char *fmt, ...)
         return TE_RC(TE_RCF_UNIX, TE_ENOMEM);
     }
 
-    pid = te_shell_cmd(cmd, -1, NULL, &fd, NULL);
+    pid = te_shell_cmd(cmd, -1, TE_EXEC_CHILD_DEV_NULL_FD, &fd, NULL);
     if (pid < 0 || fd < 0)
     {
         rc = TE_OS_RC(TE_RCF_UNIX, errno);
@@ -1231,7 +1231,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     RING("Command to start TA: %s", cmd.ptr);
     if (!(*flags & TA_FAKE) &&
         ((ta->start_pid =
-          te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL)) <= 0))
+          te_shell_cmd(cmd.ptr, -1, TE_EXEC_CHILD_DEV_NULL_FD,
+                       NULL, NULL)) <= 0))
     {
         rc = TE_OS_RC(TE_RCF_UNIX, errno);
         ERROR("Failed to start TA %s: %r", ta_name, rc);
