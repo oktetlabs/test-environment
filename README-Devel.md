@@ -30,3 +30,14 @@ uppercase, the prefix will be uppercase as well):
 |`tad`       | agent-side TAD code                     | `lib/tad`                              |
 |`tester_`   | Tester code                             | `engine/tester`                        |
 |`trc_`      | TRC-related code                        | `lib/trc`, `tools/trc`                 |
+
+## Types
+
+### Boolean
+
+In TE `te_bool` should be used instead of C standard `bool`.
+The corresponding Boolean constants are `TRUE` and `FALSE`,
+not `true` and `false`.
+
+This is due to purely historical reasons.
+`te_bool` is guaranteed to be compatible with C standard `bool`.
