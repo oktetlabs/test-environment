@@ -32,6 +32,8 @@ Meson build system control files (`meson.build` and
  - have spaces after opening and before closing square brackets
  - follow the style of a corresponding file
 
+Also see [README-Devel](README-Devel.md) for additional development
+guidelines.
 
 ## License
 
