@@ -891,6 +891,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_SO_DEBUG:
         case RPC_SO_DONTROUTE:
         case RPC_SO_ERROR:
+        case RPC_SO_INCOMING_NAPI_ID:
         case RPC_SO_KEEPALIVE:
         case RPC_SO_LINGER:
         case RPC_SO_OOBINLINE:
@@ -1042,6 +1043,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_DEBUG);
         RPC2STR(SO_DONTROUTE);
         RPC2STR(SO_ERROR);
+        RPC2STR(SO_INCOMING_NAPI_ID);
         RPC2STR(SO_KEEPALIVE);
         RPC2STR(SO_LINGER);
         RPC2STR(SO_OOBINLINE);
@@ -1193,6 +1195,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(SO_DEBUG);
         RPC2H_CHECK(SO_DONTROUTE);
         RPC2H_CHECK(SO_ERROR);
+        RPC2H_CHECK(SO_INCOMING_NAPI_ID);
         RPC2H_CHECK(SO_KEEPALIVE);
         RPC2H_CHECK(SO_LINGER);
         RPC2H_CHECK(SO_OOBINLINE);
@@ -1355,6 +1358,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(SO_DEBUG);
                 H2RPC_CHECK(SO_DONTROUTE);
                 H2RPC_CHECK(SO_ERROR);
+                H2RPC_CHECK(SO_INCOMING_NAPI_ID);
                 H2RPC_CHECK(SO_KEEPALIVE);
                 H2RPC_CHECK(SO_LINGER);
                 H2RPC_CHECK(SO_OOBINLINE);

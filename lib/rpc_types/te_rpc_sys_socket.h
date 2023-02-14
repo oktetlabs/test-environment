@@ -518,6 +518,10 @@ typedef enum rpc_sockopt {
                                  directly connected hosts */
     RPC_SO_ERROR,           /**< Reset the error status of the socket
                                  and returns the last error status */
+    RPC_SO_INCOMING_NAPI_ID, /**< System-level unique ID called NAPI ID
+                                 that is associated with a RX queue on
+                                 which the last packet associated with
+                                 that socket is received. */
     RPC_SO_KEEPALIVE,       /**< Enable sending of keep-alive messages
                                  on connection-oriented sockets. */
     RPC_SO_LINGER,          /**< Linger on close if data is present */
