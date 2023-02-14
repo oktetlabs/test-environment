@@ -3243,9 +3243,20 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
                     EXIT("SKIP");
                     return TESTER_CFG_WALK_SKIP;
                 }
-                ctx->targets = logic_expr_binary(LOGIC_EXPR_AND,
-                                                 (logic_expr *)ctx->targets,
-                                                 ctx->dyn_targets);
+
+                if (ctx->targets != NULL)
+                {
+                    ctx->targets = logic_expr_binary(LOGIC_EXPR_AND,
+                                                     (logic_expr *)ctx->targets,
+                                                     ctx->dyn_targets);
+                    ctx->targets_free = TRUE;
+                }
+                else
+                {
+                    ctx->targets = ctx->dyn_targets;
+                    ctx->targets_free = FALSE;
+                }
+
                 if (ctx->targets == NULL)
                 {
                     tester_run_destroy_ctx(gctx);
@@ -3253,7 +3264,6 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
                     EXIT("FAULT");
                     return TESTER_CFG_WALK_FAULT;
                 }
-                ctx->targets_free = TRUE;
             }
             else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
             {
