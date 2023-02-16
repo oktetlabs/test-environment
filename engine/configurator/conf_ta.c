@@ -1,15 +1,17 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Configurator
  *
  * TA interaction auxiliary routines
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
+#include <search.h>
 #include "te_str.h"
 #include "conf_defs.h"
 #include "rcf_api.h"
+#include "te_queue.h"
+#include "te_alloc.h"
 
 #define TA_LIST_SIZE    64
 
@@ -319,47 +321,85 @@ remove_excessive(cfg_instance *inst, char *list)
         cfg_db_del(inst->handle);
 }
 
-/** Sorted list element */
-typedef struct olist {
-    struct olist *next;
-    char          oid[CFG_OID_MAX];
-} olist;
+/* Element of OID queue */
+typedef struct oid_queue_entry_t {
+    TAILQ_ENTRY(oid_queue_entry_t) links;
+    char oid[CFG_OID_MAX];
+} oid_queue_entry_t;
 
-/** Insert the entry in lexicographical order */
-static int
-insert_entry(char *oid, olist **list)
+/* Head of OID queue */
+typedef TAILQ_HEAD(oid_queue_head_t, oid_queue_entry_t) oid_queue_head_t;
+
+/*
+ * TODO: get rid of this global variable once we stop support
+ * of glibc earlier than 2.30 (released in 08.2019) for TE.
+ * In glibc 2.30 twalk_r() was added which allows to pass user data
+ * to action callback.
+ *
+ * WARNING: here it is assumed that Configurator does not use
+ * multithreading.
+ */
+static oid_queue_head_t oid_queue = TAILQ_HEAD_INITIALIZER(oid_queue);
+
+/* Insert OID to queue */
+static void
+insert_entry(const char *oid, oid_queue_head_t *queue)
 {
-    olist *cur, *prev, *tmp;
+    oid_queue_entry_t *new_elm;
 
-    if ((tmp = malloc(sizeof(olist))) == NULL)
-        return TE_ENOMEM;
+    new_elm = TE_ALLOC(sizeof(*new_elm));
+    if (new_elm == NULL)
+        TE_FATAL_ERROR("cannot allocate OID queue entry");
 
-    te_strlcpy(tmp->oid, oid, CFG_OID_MAX);
-
-    for (prev = NULL, cur = *list;
-         cur != NULL && strcmp(cur->oid, oid) < 0;
-         prev = cur, cur = cur->next);
-
-    tmp->next = cur;
-    if (!prev)
-        *list = tmp;
-    else
-        prev->next = tmp;
-
-    return 0;
+    te_strlcpy(new_elm->oid, oid, CFG_OID_MAX);
+    TAILQ_INSERT_TAIL(queue, new_elm, links);
 }
 
-/** Free all entries of the list */
+/* Remove and release all entries in OID queue */
 static inline void
-free_list(olist *list)
+free_oid_queue(oid_queue_head_t *head)
 {
-    olist *tmp;
+    oid_queue_entry_t *cur;
+    oid_queue_entry_t *aux;
 
-    for (; list != NULL; list = tmp)
+    TAILQ_FOREACH_SAFE(cur, head, links, aux)
     {
-        tmp = list->next;
-        free(list);
+        TAILQ_REMOVE(head, cur, links);
+        free(cur);
     }
+}
+
+/* Comparison function for creating tree of OIDs */
+static int
+oid_tree_compare(const void *pa, const void *pb)
+{
+    return strcmp((char *)pa, (char *)pb);
+}
+
+/* Callback to use with twalk() to fill sorted queue of OIDs */
+static void
+oid_tree_action(const void *elm, VISIT which, int depth)
+{
+    UNUSED(depth);
+
+    switch (which)
+    {
+        case preorder:
+            return;
+        case endorder:
+            return;
+        default:
+            break;
+    }
+
+    insert_entry(*(char **)elm, &oid_queue);
+}
+
+/* Dummy free function for tdestroy() */
+static void
+oid_tree_free(void *unused)
+{
+    UNUSED(unused);
 }
 
 /**
@@ -379,7 +419,8 @@ sync_ta_subtree(const char *ta, const char *oid)
     char  *wildcard_oid;
     int    rc;
 
-    olist *list = NULL, *entry;
+    void *oid_tree_root = NULL;
+    oid_queue_entry_t *entry = NULL;
 
     cfg_handle *handles = NULL;
     int         h_num;
@@ -466,27 +507,37 @@ sync_ta_subtree(const char *ta, const char *oid)
     /* Calculate number of OIDs to be synchronized */
     for (tmp = cfg_get_buf; tmp < limit; tmp = next)
     {
+        void *tree_entry;
+
         next = strchr(tmp, ' ');
         if (next != NULL)
             *next++ = 0;
         else
             next = limit;
 
-        if ((rc = insert_entry(tmp, &list)) != 0)
+        tree_entry = tsearch(tmp, &oid_tree_root, oid_tree_compare);
+        if (tree_entry == NULL)
         {
-            free_list(list);
+            ERROR("%s(): failed to add OID to a search tree",
+                  __FUNCTION__);
+            tdestroy(oid_tree_root, oid_tree_free);
             free(handles);
+            rcf_ta_cfg_group(ta, 0, FALSE);
             return rc;
         }
     }
 
-    for (entry = list; entry != NULL; entry = entry->next)
+    twalk(oid_tree_root, oid_tree_action);
+    TAILQ_FOREACH(entry, &oid_queue, links)
+    {
         if ((rc = sync_ta_instance(ta, entry->oid)) != 0)
             break;
+    }
 
     rcf_ta_cfg_group(ta, 0, FALSE);
 
-    free_list(list);
+    tdestroy(oid_tree_root, oid_tree_free);
+    free_oid_queue(&oid_queue);
     free(handles);
 
     return rc;
