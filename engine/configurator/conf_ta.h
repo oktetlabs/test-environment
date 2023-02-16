@@ -96,11 +96,15 @@ extern int cfg_tas_commit(const char *oid);
 /**
  * Synchronize dependant nodes.
  *
- * @param inst Instance to
+ * @param inst          Instance whose dependants to synchronize.
+ * @param no_children   If @c TRUE, do not synchronize direct
+ *                      children (makes things faster when synchronization
+ *                      is done after removing an instance from TA).
  *
  * @return 0 on success, error code otherwise
  */
-extern int cfg_ta_sync_dependants(cfg_instance *inst);
+extern int cfg_ta_sync_dependants(cfg_instance *inst,
+                                  te_bool no_children);
 
 /**
  * Toggles logging of all sync operations

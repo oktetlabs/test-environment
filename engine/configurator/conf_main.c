@@ -1128,7 +1128,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     {
         inst->added = TRUE;
 
-        cfg_ta_sync_dependants(inst);
+        cfg_ta_sync_dependants(inst, FALSE);
 
         cfg_conf_delay_update(inst->oid);
     }
@@ -1327,7 +1327,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
     if (msg->rc != 0)
     {
         cfg_db_set(handle, old_val);
-        cfg_ta_sync_dependants(CFG_GET_INST(handle));
+        cfg_ta_sync_dependants(CFG_GET_INST(handle), FALSE);
         cfg_conf_delay_update(CFG_GET_INST(handle)->oid);
         goto cleanup;
     }
@@ -1367,7 +1367,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         }
     }
 
-    cfg_ta_sync_dependants(CFG_GET_INST(handle));
+    cfg_ta_sync_dependants(CFG_GET_INST(handle), FALSE);
 
     cfg_conf_delay_update(CFG_GET_INST(handle)->oid);
 
@@ -1528,7 +1528,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
     }
 
-    cfg_ta_sync_dependants(inst);
+    cfg_ta_sync_dependants(inst, TRUE);
 
     cfg_conf_delay_update(oid);
     free(oid);

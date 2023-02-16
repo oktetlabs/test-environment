@@ -669,7 +669,7 @@ cfg_ta_sync_obj(cfg_object *obj, te_bool subtree)
 
 /* see description in conf_ta.h */
 te_errno
-cfg_ta_sync_dependants(cfg_instance *inst)
+cfg_ta_sync_dependants(cfg_instance *inst, te_bool no_children)
 {
     cfg_dependency *dep;
     cfg_oid        *my_oid;
@@ -686,6 +686,9 @@ cfg_ta_sync_dependants(cfg_instance *inst)
     }
     for (dep = inst->obj->dependants; dep != NULL; dep = dep->next)
     {
+        if (no_children && dep->depends->father == inst->obj)
+            continue;
+
         dep_oid = cfg_convert_oid_str(dep->depends->oid);
         to_sync = cfg_oid_common_root(dep_oid, my_oid);
         if (dep->object_wide)
