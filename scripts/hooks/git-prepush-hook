@@ -465,7 +465,7 @@ function check_nonascii_body ()
     local parent
     local allownonascii
     local allownonascii_body
-    local invalid_files
+    local edited_file
 
     allownonascii="$(git config --default false --type bool \
                          --get hooks.allownonascii)"
@@ -476,14 +476,22 @@ function check_nonascii_body ()
 
     parent="$(get_parent "${rev}")"
 
-    invalid_files="$(git diff "${parent}" "${rev}" \
-                       | LC_CTYPE=C LC_COLLATE=C \
-                                    sed -n '/^+++/ { s/^+++ b\///; h; n };
-                                            /^+.*[^\n\f\t -~]/ { g; p }')"
-    if [[ -n "${invalid_files}" ]]; then
-        invalid_files="$(echo "${invalid_files}" | sort -u)"
-        nonmaintainer_error "invalid characters in: ${invalid_files}"
-    fi
+    for edited_file in $(git diff --name-only "${parent}" "${rev}")
+    do
+        local bad_lines
+
+        bad_lines="$(LC_CTYPE=C LC_COLLATE=C \
+                     git difftool -y -x "diff --old-line-format='' \
+                                              --unchanged-line-format='' \
+                                              --new-line-format='%6dn %L'" \
+                                        "${parent}" "${rev}" "${edited_file}" \
+                     | grep --no-messages --color=always \
+                            --perl-regexp '[^\n\t -~]')"
+
+        if [[ -n "$bad_lines" ]]; then
+            nonmaintainer_error "invalid characters in '${edited_file}':"$'\n'"${bad_lines}"
+        fi
+    done
 }
 
 ###
