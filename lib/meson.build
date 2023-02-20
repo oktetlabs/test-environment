@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2018-2023 OKTET Labs Ltd. All rights reserved.
 
 pkg = import('pkgconfig')
 
@@ -74,6 +74,7 @@ te_engine_libs = [
     'tapi_upnp',
     'tapi_media',
     'tapi_wifi',
+    'tapi_dns',
 ]
 
 # Test Agent libraries
