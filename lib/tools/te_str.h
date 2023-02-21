@@ -467,6 +467,17 @@ extern te_errno te_str_find_index(const char *str, const char **str_array,
                                   unsigned int *index);
 
 /**
+ * Copy requested values to the new string array.
+ *
+ * @param fst           Pointer to the first string (it may be @c NULL).
+ * @param ...           Other args for copying (it must end with @c NULL).
+ *
+ * @return              A pointer to the newly allocated string array
+ *                      with @c NULL as the last element.
+ */
+extern char **te_str_make_array(const char *fst, ...) __attribute__((sentinel));
+
+/**
  * Free array of strings
  *
  * @param str   The array of strings with @c NULL item at the end

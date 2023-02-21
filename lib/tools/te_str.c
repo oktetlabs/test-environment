@@ -10,6 +10,7 @@
 
 #include "te_config.h"
 #include "te_defs.h"
+#include "te_alloc.h"
 #include "te_errno.h"
 #include <stdlib.h>
 #ifdef HAVE_CTYPE_H
@@ -735,6 +736,35 @@ te_strtod(const char *str, double *result)
     }
 
     return 0;
+}
+
+/* See description in te_str.h */
+char **
+te_str_make_array(const char *fst, ...)
+{
+    va_list ap;
+    const char *elem = fst;
+    char **new;
+    size_t num;
+
+    if (fst == NULL)
+        return TE_ALLOC(sizeof(char *));
+
+    va_start(ap, fst);
+    for (num = 1; elem != NULL; num++)
+        elem = va_arg(ap, char *);
+
+    va_end(ap);
+    va_start(ap, fst);
+    new = TE_ALLOC(num * sizeof(char *));
+    for (num = 0, elem = fst; elem != NULL; num++)
+    {
+        new[num] = strdup(elem);
+        elem = va_arg(ap, char *);
+    }
+
+    va_end(ap);
+    return new;
 }
 
 /* See description in te_str.h */
