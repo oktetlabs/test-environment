@@ -12,6 +12,8 @@
 #include "te_errno.h"
 #include "te_queue.h"
 
+#include "ta_job.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -231,6 +233,8 @@ typedef struct nginx_inst {
     nginx_cpu_aff_mode aff_mode;   /**< Worker processes CPU affinity mode */
 
     te_bool     to_be_deleted;     /**< Flag to delete instance on commit */
+    te_bool     is_created;        /**< Flag to track if instance was created */
+    unsigned int id;               /**< ID of the created job */
 } nginx_inst;
 
 /**

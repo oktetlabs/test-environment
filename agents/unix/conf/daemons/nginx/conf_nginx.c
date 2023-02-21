@@ -25,6 +25,9 @@
 /** Name of nginx executable */
 #define NGINX_EXEC_NAME             "nginx"
 
+/** Default timeout of process graceful termination */
+#define NGINX_TIMEOUT_MS 1000
+
 /** Format string of path to PID file */
 #define NGINX_PID_PATH_FMT          "/tmp/nginx_%s.pid"
 /** Format string of path to configuration file on TA */
@@ -57,6 +60,9 @@
 #define IND1    "\t"
 #define IND2    "\t\t"
 #define IND3    "\t\t\t"
+
+/* ta_job_manager for nginx */
+static ta_job_manager_t *manager = NULL;
 
 /* Forward declarations */
 static rcf_pch_cfg_object node_nginx;
@@ -494,21 +500,34 @@ static te_errno
 nginx_inst_start(nginx_inst *inst)
 {
     te_errno    rc;
-    te_string   cmd = TE_STRING_INIT;
+    te_string args = TE_STRING_INIT;
 
-    rc = te_string_append(&cmd, "%s %s -c %s", inst->cmd_prefix,
-                          NGINX_EXEC_NAME, inst->config_path);
+    char *shell = getenv("SHELL");
+    char **argv = NULL;
+
+    te_string_append(&args, "%s %s -c %s -g 'daemon off;'",
+                     inst->cmd_prefix, NGINX_EXEC_NAME, inst->config_path);
+
+    argv = te_str_make_array(shell, "-c", args.ptr, NULL);
+    rc = ta_job_create(manager, NULL, shell, argv, NULL, &inst->id);
     if (rc != 0)
-        goto cleanup;
-
-    if (ta_system(cmd.ptr) != 0)
     {
-        ERROR("Couldn't start nginx daemon");
-        rc = TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        rc = TE_RC_UPSTREAM(TE_TA_UNIX, rc);
+        ERROR("Failed to create TA job corresponding to the process '%s', "
+              "error: %r", inst->name, rc);
         goto cleanup;
     }
 
-    te_string_free(&cmd);
+    inst->is_created = TRUE;
+    rc = ta_job_start(manager, inst->id);
+    if (rc != 0)
+    {
+        rc = TE_RC_UPSTREAM(TE_TA_UNIX, rc);
+        ERROR("Failed to start TA job corresponding to the process '%s', "
+              "error: %r", inst->name, rc);
+        goto cleanup;
+    }
+
     inst->is_running = TRUE;
 
     return 0;
@@ -518,7 +537,9 @@ cleanup:
     unlink(inst->config_path);
     unlink(inst->error_log_path);
 
-    te_string_free(&cmd);
+    te_str_free_array(argv);
+    te_string_free(&args);
+
     inst->is_running = FALSE;
     return rc;
 }
@@ -584,31 +605,6 @@ nginx_ssl_entry_find(const char *inst_name, const char *entry_name)
 }
 
 /**
- * Send signal to the nginx process.
- *
- * @param inst  Nginx instance
- * @param sig   Target signal
- *
- * @return Status code.
- */
-static te_errno
-nginx_inst_send_signal(nginx_inst *inst, int sig)
-{
-    pid_t pid = te_file_read_pid(inst->pid_path);
-
-    if (pid == -1)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if (kill(pid, sig) != 0)
-    {
-        ERROR("Couldn't send signal %d to nginx daemon (pid %d)", sig, pid);
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    return 0;
-}
-
-/**
  * Stop nginx daemon if it is running.
  *
  * @param inst  Server instance.
@@ -621,7 +617,7 @@ nginx_inst_stop(nginx_inst *inst)
     te_errno           rc;
     nginx_http_server *srv;
 
-    rc = nginx_inst_send_signal(inst, SIGTERM);
+    rc = ta_job_stop(manager, inst->id, SIGTERM, NGINX_TIMEOUT_MS);
 
     unlink(inst->pid_path);
     unlink(inst->config_path);
@@ -811,6 +807,7 @@ static te_errno
 nginx_status_get(unsigned int gid, const char *oid,
                  char *value, const char *inst_name)
 {
+    te_errno rc;
     nginx_inst    *inst = nginx_inst_find(inst_name);
     int            status_local = 0;
 
@@ -822,8 +819,27 @@ nginx_status_get(unsigned int gid, const char *oid,
 
     if (inst->is_running)
     {
-        if (nginx_inst_send_signal(inst, 0) == 0)
-            status_local = 1;
+        rc = ta_job_wait(manager, inst->id, 0, NULL);
+        switch (rc)
+        {
+            case 0:
+            case TE_ECHILD:
+                inst->is_running = FALSE;
+                break;
+
+            case TE_EINPROGRESS:
+                inst->is_running = TRUE;
+                status_local = 1;
+                break;
+
+            default:
+                WARN("Failed to check if TA job corresponding to process '%s' "
+                     "is running, ta_job_wait() exited with error %r.\n"
+                     "Considering that the job is not running.",
+                     inst->name, rc);
+                inst->is_running = FALSE;
+                break;
+        }
     }
 
     return te_snprintf(value, RCF_MAX_VAL, "%d", status_local);
@@ -1033,6 +1049,7 @@ nginx_add(unsigned int gid, const char *oid,
     inst->accept_mutex = FALSE;
 
     inst->to_be_deleted = FALSE;
+    inst->is_created = FALSE;
 
     LIST_INIT(&inst->http_servers);
     LIST_INIT(&inst->http_upstreams);
@@ -1112,8 +1129,21 @@ nginx_commit(unsigned int gid, const cfg_oid *p_oid)
                 WARN("Failed to stop nginx while removing: %r", rc);
         }
 
-        LIST_REMOVE(inst, links);
-        nginx_inst_free(inst);
+        if (inst->is_created)
+        {
+            rc = ta_job_destroy(manager, inst->id, -1);
+            if (rc != 0)
+            {
+                rc = TE_RC_UPSTREAM(TE_TA_UNIX, rc);
+                ERROR("Failed to destroy TA job corresponding to process '%s',"
+                      " error: %r", inst->name, rc);
+            }
+
+            inst->is_created = FALSE;
+
+            LIST_REMOVE(inst, links);
+            nginx_inst_free(inst);
+        }
 
         return 0;
     }
@@ -1227,10 +1257,17 @@ ta_unix_conf_nginx_init(void)
 
     LIST_INIT(&nginxs);
 
+    rc = ta_job_manager_init(&manager);
+    if (rc != 0)
+    {
+        rc = TE_RC_UPSTREAM(TE_TA_UNIX, rc);
+        ERROR("Failed to initialize TA job manager, error: %r", rc);
+        return rc;
+    }
+
     rc = rcf_pch_add_node("/agent", &node_nginx);
     if (rc != 0)
         return rc;
 
     return nginx_http_init();
 }
-
