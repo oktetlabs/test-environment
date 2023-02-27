@@ -101,7 +101,7 @@ KNOWN_TRAILERS=("${BYLINE_TRAILERS[@]}" OL-Redmine-Id GitHub-TE-Id AMD-Jira-Id \
 
 function strip_known_trailers ()
 {
-    local filter=
+    local filters=
 
     for trailer in "${KNOWN_TRAILERS[@]}"; do
         filters+="/^${trailer}:/Id;"
