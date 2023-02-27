@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
+"""Generate a summary for a TE release tag and create the tag"""
+
+import re
+import textwrap
+import argparse
+import os
+import sys
+import tempfile
+import subprocess
+import inspect
+import requests
+import requests_kerberos
+import git
+
+OL_REDMINE_URL = "https://redmine.oktetlabs.ru"
+
+ITEM_WRAPPER = textwrap.TextWrapper(initial_indent="- ", subsequent_indent="  ")
+
+
+def make_arg_parser():
+    """Create an argument parser with all valid CLI arguments"""
+    parser = argparse.ArgumentParser(
+        description=inspect.cleandoc(r"""
+            Generate a summary for a TE release tag
+            and may create the tag itself.
+
+            This tool is probably only useful for those who have
+            access to OKTET Labs internal issue tracker, since
+            the text of the summary is generated based on the status
+            of issues therein.
+
+            OL_REDMINE_APIKEY env variable must be set to the user's
+            Redmine REST API key"""),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        help="do not create tags, just print the generated summary",
+    )
+    parser.add_argument(
+        "-b",
+        "--batch",
+        action="store_true",
+        help="do not invoke an interactive editor on the summary before creating the tag",
+    )
+    parser.add_argument(
+        "-u",
+        "--url",
+        default=OL_REDMINE_URL,
+        help="base URL for Redmine",
+    )
+    parser.add_argument(
+        "-r",
+        "--revision",
+        metavar="REV",
+        default="HEAD",
+        help="the revision to tag",
+    )
+    parser.add_argument("previous", help="the previous release tag")
+    parser.add_argument("new", help="the new release tag")
+
+    return parser
+
+
+def header_line(line, sep="-"):
+    """Make an underlined header line"""
+    return f"{line}\n{sep * len(line)}\n\n"
+
+
+def format_breaking_change(commit, desc):
+    """Format a breaking change description"""
+    summary = ITEM_WRAPPER.fill(f"{commit.summary}: {desc}")
+    return f"{summary}\n  ({commit.author.name} <{commit.author.email}>)"
+
+
+def list_issues(repo, prev, current):
+    """List issues and breaking changes related to a patch series"""
+    issue_id_pattern = re.compile(r"^\s*OL-Redmine-Id:\s*(\d+)", re.MULTILINE | re.IGNORECASE)
+    break_pattern = re.compile(r"^\s*Breaks:\s*((?:.+|\n )+)", re.MULTILINE | re.IGNORECASE)
+
+    issues = set()
+    breaking_changes = {}
+    for commit in repo.iter_commits(f"{prev}..{current}"):
+        match = issue_id_pattern.search(commit.message)
+        if match:
+            issues.add(int(match.group(1)))
+        match = break_pattern.search(commit.message)
+        if match:
+            breaking_changes[commit] = " ".join(match.group(1).split())
+
+    return issues, breaking_changes
+
+
+def classify_issues(url, issues):
+    """Classify issues into resolved tasks and bugs"""
+    features = {}
+    bugs = {}
+    for issue_id in issues:
+        r = requests.get(
+            f"{url}/issues/{issue_id}.json",
+            headers={"X-Redmine-API-Key": os.environ["OL_REDMINE_APIKEY"]},
+            auth=requests_kerberos.HTTPKerberosAuth(),
+        )
+        issue = r.json()["issue"]
+        if issue["status"]["name"] == "Resolved":
+            if issue["tracker"]["name"] in ("Task", "Story"):
+                features[issue_id] = issue["subject"]
+            else:
+                bugs[issue_id] = issue["subject"]
+
+    return features, bugs
+
+
+def format_issue_list(header, issues):
+    """Format a list of issues"""
+    h = header_line(header)
+    l = "\n".join([ITEM_WRAPPER.fill(issues[issue_id]) for issue_id in issues])
+    return h + l + "\n\n"
+
+
+def format_release_message(prev, current, features, bugs, breaking_changes):
+    """Format a release message"""
+    release_message = header_line(f"Changes in {current} since {prev}", "=")
+    if features:
+        release_message += format_issue_list("New and noteworthy features", features)
+
+    if bugs:
+        release_message += format_issue_list("Fixed bugs", bugs)
+
+    if breaking_changes:
+        release_message += header_line("Breaking changes")
+        changes = [
+            format_breaking_change(commit, breaking_changes[commit])
+            for commit in breaking_changes
+        ]
+        release_message += "\n".join(changes)
+        release_message += "\n"
+
+    return release_message
+
+
+def edit_message(message):
+    """Edit a message with an external editor"""
+    if "VISUAL" in os.environ:
+        editor = os.environ["VISUAL"]
+    elif "EDITOR" in os.environ:
+        editor = os.environ["EDITOR"]
+    else:
+        sys.exit("No known editor")
+
+    with tempfile.NamedTemporaryFile(mode="w+") as f:
+        print(message, file=f, end="")
+        f.flush()
+        subprocess.run([editor, f.name], check=True)
+        f.seek(0)
+        message = f.read()
+
+    return message
+
+
+def main():
+    """Main entry point"""
+    args = make_arg_parser().parse_args()
+    if "OL_REDMINE_APIKEY" not in os.environ:
+        sys.exit("OL_REDMINE_APIKEY is not defined")
+
+    repo = git.repo.base.Repo(search_parent_directories=True)
+    issues, breaking_changes = list_issues(repo, args.previous, args.revision)
+    features, bugs = classify_issues(args.url, issues)
+    release_message = format_release_message(args.previous, args.new, features, bugs,
+                                             breaking_changes)
+
+    if args.dry_run:
+        print(release_message)
+    else:
+        if not args.batch:
+            release_message = edit_message(release_message)
+
+        if not release_message:
+            sys.exit("Release message is empty, tag is not created")
+
+        git.refs.tag.Tag.create(repo, args.new, args.revision + "^{}", release_message)
+
+
+main()
