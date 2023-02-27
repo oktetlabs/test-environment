@@ -536,6 +536,41 @@ function check_prohibited_trailers ()
     done
 }
 
+### - the obligatory presence of any additional trailer listed in
+###   hooks.push-require-trailer option (e.g. a trailer that contains
+###   an issue tracker id which is not required by the Contributor's
+###   guidelines but may be enforced by individual developers for their
+###   patches); several trailer names may be separated by a pipe symbol
+###   meaning that any of the provided variants need to be present;
+###   for example:
+###       git config --local hooks.push-require-trailer 'OL-Redmine-Id|GitHub-TE-Id|AMD-Jira-Id'
+###   may be used to require some bug reference id in all patches;
+###       git config --local --add hooks.push-require-trailer Reviewed-by
+###   would add a second required trailer (Reviewed-by in this case);
+
+function check_extra_trailers ()
+{
+    local rev="$1"
+    local reqtrailer
+    local trailer
+    local alt
+    local found
+
+    for reqtrailer in $(git config --get-all hooks.push-require-trailer); do
+        found=
+        for alt in ${reqtrailer//|/ }; do
+            trailer="$(get_trailer "${alt}" "${rev}")"
+            if [[ -n "${trailer}" ]]; then
+                found=1
+                break
+            fi
+        done
+        if [[ -z "$found" ]]; then
+            serious_error "${reqtrailer} is not present"
+        fi
+    done
+}
+
 #shellcheck disable=SC2034
 while read -r localref localsha remoteref remotesha; do
     # Local branch is deleted, nothing to do
@@ -580,6 +615,7 @@ while read -r localref localsha remoteref remotesha; do
         check_nonascii_body "${rev}"
         check_required_review "${rev}"
         check_prohibited_trailers "${rev}"
+        check_extra_trailers "${rev}"
 
         if [[ -n "${ERRORS}${WARNINGS}" ]]; then
             echo "${header}${ERRORS}${WARNINGS}" >&2
