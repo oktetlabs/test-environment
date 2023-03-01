@@ -11,10 +11,13 @@
 #include <signal.h>
 
 #include "tapi_dns_unbound.h"
+#include "tapi_dns_unbound_cfg.h"
 #include "tapi_job_opt.h"
 #include "te_alloc.h"
 #include "te_str.h"
 #include "te_enum.h"
+#include "tapi_cfg_base.h"
+#include "tapi_file.h"
 
 #define TAPI_DNS_UNBOUND_PATH "unbound"
 
@@ -48,20 +51,33 @@ tapi_dns_unbound_create(tapi_job_factory_t *factory,
                         const tapi_dns_unbound_opt *opt,
                         tapi_dns_unbound_app **app)
 {
+    const char *ta = tapi_job_factory_ta(factory);
+
     const char *exec_path = TAPI_DNS_UNBOUND_PATH;
     tapi_dns_unbound_app *unbound_app = NULL;
     te_vec unbound_args = TE_VEC_INIT(char *);
+    tapi_dns_unbound_opt opt_copy;
     te_errno rc;
 
     unbound_app = TE_ALLOC(sizeof(*unbound_app));
 
     if (opt == NULL)
         opt = &tapi_dns_unbound_default_opt;
+    opt_copy = *opt;
 
-    if (opt->unbound_path != NULL)
-        exec_path = opt->unbound_path;
+    if (opt_copy.unbound_path != NULL)
+        exec_path = opt_copy.unbound_path;
 
-    rc = tapi_job_opt_build_args(exec_path, unbound_binds, opt, &unbound_args);
+    unbound_app->generated_cfg_file = NULL;
+    if (opt_copy.cfg_file == NULL && opt_copy.cfg_opt != NULL)
+    {
+        tapi_dns_unbound_cfg_create(ta, opt_copy.cfg_opt, NULL, NULL,
+                                    &unbound_app->generated_cfg_file);
+        opt_copy.cfg_file = unbound_app->generated_cfg_file;
+    }
+
+    rc = tapi_job_opt_build_args(exec_path, unbound_binds, &opt_copy,
+                                 &unbound_args);
     if (rc != 0)
     {
         ERROR("Failed to build unbound server options");
@@ -160,6 +176,15 @@ tapi_dns_unbound_destroy(tapi_dns_unbound_app *app)
 
     if (app == NULL)
         return 0;
+
+    if (app->generated_cfg_file != NULL)
+    {
+        tapi_job_factory_t *factory = tapi_job_get_factory(app->job);
+        const char *ta = tapi_job_factory_ta(factory);
+
+        tapi_dns_unbound_cfg_destroy(ta, app->generated_cfg_file);
+        free(app->generated_cfg_file);
+    }
 
     rc = tapi_job_destroy(app->job, TAPI_DNS_UNBOUND_TERM_TIMEOUT_MS);
     if (rc != 0)
