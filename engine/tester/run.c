@@ -3894,6 +3894,13 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
             args_preparation_fail = TRUE;
     }
 
+    /*
+     * If some argument is not resolved it is set with an error message.
+     * Preserve it when such arguments are resolved within subsessions.
+     */
+    if (flags & TESTER_CFG_WALK_SKIP_REPEAT)
+        args_preparation_fail = TRUE;
+
 #if WITH_TRC
     if ((~ctx->flags & TESTER_NO_TRC) && (test_get_name(ri) != NULL))
     {

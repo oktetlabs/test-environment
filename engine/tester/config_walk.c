@@ -390,12 +390,14 @@ walk_repeat(const tester_cfg_walk *walk, const void *opaque,
         else
             ctl = TESTER_CFG_WALK_CONT;
 
-        if (ctl == TESTER_CFG_WALK_CONT && run != NULL &&
-            !(flags & TESTER_CFG_WALK_SKIP_REPEAT))
+        if (ctl == TESTER_CFG_WALK_CONT && run != NULL)
         {
             switch (run->type)
             {
                 case RUN_ITEM_SCRIPT:
+                    if (flags & TESTER_CFG_WALK_SKIP_REPEAT)
+                        break;
+
                     if (walk->script != NULL)
                         ctl = walk->script((run_item *)run,
                                            (test_script *)&run->u.script,
@@ -408,6 +410,9 @@ walk_repeat(const tester_cfg_walk *walk, const void *opaque,
                     break;
 
                 case RUN_ITEM_PACKAGE:
+                    if (flags & TESTER_CFG_WALK_SKIP_REPEAT)
+                        break;
+
                     ctl = walk_test_package(walk, opaque, id_off, flags,
                                             run, run->u.package);
                     break;
@@ -501,15 +506,22 @@ walk_iterate(const tester_cfg_walk *walk, const void *opaque,
         else
             ctl = TESTER_CFG_WALK_CONT;
 
-        if (ctl == TESTER_CFG_WALK_CONT)
+        if (ctl == TESTER_CFG_WALK_CONT &&
+            !(flags & TESTER_CFG_WALK_SKIP_REPEAT))
+        {
             ctl = walk_repeat(walk, opaque, curr_id_off, flags, run,
                               keepalive, exception, ka_failed);
-        else if (ctl == TESTER_CFG_WALK_EARGS)
+        } else if (ctl == TESTER_CFG_WALK_EARGS ||
+                   (flags & TESTER_CFG_WALK_SKIP_REPEAT))
+        {
             ctl = walk_repeat(walk, opaque, curr_id_off,
                               flags | TESTER_CFG_WALK_SKIP_REPEAT, run,
                               NULL, NULL, ka_failed);
+        }
         else if (ctl == TESTER_CFG_WALK_SKIP)
+        {
             ctl = TESTER_CFG_WALK_CONT;
+        }
 
         if (walk->iter_end != NULL)
         {
