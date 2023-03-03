@@ -678,6 +678,9 @@ rte_flow_item_ipv4_from_pdu(const asn_value *ipv4_pdu,
     struct rte_flow_item_ipv4 *last = NULL;
     struct rte_flow_item_ipv4 zero = {};
     int rc;
+    uint32_t spec_frag_ofst = 0;
+    uint32_t mask_frag_ofst = 0;
+    uint32_t last_frag_ofst = 0;
 
     if (item == NULL)
         return TE_EINVAL;
@@ -719,6 +722,37 @@ rte_flow_item_ipv4_from_pdu(const asn_value *ipv4_pdu,
     ASN_READ_IPV4_ADDR_RANGE_FIELD(ipv4_pdu, src-addr, hdr.src_addr);
     ASN_READ_IPV4_ADDR_RANGE_FIELD(ipv4_pdu, dst-addr, hdr.dst_addr);
 #undef ASN_READ_IPV4_ADDR_RANGE_FIELD
+
+    rc = ndn_rte_flow_read_with_offset(ipv4_pdu, "frag-offset",
+                                       NDN_RTE_FLOW_IPV4_FRAG_OFST_FIELD_LEN,
+                                       NDN_RTE_FLOW_IPV4_FRAG_OFST_FIELD_OFFSET,
+                                       &spec_frag_ofst,
+                                       &mask_frag_ofst,
+                                       &last_frag_ofst);
+    if (rc != 0)
+        goto out;
+
+    rc = ndn_rte_flow_read_with_offset(ipv4_pdu, "more-frags",
+                                       NDN_RTE_FLOW_IPV4_FLAG_FIELD_LEN,
+                                       NDN_RTE_FLOW_IPV4_FLAG_MORE_FRAG_FIELD_OFST,
+                                       &spec_frag_ofst,
+                                       &mask_frag_ofst,
+                                       &last_frag_ofst);
+    if (rc != 0)
+        goto out;
+
+    rc = ndn_rte_flow_read_with_offset(ipv4_pdu, "dont-frag",
+                                       NDN_RTE_FLOW_IPV4_FLAG_FIELD_LEN,
+                                       NDN_RTE_FLOW_IPV4_FLAG_DONT_FRAG_FIELD_OFST,
+                                       &spec_frag_ofst,
+                                       &mask_frag_ofst,
+                                       &last_frag_ofst);
+    if (rc != 0)
+        goto out;
+
+    spec->hdr.fragment_offset = rte_cpu_to_be_16(spec_frag_ofst);
+    mask->hdr.fragment_offset = rte_cpu_to_be_16(mask_frag_ofst);
+    last->hdr.fragment_offset = rte_cpu_to_be_16(last_frag_ofst);
 
     item->type = RTE_FLOW_ITEM_TYPE_IPV4;
 
