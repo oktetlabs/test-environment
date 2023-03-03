@@ -137,6 +137,11 @@ extern const asn_type * const ndn_rte_flow_item_conf;
 extern asn_type ndn_rte_flow_rule_s;
 
 #define NDN_RTE_FLOW_FIELD_NAME_MAX_LEN 128
+#define NDN_RTE_FLOW_IPV4_FRAG_OFST_FIELD_LEN 13
+#define NDN_RTE_FLOW_IPV4_FRAG_OFST_FIELD_OFFSET 0
+#define NDN_RTE_FLOW_IPV4_FLAG_FIELD_LEN 1
+#define NDN_RTE_FLOW_IPV4_FLAG_MORE_FRAG_FIELD_OFST 13
+#define NDN_RTE_FLOW_IPV4_FLAG_DONT_FRAG_FIELD_OFST 14
 
 /**
  * Get values of spec, mask and last of requested field with specified name
