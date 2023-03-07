@@ -1768,7 +1768,6 @@ cfg_dh_release_after(char *filename)
         {
             if (has_backup(limit, filename))
                 break;
-            return;
         }
     }
 
