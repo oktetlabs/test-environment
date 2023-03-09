@@ -14,6 +14,8 @@
     - oid: "/agent/pppoeserver"
       access: read_write
       type: int32
+      depends:
+        - oid: "/agent/rsrc"
       d: |
          PPPoE server enabling/disabling
          Name:  empty
