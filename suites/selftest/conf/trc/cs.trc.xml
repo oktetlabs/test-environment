@@ -247,5 +247,14 @@
                 <arg name="min">2</arg>
             </iter>
         </test>
+
+        <test name="unused_backup" type="script">
+            <objective>Check that unused configuration backup does not break configuration tree handling</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <notes/>
+            </iter>
+        </test>
     </iter>
 </test>

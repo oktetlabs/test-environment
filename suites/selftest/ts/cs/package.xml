@@ -227,5 +227,13 @@
                 <value>2</value>
             </arg>
         </run>
+
+        <run>
+            <script name="unused_backup"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+        </run>
+
     </session>
 </package>

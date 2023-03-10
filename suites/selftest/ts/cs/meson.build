@@ -16,6 +16,7 @@ tests = [
     'process_ping',
     'set_restore',
     'uname',
+    'unused_backup',
     'vlans',
     'vm',
 ]
