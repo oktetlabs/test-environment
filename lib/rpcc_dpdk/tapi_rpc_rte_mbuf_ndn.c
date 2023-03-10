@@ -342,7 +342,7 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
     memset(&out, 0, sizeof(out));
 
     in.m_tx = (tarpc_rte_mbuf)m_tx;
-    in.rx_burst.rx_burst_val = tapi_memdup(rx_burst, nb_rx * sizeof(*rx_burst));
+    in.rx_burst.rx_burst_val = rx_burst;
     in.rx_burst.rx_burst_len = nb_rx;
 
     CHECK_RC(cfg_get_instance_string_fmt(&in.tso_ip_id_inc_algo,
@@ -375,7 +375,6 @@ rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
 
     rpc_rte_mbuf_match_tx_rx_mismatch_verdict(&out);
 
-    free(in.rx_burst.rx_burst_val);
     free(in.tso_ip_id_inc_algo);
 
     if (reportp != NULL)

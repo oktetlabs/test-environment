@@ -503,7 +503,6 @@ rpc_rte_pktmbuf_read_data(rcf_rpc_server *rpcs,
 {
     tarpc_rte_pktmbuf_read_data_in  in;
     tarpc_rte_pktmbuf_read_data_out out;
-    uint8_t *buf_copy;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -514,17 +513,13 @@ rpc_rte_pktmbuf_read_data(rcf_rpc_server *rpcs,
         RETVAL_INT(rte_pktmbuf_read_data, -rpcs->_errno);
     }
 
-    buf_copy = tapi_memdup(buf, rbuflen);
-
     in.m = (tarpc_rte_mbuf)m;
     in.offset = offset;
     in.len = count;
     in.buf.buf_len = rbuflen;
-    in.buf.buf_val = buf_copy;
+    in.buf.buf_val = buf;
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_read_data", &in, &out);
-
-    free(in.buf.buf_val);
 
     CHECK_RETVAL_VAR(rte_pktmbuf_read_data, out.retval,
                      out.retval < 0 || (size_t)out.retval > count,
@@ -570,7 +565,6 @@ rpc_rte_pktmbuf_prepend_data(rcf_rpc_server *rpcs,
 {
     tarpc_rte_pktmbuf_prepend_data_in   in;
     tarpc_rte_pktmbuf_prepend_data_out  out;
-    uint8_t *buf_copy;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -579,15 +573,11 @@ rpc_rte_pktmbuf_prepend_data(rcf_rpc_server *rpcs,
         RETVAL_ZERO_INT(rte_pktmbuf_prepend_data,
                         -TE_RC(TE_TAPI, TE_EINVAL));
 
-    buf_copy = tapi_memdup(buf, len);
-
     in.m = (tarpc_rte_mbuf)m;
-    in.buf.buf_val = buf_copy;
+    in.buf.buf_val = buf;
     in.buf.buf_len = len;
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_prepend_data", &in, &out);
-
-    free(in.buf.buf_val);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_pktmbuf_prepend_data, out.retval);
 
@@ -1304,20 +1294,10 @@ rpc_rte_pktmbuf_redist_multi(rcf_rpc_server                 *rpcs,
     in.m = (tarpc_rte_mbuf)(*m);
 
     in.mp_multi.mp_multi_len = mp_multi_nb_items;
-    if (mp_multi != NULL)
-    {
-        in.mp_multi.mp_multi_val = tapi_memdup(mp_multi,
-                                               mp_multi_nb_items *
-                                               sizeof(*mp_multi));
-    }
+    in.mp_multi.mp_multi_val = mp_multi;
 
     in.seg_groups.seg_groups_len = nb_seg_groups;
-    if (seg_groups != NULL)
-    {
-        in.seg_groups.seg_groups_val = tapi_memdup(seg_groups,
-                                                   nb_seg_groups *
-                                                   sizeof(*seg_groups));
-    }
+    in.seg_groups.seg_groups_val = seg_groups;
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_redist", &in, &out);
 
@@ -1339,9 +1319,6 @@ rpc_rte_pktmbuf_redist_multi(rcf_rpc_server                 *rpcs,
                  NEG_ERRNO_ARGS(out.retval), RPC_PTR_VAL(out.m));
     te_log_buf_free(tlbp_pattern);
     te_log_buf_free(tlbp_multipool);
-
-    free(in.mp_multi.mp_multi_val);
-    free(in.seg_groups.seg_groups_val);
 
     RETVAL_INT(rte_pktmbuf_redist, out.retval);
 }

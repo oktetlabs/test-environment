@@ -864,13 +864,11 @@ rpc_rte_eth_tx_queue_setup(rcf_rpc_server *rpcs,
     in.socket_id = socket_id;
     if (tx_conf != NULL)
     {
-        in.tx_conf.tx_conf_val = tapi_memdup(tx_conf, sizeof(*tx_conf));
+        in.tx_conf.tx_conf_val = tx_conf;
         in.tx_conf.tx_conf_len = 1;
     }
 
     rcf_rpc_call(rpcs, "rte_eth_tx_queue_setup", &in, &out);
-
-    free(in.tx_conf.tx_conf_val);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_tx_queue_setup, out.retval);
 
@@ -908,13 +906,11 @@ rpc_rte_eth_rx_queue_setup(rcf_rpc_server *rpcs,
     in.mp = (tarpc_rte_mempool)mp;
     if (rx_conf != NULL)
     {
-        in.rx_conf.rx_conf_val = tapi_memdup(rx_conf, sizeof(*rx_conf));
+        in.rx_conf.rx_conf_val = rx_conf;
         in.rx_conf.rx_conf_len = 1;
     }
 
     rcf_rpc_call(rpcs, "rte_eth_rx_queue_setup", &in, &out);
-
-    free(in.rx_conf.rx_conf_val);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_rx_queue_setup, out.retval);
 
@@ -1055,8 +1051,7 @@ rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs,
     if (tx_pkts != NULL)
     {
         in.tx_pkts.tx_pkts_len = nb_pkts;
-        in.tx_pkts.tx_pkts_val = (tarpc_rte_mbuf *)tapi_memdup(tx_pkts, nb_pkts *
-                                                               sizeof(*tx_pkts));
+        in.tx_pkts.tx_pkts_val = (tarpc_rte_mbuf *)tx_pkts;
     }
 
     rcf_rpc_call(rpcs, "rte_eth_tx_burst", &in, &out);
@@ -1065,8 +1060,6 @@ rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs,
                               out.retval > in.tx_pkts.tx_pkts_len,
                               out.retval,
                               out.retval > in.tx_pkts.tx_pkts_len);
-
-    free(in.tx_pkts.tx_pkts_val);
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_tx_burst, "%hu, %hu, %s, %hu", "%hu",
@@ -1100,8 +1093,7 @@ rpc_rte_eth_tx_prepare(rcf_rpc_server *rpcs,
     if (tx_pkts != NULL)
     {
         in.tx_pkts.tx_pkts_len = nb_pkts;
-        in.tx_pkts.tx_pkts_val =
-            (tarpc_rte_mbuf *)tapi_memdup(tx_pkts, nb_pkts * sizeof(*tx_pkts));
+        in.tx_pkts.tx_pkts_val = (tarpc_rte_mbuf *)tx_pkts;
     }
 
     rcf_rpc_call(rpcs, "rte_eth_tx_prepare", &in, &out);
@@ -1110,8 +1102,6 @@ rpc_rte_eth_tx_prepare(rcf_rpc_server *rpcs,
                               out.retval > in.tx_pkts.tx_pkts_len,
                               out.retval,
                               out.retval > in.tx_pkts.tx_pkts_len);
-
-    free(in.tx_pkts.tx_pkts_val);
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_tx_prepare, "%hu, %hu, %s, %hu", "%hu",
@@ -1354,12 +1344,10 @@ rpc_rte_eth_dev_get_mtu(rcf_rpc_server *rpcs, uint16_t port_id, uint16_t *mtu)
     if (mtu != NULL)
     {
         in.mtu.mtu_len = 1;
-        in.mtu.mtu_val = malloc(sizeof(*mtu));
+        in.mtu.mtu_val = mtu;
     }
 
     rcf_rpc_call(rpcs, "rte_eth_dev_get_mtu", &in, &out);
-
-    free(in.mtu.mtu_val);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_get_mtu,
                                           out.retval);
@@ -1916,12 +1904,10 @@ rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint16_t port_id,
     if (mac_addr != NULL)
     {
         in.mac_addr.mac_addr_len = 1;
-        in.mac_addr.mac_addr_val = malloc(sizeof(*mac_addr));
+        in.mac_addr.mac_addr_val = mac_addr;
     }
 
     rcf_rpc_call(rpcs, "rte_eth_macaddr_get", &in, &out);
-
-    free(in.mac_addr.mac_addr_val);
 
     if (RPC_IS_CALL_OK(rpcs) && out.mac_addr.mac_addr_len != 0)
         memcpy(mac_addr->addr_bytes, out.mac_addr.mac_addr_val[0].addr_bytes,
@@ -1952,7 +1938,7 @@ rpc_rte_eth_dev_default_mac_addr_set(rcf_rpc_server *rpcs, uint16_t port_id,
     if (mac_addr != NULL)
     {
         in.mac_addr.mac_addr_len = 1;
-        in.mac_addr.mac_addr_val = tapi_memdup(mac_addr, sizeof(*mac_addr));
+        in.mac_addr.mac_addr_val = mac_addr;
     }
 
     rcf_rpc_call(rpcs, "rte_eth_dev_default_mac_addr_set", &in, &out);
@@ -1966,8 +1952,6 @@ rpc_rte_eth_dev_default_mac_addr_set(rcf_rpc_server *rpcs, uint16_t port_id,
                     tlbp, (uint8_t *)&in.mac_addr.mac_addr_val[0].addr_bytes),
                     NEG_ERRNO_ARGS(out.retval));
     te_log_buf_free(tlbp);
-
-    free(in.mac_addr.mac_addr_val);
 
     RETVAL_ZERO_INT(rte_eth_dev_default_mac_addr_set, out.retval);
 }
@@ -2486,14 +2470,14 @@ rpc_rte_eth_xstats_get_by_id(rcf_rpc_server *rpcs,
     memset(&out, 0, sizeof(out));
 
     in.port_id = port_id;
-    in.ids.ids_val = ((ids != NULL) && (n > 0)) ?
-                     tapi_memdup(ids, sizeof(*ids) * n) : NULL;
-    in.ids.ids_len = (in.ids.ids_val != NULL) ? n : 0;
+    if (n > 0 && ids != NULL)
+    {
+        in.ids.ids_val = ids;
+        in.ids.ids_len = n;
+    }
     in.n = n;
 
     rcf_rpc_call(rpcs, "rte_eth_xstats_get_by_id", &in, &out);
-
-    free(in.ids.ids_val);
 
     CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_by_id, out.retval, FALSE,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED), (out.retval < 0));
@@ -2556,14 +2540,14 @@ rpc_rte_eth_xstats_get_names_by_id(rcf_rpc_server                  *rpcs,
     memset(&out, 0, sizeof(out));
 
     in.port_id = port_id;
-    in.ids.ids_val = ((ids != NULL) && (size > 0)) ?
-                     tapi_memdup(ids, sizeof(*ids) * size) : NULL;
-    in.ids.ids_len = (in.ids.ids_val != NULL) ? size : 0;
+    if (size > 0 && ids != NULL)
+    {
+        in.ids.ids_val = ids;
+        in.ids.ids_len = size;
+    }
     in.size = size;
 
     rcf_rpc_call(rpcs, "rte_eth_xstats_get_names_by_id", &in, &out);
-
-    free(in.ids.ids_val);
 
     CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_names_by_id, out.retval, FALSE,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED), (out.retval < 0));
@@ -2610,9 +2594,7 @@ rpc_rte_eth_dev_rss_hash_update(rcf_rpc_server *rpcs, uint16_t port_id,
 
     if (rss_conf->rss_key_len != 0)
     {
-        in.rss_conf.rss_key.rss_key_val = tapi_memdup(
-            rss_conf->rss_key.rss_key_val, rss_conf->rss_key_len);
-
+        in.rss_conf.rss_key.rss_key_val = rss_conf->rss_key.rss_key_val;
         in.rss_conf.rss_key.rss_key_len = rss_conf->rss_key_len;
     }
 
@@ -2621,8 +2603,6 @@ rpc_rte_eth_dev_rss_hash_update(rcf_rpc_server *rpcs, uint16_t port_id,
     in.port_id = port_id;
 
     rcf_rpc_call(rpcs, "rte_eth_dev_rss_hash_update", &in, &out);
-
-    free(in.rss_conf.rss_key.rss_key_val);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_rss_hash_update,
                                           out.retval);
@@ -3082,7 +3062,7 @@ rpc_rte_eth_dev_fw_version_get(rcf_rpc_server *rpcs,
     }
 
     in.port_id = port_id;
-    in.fw_version.fw_version_val = tapi_memdup(fw_version, fw_size);
+    in.fw_version.fw_version_val = fw_version;
     in.fw_version.fw_version_len = fw_size;
 
     rcf_rpc_call(rpcs, "rte_eth_dev_fw_version_get", &in, &out);
@@ -3096,8 +3076,6 @@ rpc_rte_eth_dev_fw_version_get(rcf_rpc_server *rpcs,
                  (out.retval == 0) ? out.fw_version.fw_version_val : "N/A",
                  (out.retval > 0) ? " (truncated data)" : "",
                  (out.retval < 0) ? " (error occurred)" : "");
-
-    free(in.fw_version.fw_version_val);
 
     RETVAL_INT(rte_eth_dev_fw_version_get, out.retval);
 }

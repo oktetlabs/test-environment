@@ -3315,13 +3315,10 @@ rpc_chroot(rcf_rpc_server *rpcs, char *path)
     if (path != NULL)
     {
         in.path.path_len = strlen(path) + 1;
-        in.path.path_val = strdup(path);
+        in.path.path_val = path;
     }
 
     rcf_rpc_call(rpcs, "chroot", &in, &out);
-
-    if (path != NULL)
-        free(in.path.path_val);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(chroot, out.retval);
     TAPI_RPC_LOG(rpcs, chroot, "%s", "%d",
@@ -3347,13 +3344,10 @@ rpc_copy_ta_libs(rcf_rpc_server *rpcs, char *path)
     if (path != NULL)
     {
         in.path.path_len = strlen(path) + 1;
-        in.path.path_val = strdup(path);
+        in.path.path_val = path;
     }
 
     rcf_rpc_call(rpcs, "copy_ta_libs", &in, &out);
-
-    if (path != NULL)
-        free(in.path.path_val);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(copy_ta_libs, out.retval);
     TAPI_RPC_LOG(rpcs, copy_ta_libs, "", "%d",
@@ -3379,13 +3373,10 @@ rpc_rm_ta_libs(rcf_rpc_server *rpcs, char *path)
     if (path != NULL)
     {
         in.path.path_len = strlen(path) + 1;
-        in.path.path_val = strdup(path);
+        in.path.path_val = path;
     }
 
     rcf_rpc_call(rpcs, "rm_ta_libs", &in, &out);
-
-    if (path != NULL)
-        free(in.path.path_val);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(rm_ta_libs, out.retval);
     TAPI_RPC_LOG(rpcs, rm_ta_libs, "", "%d",
