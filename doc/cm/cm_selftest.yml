@@ -1,0 +1,86 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Configuration objects used to test Configurator itself.
+
+    Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/selftest"
+      access: read_only
+      type: none
+      d: |
+         Parent node for all test objects
+         Name: none
+         Value: none
+
+    - oid: "/agent/selftest/commit_obj"
+      access: read_only
+      type: none
+      unit: true
+      d: |
+         The object with commit method. Its "a" property must
+         have the same value as its "b" property, so it is not possible
+         to restore its state from history since Configurator does not
+         try to commit things in this mode.
+         Name: none
+         Value: none
+
+    - oid: "/agent/selftest/commit_obj/a"
+      access: read_write
+      type: uint32
+      d: |
+         The first property
+         Name: None
+         Value: Some number
+
+    - oid: "/agent/selftest/commit_obj/b"
+      access: read_write
+      type: uint32
+      d: |
+         The second property
+         Name: None
+         Value: Some number
+
+    - oid: "/agent/selftest/commit_obj_dep"
+      access: read_write
+      type: uint32
+      depends:
+        - oid: "/agent/selftest/commit_obj"
+      d: |
+         Object which presence depends on the state of
+         commit_obj. It disappears if a=b=0 for commit_obj.
+         Name: None
+         Value: Some number
+
+    - oid: "/agent/selftest/incr_obj"
+      access: read_only
+      type: none
+      d: |
+         Object which properties can be changed only incrementally.
+         One of the properties can be set to a value with differs
+         from the value of another property by no more than 1.
+         Such an object may be moved to a state from which
+         its original state can be restored only by using
+         configuration history.
+         Name: none
+         Value: none
+
+    - oid: "/agent/selftest/incr_obj/a"
+      access: read_write
+      type: uint32
+      d: |
+         The first property
+         Name: None
+         Value: Some number
+
+    - oid: "/agent/selftest/incr_obj/b"
+      access: read_write
+      type: uint32
+      d: |
+         The second property
+         Name: None
+         Value: Some number

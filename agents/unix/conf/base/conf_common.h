@@ -127,6 +127,14 @@ extern te_errno string_empty_list(char **list);
  */
 extern te_errno get_interface_kind(const char *ifname, char *value);
 
+/**
+ * Initialize auxiliary configuration objects used for testing
+ * Configurator.
+ *
+ * @return Status code.
+ */
+extern te_errno ta_unix_conf_selftest_init(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

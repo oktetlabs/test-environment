@@ -1533,6 +1533,9 @@ rcf_ch_conf_init(void)
         if (ta_unix_conf_key_init() != 0)
             goto fail;
 
+        if (ta_unix_conf_selftest_init() != 0)
+            goto fail;
+
         init = TRUE;
 
     }

@@ -47,6 +47,7 @@ cm_files = files(
     'cm_rshd.yml',
     'cm_rss.yml',
     'cm_rx_rules.yml',
+    'cm_selftest.yml',
     'cm_serial.yml',
     'cm_serial_parse.yml',
     'cm_sfptpd.yml',
