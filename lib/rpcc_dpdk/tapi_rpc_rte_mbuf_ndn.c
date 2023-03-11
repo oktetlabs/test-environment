@@ -62,6 +62,8 @@ rpc_rte_mk_mbuf_from_template(rcf_rpc_server   *rpcs,
                  NEG_ERRNO_ARGS(out.retval));
     te_log_buf_free(tlbp);
 
+    free(in.template);
+
     *mbufs = tapi_memdup(out.mbufs.mbufs_val,
                          out.mbufs.mbufs_len * sizeof(**mbufs));
 

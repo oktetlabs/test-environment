@@ -914,6 +914,8 @@ rpc_rte_eth_rx_queue_setup(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "rte_eth_rx_queue_setup", &in, &out);
 
+    free(in.rx_conf.rx_conf_val);
+
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_rx_queue_setup, out.retval);
 
     tlbp = te_log_buf_alloc();
@@ -1356,6 +1358,8 @@ rpc_rte_eth_dev_get_mtu(rcf_rpc_server *rpcs, uint16_t port_id, uint16_t *mtu)
     }
 
     rcf_rpc_call(rpcs, "rte_eth_dev_get_mtu", &in, &out);
+
+    free(in.mtu.mtu_val);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_get_mtu,
                                           out.retval);
@@ -1917,6 +1921,8 @@ rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint16_t port_id,
 
     rcf_rpc_call(rpcs, "rte_eth_macaddr_get", &in, &out);
 
+    free(in.mac_addr.mac_addr_val);
+
     if (RPC_IS_CALL_OK(rpcs) && out.mac_addr.mac_addr_len != 0)
         memcpy(mac_addr->addr_bytes, out.mac_addr.mac_addr_val[0].addr_bytes,
                sizeof(out.mac_addr.mac_addr_val[0].addr_bytes));
@@ -1960,6 +1966,8 @@ rpc_rte_eth_dev_default_mac_addr_set(rcf_rpc_server *rpcs, uint16_t port_id,
                     tlbp, (uint8_t *)&in.mac_addr.mac_addr_val[0].addr_bytes),
                     NEG_ERRNO_ARGS(out.retval));
     te_log_buf_free(tlbp);
+
+    free(in.mac_addr.mac_addr_val);
 
     RETVAL_ZERO_INT(rte_eth_dev_default_mac_addr_set, out.retval);
 }
@@ -2121,6 +2129,8 @@ rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs, uint16_t port_id,
     in.reta_size = reta_size;
 
     rcf_rpc_call(rpcs, "rte_eth_dev_rss_reta_query", &in, &out);
+
+    free(in.reta_conf.reta_conf_val);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_rss_reta_query,
                                           out.retval);
@@ -2482,6 +2492,9 @@ rpc_rte_eth_xstats_get_by_id(rcf_rpc_server *rpcs,
     in.n = n;
 
     rcf_rpc_call(rpcs, "rte_eth_xstats_get_by_id", &in, &out);
+
+    free(in.ids.ids_val);
+
     CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_by_id, out.retval, FALSE,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED), (out.retval < 0));
 
@@ -2549,6 +2562,9 @@ rpc_rte_eth_xstats_get_names_by_id(rcf_rpc_server                  *rpcs,
     in.size = size;
 
     rcf_rpc_call(rpcs, "rte_eth_xstats_get_names_by_id", &in, &out);
+
+    free(in.ids.ids_val);
+
     CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_names_by_id, out.retval, FALSE,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED), (out.retval < 0));
 
@@ -2606,6 +2622,8 @@ rpc_rte_eth_dev_rss_hash_update(rcf_rpc_server *rpcs, uint16_t port_id,
 
     rcf_rpc_call(rpcs, "rte_eth_dev_rss_hash_update", &in, &out);
 
+    free(in.rss_conf.rss_key.rss_key_val);
+
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_rss_hash_update,
                                           out.retval);
     tlbp = te_log_buf_alloc();
@@ -2656,6 +2674,8 @@ rpc_rte_eth_dev_rss_reta_update(rcf_rpc_server *rpcs, uint16_t port_id,
     in.reta_size = reta_size;
 
     rcf_rpc_call(rpcs, "rte_eth_dev_rss_reta_update", &in, &out);
+
+    free(in.reta_conf.reta_conf_val);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_rss_reta_update,
                                           out.retval);
@@ -3076,6 +3096,8 @@ rpc_rte_eth_dev_fw_version_get(rcf_rpc_server *rpcs,
                  (out.retval == 0) ? out.fw_version.fw_version_val : "N/A",
                  (out.retval > 0) ? " (truncated data)" : "",
                  (out.retval < 0) ? " (error occurred)" : "");
+
+    free(in.fw_version.fw_version_val);
 
     RETVAL_INT(rte_eth_dev_fw_version_get, out.retval);
 }

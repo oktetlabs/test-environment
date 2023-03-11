@@ -1340,6 +1340,9 @@ rpc_rte_pktmbuf_redist_multi(rcf_rpc_server                 *rpcs,
     te_log_buf_free(tlbp_pattern);
     te_log_buf_free(tlbp_multipool);
 
+    free(in.mp_multi.mp_multi_val);
+    free(in.seg_groups.seg_groups_val);
+
     RETVAL_INT(rte_pktmbuf_redist, out.retval);
 }
 

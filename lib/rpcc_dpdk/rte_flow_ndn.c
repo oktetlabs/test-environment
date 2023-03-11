@@ -437,6 +437,8 @@ rpc_rte_insert_flow_rule_items(rcf_rpc_server *rpcs,
                  RPC_PTR_VAL(in.pattern), in.items, in.index,
                  RPC_PTR_VAL(out.pattern), NEG_ERRNO_ARGS(out.retval));
 
+    free(in.items);
+
     if (out.retval == 0)
         *pattern = out.pattern;
 
