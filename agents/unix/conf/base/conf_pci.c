@@ -1769,11 +1769,15 @@ bind_pci_device(const pci_device *dev, const char *drvname)
          * but the binding is actually successful, which can be
          * verified by checking the link to device inside the driver
          * directory
+         * Also, if a device is already bound on a driver, e.g. auto bound,
+         * the binding it again brings the EBUSY code.
          */
-        if (errno != ENODEV)
+        if (errno != ENODEV && errno != EBUSY)
             rc = TE_OS_RC(TE_TA_UNIX, errno);
         else
         {
+            int eno = errno;
+
             te_string_cut(&buf, buf.len);
             rc = te_string_append(&buf, "/sys/bus/pci/drivers/%s/",
                                   drvname);
@@ -1781,7 +1785,7 @@ bind_pci_device(const pci_device *dev, const char *drvname)
             {
                 rc = format_device_address(&buf, &dev->address);
                 if (rc == 0 && access(buf.ptr, F_OK) != 0)
-                    rc = TE_RC(TE_TA_UNIX, TE_ENODEV);
+                    rc = TE_RC(TE_TA_UNIX, eno);
             }
         }
     }
