@@ -80,3 +80,13 @@ foreach tool: rgt_xml2_tools
         install: true,
     )
 endforeach
+
+executable(
+    'rgt-xml2json',
+    files('xml2json/xml2json.c'),
+    include_directories: inc,
+    dependencies: tool_deps,
+    c_args: c_args,
+    link_with: [libtmpls, libxml2multi, libxml2fmt_core, libmi_msg],
+    install: true,
+)

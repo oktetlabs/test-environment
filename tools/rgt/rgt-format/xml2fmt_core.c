@@ -1186,17 +1186,20 @@ main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    if (rgt_resource_files_prefix_get(util_path, argv[0],
-                                      sizeof(prefix), prefix))
+    if (xml2fmt_tmpls_num > 0)
     {
-        fprintf(stderr, "Failed to get resource files path prefix\n");
-        exit(EXIT_FAILURE);
-    }
+        if (rgt_resource_files_prefix_get(util_path, argv[0],
+                                          sizeof(prefix), prefix))
+        {
+            fprintf(stderr, "Failed to get resource files path prefix\n");
+            exit(EXIT_FAILURE);
+        }
 
-    if (rgt_tmpls_parse(xml2fmt_files, prefix, xml2fmt_tmpls,
-                        xml2fmt_tmpls_num) != 0)
-    {
-        assert(0);
+        if (rgt_tmpls_parse(xml2fmt_files, prefix, xml2fmt_tmpls,
+                            xml2fmt_tmpls_num) != 0)
+        {
+            assert(0);
+        }
     }
 
     gen_ctx.state = RGT_XML2HTML_STATE_INITIAL;
