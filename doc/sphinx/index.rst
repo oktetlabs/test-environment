@@ -320,6 +320,7 @@ Apart from main components, TE provides the following set of tools:
 |			:ref:`Test API to control a network throughput test tool<doxid-group__tapi__performance>`
 |			:ref:`Test API to control Unbound DNS server<doxid-group__ts__tapi__dns__unbound>`
 |			:ref:`Test API to generate Unbound DNS server config file<doxid-group__ts__tapi__dns__cfg__unbound>`
+|			:ref:`Test API to generate zone file<doxid-group__ts__tapi__dns__zone__file>`
 |			:ref:`Test API to operate the UPnP<doxid-group__tapi__upnp>`
 |				:ref:`Test API for DLNA UPnP commons<doxid-group__tapi__upnp__common>`
 |				:ref:`Test API to operate the DLNA UPnP Content Directory Resources<doxid-group__tapi__upnp__cd__resources>`

@@ -8,6 +8,7 @@
 
 #define TE_LGR_USER "TAPI UNBOUND CFG"
 
+#include "tapi_dns_common.h"
 #include "tapi_dns_unbound.h"
 #include "tapi_job_opt.h"
 #include "te_alloc.h"
@@ -216,26 +217,6 @@ build_cfg_group(const char *prefix,
     te_vec_deep_free(&args);
 }
 
-static char *
-gen_filepath(const char *ta, const char *base_dir, const char *filename)
-{
-    char *result = NULL;
-    char *ta_dir = NULL;
-
-    if ((filename != NULL) && (filename[0] == '/'))
-        return strdup(filename);
-
-    if (base_dir == NULL)
-    {
-        ta_dir = tapi_cfg_base_get_ta_dir(ta, TAPI_CFG_BASE_TA_DIR_TMP);
-        base_dir = ta_dir;
-    }
-    result = tapi_file_join_pathname(NULL, base_dir, filename, NULL);
-
-    free(ta_dir);
-    return result;
-}
-
 te_errno
 tapi_dns_unbound_cfg_create(const char *ta,
                             const tapi_dns_unbound_cfg_opt *opt,
@@ -256,7 +237,7 @@ tapi_dns_unbound_cfg_create(const char *ta,
                     "\n" INDENT, &cfg_data);
     build_cfg_group("", opt, unbound_cfg_auth_zone_binds, "\n", &cfg_data);
 
-    res_path = gen_filepath(ta, base_dir, filename);
+    res_path = tapi_dns_gen_filepath(ta, base_dir, filename);
     rc = tapi_file_create_ta(ta, res_path, "%s", cfg_data.ptr);
     te_string_free(&cfg_data);
     if (rc != 0)
