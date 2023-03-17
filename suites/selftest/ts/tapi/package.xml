@@ -30,6 +30,10 @@
             <package name="tool"/>
         </run>
 
+        <run>
+            <package name="dns"/>
+        </run>
+
     <!-- FIXME. Bug11561: Broken with Debian 11
         <run>
             <package name="upnp"/>

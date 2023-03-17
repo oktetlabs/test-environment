@@ -8,6 +8,7 @@ packages = [
     'job',
     'jobopt',
     'tool',
+    'dns',
 ]
 
 install_data([ 'package.xml' ], install_dir: package_dir)

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+
+    <description>Test TAPI DNS implementation</description>
+
+    <author mailto="Ivan.Khodyrev@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+        <enum name="verbose_level">
+            <value>NOT_VERBOSE</value>
+            <value>VERBOSE</value>
+            <value>MORE_VERBOSE</value>
+        </enum>
+
+        <run>
+            <script name="unbound"/>
+            <arg name="env">
+                <value>{{{'pco_iut':tester},if:'if_a',addr:'iut_addr':inet:unicast}}</value>
+            </arg>
+            <arg name="verbosity" type="verbose_level">
+                <value>MORE_VERBOSE</value>
+            </arg>
+        </run>
+    </session>
+</package>

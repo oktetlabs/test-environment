@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="dns" type="package">
+    <objective>Test TAPI DNS implemetation</objective>
+    <iter result="PASSED">
+        <test name="unbound" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="verbosity" type="verbose_level"/>
+            </iter>
+        </test>
+    </iter>
+</test>

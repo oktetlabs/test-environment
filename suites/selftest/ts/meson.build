@@ -44,6 +44,7 @@ te_libs = [
     'tapi_tool',
     'tapi_job',
     'tapi_fio',
+    'tapi_dns',
 ]
 
 foreach lib : te_libs
