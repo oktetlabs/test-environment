@@ -19,6 +19,18 @@
             <arg name="env">
                 <value>{{{'iut_rpcs':IUT},addr:'iut_addr':inet:unicast}}</value>
             </arg>
+            <arg name="key_len_min">
+                <value>128</value>
+            </arg>
+            <arg name="key_len_max">
+                <value>128</value>
+            </arg>
+            <arg name="value_len_min">
+                <value>2048</value>
+            </arg>
+            <arg name="value_len_max">
+                <value>2048</value>
+            </arg>
         </run>
         <run>
             <script name="memtier"/>

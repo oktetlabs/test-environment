@@ -22,6 +22,11 @@
 
 #define TAPI_MEMASLAP_TIMEOUT_MS 10000
 
+#define CFG_OPT_KEY_LEN_MIN_LIM 16
+#define CFG_OPT_KEY_LEN_MAX_LIM 250
+#define CFG_OPT_VALUE_LEN_MIN_LIM 1
+#define CFG_OPT_VALUE_LEN_MAX_LIM 1048576
+
 /**
  * Path to memaslap exec in the case of
  * tapi_memaslap_opt::memaslap_path is @c NULL.
@@ -98,8 +103,62 @@ const tapi_memaslap_opt tapi_memaslap_default_opt = {
 
 /* Default values of memaslap configuration file options */
 const tapi_memaslap_cfg_opt tapi_memaslap_default_cfg_opt = {
+    .key_len_min = 64,
+    .key_len_max = 64,
+    .value_len_min = 1024,
+    .value_len_max = 1024,
     .set_share = 0.1
 };
+
+static te_errno
+cfg_opts_check_lens(tapi_memaslap_cfg_opt *cfg_opt)
+{
+    te_errno rc = 0;
+
+    if (cfg_opt->key_len_min > cfg_opt->key_len_max)
+    {
+        ERROR("Incorrect key_len: min %zu > max %zu", cfg_opt->key_len_min,
+              cfg_opt->key_len_max);
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (cfg_opt->key_len_min < CFG_OPT_KEY_LEN_MIN_LIM)
+    {
+        ERROR("Incorrect key_len_min: %zu, must be >= %d", cfg_opt->key_len_min,
+              CFG_OPT_KEY_LEN_MIN_LIM);
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (cfg_opt->key_len_max > CFG_OPT_KEY_LEN_MAX_LIM)
+    {
+        ERROR("Incorrect key_len_max: %zu, must be <= %d", cfg_opt->key_len_max,
+              CFG_OPT_KEY_LEN_MAX_LIM);
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (cfg_opt->value_len_min > cfg_opt->value_len_max)
+    {
+        ERROR("Incorrect value_len: min %zu > max %zu", cfg_opt->value_len_min,
+              cfg_opt->value_len_max);
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (cfg_opt->value_len_min < CFG_OPT_VALUE_LEN_MIN_LIM)
+    {
+        ERROR("Incorrect value_len_min: %zu, must be >= %d",
+              cfg_opt->value_len_min, CFG_OPT_VALUE_LEN_MIN_LIM);
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (cfg_opt->value_len_max > CFG_OPT_VALUE_LEN_MAX_LIM)
+    {
+        ERROR("Incorrect value_len_max: %zu, must be <= %d",
+              cfg_opt->value_len_max, CFG_OPT_VALUE_LEN_MAX_LIM);
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    return rc;
+}
 
 /* See description in tapi_memaslap.h */
 te_errno
@@ -157,6 +216,10 @@ tapi_memaslap_create(tapi_job_factory_t *factory,
 
     if (opt->cfg_opts != NULL)
     {
+        rc = cfg_opts_check_lens(opt->cfg_opts);
+        if (rc != 0)
+            return rc;
+
         te_string cfg_txt = TE_STRING_INIT;
 
         tmp_fn = tapi_file_make_name(NULL);
@@ -169,12 +232,16 @@ tapi_memaslap_create(tapi_job_factory_t *factory,
          */
         te_string_append(&cfg_txt,
                          "key\n"
-                         "64 64 1\n"
+                         "%zu %zu 1\n"
                          "value\n"
-                         "1024 1024 1\n"
+                         "%zu %zu 1\n"
                          "cmd\n"
                          "0    %.2f\n"
                          "1    %.2f\n",
+                         opt->cfg_opts->key_len_min,
+                         opt->cfg_opts->key_len_max,
+                         opt->cfg_opts->value_len_min,
+                         opt->cfg_opts->value_len_max,
                          opt->cfg_opts->set_share,
                          1.0 - opt->cfg_opts->set_share);
         RING("The following contents will be passed "

@@ -33,6 +33,10 @@ int
 main(int argc, char **argv)
 {
     te_errno                rc_wait             = 0;
+    size_t                  key_len_min         = 0;
+    size_t                  key_len_max         = 0;
+    size_t                  value_len_min       = 0;
+    size_t                  value_len_max       = 0;
     rcf_rpc_server         *iut_rpcs            = NULL;
     tapi_job_factory_t     *memcached_factory   = NULL;
     tapi_job_factory_t     *memaslap_factory    = NULL;
@@ -41,8 +45,14 @@ main(int argc, char **argv)
     tapi_memaslap_app      *memaslap_app        = NULL;
     tapi_memcached_opt      memcached_opts      = tapi_memcached_default_opt;
     tapi_memaslap_opt       memaslap_opts       = tapi_memaslap_default_opt;
+    tapi_memaslap_cfg_opt   memaslap_cfg_opts   = tapi_memaslap_default_cfg_opt;
     tapi_memaslap_report    memaslap_report     = { 0 };
     const struct sockaddr  *iut_addr            = NULL;
+
+    TEST_GET_UINT_PARAM(key_len_min);
+    TEST_GET_UINT_PARAM(key_len_max);
+    TEST_GET_UINT_PARAM(value_len_min);
+    TEST_GET_UINT_PARAM(value_len_max);
 
     TEST_START;
 
@@ -87,6 +97,13 @@ main(int argc, char **argv)
     /* Set servers = 127.0.0.1:11212 and number of servers = 1. */
     memaslap_opts.servers[0]   = (const struct sockaddr *)iut_addr;
     memaslap_opts.n_servers    = 1;
+
+    /* Set key and value lengths */
+    memaslap_opts.cfg_opts = &memaslap_cfg_opts;
+    memaslap_opts.cfg_opts->key_len_min = key_len_min;
+    memaslap_opts.cfg_opts->key_len_max = key_len_max;
+    memaslap_opts.cfg_opts->value_len_min = value_len_min;
+    memaslap_opts.cfg_opts->value_len_max = value_len_max;
 
     CHECK_RC(tapi_job_factory_rpc_create(iut_rpcs, &memcached_factory));
     CHECK_RC(tapi_job_factory_rpc_create(iut_rpcs, &memaslap_factory));

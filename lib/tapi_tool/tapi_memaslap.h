@@ -60,6 +60,14 @@ typedef struct tapi_memaslap_report {
 
 /** Contents of memaslap configuration file. */
 typedef struct tapi_memaslap_cfg_opt {
+    /** Key min length. Must be equal to or greater than 16. */
+    size_t key_len_min;
+    /** Key max length. Must be equal to or less than 250. */
+    size_t key_len_max;
+    /** Value min length. Must be equal to or greater than 1. */
+    size_t value_len_min;
+    /** Value max length. Must be equal to or less than 1M. */
+    size_t value_len_max;
     /** Share of set commands. Should be within range [0, 1]. */
     double set_share;
 } tapi_memaslap_cfg_opt;
