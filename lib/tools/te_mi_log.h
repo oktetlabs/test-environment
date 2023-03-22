@@ -240,6 +240,7 @@ typedef enum te_mi_meas_type {
     TE_MI_MEAS_EPE, /**< Events per another event */
     TE_MI_MEAS_IOPS, /**< Input/Output operations per second */
     TE_MI_MEAS_LOADAVG, /**< Load average */
+    TE_MI_MEAS_PERCENTAGE, /**< Percentage value */
 
     TE_MI_MEAS_END, /**< End marker for a measurement vector.
                          Also is one past last valid type */
