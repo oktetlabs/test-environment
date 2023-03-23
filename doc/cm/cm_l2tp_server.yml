@@ -31,7 +31,7 @@
          Name: empty
 
     - oid: "/agent/l2tp/lns"
-      access: read_write
+      access: read_create
       type: none
       d: |
          An object for the LNS section
@@ -112,7 +112,7 @@
          Value: no or yes
 
     - oid: "/agent/l2tp/lns/auth/client"
-      access: read_write
+      access: read_create
       type: none
       d: |
          Client name for the authentication secrets.
