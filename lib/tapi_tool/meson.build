@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved.
 
 headers += files(
     'tapi_bttrack.h',
@@ -17,6 +17,7 @@ headers += files(
     'tapi_sfnt_pingpong.h',
     'tapi_ssh.h',
     'tapi_stress.h',
+    'tapi_trex.h',
     'tapi_wrk.h',
 )
 sources += files(
@@ -35,6 +36,7 @@ sources += files(
     'tapi_sfnt_pingpong.c',
     'tapi_ssh.c',
     'tapi_stress.c',
+    'tapi_trex.c',
     'tapi_wrk.c',
 )
 
