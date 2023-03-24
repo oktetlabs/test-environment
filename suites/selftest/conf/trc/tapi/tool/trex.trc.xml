@@ -10,5 +10,14 @@
             <iter result="PASSED"/>
         </test>
 
+        <test name="trex_wrk">
+            <objective/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="trex_duration"/>
+                <arg name="wrk_connections"/>
+            </iter>
+        </test>
+
     </iter>
 </test>
