@@ -1488,8 +1488,6 @@ RGT_DEF_FUNC(proc_logs_start)
 
     RGT_FUNC_UNUSED_PRMS();
 
-    depth_user->linum = 1;
-
     if (depth_user->fd != NULL)
     {
         attrs = rgt_tmpls_attrs_new(xml_attrs);
@@ -1921,6 +1919,7 @@ alloc_depth_user_data(uint32_t depth)
     depth_user->log_level = NULL;
     depth_user->json_data = (te_dbuf)TE_DBUF_INIT(0);
     depth_user->no_logs = TRUE;
+    depth_user->linum = 1;
 
     return depth_user;
 }
