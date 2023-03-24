@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="trex" type="package">
+    <objective>TAPI TRex implementation</objective>
+    <iter result="PASSED">
+
+        <test name="trex_prologue">
+            <objective/>
+            <iter result="PASSED"/>
+        </test>
+
+    </iter>
+</test>

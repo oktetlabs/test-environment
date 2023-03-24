@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+
+    <description>Test Suite to test TAPI TRex implementation</description>
+    <author mailto="Daniil.Byshenko@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+
+        <prologue>
+            <script name="trex_prologue"/>
+        </prologue>
+
+    </session>
+</package>

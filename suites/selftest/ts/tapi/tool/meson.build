@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2020-2023 OKTET Labs Ltd. All rights reserved.
 
 packages = [
     'memcached',
     'nptcp',
     'redis',
     'torrent',
+    'trex',
 ]
 
 install_data([ 'package.xml' ], install_dir: package_dir)
