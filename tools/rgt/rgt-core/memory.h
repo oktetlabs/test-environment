@@ -62,4 +62,14 @@ void *node_info_obstack_alloc(int size);
  */
 void *node_info_obstack_copy0(const void *address, int size);
 
+/**
+ * Allocate a copy of user-supplied data from the node_info pool.
+ *
+ * @param address       data buffer
+ * @param size          size of data
+ *
+ * @returns Pointer to the allocated buffer.
+ */
+void *node_info_obstack_copy(const void *address, int size);
+
 #endif /* __TE_RGT_MEMORY_H__ */

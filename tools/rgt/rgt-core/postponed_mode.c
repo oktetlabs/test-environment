@@ -309,28 +309,35 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
         write_xml_string(NULL, node->descr.page, FALSE);
         fputs("</page>\n", rgt_ctx.out_fd);
     }
-    if (node->descr.authors)
+    if (node->descr.authors_num > 0)
     {
-        char *author = node->descr.authors;
-        char *ptr;
+        unsigned int i;
+        rgt_author *author;
 
         fputs("<authors>", rgt_ctx.out_fd);
 
-        /* Authors are separated with a space */
-        do {
-            if ((ptr = strchr(author, ' ')) != NULL)
+        for (i = 0; i < node->descr.authors_num; i++)
+        {
+            fputs("<author", rgt_ctx.out_fd);
+
+            author = &node->descr.authors[i];
+
+            if (author->name != NULL)
             {
-                *ptr = '\0';
-                ptr++;
+                fputs(" name=\"", rgt_ctx.out_fd);
+                write_xml_string(NULL, author->name, TRUE);
+                fputs("\"", rgt_ctx.out_fd);
             }
 
-            fputs("<author email=\"", rgt_ctx.out_fd);
-            author += strlen("mailto:");
-            write_xml_string(NULL, author, TRUE);
-            fputs("\"/>", rgt_ctx.out_fd);
-            author = ptr;
-        } while (ptr != NULL);
+            if (author->email != NULL)
+            {
+                fputs(" email=\"", rgt_ctx.out_fd);
+                write_xml_string(NULL, author->email, TRUE);
+                fputs("\"", rgt_ctx.out_fd);
+            }
 
+            fputs("></author>", rgt_ctx.out_fd);
+        }
         fputs("</authors>\n", rgt_ctx.out_fd);
     }
 

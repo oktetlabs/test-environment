@@ -162,6 +162,13 @@ node_info_obstack_copy0(const void *address, int size)
 }
 
 /* See the description in memory.h */
+void *
+node_info_obstack_copy(const void *address, int size)
+{
+    return obstack_copy(node_info_obstk, address, size);
+}
+
+/* See the description in memory.h */
 log_msg_ptr *
 alloc_log_msg_ptr(void)
 {

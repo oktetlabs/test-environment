@@ -146,6 +146,14 @@ node_type2str(node_type_t node_type)
  */
 #define TE_TIN_INVALID  ((unsigned int)(-1))
 
+/** Package author. */
+typedef struct rgt_author {
+    /** Name. */
+    const char *name;
+    /** Email. */
+    const char *email;
+} rgt_author;
+
 /**
  * Structure that represents information about a particular entry.
  * It is used for passing information about start/end events.
@@ -155,9 +163,13 @@ typedef struct node_descr {
     char           *objective;  /**< Objectives of the entry */
     unsigned int    tin;        /**< Test identification number */
     char           *page;       /**< Name of the page with documentation */
-    char           *authors;    /**< Entry authors */
     char           *hash;       /**< Parameters hash */
     int             n_branches; /**< Number of branches in the entry */
+
+    /** Names and emails of authors. */
+    rgt_author *authors;
+    /** Number of authors. */
+    unsigned int authors_num;
 } node_descr_t;
 
 typedef struct node_info {

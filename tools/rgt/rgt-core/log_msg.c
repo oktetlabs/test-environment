@@ -27,6 +27,7 @@
 #include "memory.h"
 
 #include "te_string.h"
+#include "te_vector.h"
 
 f_process_ctrl_log_msg ctrl_msg_proc[CTRL_EVT_LAST][NT_LAST];
 f_process_reg_log_msg  reg_msg_proc;
@@ -640,15 +641,17 @@ rgt_process_event(node_type_t type, enum event_type evt, node_info_t *node)
 /*************************************************************************/
 
 /**
- * Transform authors information from JSON into a string.
+ * Transform authors information from JSON into an array of rgt_author
+ * structures.
  *
  * @param authors       JSON array
- * @param authors_str   TE string, the result will be put here
+ * @param authors_vec   Output vector of rgt_author structures
+ * @param num           Number of authors
  *
  * @return Status code
  */
 static te_errno
-authors_from_json(json_t *authors, te_string *authors_str)
+authors_from_json(json_t *authors, te_vec *authors_vec, unsigned int *num)
 {
     int           ret;
     te_errno      rc;
@@ -660,7 +663,10 @@ authors_from_json(json_t *authors, te_string *authors_str)
     const char   *name = NULL;
     const char   *email = NULL;
 
-    te_string_reset(authors_str);
+    char *name_copy;
+    char *email_copy;
+    unsigned int authors_num = 0;
+
     json_array_foreach(authors, index, author)
     {
         /*
@@ -678,32 +684,137 @@ authors_from_json(json_t *authors, te_string *authors_str)
         {
             FMT_TRACE("Error unpacking authors: %s (line %d, column %d)",
                       err.text, err.line, err.column);
-            te_string_reset(authors_str);
             return TE_EINVAL;
         }
 
-        rc = extract_json_string(name_opt, &name, "");
+        rc = extract_json_string(name_opt, &name, NULL);
         if (rc != 0)
         {
             FMT_TRACE("Invalid type for the \"authors.name\" value: %s",
                       get_json_type(name_opt));
-            te_string_reset(authors_str);
             return TE_EINVAL;
         }
 
-        rc = extract_json_string(email_opt, &email, "");
+        rc = extract_json_string(email_opt, &email, NULL);
         if (rc != 0)
         {
             FMT_TRACE("Invalid type for the \"authors.email\" value: %s",
                       get_json_type(email_opt));
-            te_string_reset(authors_str);
             return TE_EINVAL;
         }
 
-        te_string_append(authors_str, "%s mailto:%s", name, email);
+        if (name != NULL || email != NULL)
+        {
+            rgt_author author;
+
+            if (name != NULL)
+                name_copy = node_info_obstack_copy0(name, strlen(name));
+            else
+                name_copy = NULL;
+
+            if (email != NULL)
+                email_copy = node_info_obstack_copy0(email, strlen(email));
+            else
+                email_copy = NULL;
+
+            author.name = name_copy;
+            author.email = email_copy;
+            rc = TE_VEC_APPEND(authors_vec, author);
+            if (rc != 0)
+            {
+                FMT_TRACE("cannot append parsed author: %s",
+                          te_rc_err2str(rc));
+                THROW_EXCEPTION;
+            }
+
+            authors_num++;
+        }
     }
 
+    *num = authors_num;
     return 0;
+}
+
+/**
+ * Parse text representation of authors. It can be found in old night
+ * testing logs generated before switching to JSON messages in Tester.
+ *
+ * @param authors       A string containing list of authors
+ *                      (format: `( (<name> )?mailto:<mail>)*`).
+ * @param len           Length of the string.
+ * @param authors_vec   Output vector of rgt_author structures.
+ * @param num           Number of parsed structures.
+ */
+static void
+authors_from_text(const char *authors, size_t len, te_vec *authors_vec,
+                  unsigned int *num)
+{
+    char *name = NULL;
+    char *email = NULL;
+    size_t i;
+    size_t start;
+    size_t end;
+    int skip_mail = strlen("mailto:");
+
+    rgt_author author;
+    unsigned int count = 0;
+    te_errno rc;
+
+    for (i = 0; i < len && authors[i] == ' '; i++);
+
+    start = i;
+
+    for ( ; i + skip_mail <= len; i++)
+    {
+        if (strncmp(&authors[i], "mailto:", skip_mail) == 0 &&
+                    (i == 0 || authors[i - 1] == ' '))
+        {
+            if (i > start)
+            {
+                for (end = i - 1; end > start && authors[end] == ' '; end--);
+
+                name = node_info_obstack_copy0(&authors[start],
+                                               end - start + 1);
+            }
+            else
+            {
+                name = NULL;
+            }
+
+            start = i + skip_mail;
+            for (end = start; end < len && authors[end] != ' '; end++);
+
+            if (end > start)
+            {
+                email = node_info_obstack_copy0(&authors[start],
+                                                end - start);
+            }
+            else
+            {
+                email = NULL;
+            }
+
+            for (i = end; i < len && authors[i] == ' '; i++);
+
+            start = i;
+            i--;
+
+            author.name = name;
+            author.email = email;
+
+            rc = TE_VEC_APPEND(authors_vec, author);
+            if (rc != 0)
+            {
+                FMT_TRACE("cannot append parsed author: %s",
+                          te_rc_err2str(rc));
+                THROW_EXCEPTION;
+            }
+
+            count++;
+        }
+    }
+
+    *num = count;
 }
 
 /**
@@ -860,19 +971,22 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
     {
         if (json_is_array(authors))
         {
-            te_string authors_str = TE_STRING_INIT;
+            te_vec authors_vec = TE_VEC_INIT(rgt_author);
+            unsigned int authors_num;
 
-            rc = authors_from_json(authors, &authors_str);
+            rc = authors_from_json(authors, &authors_vec, &authors_num);
             if (rc != 0)
             {
-                te_string_free(&authors_str);
+                te_vec_free(&authors_vec);
                 free_node_info(node);
                 return NULL;
             }
 
             node->descr.authors =
-                node_info_obstack_copy0(authors_str.ptr, authors_str.len);
-            te_string_free(&authors_str);
+                node_info_obstack_copy(authors_vec.data.ptr,
+                                       authors_vec.data.len);
+            node->descr.authors_num = authors_num;
+            te_vec_free(&authors_vec);
         }
         else
         {
@@ -1072,6 +1186,9 @@ create_node_by_msg(log_msg *msg, node_type_t type,
 
     if (strncmp(fmt_str, "AUTHORS", strlen("AUTHORS")) == 0)
     {
+        te_vec authors_vec = TE_VEC_INIT(rgt_author);
+        unsigned int authors_num;
+
         /* Process "authors" clause */
         fmt_str += strlen("AUTHORS");
 
@@ -1091,10 +1208,14 @@ create_node_by_msg(log_msg *msg, node_type_t type,
                       "%s (%d %d)", msg->fmt_str, node_id, parent_id);
             return NULL;
         }
-        node->descr.authors =
-            (char *)node_info_obstack_copy0(arg->val, arg->len);
 
-        SKIP_SPACES(node->descr.authors);
+        authors_from_text((char *)(arg->val), arg->len,
+                          &authors_vec, &authors_num);
+        node->descr.authors =
+            node_info_obstack_copy(authors_vec.data.ptr,
+                                   authors_vec.data.len);
+        node->descr.authors_num = authors_num;
+        te_vec_free(&authors_vec);
 
         fmt_str += strlen("%s");
 

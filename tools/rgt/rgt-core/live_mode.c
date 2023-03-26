@@ -115,8 +115,31 @@ live_process_start_event(node_info_t *node, const char *node_name,
     if (node->descr.objective != NULL)
         fprintf(rgt_ctx.out_fd, "|- Objective: %s\n",
                 node->descr.objective);
-    if (node->descr.authors)
-        fprintf(rgt_ctx.out_fd, "|- Authors: %s\n", node->descr.authors);
+
+    if (node->descr.authors_num > 0)
+    {
+        unsigned int i;
+        rgt_author *author;
+
+        fprintf(rgt_ctx.out_fd, "|- Authors: ");
+        for (i = 0; i < node->descr.authors_num; i++)
+        {
+            if (i > 0)
+                fprintf(rgt_ctx.out_fd, ", ");
+
+            author = &node->descr.authors[i];
+            if (author->name != NULL)
+                fprintf(rgt_ctx.out_fd, "%s", author->name);
+
+            if (author->email != NULL)
+            {
+                fprintf(rgt_ctx.out_fd, "%s%s",
+                        author->name == NULL ? "" : " ",
+                        author->email);
+            }
+        }
+        fprintf(rgt_ctx.out_fd, "\n");
+    }
 
     print_params(node->params);
 
