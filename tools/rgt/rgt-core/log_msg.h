@@ -187,6 +187,12 @@ typedef struct node_info {
 typedef struct ctrl_msg_data {
     msg_queue verdicts;    /**< Test verdicts */
     msg_queue artifacts;   /**< Test artifacts */
+
+    /**
+     * If TRUE, indicates that at least some human readable
+     * artifacts are present.
+     */
+    te_bool not_mi_artifacts;
 } ctrl_msg_data;
 
 /**

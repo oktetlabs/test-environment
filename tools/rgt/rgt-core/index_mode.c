@@ -188,7 +188,15 @@ index_process_regular_msg(log_msg *msg)
 
     UNUSED(msg);
 
-    if ((msg->flags & (RGT_MSG_FLG_VERDICT | RGT_MSG_FLG_ARTIFACT)) ||
+    /*
+     * Do not add MI artifacts to the start fragment - they are not
+     * human-readable and can contain a lot of data.
+     */
+    if ((msg->flags & RGT_MSG_FLG_ARTIFACT) &&
+        (~msg->level & TE_LL_MI))
+        to_start_frag = 1;
+
+    if ((msg->flags & RGT_MSG_FLG_VERDICT) ||
         strcmp(msg->user, "TRC tags") == 0)
         to_start_frag = 1;
 

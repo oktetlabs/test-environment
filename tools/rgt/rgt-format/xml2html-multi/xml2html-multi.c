@@ -78,11 +78,6 @@ typedef struct depth_ctx_user {
                                       value - array of user names */
     uint32_t linum; /**< Line number in HTML */
 
-    te_bool ignore_artifact; /**< If @c TRUE, the currently processed
-                                  artifact should be ignored - this
-                                  is used for filtering out MI
-                                  artifacts in summary */
-
     te_dbuf json_data;    /**< Buffer for collecting JSON before it can
                                be parsed */
 
@@ -1662,14 +1657,11 @@ DEF_FUNC_WITHOUT_ATTRS(proc_log_msg_file_end, LOG_MSG_FILE_END)
 RGT_DEF_FUNC(proc_meta_artifact_start)
 {
     depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-    const char *level = rgt_tmpls_xml_attrs_get(xml_attrs, "level");
     FILE *fd = depth_user->fd;
 
     RGT_FUNC_UNUSED_PRMS();
 
-    if (level != NULL && strcmp(level, "MI") == 0)
-        depth_user->ignore_artifact = TRUE;
-    else if (fd != NULL)
+    if (fd != NULL)
         rgt_tmpls_output(fd, &xml2fmt_tmpls[META_ARTIFACT_START], NULL);
 }
 
@@ -1680,10 +1672,8 @@ RGT_DEF_FUNC(proc_meta_artifact_end)
 
     RGT_FUNC_UNUSED_PRMS();
 
-    if (!(depth_user->ignore_artifact) && fd != NULL)
+    if (fd != NULL)
         rgt_tmpls_output(fd, &xml2fmt_tmpls[META_ARTIFACT_END], NULL);
-
-    depth_user->ignore_artifact = FALSE;
 }
 
 /**
@@ -1753,9 +1743,6 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     TE_COMPILE_TIME_ASSERT(sizeof(rgt_xmlChar) == 1);
 
     if (fd == NULL)
-        return;
-
-    if (depth_user->ignore_artifact)
         return;
 
     if (depth_user->log_level != NULL &&
@@ -1915,7 +1902,6 @@ alloc_depth_user_data(uint32_t depth)
     assert(g_ptr_array_index(depth_array, depth - 1) != NULL);
 
     depth_user = g_ptr_array_index(depth_array, depth - 1);
-    depth_user->ignore_artifact = FALSE;
     depth_user->log_level = NULL;
     depth_user->json_data = (te_dbuf)TE_DBUF_INIT(0);
     depth_user->no_logs = TRUE;

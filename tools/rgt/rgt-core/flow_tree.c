@@ -247,6 +247,7 @@ ctrl_msg_data_init(ctrl_msg_data *data)
 {
     msg_queue_init(&data->verdicts);
     msg_queue_init(&data->artifacts);
+    data->not_mi_artifacts = FALSE;
 }
 
 /**
@@ -1436,6 +1437,8 @@ flow_tree_attach_message(log_msg *msg)
             {
                 msg_queue_attach(&cur_node->ctrl_data.artifacts,
                                  log_msg_ref(msg));
+                if (~msg->level & TE_LL_MI)
+                    cur_node->ctrl_data.not_mi_artifacts = TRUE;
             }
             else
             {
