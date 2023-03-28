@@ -10,6 +10,16 @@
             <iter result="PASSED"/>
         </test>
 
+        <test name="trex_nginx">
+            <objective/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="trex_duration"/>
+                <arg name="trex_multiplier"/>
+                <arg name="nginx_port"/>
+            </iter>
+        </test>
+
         <test name="trex_wrk">
             <objective/>
             <iter result="PASSED">

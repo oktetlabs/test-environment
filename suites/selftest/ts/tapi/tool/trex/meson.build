@@ -5,6 +5,7 @@ install_headers('trex.h')
 
 tests = [
     'trex_prologue',
+    'trex_nginx',
     'trex_wrk',
 ]
 

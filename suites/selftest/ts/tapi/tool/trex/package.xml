@@ -28,6 +28,23 @@
         </prologue>
 
         <run>
+            <script name="trex_nginx"/>
+            <arg name="env" ref="env.peer2peer"/>
+            <arg name="trex_duration">
+                <!-- TRex run duration, in seconds. -->
+                <value>60</value>
+            </arg>
+            <arg name="trex_multiplier">
+                <!-- TRex rate multiplier. -->
+                <value>8</value>
+            </arg>
+            <arg name="nginx_port">
+                <!-- Nginx port to bind. -->
+                <value>80</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="trex_wrk"/>
             <arg name="env" ref="env.peer2peer"/>
             <arg name="trex_duration">
