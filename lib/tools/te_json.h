@@ -42,6 +42,7 @@ typedef enum te_json_compound {
     TE_JSON_COMPOUND_OBJECT,       /**< object (dictionary) */
     TE_JSON_COMPOUND_OBJECT_VALUE, /**< object value */
     TE_JSON_COMPOUND_STRING,       /**< string value */
+    TE_JSON_COMPOUND_RAW,          /**< raw JSON value */
 } te_json_compound;
 
 /** Maximum nesting level for JSON serialization */
@@ -215,6 +216,30 @@ extern void te_json_append_string(te_json_ctx_t *ctx,
  */
 extern void te_json_append_string_va(te_json_ctx_t *ctx, const char *fmt,
                                      va_list args);
+
+/**
+ * Start "raw" JSON value. te_json_end() should be called once
+ * the value is finished. te_json_append_raw() should be used
+ * to construct the value.
+ *
+ * This function can be used when there is a string containing
+ * JSON object which should simply be attached to constructed
+ * JSON tree without any editing.
+ *
+ * @param ctx      JSON context
+ */
+extern void te_json_start_raw(te_json_ctx_t *ctx);
+
+/**
+ * Append preformatted JSON string.
+ *
+ * @param ctx       JSON context
+ * @param value     String to append
+ * @param len       Length of the string (if zero, the string must include
+ *                  the terminating null byte)
+ */
+extern void te_json_append_raw(te_json_ctx_t *ctx, const char *value,
+                               size_t len);
 
 /**
  * Start serializing a JSON array.

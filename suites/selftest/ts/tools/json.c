@@ -22,6 +22,7 @@
 
 #include "tapi_test.h"
 #include "te_json.h"
+#include "te_str.h"
 
 static void
 do_json_string(te_json_ctx_t *ctx, void *val)
@@ -150,6 +151,32 @@ do_json_array_of_str(te_json_ctx_t *ctx, void *val)
 }
 
 static void
+do_json_append_raw_gen(te_json_ctx_t *ctx, void *val, te_bool use_len)
+{
+    const char **strs = val;
+    unsigned int i;
+
+    te_json_start_raw(ctx);
+
+    for (i = 0; strs[i] != NULL; i++)
+        te_json_append_raw(ctx, strs[i], use_len ? strlen(strs[i]) : 0);
+
+    te_json_end(ctx);
+}
+
+static void
+do_json_append_raw(te_json_ctx_t *ctx, void *val)
+{
+    return do_json_append_raw_gen(ctx, val, FALSE);
+}
+
+static void
+do_json_append_raw_len(te_json_ctx_t *ctx, void *val)
+{
+    return do_json_append_raw_gen(ctx, val, TRUE);
+}
+
+static void
 check_json(void *val, void (*func)(te_json_ctx_t *ctx, void *),
            const char *expected)
 {
@@ -161,7 +188,7 @@ check_json(void *val, void (*func)(te_json_ctx_t *ctx, void *),
     if (ctx.current_level != 0)
         TEST_VERDICT("Invalid JSON nesting");
 
-    if (strcmp(dest.ptr, expected) != 0)
+    if (strcmp(te_str_empty_if_null(dest.ptr), expected) != 0)
     {
         ERROR("Unexpected JSON escaping: %s (expected %s)", dest.ptr, expected);
         TEST_VERDICT("JSON escaping is wrong");
@@ -278,6 +305,14 @@ main(int argc, char **argv)
                               {.key = "c", .value = "d"},
                               {.key = NULL}},
                do_json_kvpair, "{\"a\":\"b\",\"c\":\"d\"}");
+
+    TEST_STEP("Checking appending RAW json");
+    check_json((const char *[]){NULL},
+               do_json_append_raw, "");
+    check_json((const char *[]){"{\"a\": ", "3, ", "\"b\": \"no\"}", NULL},
+               do_json_append_raw, "{\"a\": 3, \"b\": \"no\"}");
+    check_json((const char *[]){"{\"x\": 4, \"y\":", " 5}", NULL},
+               do_json_append_raw_len, "{\"x\": 4, \"y\": 5}");
 
     TEST_SUCCESS;
 

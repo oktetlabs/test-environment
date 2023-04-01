@@ -121,6 +121,18 @@ te_json_append_string(te_json_ctx_t *ctx, const char *fmt, ...)
     va_end(args);
 }
 
+void
+te_json_append_raw(te_json_ctx_t *ctx, const char *value, size_t len)
+{
+    assert(ctx->nesting[ctx->current_level].kind ==
+                                      TE_JSON_COMPOUND_RAW);
+
+    if (len == 0)
+        te_string_append(ctx->dest, "%s", value);
+    else
+        te_string_append(ctx->dest, "%.*s", (int)len, value);
+}
+
 static void
 push_json_level(te_json_ctx_t *ctx, te_json_compound new_kind)
 {
@@ -155,6 +167,13 @@ te_json_start_string(te_json_ctx_t *ctx)
 }
 
 void
+te_json_start_raw(te_json_ctx_t *ctx)
+{
+    maybe_add_separator(ctx);
+    push_json_level(ctx, TE_JSON_COMPOUND_RAW);
+}
+
+void
 te_json_end(te_json_ctx_t *ctx)
 {
     switch (ctx->nesting[ctx->current_level].kind)
@@ -173,6 +192,9 @@ te_json_end(te_json_ctx_t *ctx)
             break;
         case TE_JSON_COMPOUND_STRING:
             te_string_append(ctx->dest, "\"");
+            break;
+        case TE_JSON_COMPOUND_RAW:
+            /* do nothing */
             break;
     }
     if (ctx->current_level != 0)
