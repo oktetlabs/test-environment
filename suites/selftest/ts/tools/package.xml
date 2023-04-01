@@ -103,6 +103,7 @@
 
         <run>
             <script name="json"/>
+            <arg name="use_file" type="boolean"/>
         </run>
 
         <run>

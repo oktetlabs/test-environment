@@ -56,6 +56,22 @@ typedef struct te_json_level_t {
     size_t n_items;
 } te_json_level_t;
 
+/** JSON output type. */
+typedef enum te_json_out_t {
+    /** append JSON to a TE string */
+    TE_JSON_OUT_STR,
+    /** write JSON to a file */
+    TE_JSON_OUT_FILE,
+} te_json_out_t;
+
+/** Output location for generated JSON. */
+typedef union te_json_out_loc_t {
+    /** TE string */
+    te_string *dest_str;
+    /** file */
+    FILE *dest_f;
+} te_json_out_loc_t;
+
 /**
  * The context for JSON serialization.
  *
@@ -64,8 +80,10 @@ typedef struct te_json_level_t {
  *       with TE_JSON_INIT_STR() and then passed to the API from this group.
  */
 typedef struct te_json_ctx_t {
-    /** JSON */
-    te_string *dest;
+    /** where to write JSON */
+    te_json_out_loc_t out_loc;
+    /** type of output destination */
+    te_json_out_t out_type;
 
     /** stack of nested JSON compounds */
     te_json_level_t nesting[TE_JSON_MAX_NEST];
@@ -75,13 +93,29 @@ typedef struct te_json_ctx_t {
 } te_json_ctx_t;
 
 /**
- * Initializer for a JSON context.
+ * Initializer for a JSON context (to print JSON to TE string).
  *
  * @param str_   destination string
  */
 #define TE_JSON_INIT_STR(str_) \
     {                                                               \
-        .dest = (str_),                                             \
+        .out_type = TE_JSON_OUT_STR,                                \
+        .out_loc.dest_str = (str_),                                 \
+        .nesting = {[0] = {                                         \
+                .kind = TE_JSON_COMPOUND_TOPLEVEL,                  \
+                .n_items = 0}},                                     \
+        .current_level = 0                                          \
+    }
+
+/**
+ * Initializer for a JSON context (to print JSON to a file).
+ *
+ * @param f_   destination FILE
+ */
+#define TE_JSON_INIT_FILE(f_) \
+    {                                                               \
+        .out_type = TE_JSON_OUT_FILE,                               \
+        .out_loc.dest_f = (f_),                                     \
         .nesting = {[0] = {                                         \
                 .kind = TE_JSON_COMPOUND_TOPLEVEL,                  \
                 .n_items = 0}},                                     \

@@ -2,5 +2,6 @@
     <objective>Testing JSON generating routines.</objective>
     <notes/>
     <iter result="PASSED">
+      <arg name="use_file"/>
     </iter>
 </test>

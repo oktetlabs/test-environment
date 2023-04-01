@@ -18,6 +18,39 @@
 #include "te_json.h"
 
 static void
+append_to_json_va(te_json_ctx_t *ctx, const char *fmt,
+                  va_list args)
+{
+    int rc;
+
+    switch (ctx->out_type)
+    {
+        case TE_JSON_OUT_STR:
+            te_string_append_va(ctx->out_loc.dest_str, fmt, args);
+            return;
+
+        case TE_JSON_OUT_FILE:
+            rc = vfprintf(ctx->out_loc.dest_f, fmt, args);
+            if (rc < 0)
+                TE_FATAL_ERROR("failed to write to a file");
+
+            return;
+    }
+
+    TE_FATAL_ERROR("unknown output type %d", ctx->out_type);
+}
+
+static void
+append_to_json(te_json_ctx_t *ctx, const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    append_to_json_va(ctx, fmt, args);
+    va_end(args);
+}
+
+static void
 maybe_add_separator(te_json_ctx_t *ctx)
 {
     te_json_level_t *level = &ctx->nesting[ctx->current_level];
@@ -29,7 +62,7 @@ maybe_add_separator(te_json_ctx_t *ctx)
     else
     {
         if (level->n_items > 0)
-            te_string_append(ctx->dest, ",");
+            append_to_json(ctx, ",");
         level->n_items++;
     }
 }
@@ -42,7 +75,7 @@ te_json_add_simple(te_json_ctx_t *ctx, const char *fmt, ...)
     maybe_add_separator(ctx);
 
     va_start(args, fmt);
-    te_string_append_va(ctx->dest, fmt, args);
+    append_to_json_va(ctx, fmt, args);
     va_end(args);
 }
 
@@ -64,32 +97,32 @@ te_json_append_string_va(te_json_ctx_t *ctx, const char *fmt, va_list args)
             case '\\':
             case '\"':
             case '/':
-                te_string_append(ctx->dest, "\\%c", *iter);
+                append_to_json(ctx, "\\%c", *iter);
                 break;
             case '\b':
-                te_string_append(ctx->dest, "\\b");
+                append_to_json(ctx, "\\b");
                 break;
             case '\f':
-                te_string_append(ctx->dest, "\\f");
+                append_to_json(ctx, "\\f");
                 break;
             case '\n':
-                te_string_append(ctx->dest, "\\n");
+                append_to_json(ctx, "\\n");
                 break;
             case '\r':
-                te_string_append(ctx->dest, "\\r");
+                append_to_json(ctx, "\\r");
                 break;
             case '\t':
-                te_string_append(ctx->dest, "\\t");
+                append_to_json(ctx, "\\t");
                 break;
             default:
                 if (iscntrl(*iter))
                 {
-                    te_string_append(ctx->dest, "\\u%4.4" PRIx8,
+                    append_to_json(ctx, "\\u%4.4" PRIx8,
                                      (uint8_t)*iter);
                 }
                 else
                 {
-                    te_string_append(ctx->dest, "%c", *iter);
+                    append_to_json(ctx, "%c", *iter);
                 }
                 break;
         }
@@ -128,9 +161,9 @@ te_json_append_raw(te_json_ctx_t *ctx, const char *value, size_t len)
                                       TE_JSON_COMPOUND_RAW);
 
     if (len == 0)
-        te_string_append(ctx->dest, "%s", value);
+        append_to_json(ctx, "%s", value);
     else
-        te_string_append(ctx->dest, "%.*s", (int)len, value);
+        append_to_json(ctx, "%.*s", (int)len, value);
 }
 
 static void
@@ -147,7 +180,7 @@ te_json_start_array(te_json_ctx_t *ctx)
 {
     maybe_add_separator(ctx);
     push_json_level(ctx, TE_JSON_COMPOUND_ARRAY);
-    te_string_append(ctx->dest, "[");
+    append_to_json(ctx, "[");
 }
 
 void
@@ -155,7 +188,7 @@ te_json_start_object(te_json_ctx_t *ctx)
 {
     maybe_add_separator(ctx);
     push_json_level(ctx, TE_JSON_COMPOUND_OBJECT);
-    te_string_append(ctx->dest, "{");
+    append_to_json(ctx, "{");
 }
 
 void
@@ -163,7 +196,7 @@ te_json_start_string(te_json_ctx_t *ctx)
 {
     maybe_add_separator(ctx);
     push_json_level(ctx, TE_JSON_COMPOUND_STRING);
-    te_string_append(ctx->dest, "\"");
+    append_to_json(ctx, "\"");
 }
 
 void
@@ -182,16 +215,16 @@ te_json_end(te_json_ctx_t *ctx)
             /* do nothing */
             break;
         case TE_JSON_COMPOUND_ARRAY:
-            te_string_append(ctx->dest, "]");
+            append_to_json(ctx, "]");
             break;
         case TE_JSON_COMPOUND_OBJECT:
-            te_string_append(ctx->dest, "}");
+            append_to_json(ctx, "}");
             break;
         case TE_JSON_COMPOUND_OBJECT_VALUE:
             TE_FATAL_ERROR("Incomplete object value");
             break;
         case TE_JSON_COMPOUND_STRING:
-            te_string_append(ctx->dest, "\"");
+            append_to_json(ctx, "\"");
             break;
         case TE_JSON_COMPOUND_RAW:
             /* do nothing */
@@ -207,7 +240,7 @@ te_json_add_key(te_json_ctx_t *ctx, const char *key)
     assert(ctx->nesting[ctx->current_level].kind == TE_JSON_COMPOUND_OBJECT);
     maybe_add_separator(ctx);
 
-    te_string_append(ctx->dest, "\"%s\":", te_str_empty_if_null(key));
+    append_to_json(ctx, "\"%s\":", te_str_empty_if_null(key));
     ctx->nesting[ctx->current_level].kind = TE_JSON_COMPOUND_OBJECT_VALUE;
 }
 

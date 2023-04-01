@@ -23,6 +23,9 @@
 #include "tapi_test.h"
 #include "te_json.h"
 #include "te_str.h"
+#include "te_file.h"
+
+static char *tmp_file = NULL;
 
 static void
 do_json_string(te_json_ctx_t *ctx, void *val)
@@ -177,30 +180,80 @@ do_json_append_raw_len(te_json_ctx_t *ctx, void *val)
 }
 
 static void
-check_json(void *val, void (*func)(te_json_ctx_t *ctx, void *),
-           const char *expected)
+check_json_result(te_json_ctx_t *ctx, const char *result,
+                  const char *expected)
+{
+    if (ctx->current_level != 0)
+        TEST_VERDICT("Invalid JSON nesting");
+
+    if (strcmp(te_str_empty_if_null(result), expected) != 0)
+    {
+        ERROR("Unexpected JSON escaping: %s (expected %s)",
+              result, expected);
+        TEST_VERDICT("JSON escaping is wrong");
+    }
+}
+
+static void
+check_json_str(void *val, void (*func)(te_json_ctx_t *ctx, void *),
+               const char *expected)
 {
     te_string dest = TE_STRING_INIT;
     te_json_ctx_t ctx = TE_JSON_INIT_STR(&dest);
 
     func(&ctx, val);
 
-    if (ctx.current_level != 0)
-        TEST_VERDICT("Invalid JSON nesting");
-
-    if (strcmp(te_str_empty_if_null(dest.ptr), expected) != 0)
-    {
-        ERROR("Unexpected JSON escaping: %s (expected %s)", dest.ptr, expected);
-        TEST_VERDICT("JSON escaping is wrong");
-    }
+    check_json_result(&ctx, dest.ptr, expected);
 
     te_string_free(&dest);
+}
+
+static void
+check_json_file(void *val, void (*func)(te_json_ctx_t *ctx, void *),
+                const char *expected, const char *tmp_file)
+{
+    te_json_ctx_t ctx;
+    char buf[1024];
+    size_t len;
+    FILE *f;
+
+    CHECK_NOT_NULL(f = fopen(tmp_file, "w+"));
+    ctx = (te_json_ctx_t)TE_JSON_INIT_FILE(f);
+
+    func(&ctx, val);
+
+    rewind(f);
+
+    len = fread(buf, 1, sizeof(buf) - 1, f);
+    fclose(f);
+    buf[len] = '\0';
+
+    check_json_result(&ctx, buf, expected);
+}
+
+static void
+check_json(void *val, void (*func)(te_json_ctx_t *ctx, void *),
+           const char *expected)
+{
+    if (tmp_file != NULL)
+        check_json_file(val, func, expected, tmp_file);
+    else
+        check_json_str(val, func, expected);
 }
 
 int
 main(int argc, char **argv)
 {
+    te_bool use_file;
+
     TEST_START;
+    TEST_GET_BOOL_PARAM(use_file);
+
+    if (use_file)
+    {
+        CHECK_NOT_NULL(tmp_file = te_file_create_unique("/tmp/te_tmp_",
+                                                        NULL));
+    }
 
     TEST_STEP("Checking JSON integers");
     check_json((intmax_t[]){0}, do_json_int, "0");
@@ -317,6 +370,12 @@ main(int argc, char **argv)
     TEST_SUCCESS;
 
 cleanup:
+
+    if (tmp_file != NULL)
+    {
+        unlink(tmp_file);
+        free(tmp_file);
+    }
 
     TEST_END;
 }
