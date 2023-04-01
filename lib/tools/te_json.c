@@ -47,19 +47,16 @@ te_json_add_simple(te_json_ctx_t *ctx, const char *fmt, ...)
 }
 
 void
-te_json_add_string(te_json_ctx_t *ctx, const char *fmt, ...)
+te_json_append_string_va(te_json_ctx_t *ctx, const char *fmt, va_list args)
 {
-    va_list args;
     te_string inner = TE_STRING_INIT;
     const char *iter;
 
-    maybe_add_separator(ctx);
+    assert(ctx->nesting[ctx->current_level].kind ==
+                                      TE_JSON_COMPOUND_STRING);
 
-    va_start(args, fmt);
     te_string_append_va(&inner, fmt, args);
-    va_end(args);
 
-    te_string_append(ctx->dest, "%s", "\"");
     for (iter = inner.ptr; *iter != '\0'; iter++)
     {
         switch (*iter)
@@ -97,8 +94,31 @@ te_json_add_string(te_json_ctx_t *ctx, const char *fmt, ...)
                 break;
         }
     }
-    te_string_append(ctx->dest, "%s", "\"");
     te_string_free(&inner);
+}
+
+void
+te_json_add_string(te_json_ctx_t *ctx, const char *fmt, ...)
+{
+    va_list args;
+
+    te_json_start_string(ctx);
+
+    va_start(args, fmt);
+    te_json_append_string_va(ctx, fmt, args);
+    va_end(args);
+
+    te_json_end(ctx);
+}
+
+void
+te_json_append_string(te_json_ctx_t *ctx, const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    te_json_append_string_va(ctx, fmt, args);
+    va_end(args);
 }
 
 static void
@@ -127,6 +147,14 @@ te_json_start_object(te_json_ctx_t *ctx)
 }
 
 void
+te_json_start_string(te_json_ctx_t *ctx)
+{
+    maybe_add_separator(ctx);
+    push_json_level(ctx, TE_JSON_COMPOUND_STRING);
+    te_string_append(ctx->dest, "\"");
+}
+
+void
 te_json_end(te_json_ctx_t *ctx)
 {
     switch (ctx->nesting[ctx->current_level].kind)
@@ -142,6 +170,9 @@ te_json_end(te_json_ctx_t *ctx)
             break;
         case TE_JSON_COMPOUND_OBJECT_VALUE:
             TE_FATAL_ERROR("Incomplete object value");
+            break;
+        case TE_JSON_COMPOUND_STRING:
+            te_string_append(ctx->dest, "\"");
             break;
     }
     if (ctx->current_level != 0)

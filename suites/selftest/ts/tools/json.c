@@ -30,6 +30,20 @@ do_json_string(te_json_ctx_t *ctx, void *val)
 }
 
 static void
+do_json_append_string(te_json_ctx_t *ctx, void *val)
+{
+    const char **strs = val;
+    unsigned int i;
+
+    te_json_start_string(ctx);
+
+    for (i = 0; strs[i] != NULL; i++)
+        te_json_append_string(ctx, "%s", strs[i]);
+
+    te_json_end(ctx);
+}
+
+static void
 do_json_int(te_json_ctx_t *ctx, void *val)
 {
     te_json_add_integer(ctx, *(intmax_t *)val);
@@ -181,6 +195,10 @@ main(int argc, char **argv)
                do_json_string,
                "\"\\u0001\\u0007\\b\\f\\n\\r\\t\\u000b"
                "\\\\\\/\\\"\\u007f\"");
+    check_json((const char *[]){NULL},
+               do_json_append_string, "\"\"");
+    check_json((const char *[]){"a", "b", "c xyz", NULL},
+               do_json_append_string, "\"abc xyz\"");
 
     TEST_STEP("Checking JSON arrays");
     check_json((const char *[]){NULL}, do_json_array, "[]");

@@ -41,6 +41,7 @@ typedef enum te_json_compound {
     TE_JSON_COMPOUND_ARRAY,        /**< array */
     TE_JSON_COMPOUND_OBJECT,       /**< object (dictionary) */
     TE_JSON_COMPOUND_OBJECT_VALUE, /**< object value */
+    TE_JSON_COMPOUND_STRING,       /**< string value */
 } te_json_compound;
 
 /** Maximum nesting level for JSON serialization */
@@ -174,6 +175,46 @@ te_json_add_float(te_json_ctx_t *ctx, double val, unsigned int precision)
 extern void te_json_add_string(te_json_ctx_t *ctx,
                                const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));;
+
+/**
+ * Start serializing a JSON string.
+ *
+ * te_json_append_string() should be used to append bytes to
+ * the serialized string. At the end, te_json_end() must be called
+ * to finalize JSON string. Double quotes around the composed string
+ * value are added automatically.
+ * Unlike te_json_add_string(), this allows to construct string
+ * value incrementally instead of specifying it all at once.
+ *
+ * @param ctx JSON context
+ */
+extern void te_json_start_string(te_json_ctx_t *ctx);
+
+/**
+ * Append formatted string to a string value which was started with
+ * te_json_start_string(). The same escaping is done as with
+ * te_json_add_string().
+ *
+ * @param ctx      JSON context
+ * @param fmt      format string
+ * @param ...      arguments
+ *
+ * @sa te_json_append_string_va()
+ */
+extern void te_json_append_string(te_json_ctx_t *ctx,
+                                  const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+
+/**
+ * Same as te_json_append_string() but accepts va_list instead of
+ * a list of arguments.
+ *
+ * @param ctx      JSON context
+ * @param fmt      format string
+ * @param args     arguments
+ */
+extern void te_json_append_string_va(te_json_ctx_t *ctx, const char *fmt,
+                                     va_list args);
 
 /**
  * Start serializing a JSON array.
