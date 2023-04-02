@@ -1218,7 +1218,5 @@ main(int argc, char **argv)
 
     g_array_free(gen_ctx.depth_info, TRUE);
 
-    free(gen_ctx.match_id);
-
     return rc;
 }

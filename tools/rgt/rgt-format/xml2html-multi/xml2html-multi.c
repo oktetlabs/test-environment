@@ -23,22 +23,9 @@
 #include "capture.h"
 
 #include "xml2gen.h"
+#include "xml2multi_common.h"
 #include "xml2html-multi.h"
 #include "mi_msg.h"
-
-/*
- * Name all files by depth and sequence numbers in tree,
- * including test iteration nodes. If this is turned off,
- * then test iteration nodes will be named by node ID.
- * If this is turned on, references to logs files in
- * TRC report will be broken.
- */
-static te_bool rgt_html_depth_seq_names = FALSE;
-
-/* Root log node depth in the tree of log nodes */
-#define ROOT_NODE_DEPTH   1
-/* Root log node sequential number */
-#define ROOT_NODE_SEQ     0
 
 /*
  * Max attribute length in one line. Zero means it is not limited and
@@ -95,16 +82,12 @@ typedef struct log_msg_name {
 #define NODE_CLASS_ERR  "err"
 
 /*
- * URL for common files (images, styles etc.)
- * If this value is NULL, all of the files are copied
- * to report output directory.
+ * Context with common parameters.
+ * It is pointless to pass it as context argument to callbacks
+ * as there is currently no way to pass it to the first place
+ * where it is needed - rgt_process_cmdline().
  */
-char *shared_url = NULL;
-
-/*
- * Base URL for doxygen-generated documentation for tests
- */
-char *docs_url = NULL;
+static rgt_xml2multi_opts multi_opts = RGT_XML2MULTI_OPTS_INIT;
 
 /* Forward declaration */
 static depth_ctx_user_t *alloc_depth_user_data(uint32_t depth);
@@ -122,16 +105,8 @@ static te_log_level te_log_level_str2h(const char *ll);
 
 /* RGT format-specific options table */
 struct poptOption rgt_options_table[] = {
-    { "shared-url", 'i', POPT_ARG_STRING, NULL, 'i',
-      "URL of directory for shared files (images etc.)", NULL },
-    { "docs-url", 'd', POPT_ARG_STRING, NULL, 'd',
-      "URL of directory for test descriptions", NULL },
-    { "single-node", 'n', POPT_ARG_STRING, NULL, 'n',
-      "Output only specified node.", NULL },
-    { "page-selector", 'p', POPT_ARG_STRING, NULL, 'p',
-      "Show page selector.", NULL },
-    { "index-only", 'x', POPT_ARG_NONE, NULL, 'x',
-      "Output only index pages.", NULL },
+    XML2MULTI_COMMON_OPTS
+    XML2MULTI_HTML_SPECIFIC_OPTS
 
     POPT_TABLEEND
 };
@@ -139,145 +114,16 @@ struct poptOption rgt_options_table[] = {
 /* Process format-specific options */
 void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
 {
-    size_t len;
+    UNUSED(ctx);
 
-    if (val == 'i')
-    {
-        shared_url = poptGetOptArg(con);
-        len = strlen(shared_url);
-        if (len > 0 && shared_url[len - 1] != '/')
-        {
-            fprintf(stderr, "Warning: URL for shared files is not "
-                    "a directory (or trailing '/' is missing)");
-        }
-        else if (len == 0)
-        {
-            free(shared_url);
-            shared_url = NULL;
-        }
-    }
-    else if (val == 'd')
-    {
-        docs_url = poptGetOptArg(con);
-        len = strlen(docs_url);
-        if (len > 0 && docs_url[len - 1] != '/')
-        {
-            fprintf(stderr, "Warning: URL for test descriptions is not "
-                    "a directory (or trailing '/' is missing)\n");
-        }
-        else if (len == 0)
-        {
-            free(docs_url);
-            docs_url = NULL;
-        }
-    }
-    else if (val == 'n')
-    {
-        char *match_exp;
-
-        if ((match_exp = poptGetOptArg(con)) == NULL)
-            usage(con, 1, "Specify node matching expression", NULL);
-
-        if (strchr(match_exp, '_') == NULL)
-        {
-            if (strcmp_start(RGT_NODE_ID_PREFIX, match_exp) == 0)
-            {
-                ctx->match_id = strdup(match_exp +
-                                       strlen(RGT_NODE_ID_PREFIX));
-                assert(ctx->match_id != NULL);
-                free(match_exp);
-                ctx->match_type = RGT_MATCH_NODE_ID;
-            }
-            else
-            {
-                ctx->match_id = match_exp;
-                ctx->match_type = RGT_MATCH_TIN;
-            }
-        }
-        else
-        {
-            sscanf(match_exp, "%u_%u",
-                   &ctx->match_depth,
-                   &ctx->match_seq);
-            free(match_exp);
-            ctx->match_type = RGT_MATCH_DEPTH_SEQ;
-        }
-        ctx->single_node_match = TRUE;
-    }
-    else if (val == 'x')
-    {
-        ctx->index_only = TRUE;
-    }
-    else if (val == 'p')
-    {
-        const char *page_selector;
-
-        if ((page_selector = poptGetOptArg(con)) == NULL)
-            usage(con, 1, "Specify page selector", NULL);
-
-        ctx->page_selector_set = TRUE;
-        if (strcmp(page_selector, "all") == 0)
-        {
-            ctx->cur_page = 0;
-            ctx->pages_count = 0;
-        }
-        else
-            sscanf(page_selector, "%u/%u",
-                   &ctx->cur_page, &ctx->pages_count);
-    }
+    rgt_xml2multi_process_cmdline(&multi_opts, con, val);
 }
 
 /* Add common global template parameters */
 void rgt_tmpls_attrs_add_globals(rgt_attrs_t *attrs)
 {
-    rgt_tmpls_attrs_add_fstr(attrs, "shared_url", shared_url);
-    rgt_tmpls_attrs_add_fstr(attrs, "docs_url", docs_url);
-}
-
-/**
- * Check whether a given log node (HTML log file) should be output.
- *
- * @param ctx       RGT context
- * @param tin       TIN of test iteration represented by this node
- * @param node_id   Node ID
- * @param depth     Node depth in log tree
- * @param seq       Node sequential number (in then list of chidren of its
- *                  parent)
- *
- * return TRUE if node should be output, FALSE otherwise.
- */
-static inline te_bool
-match_node(rgt_gen_ctx_t *ctx, const char *tin, const char *node_id,
-           uint32_t depth, uint32_t seq)
-{
-    if (ctx->index_only)
-        return FALSE;
-
-    if (ctx->single_node_match)
-    {
-        switch (ctx->match_type)
-        {
-            case RGT_MATCH_TIN:
-                if (tin == NULL || ctx->match_id == NULL ||
-                    strcmp(ctx->match_id, tin) != 0)
-                    return FALSE;
-                break;
-
-            case RGT_MATCH_NODE_ID:
-                if (node_id == NULL || ctx->match_id == NULL ||
-                    strcmp(ctx->match_id, node_id) != 0)
-                    return FALSE;
-                break;
-
-            case RGT_MATCH_DEPTH_SEQ:
-                if (ctx->match_depth != depth ||
-                    ctx->match_seq != seq)
-                    return FALSE;
-                break;
-        }
-    }
-
-    return TRUE;
+    rgt_tmpls_attrs_add_fstr(attrs, "shared_url", multi_opts.shared_url);
+    rgt_tmpls_attrs_add_fstr(attrs, "docs_url", multi_opts.docs_url);
 }
 
 RGT_DEF_FUNC(proc_document_start)
@@ -291,97 +137,14 @@ RGT_DEF_FUNC(proc_document_start)
     RGT_FUNC_UNUSED_PRMS();
 
     /* Initialize a pointer to generic user-specific data */
+    memset(&user_ctx, 0, sizeof(user_ctx));
     ctx->user_data = gen_user = &user_ctx;
 
     /* Leave XML entities as they are, without any substitution */
     ctx->expand_entities = FALSE;
 
-    /* Copy all the aux files */
-    if (ctx->out_fname == NULL)
-        ctx->out_fname = "html";
-
-    {
-        int         rc;
-        struct stat stat_buf;
-        char        buf[1024];
-        char        prefix[PATH_MAX];
-        const char *snprintf_error = "Error writing command to buffer\n";
-        int         n;
-
-        if (rgt_resource_files_prefix_get(NULL, NULL, sizeof(prefix), prefix))
-        {
-            fprintf(stderr, "Failed to get resource files path prefix\n");
-            exit(EXIT_FAILURE);
-        }
-
-        rc = stat(ctx->out_fname, &stat_buf);
-        if (rc == -1)
-        {
-            if (errno != ENOENT)
-            {
-                perror(ctx->out_fname);
-                exit(1);
-            }
-            if (mkdir(ctx->out_fname, 0777) < 0)
-            {
-                perror(ctx->out_fname);
-                exit(1);
-            }
-        }
-        if (stat(ctx->out_fname, &stat_buf) != 0)
-        {
-            perror(ctx->out_fname);
-            exit(1);
-        }
-        if (!S_ISDIR(stat_buf.st_mode))
-        {
-            fprintf(stderr, "File %s already exists and "
-                    "it is not a directory", ctx->out_fname);
-            exit(1);
-        }
-
-        if (chdir(ctx->out_fname) < 0)
-        {
-            perror(ctx->out_fname);
-            exit(1);
-        }
-
-        if (shared_url == NULL)
-        {
-            n = snprintf(buf, sizeof(buf), "cp %s/misc/* .", prefix);
-            if (n < 0 || (size_t)n >= sizeof(buf))
-            {
-                fputs(snprintf_error, stderr);
-                exit(EXIT_FAILURE);
-            }
-            system(buf);
-
-            if (stat("images", &stat_buf) != 0)
-            {
-                system("mkdir images");
-            }
-
-            n = snprintf(buf, sizeof(buf), "cp %s/images/* images", prefix);
-            if (n < 0 || (size_t)n >= sizeof(buf))
-            {
-                fputs(snprintf_error, stderr);
-                exit(EXIT_FAILURE);
-            }
-            system(buf);
-        }
-
-        n = snprintf(buf, sizeof(buf), "for i in %s/tmpls-simple/* ; do "
-                     "cat $i | sed -e 's;@@SHARED_URL@@;%s;g' "
-                     "> `basename $i` ; done",
-                     prefix, (shared_url == NULL) ? "" : shared_url);
-        if (n < 0 || (size_t)n >= sizeof(buf))
-        {
-            fputs(snprintf_error, stderr);
-            exit(EXIT_FAILURE);
-        }
-        system(buf);
-    }
-
+    /* Set up output directory */
+    rgt_xml2multi_setup_outdir(ctx, &multi_opts, TRUE);
 
     /* Initialize depth-specific user data pointer */
     depth_ctx->user_data = alloc_depth_user_data(ctx->depth);
@@ -392,23 +155,14 @@ RGT_DEF_FUNC(proc_document_start)
 
     lf_start(ctx, depth_ctx, NULL, NULL, NULL);
 
-    if (match_node(ctx, NULL, NULL, ROOT_NODE_DEPTH, ROOT_NODE_SEQ))
+    if (rgt_xml2multi_match_node(&multi_opts, NULL, NULL,
+                                 ROOT_NODE_DEPTH, ROOT_NODE_SEQ))
     {
         char fname[255];
 
-        if (ctx->page_selector_set &&
-            (ctx->cur_page > 1 || ctx->cur_page == 0))
-        {
-            if (ctx->cur_page == 0)
-                snprintf(fname, sizeof(fname),
-                         "node_1_0_all.html");
-            else
-                snprintf(fname, sizeof(fname),
-                         "node_1_0_p%u.html", ctx->cur_page);
-        }
-        else
-            snprintf(fname, sizeof(fname), "%s",
-                     "node_1_0.html");
+        rgt_xml2multi_fname(fname, sizeof(fname),
+                            &multi_opts, ctx, depth_ctx,
+                            NULL, NULL, "html");
 
         if ((depth_user->fname = strdup(fname)) == NULL ||
             (depth_user->fd = fopen(depth_user->fname, "w")) == NULL)
@@ -631,6 +385,8 @@ RGT_DEF_FUNC(proc_document_end)
     g_string_chunk_free(gen_user->strings);
 
     free_depth_user_data();
+
+    rgt_xml2multi_opts_free(&multi_opts);
 }
 
 static void
@@ -757,10 +513,8 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     const char       *hash = rgt_tmpls_xml_attrs_get(xml_attrs, "hash");
     const char       *node_class;
     char              fname[500] = "";
-    char              page_str[255] = "";
     rgt_attrs_t      *attrs;
     te_bool           matched = TRUE;
-    rgt_match_type    name_type;
 
     const char *node_type_str = rgt_node2str(depth_ctx->type);
 
@@ -784,70 +538,13 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
                                     rgt_depth_ctx_t, (ctx->depth - 2));
     prev_depth_user = prev_depth_ctx->user_data;
 
-    if (ctx->page_selector_set)
-    {
-        if (ctx->cur_page == 0)
-            snprintf(page_str, sizeof(page_str), "_all");
-        else if (ctx->cur_page > 1)
-            snprintf(page_str, sizeof(page_str), "_p%u", ctx->cur_page);
-    }
-
-    /*
-     * Default file name format. TIN is chosen here for backward
-     * compatibility with old XML logs in which there is no node IDs.
-     */
-    if (rgt_html_depth_seq_names)
-        name_type = RGT_MATCH_DEPTH_SEQ;
-    else
-        name_type = RGT_MATCH_TIN;
-
-    if (ctx->single_node_match && !(ctx->index_only))
-    {
-        /*
-         * If single log node was requested, use name format corresponding
-         * to how that node was specified.
-         */
-        name_type = ctx->match_type;
-    }
-    else if (!rgt_html_depth_seq_names && depth_user->is_test &&
-             node_id != NULL)
-    {
-        /*
-         * Otherwise use node_id<NODE_ID>.html format if possible.
-         */
-        name_type = RGT_MATCH_NODE_ID;
-    }
-
-    /*
-     * Fall back to node_<DEPTH>_<SEQ>.html name format if no
-     * TIN or node ID is available for the desired name format.
-     */
-    if ((name_type == RGT_MATCH_TIN && tin == NULL) ||
-        (name_type == RGT_MATCH_NODE_ID && node_id == NULL))
-    {
-        name_type = RGT_MATCH_DEPTH_SEQ;
-    }
-
-    switch (name_type)
-    {
-        case RGT_MATCH_TIN:
-            snprintf(fname, sizeof(fname), "node_%s%s.html", tin, page_str);
-            break;
-
-        case RGT_MATCH_NODE_ID:
-            snprintf(fname, sizeof(fname), "node_id%s%s.html",
-                     node_id, page_str);
-            break;
-
-        case RGT_MATCH_DEPTH_SEQ:
-            snprintf(fname, sizeof(fname), "node_%d_%d%s.html",
-                     ctx->depth, depth_ctx->seq, page_str);
-            break;
-    }
+    rgt_xml2multi_fname(fname, sizeof(fname), &multi_opts,
+                        ctx, depth_ctx, tin, node_id, "html");
 
     depth_user->name = strdup(name);
 
-    matched = match_node(ctx, tin, node_id, ctx->depth, depth_ctx->seq);
+    matched = rgt_xml2multi_match_node(&multi_opts, tin, node_id,
+                                       ctx->depth, depth_ctx->seq);
 
     if (matched)
     {
@@ -945,6 +642,8 @@ control_node_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
         fclose(fd);
         free(depth_user->fname);
     }
+
+    free(depth_user->name);
 
     lf_end(ctx, depth_ctx);
 }
@@ -1485,13 +1184,14 @@ RGT_DEF_FUNC(proc_logs_start)
     if (depth_user->fd != NULL)
     {
         attrs = rgt_tmpls_attrs_new(xml_attrs);
-        if (ctx->page_selector_set && ctx->cur_page >= 1)
+        if (multi_opts.page_selector_set && multi_opts.cur_page >= 1)
         {
             rgt_tmpls_attrs_add_fstr(attrs, "selector_name", "top");
             rgt_tmpls_attrs_add_fstr(attrs, "fname", depth_user->fname);
-            rgt_tmpls_attrs_add_uint32(attrs, "cur_page", ctx->cur_page);
+            rgt_tmpls_attrs_add_uint32(attrs, "cur_page",
+                                       multi_opts.cur_page);
             rgt_tmpls_attrs_add_uint32(attrs, "pages_count",
-                                       ctx->pages_count);
+                                       multi_opts.pages_count);
             rgt_tmpls_output(depth_user->fd,
                              &xml2fmt_tmpls[PAGE_SELECTOR], attrs);
         }
@@ -1526,13 +1226,14 @@ RGT_DEF_FUNC(proc_logs_end)
     {
         attrs = rgt_tmpls_attrs_new(xml_attrs);
         rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_END], attrs);
-        if (ctx->page_selector_set && ctx->cur_page >= 1)
+        if (multi_opts.page_selector_set && multi_opts.cur_page >= 1)
         {
             rgt_tmpls_attrs_add_fstr(attrs, "selector_name", "bottom");
             rgt_tmpls_attrs_add_fstr(attrs, "fname", depth_user->fname);
-            rgt_tmpls_attrs_add_uint32(attrs, "cur_page", ctx->cur_page);
+            rgt_tmpls_attrs_add_uint32(attrs, "cur_page",
+                                       multi_opts.cur_page);
             rgt_tmpls_attrs_add_uint32(attrs, "pages_count",
-                                       ctx->pages_count);
+                                       multi_opts.pages_count);
             rgt_tmpls_output(depth_user->fd,
                              &xml2fmt_tmpls[PAGE_SELECTOR], attrs);
         }

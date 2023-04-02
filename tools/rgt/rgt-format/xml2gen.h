@@ -143,22 +143,6 @@ typedef struct rgt_gen_ctx {
                                   Make sense only in STATE_MEM_... */
 
     void           *user_data; /**< User-specific data pointer */
-
-    te_bool         index_only;           /**< If @c TRUE, output HTML
-                                               index files only */
-    te_bool         single_node_match;    /**< Output HTML page only
-                                               for specified log node */
-    rgt_match_type  match_type;           /**< How a single log node
-                                               was specified */
-    char           *match_id;             /**< ID of log node */
-    uint32_t        match_depth;          /**< Depth of log node */
-    uint32_t        match_seq;            /**< Sequential number of
-                                               log node */
-    te_bool         page_selector_set;    /**< Output page selector
-                                               allowing to select page
-                                               of large HTML log */
-    uint32_t        cur_page;             /**< Current page number */
-    uint32_t        pages_count;          /**< Total pages count */
 } rgt_gen_ctx_t;
 
 

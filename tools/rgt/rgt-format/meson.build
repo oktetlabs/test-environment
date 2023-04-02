@@ -25,6 +25,14 @@ libxml2fmt_core = static_library(
                    dep_lib_logger_file, dep_lib_logger_core],
 )
 
+libxml2multi = static_library(
+    'libxml2multi',
+    'xml2multi_common.c',
+    include_directories: inc,
+    c_args: c_args,
+    dependencies: [dep_libxml2, dep_glib, dep_popt, dep_lib_tools],
+)
+
 dep_jansson = dependency('jansson', required: false)
 if dep_jansson.found() and cc.has_function('json_loadb',
                                            args: c_args,
@@ -67,7 +75,8 @@ foreach tool: rgt_xml2_tools
         include_directories: inc,
         dependencies: tool_deps,
         c_args: c_args,
-        link_with: [libtmpls, libcapture, libxml2fmt_core, libmi_msg],
+        link_with: [libtmpls, libcapture, libxml2multi, libxml2fmt_core,
+                    libmi_msg],
         install: true,
     )
 endforeach
