@@ -304,3 +304,55 @@ asn_type ndn_rte_flow_rule_s = {
 
 const asn_type * const ndn_rte_flow_pattern = &ndn_generic_pdu_sequence_s;
 const asn_type * const ndn_rte_flow_rule = &ndn_rte_flow_rule_s;
+
+te_errno
+ndn_rte_flow_read_with_offset(const asn_value *pdu, const char *name,
+                              size_t size, uint32_t offset, uint32_t *spec_p,
+                              uint32_t *mask_p, uint32_t *last_p)
+{
+    uint32_t val;
+    uint32_t spec_val = 0;
+    uint32_t mask_val = 0;
+    uint32_t last_val = 0;
+    char buf[NDN_RTE_FLOW_FIELD_NAME_MAX_LEN];
+    unsigned int i;
+    int rc;
+
+    snprintf(buf, NDN_RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#plain", name);
+    rc = asn_read_uint32(pdu, &val, buf);
+    if (rc == 0)
+    {
+        spec_val |= val << offset;
+        for (i = 0; i < size; i++)
+            mask_val |= 1U << (offset + i);
+    }
+    else if (rc == TE_EASNOTHERCHOICE)
+    {
+        snprintf(buf, NDN_RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.first", name);
+        rc = asn_read_uint32(pdu, &val, buf);
+        if (rc == 0)
+            spec_val |= val << offset;
+        if (rc == 0 || rc == TE_EASNINCOMPLVAL)
+        {
+            snprintf(buf, NDN_RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.last", name);
+            rc = asn_read_uint32(pdu, &val, buf);
+        }
+        if (rc == 0)
+            last_val |= val << offset;
+        if (rc == 0 || rc == TE_EASNINCOMPLVAL)
+        {
+            snprintf(buf, NDN_RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.mask", name);
+            rc = asn_read_uint32(pdu, &val, buf);
+        }
+        if (rc == 0)
+            mask_val |= val << offset;
+    }
+    if (rc != 0 && rc != TE_EASNINCOMPLVAL && rc != TE_EASNOTHERCHOICE)
+        return rc;
+
+    *spec_p |= spec_val;
+    *mask_p |= mask_val;
+    *last_p |= last_val;
+
+    return 0;
+}
