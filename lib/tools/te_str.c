@@ -871,3 +871,102 @@ te_str_find_index(const char *str, const char **str_array,
 
     return TE_EINVAL;
 }
+
+/** The symbol that separates parts in version format. */
+#define TE_STR_VERSION_DELIMETER '.'
+
+/**
+ * Checks that version has appropriate format and supported symbols.
+ *
+ * @param v Version to validate.
+ *
+ */
+static te_errno
+check_version_consistency(const char* v)
+{
+    int i;
+
+    if (v[0] == '\0')
+        return 0;
+
+    if (!isdigit(v[0]))
+    {
+        ERROR("version '%s' has bad syntax: version number "
+              "does not start with digit", v);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    for (i = 0; i < strlen(v); i++)
+    {
+        if (!isdigit(v[i]) && v[i] != TE_STR_VERSION_DELIMETER)
+        {
+            ERROR("version '%s' has bad syntax: version number "
+                  "contains unsupported symbol '%c'", v, v[i]);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+
+        if (v[i] == TE_STR_VERSION_DELIMETER &&
+            v[i + 1] == TE_STR_VERSION_DELIMETER)
+        {
+            ERROR("version '%s' has bad syntax: version delimeters '%c' "
+                  "are placed together", v, TE_STR_VERSION_DELIMETER);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+    }
+
+    if (v[strlen(v) - 1] == TE_STR_VERSION_DELIMETER)
+    {
+        ERROR("version '%s' has bad syntax: version can't end by delimeter "
+              "'%c'", v, TE_STR_VERSION_DELIMETER);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    return 0;
+}
+
+/* See description in te_str.h */
+te_errno
+te_str_compare_versions(const char *v1, const char *v2, int *res)
+{
+    int i;
+    te_errno rc = 0;
+    char *end_ptr = NULL;
+    const char *versions[] = { v1, v2 };
+    long int values[] = { 0, 0 };
+
+    for (i = 0; i < TE_ARRAY_LEN(versions); i++)
+    {
+        rc = check_version_consistency(versions[i]);
+        if (rc != 0)
+            return rc;
+    }
+
+    while (*versions[0] != '\0' && *versions[1] != '\0')
+    {
+        for (i = 0; i < TE_ARRAY_LEN(versions); i++)
+        {
+            rc = te_strtol_raw(versions[i], &end_ptr, 10, &values[i]);
+            if (rc != 0)
+                return rc;
+
+            if (*end_ptr != '\0')
+                end_ptr++;
+
+            versions[i] = end_ptr;
+        }
+
+        *res = values[0] - values[1];
+
+        if (*res != 0)
+            return rc;
+    }
+
+    if (*versions[0] != '\0')
+        *res = 1;
+    else if (*versions[1] != '\0')
+        *res = -1;
+    else
+        *res = 0;
+
+    return rc;
+}

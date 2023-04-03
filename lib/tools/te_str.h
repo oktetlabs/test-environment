@@ -473,6 +473,24 @@ extern te_errno te_str_find_index(const char *str, const char **str_array,
  */
 extern void te_str_free_array(char **str);
 
+/**
+ * Compares two version strings in Major.Minor.Patch format.
+ *
+ * @note Major/Minor/Patch parts should consist of digits only.
+ *
+ * @param[in]  v1  First version.
+ * @param[in]  v2  Second version.
+ * @param[out] res Comparison result.
+ *
+ * @note @p res may take value that is
+ *       - >0 if @p v1 is greater (later) than @p v2,
+ *       - <0 if @p v1 is less (earlier) than @p v2,
+ *       - 0  if @p v1 is the same as @p v2.
+ *
+ * @return Status code.
+ */
+extern te_errno te_str_compare_versions(const char *v1, const char *v2,
+                                        int *res);
 
 #ifdef __cplusplus
 } /* extern "C" */

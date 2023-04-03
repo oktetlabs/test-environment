@@ -1,0 +1,8 @@
+<test name="str_compare_versions" type="script">
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+    <objective>Testing versions comparison function</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>

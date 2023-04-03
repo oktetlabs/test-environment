@@ -16,6 +16,7 @@ tests = [
     'readlink',
     'resolvepath',
     'scandir',
+    'str_compare_versions',
     'string',
     'units',
     'uri',
