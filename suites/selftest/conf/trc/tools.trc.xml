@@ -17,6 +17,8 @@
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/expand.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tools/expand_filters.trc.xml" parse="xml"/>
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/extract_glob.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/hexdump.trc.xml" parse="xml"/>

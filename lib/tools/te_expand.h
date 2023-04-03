@@ -59,6 +59,42 @@ typedef te_bool (*te_expand_param_func)(const char *name, const void *ctx,
  * - `${NAME:+VALUE}` is expanded into @c VALUE if @c NAME variable is set,
  *   otherwise to an empty string.
  *
+ * A @c NAME may have attached a pipeline of filters separated by a pipe
+ * character, e.g. `${var|base64|json}`.
+ *
+ * The following filters are defined:
+ *
+ * Name      | Meaning
+ * ----------|--------------------------------------------------------------
+ * base64    | Use Base-64 encoding; see te_string_encode_base64().
+ * base64uri | As the above, but use the URI-safe variant of Base-64.
+ * c         | Escape characters not allowed in C literals.
+ * cid       | Replace all non-alphanumerics with an underscore.
+ * crlf      | Replace all newlines not preceded by @c CR with @c CR-LF.
+ * hex       | Encode each character as a two-digit hex value.
+ * json      | Encode the value as a JSON strings, quotes are added.
+ * length    | Replace the value with its length.
+ * normalize | Trim trailing spaces and contract all inner spaces.
+ * notempty  | A special conditional filter, see below.
+ * shell     | Quote all special shell characters.
+ * upper     | Convert all letters to uppercase.
+ * uri       | Percent-encode all characters not allowed in URI.
+ * xml       | Represent all characters disallowed in XML as XML references.
+ *
+ * @c notempty filter is only useful after some other filters and in
+ * conjuction with `${NAME:-VALUE}`. Namely, any non-empty string is passed
+ * as is, but an empty string is discarded, as if the original reference
+ * did not exist, thus allowing the default value to be substituted.
+ *
+ * @todo Support registering additional filters.
+ * @note @c base64, @c base64uri and @c hex filters can properly handle
+ *       values with embedded zeroes, however, standard expanders used in
+ *       te_string_expand_env_vars() and te_string_expand_kvpairs() cannot
+ *       produce such values.
+ *
+ * Only the actual value of a variable is passed through filters; default
+ * @c VALUE is not processed.
+ *
  * @param[in]  src               source string
  * @param[in]  expand_param      parameter expansion function
  * @param[in]  ctx               parameter expansion context
@@ -68,7 +104,8 @@ typedef te_bool (*te_expand_param_func)(const char *name, const void *ctx,
  * @retval TE_EINVAL  Unmatched `${` found
  *
  * @note If @p src has a valid syntax, the function and its derivatives
- *       always return success.
+ *       may only fail if any of filters fail. All currently implemented
+ *       filters always succeed.
  */
 extern te_errno te_string_expand_parameters(const char *src,
                                             te_expand_param_func expand_param,

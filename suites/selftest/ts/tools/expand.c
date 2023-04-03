@@ -34,7 +34,7 @@
  */
 static const char template[] = "var1=${var1} var2=${var2:-unknown} "
     "pos=${0} unknown=${unknown:-${var2}} known=${var2:+known} "
-    "nested=${var2:+${unknown:-${var1}}} end";
+    "nested=${var2:+${unknown:-${var1}}} notempty=${var2|notempty:-empty} end";
 
 int
 main(int argc, char **argv)

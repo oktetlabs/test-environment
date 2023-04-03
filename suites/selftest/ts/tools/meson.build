@@ -6,6 +6,7 @@ tests = [
     'compare_bufs',
     'enum_map',
     'expand',
+    'expand_filters',
     'extract_glob',
     'hexdump',
     'intset',
