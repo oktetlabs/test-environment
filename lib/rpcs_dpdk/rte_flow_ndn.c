@@ -64,7 +64,6 @@
 #define RTE_FLOW_VLAN_PCP_FILED_LEN 3
 #define RTE_FLOW_VLAN_DEI_FILED_LEN 1
 #define RTE_FLOW_INT24_FIELD_LEN 3
-#define RTE_FLOW_FIELD_NAME_MAX_LEN 128
 #define RTE_FLOW_BIT_FIELD_LEN 1
 #define RTE_FLOW_VXLAN_VNI_VALID_OFFSET 3
 #define RTE_FLOW_GENEVE_CRITICAL_OFFSET 6
@@ -222,62 +221,6 @@ rte_int_hton(uint32_t val, void *data, size_t size)
             goto out;                                                       \
     } while (0)
 
-/*
- * Get values of spec, mask and last of requested field with specified name
- * based on size of the value (in bits) and offset of the value (in bits)
- */
-static te_errno
-asn_read_int_field_with_offset(const asn_value *pdu, const char *name,
-                               size_t size, uint32_t offset, uint32_t *spec_p,
-                               uint32_t *mask_p, uint32_t *last_p)
-{
-    uint32_t val;
-    uint32_t spec_val = 0;
-    uint32_t mask_val = 0;
-    uint32_t last_val = 0;
-    char buf[RTE_FLOW_FIELD_NAME_MAX_LEN];
-    unsigned int i;
-    int rc;
-
-    snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#plain", name);
-    rc = asn_read_uint32(pdu, &val, buf);
-    if (rc == 0)
-    {
-        spec_val |= val << offset;
-        for (i = 0; i < size; i++)
-            mask_val |= 1U << (offset + i);
-    }
-    else if (rc == TE_EASNOTHERCHOICE)
-    {
-        snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.first", name);
-        rc = asn_read_uint32(pdu, &val, buf);
-        if (rc == 0)
-            spec_val |= val << offset;
-        if (rc == 0 || rc == TE_EASNINCOMPLVAL)
-        {
-            snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.last", name);
-            rc = asn_read_uint32(pdu, &val, buf);
-        }
-        if (rc == 0)
-            last_val |= val << offset;
-        if (rc == 0 || rc == TE_EASNINCOMPLVAL)
-        {
-            snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.mask", name);
-            rc = asn_read_uint32(pdu, &val, buf);
-        }
-        if (rc == 0)
-            mask_val |= val << offset;
-    }
-    if (rc != 0 && rc != TE_EASNINCOMPLVAL && rc != TE_EASNOTHERCHOICE)
-        return rc;
-
-    *spec_p |= spec_val;
-    *mask_p |= mask_val;
-    *last_p |= last_val;
-
-    return 0;
-}
-
 static void
 convert_int24_to_array(uint8_t *array, uint32_t val)
 {
@@ -292,10 +235,10 @@ asn_read_int24_field(const asn_value *pdu, char *name, uint8_t *spec_val,
 {
     uint32_t val;
     size_t size = sizeof(val);
-    char buf[RTE_FLOW_FIELD_NAME_MAX_LEN];
+    char buf[NDN_RTE_FLOW_FIELD_NAME_MAX_LEN];
     int rc;
 
-    snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#plain", name);
+    snprintf(buf, NDN_RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#plain", name);
     rc = asn_read_value_field(pdu, &val, &size, buf);
     if (rc == 0)
     {
@@ -304,20 +247,22 @@ asn_read_int24_field(const asn_value *pdu, char *name, uint8_t *spec_val,
     }
     else if (rc == TE_EASNOTHERCHOICE)
     {
-        snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.first", name);
+        snprintf(buf, NDN_RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.first", name);
         rc = asn_read_value_field(pdu, &val, &size, buf);
         if (rc == 0)
             convert_int24_to_array(spec_val, val);
         if (rc == 0 || rc == TE_EASNINCOMPLVAL)
         {
-            snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.last", name);
+            snprintf(buf, NDN_RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.last",
+                     name);
             rc = asn_read_value_field(pdu, &val, &size, buf);
         }
         if (rc == 0)
             convert_int24_to_array(last_val, val);
         if (rc == 0 || rc == TE_EASNINCOMPLVAL)
         {
-            snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.mask", name);
+            snprintf(buf, NDN_RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.mask",
+                     name);
             rc = asn_read_value_field(pdu, &val, &size, buf);
         }
         if (rc == 0)
@@ -494,20 +439,20 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
 
     if (is_double_tagged && !is_empty)
     {
-        rc = asn_read_int_field_with_offset(vlan_pdu, "vid",
-                                            RTE_FLOW_VLAN_VID_FILED_LEN, 0,
-                                            &spec_tci, &mask_tci, &last_tci);
+        rc = ndn_rte_flow_read_with_offset(vlan_pdu, "vid",
+                                           RTE_FLOW_VLAN_VID_FILED_LEN, 0,
+                                           &spec_tci, &mask_tci, &last_tci);
         if (rc == 0)
-            rc = asn_read_int_field_with_offset(vlan_pdu, "dei",
-                                                RTE_FLOW_VLAN_DEI_FILED_LEN,
-                                                RTE_FLOW_VLAN_VID_FILED_LEN,
-                                                &spec_tci, &mask_tci, &last_tci);
+            rc = ndn_rte_flow_read_with_offset(vlan_pdu, "dei",
+                                               RTE_FLOW_VLAN_DEI_FILED_LEN,
+                                               RTE_FLOW_VLAN_VID_FILED_LEN,
+                                               &spec_tci, &mask_tci, &last_tci);
         if (rc == 0)
-            rc = asn_read_int_field_with_offset(vlan_pdu, "pcp",
-                                                RTE_FLOW_VLAN_PCP_FILED_LEN,
-                                                RTE_FLOW_VLAN_VID_FILED_LEN +
-                                                RTE_FLOW_VLAN_DEI_FILED_LEN,
-                                                &spec_tci, &mask_tci, &last_tci);
+            rc = ndn_rte_flow_read_with_offset(vlan_pdu, "pcp",
+                                               RTE_FLOW_VLAN_PCP_FILED_LEN,
+                                               RTE_FLOW_VLAN_VID_FILED_LEN +
+                                               RTE_FLOW_VLAN_DEI_FILED_LEN,
+                                               &spec_tci, &mask_tci, &last_tci);
         if (rc != 0)
             goto out;
 
@@ -516,20 +461,20 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     }
     else if (!is_double_tagged)
     {
-        rc = asn_read_int_field_with_offset(vlan_pdu, "vlan-id",
-                                            RTE_FLOW_VLAN_VID_FILED_LEN, 0,
-                                            &spec_tci, &mask_tci, &last_tci);
+        rc = ndn_rte_flow_read_with_offset(vlan_pdu, "vlan-id",
+                                           RTE_FLOW_VLAN_VID_FILED_LEN, 0,
+                                           &spec_tci, &mask_tci, &last_tci);
         if (rc == 0)
-            rc = asn_read_int_field_with_offset(vlan_pdu, "cfi",
-                                                RTE_FLOW_VLAN_DEI_FILED_LEN,
-                                                RTE_FLOW_VLAN_VID_FILED_LEN,
-                                                &spec_tci, &mask_tci, &last_tci);
+            rc = ndn_rte_flow_read_with_offset(vlan_pdu, "cfi",
+                                               RTE_FLOW_VLAN_DEI_FILED_LEN,
+                                               RTE_FLOW_VLAN_VID_FILED_LEN,
+                                               &spec_tci, &mask_tci, &last_tci);
         if (rc == 0)
-            rc = asn_read_int_field_with_offset(vlan_pdu, "priority",
-                                                RTE_FLOW_VLAN_PCP_FILED_LEN,
-                                                RTE_FLOW_VLAN_VID_FILED_LEN +
-                                                RTE_FLOW_VLAN_DEI_FILED_LEN,
-                                                &spec_tci, &mask_tci, &last_tci);
+            rc = ndn_rte_flow_read_with_offset(vlan_pdu, "priority",
+                                               RTE_FLOW_VLAN_PCP_FILED_LEN,
+                                               RTE_FLOW_VLAN_VID_FILED_LEN +
+                                               RTE_FLOW_VLAN_DEI_FILED_LEN,
+                                               &spec_tci, &mask_tci, &last_tci);
         if (rc != 0)
             goto out;
     }
@@ -958,11 +903,11 @@ rte_flow_item_vxlan_from_pdu(const asn_value *vxlan_pdu,
     if (rc != 0)
         return rc;
 
-    rc = asn_read_int_field_with_offset(vxlan_pdu, "vni-valid",
-                                        RTE_FLOW_BIT_FIELD_LEN,
-                                        RTE_FLOW_VXLAN_VNI_VALID_OFFSET,
-                                        &spec_vni_valid, &mask_vni_valid,
-                                        &last_vni_valid);
+    rc = ndn_rte_flow_read_with_offset(vxlan_pdu, "vni-valid",
+                                       RTE_FLOW_BIT_FIELD_LEN,
+                                       RTE_FLOW_VXLAN_VNI_VALID_OFFSET,
+                                       &spec_vni_valid, &mask_vni_valid,
+                                       &last_vni_valid);
     if (rc != 0)
         goto out;
 
@@ -1020,29 +965,29 @@ rte_flow_item_geneve_from_pdu(const asn_value *geneve_pdu,
     if (rc != 0)
         return rc;
 
-    rc = asn_read_int_field_with_offset(geneve_pdu, "critical",
-                                        RTE_FLOW_BIT_FIELD_LEN,
-                                        RTE_FLOW_GENEVE_CRITICAL_OFFSET,
-                                        &spec_fields, &mask_fields,
-                                        &last_fields);
+    rc = ndn_rte_flow_read_with_offset(geneve_pdu, "critical",
+                                       RTE_FLOW_BIT_FIELD_LEN,
+                                       RTE_FLOW_GENEVE_CRITICAL_OFFSET,
+                                       &spec_fields, &mask_fields,
+                                       &last_fields);
     if (rc == 0)
-        rc = asn_read_int_field_with_offset(geneve_pdu, "oam",
-                                            RTE_FLOW_BIT_FIELD_LEN,
-                                            RTE_FLOW_GENEVE_OAM_OFFSET,
-                                            &spec_fields, &mask_fields,
-                                            &last_fields);
+        rc = ndn_rte_flow_read_with_offset(geneve_pdu, "oam",
+                                           RTE_FLOW_BIT_FIELD_LEN,
+                                           RTE_FLOW_GENEVE_OAM_OFFSET,
+                                           &spec_fields, &mask_fields,
+                                           &last_fields);
     if (rc == 0)
-        rc = asn_read_int_field_with_offset(geneve_pdu, "options-length",
-                                            RTE_FLOW_GENEVE_OPT_LEN_SIZE,
-                                            RTE_FLOW_GENEVE_OPT_LEN_OFFSET,
-                                            &spec_fields, &mask_fields,
-                                            &last_fields);
+        rc = ndn_rte_flow_read_with_offset(geneve_pdu, "options-length",
+                                           RTE_FLOW_GENEVE_OPT_LEN_SIZE,
+                                           RTE_FLOW_GENEVE_OPT_LEN_OFFSET,
+                                           &spec_fields, &mask_fields,
+                                           &last_fields);
     if (rc == 0)
-        rc = asn_read_int_field_with_offset(geneve_pdu, "version",
-                                            RTE_FLOW_GENEVE_VER_SIZE,
-                                            RTE_FLOW_GENEVE_VER_OFFSET,
-                                            &spec_fields, &mask_fields,
-                                            &last_fields);
+        rc = ndn_rte_flow_read_with_offset(geneve_pdu, "version",
+                                           RTE_FLOW_GENEVE_VER_SIZE,
+                                           RTE_FLOW_GENEVE_VER_OFFSET,
+                                           &spec_fields, &mask_fields,
+                                           &last_fields);
     if (rc != 0)
         goto out;
 
@@ -1107,16 +1052,16 @@ rte_flow_item_gre_from_pdu(const asn_value *gre_pdu,
     if (rc != 0)
         return rc;
 
-    rc = asn_read_int_field_with_offset(gre_pdu, "cksum-present",
-                                        RTE_FLOW_BIT_FIELD_LEN,
-                                        RTE_FLOW_GRE_CKSUM_OFFSET,
-                                        &spec_fields, &mask_fields,
-                                        &last_fields);
+    rc = ndn_rte_flow_read_with_offset(gre_pdu, "cksum-present",
+                                       RTE_FLOW_BIT_FIELD_LEN,
+                                       RTE_FLOW_GRE_CKSUM_OFFSET,
+                                       &spec_fields, &mask_fields,
+                                       &last_fields);
     if (rc == 0)
-        rc = asn_read_int_field_with_offset(gre_pdu, "version",
-                                            RTE_FLOW_GRE_VER_LEN, 0,
-                                            &spec_fields, &mask_fields,
-                                            &last_fields);
+        rc = ndn_rte_flow_read_with_offset(gre_pdu, "version",
+                                           RTE_FLOW_GRE_VER_LEN, 0,
+                                           &spec_fields, &mask_fields,
+                                           &last_fields);
     if (rc != 0)
         goto out;
 
@@ -1172,25 +1117,25 @@ rte_flow_item_nvgre_from_pdu(const asn_value *gre_pdu,
     if (rc != 0)
         return rc;
 
-    rc = asn_read_int_field_with_offset(gre_pdu, "cksum-present",
-                                        RTE_FLOW_BIT_FIELD_LEN,
-                                        RTE_FLOW_GRE_CKSUM_OFFSET,
-                                        &spec_fields, &mask_fields,
-                                        &last_fields);
+    rc = ndn_rte_flow_read_with_offset(gre_pdu, "cksum-present",
+                                       RTE_FLOW_BIT_FIELD_LEN,
+                                       RTE_FLOW_GRE_CKSUM_OFFSET,
+                                       &spec_fields, &mask_fields,
+                                       &last_fields);
     if (rc == 0)
-        rc = asn_read_int_field_with_offset(gre_pdu, "key-present",
-                                            RTE_FLOW_BIT_FIELD_LEN,
-                                            RTE_FLOW_GRE_KEY_OFFSET,
-                                            &spec_fields, &mask_fields,
-                                            &last_fields);
+        rc = ndn_rte_flow_read_with_offset(gre_pdu, "key-present",
+                                           RTE_FLOW_BIT_FIELD_LEN,
+                                           RTE_FLOW_GRE_KEY_OFFSET,
+                                           &spec_fields, &mask_fields,
+                                           &last_fields);
     if (rc == 0)
-        rc = asn_read_int_field_with_offset(gre_pdu, "seqn-present",
-                                            RTE_FLOW_BIT_FIELD_LEN,
-                                            RTE_FLOW_GRE_SEQN_OFFSET,
-                                            &spec_fields, &mask_fields,
-                                            &last_fields);
+        rc = ndn_rte_flow_read_with_offset(gre_pdu, "seqn-present",
+                                           RTE_FLOW_BIT_FIELD_LEN,
+                                           RTE_FLOW_GRE_SEQN_OFFSET,
+                                           &spec_fields, &mask_fields,
+                                           &last_fields);
     if (rc == 0)
-        rc = asn_read_int_field_with_offset(gre_pdu, "version",
+        rc = ndn_rte_flow_read_with_offset(gre_pdu, "version",
                                             RTE_FLOW_GRE_VER_LEN, 0,
                                             &spec_fields, &mask_fields,
                                             &last_fields);
@@ -2773,10 +2718,10 @@ rte_flow_item_port_from_pdu(const asn_value *pdu, struct rte_flow_item *out)
     if (rc != 0)
         return rc;
 
-    rc = asn_read_int_field_with_offset(pdu, "ethdev-port-id",
-                                        RTE_FLOW_PORT_ID_LEN, 0,
-                                        &spec_port_id, &mask_port_id,
-                                        &last_port_id);
+    rc = ndn_rte_flow_read_with_offset(pdu, "ethdev-port-id",
+                                       RTE_FLOW_PORT_ID_LEN, 0,
+                                       &spec_port_id, &mask_port_id,
+                                       &last_port_id);
     if (rc != 0)
     {
         free(spec);

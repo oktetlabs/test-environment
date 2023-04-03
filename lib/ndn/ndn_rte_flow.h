@@ -136,6 +136,29 @@ extern const asn_type * const ndn_rte_flow_item_conf;
 
 extern asn_type ndn_rte_flow_rule_s;
 
+#define NDN_RTE_FLOW_FIELD_NAME_MAX_LEN 128
+
+/**
+ * Get values of spec, mask and last of requested field with specified name
+ * based on size of the value (in bits) and offset of the value (in bits)
+ *
+ * @param pdu    ASN.1 value
+ * @param name   Name of the field
+ * @param size   Size of the requested filed
+ * @param offset Offset of the requested filed
+ * @param spec_p Pointer to the spec
+ * @param mask_p Pointer to the mask
+ * @param last_p Pointer to the last
+ *
+ * @return Status code
+*/
+extern te_errno ndn_rte_flow_read_with_offset(const asn_value *pdu,
+                                              const char *name,
+                                              size_t size, uint32_t offset,
+                                              uint32_t *spec_p,
+                                              uint32_t *mask_p,
+                                              uint32_t *last_p);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
