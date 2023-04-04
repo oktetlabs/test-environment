@@ -81,24 +81,17 @@ static te_errno
 get_val(const logic_expr *parsed, void *expand_vars, logic_expr_res *res)
 {
     te_errno rc;
-    int rc_errno;
 
     if (expand_vars != NULL)
-        rc_errno = te_expand_kvpairs(parsed->u.value, NULL,
-                                     (te_kvpair_h *)expand_vars,
-                                     &res->value.simple);
+        rc = te_expand_kvpairs(parsed->u.value, NULL,
+                               (te_kvpair_h *)expand_vars,
+                               &res->value.simple);
     else
-        rc_errno = te_expand_env_vars(parsed->u.value, NULL,
-                                      &res->value.simple);
-    if (rc_errno != 0)
-    {
-        rc = te_rc_os2te(rc_errno);
+        rc = te_expand_env_vars(parsed->u.value, NULL,
+                                &res->value.simple);
+    if (rc != 0)
         goto out;
-    }
-    else
-    {
-        rc = 0;
-    }
+
     res->res_type = LOGIC_EXPR_RES_SIMPLE;
 
 out:

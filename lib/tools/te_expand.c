@@ -4,7 +4,7 @@
  *
  * API that allows to expand parameters in a string
  *
- * Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2018-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_defs.h"
@@ -51,7 +51,7 @@ te_get_kvpairs_value(const char *param_name, const void *params_ctx)
 }
 
 /* See description in te_expand.h */
-int
+te_errno
 te_expand_parameters(const char *src, const char **posargs,
                      te_param_value_getter get_param_value,
                      const void *params_ctx, char **retval)
@@ -74,7 +74,7 @@ te_expand_parameters(const char *src, const char **posargs,
             len = strlen(src) + 1;
             result = realloc(result, result_len + len);
             if (result == NULL)
-                return errno;
+                return te_rc_os2te(errno);
             memcpy(result + result_len, src, len);
             break;
         }
@@ -82,7 +82,7 @@ te_expand_parameters(const char *src, const char **posargs,
         {
             result = realloc(result, result_len + (next - src));
             if (result == NULL)
-                return errno;
+                return te_rc_os2te(errno);
             memcpy(result + result_len, src, next - src);
             result_len += next - src;
         }
@@ -95,7 +95,7 @@ te_expand_parameters(const char *src, const char **posargs,
                 case '\0':
                     free(result);
                     *retval = NULL;
-                    return EINVAL;
+                    return TE_EINVAL;
                 case '{':
                     brace_level++;
                     break;
@@ -109,7 +109,7 @@ te_expand_parameters(const char *src, const char **posargs,
         {
             free(result);
             *retval = NULL;
-            return ENOBUFS;
+            return TE_ENOBUFS;
         }
         memcpy(param_name, next, src - next - 1);
         param_name[src - next - 1] = '\0';
@@ -145,9 +145,9 @@ te_expand_parameters(const char *src, const char **posargs,
             if ((*default_value == '+' && tmp_param_val != NULL) ||
                 (*default_value == '-' && tmp_param_val == NULL))
             {
-                int rc = te_expand_parameters(default_value + 1, NULL,
-                                              get_param_value, params_ctx,
-                                              &tmp_param_val);
+                te_errno rc = te_expand_parameters(default_value + 1, NULL,
+                                                   get_param_value, params_ctx,
+                                                   &tmp_param_val);
 
                 if (rc != 0)
                 {
@@ -162,7 +162,7 @@ te_expand_parameters(const char *src, const char **posargs,
             len = strlen(tmp_param_val);
             result = realloc(result, result_len + len);
             if (result == NULL)
-                return errno;
+                return te_rc_os2te(errno);
             memcpy(result + result_len, tmp_param_val, len);
             result_len += len;
             free(tmp_param_val);
@@ -173,7 +173,7 @@ te_expand_parameters(const char *src, const char **posargs,
 }
 
 /* See description in te_expand.h */
-int
+te_errno
 te_expand_env_vars(const char *src, const char **posargs, char **retval)
 {
     return te_expand_parameters(src, posargs, &te_get_env_value,
@@ -181,9 +181,9 @@ te_expand_env_vars(const char *src, const char **posargs, char **retval)
 }
 
 /* See description in te_expand.h */
-int
-te_expand_kvpairs(const char *src, const char **posargs, const te_kvpair_h *kvpairs,
-                  char **retval)
+te_errno
+te_expand_kvpairs(const char *src, const char **posargs,
+                  const te_kvpair_h *kvpairs, char **retval)
 {
     return te_expand_parameters(src, posargs, &te_get_kvpairs_value,
                                 kvpairs, retval);

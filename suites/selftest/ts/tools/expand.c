@@ -59,8 +59,7 @@ main(int argc, char **argv)
     CHECK_RC(te_kvpair_add(&kvpairs, "var2", "%s",
                            te_str_empty_if_null(var2)));
 
-    if (te_expand_kvpairs(template, posargs, &kvpairs, &actual) != 0)
-        TEST_VERDICT("te_expand_kvpairs() failed");
+    CHECK_RC(te_expand_kvpairs(template, posargs, &kvpairs, &actual));
     if (strcmp(expanded, actual) != 0)
     {
         ERROR("Expected '%s', got '%s'", expanded, actual);

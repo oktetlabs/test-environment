@@ -4,13 +4,14 @@
  *
  * Definitions of the C API that allows to expand parameters in a string
  *
- * Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2018-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TOOLS_EXPAND_H__
 #define __TE_TOOLS_EXPAND_H__
 
 #include "te_config.h"
+#include "te_errno.h"
 
 #ifdef TE_EXPAND_XML
 #include <libxml/xmlmemory.h>
@@ -48,12 +49,13 @@ typedef const char *(*te_param_value_getter)(const char *, const void *);
  * @param retval            Resulting string (OUT)
  *
  * @return 0 if success, an error code otherwise
- * @retval ENOBUFS The variable name is longer than @c TE_EXPAND_PARAM_NAME_LEN
- * @retval EINVAL Unmatched ${ found
+ * @retval TE_ENOBUFS The variable name is longer than
+ *                    @c TE_EXPAND_PARAM_NAME_LEN
+ * @retval TE_EINVAL  Unmatched ${ found
  */
-extern int te_expand_parameters(const char *src, const char **posargs,
-                                te_param_value_getter get_param_value,
-                                const void *params_ctx, char **retval);
+extern te_errno te_expand_parameters(const char *src, const char **posargs,
+                                     te_param_value_getter get_param_value,
+                                     const void *params_ctx, char **retval);
 
 /**
  * Expands environment variables in a string.
@@ -73,11 +75,12 @@ extern int te_expand_parameters(const char *src, const char **posargs,
  * @param retval  Resulting string (OUT)
  *
  * @return 0 if success, an error code otherwise
- * @retval ENOBUFS The variable name is longer than @c TE_EXPAND_PARAM_NAME_LEN
- * @retval EINVAL Unmatched ${ found
+ * @retval TE_ENOBUFS The variable name is longer than
+ *                    @c TE_EXPAND_PARAM_NAME_LEN
+ * @retval TE_EINVAL  Unmatched ${ found
  */
-extern int te_expand_env_vars(const char *src, const char **posargs,
-                              char **retval);
+extern te_errno te_expand_env_vars(const char *src, const char **posargs,
+                                   char **retval);
 
 /**
  * Expands key-value pairs in a string.
@@ -98,11 +101,12 @@ extern int te_expand_env_vars(const char *src, const char **posargs,
  * @param retval  Resulting string (OUT)
  *
  * @return 0 if success, an error code otherwise
- * @retval ENOBUFS The variable name is longer than @c TE_EXPAND_PARAM_NAME_LEN
- * @retval EINVAL Unmatched ${ found
+ * @retval TE_ENOBUFS The variable name is longer than
+ *                    @c TE_EXPAND_PARAM_NAME_LEN
+ * @retval TE_EINVAL  Unmatched ${ found
  */
-extern int te_expand_kvpairs(const char *src, const char **posargs,
-                             const te_kvpair_h *kvpairs, char **retval);
+extern te_errno te_expand_kvpairs(const char *src, const char **posargs,
+                                  const te_kvpair_h *kvpairs, char **retval);
 
 
 #ifdef TE_EXPAND_XML
@@ -131,7 +135,7 @@ xmlGetProp_exp_vars_or_env(xmlNodePtr node, const xmlChar *name,
     if (value)
     {
         char *result = NULL;
-        int   rc;
+        te_errno rc;
 
         if (kvpairs == NULL)
             rc = te_expand_env_vars((const char *)value, NULL, &result);
@@ -144,9 +148,9 @@ xmlGetProp_exp_vars_or_env(xmlNodePtr node, const xmlChar *name,
             value = (xmlChar *)result;
         }
         else
-{
-            ERROR("Error substituting variables in %s '%s': %s",
-                  name, value, strerror(rc));
+        {
+            ERROR("Error substituting variables in %s '%s': %r",
+                  name, value, rc);
             xmlFree(value);
             value = NULL;
         }
