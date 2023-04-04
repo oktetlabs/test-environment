@@ -25,6 +25,7 @@
 #include "te_kvpair.h"
 #include "te_expand.h"
 #include "te_str.h"
+#include "te_string.h"
 
 /*
  * FIXME: the template should a parameter too, but
@@ -43,8 +44,8 @@ main(int argc, char **argv)
     const char *posarg;
     const char *expanded;
     te_kvpair_h kvpairs;
-    const char *posargs[10] = {NULL,};
-    char *actual = NULL;
+    const char *posargs[TE_EXPAND_MAX_POS_ARGS] = {NULL,};
+    te_string actual = TE_STRING_INIT;
 
     te_kvpair_init(&kvpairs);
 
@@ -59,10 +60,10 @@ main(int argc, char **argv)
     CHECK_RC(te_kvpair_add(&kvpairs, "var2", "%s",
                            te_str_empty_if_null(var2)));
 
-    CHECK_RC(te_expand_kvpairs(template, posargs, &kvpairs, &actual));
-    if (strcmp(expanded, actual) != 0)
+    CHECK_RC(te_string_expand_kvpairs(template, posargs, &kvpairs, &actual));
+    if (strcmp(expanded, actual.ptr) != 0)
     {
-        ERROR("Expected '%s', got '%s'", expanded, actual);
+        ERROR("Expected '%s', got '%s'", expanded, actual.ptr);
         TEST_VERDICT("Unexpected expansion");
     }
 
@@ -71,6 +72,6 @@ main(int argc, char **argv)
 cleanup:
 
     te_kvpair_fini(&kvpairs);
-    free(actual);
+    te_string_free(&actual);
     TEST_END;
 }

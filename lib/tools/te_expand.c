@@ -19,73 +19,97 @@
 #include <sys/types.h>
 #endif
 
+#include "te_str.h"
 #include "te_expand.h"
 
-/**
- * Get parameter value by name from environment.
- *
- * @param param_name    Name of required value
- *
- * @retval   Requested @p param_name value if found, otherwise @c NULL
- */
 static const char *
-te_get_env_value(const char *param_name, const void *params_ctx)
+get_positional_arg(const char *param_name, const char * const *posargs)
 {
-    UNUSED(params_ctx);
+    if (posargs == NULL || !isdigit(param_name[0]) || param_name[1] != '\0')
+        return NULL;
 
-    return getenv(param_name);
+    return posargs[param_name[0] - '0'];
 }
 
 /**
- * Get parameter value by name from queue of key-value pairs.
+ * Expand an environment variable or positional argument into @p dest.
  *
- * @param param_name    Name of required value
- * @param params_ctx    Head of queue of key-value pairs
+ * @param param_name    Name to expand.
+ * @param ctx           Array of positional arguments.
+ * @param dest          Destination string.
  *
- * @retval   Requested @p param_name value if found, otherwise @c NULL
+ * @return @c TRUE if the expansion has happened.
  */
-static const char *
-te_get_kvpairs_value(const char *param_name, const void *params_ctx)
+static te_bool
+expand_env_value(const char *param_name, const void *ctx, te_string *dest)
 {
-    return te_kvpairs_get((const te_kvpair_h *)params_ctx, param_name);
+    const char * const *posargs = ctx;
+    const char *value = get_positional_arg(param_name, posargs);
+
+    if (value == NULL)
+        value = getenv(param_name);
+
+    te_string_append(dest, "%s", te_str_empty_if_null(value));
+
+    return value != NULL;
+}
+
+/**
+ * A context for kvpair expansion.
+ */
+typedef struct kvpairs_expand_ctx {
+    /** Array of positional arguments */
+    const char **posargs;
+    /** Head of key value pairs */
+    const te_kvpair_h *kvpairs;
+} kvpairs_expand_ctx;
+
+/**
+ * Expand a value of a key or a positional argument into @p dest.
+ *
+ * @param param_name    Name to expand.
+ * @param ctx           Context, see kvpairs_expand_ctx.
+ * @param dest          Destination string
+ *
+ * @return @c TRUE if the expansion has happended.
+ */
+static te_bool
+expand_kvpairs_value(const char *param_name, const void *ctx, te_string *dest)
+{
+    const kvpairs_expand_ctx *kvpairs_ctx = ctx;
+    const char *value = get_positional_arg(param_name, kvpairs_ctx->posargs);
+
+    if (value == NULL)
+        value = te_kvpairs_get(kvpairs_ctx->kvpairs, param_name);
+
+    te_string_append(dest, "%s", te_str_empty_if_null(value));
+
+    return value != NULL;
 }
 
 /* See description in te_expand.h */
 te_errno
-te_expand_parameters(const char *src, const char **posargs,
-                     te_param_value_getter get_param_value,
-                     const void *params_ctx, char **retval)
+te_string_expand_parameters(const char *src,
+                            te_expand_param_func expand_param,
+                            const void *ctx, te_string *dest)
 {
     const char *next = NULL;
-    char       *result = NULL;
-    int         result_len = 0;
-    int         len;
     char        param_name[TE_EXPAND_PARAM_NAME_LEN];
     char       *default_value;
-    const char *param_var;
-    char       *tmp_param_val;
     int         brace_level = 0;
+    te_bool expanded;
+    size_t prev_len;
+    te_errno rc;
 
     for (;;)
     {
         next = strstr(src, "${");
         if (next == NULL)
         {
-            len = strlen(src) + 1;
-            result = realloc(result, result_len + len);
-            if (result == NULL)
-                return te_rc_os2te(errno);
-            memcpy(result + result_len, src, len);
+            te_string_append(dest, "%s", src);
             break;
         }
-        if (next != src)
-        {
-            result = realloc(result, result_len + (next - src));
-            if (result == NULL)
-                return te_rc_os2te(errno);
-            memcpy(result + result_len, src, next - src);
-            result_len += next - src;
-        }
+        te_string_append(dest, "%.*s", next - src, src);
         next += 2;
 
         for (src = next, brace_level = 1; brace_level != 0; src++)
@@ -93,8 +117,6 @@ te_expand_parameters(const char *src, const char **posargs,
             switch (*src)
             {
                 case '\0':
-                    free(result);
-                    *retval = NULL;
                     return TE_EINVAL;
                 case '{':
                     brace_level++;
@@ -105,12 +127,9 @@ te_expand_parameters(const char *src, const char **posargs,
             }
         }
 
-        if ((unsigned)(src - next - 1) > sizeof(param_name))
-        {
-            free(result);
-            *retval = NULL;
+        if ((size_t)(src - next - 1) >= sizeof(param_name))
             return TE_ENOBUFS;
-        }
+
         memcpy(param_name, next, src - next - 1);
         param_name[src - next - 1] = '\0';
         default_value = strchr(param_name, ':');
@@ -125,66 +144,94 @@ te_expand_parameters(const char *src, const char **posargs,
                 default_value = NULL;
             }
         }
-        if (isdigit(*param_name) && param_name[1] == '\0')
-        {
-            param_var = (posargs == NULL ? NULL :
-                         posargs[*param_name - '0']);
-        }
-        else
-        {
-            param_var = get_param_value(param_name, params_ctx);
-        }
 
-        if (param_var != NULL)
-            tmp_param_val = strdup(param_var);
-        else
-            tmp_param_val = NULL;
-
+        prev_len = dest->len;
+        expanded = expand_param(param_name, ctx, dest);
         if (default_value != NULL)
         {
-            if ((*default_value == '+' && tmp_param_val != NULL) ||
-                (*default_value == '-' && tmp_param_val == NULL))
+            if (*default_value == '+' && expanded)
             {
-                te_errno rc = te_expand_parameters(default_value + 1, NULL,
-                                                   get_param_value, params_ctx,
-                                                   &tmp_param_val);
-
+                te_string_cut(dest, dest->len - prev_len);
+                rc = te_string_expand_parameters(default_value + 1,
+                                                 expand_param, ctx, dest);
                 if (rc != 0)
-                {
-                    free(result);
-                    *retval = NULL;
                     return rc;
-                }
+            }
+            else if (*default_value == '-' && !expanded)
+            {
+                rc = te_string_expand_parameters(default_value + 1,
+                                                 expand_param, ctx, dest);
+                if (rc != 0)
+                    return rc;
             }
         }
-        if (tmp_param_val != NULL)
-        {
-            len = strlen(tmp_param_val);
-            result = realloc(result, result_len + len);
-            if (result == NULL)
-                return te_rc_os2te(errno);
-            memcpy(result + result_len, tmp_param_val, len);
-            result_len += len;
-            free(tmp_param_val);
-        }
     }
-    *retval = result;
+
     return 0;
 }
 
 /* See description in te_expand.h */
 te_errno
-te_expand_env_vars(const char *src, const char **posargs, char **retval)
+te_string_expand_env_vars(const char *src,
+                          const char *posargs[static TE_EXPAND_MAX_POS_ARGS],
+                          te_string *dest)
 {
-    return te_expand_parameters(src, posargs, &te_get_env_value,
-                                NULL, retval);
+    return te_string_expand_parameters(src, expand_env_value, posargs, dest);
 }
 
 /* See description in te_expand.h */
 te_errno
-te_expand_kvpairs(const char *src, const char **posargs,
-                  const te_kvpair_h *kvpairs, char **retval)
+te_string_expand_kvpairs(const char *src,
+                         const char *posargs[static TE_EXPAND_MAX_POS_ARGS],
+                         const te_kvpair_h *kvpairs, te_string *dest)
 {
-    return te_expand_parameters(src, posargs, &te_get_kvpairs_value,
-                                kvpairs, retval);
+    kvpairs_expand_ctx ctx = {.posargs = posargs, .kvpairs = kvpairs};
+
+    return te_string_expand_parameters(src, expand_kvpairs_value, &ctx, dest);
+}
+
+typedef struct legacy_expand_ctx {
+    const char **posargs;
+    te_param_value_getter get_param_value;
+    const void *params_ctx;
+} legacy_expand_ctx;
+
+static te_bool
+legacy_expand(const char *param_name, const void *ctx, te_string *dest)
+{
+    const legacy_expand_ctx *legacy_ctx = ctx;
+    const char *value = get_positional_arg(param_name, legacy_ctx->posargs);
+
+    if (value == NULL)
+        value = legacy_ctx->get_param_value(param_name, legacy_ctx->params_ctx);
+
+    return value;
+}
+
+te_errno
+te_expand_parameters(const char *src, const char **posargs,
+                     te_param_value_getter get_param_value,
+                     const void *params_ctx, char **retval)
+{
+    te_errno rc;
+    legacy_expand_ctx legacy_ctx = {
+        .posargs = posargs,
+        .get_param_value = get_param_value,
+        .params_ctx = params_ctx,
+    };
+    te_string str = TE_STRING_INIT;
+
+    rc = te_string_expand_parameters(src, legacy_expand, &legacy_ctx,
+                                     &str);
+
+    if (rc != 0)
+    {
+        te_string_free(&str);
+        *retval = NULL;
+        return rc;
+    }
+
+    te_string_move(retval, &str);
+
+    return 0;
 }
