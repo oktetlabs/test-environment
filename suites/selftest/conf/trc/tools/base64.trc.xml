@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="base64" type="script">
+    <objective>Testing Base-64 encoding/decoding routines.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="n_iterations" />
+        <arg name="min_len" />
+        <arg name="max_len" />
+        <arg name="url_safe" />
+    </iter>
+</test>

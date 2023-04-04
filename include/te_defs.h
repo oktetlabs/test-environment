@@ -5,7 +5,7 @@
  * Common useful definition
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_DEFS_H__
@@ -481,6 +481,19 @@ te_round_up_pow2(unsigned long long num)
 
 /** Align up a value to a power of two */
 #define TE_ALIGN(_v, _a)            TE_ALIGN_MASK((_v), (typeof(_v))(_a) - 1)
+
+
+/**
+ * Extract @p len_ bits from @p v_ starting from @p start_.
+ *
+ * @param v_       integral value
+ * @param start_   starting bit
+ * @param len_     field length
+ *
+ * @return extracted bits
+ */
+#define TE_EXTRACT_BITS(v_, start_, len_) \
+    (((v_) >> (start_)) & ((1ull << (len_)) - 1))
 
 /* Tests related part */
 /* fixme kostik: should be moved */

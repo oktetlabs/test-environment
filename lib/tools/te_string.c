@@ -5,7 +5,7 @@
  * Routines to work with strings.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_config.h"
@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 #endif
 
 #include "logger_api.h"
@@ -447,6 +448,131 @@ te_string_build_uri(te_string *str, const char *scheme,
         te_string_append_escape_uri(str, TE_STRING_URI_ESCAPE_FRAG, frag);
     }
 }
+
+static char
+encode_base64_bits(uint8_t sextet, te_bool url_safe)
+{
+    char bc;
+
+    if (sextet < 26)
+        bc = 'A' + sextet;
+    else if (sextet < 52)
+        bc = 'a' + sextet - 26;
+    else if (sextet < 62)
+        bc = '0' + sextet - 52;
+    else if (sextet == 62)
+        bc = url_safe ? '-' : '+';
+    else
+        bc = url_safe ? '_' : '/';
+
+    return bc;
+}
+
+#define BASE64_ENC_BITS 6
+
+void
+te_string_encode_base64(te_string *str, size_t len, const uint8_t bytes[len],
+                        te_bool url_safe)
+{
+    size_t i;
+    uint32_t latch = 0;
+    unsigned int bits = 0;
+    uint8_t sextet;
+
+    /* Base64 encodes each three bytes as four characters */
+    te_string_reserve(str, str->size + len * 4 / 3);
+    for (i = 0; i < len; i++)
+    {
+        latch <<= CHAR_BIT;
+        latch |= bytes[i];
+        bits += CHAR_BIT;
+
+        while (bits >= BASE64_ENC_BITS)
+        {
+            sextet = TE_EXTRACT_BITS(latch, bits - BASE64_ENC_BITS,
+                                     BASE64_ENC_BITS);
+            bits -= BASE64_ENC_BITS;
+
+            te_string_append(str, "%c", encode_base64_bits(sextet, url_safe));
+        }
+    }
+
+    if (bits != 0)
+    {
+        sextet = TE_EXTRACT_BITS(latch, 0, bits) << (BASE64_ENC_BITS - bits);
+        te_string_append(str, "%c%s", encode_base64_bits(sextet, url_safe),
+                         bits == 2 ? "==" : "=");
+    }
+}
+
+te_errno
+te_string_decode_base64(te_string *str, const char *base64str)
+{
+    const char *src;
+    uint32_t latch = 0;
+    unsigned int bits = 0;
+    unsigned int padding = 0;
+
+    for (src = base64str; *src != '\0'; src++)
+    {
+        uint8_t sextet;
+
+        if (isspace(*src))
+            continue;
+        if (*src == '=')
+        {
+            padding++;
+            if (padding > 2)
+            {
+                ERROR("Too many padding characters");
+                return TE_EILSEQ;
+            }
+            continue;
+        }
+
+        if (padding > 0)
+        {
+            ERROR("Significant characters after padding");
+            return TE_EILSEQ;
+        }
+        if (*src >= 'A' && *src <= 'Z')
+            sextet = *src - 'A';
+        else if (*src >= 'a' && *src <= 'z')
+            sextet = *src - 'a' + 26;
+        else if (*src >= '0' && *src <= '9')
+            sextet = *src - '0' + 52;
+        else if (*src == '+' || *src == '-')
+            sextet = 62;
+        else if (*src == '/' || *src == '_')
+            sextet = 63;
+        else
+        {
+            ERROR("Invalid Base64 character: %#x", (unsigned int)*src);
+            return TE_EILSEQ;
+        }
+
+        latch <<= BASE64_ENC_BITS;
+        latch |= sextet;
+        bits += BASE64_ENC_BITS;
+        if (bits >= CHAR_BIT)
+        {
+            te_string_append_buf(str,
+                                 (const char[]){TE_EXTRACT_BITS(latch,
+                                                                bits - CHAR_BIT,
+                                                                CHAR_BIT)}, 1);
+            bits -= CHAR_BIT;
+        }
+    }
+    if (bits == BASE64_ENC_BITS)
+    {
+        ERROR("Insufficient number of Base64 characters");
+        return TE_EILSEQ;
+    }
+
+    return 0;
+}
+
+#undef BASE64_ENC_BITS
 
 char *
 te_string_fmt_va(const char *fmt,

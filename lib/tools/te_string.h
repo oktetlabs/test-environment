@@ -9,7 +9,7 @@
  * Helper functions to work with strings.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_STRING_H__
@@ -391,6 +391,41 @@ extern void te_string_build_uri(te_string *str, const char *scheme,
                                 const char *userinfo, const char *host,
                                 uint16_t port, const char *path,
                                 const char *query, const char *frag);
+
+/**
+ * Encode binary data with Base-64 encoding.
+ *
+ * The encoding is defined in RFC 4648. Lines are not split.
+ *
+ * If @p url_safe is @c TRUE, the so called URL-safe variant of RFC 4648
+ * is used which produces strings that may be directed included into an URI
+ * without additional escaping. Also they may be safely used as filenames.
+ *
+ * @param str       TE string
+ * @param len       size of binary data
+ * @param bytes     raw binary data
+ * @param url_safe  a variant of RFC 4648
+ */
+extern void te_string_encode_base64(te_string *str, size_t len,
+                                    const uint8_t bytes[len],
+                                    te_bool url_safe);
+
+/**
+ * Decode a Base64-encoded string.
+ *
+ * Both variants of RFC 4648 encoding are accepted. Embedded newlines
+ * are silently skipped.
+ *
+ * @param str         TE string
+ * @param base64str   Base64-encoded string
+ *
+ * @return status code
+ * @retval TE_EILSEQ  Invalid Base64 encoding
+ *
+ * @note @p str will always be zero-terminated, but it may contain
+ *       embedded zeroes.
+ */
+extern te_errno te_string_decode_base64(te_string *str, const char *base64str);
 
 /**
  * Return a char * that is a result of sprintf into allocated memory.

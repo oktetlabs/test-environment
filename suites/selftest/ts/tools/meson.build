@@ -2,6 +2,7 @@
 # Copyright (C) 2022-2023 OKTET Labs Ltd. All rights reserved.
 
 tests = [
+    'base64',
     'compare_bufs',
     'enum_map',
     'expand',
