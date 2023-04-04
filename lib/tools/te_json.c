@@ -79,54 +79,37 @@ te_json_add_simple(te_json_ctx_t *ctx, const char *fmt, ...)
     va_end(args);
 }
 
+static void
+json_ctrl_char_escape(te_string *str, char c)
+{
+    te_string_append(str, "\\u%4.4" PRIx8, (uint8_t)c);
+}
+
 void
 te_json_append_string_va(te_json_ctx_t *ctx, const char *fmt, va_list args)
 {
+    static const char *json_esc[UINT8_MAX + 1] = {
+        ['\\'] = "\\\\",
+        ['\"'] = "\\\"",
+        ['/'] = "\\/",
+        ['\b'] = "\\b",
+        ['\f'] = "\\f",
+        ['\n'] = "\\n",
+        ['\r'] = "\\r",
+        ['\t'] = "\\t",
+    };
     te_string inner = TE_STRING_INIT;
-    const char *iter;
+    te_string escaped = TE_STRING_INIT;
 
     assert(ctx->nesting[ctx->current_level].kind ==
                                       TE_JSON_COMPOUND_STRING);
 
     te_string_append_va(&inner, fmt, args);
+    te_string_generic_escape(&escaped, inner.ptr,
+                             json_esc, json_ctrl_char_escape, NULL);
+    append_to_json(ctx, "%s", te_string_value(&escaped));
 
-    for (iter = inner.ptr; *iter != '\0'; iter++)
-    {
-        switch (*iter)
-        {
-            case '\\':
-            case '\"':
-            case '/':
-                append_to_json(ctx, "\\%c", *iter);
-                break;
-            case '\b':
-                append_to_json(ctx, "\\b");
-                break;
-            case '\f':
-                append_to_json(ctx, "\\f");
-                break;
-            case '\n':
-                append_to_json(ctx, "\\n");
-                break;
-            case '\r':
-                append_to_json(ctx, "\\r");
-                break;
-            case '\t':
-                append_to_json(ctx, "\\t");
-                break;
-            default:
-                if (iscntrl(*iter))
-                {
-                    append_to_json(ctx, "\\u%4.4" PRIx8,
-                                     (uint8_t)*iter);
-                }
-                else
-                {
-                    append_to_json(ctx, "%c", *iter);
-                }
-                break;
-        }
-    }
+    te_string_free(&escaped);
     te_string_free(&inner);
 }
 

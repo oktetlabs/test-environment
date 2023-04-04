@@ -393,6 +393,43 @@ extern void te_string_build_uri(te_string *str, const char *scheme,
                                 const char *query, const char *frag);
 
 /**
+ * Type for character escaping functions.
+ *
+ * A function is expected to append some representation of @p c
+ * to @p str. The representation is allowed to be empty, i.e.
+ * the function may swallow some input characters.
+ *
+ * @param str TE string
+ * @param c   input character
+ */
+typedef void te_string_generic_escape_fn(te_string *str, char c);
+
+/**
+ * Generic string escaping function.
+ *
+ * All characters from @p input are copied unchanged to @p str, except:
+ * - if the character has a non-@c NULL entry in @p esctable,
+ *   it is substituted;
+ * - if @p ctrl_esc is not @c NULL and the character is a control character,
+ *   @p ctrl_esc is used to write the representation of the character;
+ * - if @p nonascii_esc is not @c NULL and the character is non-ASCII
+ *   (i.e. its code is larger than @c 127), @p nonascii_esc is used to
+ *   write the representation of the character.
+ *
+ * @param str           TE string
+ * @param input         input string
+ * @param esctable      table of escape sequences
+ * @param ctrl_esc      control character escaping function
+ *                      (may be @c NULL)
+ * @param nonascii_esc  non-ASCII character escaping function
+ *                      (may be @c NULL)
+ */
+extern void te_string_generic_escape(te_string *str, const char *input,
+                                     const char *esctable[static UINT8_MAX + 1],
+                                     te_string_generic_escape_fn *ctrl_esc,
+                                     te_string_generic_escape_fn *nonascii_esc);
+
+/**
  * Encode binary data with Base-64 encoding.
  *
  * The encoding is defined in RFC 4648. Lines are not split.

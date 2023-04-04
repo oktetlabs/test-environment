@@ -433,6 +433,25 @@ te_string_build_uri(te_string *str, const char *scheme,
     }
 }
 
+void
+te_string_generic_escape(te_string *str, const char *input,
+                         const char *esctable[static UINT8_MAX + 1],
+                         te_string_generic_escape_fn *ctrl_esc,
+                         te_string_generic_escape_fn *nonascii_esc)
+{
+    for (; *input != '\0'; input++)
+    {
+        if (esctable[(uint8_t)*input] != NULL)
+            te_string_append(str, "%s", esctable[(uint8_t)*input]);
+        else if (ctrl_esc != NULL && iscntrl(*input))
+            ctrl_esc(str, *input);
+        else if (nonascii_esc != NULL && !isascii(*input))
+            nonascii_esc(str, *input);
+        else
+            te_string_append(str, "%c", *input);
+    }
+}
+
 static char
 encode_base64_bits(uint8_t sextet, te_bool url_safe)
 {
