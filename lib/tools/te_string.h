@@ -502,6 +502,20 @@ extern void te_string_cut(te_string *str, size_t len);
 extern void te_string_cut_beginning(te_string *str, size_t len);
 
 /**
+ * Chop off trailing characters from @p str that belong to @p trail.
+ *
+ * For example, this function may be used to remove trailing newlines
+ * from the contents of a file:
+ * @code
+ *     te_string_chop(dest, "\n");
+ * @endcode
+ *
+ * @param str           TE string.
+ * @param trail         Trailing characters to chop.
+ */
+extern void te_string_chop(te_string *str, const char *trail);
+
+/**
  * Center the string @p src padding it to @p padlen with @p padchar and
  * append the result to @p str.
  *

@@ -631,6 +631,16 @@ te_string_cut(te_string *str, size_t len)
 }
 
 void
+te_string_chop(te_string *str, const char *trail)
+{
+    while (str->len > 0 && strchr(trail, str->ptr[str->len - 1]) != NULL)
+    {
+        str->len--;
+        str->ptr[str->len] = '\0';
+    }
+}
+
+void
 te_string_add_centered(te_string *str, const char *src,
                        size_t padlen, char padchar)
 {
