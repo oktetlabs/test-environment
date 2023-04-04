@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="expand" type="script">
+    <objective>Testing variable expansion routines.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="var1" />
+        <arg name="var2" />
+        <arg name="posarg" />
+        <arg name="expanded" />
+    </iter>
+</test>

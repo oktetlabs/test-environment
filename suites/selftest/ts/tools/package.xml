@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (C) 2022 OKTET Labs Ltd. All rights reserved. -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
 <package version="1.0">
     <description>Package for self-tests of lib/tool functions</description>
     <author mailto="Artem.Andreev@oktetlabs.ru"/>
@@ -37,6 +37,25 @@
 
         <run>
             <script name="enum_map"/>
+        </run>
+
+        <run>
+            <script name="expand"/>
+            <arg name="var1" list="">
+                <value>value1</value>
+                <value>-</value>
+            </arg>
+            <arg name="var2" list="">
+                <value>value2</value>
+                <value>-</value>
+            </arg>
+            <arg name="posarg" list="">
+                <value>positional</value>
+            </arg>
+            <arg name="expanded" list="">
+                <value>var1=value1 var2=value2 pos=positional unknown=value2 known=known nested=value1 end</value>
+                <value>var1= var2= pos=positional unknown= known=known nested= end</value>
+            </arg>
         </run>
 
         <run>

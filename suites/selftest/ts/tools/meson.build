@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2022-2023 OKTET Labs Ltd. All rights reserved.
 
 tests = [
     'compare_bufs',
     'enum_map',
+    'expand',
     'extract_glob',
     'hexdump',
     'intset',
