@@ -87,6 +87,80 @@ expand_kvpairs_value(const char *param_name, const void *ctx, te_string *dest)
     return value != NULL;
 }
 
+static const char *
+find_ref_end(const char *start)
+{
+    unsigned int brace_level = 1;
+
+    for (; brace_level != 0; start++)
+    {
+        switch (*start)
+        {
+            case '\0':
+                return NULL;
+            case '{':
+                brace_level++;
+                break;
+            case '}':
+                brace_level--;
+                break;
+            default:
+                break;
+        }
+    }
+    return start;
+}
+
+static const char *
+process_reference(const char *start, te_expand_param_func expand_param,
+                  const void *ctx, te_string *dest)
+{
+    const char *end = find_ref_end(start);
+
+    if (end == NULL)
+        return NULL;
+    else
+    {
+        char *default_value = NULL;
+        char ref[end - start];
+        size_t prev_len;
+        te_bool expanded;
+
+        memcpy(ref, start, end - start - 1);
+        ref[end - start - 1] = '\0';
+
+        default_value = strchr(ref, ':');
+        if (default_value != NULL)
+        {
+            if (default_value[1] != '+' && default_value[1] != '-')
+                default_value = NULL;
+            else
+                *default_value++ = '\0';
+        }
+
+        prev_len = dest->len;
+        expanded = expand_param(ref, ctx, dest);
+        if (default_value != NULL)
+        {
+            if (*default_value == '+' && expanded)
+            {
+                te_string_cut(dest, dest->len - prev_len);
+                if (te_string_expand_parameters(default_value + 1,
+                                                expand_param, ctx, dest) != 0)
+                    return NULL;
+            }
+            else if (*default_value == '-' && !expanded)
+            {
+                if (te_string_expand_parameters(default_value + 1,
+                                                expand_param, ctx, dest) != 0)
+                    return NULL;
+            }
+        }
+
+        return end;
+    }
+}
+
 /* See description in te_expand.h */
 te_errno
 te_string_expand_parameters(const char *src,
@@ -94,12 +168,6 @@ te_string_expand_parameters(const char *src,
                             const void *ctx, te_string *dest)
 {
     const char *next = NULL;
-    char        param_name[TE_EXPAND_PARAM_NAME_LEN];
-    char       *default_value;
-    int         brace_level = 0;
-    te_bool expanded;
-    size_t prev_len;
-    te_errno rc;
 
     for (;;)
     {
@@ -112,59 +180,9 @@ te_string_expand_parameters(const char *src,
         te_string_append(dest, "%.*s", next - src, src);
         next += 2;
 
-        for (src = next, brace_level = 1; brace_level != 0; src++)
-        {
-            switch (*src)
-            {
-                case '\0':
-                    return TE_EINVAL;
-                case '{':
-                    brace_level++;
-                    break;
-                case '}':
-                    brace_level--;
-                    break;
-            }
-        }
-
-        if ((size_t)(src - next - 1) >= sizeof(param_name))
-            return TE_ENOBUFS;
-
-        memcpy(param_name, next, src - next - 1);
-        param_name[src - next - 1] = '\0';
-        default_value = strchr(param_name, ':');
-        if (default_value != NULL)
-        {
-            if (default_value[1] == '+' || default_value[1] == '-')
-            {
-                *default_value++ = '\0';
-            }
-            else
-            {
-                default_value = NULL;
-            }
-        }
-
-        prev_len = dest->len;
-        expanded = expand_param(param_name, ctx, dest);
-        if (default_value != NULL)
-        {
-            if (*default_value == '+' && expanded)
-            {
-                te_string_cut(dest, dest->len - prev_len);
-                rc = te_string_expand_parameters(default_value + 1,
-                                                 expand_param, ctx, dest);
-                if (rc != 0)
-                    return rc;
-            }
-            else if (*default_value == '-' && !expanded)
-            {
-                rc = te_string_expand_parameters(default_value + 1,
-                                                 expand_param, ctx, dest);
-                if (rc != 0)
-                    return rc;
-            }
-        }
+        src = process_reference(next, expand_param, ctx, dest);
+        if (src == NULL)
+            return TE_EINVAL;
     }
 
     return 0;

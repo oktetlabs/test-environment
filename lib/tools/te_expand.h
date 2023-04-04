@@ -22,9 +22,6 @@
 #include "te_string.h"
 #include "te_kvpair.h"
 
-/** Maximal length of parameter name */
-#define TE_EXPAND_PARAM_NAME_LEN 128
-
 /** Maximum number of positional arguments */
 #define TE_EXPAND_MAX_POS_ARGS 10
 
@@ -62,18 +59,16 @@ typedef te_bool (*te_expand_param_func)(const char *name, const void *ctx,
  * - `${NAME:+VALUE}` is expanded into @c VALUE if @c NAME variable is set,
  *   otherwise to an empty string.
  *
- * @note The length of anything between `${...}` must be less than
- *       TE_EXPAND_PARAM_NAME_LEN
- *
  * @param[in]  src               source string
  * @param[in]  expand_param      parameter expansion function
  * @param[in]  ctx               parameter expansion context
  * @param[out] dest              destination string
  *
  * @return status code
- * @retval TE_ENOBUFS The variable name is longer than
- *                    TE_EXPAND_PARAM_NAME_LEN
  * @retval TE_EINVAL  Unmatched `${` found
+ *
+ * @note If @p src has a valid syntax, the function and its derivatives
+ *       always return success.
  */
 extern te_errno te_string_expand_parameters(const char *src,
                                             te_expand_param_func expand_param,
@@ -143,8 +138,6 @@ typedef const char *(*te_param_value_getter)(const char *name, const void *ctx);
  *                              (must be free()'d by the caller)
  *
  * @return status code
- * @retval TE_ENOBUFS The variable name is longer than
- *                    TE_EXPAND_PARAM_NAME_LEN
  * @retval TE_EINVAL  Unmatched `${` found
  *
  * @deprecated te_string_expand_parameters() should be used instead.
