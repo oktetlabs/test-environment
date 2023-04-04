@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="file" type="script">
+    <objective>Testing te_file_read_string and te_file_write_string correctness.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="content" />
+        <arg name="binary" />
+    </iter>
+</test>

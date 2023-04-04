@@ -8,6 +8,7 @@ tests = [
     'expand',
     'expand_filters',
     'extract_glob',
+    'file',
     'hexdump',
     'intset',
     'json',

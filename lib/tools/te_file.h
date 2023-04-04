@@ -8,7 +8,7 @@
  *
  * Functions to operate the files.
  *
- * Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2018-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_FILE_H__
@@ -22,6 +22,7 @@
 #endif
 
 #include "te_vector.h"
+#include "te_string.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -227,6 +228,59 @@ extern te_errno te_access_fmt(int mode, const char *fmt, ...)
 extern te_errno te_unlink_fmt(const char *fmt, ...)
     __attribute__((format(printf, 1, 2)));
 
+/**
+ * Read the contents of the file into a dynamic string @p dest.
+ *
+ * If @p binary is @c FALSE, the function ensures that there is no
+ * embedded zeroes in the file content and strips off trailing newlines
+ * if there are any.
+ *
+ * If @p maxsize is not zero, the function ensures that the file size
+ * is not greater than it. That allows to avoid crashes if @p dest
+ * is a statically allocated TE string and in general to prevent memory
+ * bombs if a file comes from an untrusted source.
+ *
+ * @note The file should be random-access, so the function cannot read
+ *       reliably from sockets, named FIFOs and most kinds of character devices.
+ *
+ * @param dest     TE string (the content of the file will be appended to it)
+ * @param binary   reading mode (binary or text mode)
+ * @param maxsize  the maximum allowed file size, if not zero
+ * @param path_fmt pathname format string
+ * @param ...      arguments
+ *
+ * @return status code
+ * @retval TE_EFBIG     The file size is larger than @p maxsize.
+ * @retval TE_EILSEQ    The file contains embedded zeroes and
+ *                      @p binary is @c FALSE.
+ */
+extern te_errno te_file_read_string(te_string *dest, te_bool binary,
+                                    size_t maxsize, const char *path_fmt, ...)
+                                    __attribute__((format(printf, 4, 5)));
+
+/**
+ * Write the contents of the file from a dynamic string @p src.
+ *
+ * The file is opened with POSIX @p flags ORed with @c O_WRONLY
+ * and if the file is created, then access @p mode will be set on it.
+ *
+ * If @p fitlen is not zero, the resulting file will be exactly that long:
+ * - if @p src is longer than @p fitlen, it will be truncated;
+ * - if @p src is shorter, it will be repeated until the length is reached.
+ *
+ * @param src      source TE string
+ * @param fitlen   desired file length (ignored if zero)
+ * @param flags    POSIX open flags, such as @c O_CREAT
+ * @param mode     POSIX access mode for newly created files
+ * @param path_fmt pathname format string
+ * @param ...      arguments
+ *
+ * @return status code
+ */
+extern te_errno te_file_write_string(const te_string *src, size_t fitlen,
+                                     int flags, mode_t mode,
+                                     const char *path_fmt, ...)
+                                     __attribute__((format(printf, 5, 6)));
 
 /**
  * Read the contents of the file @p path into @p buffer.
@@ -245,8 +299,9 @@ extern te_errno te_unlink_fmt(const char *fmt, ...)
  *
  * @return Status code
  * @retval TE_EFBIG     The file size is larger than @p bufsize
- * @retval TE_ESPIPE    The file is not random-access
  * @retval TE_EILSEQ    The file contains embedded zeroes
+ *
+ * @deprecated Prefer te_file_read_string().
  */
 extern te_errno te_file_read_text(const char *path, char *buffer,
                                   size_t bufsize);

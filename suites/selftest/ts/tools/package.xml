@@ -197,6 +197,17 @@
         </run>
 
         <run>
+            <script name="file"/>
+            <arg name="content">
+                <value>Test data</value>
+            </arg>
+            <arg name="binary">
+                <value>FALSE</value>
+                <value>TRUE</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="hexdump"/>
         </run>
 

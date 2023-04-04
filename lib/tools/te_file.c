@@ -4,7 +4,7 @@
  *
  * Functions to operate the files.
  *
- * Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2018-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_config.h"
@@ -12,6 +12,7 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_file.h"
+#include "te_str.h"
 #include "te_string.h"
 #include "te_dbuf.h"
 #include "te_alloc.h"
@@ -400,71 +401,165 @@ te_unlink_fmt(const char *fmt, ...)
 }
 
 te_errno
-te_file_read_text(const char *path, char *buffer, size_t bufsize)
+te_file_read_string(te_string *dest, te_bool binary,
+                    size_t maxsize, const char *path_fmt, ...)
 {
-    int fd = open(path, O_RDONLY);
-    off_t size;
+    te_string pathname = TE_STRING_INIT;
+    va_list args;
+    struct stat st;
+    te_errno rc = 0;
+    int fd = -1;
     ssize_t actual;
-    ssize_t i;
-    int saved_errno;
 
+    va_start(args, path_fmt);
+    te_string_append_va(&pathname, path_fmt, args);
+    va_end(args);
+
+    if (stat(pathname.ptr, &st))
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("Cannot stat '%s': %r", pathname.ptr, rc);
+        goto out;
+    }
+
+    if (!S_ISREG(st.st_mode))
+    {
+        WARN("'%s' is not a regular file or symlink, "
+             "%s() may not return the expected data",
+             pathname.ptr, __func__);
+    }
+
+    if (maxsize != 0 && st.st_size > maxsize)
+    {
+        ERROR("File %s's size (%zu) is larger than %zu",
+              pathname.ptr, (size_t)st.st_size, maxsize);
+        rc = TE_EFBIG;
+        goto out;
+    }
+    te_string_reserve(dest, dest->len + st.st_size + 1);
+
+    fd  = open(pathname.ptr, O_RDONLY);
     if (fd < 0)
-        return TE_OS_RC(TE_MODULE_NONE, errno);
-    size = lseek(fd, 0, SEEK_END);
-    if (size == (off_t)-1)
     {
-        saved_errno = errno;
-        close(fd);
-        return TE_OS_RC(TE_MODULE_NONE, saved_errno);
+        rc = te_rc_os2te(errno);
+        ERROR("Cannot open '%s' for reading: %r",
+              pathname.ptr, rc);
+        goto out;
     }
 
-    if (size >= bufsize)
-    {
-        ERROR("File %s's size (%zu) is larger than %zu", path,
-              (size_t)size, bufsize);
-        close(fd);
-        return TE_RC(TE_MODULE_NONE, TE_EFBIG);
-    }
-
-    if (lseek(fd, 0, SEEK_SET) == (off_t)-1)
-    {
-        saved_errno = errno;
-        close(fd);
-        return TE_OS_RC(TE_MODULE_NONE, saved_errno);
-    }
-
-    actual = read(fd, buffer, size);
+    actual = read(fd, dest->ptr + dest->len, st.st_size);
     if (actual < 0)
     {
-        saved_errno = errno;
-        close(fd);
-        return TE_OS_RC(TE_MODULE_NONE, saved_errno);
-    }
-    close(fd);
-
-    if (actual != size)
-    {
-        ERROR("Could not read %zu bytes from %s, only %zu were read", size,
-              path, (size_t)actual);
-        return TE_RC(TE_MODULE_NONE, TE_EIO);
+        rc = te_rc_os2te(errno);
+        ERROR("Cannot read from '%s': %r", pathname.ptr, rc);
+        goto out;
     }
 
-    for (i = 0; i < actual; i++)
+    if ((size_t)actual != (size_t)st.st_size)
     {
-        if (buffer[i] == '\0')
+        ERROR("Could not read %zu bytes from %s, only %zu were read",
+              (size_t)st.st_size, pathname.ptr, (size_t)actual);
+        rc = TE_EIO;
+        goto out;
+    }
+
+    dest->len += actual;
+    dest->ptr[dest->len] = '\0';
+
+    if (!binary)
+    {
+        ssize_t i;
+
+        for (i = 0; i < actual; i++)
         {
-            ERROR("File '%s' contains an embedded zero at %zu", path, actual);
-            return TE_RC(TE_MODULE_NONE, TE_EILSEQ);
+            if (dest->ptr[dest->len - actual + i] == '\0')
+            {
+                ERROR("File '%s' contains an embedded zero at %zu",
+                      pathname.ptr, (size_t)i);
+                te_string_cut(dest, actual);
+                rc = TE_EILSEQ;
+                goto out;
+            }
+        }
+
+        te_string_chop(dest, "\n");
+    }
+
+out:
+    if (fd >= 0)
+        close(fd);
+    te_string_free(&pathname);
+
+    return rc;
+}
+
+te_errno
+te_file_write_string(const te_string *src, size_t fitlen,
+                     int flags, mode_t mode,
+                     const char *path_fmt, ...)
+{
+    te_string pathname = TE_STRING_INIT;
+    va_list args;
+    te_errno rc = 0;
+    int fd = -1;
+    ssize_t actual;
+    size_t remaining = fitlen == 0 ? src->len : fitlen;
+
+    va_start(args, path_fmt);
+    te_string_append_va(&pathname, path_fmt, args);
+    va_end(args);
+
+    fd  = open(pathname.ptr, O_WRONLY | flags, mode);
+    if (fd < 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("Cannot open '%s' for writing: %r",
+              pathname.ptr, rc);
+        goto out;
+    }
+
+    while (remaining > 0)
+    {
+        size_t chunk = src->len > remaining ? remaining : src->len;
+
+        actual = write(fd, src->ptr, chunk);
+        if (actual < 0)
+        {
+            rc = te_rc_os2te(errno);
+            ERROR("Cannot write to '%s': %r", pathname.ptr, rc);
+            goto out;
+        }
+
+        if ((size_t)actual != chunk)
+        {
+            ERROR("Could not write %zu bytes to %s, only %zu were written",
+                  chunk, pathname.ptr, (size_t)actual);
+            rc = TE_EIO;
+            goto out;
+        }
+
+        remaining -= chunk;
+    }
+out:
+    if (fd >= 0)
+    {
+        if (close(fd) != 0)
+        {
+            rc = te_rc_os2te(errno);
+            ERROR("Error closing '%s': %r", pathname.ptr, rc);
         }
     }
-    buffer[actual] = '\0';
-    while (actual > 0 && buffer[actual - 1] == '\n')
-    {
-        actual--;
-        buffer[actual] = '\0';
-    }
+    te_string_free(&pathname);
 
-    return 0;
+    return rc;
+}
+
+te_errno
+te_file_read_text(const char *path, char *buffer, size_t bufsize)
+{
+    te_string bufstr = TE_STRING_EXT_BUF_INIT(buffer, bufsize);
+
+    return te_file_read_string(&bufstr, FALSE, bufsize - 1, "%s", path);
 }
 
 static te_errno
