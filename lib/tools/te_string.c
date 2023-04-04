@@ -231,41 +231,25 @@ te_string_append_buf(te_string *str, const char *buf, size_t len)
 te_errno
 te_string_append_shell_arg_as_is(te_string *str, const char *arg)
 {
-    te_errno rc = 0;
-    te_string arg_escaped = TE_STRING_INIT;
-
-    do {
+    while (TRUE)
+    {
         const char *p;
-        int len;
 
         p = strchr(arg, '\'');
         if (p == NULL)
-            len = strlen(arg);
-        else
-            len = p - arg;
-
-        /* Print up to ' or end of string */
-        rc = te_string_append(&arg_escaped, "'%.*s'", len, arg);
-        if (rc != 0)
-            break;
-        arg += len;
-
-        if (*arg == '\'')
         {
-            rc = te_string_append(&arg_escaped, "\\\'");
-            if (rc != 0)
-                break;
-            arg++;
+            te_string_append(str, "'%s'", arg);
+            break;
         }
-    } while (*arg != '\0');
-
-    if (rc != 0)
-    {
-        te_string_free(&arg_escaped);
-        return rc;
+        else
+        {
+            te_string_append(str, "'%.*s'\\\'",
+                             (int)(p - arg), arg);
+            arg = p + 1;
+        }
     }
 
-    return te_string_append(str, "%s", arg_escaped.ptr);
+    return 0;
 }
 
 te_errno
