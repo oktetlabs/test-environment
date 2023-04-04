@@ -476,7 +476,7 @@
             nginx version.
          Default: 1
 
-    - oid: "/agent/nginx/http/server/ssl_link"
+    - oid: "/agent/nginx/http/server/ssl_name"
       access: read_write
       type: string
       d: |
