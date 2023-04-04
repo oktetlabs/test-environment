@@ -1,29 +1,54 @@
 <?xml version="1.0"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved. -->
+<!-- Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved. -->
 <package version="1.0">
     <description>Nginx demo test suite</description>
     <author mailto="Marina.Maslova@oktetlabs.ru"/>
 
     <session track_conf="silent">
+
+        <var name="env.iut_only">
+            <value>{{{'iut_rpcs':IUT}}}</value>
+        </var>
+
+        <var name="env.peer2peer">
+            <value>{
+                {
+                  {'pco_srv':IUT},
+                   addr:'iut_addr':inet:unicast,
+                   if:'iut_if'
+                },
+                {
+                  {'pco_proxy':tester},
+                  addr:'tst_addr':inet:unicast,
+                  if:'tst_if'
+                }
+            }</value>
+        </var>
+
         <run>
             <script name="start"/>
+            <arg name="env" ref="env.iut_only"/>
         </run>
 
         <run>
             <script name="prefix"/>
+            <arg name="env" ref="env.iut_only"/>
         </run>
 
         <run>
             <script name="conf_change"/>
+            <arg name="env" ref="env.iut_only"/>
         </run>
 
         <run>
             <script name="http_get"/>
+            <arg name="env" ref="env.iut_only"/>
         </run>
 
         <run>
             <script name="server_proxy"/>
+            <arg name="env" ref="env.peer2peer"/>
             <arg name="upstreams_num" list="">
                 <value>2</value>
                 <value>40</value>
@@ -48,6 +73,7 @@
 
         <run>
             <script name="ssl"/>
+            <arg name="env" ref="env.iut_only"/>
         </run>
     </session>
 </package>

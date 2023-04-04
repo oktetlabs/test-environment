@@ -5,7 +5,7 @@
  * Configure pair of proxy and server nginx instances and test it
  * using HTTP benchmarking tool.
  *
- * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef DOXYGEN_TEST_SPEC
@@ -15,6 +15,7 @@
 
 #include "te_config.h"
 
+#include "nginx_suite.h"
 #include "logger_api.h"
 #include "tapi_test.h"
 #include "tapi_file.h"
@@ -25,6 +26,7 @@
 #include "tapi_rpc_signal.h"
 #include "tapi_rpc_stdio.h"
 #include "tapi_rpc_unistd.h"
+#include "tapi_env.h"
 
 #define SRV_NAME   "server"
 #define PROXY_NAME "proxy"
@@ -183,8 +185,6 @@ dump_config(const char *ta, const char *inst_name)
 int
 main(int argc, char **argv)
 {
-    const char         *ta_srv = "Agt_A";
-    const char         *ta_proxy = "Agt_B";
     rcf_rpc_server     *pco_srv = NULL;
     rcf_rpc_server     *pco_proxy = NULL;
     char               *filepath = NULL;
@@ -201,8 +201,9 @@ main(int argc, char **argv)
 
     TEST_START;
 
-    TEST_GET_RPCS(ta_srv, "pco_srv", pco_srv);
-    TEST_GET_RPCS(ta_proxy, "pco_proxy", pco_proxy);
+    TEST_STEP("Get parameters from environment");
+    TEST_GET_PCO(pco_srv);
+    TEST_GET_PCO(pco_proxy);
 
     TEST_GET_INT_PARAM(upstreams_num);
     TEST_GET_INT_PARAM(payload_size);
@@ -220,49 +221,51 @@ main(int argc, char **argv)
     TEST_STEP("Configure nginx daemons");
 
     TEST_SUBSTEP("Configure nginx server");
-    nginx_setup_common(ta_srv, SRV_NAME);
+    nginx_setup_common(pco_srv->ta, SRV_NAME);
 
-    CHECK_RC(tapi_cfg_nginx_http_loc_add(ta_srv, SRV_NAME, DFLT_NAME,
+    CHECK_RC(tapi_cfg_nginx_http_loc_add(pco_srv->ta, SRV_NAME, DFLT_NAME,
                                          SRV_LOC_ROOT_NAME, SRV_LOC_ROOT_URI));
-    CHECK_RC(tapi_cfg_nginx_http_loc_root_set(ta_srv, SRV_NAME, DFLT_NAME,
+    CHECK_RC(tapi_cfg_nginx_http_loc_root_set(pco_srv->ta, SRV_NAME, DFLT_NAME,
                                               SRV_LOC_ROOT_NAME,
                                               SRV_LOC_ROOT_PATH));
-    CHECK_RC(tapi_cfg_nginx_http_loc_index_set(ta_srv, SRV_NAME, DFLT_NAME,
+    CHECK_RC(tapi_cfg_nginx_http_loc_index_set(pco_srv->ta,
+                                               SRV_NAME, DFLT_NAME,
                                                SRV_LOC_ROOT_NAME,
                                                SRV_LOC_ROOT_INDEX));
 
-    CHECK_RC(tapi_cfg_nginx_http_loc_add(ta_srv, SRV_NAME, DFLT_NAME,
+    CHECK_RC(tapi_cfg_nginx_http_loc_add(pco_srv->ta, SRV_NAME, DFLT_NAME,
                                          SRV_LOC_RET_NAME, SRV_LOC_RET_URI));
-    CHECK_RC(tapi_cfg_nginx_http_loc_ret_set(ta_srv, SRV_NAME, DFLT_NAME,
+    CHECK_RC(tapi_cfg_nginx_http_loc_ret_set(pco_srv->ta, SRV_NAME, DFLT_NAME,
                                              SRV_LOC_RET_NAME,
                                              SRV_LOC_RET_STR));
 
     TEST_SUBSTEP("Configure nginx proxy");
-    nginx_setup_common(ta_proxy, PROXY_NAME);
+    nginx_setup_common(pco_proxy->ta, PROXY_NAME);
 
-    CHECK_RC(tapi_cfg_nginx_http_listen_entry_add(ta_proxy, PROXY_NAME,
+    CHECK_RC(tapi_cfg_nginx_http_listen_entry_add(pco_proxy->ta, PROXY_NAME,
                                                   DFLT_NAME, DFLT_NAME,
                                                   PROXY_ADDR_SPEC));
     CHECK_RC(tapi_cfg_nginx_http_listen_entry_reuseport_enable(
-                                            ta_proxy, PROXY_NAME,
+                                            pco_proxy->ta, PROXY_NAME,
                                             DFLT_NAME, DFLT_NAME));
 
-    CHECK_RC(tapi_cfg_nginx_http_loc_add(ta_proxy, PROXY_NAME, DFLT_NAME,
+    CHECK_RC(tapi_cfg_nginx_http_loc_add(pco_proxy->ta, PROXY_NAME, DFLT_NAME,
                                          PROXY_LOC_NAME, PROXY_LOC_URI));
-    CHECK_RC(tapi_cfg_nginx_http_loc_proxy_pass_url_set(ta_proxy, PROXY_NAME,
+    CHECK_RC(tapi_cfg_nginx_http_loc_proxy_pass_url_set(pco_proxy->ta,
+                                                        PROXY_NAME,
                                                         DFLT_NAME,
                                                         PROXY_LOC_NAME,
                                                         PROXY_LOC_PASS_URL));
 
-    CHECK_RC(tapi_cfg_nginx_http_upstream_add(ta_proxy, PROXY_NAME,
+    CHECK_RC(tapi_cfg_nginx_http_upstream_add(pco_proxy->ta, PROXY_NAME,
                                               PROXY_US_NAME));
 
     TEST_SUBSTEP("Configure port pairs for proxying");
-    nginx_setup_proxy_port_pairs(ta_srv, ta_proxy, upstreams_num);
+    nginx_setup_proxy_port_pairs(pco_srv->ta, pco_proxy->ta, upstreams_num);
 
     TEST_STEP("Start nginx processes");
-    CHECK_RC(tapi_cfg_nginx_enable(ta_srv, SRV_NAME));
-    CHECK_RC(tapi_cfg_nginx_enable(ta_proxy, PROXY_NAME));
+    CHECK_RC(tapi_cfg_nginx_enable(pco_srv->ta, SRV_NAME));
+    CHECK_RC(tapi_cfg_nginx_enable(pco_proxy->ta, PROXY_NAME));
 
     TEST_STEP("Run HTTP benchmarking test");
     opt.connections = conns_num;
@@ -288,8 +291,8 @@ main(int argc, char **argv)
 #endif
 
     TEST_STEP("Stop nginx processes");
-    CHECK_RC(tapi_cfg_nginx_disable(ta_srv, SRV_NAME));
-    CHECK_RC(tapi_cfg_nginx_disable(ta_proxy, PROXY_NAME));
+    CHECK_RC(tapi_cfg_nginx_disable(pco_srv->ta, SRV_NAME));
+    CHECK_RC(tapi_cfg_nginx_disable(pco_proxy->ta, PROXY_NAME));
 
     TEST_SUCCESS;
 

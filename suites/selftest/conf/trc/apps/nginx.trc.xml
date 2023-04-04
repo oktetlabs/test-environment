@@ -9,30 +9,35 @@
             <objective/>
             <notes/>
             <iter result="PASSED">
+                <arg name="env"/>
             </iter>
         </test>
         <test name="prefix" type="script">
             <objective/>
             <notes/>
             <iter result="PASSED">
+                <arg name="env"/>
             </iter>
         </test>
         <test name="conf_change" type="script">
             <objective/>
             <notes/>
             <iter result="PASSED">
+                <arg name="env"/>
             </iter>
         </test>
         <test name="http_get" type="script">
             <objective/>
             <notes/>
             <iter result="PASSED">
+                <arg name="env"/>
             </iter>
         </test>
         <test name="server_proxy" type="script">
             <objective/>
             <notes/>
             <iter result="PASSED">
+                <arg name="env"/>
                 <arg name="upstreams_num"/>
                 <arg name="payload_size"/>
                 <arg name="conns_num"/>
@@ -44,6 +49,7 @@
             <objective/>
             <notes/>
             <iter result="PASSED">
+                <arg name="env"/>
             </iter>
         </test>
     </iter>

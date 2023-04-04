@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved.
+
+install_headers('nginx_suite.h')
 
 tests = [
     'start',
