@@ -27,6 +27,19 @@
             </arg>
         </run>
         <run>
+            <script name="file_expand"/>
+            <arg name="env" ref="env" />
+            <arg name="varname" list="">
+                <value>var</value>
+            </arg>
+            <arg name="value" list="">
+                <value>42</value>
+            </arg>
+            <arg name="expected" list="">
+                <value>var=42</value>
+            </arg>
+        </run>
+        <run>
             <script name="file_put"/>
             <arg name="env" ref="env" />
             <arg name="len">

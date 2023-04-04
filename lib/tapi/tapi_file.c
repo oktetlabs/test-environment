@@ -378,6 +378,42 @@ tapi_file_append_ta(const char *ta, const char *filename, const char *fmt, ...)
     return rc;
 }
 
+te_errno
+tapi_file_expand_kvpairs(const char *ta, const char *template,
+                         const char *posargs[static TE_EXPAND_MAX_POS_ARGS],
+                         const te_kvpair_h *kvpairs,
+                         const char *filename_fmt, ...)
+{
+    va_list args;
+    char path[RCF_MAX_PATH];
+    te_errno rc = 0;
+    te_string content = TE_STRING_INIT;
+
+    va_start(args, filename_fmt);
+    rc = te_vsnprintf(path, sizeof(path), filename_fmt, args);
+    va_end(args);
+    if (rc != 0)
+        goto out;
+
+    rc = te_string_expand_kvpairs(template, posargs, kvpairs, &content);
+    if (rc != 0)
+        goto out;
+
+    if (ta != NULL)
+        rc = tapi_file_create_ta(ta, path, "%s", content.ptr);
+    else
+    {
+        rc = te_file_write_string(&content, 0, O_CREAT | O_TRUNC,
+                                  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP |
+                                  S_IROTH | S_IWOTH,
+                                  "%s", path);
+    }
+
+out:
+    te_string_free(&content);
+    return TE_RC_UPSTREAM(TE_TAPI, rc);
+}
+
 /* See description in tapi_file.h */
 te_errno
 tapi_file_ta_unlink_fmt(const char *ta, const char *path_fmt, ...)

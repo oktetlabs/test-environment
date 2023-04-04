@@ -24,6 +24,17 @@
                 <notes/>
             </iter>
         </test>
+        <test name="file_expand" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="varname"/>
+                <arg name="value"/>
+                <arg name="expected"/>
+                <notes/>
+            </iter>
+        </test>
         <test name="file_put" type="script">
             <objective/>
             <notes/>

@@ -17,6 +17,7 @@
 
 #include "te_defs.h"
 #include "te_string.h"
+#include "te_expand.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -199,6 +200,34 @@ extern te_errno tapi_file_append_ta(const char *ta, const char *filename,
  */
 extern te_errno tapi_file_copy_ta(const char *ta_src, const char *src,
                                   const char *ta_dst, const char *dst);
+
+
+/**
+ * Generate a file by expanding references in @p template.
+ *
+ * The expansion is done with te_string_expand_kvpairs() using
+ * @p posargs for positional argument references and @p kvpairs for
+ * named variable references.
+ *
+ * If @p ta is not @c NULL, the file is copied to a given agent; otherwise
+ * it is created locally on the Engine host.
+ *
+ * @param ta            Test Agent name
+ *                      (may be @c NULL, then Engine is assumed)
+ * @param template      file content template
+ * @param posargs       array of positional arguments (may be @c NULL)
+ * @param kvpairs       kvpairs of named variables
+ * @param filename_fmt  format string of a generated pathname
+ * @param ...           arguments
+ *
+ * @return status code
+ */
+extern te_errno tapi_file_expand_kvpairs(const char *ta,
+                                         const char *template,
+                                         const char *posargs
+                                         [static TE_EXPAND_MAX_POS_ARGS],
+                                         const te_kvpair_h *kvpairs,
+                                         const char *filename_fmt, ...);
 
 /**
  * Unlink file on the TA.
