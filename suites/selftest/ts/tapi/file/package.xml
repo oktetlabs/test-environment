@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved. -->
+<!-- Copyright (C) 2020-2023 OKTET Labs Ltd. All rights reserved. -->
 <package version="1.0">
     <description>Package for demonstrating TAPI/RPC file tests</description>
     <author mailto="te-maint@oktetlabs.ru"/>
@@ -11,6 +11,20 @@
         <run>
             <script name="file_create_delete"/>
             <arg name="env" ref="env" />
+        </run>
+        <run>
+            <script name="file_create_pattern"/>
+            <arg name="env" ref="env" />
+            <arg name="pattern">
+                <value>X</value>
+            </arg>
+            <arg name="length">
+                <value>1</value>
+                <value>1024</value>
+                <value>2048</value>
+                <value>2049</value>
+                <value>10240</value>
+            </arg>
         </run>
         <run>
             <script name="file_put"/>

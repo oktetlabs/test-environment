@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved. -->
+<!-- Copyright (C) 2020-2023 OKTET Labs Ltd. All rights reserved. -->
 <test name="file" type="package">
     <objective>Package for demonstrating TAPI/RPC file tests</objective>
     <notes/>
@@ -11,6 +11,16 @@
             <notes/>
             <iter result="PASSED">
                 <arg name="env"/>
+                <notes/>
+            </iter>
+        </test>
+        <test name="file_create_pattern" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="pattern"/>
+                <arg name="length"/>
                 <notes/>
             </iter>
         </test>

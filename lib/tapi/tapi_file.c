@@ -5,7 +5,7 @@
  * Functions for convinient work with the files on the engine and TA.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "File TAPI"
@@ -13,6 +13,8 @@
 #include "te_config.h"
 
 #include <stdio.h>
+#include <sys/types.h>
+#include <fcntl.h>
 #if STDC_HEADERS
 #include <string.h>
 #elif HAVE_STRING_H
@@ -40,6 +42,7 @@
 #include "rcf_common.h"
 #include "logger_api.h"
 #include "tapi_file.h"
+#include "te_file.h"
 
 char *
 tapi_file_make_name(te_string *dest)
@@ -107,116 +110,24 @@ tapi_file_generate_pathname(void)
     return buf;
 }
 
-static te_errno
-open_and_check(const char *filename, const char *mode, FILE **f)
-{
-    te_errno rc = 0;
-
-    *f = fopen(filename, mode);
-    if (*f == NULL)
-    {
-        rc = TE_OS_RC(TE_TAPI, errno);
-        ERROR("Cannot open '%s': %r", filename, rc);
-    }
-
-    return rc;
-}
-
-static te_errno
-write_and_check(FILE *f, const char *filename, const void *buf, size_t len)
-{
-    te_errno rc = 0;
-    size_t actual_len;
-
-    actual_len = fwrite(buf, 1, len, f);
-
-    if (actual_len != len)
-    {
-        if (ferror(f))
-        {
-            rc = TE_OS_RC(TE_TAPI, errno);
-            ERROR("Cannot write to %s: %r", filename, rc);
-        }
-        else
-        {
-            rc = TE_RC(TE_TAPI, TE_ENOSPC);
-            ERROR("Too few bytes written: %zu < %zu", actual_len, len);
-        }
-    }
-    return rc;
-}
-
-static te_errno
-read_and_check(FILE *f, const char *filename, void *buf, size_t len)
-{
-    te_errno rc = 0;
-    size_t actual_len;
-
-    actual_len = fread(buf, 1, len, f);
-
-    if (actual_len != len)
-    {
-        if (ferror(f))
-        {
-            rc = TE_OS_RC(TE_TAPI, errno);
-            ERROR("Cannot read from %s: %r", filename, rc);
-        }
-        else
-        {
-            rc = TE_RC(TE_TAPI, TE_ENODATA);
-            ERROR("Too few bytes read: %zu < %zu", actual_len, len);
-        }
-    }
-    ((char *)buf)[len] = '\0';
-    return rc;
-}
-
-static te_errno
-close_and_check(FILE *f, const char *filename)
-{
-    te_errno rc = 0;
-
-    if (fclose(f) != 0)
-    {
-        rc = TE_OS_RC(TE_TAPI, errno);
-        ERROR("Cannot close %s: %r", filename, rc);
-    }
-    return rc;
-}
-
 /* See description in tapi_file.h */
 char *
 tapi_file_create_pattern(size_t len, char c)
 {
     te_string pathname = TE_STRING_INIT;
-    char  buf[1024];
-    FILE *f;
+    te_string buffer = TE_STRING_INIT_STATIC(1024);
 
     tapi_file_make_pathname(&pathname);
 
-    if (open_and_check(pathname.ptr, "w", &f) != 0)
+    memset(buffer.ptr, c, buffer.size);
+    buffer.len = buffer.size;
+    if (te_file_write_string(&buffer, len,
+                             O_CREAT | O_TRUNC,
+                             S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP |
+                             S_IROTH | S_IWOTH,
+                             "%s", pathname.ptr) != 0)
     {
-        te_string_free(&pathname);
-        return NULL;
-    }
-
-    memset(buf, c, sizeof(buf));
-
-    while (len > 0)
-    {
-        size_t chunk = len > sizeof(buf) ? sizeof(buf) : len;
-
-        if (write_and_check(f, pathname.ptr, buf, chunk) != 0)
-        {
-            fclose(f);
-            te_string_free(&pathname);
-            return NULL;
-        }
-        len -= chunk;
-    }
-
-    if (close_and_check(f, pathname.ptr) != 0)
-    {
+        unlink(pathname.ptr);
         te_string_free(&pathname);
         return NULL;
     }
@@ -229,27 +140,20 @@ char *
 tapi_file_create(size_t len, char *buf, te_bool random)
 {
     te_string pathname = TE_STRING_INIT;
-    FILE *f;
+    te_string buffer = TE_STRING_EXT_BUF_INIT(buf, len + 1);
+    te_errno rc;
 
     tapi_file_make_pathname(&pathname);
 
     if (random)
         te_fill_buf(buf, len);
 
-    if (open_and_check(pathname.ptr, "w", &f) != 0)
-    {
-        te_string_free(&pathname);
-        return NULL;
-    }
-
-    if (write_and_check(f, pathname.ptr, buf, len) != 0)
-    {
-        fclose(f);
-        te_string_free(&pathname);
-        return NULL;
-    }
-
-    if (close_and_check(f, pathname.ptr) != 0)
+    buffer.len = len;
+    rc = te_file_write_string(&buffer, 0, O_CREAT | O_TRUNC,
+                              S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP |
+                              S_IROTH | S_IWOTH,
+                              "%s", pathname.ptr);
+    if (rc != 0)
     {
         te_string_free(&pathname);
         return NULL;
@@ -279,7 +183,7 @@ tapi_file_create_ta_gen(const char *ta,
                         const char *fmt, va_list ap)
 {
     te_string lfile_name = TE_STRING_INIT;
-    FILE *f;
+    te_string content = TE_STRING_INIT;
     te_errno rc;
 
     if (lfile == NULL)
@@ -287,14 +191,14 @@ tapi_file_create_ta_gen(const char *ta,
     else
         te_string_append(&lfile_name, "%s", lfile);
 
-    if ((rc = open_and_check(lfile_name.ptr, "w", &f)) != 0)
-        return rc;
-
     if (header != NULL)
-        fputs(header, f);
-    vfprintf(f, fmt, ap);
+        te_string_append(&content, "%s", header);
+    te_string_append_va(&content, fmt, ap);
 
-    rc = close_and_check(f, lfile_name.ptr);
+    rc = te_file_write_string(&content, 0, O_CREAT | O_TRUNC,
+                              S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP |
+                              S_IROTH | S_IWOTH, "%s",
+                              lfile_name.ptr);
     if (rc == 0)
     {
         rc = rcf_ta_put_file(ta, 0, lfile_name.ptr, rfile);
@@ -303,6 +207,7 @@ tapi_file_create_ta_gen(const char *ta,
     }
     unlink(lfile_name.ptr);
     te_string_free(&lfile_name);
+    te_string_free(&content);
 
     return rc;
 }
@@ -415,17 +320,14 @@ tapi_file_read_ta_gen(const char *ta, const char *filename,
                       te_bool may_not_exist, char **pbuf)
 {
     te_string pathname = TE_STRING_INIT;
+    te_string content = TE_STRING_INIT;
     te_errno rc = 0;
-    char *buf = NULL;
-    FILE *f = NULL;
-
-    struct stat st;
-    size_t to_read;
 
     tapi_file_make_pathname(&pathname);
     if ((rc = rcf_ta_get_file(ta, 0, filename, pathname.ptr)) != 0)
     {
         te_string_free(&pathname);
+        te_string_free(&content);
 
         if (may_not_exist && TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
@@ -436,37 +338,16 @@ tapi_file_read_ta_gen(const char *ta, const char *filename,
         ERROR("Cannot get file %s from TA %s: %r", filename, ta, rc);
         return rc;
     }
-    if (stat(pathname.ptr, &st) != 0)
-    {
-        rc = TE_OS_RC(TE_TAPI, errno);
-        ERROR("Failed to stat file %s: %r", pathname.ptr, rc);
-        te_string_free(&pathname);
 
-        return rc;
-    }
-    to_read = st.st_size;
+    rc = te_file_read_string(&content, TRUE, 0, "%s", pathname.ptr);
 
-    if ((buf = malloc(to_read + 1)) == NULL)
-    {
-        rc = TE_OS_RC(TE_TAPI, errno);
-        ERROR("Out of memory");
-    }
-    else
-    {
-        rc = open_and_check(pathname.ptr, "r", &f);
-        if (rc == 0)
-            rc = read_and_check(f, pathname.ptr, buf, to_read);
-    }
-
-    if (f != NULL)
-        fclose(f);
     unlink(pathname.ptr);
     te_string_free(&pathname);
 
     if (rc == 0)
-        *pbuf = buf;
+        te_string_move(pbuf, &content);
     else
-        free(buf);
+        te_string_free(&content);
 
     return rc;
 }
