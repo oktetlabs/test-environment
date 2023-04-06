@@ -100,6 +100,7 @@ main(int argc, char **argv)
         enum sample_enum e1;
         te_bool e2;
         te_bool e3;
+        const char **array_ptr;
     } data_sample;
 
     static const te_enum_map enum_mapping[] = {
@@ -138,6 +139,12 @@ main(int argc, char **argv)
                                      TAPI_JOB_OPT_STRING(NULL, TRUE,
                                                          data_sample,
                                                          array[0])),
+            TAPI_JOB_OPT_ARRAY_PTR(data_sample, n_array, array_ptr,
+                TAPI_JOB_OPT_CONTENT(TAPI_JOB_OPT_STRING, "--arr-ptr-item=",
+                                     TRUE)),
+            TAPI_JOB_OPT_EMBED_ARRAY_PTR("--arr-ptr-items={", TRUE, ",", "}",
+                data_sample, n_array, array_ptr,
+                TAPI_JOB_OPT_CONTENT(TAPI_JOB_OPT_STRING, NULL, FALSE)),
             TAPI_JOB_OPT_STRUCT("--struct={", TRUE, ":", "}",
                     TAPI_JOB_OPT_UINT_T(NULL, FALSE, NULL, data_sample,
                                         structure.opt_uint),
@@ -191,7 +198,8 @@ main(int argc, char **argv)
 #endif
         .e1 = E2,
         .e2 = TRUE,
-        .e3 = FALSE
+        .e3 = FALSE,
+        .array_ptr = option_data.array,
     };
     te_vec result_args = TE_VEC_INIT(char *);
     static const char *expected_strs[] = {
@@ -206,6 +214,9 @@ main(int argc, char **argv)
         "--flag1",
         "--item=value1", "--item=value2", "--item=value3",
         "--items={value1,value2,value3}",
+        "--arr-ptr-item=value1", "--arr-ptr-item=value2",
+        "--arr-ptr-item=value3",
+        "--arr-ptr-items={value1,value2,value3}",
         "--struct={123:45.670000:struct_string}",
         "--dummy",
 #ifdef HAVE_NETINET_IN_H

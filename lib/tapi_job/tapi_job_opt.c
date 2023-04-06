@@ -375,13 +375,21 @@ tapi_job_opt_create_array(const void *value, const void *priv, te_vec *args)
     te_errno rc;
     size_t i;
     size_t len = *(const size_t *)value;
+    const void *array_ptr = NULL;
 
-    bind.opt_offset = array->array_offset;
-    assert(bind.opt_offset > 0);
+    if (array->is_ptr)
+        array_ptr = *(const void * const *)(value + array->array_offset);
+    else
+        array_ptr = value + array->array_offset;
+
+    if (len > 0 && array_ptr == NULL)
+        return TE_EINVAL;
+
+    bind.opt_offset = 0;
 
     for (i = 0; i < len; i++, bind.opt_offset += array->element_size)
     {
-        rc = tapi_job_opt_bind2str(&bind, value, args);
+        rc = tapi_job_opt_bind2str(&bind, array_ptr, args);
         if (rc != 0)
             return rc;
     }
