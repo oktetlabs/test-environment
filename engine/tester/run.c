@@ -1612,21 +1612,21 @@ log_test_start(unsigned int flags,
             {
                 SET_JSON_INT(tmp, tin);
                 SET_NEW_JSON(result, "tin", tmp);
+            }
 
-                hash_str = test_params_hash(ctx->args, ri->n_args);
-                if (hash_str != NULL)
+            hash_str = test_params_hash(ctx->args, ri->n_args);
+            if (hash_str != NULL)
+            {
+                tmp = json_string(hash_str);
+                free(hash_str);
+                if (tmp == NULL)
                 {
-                    tmp = json_string(hash_str);
-                    free(hash_str);
-                    if (tmp == NULL)
-                    {
-                        ERROR("%s: json_string failed for hash_str",
-                              __FUNCTION__);
-                        json_decref(result);
-                        return;
-                    }
-                    SET_NEW_JSON(result, "hash", tmp);
+                    ERROR("%s: json_string failed for hash_str",
+                          __FUNCTION__);
+                    json_decref(result);
+                    return;
                 }
+                SET_NEW_JSON(result, "hash", tmp);
             }
 
 
