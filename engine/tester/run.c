@@ -1277,99 +1277,38 @@ test_param_space(const test_iter_arg *arg)
            1 /* " */ + strlen(arg->value) + extra + 1 /* " */ + 1 /* \0 */;
 }
 
-
 /**
- * Convert test parameters to string representation.
- * The first symbol is a space, if the result is not NULL.
+ * Convert test parameters to string representation using te_string.
+ * The first symbol is a space, if @p str is not NULL.
  *
- * @param str           Initial string to append parameters or NULL
+ * @param str           Initial te_string to append parameters or NULL
  * @param n_args        Number of arguments
  * @param args          Current arguments context
  *
- * @return Allocated/Reallocated string or NULL.
- *
- * @note If function fails to allocate enough space, the original buffer
- * @p str is left unchanged.
- * It is expected that a caller allocated @p str by means of
- * malloc/calloc/realloc functions.
+ * @note It is expected that @p str is allocated.
  *
  */
-static char *
-test_params_to_string(char *str, const unsigned int n_args,
-                      const test_iter_arg *args)
+static void
+test_params_to_te_string(te_string *str, const unsigned int n_args,
+                         const test_iter_arg *args)
 {
     unsigned int         i;
     const test_iter_arg *p;
 
-    char       *v = str;
-    size_t      len = (str == NULL) ? 0 : (strlen(str) + 1);
-    size_t      rest = (len == 0) ? 0 : 1;
-
-
-    if (args == NULL)
-        return v;
+    if (args == NULL || str == NULL)
+        return;
 
     for (i = 0, p = args; i < n_args; ++i, ++p)
     {
-        size_t req = test_param_space(p);
-
         if (p->variable)
             continue;
 
         VERB("%s(): parameter %s=%s", __FUNCTION__, p->name, p->value);
-        while (rest < req)
-        {
-            char *nv;
-
-            len += TESTER_STR_BULK;
-            nv = realloc(v, len);
-            if (nv == NULL)
-            {
-                ERROR("realloc(%p, %u) failed", v, len);
-
-                if (str == NULL)
-                   free(v);
-
-                return NULL;
-            }
-            rest += TESTER_STR_BULK;
-            v = nv;
-        }
-        rest -= sprintf(v + (len - rest), " %s=\"", p->name);
-
-        /*
-         * Add back slashes before '"' (quotation mark) and
-         * "\" (back slash) characters.
-         */
-        {
-            size_t prev_len = 0;
-            size_t seg_len;
-
-            while ((seg_len = strcspn(p->value + prev_len, "\\\""),
-                    p->value[prev_len + seg_len] != '\0'))
-            {
-                assert(rest >= (seg_len + 1));
-
-                memcpy(v + (len - rest), p->value + prev_len, seg_len);
-                rest -= seg_len;
-
-                v[len - rest] = '\\';
-                v[len - rest + 1] = p->value[prev_len + seg_len];
-
-                rest -= 2;
-                prev_len += seg_len + 1;
-            }
-            assert(rest >= seg_len);
-            memcpy(v + (len - rest), p->value + prev_len, seg_len);
-            rest -= seg_len;
-        }
-        assert(rest >= 2);
-        rest -= sprintf(v + (len - rest), "\"");
+        te_string_append(str, " %s=", p->name);
+        te_string_append_shell_arg_as_is(str, p->value);
     }
-    if (v != NULL)
-        VERB("%s(): %s", __FUNCTION__, v);
 
-    return v;
+    VERB("%s(): %s", __FUNCTION__, str->ptr);
 }
 
 /**
@@ -1602,8 +1541,8 @@ log_test_start(unsigned int flags,
     json_t                 *authors;
     json_t                 *tmp;
 
-    char   *params_str  = NULL;
-    char   *hash_str    = NULL;
+    te_string   params_str  = TE_STRING_INIT;
+    char       *hash_str    = NULL;
 
 #define SET_JSON_STRING(_target, _string) \
     do {                                                                 \
@@ -1714,13 +1653,12 @@ log_test_start(unsigned int flags,
 
             if (flags & TESTER_CFG_WALK_OUTPUT_PARAMS)
             {
-                params_str = test_params_to_string(NULL, ri->n_args, ctx->args);
+                test_params_to_te_string(&params_str, ri->n_args, ctx->args);
                 fprintf(stderr, "\n"
                         "                       "
                         "ARGs%s\n"
                         "                              \n",
-                        PRINT_STRING(params_str));
-                free(params_str);
+                        PRINT_STRING(params_str.ptr));
             }
             break;
         }
@@ -1753,6 +1691,7 @@ log_test_start(unsigned int flags,
             ERROR("Invalid run item type %d", ri->type);
     }
 
+    te_string_free(&params_str);
     tester_control_log(result, "test_start");
     json_decref(result);
 
@@ -2183,7 +2122,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
                 const tester_flags flags, tester_test_status *status)
 {
     int         ret;
-    char       *params_str = NULL;
+    te_string   params_str = TE_STRING_INIT;
     char       *cmd = NULL;
     char        shell[256] = "";
     char        gdb_init[32] = "";
@@ -2198,22 +2137,12 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
           TE_PRINTF_TESTER_FLAGS "x",
           script->name, exec_id, n_args, args, flags);
 
-    if (te_asprintf(&params_str,
-                    " te_test_id=%u te_test_name=\"%s\" te_rand_seed=%d",
-                    exec_id, run_name != NULL ? run_name : script->name,
-                    rand()) < 0)
-    {
-        ERROR("%s(): te_asprintf() failed", __FUNCTION__);
-        return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
+    te_string_append(&params_str,
+                     " te_test_id=%u te_test_name=\"%s\" te_rand_seed=%d",
+                     exec_id, run_name != NULL ? run_name : script->name,
+                     rand());
 
-    tmp = test_params_to_string(params_str, n_args, args);
-    if (tmp == NULL)
-    {
-        free(params_str);
-        return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
-    params_str = tmp;
+    test_params_to_te_string(&params_str, n_args, args);
 
     if (flags & TESTER_GDB)
     {
@@ -2225,7 +2154,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         {
             ERROR("Too short buffer is reserved for GDB init file "
                   "name");
-            free(params_str);
+            te_string_free(&params_str);
             return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
         f = fopen(gdb_init, "w");
@@ -2233,12 +2162,11 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         {
             ERROR("Failed to create GDB init file: %s",
                   strerror(errno));
-            free(params_str);
+            te_string_free(&params_str);
             return TE_OS_RC(TE_TESTER, errno);
         }
-        fprintf(f, "set args %s\n", params_str);
-        free(params_str);
-        params_str = NULL;
+        fprintf(f, "set args %s\n", params_str.ptr);
+        te_string_free(&params_str);
         if (fclose(f) != 0)
         {
             ERROR("fclose() failed");
@@ -2261,7 +2189,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
                 (int)sizeof(shell))
         {
             ERROR("Too short buffer is reserved for shell command prefix");
-            free(params_str);
+            te_string_free(&params_str);
             return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
         if (snprintf(vg_filename, sizeof(vg_filename),
@@ -2270,7 +2198,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         {
             ERROR("Too short buffer is reserved for Vagrind output "
                   "filename");
-            free(params_str);
+            te_string_free(&params_str);
             return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
         if (snprintf(postfix, sizeof(postfix), " 2>%s", vg_filename) >=
@@ -2278,7 +2206,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         {
             ERROR("Too short buffer is reserved for test script "
                   "command postfix");
-            free(params_str);
+            te_string_free(&params_str);
             return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
     }
@@ -2288,20 +2216,20 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     {
         ERROR("%s():%u: malloc(%u) failed",
               __FUNCTION__, __LINE__, TESTER_CMD_BUF_SZ);
-        free(params_str);
+        te_string_free(&params_str);
         return TE_OS_RC(TE_TESTER, errno);;
     }
     if (snprintf(cmd, TESTER_CMD_BUF_SZ, "%s%s%s%s", shell, script->execute,
-                 (flags & TESTER_GDB) ? "" : PRINT_STRING(params_str),
+                 (flags & TESTER_GDB) ? "" : PRINT_STRING(params_str.ptr),
                  postfix) >= TESTER_CMD_BUF_SZ)
     {
         ERROR("Too short buffer is reserved for test script command "
               "line");
         free(cmd);
-        free(params_str);
+        te_string_free(&params_str);
         return TE_RC(TE_TESTER, TE_ESMALLBUF);
     }
-    free(params_str);
+    te_string_free(&params_str);
 
     if (flags & TESTER_FAKE)
         *status = TESTER_TEST_FAKED;
