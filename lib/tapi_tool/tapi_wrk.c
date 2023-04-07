@@ -114,7 +114,7 @@ tapi_wrk_args2str(te_vec *vec, size_t max_arg_len)
 static const te_unit_list time_units_us = {
     .scale = 1,
     .start_pow = 0,
-    .non_uniform_scale = (double[]){ 1e-9, 1e-3, 1.0, 60.0, 3600.0 },
+    .non_uniform_scale = (double[]){ 1.0, 1E+3, 1E+6, 60E+6, 3600E+6 },
     .units = (const char * const[]){ "us", "ms", "s", "m", "h", NULL },
 };
 
@@ -526,12 +526,9 @@ tapi_wrk_report_mi_log(te_mi_logger *logger, const tapi_wrk_report *report)
             TE_MI_MEAS(THROUGHPUT, NULL, MEAN,
                        TE_UNITS_DEC_U2M(report->bps * 8.0), MEGA),
             TE_MI_MEAS(RPS, NULL, MEAN, report->req_per_sec, PLAIN),
-            TE_MI_MEAS(LATENCY, pt, MEAN, report->thread_latency.mean / 1000.,
-                       MILLI),
-            TE_MI_MEAS(LATENCY, pt, MAX, report->thread_latency.max / 1000.,
-                       MILLI),
-            TE_MI_MEAS(LATENCY, pt, STDEV, report->thread_latency.stdev / 1000.,
-                       MILLI),
+            TE_MI_MEAS(LATENCY, pt, MEAN, report->thread_latency.mean, MICRO),
+            TE_MI_MEAS(LATENCY, pt, MAX, report->thread_latency.max, MICRO),
+            TE_MI_MEAS(LATENCY, pt, STDEV, report->thread_latency.stdev, MICRO),
             TE_MI_MEAS(RPS, pt, MEAN, report->thread_req_per_sec.mean, PLAIN),
             TE_MI_MEAS(RPS, pt, MAX, report->thread_req_per_sec.max, PLAIN),
             TE_MI_MEAS(RPS, pt, STDEV, report->thread_req_per_sec.stdev, PLAIN)));

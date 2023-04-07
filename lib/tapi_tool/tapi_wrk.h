@@ -69,13 +69,13 @@ typedef struct tapi_wrk_opt {
 /** Default options initializer */
 extern const tapi_wrk_opt tapi_wrk_default_opt;
 
-/** Statistics for a single thread in wrk (units are not specified) */
+/** Statistics for a single thread in wrk */
 typedef struct tapi_wrk_thread_stats {
-    /** Mean value */
+    /** Mean value (microseconds) */
     double mean;
-    /** Standard deviation */
+    /** Standard deviation (microseconds) */
     double stdev;
-    /** Max value */
+    /** Max value (microseconds) */
     double max;
     /** Percentage of values within [mean - stdev ; mean + stdev] range */
     double within_stdev;
@@ -85,7 +85,7 @@ typedef struct tapi_wrk_thread_stats {
 typedef struct tapi_wrk_latency_percentile {
     /** Percentile */
     double percentile;
-    /** Latency value */
+    /** Latency value (microseconds) */
     double latency;
 } tapi_wrk_latency_percentile;
 

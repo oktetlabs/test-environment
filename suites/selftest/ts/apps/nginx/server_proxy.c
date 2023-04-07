@@ -197,6 +197,7 @@ main(int argc, char **argv)
     tapi_wrk_opt        opt = tapi_wrk_default_opt;
     tapi_wrk_report     report;
     tapi_job_factory_t *factory = NULL;
+    te_mi_logger       *logger = NULL;
 
     TEST_START;
 
@@ -274,6 +275,8 @@ main(int argc, char **argv)
     CHECK_RC(tapi_wrk_start(app));
     CHECK_RC(tapi_wrk_wait(app, TE_SEC2MS(duration + 1)));
     CHECK_RC(tapi_wrk_get_report(app, &report));
+    CHECK_RC(te_mi_logger_meas_create("server-proxy", &logger));
+    tapi_wrk_report_mi_log(logger, &report);
 
     TEST_ARTIFACT("Average latency %.fus", report.thread_latency.mean);
 
@@ -293,6 +296,7 @@ main(int argc, char **argv)
 cleanup:
     tapi_wrk_destroy(app);
     tapi_job_factory_destroy(factory);
+    te_mi_logger_destroy(logger);
 
     if (pco_srv != NULL)
         share_cleanup(pco_srv);
