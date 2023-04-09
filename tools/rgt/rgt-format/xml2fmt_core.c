@@ -54,6 +54,7 @@ rgt_log_start_document(void *user_data)
     g_array_append_val(ctx->depth_info, new_depth_ctx);
     depth_ctx = &g_array_index(ctx->depth_info,
                                rgt_depth_ctx_t, (ctx->depth - 1));
+    depth_ctx->type = NT_ROOT;
 
     proc_document_start(ctx, depth_ctx, NULL);
 }
@@ -1047,6 +1048,32 @@ rgt_xml2fmt_files_get_idx(const char* short_name)
     }
 
     return -1;
+}
+
+/* See the description in xml2gen.h */
+const char *
+rgt_node2str(rgt_node_t node_type)
+{
+    switch (node_type)
+    {
+        case NT_ROOT:
+            return "Root";
+
+        case NT_SESSION:
+            return "Session";
+
+        case NT_PACKAGE:
+            return "Package";
+
+        case NT_TEST:
+            return "Test";
+
+        case NT_BRANCH:
+            return "Branch";
+
+        default:
+            return "Unknown node type";
+    }
 }
 
 int

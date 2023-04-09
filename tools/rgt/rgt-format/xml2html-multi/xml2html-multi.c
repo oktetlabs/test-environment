@@ -739,11 +739,10 @@ lf_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx)
  * @param ctx        Pointer to the global processing context
  * @param depth_ctx  Pointer to the depth processing context
  * @param xml_attrs  Pointer to the list of attributes in libxml style
- * @param node_type  String representation of the node type
  */
 static void
 control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
-                   const char **xml_attrs, const char *node_type)
+                   const char **xml_attrs)
 {
     gen_ctx_user_t   *gen_user = (gen_ctx_user_t *)ctx->user_data;
     depth_ctx_user_t *depth_user;
@@ -763,6 +762,8 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     te_bool           matched = TRUE;
     rgt_match_type    name_type;
 
+    const char *node_type_str = rgt_node2str(depth_ctx->type);
+
     assert(ctx->depth >= 2);
 
     depth_user = depth_ctx->user_data = alloc_depth_user_data(ctx->depth);
@@ -771,7 +772,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     if (name == NULL)
         name = "session";
 
-    depth_user->is_test = strcmp(node_type, "Test") == 0;
+    depth_user->is_test = (depth_ctx->type == NT_TEST);
 
     if ((err != NULL && err[0] != '\0') ||
         strcasecmp(result, "INCOMPLETE") == 0)
@@ -867,13 +868,13 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
     rgt_tmpls_attrs_add_globals(attrs);
-    rgt_tmpls_attrs_add_fstr(attrs, "reporter", "%s %s", node_type,
+    rgt_tmpls_attrs_add_fstr(attrs, "reporter", "%s %s", node_type_str,
                              name == NULL ? "<anonimous>" : name);
     rgt_tmpls_attrs_add_uint32(attrs, "depth", ctx->depth);
     rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
     rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[DOC_START], attrs);
 
-    rgt_tmpls_attrs_add_fstr(attrs, "node_type", node_type);
+    rgt_tmpls_attrs_add_fstr(attrs, "node_type", node_type_str);
     rgt_tmpls_attrs_add_fstr(attrs, "name", name);
     rgt_tmpls_attrs_add_fstr(attrs, "result", result);
     rgt_tmpls_attrs_add_fstr(attrs, "tin", tin);
@@ -924,18 +925,16 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
  * @param ctx        Pointer to the global processing context
  * @param depth_ctx  Pointer to the depth processing context
  * @param xml_attrs  Pointer to the list of attributes in libxml style
- * @param node_type  String representation of the node type
  */
 static void
 control_node_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
-                 const char **xml_attrs, const char *node_type)
+                 const char **xml_attrs)
 {
     depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
     FILE             *fd = depth_user->fd;
 
     UNUSED(ctx);
     UNUSED(xml_attrs);
-    UNUSED(node_type);
 
     if (fd != NULL)
     {
@@ -954,41 +953,41 @@ RGT_DEF_FUNC(proc_session_start)
 {
     RGT_FUNC_UNUSED_PRMS();
 
-    control_node_start(ctx, depth_ctx, xml_attrs, "Session");
+    control_node_start(ctx, depth_ctx, xml_attrs);
 }
 
 RGT_DEF_FUNC(proc_session_end)
 {
     RGT_FUNC_UNUSED_PRMS();
-    control_node_end(ctx, depth_ctx, xml_attrs, "Session");
+    control_node_end(ctx, depth_ctx, xml_attrs);
 }
 
 RGT_DEF_FUNC(proc_pkg_start)
 {
     RGT_FUNC_UNUSED_PRMS();
 
-    control_node_start(ctx, depth_ctx, xml_attrs, "Package");
+    control_node_start(ctx, depth_ctx, xml_attrs);
 }
 
 RGT_DEF_FUNC(proc_pkg_end)
 {
     RGT_FUNC_UNUSED_PRMS();
 
-    control_node_end(ctx, depth_ctx, xml_attrs, "Package");
+    control_node_end(ctx, depth_ctx, xml_attrs);
 }
 
 RGT_DEF_FUNC(proc_test_start)
 {
     RGT_FUNC_UNUSED_PRMS();
 
-    control_node_start(ctx, depth_ctx, xml_attrs, "Test");
+    control_node_start(ctx, depth_ctx, xml_attrs);
 }
 
 RGT_DEF_FUNC(proc_test_end)
 {
     RGT_FUNC_UNUSED_PRMS();
 
-    control_node_end(ctx, depth_ctx, xml_attrs, "Test");
+    control_node_end(ctx, depth_ctx, xml_attrs);
 }
 
 RGT_DEF_FUNC(proc_log_msg_start)

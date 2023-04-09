@@ -71,6 +71,7 @@ typedef enum rgt_state {
 
 /** Possible node types */
 typedef enum rgt_node {
+    NT_ROOT,    /**< Root node of testing */
     NT_SESSION, /**< Node of session type */
     NT_PACKAGE, /**< Node of package type */
     NT_TEST,    /**< Node of test type */
@@ -78,6 +79,15 @@ typedef enum rgt_node {
                      "branch start" / "branch end" */
     NT_LAST     /**< Last marker - the biggest value of the all evements */
 } rgt_node_t;
+
+/**
+ * Get string name of node type.
+ *
+ * @param node_type       Node type.
+ *
+ * @return Type name.
+ */
+extern const char *rgt_node2str(rgt_node_t node_type);
 
 /**
  * Structure that keeps values specific for the particular depth of
