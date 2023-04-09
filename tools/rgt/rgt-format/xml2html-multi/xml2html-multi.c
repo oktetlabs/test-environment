@@ -1861,11 +1861,9 @@ add_log_user(gen_ctx_user_t *gen_user, depth_ctx_user_t *depth_user,
     add_log_user_to_hash(depth_user->depth_log_names, entity_cp, user_cp);
 }
 
-/**
- * Array of pointer to depth-specific user data
- * (it is used as stack).
- */
-static GPtrArray *depth_array = NULL;
+/** Storage of depth-specific user data */
+static rgt_depth_data_storage depth_data =
+          RGT_DEPTH_DATA_STORAGE_INIT(sizeof(depth_ctx_user_t));
 
 /**
  * Returns a pointer to depth-specific user data
@@ -1878,33 +1876,18 @@ static depth_ctx_user_t *
 alloc_depth_user_data(uint32_t depth)
 {
     depth_ctx_user_t *depth_user;
+    te_bool reused = FALSE;
 
     assert(depth >= 1);
 
-    if (depth_array == NULL)
-    {
-        depth_array = g_ptr_array_new();
-        if (depth_array == NULL)
-            exit(1);
-    }
+    depth_user = rgt_xml2fmt_alloc_depth_data(&depth_data, depth, &reused);
 
-    if (depth_array->len < depth)
-    {
-        assert((depth_array->len + 1) == depth);
-
-        /* Create a new element in the array */
-        g_ptr_array_set_size(depth_array, depth);
-        g_ptr_array_index(depth_array, depth - 1) =
-            (depth_ctx_user_t *)g_malloc(sizeof(depth_ctx_user_t));
-    }
-
-    assert(g_ptr_array_index(depth_array, depth - 1) != NULL);
-
-    depth_user = g_ptr_array_index(depth_array, depth - 1);
     depth_user->log_level = NULL;
-    depth_user->json_data = (te_dbuf)TE_DBUF_INIT(0);
     depth_user->no_logs = TRUE;
     depth_user->linum = 1;
+
+    if (!reused)
+        depth_user->json_data = (te_dbuf)TE_DBUF_INIT(0);
 
     return depth_user;
 }
@@ -1912,21 +1895,13 @@ alloc_depth_user_data(uint32_t depth)
 /**
  * Free resources allocated under depth-specific user data -
  * on the particular depth.
- *
- * @note The function is intended to be used as callback for
- * g_ptr_array_foreach() function.
  */
 static void
-free_depth_user_data_part(gpointer data, gpointer user_data)
+free_depth_user_data_cb(void *data)
 {
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)data;
+    depth_ctx_user_t *depth_user = data;
 
-    UNUSED(user_data);
-
-    if (depth_user != NULL)
-        te_dbuf_free(&depth_user->json_data);
-
-    g_free(data);
+    te_dbuf_free(&depth_user->json_data);
 }
 
 /**
@@ -1936,9 +1911,7 @@ free_depth_user_data_part(gpointer data, gpointer user_data)
 static void
 free_depth_user_data()
 {
-    g_ptr_array_foreach(depth_array, free_depth_user_data_part, NULL);
-    g_ptr_array_free(depth_array, TRUE);
-    depth_array = NULL;
+    rgt_xml2fmt_free_depth_data(&depth_data, &free_depth_user_data_cb);
 }
 
 static te_log_level

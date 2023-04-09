@@ -319,6 +319,45 @@ extern te_bool proc_expand_entities(void);
  */
 extern int rgt_xml2fmt_files_get_idx(const char* short_name);
 
+/** Storage for user data associated with different log depths. */
+typedef struct rgt_depth_data_storage {
+    /** Array with pointers to allocated data. */
+    GPtrArray *array;
+    /** Allocated data size. */
+    size_t data_size;
+} rgt_depth_data_storage;
+
+/** Initializer for rgt_depth_data_storage. */
+#define RGT_DEPTH_DATA_STORAGE_INIT(_size) \
+    { .array = NULL, .data_size = (_size) }
+
+/**
+ * Allocate or reuse user data for a given depth.
+ *
+ * @param[in]  storage      Pointer to user data storage.
+ * @param[in]  depth        Depth for which to obtain user data.
+ * @param[out] reused       Set to TRUE if data is reused (rather than
+ *                          allocated from scratch).
+ *
+ * @return Pointer to the requested user data.
+ */
+extern void *rgt_xml2fmt_alloc_depth_data(rgt_depth_data_storage *storage,
+                                          uint32_t depth, te_bool *reused);
+
+/**
+ * Type of callback to use with rgt_xml2fmt_free_depth_data().
+ */
+typedef void (rgt_xml2fmt_free_depth_data_cb)(void *data);
+
+/**
+ * Release memory allocated for user data storage.
+ *
+ * @param storage       Pointer to storage.
+ * @param cb            Callback to release user data.
+ */
+extern void rgt_xml2fmt_free_depth_data(rgt_depth_data_storage *storage,
+                                        rgt_xml2fmt_free_depth_data_cb *cb);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -1076,6 +1076,72 @@ rgt_node2str(rgt_node_t node_type)
     }
 }
 
+/* See the description in xml2gen.h */
+void *
+rgt_xml2fmt_alloc_depth_data(rgt_depth_data_storage *storage,
+                             uint32_t depth, te_bool *reused)
+{
+    GPtrArray *p_arr;
+    void *result;
+
+    if (storage->array == NULL)
+    {
+        storage->array = g_ptr_array_new();
+        if (storage->array == NULL)
+            abort();
+    }
+
+    p_arr = storage->array;
+
+    if (p_arr->len < depth)
+    {
+        void *ptr;
+
+        assert(p_arr->len + 1 == depth);
+
+        /* Create a new element in the array */
+        g_ptr_array_set_size(p_arr, depth);
+        ptr = g_ptr_array_index(p_arr, depth - 1) =
+                                   g_malloc(storage->data_size);
+        memset(ptr, 0, storage->data_size);
+
+        if (reused != NULL)
+            *reused = FALSE;
+    }
+    else if (reused != NULL)
+    {
+        *reused = TRUE;
+    }
+
+    result = g_ptr_array_index(p_arr, depth - 1);
+    if (result == NULL)
+        abort();
+
+    return result;
+}
+
+/* See the description in xml2gen.h */
+static void
+free_depth_data_part(gpointer data, gpointer user_data)
+{
+    rgt_xml2fmt_free_depth_data_cb *cb = user_data;
+
+    if (cb != NULL && data != NULL)
+        cb((void *)data);
+
+    g_free(data);
+}
+
+/* See the description in xml2gen.h */
+void
+rgt_xml2fmt_free_depth_data(rgt_depth_data_storage *storage,
+                            rgt_xml2fmt_free_depth_data_cb *cb)
+{
+    g_ptr_array_foreach(storage->array, free_depth_data_part, cb);
+    g_ptr_array_free(storage->array, TRUE);
+    storage->array = NULL;
+}
+
 int
 main(int argc, char **argv)
 {
