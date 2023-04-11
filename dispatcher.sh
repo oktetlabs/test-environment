@@ -5,7 +5,7 @@
 #
 # Script to build and start Test Environment.
 #
-# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved.
 
 bin_sh=`ls -l /bin/sh | sed "s/^.*-> //g"`
 case "$bin_sh" in
@@ -100,6 +100,16 @@ Generic options:
                                 build but do not run Test Suites
 
   --build-parallel[=num]        Enable parallel build using num threads.
+
+
+  --build-colorize              Preserve colouring escape codes in the build log.
+                                The default is to strip off escape codes.
+
+                                Setting TE_BUILD_COLORIZE env variable to 'yes'
+                                has the same effect.
+
+                                Note that log colourising only works with
+                                Ninja 1.9 or later.
 
   --build-ta-none               Don't build Test Agents.
   --build-ta-missing            Build only new Test Agents.
@@ -332,6 +342,8 @@ TRC_TAGS=
 declare -a RGT_X2HM_OPTS
 # Logger options
 LOGGER_OPTS=
+# Build log mode options: plain, colo(u)r
+test -z "${TE_BUILD_COLORIZE:-}" && TE_BUILD_COLORIZE="no"
 # Configurator options
 CS_OPTS=
 # Building options
@@ -615,6 +627,10 @@ process_opts()
                 export TE_TEST_BEHAVIOUR_WAIT_ON_CLEANUP=1
                 ;;
 
+            --build-colorize | --build-colourise )
+                TE_BUILD_COLORIZE=yes
+                ;;
+
             --logger-*=[^\"]*)
                 opt_name="${1%%=*}"
                 opt_str="--${opt_name#--logger-}=\"${1#${opt_name}=}\""
@@ -846,6 +862,19 @@ if test -z "$TE_BASE" -a -n "$BUILDER" ; then
     echo "Cannot find TE sources for building - exiting." >&2
     exit 1
 fi
+
+case "${TE_BUILD_COLORIZE}" in
+    yes)
+        # Disables escape code stripping.
+        # Requires Ninja v1.9.0 or newer.
+        export CLICOLOR_FORCE='1'
+        ;;
+    no)
+        ;;
+    *)
+        echo "Invalid value for TE_BUILD_COLORIZE: ${TE_BUILD_COLORIZE}" >&2
+        exit 1
+esac
 
 export TE_NO_PROMPT
 

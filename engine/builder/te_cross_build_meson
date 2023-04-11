@@ -404,8 +404,10 @@ build_platform() {
     # Run ninja in subshell to avoid pipefail option setting inheritance
     (
         set -o pipefail
+        # CLICOLOR_FORCE is used to disable escape code stripping
         te_eval_or_ssh "${p}" \
             "which ninja >/dev/null 2>&1 && NINJA=ninja || NINJA=ninja-build ;
+            test -z \"${CLICOLOR_FORCE}\" || export CLICOLOR_FORCE=\"${CLICOLOR_FORCE}\" ;
             test -z \"$CCACHE_DIR\" || export CCACHE_DIR=\"${CCACHE_DIR}\" ;
             TE_BASE=\"${ws}\"/src ${destdir} NINJA_STATUS=\"[ninja][%f/%t] \"
             \$NINJA "${NINJA_EXTRA_OPTS[@]}" -C \"${ws}\"/build -v install" | ninja_status_filter
