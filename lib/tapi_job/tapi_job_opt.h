@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  *
  * @brief generic tool options TAPI
@@ -8,8 +9,6 @@
  * @{
  *
  * TAPI to handle tool options.
- *
- * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_JOB_OPT_H__
@@ -307,6 +306,9 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
                                  sizeof(_exptype)) ?                 \
      offsetof(_struct, _field) : 0)
 
+/** Value type used in TAPI_JOB_OPT_UINT_T(). */
+#define TAPI_JOB_OPT_UINT_T_TYPE tapi_job_opt_uint_t
+
 /**
  * Bind `tapi_job_opt_uint_t` argument.
  *
@@ -317,10 +319,13 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @param[in] _field          Field name in option struct.
  */
 #define TAPI_JOB_OPT_UINT_T(_prefix, _concat_prefix, _suffix, \
-                            _struct, _field)                          \
-    { tapi_job_opt_create_uint_t, _prefix, _concat_prefix, _suffix,   \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                 \
-                                     tapi_job_opt_uint_t), NULL }
+                            _struct, _field)                           \
+    { tapi_job_opt_create_uint_t, _prefix, _concat_prefix, _suffix,    \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                  \
+                                     TAPI_JOB_OPT_UINT_T_TYPE), NULL }
+
+/** Value type used in TAPI_JOB_OPT_UINT_T_HEX(). */
+#define TAPI_JOB_OPT_UINT_T_HEX_TYPE tapi_job_opt_uint_t
 
 /**
  * Bind `tapi_job_opt_uint_t` argument, specifying it in hexadecimal
@@ -333,10 +338,13 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @param[in] _field          Field name in option struct.
  */
 #define TAPI_JOB_OPT_UINT_T_HEX(_prefix, _concat_prefix, _suffix, \
-                                _struct, _field)                        \
-    { tapi_job_opt_create_uint_t_hex, _prefix, _concat_prefix, _suffix, \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                   \
-                                     tapi_job_opt_uint_t), NULL }
+                                _struct, _field)                           \
+    { tapi_job_opt_create_uint_t_hex, _prefix, _concat_prefix, _suffix,    \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                      \
+                                     TAPI_JOB_OPT_UINT_T_HEX_TYPE), NULL }
+
+/** Value type used in TAPI_JOB_OPT_UINT_T_OCTAL(). */
+#define TAPI_JOB_OPT_UINT_T_OCTAL_TYPE tapi_job_opt_uint_t
 
 /**
  * Bind `tapi_job_opt_uint_t` argument, specifying it in octal
@@ -349,10 +357,14 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @param[in] _field          Field name in option struct.
  */
 #define TAPI_JOB_OPT_UINT_T_OCTAL(_prefix, _concat_prefix, _suffix, \
-                                  _struct, _field)                        \
-    { tapi_job_opt_create_uint_t_octal, _prefix, _concat_prefix, _suffix, \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                     \
-                                     tapi_job_opt_uint_t), NULL }
+                                  _struct, _field)                           \
+    { tapi_job_opt_create_uint_t_octal, _prefix, _concat_prefix, _suffix,    \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                        \
+                                     TAPI_JOB_OPT_UINT_T_OCTAL_TYPE), NULL }
+
+/** Value type used in TAPI_JOB_OPT_UINTMAX_T(). */
+#define TAPI_JOB_OPT_UINTMAX_T_TYPE tapi_job_opt_uintmax_t
+
 /**
  * Bind `tapi_job_opt_uintmax_t` argument.
  *
@@ -363,10 +375,13 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @param[in] _field          Field name in option struct.
  */
 #define TAPI_JOB_OPT_UINTMAX_T(_prefix, _concat_prefix, _suffix, \
-                               _struct, _field)                          \
-    { tapi_job_opt_create_uintmax_t, _prefix, _concat_prefix, _suffix,   \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                    \
-                                     tapi_job_opt_uintmax_t), NULL }
+                               _struct, _field)                           \
+    { tapi_job_opt_create_uintmax_t, _prefix, _concat_prefix, _suffix,    \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                     \
+                                     TAPI_JOB_OPT_UINTMAX_T_TYPE), NULL }
+
+/** Value type used in TAPI_JOB_OPT_UINT(). */
+#define TAPI_JOB_OPT_UINT_TYPE unsigned int
 
 /**
  * Bind `unsigned int` argument.
@@ -379,7 +394,11 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  */
 #define TAPI_JOB_OPT_UINT(_prefix, _concat_prefix, _suffix, _struct, _field) \
     { tapi_job_opt_create_uint, _prefix, _concat_prefix, _suffix,            \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field, unsigned int), NULL }
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                        \
+                                     TAPI_JOB_OPT_UINT_TYPE), NULL }
+
+/** Value type used in TAPI_JOB_OPT_UINT_OMITTABLE(). */
+#define TAPI_JOB_OPT_UINT_OMITTABLE_TYPE unsigned int
 
 /**
  * Similar to @ref TAPI_JOB_OPT_UINT, but the argument will not be included in
@@ -397,9 +416,13 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @param[in]     _field            Field name of the uint in option struct.
  */
 #define TAPI_JOB_OPT_UINT_OMITTABLE(_prefix, _concat_prefix, _suffix, \
-                                    _struct, _field)                        \
-    { tapi_job_opt_create_uint_omittable, _prefix, _concat_prefix, _suffix, \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field, unsigned int), NULL }
+                                    _struct, _field)                           \
+    { tapi_job_opt_create_uint_omittable, _prefix, _concat_prefix, _suffix,    \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                          \
+                                     TAPI_JOB_OPT_UINT_OMITTABLE_TYPE), NULL }
+
+/** Value type used in TAPI_JOB_OPT_DOUBLE(). */
+#define TAPI_JOB_OPT_DOUBLE_TYPE tapi_job_opt_double_t
 
 /**
  * Bind `tapi_job_opt_double_t` argument.
@@ -411,16 +434,19 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @param[in] _field          Field name in option struct.
  */
 #define TAPI_JOB_OPT_DOUBLE(_prefix, _concat_prefix, _suffix, \
-                            _struct, _field)                            \
-    { tapi_job_opt_create_double_t, _prefix, _concat_prefix, _suffix,   \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                   \
-                                     tapi_job_opt_double_t), NULL }
+                            _struct, _field)                           \
+    { tapi_job_opt_create_double_t, _prefix, _concat_prefix, _suffix,  \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                  \
+                                     TAPI_JOB_OPT_DOUBLE_TYPE), NULL }
 
 /**
  * The value is used to omit uint argument when it is bound
  * with @ref TAPI_JOB_OPT_UINT_OMITTABLE.
  */
 #define TAPI_JOB_OPT_OMIT_UINT 0xdeadbeef
+
+/** Value type used in TAPI_JOB_OPT_BOOL(). */
+#define TAPI_JOB_OPT_BOOL_TYPE te_bool
 
 /**
  * Bind `te_bool` argument.
@@ -430,8 +456,12 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @param[in]     _field    Field name of the bool in option struct.
  */
 #define TAPI_JOB_OPT_BOOL(_prefix, _struct, _field) \
-    { tapi_job_opt_create_bool, _prefix, FALSE, NULL,                   \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field, te_bool), NULL }
+    { tapi_job_opt_create_bool, _prefix, FALSE, NULL,                \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                \
+                                     TAPI_JOB_OPT_BOOL_TYPE), NULL }
+
+/** Value type used in TAPI_JOB_OPT_STRING(). */
+#define TAPI_JOB_OPT_STRING_TYPE char *
 
 /**
  * Bind `char *` argument.
@@ -442,8 +472,40 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @param[in]     _field            Field name of the string in option struct.
  */
 #define TAPI_JOB_OPT_STRING(_prefix, _concat_prefix, _struct, _field) \
-    { tapi_job_opt_create_string, _prefix, _concat_prefix, NULL,      \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field, char *), NULL }
+    { tapi_job_opt_create_string, _prefix, _concat_prefix, NULL,       \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                  \
+                                     TAPI_JOB_OPT_STRING_TYPE), NULL }
+
+/**
+ * An adaptor for indirect struct fields.
+ *
+ * Macros for option formatting would not work with indirect non-struct values,
+ * since they calculate offset of a field from the start of a struct.
+ *
+ * This adaptor creates an anonymous structure with a field of a correct type.
+ * For example, there is the following structure with a field:
+ * @code
+ *     typedef struct binds {
+ *         size_t argc;
+ *         const char **argv;
+ *     } binds;
+ * @endcode
+ * Where @c argv is an pointer to an array of strings of @c argc length.
+ * This field can be processed as follows:
+ * @code
+ *     TAPI_JOB_OPT_ARRAY_PTR(binds, argc, argv,
+ *         TAPI_JOB_OPT_CONTENT(TAPI_JOB_OPT_STRING(NULL, FALSE))
+ * @endcode
+ *
+ * @note New formatting macros shall define a `*_TYPE` macro for this adaptor to
+ *       work (for example, @ref TAPI_JOB_OPT_STRING_TYPE()).
+ *
+ * @param optname_    Name of the macro.
+ * @param ...         Arguments required for the macro.
+ *                    Except for the last two: type and field.
+ */
+#define TAPI_JOB_OPT_CONTENT(optname_, ...) \
+    optname_(__VA_ARGS__, struct { optname_##_TYPE __item; }, __item) \
 
 /**
  * Bind `tapi_job_opt_array` argument.
@@ -558,6 +620,9 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
 #define TAPI_JOB_OPT_DUMMY(_prefix) \
     { tapi_job_opt_create_dummy, _prefix, FALSE, NULL, 0, NULL }
 
+/** Value type used in TAPI_JOB_OPT_SOCKADDR_PTR(). */
+#define TAPI_JOB_OPT_SOCKADDR_PTR_TYPE struct sockaddr *
+
 /**
  * Bind `struct sockaddr *` argument.
  * The argument won't be included to command line if the field is @c NULL.
@@ -568,9 +633,12 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @param[in]     _field            Field name of the string in option struct.
  */
 #define TAPI_JOB_OPT_SOCKADDR_PTR(_prefix, _concat_prefix, _struct, _field) \
-    { tapi_job_opt_create_sockaddr_ptr, _prefix, _concat_prefix, NULL,      \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                       \
-                                     struct sockaddr *), NULL }
+    { tapi_job_opt_create_sockaddr_ptr, _prefix, _concat_prefix, NULL,       \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                        \
+                                     TAPI_JOB_OPT_SOCKADDR_PTR_TYPE), NULL }
+
+/** Value type used in TAPI_JOB_OPT_ADDR_PORT_PTR(). */
+#define TAPI_JOB_OPT_ADDR_PORT_PTR_TYPE struct sockaddr *
 
 /**
  * Bind `struct sockaddr *` argument (formatted as "address:port").
@@ -582,9 +650,12 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @param[in]   _field          Field name of the address in option struct.
  */
 #define TAPI_JOB_OPT_ADDR_PORT_PTR(_prefix, _concat_prefix, _struct, _field) \
-    { tapi_job_opt_create_addr_port_ptr, _prefix, _concat_prefix, NULL,      \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                        \
-                                     struct sockaddr *), NULL }
+    { tapi_job_opt_create_addr_port_ptr, _prefix, _concat_prefix, NULL,       \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                         \
+                                     TAPI_JOB_OPT_ADDR_PORT_PTR_TYPE), NULL }
+
+/** Value type used in TAPI_JOB_OPT_SOCKPORT_PTR(). */
+#define TAPI_JOB_OPT_SOCKPORT_PTR_TYPE struct sockaddr *
 
 /**
  * Bind `struct sockaddr *` argument (formatted as "port").
@@ -596,9 +667,9 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @param[in]   _field          Field name of the address in option struct.
  */
 #define TAPI_JOB_OPT_SOCKPORT_PTR(_prefix, _concat_prefix, _struct, _field) \
-    { tapi_job_opt_create_sockport_ptr, _prefix, _concat_prefix, NULL,      \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                       \
-                                     struct sockaddr *), NULL }
+    { tapi_job_opt_create_sockport_ptr, _prefix, _concat_prefix, NULL,       \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                        \
+                                     TAPI_JOB_OPT_SOCKPORT_PTR_TYPE), NULL }
 
 /** Undefined value for enum option */
 #define TAPI_JOB_OPT_ENUM_UNDEF INT_MIN
