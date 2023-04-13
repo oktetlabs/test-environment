@@ -85,7 +85,10 @@ TS_DEFAULT_OPTS+="--conf-dirs=${TS_CONF_DIRS} "
 TS_DEFAULT_OPTS+="--build-parallel "
 TS_DEFAULT_OPTS+="--trc-db=\"${TS_TOPDIR}\"/conf/trc.xml "
 
-eval "${TE_BASE}/dispatcher.sh ${TS_DEFAULT_OPTS} ${TS_OPTS}"
+# ta-def must be included at the end, when Test Agents are already
+# specified from processing of other options
+eval "${TE_BASE}/dispatcher.sh ${TS_DEFAULT_OPTS} ${TS_OPTS} " \
+     "--script=scripts/ta-def"
 TS_RESULT=$?
 
 if test ${TS_RESULT} -ne 0 ; then

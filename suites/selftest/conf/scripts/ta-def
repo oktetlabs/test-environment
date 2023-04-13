@@ -1,0 +1,16 @@
+#! /bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
+#
+# Test Agents configuration.
+
+source "${TE_BASE}"/engine/builder/te_ta_ssh_helper
+
+export TE_TA_SIGNATURE_FIELDS="gcc-target kernel-version-full libc-version header-version"
+
+te_ta_list_detect_type_with_signature TE_IUT TE_TST1
+
+# This disables unused test agents. Without this, RCF consistency check
+# script will fail.
+export TE_TST2=
+export TE_TST3=

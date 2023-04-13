@@ -13,9 +13,6 @@ TS_CONF_DIRS+="\"${TS_RIGSDIR}\":"
 
 take_items "${TS_CFG%-*}" || exit 1
 
-export TE_IUT_TA_TYPE=linux
-export TE_TST1_TA_TYPE=linux
-export TE_TST2_TA_TYPE=linux
 export TE_IUT_TA_SUDO=true
 export TE_TST1_TA_SUDO=true
 
