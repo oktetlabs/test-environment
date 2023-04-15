@@ -59,6 +59,18 @@ main(int argc, char **argv)
     TEST_STEP("Add TRC tag");
     CHECK_RC(tapi_tags_add_tag("tag_set_by_prologue", NULL));
 
+    /*
+     * Check whether some interfaces in networks specifications are defined
+     * as PCI devices. Find out names of such interfaces, grab them and
+     * replace PCI device references with interface name references in
+     * networks specifications.
+     *
+     * This makes it possible to work with such interfaces in a usual way,
+     * for example add IP addresses on them.
+     */
+    CHECK_RC(tapi_cfg_net_nodes_update_pci_fn_to_interface(
+                                          NET_NODE_TYPE_INVALID));
+
     /* Total memory in MB */
     CHECK_RC(tapi_cfg_get_memory(iut_rpcs->ta, 0, &memory));
     memory /= (1024 * 1024); /* Bytes to Megabytes */
