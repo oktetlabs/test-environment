@@ -194,7 +194,8 @@ elif [[ "${req_path}" =~ /html[/]?$ ||
         err_cleanup "Failed to obtain html log tree"
     fi
 
-elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
+elif [[ "${req_path}" =~ node_[^/]*[.]html$ \
+          || "${req_path}" =~ node_[^/]*[.]json$ ]] ; then
 
     declare -a sniff_opts
     if [[ "${sniff_log}" == "true" ]] ; then
@@ -216,7 +217,8 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
 
     node="${req_path##*/}"
     node="${node#node_}"
-    node="${node%.html}"
+    extension=${node##*.}
+    node="${node%.*}"
 
     if [[ "${node}" =~ ^([0-9]+)_([0-9]+) ]] ; then
         filter_depth="${BASH_REMATCH[1]}"
@@ -263,19 +265,30 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
         sniff_opts=("--sniff-log" "--sniff-log-dir=${sniff_log_dir}")
     fi
 
-    page_selector=
-    if test ${all_pages} -gt 0 ; then
-        page_selector="--rgt-x2hm-page-selector=all"
-    elif test ${pages_count} -gt 1 ; then
-        page_selector="--rgt-x2hm-page-selector=${cur_page}/${pages_count}"
-    fi
     dir_path=$(dirname "${req_path}")
 
+    declare -a multi_opts
+
+    if [[ "${extension}" = "html" ]] ; then
+        multi_opts+=(--rgt-x2hm-shared-url="${shared_url}")
+        multi_pref="--rgt-x2hm-"
+        out_opt="html"
+    else
+        multi_pref="--rgt-x2json-"
+        out_opt="json"
+    fi
+
+    if test ${all_pages} -gt 0 ; then
+        multi_opts+=("${multi_pref}page-selector=all")
+    elif test ${pages_count} -gt 1 ; then
+        multi_opts+=("${multi_pref}page-selector=${cur_page}/${pages_count}")
+    fi
+
+    multi_opts+=("${multi_pref}single-node=${node}")
+    multi_opts+=("${multi_pref}docs-url=${docs_url}")
+
     rgt-proc-raw-log --raw-log="${bundle_tmpdir}/log_merge.raw" \
-        --html="${dir_path}" "${page_selector}" \
-        --rgt-x2hm-single-node="${node}" \
-        --rgt-x2hm-shared-url="${shared_url}" \
-        --rgt-x2hm-docs-url="${docs_url}" \
+        --${out_opt}="${dir_path}" "${multi_opts[@]}" \
         --rgt-conv-incomplete-log "${sniff_opts[@]}"
 
 else
