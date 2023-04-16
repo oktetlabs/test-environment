@@ -16,6 +16,7 @@ sniff_detailed_packets=
 raw_path=
 bundle_path=
 html_path=
+json_path=
 plain_html_path=
 txt_path=
 junit_path=
@@ -28,6 +29,7 @@ mi_only=false
 
 declare -a rgt_conv_opts
 declare -a rgt_x2hm_opts
+declare -a rgt_x2json_opts
 
 caps_tmp_dir=
 declare -a tmp_files
@@ -80,6 +82,7 @@ Usage: te_proc_raw_log.sh [<options>]
   --xml=<filepath>              Where to save full XML log (if needed).
   --rgt-conv-*                  Pass an option to rgt-conv.
   --rgt-x2hm-*                  Pass an option to rgt-xml2html-multi.
+  --rgt-x2json-*                Pass an option to rgt-xml2json.
 EOF
 }
 
@@ -113,6 +116,7 @@ function print_warn() {
 #   sniff_log_dir
 #   bundle_path
 #   html_path
+#   json_path
 #   plain_html_path
 #   txt_path
 #   junit_path
@@ -125,6 +129,7 @@ function print_warn() {
 #   sniff_detailed_packets
 #   rgt_conv_opts
 #   rgt_x2hm_opts
+#   rgt_x2json_opts
 # Arguments:
 #   All arguments passed to this script.
 # Outputs:
@@ -144,6 +149,7 @@ function process_opts() {
 
             --bundle=*) bundle_path=${1#--bundle=} ;;
             --html=*) html_path=${1#--html=} ;;
+            --json=*) json_path=${1#--json=} ;;
             --plain-html=*) plain_html_path=${1#--plain-html=} ;;
             --txt=*) txt_path=${1#--txt=} ;;
             --junit=*) junit_path=${1#--junit=} ;;
@@ -170,6 +176,10 @@ function process_opts() {
 
             --rgt-x2hm-*)
                 rgt_x2hm_opts+=("--${1#--rgt-x2hm-}")
+                ;;
+
+            --rgt-x2json-*)
+                rgt_x2json_opts+=("--${1#--rgt-x2json-}")
                 ;;
 
             *) print_warn "Unknown option $1 will be passed to rgt-conv";
@@ -336,7 +346,8 @@ function main() {
 
     fi
 
-    if [[ -n "${html_path}" || -n "${xml_path}" ]] ; then
+    if [[ -n "${html_path}" || -n "${json_path}" \
+            || -n "${xml_path}" ]] ; then
         # Generate XML log taking into account control messages
         local log_xml_struct
         local log_xml_merged
@@ -364,6 +375,11 @@ function main() {
             if [[ -n "${html_path}" ]] ; then
                 "${BINDIR}"/rgt-xml2html-multi "${rgt_x2hm_opts[@]}" \
                     "${log_xml_merged}" "${html_path}"
+            fi
+
+            if [[ -n "${json_path}" ]] ; then
+                "${BINDIR}"/rgt-xml2json "${rgt_x2json_opts[@]}" \
+                    "${log_xml_merged}" "${json_path}"
             fi
         fi
     fi
