@@ -62,7 +62,10 @@
 #define _U64_FMT " " U64_FMT
 #define _I64_FMT " " I64_FMT
 
-
+/*
+ * Data model based on IF-MIB
+ * https://www.rfc-editor.org/rfc/rfc2863.html
+ */
 typedef struct if_stats {
     uint64_t      in_octets;
     uint64_t      in_ucast_pkts;
@@ -77,6 +80,25 @@ typedef struct if_stats {
     uint64_t      out_errors;
 } if_stats;
 
+/* Interface stats counters from /proc/net/dev */
+typedef struct linux_if_stats {
+    uint64_t      rx_bytes;
+    uint64_t      rx_packets;
+    uint64_t      rx_errs;
+    uint64_t      rx_drop;
+    uint64_t      rx_fifo;
+    uint64_t      rx_frame;
+    uint64_t      rx_compressed;
+    uint64_t      rx_multicast;
+    uint64_t      tx_bytes;
+    uint64_t      tx_packets;
+    uint64_t      tx_errs;
+    uint64_t      tx_drop;
+    uint64_t      tx_fifo;
+    uint64_t      tx_colls;
+    uint64_t      tx_carrier;
+    uint64_t      tx_compressed;
+} linux_if_stats;
 
 typedef struct net_stats_ipv4{
     uint64_t      in_recvs;
@@ -144,12 +166,7 @@ dev_stats_get(const char *devname, if_stats *stats)
     FILE *devf = NULL;
     int   line = 0;
 
-    uint64_t in_overruns;
-    uint64_t in_frame_losses;
-    uint64_t in_compressed;
-    uint64_t out_overruns;
-    uint64_t out_carrier_losses;
-    uint64_t out_compressed;
+    linux_if_stats linux_stats;
 #endif
 
     memset(stats, 0, sizeof(*stats));
@@ -212,38 +229,59 @@ dev_stats_get(const char *devname, if_stats *stats)
 
     if (ptr != NULL)
     {
-#define STATS_NET_DEV_PARAM_COUNT   15
+#define LINUX_IF_STATS_COUNT   16
 
         static const char *stats_net_dev_fmt =
-            U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
-            U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT
-            U64_FMT U64_FMT U64_FMT U64_FMT U64_FMT;
+            U64_FMT U64_FMT U64_FMT U64_FMT
+            U64_FMT U64_FMT U64_FMT U64_FMT
+            U64_FMT U64_FMT U64_FMT U64_FMT
+            U64_FMT U64_FMT U64_FMT U64_FMT;
 
         VERB("Found line %d: >%s", line, buf);
         ptr += strlen(devname) + 1;
         if ((rc = sscanf(ptr, stats_net_dev_fmt,
-                         &stats->in_octets,
-                         &stats->in_ucast_pkts,
-                         &stats->in_errors,
-                         &stats->in_discards,
-                         &in_overruns,
-                         &in_frame_losses,
-                         &in_compressed,
-                         &stats->in_nucast_pkts,
-                         &stats->out_octets,
-                         &stats->out_ucast_pkts,
-                         &stats->out_errors,
-                         &stats->out_discards,
-                         &out_overruns,
-                         &out_carrier_losses,
-                         &out_compressed)) != STATS_NET_DEV_PARAM_COUNT)
+                         &linux_stats.rx_bytes,
+                         &linux_stats.rx_packets,
+                         &linux_stats.rx_errs,
+                         &linux_stats.rx_drop,
+                         &linux_stats.rx_fifo,
+                         &linux_stats.rx_frame,
+                         &linux_stats.rx_compressed,
+                         &linux_stats.rx_multicast,
+                         &linux_stats.tx_bytes,
+                         &linux_stats.tx_packets,
+                         &linux_stats.tx_errs,
+                         &linux_stats.tx_drop,
+                         &linux_stats.tx_fifo,
+                         &linux_stats.tx_colls,
+                         &linux_stats.tx_carrier,
+                         &linux_stats.tx_compressed)) != LINUX_IF_STATS_COUNT)
         {
             ERROR("Invalid /proc/net/dev file format, "
                   "only %d of %d counters are parsed",
-                  rc, STATS_NET_DEV_PARAM_COUNT);
+                  rc, LINUX_IF_STATS_COUNT);
             return TE_OS_RC(TE_TA_UNIX, EINVAL);
         }
-#undef STATS_NET_DEV_PARAM_COUNT
+
+        stats->in_octets = linux_stats.rx_bytes;
+        stats->in_ucast_pkts = linux_stats.rx_packets -
+                               linux_stats.rx_multicast;
+        stats->in_nucast_pkts = linux_stats.rx_multicast;
+        stats->in_discards = linux_stats.rx_drop;
+        stats->in_errors = linux_stats.rx_errs;
+
+        stats->out_octets = linux_stats.tx_bytes;
+        stats->out_ucast_pkts = linux_stats.tx_packets;
+        stats->out_discards = linux_stats.tx_drop;
+        stats->out_errors = linux_stats.tx_errs;
+
+        /*
+         * Due to differences between IF-MIB and /proc/net/dev fields,
+         * these counters are not calculated.
+         */
+        stats->in_unknown_protos = 0;
+        stats->out_nucast_pkts = 0;
+#undef LINUX_IF_STATS_COUNT
     }
 #endif
 
