@@ -406,6 +406,9 @@ tapi_job_opt_create_embed_array(const void *value, const void *priv,
         return rc;
     }
 
+    if (te_vec_size(&sub_args) == 0)
+        return TE_ENOENT;
+
     rc = te_string_join_vec(&combined, &sub_args, array->sep);
     te_vec_deep_free(&sub_args);
     if (rc != 0)
