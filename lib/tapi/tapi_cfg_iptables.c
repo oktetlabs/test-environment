@@ -235,3 +235,78 @@ tapi_cfg_iptables_cmd_fmt(const char *ta, const char *ifname,
 
     return tapi_cfg_iptables_cmd(ta, ifname, af, table, chain, str);
 }
+
+/* See description in tapi_cfg_iptables.h */
+te_errno
+tapi_cfg_iptables_rules(const char *ta,
+                        const char *ifname,
+                        unsigned int af,
+                        const char *table,
+                        const char *chain,
+                        const char *rule)
+{
+    int rc;
+    cfg_handle handle;
+
+    INFO("Set iptables rules (TA:%s, ifname:%s, table:%s, chain:%s): %s",
+         ta, ifname, table, chain, rule);
+
+    if ((rc = cfg_find_fmt(&handle, "/agent:%s/interface:%s"
+                           "/iptables:%s/table:%s/chain:%s",
+                           ta, ifname, af_str(af), table, chain)) != 0)
+    {
+        ERROR("Chain %s_%s not found, rc=%r", chain, ifname, rc);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, rule),
+                                   "/agent:%s/interface:%s/iptables:%s"
+                                   "/table:%s/chain:%s/rules:",
+                                   ta, ifname, af_str(af), table, chain)) != 0)
+    {
+        ERROR("Error while executing iptables rule, rc=%r", rc);
+        return rc;
+    }
+
+    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s"
+                                  "/iptables:%s/table:%s/chain:%s",
+                                  ta, ifname, af_str(af), table, chain)) != 0)
+    {
+        ERROR("Error while synchronizing iptables rules on %s Agent, rc=%r",
+              ta, rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+
+/* See description in tapi_cfg_iptables.h */
+te_errno
+tapi_cfg_iptables_rules_fmt(const char *ta, const char *ifname,
+                            unsigned int af, const char *table,
+                            const char *chain, const char *rule, ...)
+{
+    char    str[TAPI_CFG_IPTABLES_CMD_LEN_MAX];
+    va_list ap;
+    int     rc;
+
+    va_start(ap, rule);
+    rc = vsnprintf(str, sizeof(str), rule, ap);
+    va_end(ap);
+
+    if (rc < 0)
+    {
+        ERROR("Cannot compose the rule string from the arguments: %r",
+              te_rc_os2te(errno));
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if ((size_t)rc >= sizeof(str))
+    {
+        ERROR("Too long iptables rule");
+        return TE_RC(TE_TAPI, TE_ESMALLBUF);
+    }
+
+    return tapi_cfg_iptables_rules(ta, ifname, af, table, chain, str);
+ }
