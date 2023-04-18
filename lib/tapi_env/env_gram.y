@@ -358,6 +358,7 @@ address:
         {
             p->name = name;
             name = NULL;
+            p->source = NULL;
             p->iface = curr_host_if;
             p->family = $5;
             p->type = $7;
@@ -365,6 +366,32 @@ address:
             CIRCLEQ_INSERT_TAIL(&env->addrs, p, links);
         }
         free(name);
+    }
+    |
+    ADDRESS COLON quotedname COLON ADDR_FAMILY COLON ADDR_TYPE COLON quotedname
+    {
+        char            *name = $3;
+        char            *source = $9;
+        tapi_env_addr   *p = calloc(1, sizeof(*p));
+
+        if (curr_host_if == NULL)
+            curr_host_if = create_host_if();
+
+        assert(p != NULL);
+        if (p != NULL)
+        {
+            p->name = name;
+            name = NULL;
+            p->source = source;
+            source = NULL;
+            p->iface = curr_host_if;
+            p->family = $5;
+            p->type = $7;
+            p->handle = CFG_HANDLE_INVALID;
+            CIRCLEQ_INSERT_TAIL(&env->addrs, p, links);
+        }
+        free(name);
+        free(source);
     }
     ;
 
