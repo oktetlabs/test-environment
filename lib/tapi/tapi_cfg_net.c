@@ -40,6 +40,7 @@
 
 #include "tapi_cfg.h"
 #include "tapi_cfg_base.h"
+#include "tapi_cfg_iptables.h"
 #include "tapi_cfg_net.h"
 #include "tapi_host_ns.h"
 
@@ -91,6 +92,7 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
 {
     te_errno        rc;
     char           *net_oid;
+    char           *nat_setup;
     cfg_handle     *gateway_handles;
     unsigned int    n_gateways;
     cfg_handle     *node_handles;
@@ -176,6 +178,37 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
             return rc;
         }
     }
+
+    rc = cfg_get_bool(&net->nat, "%s/nat:", net_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get the nat instance for network '%s'", net_oid);
+        free(net->name);
+        return rc;
+    }
+
+    if (net->nat && net->is_virtual)
+    {
+        ERROR("Only non-virtual networks may be behind NAT", net_oid);
+        free(net->name);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = cfg_get_string(&nat_setup, "%s/nat:/setup:", net_oid);
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    {
+        ERROR("Failed to get the nat setup instance for network '%s'", net_oid);
+        free(nat_setup);
+        free(net->name);
+        return rc;
+    }
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT ||
+        strcmp(nat_setup, "none") == 0 ||
+        strcmp(nat_setup, "") == 0)
+        net->nat_setup = NET_NAT_SETUP_NONE;
+    else if (strcmp(nat_setup, "iptables") == 0)
+        net->nat_setup = NET_NAT_SETUP_IPTABLES;
+    free(nat_setup);
 
     /* Find all nodes in this net */
     rc = cfg_find_pattern_fmt(&n_nodes, &node_handles,
@@ -2938,6 +2971,362 @@ tapi_cfg_net_create_routes(unsigned int af)
 
 cleanup:
     free(routed);
+    tapi_cfg_net_free_nets(&nets);
+
+    return rc;
+}
+
+/**
+ * Given a network and a node instance name, find the associated node structure.
+ *
+ * @param      net          Network to search.
+ * @param      name         Node name.
+ * @param[out] node         Node description structure.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_cfg_net_find_node(cfg_net_t *net, const char *name, cfg_net_node_t **node)
+{
+    te_errno     rc;
+    unsigned int i;
+
+    for (i = 0; i < net->n_nodes; i++)
+    {
+        char *node_name;
+
+        rc = cfg_get_inst_name(net->nodes[i].handle, &node_name);
+        if (rc != 0)
+        {
+            ERROR("Failed to get instance name of node %u from net %s: %r",
+                  i, net->name, rc);
+            return rc;
+        }
+
+        if (strcmp(node_name, name) == 0)
+        {
+            free(node_name);
+            *node = &net->nodes[i];
+            return 0;
+        }
+
+        free(node_name);
+    }
+
+    return TE_RC(TE_TAPI, TE_ENOENT);
+}
+
+/**
+ * Set up masquerading for a given network using iptables.
+ *
+ * @param nets                  All available networks.
+ * @param net                   Network to set up.
+ * @param af                    Address family.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_cfg_net_setup_masquerade(cfg_nets_t *nets, cfg_net_t *net, unsigned int af)
+{
+    te_errno     rc = 0;
+    unsigned int i;
+
+    for (i = 0; i < nets->n_nets; i++)
+    {
+        char           *ta;
+        char           *intf;
+        cfg_net_t      *net2;
+        cfg_net_node_t *gw;
+
+        net2 = &nets->nets[i];
+        gw = tapi_cfg_net_get_gateway(net2, net);
+
+        if (net2 == net || net2->is_virtual || net2->n_nodes == 0)
+            continue;
+
+        if (gw == NULL)
+        {
+            ERROR("Failed to set up masquerading between networks %s and %s: no gateway specified",
+                  net->name, net2->name);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+
+        rc = tapi_cfg_net_get_node_info(gw->handle, af,
+                                        NULL, &ta, &intf);
+        if (rc != 0)
+        {
+            ERROR("Failed to extract node info of gateway in net %s: %r",
+                  net2->name, rc);
+            return rc;
+        }
+
+        rc = tapi_cfg_iptables_chain_add(ta, intf, af, "nat",
+                                         "POSTROUTING", TRUE);
+        if (rc != 0)
+        {
+            ERROR("Failed to create POSTROUTING chain for %s on TA %s: %r",
+                  intf, ta, rc);
+            free(ta);
+            free(intf);
+            return rc;
+        }
+
+        rc = tapi_cfg_iptables_rules(ta, intf, af, "nat", "POSTROUTING",
+                                     "-j MASQUERADE");
+        if (rc != 0)
+        {
+            ERROR("Failed to add MASQUERADE action for %s on TA %s: %r",
+                  intf, ta, rc);
+            free(ta);
+            free(intf);
+            return rc;
+        }
+
+        free(ta);
+        free(intf);
+    }
+
+    return 0;
+}
+
+/**
+ * Set up DNAT within a given network using iptables.
+ *
+ * @param nets              All available networks.
+ * @param net               Network to set up.
+ * @param af                Address family.
+ * @param rule              Forwarding rule to install.
+ * @param target_name       Name of the target node.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_cfg_net_setup_dnat(cfg_nets_t *nets, cfg_net_t *net, unsigned int af,
+                        const char *rule, const char *target_name)
+{
+    unsigned int     i;
+    te_errno         rc;
+    cfg_net_t       *source_net = NULL;
+    cfg_net_node_t  *target_node;
+    cfg_net_node_t  *gateway_node;
+    struct sockaddr *target_addr = NULL;
+    char            *target_addr_str = NULL;
+    char            *source_ta = NULL;
+    char            *source_intf = NULL;
+
+    RING("Redirecting traffic \"%s\" to %s:%s", rule, net->name, target_name);
+
+    if (strchr(rule, ':') != NULL)
+    {
+        ERROR("Unsupported or unimplemented forwarding rule format");
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+        return rc;
+    }
+
+    for (i = 0; i < nets->n_nets; i++)
+    {
+        if (strcmp(nets->nets[i].name, rule) == 0)
+        {
+            source_net = &nets->nets[i];
+            break;
+        }
+    }
+    if (source_net == NULL)
+    {
+        ERROR("Failed to find source network '%s'", rule);
+        return TE_RC(TE_TAPI, TE_ENOENT);
+    }
+
+    if (source_net->n_nodes == 0)
+    {
+        ERROR("Source network does not have any nodes");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    gateway_node = tapi_cfg_net_get_gateway(source_net, net);
+    if (gateway_node == NULL)
+    {
+        ERROR("No gateway available");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = tapi_cfg_net_find_node(net, target_name, &target_node);
+    if (rc != 0)
+    {
+        ERROR("Failed to find target node %s in net %s: %r",
+              target_node, net->name, rc);
+        return rc;
+    }
+
+    rc = tapi_cfg_net_get_node_info(target_node->handle, af, &target_addr,
+                                    NULL, NULL);
+    if (rc != 0)
+    {
+        ERROR("Failed to get target node (%s) address: %r", target_name, rc);
+        return rc;
+    }
+
+    rc = tapi_cfg_net_get_node_info(gateway_node->handle, af, NULL,
+                                    &source_ta, &source_intf);
+    if (rc != 0)
+    {
+        ERROR("Failed to get source network (%s) gateway info: %r",
+              source_net->name, rc);
+        goto cleanup;
+    }
+
+    target_addr_str = te_ip2str(target_addr);
+    if (target_addr_str == NULL)
+    {
+        ERROR("Failed to transform target node (%s) addres to string");
+        rc = TE_RC(TE_TAPI, TE_ENOMEM);
+        goto cleanup;
+    }
+
+    rc = tapi_cfg_iptables_chain_add(source_ta, source_intf, af, "nat",
+                                     "PREROUTING", TRUE);
+    if (rc != 0)
+    {
+        ERROR("Failed to create PREROUTING chain for %s on TA %s: %r",
+              source_intf, source_ta, rc);
+        goto cleanup;
+    }
+
+    rc = tapi_cfg_iptables_rules_fmt(source_ta, source_intf, af, "nat",
+                                     "PREROUTING",
+                                     "-j DNAT --to %s", target_addr_str);
+    if (rc != 0)
+    {
+        ERROR("Failed to add DNAT action for %s on TA %s: %r",
+              source_intf, source_ta, rc);
+        goto cleanup;
+    }
+
+cleanup:
+    free(source_ta);
+    free(source_intf);
+    free(target_addr);
+    free(target_addr_str);
+
+    return rc;
+}
+
+/**
+ * Set up NAT for a given network using iptables.
+ *
+ * @param   nets        All available networks.
+ * @param   net         Network to set up.
+ * @param   af          Address family.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_cfg_net_setup_iptables(cfg_nets_t *nets, cfg_net_t *net, unsigned int af)
+{
+    te_errno      rc;
+    unsigned int  i;
+    unsigned int  n_handles;
+    cfg_handle   *handles = NULL;
+
+    if (!net->nat)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    rc = tapi_cfg_net_setup_masquerade(nets, net, af);
+    if (rc != 0)
+    {
+        ERROR("Failed to set up masquerading for network %s: %r",
+              net->name, rc);
+        goto cleanup;
+    }
+
+    rc = cfg_find_pattern_fmt(&n_handles, &handles, "/net:%s/nat:/forward:*",
+                              net->name);
+    if (rc != 0)
+    {
+        ERROR("Failed to find forwarding rules for network %s: %r",
+              net->name, rc);
+        goto cleanup;
+    }
+
+    for (i = 0; i < n_handles; i++)
+    {
+        cfg_val_type  cvt;
+        char         *rule = NULL;
+        char         *target = NULL;
+
+        rc = cfg_get_inst_name(handles[i], &rule);
+        if (rc != 0)
+        {
+            ERROR("Failed to extract forwarding rule %u from net %s: %r",
+                  i, net->name, rc);
+            break;
+        }
+
+        cvt = CVT_STRING;
+        rc = cfg_get_instance(handles[i], &cvt, &target);
+        if (rc != 0)
+        {
+            ERROR("Failed to extract forwarding rule %u from net %s: %r",
+                  i, net->name, rc);
+            free(rule);
+            break;
+        }
+
+        rc = tapi_cfg_net_setup_dnat(nets, net, af, rule, target);
+        free(rule);
+        free(target);
+        if (rc != 0)
+        {
+            ERROR("Failed to find %s in net %s: %r", target, net->name, rc);
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    free(handles);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_create_nat(unsigned int af)
+{
+    unsigned int    i;
+    int             rc = 0;
+
+    cfg_nets_t      nets;
+
+    /* Get testing network configuration in C structures */
+    rc = tapi_cfg_net_get_nets(&nets);
+    if (rc != 0)
+    {
+        ERROR("tapi_cfg_net_get_nets() failed %r", rc);
+        return rc;
+    }
+
+    for (i = 0; i < nets.n_nets && rc == 0; ++i)
+    {
+        cfg_net_t       *net = nets.nets + i;
+
+        if (!net->nat)
+            continue;
+
+        switch(net->nat_setup)
+        {
+            case NET_NAT_SETUP_IPTABLES:
+                rc = tapi_cfg_net_setup_iptables(&nets, net, af);
+                if (rc != 0)
+                {
+                    ERROR("Failed to set iptables rules for network %s: %r",
+                          net->name, rc);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
     tapi_cfg_net_free_nets(&nets);
 
     return rc;
