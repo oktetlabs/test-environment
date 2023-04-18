@@ -45,6 +45,33 @@
          Name: Target network
          Value: Instance name of the gateway node
 
+    - oid: "/net/nat"
+      access: read_write
+      type: bool
+      d: |
+         Whether this network is hidden behind NAT.
+         Only applicable to non-virtual networks.
+         Needs to be enabled explicitly.
+         Name: Empty
+         Value: Boolean value
+
+    - oid: "/net/nat/setup"
+      access: read_write
+      type: string
+      d: |
+         NAT setup procedure.
+         Name: Empty
+         Value: "none" or "iptables"
+
+
+    - oid: "/net/nat/forward"
+      access: read_create
+      type: string
+      d: |
+         Rules for port forwarding.
+         Name: Source network name[:protocol[:port-range]]
+         Value: Node name within the network
+
     - oid: "/net/ip4_subnet"
       access: read_create
       type: address

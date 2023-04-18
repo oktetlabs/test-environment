@@ -53,10 +53,18 @@ typedef struct cfg_net_node_t {
     enum net_node_rsrc_type rsrc_type;  /**< Node resource type */
 } cfg_net_node_t;
 
+/** Supported NAT setup procedures */
+typedef enum cfg_nat_setup_t {
+    NET_NAT_SETUP_NONE = 0,
+    NET_NAT_SETUP_IPTABLES,
+} cfg_nat_setup_t;
+
 /** Net description structure */
 typedef struct cfg_net_t {
     char           *name;       /**< Network instance name */
     te_bool         is_virtual; /**< Is network virtual? */
+    te_bool         nat;        /**< Is network behind NAT? */
+    cfg_nat_setup_t nat_setup;  /**< NAT setup procedure */
     cfg_handle      handle;     /**< Cfg instance handle */
     te_kvpair_h     gateways;   /**< Gateway nodes */
     unsigned int    n_nodes;    /**< Number of nodes in the net */
@@ -478,6 +486,15 @@ extern te_errno tapi_cfg_net_delete_all(void);
  * @return Status code (see te_errno.h).
  */
 extern te_errno tapi_cfg_net_create_routes(unsigned int af);
+
+/**
+ * Create iptables for NAT networks.
+ *
+ * @param af            Address family.
+ *
+ * @return Status code (see te_errno.h).
+ */
+extern te_errno tapi_cfg_net_create_nat(unsigned int af);
 
 /**
  * Get PCI devices associated with a network node.
