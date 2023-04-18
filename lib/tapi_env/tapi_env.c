@@ -1119,10 +1119,71 @@ prepare_hosts(tapi_env *env)
     return rc;
 }
 
+static te_errno
+get_source_addr(tapi_env_addrs *addrs, tapi_env_addr *addr,
+                tapi_env_addr **source)
+{
+    tapi_env_addr *item;
+
+    CIRCLEQ_FOREACH(item, addrs, links)
+    {
+        if (strcmp(item->name, addr->source) == 0)
+        {
+            *source = item;
+            return 0;
+        }
+    }
+
+    ERROR("Source address '%s' not found", addr->source);
+    return TE_RC(TE_TAPI, TE_ENOENT);
+}
+
+static te_errno
+resolve_l3_link(cfg_handle handle, cfg_nets_t *nets, unsigned int *i_net)
+{
+    te_errno      rc;
+    cfg_val_type  cvt;
+    char         *l2oid = NULL;
+    char         *net = NULL;
+    unsigned int  i;
+
+    cvt = CVT_STRING;
+    rc = cfg_get_instance(handle, &cvt, &l2oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get virtual node contents: %r", rc);
+        return rc;
+    }
+
+    net = cfg_oid_str_get_inst_name(l2oid, 1);
+    if (net == NULL)
+    {
+        ERROR("Failed to extract L2 net name from virtual node");
+        goto cleanup;
+    }
+
+    for (i = 0; i < nets->n_nets; i++)
+    {
+        if (strcmp(nets->nets[i].name, net) == 0)
+        {
+            *i_net = i;
+            goto cleanup;
+        }
+    }
+
+    rc = TE_RC(TE_TAPI, TE_ENOENT);
+
+cleanup:
+    free(l2oid);
+    free(net);
+
+    return rc;
+}
 
 te_errno
 prepare_unicast(unsigned int af, tapi_env_addr *env_addr,
-                cfg_nets_t *cfg_nets, struct sockaddr **addr)
+                tapi_env_addrs *env_addrs, cfg_nets_t *cfg_nets,
+                struct sockaddr **addr)
 {
     te_errno rc;
 
@@ -1130,6 +1191,7 @@ prepare_unicast(unsigned int af, tapi_env_addr *env_addr,
     assert(af == AF_INET || af == AF_INET6);
 
     if (!cfg_nets->nets[env_addr->iface->net->i_net].is_virtual &&
+        (env_addr->source == NULL) &&
         (af == AF_INET ? env_addr->iface->ip4_unicast_used :
                          env_addr->iface->ip6_unicast_used))
     {
@@ -1162,20 +1224,70 @@ prepare_unicast(unsigned int af, tapi_env_addr *env_addr,
 
         if (cfg_nets->nets[env_addr->iface->net->i_net].is_virtual)
         {
-            val_type = CVT_STRING;
-            rc = cfg_get_instance(handle, &val_type, &node_oid);
+            unsigned int    i_source_net;
+            unsigned int    i_target_net;
+            cfg_handle      source_handle;
+            cfg_net_node_t *gateway;
+
+            rc = resolve_l3_link(handle, cfg_nets, &i_target_net);
             if (rc != 0)
             {
-                ERROR("Failed to get value of virtual node: %r", rc);
+                ERROR("Failed to resolve target virtual node: %r", rc);
                 return rc;
             }
 
-            rc = cfg_find_str(node_oid, &handle);
-            free(node_oid);
-            if (rc != 0)
+            if (env_addr->source != NULL)
             {
-                ERROR("Failed to find handle of node '%s': %r", node_oid, rc);
-                return rc;
+                tapi_env_addr *source;
+
+                rc = get_source_addr(env_addrs, env_addr, &source);
+                if (rc != 0)
+                {
+                    ERROR("Failed to find source addr: %r", rc);
+                    return rc;
+                }
+
+                source_handle = cfg_nets->nets[source->iface->net->i_net].
+                                    nodes[source->iface->i_node].handle;
+
+                rc = resolve_l3_link(source_handle, cfg_nets, &i_source_net);
+                if (rc != 0)
+                {
+                    ERROR("Failed to resolve source virtual node: %r", rc);
+                    return rc;
+                }
+            }
+            else
+            {
+                i_source_net = i_target_net;
+            }
+
+            gateway = tapi_cfg_net_get_gateway(&cfg_nets->nets[i_target_net],
+                                               &cfg_nets->nets[i_source_net]);
+
+            if (gateway != NULL && cfg_nets->nets[i_target_net].nat)
+            {
+                handle = gateway->handle;
+            }
+            else
+            {
+                char *node_oid;
+
+                val_type = CVT_STRING;
+                rc = cfg_get_instance(handle, &val_type, &node_oid);
+                if (rc != 0)
+                {
+                    ERROR("Failed to get value of virtual node: %r", rc);
+                    return rc;
+                }
+
+                rc = cfg_find_str(node_oid, &handle);
+                free(node_oid);
+                if (rc != 0)
+                {
+                    ERROR("Failed to find handle of node '%s': %r", node_oid, rc);
+                    return rc;
+                }
             }
         }
 
@@ -1406,7 +1518,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             env_addr->addr->sa_family = AF_INET;
             if (env_addr->type == TAPI_ENV_ADDR_UNICAST)
             {
-                rc = prepare_unicast(AF_INET, env_addr, cfg_nets,
+                rc = prepare_unicast(AF_INET, env_addr, addrs, cfg_nets,
                                      &env_addr->addr);
                 if (rc != 0)
                     break;
@@ -1477,7 +1589,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             {
                 struct sockaddr *ip4;
 
-                rc = prepare_unicast(AF_INET, env_addr, cfg_nets, &ip4);
+                rc = prepare_unicast(AF_INET, env_addr, addrs, cfg_nets, &ip4);
                 if (rc != 0)
                     break;
 
@@ -1489,7 +1601,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             }
             else if (env_addr->type == TAPI_ENV_ADDR_UNICAST)
             {
-                rc = prepare_unicast(AF_INET6, env_addr, cfg_nets,
+                rc = prepare_unicast(AF_INET6, env_addr, addrs, cfg_nets,
                                      &env_addr->addr);
                 if (rc != 0)
                     break;

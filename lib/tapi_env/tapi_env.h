@@ -318,6 +318,8 @@ typedef enum {
     TAPI_ENV_ADDR_IP4MAPPED_UC,     /**< Unicast IPv4-mapped IPv6 address */
     TAPI_ENV_ADDR_LINKLOCAL,        /**< Link-local IPv6 address */
     TAPI_ENV_ADDR_SITELOCAL,        /**< Site-local IPv6 address */
+    TAPI_ENV_ADDR_EXTERNAL,         /**< IP address visible from outside
+                                         the network */
     TAPI_ENV_ADDR_INVALID,
 } tapi_env_addr_type;
 
@@ -464,6 +466,7 @@ typedef struct tapi_env_addr {
     CIRCLEQ_ENTRY(tapi_env_addr)    links;  /**< Links */
 
     char                   *name;       /**< Name of the address */
+    char                   *source;     /**< Name of the source address */
 
     tapi_env_if            *iface;      /**< Host interface the address
                                              belongs to */
