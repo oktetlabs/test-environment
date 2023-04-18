@@ -869,6 +869,8 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
             break;
         }
 
+        if (env_net->cfg_net->is_virtual)
+            continue;
 
         /*
          * IPv4 prepare
@@ -1058,10 +1060,31 @@ prepare_hosts(tapi_env *env)
         }
 
         /* Get name of the Test Agent */
-        rc = node_value_get_ith_inst_name(
-                 env->cfg_nets.nets[iface->net->i_net].
-                     nodes[iface->i_node].handle,
-                 1, &host->ta);
+        handle = env->cfg_nets.nets[iface->net->i_net].
+                    nodes[iface->i_node].handle;
+        if (env->cfg_nets.nets[iface->net->i_net].is_virtual)
+        {
+            char *l2node;
+
+            type = CVT_STRING;
+            rc = cfg_get_instance(handle, &type, &l2node);
+            if (rc != 0)
+            {
+                ERROR("Failed to extract contents of virtual network node: %r", rc);
+                break;
+            }
+
+            rc = cfg_find_str(l2node, &handle);
+            free(l2node);
+            if (rc != 0)
+            {
+                ERROR("Failed to get instance by handle 0x%x: %r",
+                      handle, rc);
+                break;
+            }
+        }
+
+        rc = node_value_get_ith_inst_name(handle, 1, &host->ta);
         if (rc != 0)
             break;
 
@@ -1106,8 +1129,9 @@ prepare_unicast(unsigned int af, tapi_env_addr *env_addr,
     assert(addr != NULL);
     assert(af == AF_INET || af == AF_INET6);
 
-    if (af == AF_INET ? env_addr->iface->ip4_unicast_used :
-                        env_addr->iface->ip6_unicast_used)
+    if (!cfg_nets->nets[env_addr->iface->net->i_net].is_virtual &&
+        (af == AF_INET ? env_addr->iface->ip4_unicast_used :
+                         env_addr->iface->ip6_unicast_used))
     {
         rc = tapi_env_allocate_addr(env_addr->iface->net,
                                     af, addr, NULL);
@@ -1135,6 +1159,25 @@ prepare_unicast(unsigned int af, tapi_env_addr *env_addr,
         /* Handle of the associated network node */
         handle = cfg_nets->nets[env_addr->iface->net->i_net].
                      nodes[env_addr->iface->i_node].handle;
+
+        if (cfg_nets->nets[env_addr->iface->net->i_net].is_virtual)
+        {
+            val_type = CVT_STRING;
+            rc = cfg_get_instance(handle, &val_type, &node_oid);
+            if (rc != 0)
+            {
+                ERROR("Failed to get value of virtual node: %r", rc);
+                return rc;
+            }
+
+            rc = cfg_find_str(node_oid, &handle);
+            free(node_oid);
+            if (rc != 0)
+            {
+                ERROR("Failed to find handle of node '%s': %r", node_oid, rc);
+                return rc;
+            }
+        }
 
         /* Get address assigned to the node */
         rc = cfg_get_oid_str(handle, &node_oid);
@@ -1906,6 +1949,9 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
         if (p->name == NULL)
             continue;
 
+        if (cfg_nets->nets[p->net->i_net].is_virtual)
+            continue;
+
         if (strcmp(p->name, "lo") != 0)
         {
             cfg_net_node_t *node;
@@ -2262,6 +2308,68 @@ node_value_get_ith_inst_name(cfg_handle node, unsigned int i, char **p_str)
 }
 
 /**
+ * Find the name of TA associated with a network configuration node.
+ *
+ * @param node          Node handle.
+ *
+ * @return Agent name if available, NULL otherwise.
+ */
+static char *
+get_node_ta(cfg_handle node)
+{
+    te_errno    rc;
+    cfg_oid    *oid;
+    char       *ta = NULL;
+    char       *object_name;
+    cfg_handle  object;
+
+    rc = cfg_find_object_by_instance(node, &object);
+    if (rc != 0)
+        return NULL;
+
+    rc = cfg_get_oid(object, &oid);
+    if (rc != 0)
+        return NULL;
+
+    object_name = cfg_oid_object_subid(oid, 1);
+    if (object_name == NULL)
+    {
+        cfg_free_oid(oid);
+        return NULL;
+    }
+
+    if (strcmp(object_name, "agent") == 0)
+    {
+        cfg_free_oid(oid);
+        rc = cfg_get_oid(node, &oid);
+        if (rc == 0)
+            ta = cfg_oid_get_inst_name(oid, 1);
+    }
+    else if (strcmp(object_name, "net") == 0)
+    {
+        char *value;
+        cfg_val_type cvt;
+
+        cvt = CVT_STRING;
+        rc = cfg_get_instance(node, &cvt, &value);
+
+        if (rc == 0)
+        {
+            rc = cfg_find_str(value, &node);
+            free(value);
+        }
+        if (rc == 0)
+            ta = get_node_ta(node);
+    }
+
+    cfg_free_oid(oid);
+
+    if (rc != 0)
+        return NULL;
+    return ta;
+}
+
+/**
  * Compare names of the test agents in OID stored in network
  * configuration nodes.
  *
@@ -2274,16 +2382,15 @@ node_value_get_ith_inst_name(cfg_handle node, unsigned int i, char **p_str)
 static int
 cmp_agent_names(cfg_handle node1, cfg_handle node2)
 {
-    te_errno    rc;
     int         retval;
     char       *agt1;
     char       *agt2;
 
-    rc = node_value_get_ith_inst_name(node1, 1, &agt1);
-    if (rc != 0)
+    agt1 = get_node_ta(node1);
+    if (agt1 == NULL)
         return -1;
-    rc = node_value_get_ith_inst_name(node2, 1, &agt2);
-    if (rc != 0)
+    agt2 = get_node_ta(node2);
+    if (agt2 == NULL)
     {
         free(agt1);
         return -1;

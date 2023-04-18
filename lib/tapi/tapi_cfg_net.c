@@ -32,6 +32,7 @@
 #include "te_errno.h"
 #include "te_stdint.h"
 #include "te_alloc.h"
+#include "te_sockaddr.h"
 #include "te_str.h"
 #include "rcf_api.h"
 #include "logger_api.h"
@@ -90,6 +91,8 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
 {
     te_errno        rc;
     char           *net_oid;
+    cfg_handle     *gateway_handles;
+    unsigned int    n_gateways;
     cfg_handle     *node_handles;
     unsigned int    n_nodes;
     unsigned int    i;
@@ -118,6 +121,62 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
         return TE_RC(TE_TAPI, TE_EFAULT);
     }
 
+    rc = cfg_get_bool(&net->is_virtual, "%s/virtual:", net_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get the virtual instance for network '%s'", net_oid);
+        free(net->name);
+        return rc;
+    }
+
+    rc = cfg_find_pattern_fmt(&n_gateways, &gateway_handles,
+                              "%s/gateway:*", net_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get the gateways for network %s: %r", net_oid, rc);
+        free(net->name);
+        return rc;
+    }
+
+    te_kvpair_init(&net->gateways);
+    for (i = 0; i < n_gateways; i++)
+    {
+        cfg_val_type  cvt = CVT_STRING;
+        char         *target_network = NULL;
+        char         *gateway_node = NULL;
+
+        rc = cfg_get_inst_name(gateway_handles[i], &target_network);
+        if (rc != 0)
+        {
+            ERROR("Failed to get target network of one of the gateways of network %s: %r",
+                  net_oid, rc);
+            free(net->name);
+            te_kvpair_fini(&net->gateways);
+            return rc;
+        }
+
+        rc = cfg_get_instance(gateway_handles[i], &cvt, &gateway_node);
+        if (rc != 0)
+        {
+            ERROR("Failed to read gateway node of one of the gateways of network %s: %r",
+                  net_oid, rc);
+            free(net->name);
+            te_kvpair_fini(&net->gateways);
+            return rc;
+        }
+
+        rc = te_kvpair_add(&net->gateways, target_network, gateway_node);
+        free(target_network);
+        free(gateway_node);
+        if (rc != 0)
+        {
+            ERROR("Failed to add gateway node of network %s: %r", net_oid, rc);
+            free(net->name);
+            te_kvpair_fini(&net->gateways);
+            return rc;
+        }
+    }
+
     /* Find all nodes in this net */
     rc = cfg_find_pattern_fmt(&n_nodes, &node_handles,
                               "%s/node:*", net_oid);
@@ -126,6 +185,7 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
     {
         ERROR("cfg_find_pattern() failed %r", rc);
         free(net->name);
+        te_kvpair_fini(&net->gateways);
         net->name = NULL;
         return rc;
     }
@@ -143,6 +203,7 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
         {
             ERROR("Memory allocation failure");
             free(net->name);
+            te_kvpair_fini(&net->gateways);
             net->name = NULL;
             return rc;
         }
@@ -163,6 +224,7 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
             ERROR("cfg_get_oid_str() failed %r", rc);
             break;
         }
+
         /* Get node type */
         rc = cfg_get_instance_int_fmt(&val, "%s/type:", node_oid);
         free(node_oid);
@@ -1131,7 +1193,8 @@ tapi_cfg_net_node_bind_driver(cfg_net_t *net, cfg_net_node_t *node,
     te_errno rc = 0;
     size_t i;
 
-    UNUSED(net);
+    if (net->is_virtual)
+        return 0;
 
     if (cookie == NULL)
     {
@@ -1673,6 +1736,9 @@ tapi_cfg_net_node_delete_all_ip_addresses(cfg_net_t *net, cfg_net_node_t *node,
     UNUSED(net);
     UNUSED(node);
 
+    if (net->is_virtual)
+        return 0;
+
     if (cookie != NULL && *(te_bool *)cookie)
         ipv6 = TRUE;
 
@@ -2128,6 +2194,9 @@ tapi_cfg_net_all_assign_ip(unsigned int af)
 
     for (i = 0; i < nets.n_nets; ++i)
     {
+        if (nets.nets[i].is_virtual)
+            continue;
+
         rc = tapi_cfg_net_assign_ip(af, nets.nets + i, NULL);
         if (rc != 0)
         {
@@ -2381,6 +2450,495 @@ tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
     }
 
     free(net_oid);
+
+    return rc;
+}
+
+/**
+ * For a given configuration network, find its mask and prefix.
+ *
+ * @param       net         Network descriptor.
+ * @param       af          Mask address family.
+ * @param[out]  mask        Network's mask.
+ * @param[out]  pfx         Network's prefix.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_cfg_net_get_net_mask(cfg_net_t *net, unsigned int af,
+                          struct sockaddr **mask, int32_t *pfx)
+{
+    te_errno         rc;
+    unsigned int     n_nodes;
+    cfg_handle      *node_handles;
+    cfg_val_type     cvt;
+    char            *mask_str;
+    struct sockaddr *mask_tmp;
+
+    rc = cfg_find_pattern_fmt(&n_nodes, &node_handles, "/net:%s/ip%u_subnet:*",
+                              net->name, af == AF_INET ? 4 : 6);
+    if (TE_RC_GET_ERROR(rc) != 0)
+    {
+        ERROR("Failed to find the IPv%u subnet in %s: %r",
+              af == AF_INET ? 4 : 6, net->name, rc);
+        return rc;
+    }
+
+    if (n_nodes != 1)
+    {
+        ERROR("Only one IPv%u subnet is allowed in %s, found %u: %r",
+              af == AF_INET ? 4 : 6, net->name, n_nodes, rc);
+        free(node_handles);
+        return rc;
+    }
+
+    cvt = CVT_ADDRESS;
+    rc = cfg_get_instance(node_handles[0], &cvt, &mask_tmp);
+    free(node_handles);
+    if (rc != 0)
+    {
+        ERROR("Failed to get mask for network '%s': %r", net->name, rc);
+        return rc;
+    }
+
+    rc = te_sockaddr_h2str(mask_tmp, &mask_str);
+    if (rc != 0)
+    {
+        ERROR("Failed to format mask for network '%s': %r", net->name, rc);
+        free(mask_tmp);
+        return rc;
+    }
+
+    rc = cfg_get_int32(pfx, "/net_pool:%s/entry:%s/prefix:",
+                       af == AF_INET ? "ip4" : "ip6",
+                       mask_str);
+    free(mask_str);
+    if (rc != 0)
+    {
+        ERROR("Failed to extract prefix for network '%s': %r", net->name, rc);
+        return rc;
+    }
+
+    *mask = mask_tmp;
+
+    return 0;
+}
+
+/* See description in tapi_cfg_net.h */
+cfg_net_node_t *
+tapi_cfg_net_get_gateway(const cfg_net_t *net_src, const cfg_net_t *net_tgt)
+{
+    te_errno      rc;
+    unsigned int  i;
+    const char   *gateway_name;
+
+    gateway_name = te_kvpairs_get(&net_src->gateways, net_tgt->name);
+    if (gateway_name == NULL)
+        return NULL;
+
+    for (i = 0; i < net_src->n_nodes; i++)
+    {
+        char *node_name;
+
+        rc = cfg_get_inst_name(net_src->nodes[i].handle, &node_name);
+        if (rc != 0)
+        {
+            ERROR("Failed to get instance name of network node with handle 0x%x: %r",
+                  net_src->nodes[i].handle, rc);
+            continue;
+        }
+
+        if (strcmp(node_name, gateway_name) == 0)
+        {
+            free(node_name);
+            return &net_src->nodes[i];
+        }
+
+        free(node_name);
+    }
+
+    return NULL;
+}
+
+/**
+ * Get information associated with a given network node.
+ *
+ * @param       node_handle         Network node.
+ * @param       af                  Address family for the address.
+ * @param[out]  addr                Node's network address.
+ * @param[out]  ta                  On which Test Agent the node is located.
+ * @param[out]  intf                The interface that the node uses.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_cfg_net_get_node_info(cfg_handle node_handle, unsigned int af,
+                           struct sockaddr **addr, char **ta, char **intf)
+{
+    te_errno      rc;
+    char         *node_oid = NULL;
+    cfg_val_type  cvt = CVT_STRING;
+    cfg_oid      *intf_oid = NULL;
+    char         *intf_str = NULL;
+    unsigned int  n_ips;
+    cfg_handle   *ip_hndls = NULL;
+
+    rc = cfg_get_oid_str(node_handle, &node_oid);
+    if (TE_RC_GET_ERROR(rc) != 0)
+    {
+        ERROR("Failed to get OID of network node %u: %r",
+             node_handle, rc);
+        goto cleanup;
+    }
+
+    rc = cfg_get_string(&intf_str, "%s", node_oid);
+    if (TE_RC_GET_ERROR(rc) != 0)
+    {
+        ERROR("Failed to get interface of network node %s: %r",
+              node_oid, rc);
+        goto cleanup;
+    }
+
+    intf_oid = cfg_convert_oid_str(intf_str);
+    if (intf_oid == NULL)
+    {
+        ERROR("Failed to convert OID of network node %u: %r",
+                  node_handle, rc);
+        goto cleanup;
+    }
+
+    if (ta != NULL)
+        *ta = cfg_oid_get_inst_name(intf_oid, 1);
+    if (intf != NULL)
+        *intf = cfg_oid_get_inst_name(intf_oid, 2);
+
+    if (addr != NULL)
+    {
+        rc = cfg_find_pattern_fmt(&n_ips, &ip_hndls, "%s/ip%u_address:*",
+                                  node_oid, af == AF_INET ? 4 : 6);
+        if (TE_RC_GET_ERROR(rc) != 0)
+        {
+            ERROR("Failed to find IPv%u address of network node %s: %r",
+                  af == AF_INET ? 4 : 6, node_oid, rc);
+            goto cleanup;
+        }
+
+        if (n_ips != 1)
+        {
+            ERROR("Node %s has %d IPv%u addresses, unsupported",
+                  node_oid, n_ips, af == AF_INET? 4 : 6);
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+        }
+        else if (n_ips == 1)
+        {
+            cvt = CVT_ADDRESS;
+            rc = cfg_get_instance(ip_hndls[0], &cvt, addr);
+            if (TE_RC_GET_ERROR(rc) != 0)
+            {
+                ERROR("Failed to get IPv%u address of network node %s: %r",
+                      af == AF_INET ? 4 : 6, node_oid, rc);
+            }
+        }
+    }
+
+cleanup:
+    free(ip_hndls);
+    free(intf_str);
+    cfg_free_oid(intf_oid);
+    free(node_oid);
+
+    return rc;
+}
+
+/**
+ * Create routes from one non-virtual network to another.
+ *
+ * @param af            Route address family.
+ * @param net_src       Source network.
+ * @param net_tgt       Target network.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_cfg_net_create_routes_to(unsigned int af, cfg_net_t *net_src, cfg_net_t *net_tgt)
+{
+    te_errno     rc;
+    unsigned int i;
+
+    cfg_net_node_t  *gw_src = NULL;
+    cfg_net_node_t  *gw_tgt = NULL;
+    struct sockaddr *gw_addr = NULL;
+    struct sockaddr *dst_mask = NULL;
+    char            *dst_mask_str = NULL;
+    int32_t          dst_pfx;
+
+    if (net_src->n_nodes == 0 || net_tgt->n_nodes == 0)
+    {
+        WARN("Tried to create routes between networks '%s' and '%s' one of which is empty",
+             net_src->name, net_tgt->name);
+        goto cleanup;
+    }
+
+    rc = tapi_cfg_net_get_net_mask(net_tgt, af, &dst_mask, &dst_pfx);
+    if (rc != 0)
+    {
+        ERROR("Failed to extract mask from network '%s': %r", net_tgt->name, rc);
+        goto cleanup;
+    }
+
+    dst_mask_str = te_ip2str(dst_mask);
+    if (dst_mask_str == NULL)
+    {
+        ERROR("Failed to convert destination mask to string");
+        rc = TE_RC(TE_TAPI, TE_ENOMEM);
+        goto cleanup;
+    }
+
+    gw_src = tapi_cfg_net_get_gateway(net_src, net_tgt);
+    if (gw_src != NULL)
+    {
+        rc = tapi_cfg_net_get_node_info(gw_src->handle, af, &gw_addr,
+                                        NULL, NULL);
+        if (rc != 0)
+        {
+            ERROR("Failed to extract gateway for network '%s': %r", net_src, rc);
+            goto cleanup;
+        }
+    }
+
+    for (i = 0; i < net_src->n_nodes; i++)
+    {
+        char            *ta;
+        char            *intf;
+        struct sockaddr *addr;
+        unsigned int     j;
+        unsigned int     n_routes;
+        cfg_handle      *routes;
+
+        rc = tapi_cfg_net_get_node_info(net_src->nodes[i].handle, af, &addr, &ta,
+                                        &intf);
+        if (rc != 0)
+        {
+            ERROR("Failed to extract node info for node with handle %u: %r",
+                  net_src->nodes[i].handle, rc);
+            break;
+        }
+
+        /*
+         * If target network's gateway is on the same TA as the source network's,
+         * then use target network's gateway interface and source address.
+         */
+        gw_tgt = tapi_cfg_net_get_gateway(net_tgt, net_src);
+        if (&net_src->nodes[i] == gw_src && gw_tgt != NULL)
+        {
+            struct sockaddr *gw_tgt_addr;
+            char            *gw_tgt_ta;
+            char            *gw_tgt_intf;
+
+            rc = tapi_cfg_net_get_node_info(gw_tgt->handle, af, &gw_tgt_addr,
+                                            &gw_tgt_ta, &gw_tgt_intf);
+            if (rc != 0)
+            {
+                ERROR("Failed to extract node info for node with handle %u: %r",
+                      net_src->nodes[i].handle, rc);
+                break;
+            }
+
+            if (strcmp(ta, gw_tgt_ta) == 0)
+            {
+                free(addr);
+                addr = gw_tgt_addr;
+                free(intf);
+                intf = gw_tgt_intf;
+            }
+            else
+            {
+                free(gw_tgt_addr);
+                free(gw_tgt_intf);
+            }
+            free(gw_tgt_ta);
+        }
+
+        rc = cfg_find_pattern_fmt(&n_routes, &routes, "/agent:%s/route:%s|%d*",
+                                  ta, dst_mask_str, dst_pfx);
+        if (TE_RC_GET_ERROR(rc) != 0)
+        {
+            ERROR("Failed to check if route already exists: %r", rc);
+        }
+        for (j = 0; j < n_routes; j++)
+        {
+            rc = tapi_cfg_del_route(&routes[j]);
+            if (rc != 0)
+            {
+                ERROR("Failed to remove old route: %r", rc);
+                free(ta);
+                free(intf);
+                free(addr);
+                free(routes);
+                goto cleanup;
+            }
+        }
+
+        rc = tapi_cfg_add_route(ta, af,
+                        te_sockaddr_get_netaddr(dst_mask), dst_pfx,
+                        i == 0 ? NULL : te_sockaddr_get_netaddr(gw_addr),
+                        intf, NULL,
+                        0, af == AF_INET ? 0 : 1, 0, 0, 0, 0, NULL);
+        free(ta);
+        free(intf);
+        free(addr);
+        free(routes);
+
+        if (rc != 0)
+        {
+            ERROR("Failed to set up routing rule: %r", rc);
+            break;
+        }
+    }
+
+cleanup:
+    free(dst_mask_str);
+    free(dst_mask);
+    free(gw_addr);
+
+    return rc;
+}
+
+/**
+ * Find network with a node that has a given OID.
+ *
+ * @param      nets         All available networks.
+ * @param      oid          OID of a node in the target network.
+ * @param[out] net          Target network.
+ * @param[out] index        Index of target network.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_cfg_net_find_net_by_node_oid(cfg_nets_t *nets, const char *oid,
+                                  cfg_net_t **net, unsigned int *index)
+{
+    char         *net_name;
+    unsigned int  i;
+
+    net_name = cfg_oid_str_get_inst_name(oid, 1);
+    if (net_name == NULL)
+    {
+        ERROR("Failed to extact network name from OID %s", oid);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    for (i = 0; i < nets->n_nets; i++)
+    {
+        if (strcmp(nets->nets[i].name, net_name) == 0)
+        {
+            *net = &nets->nets[i];
+            *index = i;
+            break;
+        }
+    }
+    free(net_name);
+
+    if (i == nets->n_nets)
+        return TE_RC(TE_TAPI, TE_ENOENT);
+    else
+        return 0;
+}
+
+/* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_create_routes(unsigned int af)
+{
+    te_errno      rc = 0;
+    unsigned int  i, j, k;
+    cfg_nets_t    nets;
+    bool         *routed = NULL;
+
+    /* Get testing network configuration in C structures */
+    rc = tapi_cfg_net_get_nets(&nets);
+    if (rc != 0)
+    {
+        ERROR("Failed to get cfg networks: %r", rc);
+        return rc;
+    }
+
+    routed = TE_ALLOC(sizeof(bool) * nets.n_nets * nets.n_nets);
+
+    for (i = 0; i < nets.n_nets; ++i)
+    {
+        cfg_net_t *net = nets.nets + i;
+
+        if (!net->is_virtual)
+            continue;
+
+        for (j = 0; j < net->n_nodes - 1; ++j)
+        {
+            cfg_val_type  type;
+            char         *oid = NULL;
+            cfg_net_t    *net1;
+            unsigned int  net1_ind;
+
+            type = CVT_STRING;
+            rc = cfg_get_instance(net->nodes[j].handle, &type, &oid);
+            if (rc != 0)
+            {
+                ERROR("Failed to extract virtual node content: %r", rc);
+                goto cleanup;
+            }
+
+            rc = tapi_cfg_net_find_net_by_node_oid(&nets, oid, &net1, &net1_ind);
+            free(oid);
+            if (rc != 0)
+            {
+                ERROR("Failed to find network from OID %s", oid);
+                goto cleanup;
+            }
+
+            for (k = j + 1; k < net->n_nodes; ++k)
+            {
+                cfg_net_t *net2;
+                unsigned int net2_ind;
+
+                type = CVT_STRING;
+                rc = cfg_get_instance(net->nodes[k].handle, &type, &oid);
+                if (rc != 0)
+                {
+                    ERROR("Failed to extract virtual node content: %r", rc);
+                    goto cleanup;
+                }
+
+                rc = tapi_cfg_net_find_net_by_node_oid(&nets, oid, &net2,
+                                                       &net2_ind);
+                free(oid);
+                if (rc != 0)
+                {
+                    ERROR("Failed to find network from OID %s", oid);
+                    goto cleanup;
+                }
+
+                if (routed[net1_ind * nets.n_nets + net2_ind])
+                    continue;
+
+                if (strcmp(net1->name, net2->name) != 0)
+                {
+                    routed[net1_ind * nets.n_nets + net2_ind] = TRUE;
+                    routed[net2_ind * nets.n_nets + net1_ind] = TRUE;
+                    rc = tapi_cfg_net_create_routes_to(af, net1, net2);
+                    if (rc == 0)
+                        rc = tapi_cfg_net_create_routes_to(af, net2, net1);
+                }
+
+                if (rc != 0)
+                    break;
+            }
+            if (rc != 0)
+                break;
+        }
+    }
+
+cleanup:
+    free(routed);
+    tapi_cfg_net_free_nets(&nets);
 
     return rc;
 }

@@ -20,6 +20,31 @@
          Root object of the network configuration tree.
          Name: network name
 
+    - oid: "/net/virtual"
+      access: read_write
+      type: bool
+      d: |
+         Whether the network is virtual, false by default.
+
+         Testing environment can be bound to a virtual network to employ nodes
+         from multiple "real" networks without assigning them IP addresses from
+         a common IP subnet.
+
+         To make sure that these nodes can reach each other, networking routes
+         can be installed on each node of all involved "real" networks.
+
+         Name: Empty
+         Value: Boolean value
+
+    - oid: "/net/gateway"
+      access: read_create
+      type: string
+      d: |
+         Network node that needs to be used as the gateway when setting up
+         routing rules for a given target network.
+         Name: Target network
+         Value: Instance name of the gateway node
+
     - oid: "/net/ip4_subnet"
       access: read_create
       type: address
@@ -51,6 +76,10 @@
                 E.g.: /agent:bridge/port:20
                 Note that nodes of type bridge are identified as nodes of
                 type nut.
+
+                For nodes of a virtual network the value is in the following format:
+                /net:<net_name>/node:<node_name>
+                E.g.: /net:net1/node:A
 
     - oid: "/net/node/type"
       access: read_write
