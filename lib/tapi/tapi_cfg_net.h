@@ -14,6 +14,7 @@
 
 #include "conf_api.h"
 #include "tapi_cfg_pci.h"
+#include "te_kvpair.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,7 +56,9 @@ typedef struct cfg_net_node_t {
 /** Net description structure */
 typedef struct cfg_net_t {
     char           *name;       /**< Network instance name */
+    te_bool         is_virtual; /**< Is network virtual? */
     cfg_handle      handle;     /**< Cfg instance handle */
+    te_kvpair_h     gateways;   /**< Gateway nodes */
     unsigned int    n_nodes;    /**< Number of nodes in the net */
     cfg_net_node_t *nodes;      /**< Array with net nodes */
 } cfg_net_t;
@@ -436,6 +439,17 @@ extern int tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
                                           tapi_cfg_net_assigned *assigned);
 
 /**
+ * Get gateway node between two given networks.
+ *
+ * @param       net_src             Source network.
+ * @param       net_tgt             Target network.
+ *
+ * @return Network node.
+ */
+cfg_net_node_t *
+tapi_cfg_net_get_gateway(const cfg_net_t *net_src, const cfg_net_t *net_tgt);
+
+/**
  * Obtain information about subnet address and prefix length.
  *
  * @param assigned    subnet assignments handle
@@ -455,6 +469,15 @@ extern te_errno tapi_cfg_net_assigned_get_subnet_ip(
  * @return Status code (see te_errno.h)
  */
 extern te_errno tapi_cfg_net_delete_all(void);
+
+/**
+ * Create routes within virtual networks.
+ *
+ * @param af            Address family.
+ *
+ * @return Status code (see te_errno.h).
+ */
+extern te_errno tapi_cfg_net_create_routes(unsigned int af);
 
 /**
  * Get PCI devices associated with a network node.
