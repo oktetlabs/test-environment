@@ -189,7 +189,7 @@ static const char *bridge_datapath_types[] = { "system", "netdev", NULL };
 static const char *other_config_types[] = {
     "dpdk-alloc-mem", "dpdk-socket-mem", "dpdk-lcore-mask",
     "dpdk-hugepage-dir", "dpdk-socket-limit", "dpdk-extra", "hw-offload",
-    NULL
+    "tc-policy", NULL
 };
 
 static const char *vlan_types[] = { "trunk", "access", "dot1q-tunnel",
