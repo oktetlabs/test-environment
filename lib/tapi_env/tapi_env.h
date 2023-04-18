@@ -172,6 +172,28 @@
     } while (0)
 
 /**
+ * Get address and assign port from another address. Names of the variables must
+ * match name of the addresses in environment configuration string. Source
+ * address must already be initialized.
+ *
+ * @param      pco_     RPC server to use when checking the port.
+ * @param      src_     Address whose port to use (const struct sockaddr *).
+ * @param[out] addr_    Address (const struct sockaddr *).
+ */
+#define TEST_GET_ADDR_REUSE_PORT(pco_, src_, addr_) \
+    do {                                                     \
+        uint16_t *addr_port_ptr;                             \
+        uint16_t *src_port_ptr;                              \
+        TEST_GET_ADDR_NO_PORT(addr_);                        \
+        addr_port_ptr = te_sockaddr_get_port_ptr(addr_);     \
+        src_port_ptr = te_sockaddr_get_port_ptr(src_);       \
+        if (addr_port_ptr == NULL || src_port_ptr == NULL) { \
+            ERROR("Failed to extract port pointers");        \
+            TEST_STOP;                                       \
+        }                                                    \
+        *addr_port_ptr = *src_port_ptr;                      \
+    } while (0)
+/**
  * Check that the address is fake. Name of the variable must
  * match name of the address in environment configuration string.
  *
