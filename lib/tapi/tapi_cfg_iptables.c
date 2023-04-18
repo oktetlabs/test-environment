@@ -32,10 +32,17 @@
 
 #include "tapi_cfg_iptables.h"
 
+static const char *
+af_str(unsigned int af)
+{
+    return af == AF_INET ? "4" : "6";
+}
+
 /* See description in tapi_cfg_iptables.h */
 te_errno
 tapi_cfg_iptables_chain_set(const char *ta,
                             const char *ifname,
+                            unsigned int af,
                             const char *table,
                             const char *chain,
                             te_bool     enable)
@@ -51,9 +58,9 @@ tapi_cfg_iptables_chain_set(const char *ta,
          ta, ifname, table, chain, enable ? "ON" : "OFF");
 
     rc = cfg_set_instance_fmt(CFG_VAL(INT32, enable),
-                              "/agent:%s/interface:%s/iptables:"
+                              "/agent:%s/interface:%s/iptables:%s"
                               "/table:%s/chain:%s",
-                              ta, ifname, table, chain);
+                              ta, ifname, af_str(af), table, chain);
     if (rc != 0)
     {
         ERROR("Error while executing iptables rule: %r", rc);
@@ -61,8 +68,8 @@ tapi_cfg_iptables_chain_set(const char *ta,
     }
 
     if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s"
-                                  "/iptables:/table:%s",
-                                  ta, ifname, table)) != 0)
+                                  "/iptables:%s/table:%s",
+                                  ta, ifname, af_str(af), table)) != 0)
     {
         ERROR("Error while synchronizing iptables rules on %s Agent, rc=%r",
               ta, rc);
@@ -76,6 +83,7 @@ tapi_cfg_iptables_chain_set(const char *ta,
 te_errno
 tapi_cfg_iptables_chain_add(const char *ta,
                             const char *ifname,
+                            unsigned int af,
                             const char *table,
                             const char *chain,
                             te_bool     enable)
@@ -86,8 +94,8 @@ tapi_cfg_iptables_chain_add(const char *ta,
     INFO("Add/Set iptables chain (TA:%s, ifname:%s, table:%s, chain:%s) %s",
          ta, ifname, table, chain, enable ? "ON" : "OFF");
 
-    if ((rc = cfg_find_fmt(&handle, "/agent:%s/interface:%s/iptables:"
-                           "/table:%s/chain:%s", ta, ifname,
+    if ((rc = cfg_find_fmt(&handle, "/agent:%s/interface:%s/iptables:%s"
+                           "/table:%s/chain:%s", ta, ifname, af_str(af),
                            table, chain)) == 0)
     {
         if ((rc = cfg_set_instance(handle, CFG_VAL(INT32, enable))) != 0)
@@ -98,9 +106,9 @@ tapi_cfg_iptables_chain_add(const char *ta,
         }
     }
     else if ((rc = cfg_add_instance_fmt(&handle, CFG_VAL(INT32, enable),
-                                        "/agent:%s/interface:%s/iptables:"
-                                        "/table:%s/chain:%s",
-                                        ta, ifname, table, chain)) != 0)
+                                        "/agent:%s/interface:%s/iptables:%s"
+                                        "/table:%s/chain:%s", ta, ifname,
+                                        af_str(af), table, chain)) != 0)
     {
         ERROR("Failed to add iptables chain %s for %s table on %s, rc=%r",
               chain, table, ifname, rc);
@@ -108,8 +116,8 @@ tapi_cfg_iptables_chain_add(const char *ta,
     }
 
     if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s"
-                                  "/iptables:/table:%s",
-                                  ta, ifname, table)) != 0)
+                                  "/iptables:%s/table:%s",
+                                  ta, ifname, af_str(af), table)) != 0)
     {
         ERROR("Error while synchronizing iptables rules on %s Agent, rc=%r",
               ta, rc);
@@ -123,6 +131,7 @@ tapi_cfg_iptables_chain_add(const char *ta,
 te_errno
 tapi_cfg_iptables_chain_del(const char *ta,
                             const char *ifname,
+                            unsigned int af,
                             const char *table,
                             const char *chain)
 {
@@ -132,17 +141,17 @@ tapi_cfg_iptables_chain_del(const char *ta,
          ta, ifname, table, chain);
 
     if ((rc = cfg_del_instance_fmt(FALSE,
-                                   "/agent:%s/interface:%s/iptables:"
+                                   "/agent:%s/interface:%s/iptables:%s"
                                    "/table:%s/chain:%s",
-                                   ta, ifname, table, chain)) != 0)
+                                   ta, ifname, af_str(af), table, chain)) != 0)
     {
         ERROR("Failed to delete chain, rc=%r", rc);
         return rc;
     }
 
     if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s"
-                                  "/iptables:/table:%s",
-                                  ta, ifname, table)) != 0)
+                                  "/iptables:%s/table:%s",
+                                  ta, ifname, af_str(af), table)) != 0)
     {
         ERROR("Error while synchronizing iptables rules on %s Agent, rc=%r",
               ta, rc);
@@ -156,6 +165,7 @@ tapi_cfg_iptables_chain_del(const char *ta,
 te_errno
 tapi_cfg_iptables_cmd(const char *ta,
                       const char *ifname,
+                      unsigned int af,
                       const char *table,
                       const char *chain,
                       const char *rule)
@@ -167,25 +177,25 @@ tapi_cfg_iptables_cmd(const char *ta,
          ta, ifname, table, chain, rule);
 
     if ((rc = cfg_find_fmt(&handle, "/agent:%s/interface:%s"
-                           "/iptables:/table:%s/chain:%s",
-                           ta, ifname, table, chain)) != 0)
+                           "/iptables:%s/table:%s/chain:%s",
+                           ta, ifname, af_str(af), table, chain)) != 0)
     {
         ERROR("Chain %s_%s not found, rc=%r", chain, ifname, rc);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, rule),
-                                   "/agent:%s/interface:%s/iptables:"
+                                   "/agent:%s/interface:%s/iptables:%s"
                                    "/table:%s/chain:%s/cmd:",
-                                   ta, ifname, table, chain)) != 0)
+                                   ta, ifname, af_str(af), table, chain)) != 0)
     {
         ERROR("Error while executing iptables rule, rc=%r", rc);
         return rc;
     }
 
     if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s"
-                                  "/iptables:/table:%s/chain:%s",
-                                  ta, ifname, table, chain)) != 0)
+                                  "/iptables:%s/table:%s/chain:%s",
+                                  ta, ifname, af_str(af), table, chain)) != 0)
     {
         ERROR("Error while synchronizing iptables rules on %s Agent, rc=%r",
               ta, rc);
@@ -199,7 +209,7 @@ tapi_cfg_iptables_cmd(const char *ta,
 /* See description in tapi_cfg_iptables.h */
 te_errno
 tapi_cfg_iptables_cmd_fmt(const char *ta, const char *ifname,
-                          const char *table, const char *chain,
+                          unsigned int af, const char *table, const char *chain,
                           const char *rule, ...)
 {
     char    str[TAPI_CFG_IPTABLES_CMD_LEN_MAX];
@@ -223,5 +233,5 @@ tapi_cfg_iptables_cmd_fmt(const char *ta, const char *ifname,
         return TE_RC(TE_TAPI, TE_ESMALLBUF);
     }
 
-    return tapi_cfg_iptables_cmd(ta, ifname, table, chain, str);
+    return tapi_cfg_iptables_cmd(ta, ifname, af, table, chain, str);
 }
