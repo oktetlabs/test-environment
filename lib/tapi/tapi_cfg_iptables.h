@@ -67,6 +67,41 @@ extern te_errno tapi_cfg_iptables_cmd_fmt(const char *ta, const char *ifname,
                                           const char *rule, ...);
 
 /**
+ * Set iptables rules for the specified chain
+ *
+ * @param ta            Test agent name.
+ * @param ifname        Interface name.
+ * @param af            Address family.
+ * @param table         Table to operate with (raw, filter, mangle, nat).
+ * @param chain         Chain name to operate with (without prefix).
+ * @param rules         Rules to add.
+ *
+ * @return              Status of the operation.
+ */
+extern te_errno tapi_cfg_iptables_rules(const char *ta, const char *ifname,
+                                        unsigned int af, const char *table,
+                                        const char *chain, const char *rules);
+
+/**
+ * Set iptables rules for the specified chain. The rules are specified
+ * using a format string with arguments.
+ *
+ * @param ta            Test agent name.
+ * @param ifname        Interface name.
+ * @param af            Address family.
+ * @param table         Table to operate with (raw, filter, mangle, nat).
+ * @param chain         Chain name to operate with (without prefix).
+ * @param rules         Rules to add.
+ *
+ * @return              Status of the operation.
+ */
+extern te_errno tapi_cfg_iptables_rules_fmt(const char *ta, const char *ifname,
+                                            unsigned int af, const char *table,
+                                            const char *chain,
+                                            const char *rules, ...)
+                                          __attribute__((format(printf, 6, 7)));
+
+/**
  * Install or delete jumping rule for the per-interface chain
  *
  * @param ta            - Test agent name
