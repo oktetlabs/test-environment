@@ -70,7 +70,15 @@
       access: read_write
       type: int32
       d: |
-         IP forwarding enabling/disabling.
+         IPv4 forwarding enabling/disabling.
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/ip6_fw"
+      access: read_write
+      type: bool
+      d: |
+         IPv6 forwarding enabling/disabling.
          Name:  empty
          Limit: 1
 
