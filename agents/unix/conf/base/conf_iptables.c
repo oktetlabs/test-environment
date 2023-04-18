@@ -810,7 +810,7 @@ iptables_rules_set(unsigned int  gid, const char *oid,
         len = (p != NULL) ? (p - value) : (int)strlen(value);
         /* prepare format string */
         sprintf(buf, "-A %%s_%%s %%.%ds\n", len);
-        fprintf(fp, buf, ifname, chain, value);
+        fprintf(fp, buf, chain, ifname, value);
 
         if (p != NULL)
             value = p + 1;
