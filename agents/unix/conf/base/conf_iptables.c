@@ -793,7 +793,7 @@ iptables_rules_set(unsigned int  gid, const char *oid,
         return pid;
     }
 
-    if ((fp = fdopen(in_fd, "r")) == NULL)
+    if ((fp = fdopen(in_fd, "w")) == NULL)
     {
         ERROR("failed to get shell command execution result");
         rc = TE_RC(TE_TA_UNIX, TE_EFAULT);
