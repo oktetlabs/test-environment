@@ -19,7 +19,7 @@
       type: none
       d: |
          Root object of iptables rules for the specific interface.
-         Name: empty
+         Name: IP version, 4 or 6
 
     - oid: "/agent/interface/iptables/table"
       access: read_only

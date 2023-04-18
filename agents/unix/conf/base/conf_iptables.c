@@ -41,6 +41,10 @@
 #define IPTABLES_SAVE_TOOL      "PATH=/sbin:/usr/sbin iptables-save"
 #define IPTABLES_RESTORE_TOOL   "PATH=/sbin:/usr/sbin iptables-restore"
 
+#define IP6TABLES_TOOL           "PATH=/sbin:/usr/sbin ip6tables"
+#define IP6TABLES_SAVE_TOOL      "PATH=/sbin:/usr/sbin ip6tables-save"
+#define IP6TABLES_RESTORE_TOOL   "PATH=/sbin:/usr/sbin ip6tables-restore"
+
 /* iptables tool extra options */
 static char iptables_tool_options[RCF_MAX_VAL];
 
@@ -48,9 +52,13 @@ static char iptables_tool_options[RCF_MAX_VAL];
  * Methods
  */
 
+static te_errno iptables_iptables_list(unsigned int, const char *,
+                                       const char *, char **,
+                                       const char *);
+
 static te_errno iptables_table_list(unsigned int, const char *,
                                     const char *, char **,
-                                    const char *);
+                                    const char *, const char *);
 
 static te_errno iptables_chain_get(unsigned int, const char *, char *,
                                    const char *, const char *, const char *,
@@ -117,8 +125,54 @@ RCF_PCH_CFG_NODE_COLLECTION(node_iptables_table, "table",
                             NULL, NULL,
                             iptables_table_list, NULL);
 
-RCF_PCH_CFG_NODE_NA(node_iptables, "iptables",
-                    &node_iptables_table, NULL);
+RCF_PCH_CFG_NODE_COLLECTION(node_iptables, "iptables",
+                            &node_iptables_table, NULL,
+                            NULL, NULL,
+                            iptables_iptables_list, NULL);
+
+/**
+ * Obtain list of supported IP versions.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full parent object instance identifier (unused)
+ * @param sub_id        ID of the object to be listed (unused)
+ * @param list          location for the list pointer
+ * @param ifname        interface name (unused)
+ *
+ * @return              Status code
+ */
+static te_errno
+iptables_iptables_list(unsigned int gid, const char *oid,
+                       const char *sub_id, char **list,
+                       const char *ifname)
+{
+    UNUSED(sub_id);
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ifname);
+
+    *list = strdup("4 6");
+
+    return 0;
+}
+
+static const char *
+iptables_get_tool(const char *ip)
+{
+    return *ip == '4' ? IPTABLES_TOOL : IP6TABLES_TOOL;
+}
+
+static const char *
+iptables_get_save_tool(const char *ip)
+{
+    return *ip == '4' ? IPTABLES_SAVE_TOOL : IP6TABLES_SAVE_TOOL;
+}
+
+static const char *
+iptables_get_restore_tool(const char *ip)
+{
+    return *ip == '4' ? IPTABLES_RESTORE_TOOL : IP6TABLES_RESTORE_TOOL;
+}
 
 /**
  * Get the list of iptables tables available in the system.
@@ -167,7 +221,7 @@ iptables_obtain_table_list(te_string *table_list)
 static te_errno
 iptables_table_list(unsigned int  gid, const char *oid,
                     const char *sub_id, char **list,
-                    const char *ifname)
+                    const char *ifname, const char *ip)
 {
     static te_string table_list = TE_STRING_INIT;
 
@@ -175,9 +229,15 @@ iptables_table_list(unsigned int  gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(ifname);
+    UNUSED(ip);
+
 
     if (table_list.len == 0)
     {
+        /*
+         * Assume that the sets of available tables are the same
+         * for IPv4 and IPv6.
+         */
         te_errno rc = iptables_obtain_table_list(&table_list);
 
         if (rc != 0)
@@ -215,14 +275,15 @@ iptables_is_chain_output(const char *chain)
  * Check if per-interface chain jumping rule is installed.
  *
  * @param ifname        interface name to check chain linked to
+ * @param ip            IP version
  * @param table         table name to check chains in
  * @param chain         chain name to check status of
  *
  * @return              Check status (boolean value)
  */
 static te_bool
-iptables_perif_chain_is_enabled(const char *ifname, const char *table,
-                                const char *chain)
+iptables_perif_chain_is_enabled(const char *ifname, const char *ip,
+                                const char *table, const char *chain)
 {
     FILE    *fp;
     int      out_fd;
@@ -234,10 +295,10 @@ iptables_perif_chain_is_enabled(const char *ifname, const char *table,
     INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
 
     TE_SPRINTF(buf,
-        IPTABLES_TOOL " %s -t %s -S %s_%s | grep '^-A %s -%c %s -j %s_%s'",
-        iptables_tool_options, table, chain, ifname, chain,
-        iptables_is_chain_output(chain) ? 'o' : 'i',
-        ifname, chain, ifname);
+        "%s %s -t %s -S %s_%s | grep '^-A %s -%c %s -j %s_%s'",
+        iptables_get_tool(ip), iptables_tool_options, table, chain, ifname,
+        chain, iptables_is_chain_output(chain) ? 'o' : 'i', ifname,
+        chain, ifname);
     VERB("Invoke: %s", buf);
     if ((pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL)) < 0)
     {
@@ -276,6 +337,7 @@ cleanup:
  */
 static te_errno
 iptables_perif_chain_set(const char *ifname,
+                         const char *ip,
                          const char *table,
                          const char *chain,
                          te_bool enable)
@@ -283,16 +345,17 @@ iptables_perif_chain_set(const char *ifname,
     int  rc;
     char cmd_buf[IPTABLES_CMD_BUF_SIZE];
 
-    INFO("%s(%s, %s, %s, %s) started", __FUNCTION__,
-         ifname, table, chain, enable ? "ON" : "OFF");
+    INFO("%s(%s, %s, %s, %s, %s) started", __FUNCTION__,
+         ifname, ip, table, chain, enable ? "ON" : "OFF");
 
-    if (enable == iptables_perif_chain_is_enabled(ifname, table, chain))
+    if (enable == iptables_perif_chain_is_enabled(ifname, ip, table, chain))
         return 0;
 
     /* Add rule to jump to new chain */
     rc = te_snprintf(cmd_buf, sizeof(cmd_buf),
-                     IPTABLES_TOOL " %s -t %s -%c %s -%c %s -j %s_%s",
-                     iptables_tool_options, table, (enable ? 'I' : 'D'), chain,
+                     "%s %s -t %s -%c %s -%c %s -j %s_%s",
+                     iptables_get_tool(ip), iptables_tool_options, table,
+                     (enable ? 'I' : 'D'), chain,
                      iptables_is_chain_output(chain) ? 'o' : 'i',
                      ifname, chain, ifname);
     if (rc != 0)
@@ -315,7 +378,7 @@ iptables_perif_chain_set(const char *ifname,
  * @param oid           full identifier of the father instance
  * @param value         boolean value, if we should install jumping rule
  * @param ifname        interface name to operate the chain linked to
- * @param dummy         unused value, corresponding to .../iptables: node
+ * @param ip            IP version
  * @param table         table name to operate chains in
  * @param chain         chain name to add (without ifname prefix)
  *
@@ -324,8 +387,7 @@ iptables_perif_chain_set(const char *ifname,
 static te_errno
 iptables_chain_add(unsigned int  gid, const char *oid,
                    const char   *value, const char *ifname,
-                   const char   *dummy, const char   *table,
-                   const char   *chain)
+                   const char   *ip, const char *table, const char *chain)
 {
     char        cmd_buf[IPTABLES_CMD_BUF_SIZE];
     int         enable = atoi(value);
@@ -333,14 +395,14 @@ iptables_chain_add(unsigned int  gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(dummy);
 
-    INFO("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
+    INFO("%s(%s, %s, %s, %s) started", __FUNCTION__, ifname, ip, table, chain);
 
     /* Create new chain first */
     rc = te_snprintf(cmd_buf, sizeof(cmd_buf),
-                     IPTABLES_TOOL " %s -t %s -N %s_%s",
-                     iptables_tool_options, table, chain, ifname);
+                     "%s %s -t %s -N %s_%s",
+                     iptables_get_tool(ip), iptables_tool_options, table,
+                     chain, ifname);
     if (rc != 0)
         return rc;
 
@@ -354,7 +416,7 @@ iptables_chain_add(unsigned int  gid, const char *oid,
 
     if (enable)
     {
-        if ((rc = iptables_perif_chain_set(ifname, table,
+        if ((rc = iptables_perif_chain_set(ifname, ip, table,
                                            chain, TRUE)) != 0)
         {
             ERROR("Failed to add jumping rule for chain %s_%s",
@@ -373,7 +435,7 @@ iptables_chain_add(unsigned int  gid, const char *oid,
  * @param oid           full identifier of the father instance
  * @param value         boolean value, if we should install jumping rule
  * @param ifname        interface name to operate the chain linked to
- * @param dummy         unused value, corresponding to .../iptables: node
+ * @param ip            IP version
  * @param table         table name to operate chains in
  * @param chain         chain name to delete (without ifname prefix)
  *
@@ -381,7 +443,7 @@ iptables_chain_add(unsigned int  gid, const char *oid,
  */
 static te_errno
 iptables_chain_del(unsigned int  gid, const char *oid,
-                   const char   *ifname, const char *dummy,
+                   const char   *ifname, const char *ip,
                    const char   *table, const char *chain)
 {
     char        cmd_buf[IPTABLES_CMD_BUF_SIZE];
@@ -389,14 +451,13 @@ iptables_chain_del(unsigned int  gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(dummy);
 
-    INFO("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
+    INFO("%s(%s, %s, %s, %s) started", __FUNCTION__, ifname, ip, table, chain);
 
     /* Delete jump rule */
-    if (iptables_perif_chain_is_enabled(ifname, table, chain))
+    if (iptables_perif_chain_is_enabled(ifname, ip, table, chain))
     {
-        if ((rc = iptables_perif_chain_set(ifname, table,
+        if ((rc = iptables_perif_chain_set(ifname, ip, table,
                                            chain, FALSE)) != 0)
         {
             ERROR("Failed to remove jumping rule for chain %s_%s, rc=%r",
@@ -407,8 +468,9 @@ iptables_chain_del(unsigned int  gid, const char *oid,
 
     /* Flush chain */
     rc = te_snprintf(cmd_buf, sizeof(cmd_buf),
-                     IPTABLES_TOOL " %s -t %s -F %s_%s",
-                     iptables_tool_options, table, chain, ifname);
+                     "%s %s -t %s -F %s_%s",
+                     iptables_get_tool(ip), iptables_tool_options, table,
+                     chain, ifname);
     if (rc != 0)
         return rc;
 
@@ -422,9 +484,9 @@ iptables_chain_del(unsigned int  gid, const char *oid,
 
     /* Remove all rules which refer to the current chain */
     rc = te_snprintf(cmd_buf, sizeof(cmd_buf),
-                     IPTABLES_SAVE_TOOL " | grep -v -- '-j %s_%s' | "
-                     IPTABLES_RESTORE_TOOL,
-                     chain, ifname);
+                     "%s | grep -v -- '-j %s_%s' | %s",
+                     iptables_get_save_tool(ip), chain, ifname,
+                     iptables_get_restore_tool(ip));
     if (rc != 0)
         return rc;
 
@@ -438,8 +500,9 @@ iptables_chain_del(unsigned int  gid, const char *oid,
 
     /* Delete chain */
     rc = te_snprintf(cmd_buf, sizeof(cmd_buf),
-                     IPTABLES_TOOL " %s -t %s -X %s_%s",
-                     iptables_tool_options, table, chain, ifname);
+                     "%s %s -t %s -X %s_%s",
+                     iptables_get_tool(ip), iptables_tool_options, table,
+                     chain, ifname);
     if (rc != 0)
         return rc;
 
@@ -463,7 +526,7 @@ iptables_chain_del(unsigned int  gid, const char *oid,
  * @param value         boolean value, if the jumping rule should be
  *                      installed (1) or removed (0)
  * @param ifname        interface name to operate the chain linked to
- * @param dummy         unused value, corresponding to .../iptables: node
+ * @param ip            IP version
  * @param table         table name to operate chains in
  * @param chain         chain name (without ifname prefix)
  *
@@ -472,16 +535,15 @@ iptables_chain_del(unsigned int  gid, const char *oid,
 static te_errno
 iptables_chain_set(unsigned int  gid, const char *oid,
                    const char   *value, const char *ifname,
-                   const char   *dummy, const char   *table,
+                   const char   *ip, const char *table,
                    const char   *chain)
 {
     int enable = atoi(value);
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(dummy);
 
-    return iptables_perif_chain_set(ifname, table, chain, enable);
+    return iptables_perif_chain_set(ifname, ip, table, chain, enable);
 }
 
 /**
@@ -491,7 +553,7 @@ iptables_chain_set(unsigned int  gid, const char *oid,
  * @param oid           full identifier of the father instance
  * @param value         location to returned status of jumping rule
  * @param ifname        interface name to operate the chain linked to
- * @param dummy         unused value, corresponding to .../iptables: node
+ * @param ip            IP version
  * @param table         table name to operate chains in
  * @param chain         chain name to check (without ifname prefix)
  *
@@ -500,21 +562,20 @@ iptables_chain_set(unsigned int  gid, const char *oid,
 static te_errno
 iptables_chain_get(unsigned int  gid, const char *oid,
                    char   *value, const char *ifname,
-                   const char *dummy, const char   *table,
+                   const char *ip, const char *table,
                    const char *chain)
 {
     te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(dummy);
 
     rc = te_snprintf(value, RCF_MAX_VAL,
-                     iptables_perif_chain_is_enabled(ifname, table, chain) ?
+                     iptables_perif_chain_is_enabled(ifname, ip, table, chain) ?
                      "1" : "0");
 
-    INFO("%s(): dummy %p, table %p chain %p", __FUNCTION__,
-         dummy, table, chain);
+    INFO("%s(): ip %p, table %p chain %p", __FUNCTION__,
+         ip, table, chain);
 
     return rc;
 }
@@ -546,7 +607,7 @@ chomp(char *buf)
  * @param sub_id        ID of the object to be listed (unused)
  * @param list          location of the chains list
  * @param ifname        interface name to operate the chain linked to
- * @param dummy         unused value, corresponding to .../iptables: node
+ * @param ip            IP version
  * @param table         table name to look for chains in
  *
  * @return              Status code
@@ -554,7 +615,7 @@ chomp(char *buf)
 static te_errno
 iptables_chain_list(unsigned int  gid, const char *oid,
                     const char *sub_id, char **list,
-                    const char *ifname, const char *dummy,
+                    const char *ifname, const char *ip,
                     const char *table)
 {
     int       rc        = 0;
@@ -569,16 +630,17 @@ iptables_chain_list(unsigned int  gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
-    UNUSED(dummy);
 
-    INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
+    INFO("%s started, ifname=%s, ip=%s, table=%s", __FUNCTION__,
+         ifname, ip, table);
 
     *list = NULL;
 
     rc = te_snprintf(buf, sizeof(buf),
-                     IPTABLES_TOOL " %s -t %s -S | grep '^-N .*_%s' | "
+                     "%s %s -t %s -S | grep '^-N .*_%s' | "
                      "sed -e 's/^-N //g' | sed -e 's/_%s$//g'",
-                     iptables_tool_options, table, ifname, ifname);
+                     iptables_get_tool(ip), iptables_tool_options, table,
+                     ifname, ifname);
     if (rc != 0)
         return rc;
 
@@ -647,7 +709,7 @@ extern void **konst_susp_ptr;
  * @param oid           full identifier of the father instance
  * @param value         location for the rules list
  * @param ifname        interface name to operate the chain linked to
- * @param dummy         unused value, corresponding to .../iptables: node
+ * @param ip            IP version
  * @param table         table name to operate with chains in
  * @param chain         chain name to get the list of rules in
  *
@@ -656,7 +718,7 @@ extern void **konst_susp_ptr;
 static te_errno
 iptables_rules_get(unsigned int  gid, const char *oid,
                    char         *value, const char *ifname,
-                   const char   *dummy, const char *table,
+                   const char   *ip, const char *table,
                    const char   *chain)
 {
     int   rc = 0;
@@ -671,7 +733,6 @@ iptables_rules_get(unsigned int  gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(dummy);
 
 #if 0
     fprintf(stderr,"%p:%s(ifname=%s, table=%s, chain=%s) started, "
@@ -679,16 +740,16 @@ iptables_rules_get(unsigned int  gid, const char *oid,
          &iptables_rules_get, __FUNCTION__, ifname, table, chain,
          konst_susp_ptr);
 #endif
-    RING("%s(ifname=%s, table=%s, chain=%s) started",
-         __FUNCTION__, ifname, table, chain);
+    RING("%s(ifname=%s, ip=%s, table=%s, chain=%s) started",
+         __FUNCTION__, ifname, ip, table, chain);
 
     *value = '\0';
 
     rc = te_snprintf(buf, sizeof(buf),
-                     IPTABLES_TOOL " %s -t %s -S %s_%s | "
+                     "%s %s -t %s -S %s_%s | "
                      "grep '^-A %s_%s ' | "
                      "sed -e 's/^-A %s_%s //g'",
-                     iptables_tool_options,
+                     iptables_get_tool(ip), iptables_tool_options,
                      table, chain, ifname, chain, ifname, chain, ifname);
     if (rc != 0)
         return rc;
@@ -744,7 +805,7 @@ cleanup:
  * @param oid           full identifier of the father instance
  * @param value         rules list without chain name and delimited by '|'
  * @param ifname        interface name to operate the chain linked to
- * @param dummy         unused value, corresponding to .../iptables: node
+ * @param ip            IP version
  * @param table         table name to operate with chain in
  * @param chain         chain name to update the list of rules in
  *
@@ -753,7 +814,7 @@ cleanup:
 static te_errno
 iptables_rules_set(unsigned int  gid, const char *oid,
                    const char   *value, const char *ifname,
-                   const char   *dummy, const char *table,
+                   const char   *ip, const char *table,
                    const char   *chain)
 {
     int   rc = 0;
@@ -766,14 +827,15 @@ iptables_rules_set(unsigned int  gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(dummy);
 
-    INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
+    INFO("%s started, ifname=%s, ip=%s, table=%s", __FUNCTION__,
+         ifname, ip, table);
 
     /* Flush the chain */
     rc = te_snprintf(buf, sizeof(buf),
-                     IPTABLES_TOOL " %s -t %s -F %s_%s",
-                     iptables_tool_options, table, chain, ifname);
+                     "%s %s -t %s -F %s_%s",
+                     iptables_get_tool(ip), iptables_tool_options,
+                     table, chain, ifname);
     if (rc != 0)
         return rc;
 
@@ -782,7 +844,7 @@ iptables_rules_set(unsigned int  gid, const char *oid,
 
     /* Open iptables-restore session, do not flush all chains */
     rc = te_snprintf(buf, sizeof(buf),
-                     IPTABLES_RESTORE_TOOL " -n");
+                     "%s -n", iptables_get_restore_tool(ip));
     if (rc != 0)
         return rc;
 
@@ -838,7 +900,7 @@ cleanup:
  * @param value         iptables command to execute, chain name in the
  *                      command should be omitted to avoid ambiguity
  * @param ifname        interface name to operate the chain linked to
- * @param dummy         unused value, corresponding to .../iptables: node
+ * @param ip            IP version
  * @param table         table name to operate with chain in
  * @param chain         chain name to operate with
  *
@@ -847,7 +909,7 @@ cleanup:
 static te_errno
 iptables_cmd_set(unsigned int  gid, const char *oid,
                  const char   *value, const char *ifname,
-                 const char   *dummy, const char *table,
+                 const char   *ip, const char *table,
                  const char   *chain)
 {
     int         rc = 0;
@@ -860,10 +922,9 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(dummy);
 
-    INFO("%s(ifname=%s, table=%s, chain=%s): %s", __FUNCTION__,
-         ifname, table, chain, value);
+    INFO("%s(ifname=%s, ip=%s, table=%s, chain=%s): %s", __FUNCTION__,
+         ifname, ip, table, chain, value);
 
 #define SKIP_SPACES(_p)                                 \
     while (isspace(*(_p))) (_p)++;
@@ -878,8 +939,8 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
      * the parameter @c '-j' without target value. Second substitution takes
      * precedence.
      */
-    rc = te_string_append(&buf, IPTABLES_TOOL " %s -t %s ",
-                          iptables_tool_options, table);
+    rc = te_string_append(&buf, "%s %s -t %s ",
+                          iptables_get_tool(ip), iptables_tool_options, table);
     if (rc)
     {
         te_string_free(&buf);
@@ -985,7 +1046,7 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
  * @param oid           full identifier of the father instance
  * @param value         location to the returned empty value
  * @param ifname        interface name to operate the chain linked to
- * @param dummy         unused value, corresponding to .../iptables: node
+ * @param ip            IP version
  * @param table         table name to operate with chain in
  * @param chain         chain name to operate with
  *
@@ -994,13 +1055,13 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
 static te_errno
 iptables_cmd_get(unsigned int  gid, const char *oid,
                  char   *value, const char *ifname,
-                 const char   *dummy, const char *table,
-                 const char   *chain)
+                 const char   *ip, const char *table,
+                 const char *chain)
 {
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(ifname);
-    UNUSED(dummy);
+    UNUSED(ip);
     UNUSED(table);
     UNUSED(chain);
 

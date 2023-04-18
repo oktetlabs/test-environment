@@ -44,6 +44,7 @@ extern "C" {
  */
 extern te_errno tapi_cfg_iptables_cmd(const char *ta,
                                       const char *ifname,
+                                      unsigned int af,
                                       const char *table,
                                       const char *chain,
                                       const char *rule);
@@ -61,7 +62,8 @@ extern te_errno tapi_cfg_iptables_cmd(const char *ta,
  * @return              Status of the operation
  */
 extern te_errno tapi_cfg_iptables_cmd_fmt(const char *ta, const char *ifname,
-                                          const char *table, const char *chain,
+                                          unsigned int af, const char *table,
+                                          const char *chain,
                                           const char *rule, ...);
 
 /**
@@ -77,6 +79,7 @@ extern te_errno tapi_cfg_iptables_cmd_fmt(const char *ta, const char *ifname,
  */
 extern te_errno tapi_cfg_iptables_chain_set(const char *ta,
                                             const char *ifname,
+                                            unsigned int af,
                                             const char *table,
                                             const char *chain,
                                             te_bool enable);
@@ -94,6 +97,7 @@ extern te_errno tapi_cfg_iptables_chain_set(const char *ta,
  */
 extern te_errno tapi_cfg_iptables_chain_add(const char *ta,
                                             const char *ifname,
+                                            unsigned int af,
                                             const char *table,
                                             const char *chain,
                                             te_bool enable);
@@ -110,6 +114,7 @@ extern te_errno tapi_cfg_iptables_chain_add(const char *ta,
  */
 extern te_errno tapi_cfg_iptables_chain_del(const char *ta,
                                             const char *ifname,
+                                            unsigned int af,
                                             const char *table,
                                             const char *chain);
 

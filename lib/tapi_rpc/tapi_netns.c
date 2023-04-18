@@ -141,20 +141,20 @@ tapi_netns_create_ns_with_net_channel(const char *ta, const char *ns_name,
                                        prefix, FALSE, NULL));
 
     /* iptables -t nat -A POSTROUTING -o ctl_if -j MASQUERADE");*/
-    CHRC(tapi_cfg_iptables_chain_add(ta, veth1, "nat", "NS_MASQUERADE",
+    CHRC(tapi_cfg_iptables_chain_add(ta, veth1, AF_INET, "nat", "NS_MASQUERADE",
                                      FALSE));
-    CHRC(tapi_cfg_iptables_cmd_fmt(ta, veth1, "nat", "NS_MASQUERADE",
+    CHRC(tapi_cfg_iptables_cmd_fmt(ta, veth1, AF_INET, "nat", "NS_MASQUERADE",
                                        "-A POSTROUTING -o %s -j", ctl_if));
-    CHRC(tapi_cfg_iptables_cmd(ta, veth1, "nat",
+    CHRC(tapi_cfg_iptables_cmd(ta, veth1, AF_INET, "nat",
                                    "NS_MASQUERADE", "-A -j MASQUERADE"));
 
     /* iptables -t nat -A PREROUTING -p tcp --dport rcfport -j DNAT
      *          --to-destination addr_str2:rcfport  */
-    CHRC(tapi_cfg_iptables_chain_add(ta, veth1, "nat", "NS_PORT_FW", FALSE));
-    CHRC(tapi_cfg_iptables_cmd_fmt(ta, veth1, "nat", "NS_PORT_FW",
+    CHRC(tapi_cfg_iptables_chain_add(ta, veth1, AF_INET, "nat", "NS_PORT_FW", FALSE));
+    CHRC(tapi_cfg_iptables_cmd_fmt(ta, veth1, AF_INET, "nat", "NS_PORT_FW",
                                    "-A PREROUTING -p tcp --dport %d -j",
                                    rcfport));
-    CHRC(tapi_cfg_iptables_cmd_fmt(ta, veth1, "nat", "NS_PORT_FW",
+    CHRC(tapi_cfg_iptables_cmd_fmt(ta, veth1, AF_INET, "nat", "NS_PORT_FW",
                                    "-A -p tcp -j DNAT --to-destination %s:%d",
                                    addr_str2, rcfport));
 
