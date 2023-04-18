@@ -757,7 +757,7 @@
 
     - oid: "/agent/interface/ring/rx/max"
       access: read_only
-      type: int32
+      type: int64
       d: |
          Advertised maximum for Rx ring size.
 
@@ -766,7 +766,7 @@
 
     - oid: "/agent/interface/ring/rx/current"
       access: read_write
-      type: int32
+      type: int64
       d: |
          Effective Rx ring size.
 
@@ -793,7 +793,7 @@
 
     - oid: "/agent/interface/ring/tx/max"
       access: read_only
-      type: int32
+      type: int64
       d: |
          Advertised maximum for Tx ring size.
 
@@ -802,7 +802,7 @@
 
     - oid: "/agent/interface/ring/tx/current"
       access: read_write
-      type: int32
+      type: int64
       d: |
          Effective Tx ring size.
 

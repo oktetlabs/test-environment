@@ -199,7 +199,7 @@ extern te_errno tapi_cfg_if_flags_get(const char *ta, const char *ifname,
 extern te_errno tapi_cfg_if_get_ring_size(const char *ta,
                                           const char *ifname,
                                           bool is_rx,
-                                          int *ring_size);
+                                          int64_t *ring_size);
 
 /**
  * Get network interface Rx or Tx preset maximum ring size
@@ -214,7 +214,7 @@ extern te_errno tapi_cfg_if_get_ring_size(const char *ta,
 extern te_errno tapi_cfg_if_get_max_ring_size(const char *ta,
                                               const char *ifname,
                                               bool is_rx,
-                                              int *max_ring_size);
+                                              int64_t *max_ring_size);
 
 /**
  * Set GRO value of an ethernet interface
@@ -275,7 +275,7 @@ extern te_errno tapi_cfg_if_flags_set(const char *ta, const char *ifname,
  * @return Status code
  */
 extern te_errno tapi_cfg_if_set_ring_size(const char *ta, const char *ifname,
-                                          bool is_rx, int ring_size);
+                                          bool is_rx, int64_t ring_size);
 
 /**
  * Set network interface Rx or Tx ring size to its maximum
@@ -288,7 +288,7 @@ extern te_errno tapi_cfg_if_set_ring_size(const char *ta, const char *ifname,
  * @return Status code
  */
 extern te_errno tapi_cfg_if_set_ring_size_to_max(const char *ta, const char *ifname,
-                                                 bool is_rx, int *ring_size);
+                                                 bool is_rx, int64_t *ring_size);
 
 /**
  * Reset an ethernet interface

@@ -228,6 +228,29 @@ tapi_cfg_if_common_get(const char *ta, const char *ifname, const char *field,
     return rc;
 }
 
+/**
+ * Get 64bit integer value of an interface field
+ *
+ * @param ta        Test agent name
+ * @param ifname    Interface name
+ * @param field     Field name
+ * @param val       The value location
+ *
+ * @return Status code
+ */
+static te_errno
+tapi_cfg_if_common_get_int64(const char *ta, const char *ifname,
+                             const char *field, int64_t *val)
+{
+    int          rc;
+
+    if ((rc = cfg_get_int64(val, TE_CFG_TA_IF_FMT "/%s:",
+                            ta, ifname, field)) != 0)
+        ERROR("Failed to get %s value: %r", field, rc);
+
+    return rc;
+}
+
 /* See description in the tapi_cfg_if.h */
 te_errno
 tapi_cfg_if_gro_get(const char *ta, const char *ifname, int *gro)
@@ -259,25 +282,25 @@ tapi_cfg_if_flags_get(const char *ta, const char *ifname, int *flags)
 /* See description in the tapi_cfg_if.h */
 te_errno
 tapi_cfg_if_get_ring_size(const char *ta, const char *ifname,
-                          bool is_rx, int *ring_size)
+                          bool is_rx, int64_t *ring_size)
 {
     const char *path;
 
     path = is_rx ? "ring:/rx:/current" : "ring:/tx:/current";
 
-    return tapi_cfg_if_common_get(ta, ifname, path, ring_size);
+    return tapi_cfg_if_common_get_int64(ta, ifname, path, ring_size);
 }
 
 /* See description in the tapi_cfg_if.h */
 te_errno
 tapi_cfg_if_get_max_ring_size(const char *ta, const char *ifname,
-                              bool is_rx, int *max_ring_size)
+                              bool is_rx, int64_t *max_ring_size)
 {
     const char *path;
 
     path = is_rx ? "ring:/rx:/max" : "ring:/tx:/max";
 
-    return tapi_cfg_if_common_get(ta, ifname, path, max_ring_size);
+    return tapi_cfg_if_common_get_int64(ta, ifname, path, max_ring_size);
 }
 
 /**
@@ -297,6 +320,30 @@ tapi_cfg_if_common_set(const char *ta, const char *ifname,
     te_errno rc;
 
     if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *)(intptr_t)val,
+                                   TE_CFG_TA_IF_FMT "/%s:", ta,
+                                   ifname, field)) != 0)
+        ERROR("Failed to set %s value: %r", field, rc);
+
+    return rc;
+}
+
+/**
+ * Set 64bit integer value of an interface field
+ *
+ * @param ta        Test agent name
+ * @param ifname    Interface name
+ * @param field     Field name
+ * @param val       The new value
+ *
+ * @return Status code
+ */
+static te_errno
+tapi_cfg_if_common_set_int64(const char *ta, const char *ifname,
+                             const char *field, int64_t val)
+{
+    te_errno rc;
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INT64, val),
                                    TE_CFG_TA_IF_FMT "/%s:", ta,
                                    ifname, field)) != 0)
         ERROR("Failed to set %s value: %r", field, rc);
@@ -335,23 +382,23 @@ tapi_cfg_if_flags_set(const char *ta, const char *ifname, int flags)
 /* See description in the tapi_cfg_if.h */
 te_errno
 tapi_cfg_if_set_ring_size(const char *ta, const char *ifname,
-                          bool is_rx, int ring_size)
+                          bool is_rx, int64_t ring_size)
 {
     const char *path;
 
     path = is_rx ? "ring:/rx:/current" : "ring:/tx:/current";
 
-    return tapi_cfg_if_common_set(ta, ifname, path, ring_size);
+    return tapi_cfg_if_common_set_int64(ta, ifname, path, ring_size);
 }
 
 /* See description in the tapi_cfg_if.h */
 te_errno
 tapi_cfg_if_set_ring_size_to_max(const char *ta, const char *ifname,
-                                 bool is_rx, int *ring_size)
+                                 bool is_rx, int64_t *ring_size)
 {
     te_errno rc;
-    int cur;
-    int max;
+    int64_t cur;
+    int64_t max;
 
     rc = tapi_cfg_if_get_max_ring_size(ta, ifname, is_rx, &max);
     if (rc != 0)
