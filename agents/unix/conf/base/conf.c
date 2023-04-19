@@ -535,6 +535,11 @@ static te_errno iface_port_id_get(unsigned int, const char *, char *,
 static te_errno iface_port_name_get(unsigned int, const char *, char *,
                                     const char *);
 
+static te_errno switchdev_name_get(unsigned int, const char *, char *,
+                                   const char *);
+static te_errno switchdev_name_list(unsigned int, const char *,
+                                    const char *, char **);
+
 static te_errno interface_list(unsigned int, const char *,
                                const char *, char **);
 
@@ -969,7 +974,11 @@ RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
                             &node_iface_switch_id, &node_arp_ignore_all,
                             NULL, NULL, interface_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_ip4_fw, "ip4_fw", NULL, &node_interface,
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_switchdev_name, "switchdev_name",
+                            NULL, &node_interface,
+                            switchdev_name_get, switchdev_name_list);
+
+RCF_PCH_CFG_NODE_RW(node_ip4_fw, "ip4_fw", NULL, &node_switchdev_name,
                     ip4_fw_get, ip4_fw_set);
 
 RCF_PCH_CFG_NODE_RW(node_ip6_fw, "ip6_fw", NULL, &node_ip4_fw,
@@ -3100,6 +3109,140 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
 #else
     ERROR("This test agent does not support VLANs");
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+}
+
+/**
+ * Get instance value for object "agent/switchdev_name".
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full identifier of the father instance.
+ * @param value         Location for the interface name.
+ * @param id            (switch ID, port name) pair.
+ *
+ * @return              Status code.
+ */
+static te_errno
+switchdev_name_get(unsigned int gid, const char *oid, char *value,
+                   const char *id)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (id == NULL || *id == '\0')
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    char *sep = strchr(id, ':');
+    if (sep == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    char *switch_id = strndup(id, sep - id);
+    char *port_name = strdup(sep + 1);
+
+#ifdef USE_LIBNETCONF
+    {
+        netconf_list       *links;
+        const netconf_node *node;
+
+        links = netconf_link_dump(nh);
+        if (links == NULL)
+            return TE_OS_RC(TE_TA_UNIX, errno);
+
+        for (node = links->head; node != NULL; node = node->next)
+        {
+            const netconf_link *link = &(node->data.link);
+
+            if (link->switch_id != NULL && link->port_name != NULL &&
+                strcmp(link->switch_id, switch_id) == 0 &&
+                strcmp(link->port_name, port_name) == 0)
+            {
+                te_errno rc = 0;
+                size_t   ret;
+
+                ret = te_strlcpy(value, link->ifname, RCF_MAX_VAL);
+                if (ret == RCF_MAX_VAL)
+                {
+                    ERROR("Failed to copy interface's base name");
+                    rc = TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+                }
+
+                free(switch_id);
+                free(port_name);
+                netconf_list_free(links);
+                return rc;
+            }
+        }
+        netconf_list_free(links);
+    }
+
+    free(switch_id);
+    free(port_name);
+
+    ERROR("Failed to find rep for '%s/%s'", switch_id, port_name);
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#else
+    value[0] = '\0';
+
+    return 0;
+#endif
+}
+
+/**
+ * Get instance list for object "agent/switchdev_name".
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full identifier of the father instance.
+ * @param sub_id        ID of the object to be listed (unused).
+ * @param list          Location for the list pointer.
+ *
+ * @return              Status code.
+ */
+static te_errno
+switchdev_name_list(unsigned int gid, const char *oid,
+                    const char *sub_id, char **list)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    te_string buffer = TE_STRING_INIT;
+
+#ifdef USE_LIBNETCONF
+    {
+        netconf_list       *links;
+        const netconf_node *node;
+
+        links = netconf_link_dump(nh);
+        if (links == NULL)
+            return TE_OS_RC(TE_TA_UNIX, errno);
+
+        for (node = links->head; node != NULL; node = node->next)
+        {
+            const netconf_link *link = &(node->data.link);
+
+            if (link->switch_id != NULL && link->port_name != NULL)
+            {
+                te_errno rc;
+
+                rc = te_string_append(&buffer, "%s:%s ", link->switch_id,
+                                      link->port_name);
+                if (rc != 0)
+                {
+                    ERROR("Failed to copy interface's switch_id and port_name");
+                    netconf_list_free(links);
+                    return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+                }
+            }
+        }
+        netconf_list_free(links);
+    }
+
+    *list = buffer.ptr;
+
+    return 0;
+#else
+    value[0] = '\0';
+
+    return 0;
 #endif
 }
 
