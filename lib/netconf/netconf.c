@@ -248,6 +248,29 @@ netconf_dup_rta(const struct rtattr *rta)
     return data;
 }
 
+void *
+netconf_bytes2str_rta(const struct rtattr *rta)
+{
+    unsigned char     *data;
+    char              *out;
+    unsigned int       i;
+    static const char  hex[] = "0123456789abcdef";
+
+    out = TE_ALLOC(RTA_PAYLOAD(rta) * 2 + 1);
+    if (out == NULL)
+        return out;
+
+    data = RTA_DATA(rta);
+    for (i = 0; i < RTA_PAYLOAD(rta); i++)
+    {
+        out[i * 2]     = hex[(data[i] >> 4) & 0xf];
+        out[i * 2 + 1] = hex[ data[i]       & 0xf];
+    }
+    out[i * 2] = '\0';
+
+    return out;
+}
+
 void
 netconf_list_filter(netconf_list *list,
                     netconf_node_filter_t filter,

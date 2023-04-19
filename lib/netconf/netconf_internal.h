@@ -255,6 +255,16 @@ extern uint32_t netconf_get_rta_u32(struct rtattr *rta);
  */
 void *netconf_dup_rta(const struct rtattr *rta);
 
+/**
+ * Duplicate data of rtattr, transforming raw bytes into a readable lowercase
+ * hex string.
+ *
+ * @param rta           Routing atribute.
+ *
+ * @return Address of duplicated data, or NULL in case of error.
+ */
+void *netconf_bytes2str_rta(const struct rtattr *rta);
+
 
 /** Generic callback for attribute processing */
 typedef te_errno (*netconf_attr_cb)(struct nlattr *na, void *cb_data);
