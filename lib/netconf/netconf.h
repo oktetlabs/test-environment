@@ -383,6 +383,38 @@ typedef struct netconf_devlink_param {
     netconf_devlink_param_value values[NETCONF_DEVLINK_PARAM_CMODES];
 } netconf_devlink_param;
 
+typedef enum netconf_devlink_eswitch_mode {
+    NETCONF_DEVLINK_ESWITCH_MODE_LEGACY,    /**< Legacy eswitch mode */
+    NETCONF_DEVLINK_ESWITCH_MODE_SWITCHDEV, /**< Switchdev eswitch mode */
+    /* This should be the last in enum */
+    NETCONF_DEVLINK_ESWITCH_MODE_UNDEF,     /**< Not defined */
+} netconf_devlink_eswitch_mode;
+
+/** Information about device eswitch obtained from devlink */
+typedef struct netconf_devlink_eswitch {
+    netconf_devlink_eswitch_mode mode;
+} netconf_devlink_eswitch;
+
+/**
+ * Get string name of device eswitch mode.
+ *
+ * @param mode          Eswitch mode.
+ *
+ * @return Pointer to statically allocated string.
+ */
+extern const char *netconf_devlink_eswitch_mode_netconf2str(
+                                            netconf_devlink_eswitch_mode mode);
+
+/**
+ * Parse name of device eswitch mode.
+ *
+ * @param mode          Name to parse.
+ *
+ * @return One of the values from netconf_devlink_eswitch_mode.
+ */
+extern netconf_devlink_eswitch_mode netconf_devlink_eswitch_mode_str2netconf(
+                                            const char *mode);
+
 /** Type of nodes in the list */
 typedef enum netconf_node_type {
     NETCONF_NODE_UNSPEC,                /**< Unspecified */
@@ -404,6 +436,8 @@ typedef enum netconf_node_type {
     NETCONF_NODE_DEVLINK_INFO,          /**< Device information obtained
                                              from devlink */
     NETCONF_NODE_DEVLINK_PARAM,         /**< Device parameters data obtained
+                                             from devlink */
+    NETCONF_NODE_DEVLINK_ESWITCH,       /**< Eswitch information obtained
                                              from devlink */
 } netconf_node_type;
 
@@ -429,6 +463,7 @@ typedef struct netconf_node {
 
         netconf_devlink_info     devlink_info;
         netconf_devlink_param    devlink_param;
+        netconf_devlink_eswitch  devlink_eswitch;
     } data;                             /**< Network data */
     struct netconf_node  *next;         /**< Next node of the list */
     struct netconf_node  *prev;         /**< Previous node of the list */
@@ -1113,6 +1148,42 @@ extern te_errno netconf_devlink_get_info(netconf_handle nh,
                                          const char *bus,
                                          const char *dev,
                                          netconf_list **list);
+
+/**
+ * Get device eswitch information from devlink.
+ *
+ * @note @p bus and @p dev should be either both @c NULL (to retrieve
+ *       information about all devices) or not @c NULL (to retrieve
+ *       information about specific device).
+ *
+ * @param nh        Netconf session handle.
+ * @param bus       Bus name.
+ * @param dev       Device name (PCI address for PCI device).
+ * @param list      Where to save pointer to the list of retrieved
+ *                  device data (caller should release it).
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_devlink_get_eswitch(netconf_handle nh,
+                                            const char *bus,
+                                            const char *dev,
+                                            netconf_list **list);
+
+/**
+ * Set eswitch mode for a device via devlink.
+ *
+ * @param nh        Netconf session handle.
+ * @param bus       Bus name.
+ * @param dev       Device name (PCI address for PCI device).
+ * @param mode      Eswitch mode to set.
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_devlink_eswitch_mode_set(
+                            netconf_handle nh,
+                            const char *bus,
+                            const char *dev,
+                            netconf_devlink_eswitch_mode mode);
 
 /**
  * Get list of supported device parameters from devlink.

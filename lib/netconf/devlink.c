@@ -168,6 +168,208 @@ netconf_devlink_get_info(netconf_handle nh, const char *bus,
 
 #endif /* HAVE_DECL_DEVLINK_CMD_INFO_GET */
 
+#if HAVE_DECL_DEVLINK_CMD_ESWITCH_GET
+
+/* Convert native configuration mode to netconf constant */
+static netconf_devlink_param_cmode
+devlink_eswitch_mode_h2netconf(uint16_t val)
+{
+#define CHECK_MODE(_name) \
+    case DEVLINK_ESWITCH_MODE_ ## _name:                 \
+        return NETCONF_DEVLINK_ESWITCH_MODE_ ## _name
+
+    switch (val)
+    {
+        CHECK_MODE(LEGACY);
+        CHECK_MODE(SWITCHDEV);
+
+        default:
+            return NETCONF_DEVLINK_ESWITCH_MODE_UNDEF;
+    }
+#undef CHECK_MODE
+}
+
+/* Process attributes of DEVLINK_CMD_ESWITCH_GET message */
+static te_errno
+eswitch_attr_cb(struct nlattr *na, void *cb_data)
+{
+    netconf_devlink_eswitch *eswitch = cb_data;
+    uint16_t res;
+
+    switch (na->nla_type)
+    {
+        case DEVLINK_ATTR_ESWITCH_MODE:
+            netconf_get_uint16_attr(na, &res);
+            eswitch->mode = devlink_eswitch_mode_h2netconf(res);
+            break;
+    }
+
+    return 0;
+}
+
+/* Process device information message received from netlink */
+static int
+eswitch_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
+{
+    netconf_devlink_eswitch *eswitch;
+    te_errno rc = 0;
+
+    UNUSED(cookie);
+
+    if (netconf_list_extend(list, NETCONF_NODE_DEVLINK_ESWITCH) != 0)
+        return -1;
+
+    eswitch = &(list->tail->data.devlink_eswitch);
+
+    rc = netconf_gn_process_attrs(h, eswitch_attr_cb, eswitch);
+    if (rc != 0)
+        return -1;
+
+    return 0;
+}
+
+/* See description in netconf.h */
+te_errno
+netconf_devlink_get_eswitch(netconf_handle nh, const char *bus,
+                            const char *dev, netconf_list **list)
+{
+    int os_rc;
+    te_errno rc = 0;
+    char req[NETCONF_MAX_REQ_LEN] = { 0, };
+    struct nlmsghdr *h;
+    uint16_t req_flags = NLM_F_REQUEST;
+    netconf_list *list_ptr = NULL;
+
+    if (bus == NULL || dev == NULL)
+    {
+        if (dev != bus)
+        {
+            ERROR("%s(): either specify both bus and dev or none of them",
+                  __FUNCTION__);
+            return TE_EINVAL;
+        }
+
+        req_flags |= NLM_F_DUMP;
+    }
+
+    GET_CHECK_DEVLINK_FAMILY(nh);
+
+    h = (struct nlmsghdr *)req;
+
+    rc = netconf_gn_init_hdrs(req, sizeof(req), devlink_family, req_flags,
+                              DEVLINK_CMD_ESWITCH_GET, DEVLINK_GENL_VERSION,
+                              nh);
+    if (rc != 0)
+        return rc;
+
+    if (bus != NULL)
+    {
+        rc = netconf_append_attr(req, sizeof(req), DEVLINK_ATTR_BUS_NAME,
+                                 bus, strlen(bus) + 1);
+        if (rc != 0)
+            return rc;
+
+        rc = netconf_append_attr(req, sizeof(req), DEVLINK_ATTR_DEV_NAME,
+                                 dev, strlen(dev) + 1);
+        if (rc != 0)
+            return rc;
+    }
+
+    list_ptr = TE_ALLOC(sizeof(*list_ptr));
+    if (list_ptr == NULL)
+        return TE_ENOMEM;
+
+    os_rc = netconf_talk(nh, req, h->nlmsg_len, eswitch_cb, NULL, list_ptr);
+    if (os_rc != 0)
+    {
+        rc = te_rc_os2te(errno);
+        netconf_list_free(list_ptr);
+    }
+    else
+    {
+        *list = list_ptr;
+    }
+
+    return rc;
+}
+
+#endif /* HAVE_DECL_DEVLINK_CMD_ESWITCH_GET */
+
+#if HAVE_DECL_DEVLINK_CMD_ESWITCH_SET
+
+/* Convert native configuration mode from netconf constant */
+static te_errno
+devlink_eswitch_mode_netconf2h(uint8_t mode, uint16_t *val)
+{
+#define CHECK_MODE(_name) \
+    case NETCONF_DEVLINK_ESWITCH_MODE_ ## _name:         \
+        *val = DEVLINK_ESWITCH_MODE_ ## _name;           \
+        break
+
+    switch (mode)
+    {
+        CHECK_MODE(LEGACY);
+        CHECK_MODE(SWITCHDEV);
+
+        default:
+            return TE_ENOENT;
+    }
+
+    return 0;
+#undef CHECK_MODE
+}
+
+/* See description in netconf.h */
+te_errno
+netconf_devlink_eswitch_mode_set(netconf_handle nh, const char *bus,
+                                 const char *dev,
+                                 netconf_devlink_eswitch_mode mode)
+{
+    int os_rc;
+    te_errno rc = 0;
+    char req[NETCONF_MAX_REQ_LEN] = { 0, };
+    struct nlmsghdr *h;
+    uint16_t native_mode;
+
+    GET_CHECK_DEVLINK_FAMILY(nh);
+
+    h = (struct nlmsghdr *)req;
+
+    rc = devlink_eswitch_mode_netconf2h(mode, &native_mode);
+    if (rc != 0)
+        return rc;
+
+    rc = netconf_gn_init_hdrs(req, sizeof(req), devlink_family,
+                              NLM_F_REQUEST | NLM_F_ACK,
+                              DEVLINK_CMD_ESWITCH_SET, DEVLINK_GENL_VERSION,
+                              nh);
+    if (rc != 0)
+        return rc;
+
+    rc = netconf_append_attr(req, sizeof(req), DEVLINK_ATTR_BUS_NAME,
+                             bus, strlen(bus) + 1);
+    if (rc != 0)
+        return rc;
+
+    rc = netconf_append_attr(req, sizeof(req), DEVLINK_ATTR_DEV_NAME,
+                             dev, strlen(dev) + 1);
+    if (rc != 0)
+        return rc;
+
+    rc = netconf_append_attr(req, sizeof(req), DEVLINK_ATTR_ESWITCH_MODE,
+                             &native_mode, sizeof(native_mode));
+    if (rc != 0)
+        return rc;
+
+    os_rc = netconf_talk(nh, req, h->nlmsg_len, NULL, NULL, NULL);
+    if (os_rc != 0)
+        rc = te_rc_os2te(errno);
+
+    return rc;
+}
+
+#endif /* HAVE_DECL_DEVLINK_CMD_ESWITCH_SET */
+
 #if HAVE_DECL_DEVLINK_CMD_PARAM_GET
 
 /*
@@ -793,4 +995,31 @@ netconf_devlink_param_value_data_mv(
 
     memcpy(dst, src, sizeof(*src));
     memset(src, 0, sizeof(*src));
+}
+
+/* See description in netconf.h */
+const char *
+netconf_devlink_eswitch_mode_netconf2str(netconf_devlink_eswitch_mode mode)
+{
+    switch (mode)
+    {
+        case NETCONF_DEVLINK_ESWITCH_MODE_LEGACY:
+            return "legacy";
+        case NETCONF_DEVLINK_ESWITCH_MODE_SWITCHDEV:
+            return "switchdev";
+        default:
+            return "<unknown>";
+    }
+}
+
+/* See description in netconf.h */
+netconf_devlink_eswitch_mode
+netconf_devlink_eswitch_mode_str2netconf(const char *mode)
+{
+    if (strcmp(mode, "legacy") == 0)
+        return NETCONF_DEVLINK_ESWITCH_MODE_LEGACY;
+    else if (strcmp(mode, "switchdev") == 0)
+        return NETCONF_DEVLINK_ESWITCH_MODE_SWITCHDEV;
+
+    return NETCONF_DEVLINK_ESWITCH_MODE_UNDEF;
 }

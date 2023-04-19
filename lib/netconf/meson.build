@@ -62,6 +62,8 @@ if cc.has_header('linux/devlink.h')
     conf_data.set('HAVE_LINUX_DEVLINK_H', 1)
 
     devlink_cmds = [
+        'DEVLINK_CMD_ESWITCH_GET',
+        'DEVLINK_CMD_ESWITCH_SET',
         'DEVLINK_CMD_INFO_GET',
         'DEVLINK_CMD_PARAM_GET',
         'DEVLINK_CMD_PARAM_SET',
