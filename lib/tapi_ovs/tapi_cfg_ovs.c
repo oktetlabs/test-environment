@@ -123,6 +123,186 @@ out:
 }
 
 te_errno
+tapi_cfg_ovs_clear_rules(const char *ta, const char *bridge)
+{
+    te_errno      rc;
+    char         *bridge_name = NULL;
+    unsigned int  i;
+    unsigned int  n_rules;
+    cfg_handle   *rules;
+
+    if (bridge == NULL)
+    {
+        rc = tapi_cfg_ovs_default_bridge(ta, &bridge_name);
+        if (rc != 0)
+        {
+            ERROR("Failed to find default bridge on TA %s: %r", ta, rc);
+            return rc;
+        }
+        bridge = bridge_name;
+    }
+
+    rc = cfg_find_pattern_fmt(&n_rules, &rules,
+                              "/agent:%s/ovs:/bridge:%s/flow:*", ta, bridge);
+    free(bridge_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to find flow rules on TA %s OvS bridge %s: %r",
+              ta, bridge, rc);
+        return rc;
+    }
+
+    for (i = 0; i < n_rules; i++)
+    {
+        rc = cfg_del_instance(rules[i], FALSE);
+        if (rc != 0)
+        {
+            ERROR("Failed to remove flow rule with handle 0x%x: %r",
+                  rules[i], rc);
+            break;
+        }
+    }
+
+    free(rules);
+    return rc;
+}
+
+
+static uint64_t
+allocate_ovs_flow_cookie(const char *ta, const char *bridge)
+{
+    te_errno rc;
+    uint64_t next;
+
+    rc = cfg_get_uint64(&next, "/agent:%s/ovs:/bridge:%s/next_flow_cookie:",
+                        ta, bridge);
+    if (rc != 0)
+    {
+        TE_FATAL_ERROR("Failed to get next flow cookie for TA %s bridge %s: %r",
+                       ta, bridge, rc);
+    }
+
+    rc = cfg_set_instance_fmt(CFG_VAL(UINT64, next + 1),
+                              "/agent:%s/ovs:/bridge:%s/next_flow_cookie:",
+                              ta, bridge);
+    if (rc != 0)
+    {
+        TE_FATAL_ERROR("Failed to set next flow cookie for TA %s bridge %s: %r",
+                       ta, bridge, rc);
+    }
+
+    return next;
+}
+
+te_errno
+tapi_cfg_ovs_add_rule(const char *ta, const char *bridge, uint64_t *cookie,
+                      const char *fmt, ...)
+{
+    te_errno                rc;
+    char                   *bridge_name = NULL;
+    va_list                 va;
+    char                    user_rule[RCF_MAX_VAL];
+    uint64_t                new_cookie;
+
+    if (bridge == NULL)
+    {
+        rc = tapi_cfg_ovs_default_bridge(ta, &bridge_name);
+        if (rc != 0)
+        {
+            ERROR("Failed to find default bridge on TA %s: %r", ta, rc);
+            return rc;
+        }
+        bridge = bridge_name;
+    }
+
+    va_start(va, fmt);
+    rc = te_vsnprintf(user_rule, sizeof(user_rule), fmt, va);
+    va_end(va);
+    if (rc != 0)
+    {
+        ERROR("Failed to format user OvS flow rule: %r", rc);
+        free(bridge_name);
+        return rc;
+    }
+
+    rc = cfg_get_uint64(&new_cookie, "/agent:%s/ovs:/bridge:%s/next_flow_cookie:",
+                        ta, bridge);
+    if (rc != 0)
+    {
+        TE_FATAL_ERROR("Failed to get next flow cookie for TA %s bridge %s: %r",
+                       ta, bridge, rc);
+    }
+
+    new_cookie = allocate_ovs_flow_cookie(ta, bridge);
+
+    rc = cfg_add_instance_fmt(NULL, CVT_STRING, user_rule,
+                              "/agent:%s/ovs:/bridge:%s/flow:0x%"PRIx64,
+                              ta, bridge, new_cookie);
+    free(bridge_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to add OvS flow rule with cookie 0x%"PRIx64" %r",
+              new_cookie, rc);
+        return rc;
+    }
+
+    if (cookie != NULL)
+        *cookie = new_cookie;
+
+    return 0;
+}
+
+te_errno
+tapi_cfg_ovs_flow_rule_get(const char *ta, const char *bridge, uint64_t cookie,
+                           ovs_flow_rule *rule)
+{
+    te_errno  rc;
+    char     *rule_str;
+
+    rc = cfg_get_string(&rule_str, "/agent:%s/ovs:/bridge:%s/flow:0x%"PRIx64,
+                        ta, bridge, cookie);
+    if (rc != 0)
+    {
+        ERROR("Failed to get OvS flow rule: %r", rc);
+        return rc;
+    }
+
+    rc = ovs_flow_rule_parse(rule_str, rule);
+    free(rule_str);
+    if (rc != 0)
+    {
+        ERROR("Failed to parse OvS flow rule: %r", rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+te_errno
+tapi_cfg_ovs_del_rule(const char *ta, const char *bridge, uint64_t cookie)
+{
+    te_errno  rc;
+    char     *bridge_name = NULL;
+
+    if (bridge == NULL)
+    {
+        rc = tapi_cfg_ovs_default_bridge(ta, &bridge_name);
+        if (rc != 0)
+        {
+            ERROR("Failed to find default bridge on TA %s: %r", ta, rc);
+            return rc;
+        }
+        bridge = bridge_name;
+    }
+
+    rc = cfg_del_instance_fmt(FALSE, "/agent:%s/ovs:/bridge:%s/flow:0x%"PRIx64,
+                              ta, bridge, cookie);
+    free(bridge_name);
+
+    return rc;
+}
+
+te_errno
 tapi_cfg_ovs_default_bridge(const char *ta, char **bridge_name)
 {
     te_errno      rc;
