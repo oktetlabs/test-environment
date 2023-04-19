@@ -199,6 +199,26 @@
          Name: ordinal number of a VF
          Value: an OID of a VF
 
+    - oid: "/agent/hardware/pci/device/eswitch"
+      access: read_only
+      type: bool
+      depends:
+        - oid: "/agent/hardware/pci/device/driver"
+      d: |
+         Availability of eswitch interface on a given PCI device
+
+         Name: none
+         Value: 1 if available, 0 otherwise
+
+    - oid: "/agent/hardware/pci/device/eswitch/mode"
+      access: read_write
+      type: string
+      d: |
+         Current eswitch mode
+
+         Name: none
+         Value: eswitch mode ('legacy' or 'switchdev'), empty if not available
+
     - oid: "/agent/hardware/pci/device/param"
       access: read_only
       type: none
