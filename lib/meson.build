@@ -39,6 +39,7 @@ te_common_libs = [
     'rpcxdr',
     'rpc_dpdk',
     'rpc_types',
+    'ovs_flow',
 ]
 
 # Test Engine libraries

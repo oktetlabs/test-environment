@@ -43,6 +43,7 @@
 
 #include "conf_common.h"
 #include "conf_ovs.h"
+#include "ovs_flow_rule.h"
 
 #define OVS_SLEEP_MS_MAX 256
 
@@ -307,6 +308,108 @@ out:
         ta_waitpid(ret, NULL, 0);
 
     te_string_free(&cmd);
+
+    return rc;
+}
+
+typedef te_errno ovs_command_handler(const char *line,
+                                     void       *data);
+
+__attribute__((format(printf, 4, 5)))
+static te_errno
+ovs_command(ovs_ctx_t           *ctx,
+            ovs_command_handler *handler,
+            void                *data,
+            const char          *cmd_fmt,
+                                 ...)
+{
+    te_string  cmd_str = TE_STRING_INIT;
+    te_errno   rc;
+    char      *user_cmd;
+    int        ret;
+    int        out_fd;
+    int        status;
+
+    va_list va;
+
+    va_start(va, cmd_fmt);
+    ret = te_vasprintf(&user_cmd, cmd_fmt, va);
+    va_end(va);
+    if (ret < 0)
+    {
+        ERROR("Failed to format user command");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    rc = te_string_append(&cmd_str, "%s %s", ctx->env.ptr, user_cmd);
+    free(user_cmd);
+    if (rc != 0)
+    {
+        ERROR("Failed to format OvS command: %r", rc);
+        te_string_free(&cmd_str);
+        return rc;
+    }
+
+    ret = te_shell_cmd(cmd_str.ptr, -1,
+                       NULL, (handler != NULL ? &out_fd : NULL), NULL);
+    te_string_free(&cmd_str);
+    if (ret == -1)
+    {
+        ERROR("Failed to invoke OvS command");
+        return TE_RC(TE_TA_UNIX, TE_ECHILD);
+    }
+
+    if (handler != NULL)
+    {
+        FILE   *f;
+        char   *buf = NULL;
+        size_t  buf_size = 0;
+
+        f = fdopen(out_fd, "r");
+        if (f == NULL)
+        {
+            rc = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("Failed to open OvS command output stream: %r", rc);
+            goto out;
+        }
+
+        while (!feof(f))
+        {
+            ssize_t ret;
+
+            ret = getline(&buf, &buf_size, f);
+            if (ret == -1 && !feof(f))
+            {
+                rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
+                ERROR("Failed to read OvS command output stream: %r", rc);
+                break;
+            }
+            else if (ret < 1)
+            {
+                rc = 0;
+                break;
+            }
+
+            if (buf[ret - 1] == '\n')
+                buf[ret - 1] = '\0';
+
+            rc = handler(buf, data);
+            if (rc != 0)
+                break;
+        }
+
+        fclose(f);
+        free(buf);
+    }
+
+out:
+    ta_waitpid(ret, &status, 0);
+    if (status != 0)
+    {
+        ERROR("OvS command returned %d", status);
+        if (rc == 0)
+            rc = TE_OS_RC(TE_TA_UNIX, TE_EFAIL);
+    }
 
     return rc;
 }
@@ -3852,6 +3955,318 @@ ovs_bridge_port_vlan_trunks_del(unsigned int  gid,
     return 0;
 }
 
+static te_errno
+ovs_bridge_flow_add(unsigned int  gid,
+                    const char   *oid,
+                    const char   *value,
+                    const char   *ovs,
+                    const char   *bridge_name,
+                    const char   *cookie)
+{
+    ovs_ctx_t     *ctx;
+    te_errno       rc;
+    ovs_flow_rule  rule;
+    char          *rule_str = NULL;
+    uint64_t       new_cookie;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (strcmp_start("0x", cookie) != 0)
+    {
+        ERROR("OvS flow instance names must start with 0x");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = te_str_to_uint64(cookie, 16, &new_cookie);
+    if (rc != 0)
+    {
+        ERROR("Failed to parse OvS flow cookie: %r", rc);
+        return rc;
+    }
+
+    rc = ovs_flow_rule_parse(value, &rule);
+    if (rc != 0)
+    {
+        ERROR("Failed to parse Open vSwitch flow rule: %r", rc);
+        return rc;
+    }
+
+    if (rule.cookie != 0 && rule.cookie != new_cookie)
+    {
+        ERROR("Cookie specified in flow rule must match the one in instance name");
+        return rc;
+    }
+
+    rule.cookie = new_cookie;
+
+    /*
+     * TE uses cookies to uniquely identify flow rules. However, Open vSwitch
+     * allows multiple rules to share the same cookie. Most hidden flow rules
+     * have their cookie set to 0, which also applies to the "actions=normal"
+     * rule that is set up by default. TE needs to be able to handle this rule,
+     * so it can't simply ignore rules that have 0 for their cookies. The hidden
+     * rules have been observed to be created only in tables other than 0, which
+     * can be used by TE as a filter criterion.
+     */
+    if (rule.cookie == 0 && rule.table != 0)
+    {
+        ERROR("Cookie 0x0 is reserved for table=0 rules");
+        ovs_flow_rule_fini(&rule);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = ovs_bridge_pick(ovs, bridge_name, &ctx, NULL);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the bridge entry");
+        ovs_flow_rule_fini(&rule);
+        return rc;
+    }
+
+    /* Remove metadata fields that cannot be interpreted by ovs-ofctl */
+    rc = ovs_flow_rule_to_ofctl(&rule, &rule_str);
+    ovs_flow_rule_fini(&rule);
+    if (rc != 0)
+        return rc;
+
+    rc = ovs_command(ctx, NULL, NULL,
+                     "ovs-ofctl add-flow %s '%s'",
+                     bridge_name, rule_str);
+    free(rule_str);
+
+    return rc;
+}
+
+static te_errno
+ovs_bridge_flow_del(unsigned int  gid,
+                    const char   *oid,
+                    const char   *ovs,
+                    const char   *bridge_name,
+                    const char   *cookie)
+{
+    ovs_ctx_t    *ctx;
+    te_errno      rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ovs_bridge_pick(ovs, bridge_name, &ctx, NULL);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the bridge entry");
+        return rc;
+    }
+
+    if (strcmp(cookie, "0x0") == 0)
+    {
+        return ovs_command(ctx, NULL, NULL,
+                           "ovs-ofctl del-flows %s cookie=0x0/-1,table=0",
+                           bridge_name);
+    }
+
+    return ovs_command(ctx, NULL, NULL,
+                       "ovs-ofctl del-flows %s 'cookie=%s/-1'",
+                       bridge_name, cookie);
+}
+
+typedef struct flow_get_ctx {
+    uint64_t  cookie;
+    char     *result;
+} flow_get_ctx;
+
+static te_errno
+ovs_bridge_flow_get_handler(const char *line,
+                            void       *data)
+{
+    te_errno       rc;
+    flow_get_ctx  *ctx = data;
+    char          *value = ctx->result;
+    ovs_flow_rule  rule;
+    char          *rule_str;
+    size_t         ret;
+
+    /* Skip lines that are not flows */
+    if (strstr(line, "NXST_FLOW") == line || *line == '\0')
+        return 0;
+
+    rc = ovs_flow_rule_parse(line, &rule);
+    if (rc != 0)
+    {
+        ERROR("Failed to parse Open vSwitch flow rule: %r", rc);
+        return rc;
+    }
+
+    if (rule.cookie == 0 && rule.table != 0)
+        return 0;
+
+    if (rule.cookie != ctx->cookie)
+        return 0;
+
+    if (*value != '\0')
+        return TE_RC(TE_TA_UNIX, TE_ETOOMANY);
+
+    rc = ovs_flow_rule_to_string(&rule, &rule_str);
+    ovs_flow_rule_fini(&rule);
+    if (rc != 0)
+        return rc;
+
+    ret = te_strlcpy(value, rule_str, RCF_MAX_VAL);
+    free(rule_str);
+    if (ret == RCF_MAX_VAL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_flow_get(unsigned int  gid,
+                    const char   *oid,
+                    char         *value,
+                    const char   *ovs,
+                    const char   *bridge_name,
+                    const char   *cookie)
+{
+    ovs_ctx_t    *ctx;
+    te_errno      rc;
+    flow_get_ctx  get_ctx = {
+        .result = value,
+    };
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Getting flow with cookie %s from %s", cookie, bridge_name);
+
+    if (strcmp_start("0x", cookie) != 0)
+    {
+        ERROR("OvS flow instance names must start with 0x");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = te_str_to_uint64(cookie, 16, &get_ctx.cookie);
+    if (rc != 0)
+    {
+        ERROR("Failed to pass flow cookie: %r", rc);
+        return rc;
+    }
+
+    rc = ovs_bridge_pick(ovs, bridge_name, &ctx, NULL);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the bridge entry");
+        return rc;
+    }
+
+    *value = '\0';
+    rc = ovs_command(ctx, ovs_bridge_flow_get_handler, &get_ctx,
+                     "ovs-appctl bridge/dump-flows --offload-stats %s",
+                     bridge_name);
+
+    return rc;
+}
+
+static te_errno
+ovs_bridge_flow_set(unsigned int  gid,
+                    const char   *oid,
+                    const char   *value,
+                    const char   *ovs,
+                    const char   *bridge_name,
+                    const char   *cookie)
+{
+    te_errno rc;
+    te_errno rc_restore;
+    char     old_val[RCF_MAX_VAL];
+
+    rc = ovs_bridge_flow_get(gid, oid, old_val, ovs, bridge_name, cookie);
+    if (rc != 0)
+    {
+        ERROR("Failed to back up old OvS flow rule");
+        return rc;
+    }
+
+    rc = ovs_bridge_flow_del(gid, oid, ovs, bridge_name, cookie);
+    if (rc != 0)
+    {
+        ERROR("Failed to install new OvS flow rule");
+        return rc;
+    }
+
+    rc = ovs_bridge_flow_add(gid, oid, value, ovs, bridge_name, cookie);
+    if (rc != 0)
+    {
+        ERROR("Failed to install new OvS flow rule");
+        rc_restore = ovs_bridge_flow_add(gid, oid, old_val, ovs, bridge_name,
+                                         cookie);
+        if (rc_restore != 0)
+        {
+            ERROR("Failed to restore the old rule");
+            return rc_restore;
+        }
+
+        return rc;
+    }
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_flow_list_handler(const char *line,
+                             void *data)
+{
+    te_string     *result = data;
+    te_errno       rc;
+    ovs_flow_rule  rule;
+
+    /* Skip lines that are not flows */
+    if (strstr(line, "NXST_FLOW") == line || *line == '\0')
+        return 0;
+
+    rc = ovs_flow_rule_parse(line, &rule);
+    if (rc != 0)
+    {
+        ERROR("Failed to parse Open vSwitch flow rule: %r", rc);
+        return rc;
+    }
+
+    if (rule.cookie == 0 && rule.table != 0)
+        return 0;
+
+    return te_string_append(result, "0x%"PRIx64" ", rule.cookie);
+}
+
+static te_errno
+ovs_bridge_flow_list(unsigned int  gid,
+                     const char   *oid,
+                     const char   *sub_id,
+                     char         **list,
+                     const char   *ovs,
+                     const char   *bridge_name)
+{
+    te_string  result = TE_STRING_INIT;
+    ovs_ctx_t *ctx;
+    te_errno   rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    rc = ovs_bridge_pick(ovs, bridge_name, &ctx, NULL);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the bridge entry");
+        return rc;
+    }
+
+    rc = ovs_command(ctx, ovs_bridge_flow_list_handler, &result,
+                     "ovs-appctl bridge/dump-flows --offload-stats %s",
+                     bridge_name);
+
+    *list = result.ptr;
+
+    return rc;
+}
+
 RCF_PCH_CFG_NODE_COLLECTION(node_ovs_bridge_port_vlan_trunks, "trunk",
                             NULL, NULL,
                             ovs_bridge_port_vlan_trunks_add,
@@ -3872,8 +4287,14 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_bridge_port, "port",
                                ovs_bridge_port_add, ovs_bridge_port_del,
                                ovs_bridge_port_list, NULL);
 
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_bridge_flow, "flow",
+                               NULL, &node_ovs_bridge_port,
+                               ovs_bridge_flow_get, ovs_bridge_flow_set,
+                               ovs_bridge_flow_add, ovs_bridge_flow_del,
+                               ovs_bridge_flow_list, NULL);
+
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_bridge, "bridge",
-                               &node_ovs_bridge_port, NULL,
+                               &node_ovs_bridge_flow, NULL,
                                ovs_bridge_get, NULL,
                                ovs_bridge_add, ovs_bridge_del,
                                ovs_bridge_list, NULL);
