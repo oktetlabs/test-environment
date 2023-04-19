@@ -2751,6 +2751,125 @@ out:
 #endif
 }
 
+/* Get PCI device eswitch mode */
+static te_errno
+pci_eswitch_mode_get(unsigned int gid, const char *oid, char *value,
+                     const char *unused1, const char *unused2,
+                     const char *addr_str)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+#ifndef USE_LIBNETCONF
+    UNUSED(addr_str);
+
+    *value = '\0';
+    return 0;
+#else
+    te_errno rc = 0;
+    netconf_list *list = NULL;
+
+    rc = netconf_devlink_get_eswitch(nh_genl, "pci", addr_str, &list);
+    if (rc != 0)
+    {
+        if (rc == TE_ENODEV || rc == TE_ENOENT || rc == TE_EOPNOTSUPP ||
+            rc == TE_EPERM)
+        {
+            *value = '\0';
+            return 0;
+        }
+
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (list->length == 0)
+    {
+        *value = '\0';
+        netconf_list_free(list);
+        return 0;
+    }
+
+    rc = te_snprintf(value, RCF_MAX_VAL, "%s",
+                     netconf_devlink_eswitch_mode_netconf2str(
+                                        list->tail->data.devlink_eswitch.mode));
+    netconf_list_free(list);
+    if (rc != 0)
+    {
+        ERROR("%s(): te_snprintf() failed, rc=%r", __FUNCTION__, rc);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return 0;
+#endif
+}
+
+/* Set PCI device eswitch mode */
+static te_errno
+pci_eswitch_mode_set(unsigned int gid, const char *oid, const char *value,
+                     const char *unused1, const char *unused2,
+                     const char *addr_str)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+#ifndef USE_LIBNETCONF
+    UNUSED(addr_str);
+
+    *value = '\0';
+    return 0;
+#else
+    te_errno rc = 0;
+    netconf_devlink_eswitch_mode mode;
+
+    mode = netconf_devlink_eswitch_mode_str2netconf(value);
+    if (mode == NETCONF_DEVLINK_ESWITCH_MODE_UNDEF)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    rc = netconf_devlink_eswitch_mode_set(nh_genl, "pci", addr_str, mode);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    return 0;
+#endif
+}
+/* Get PCI device eswitch support */
+static te_errno
+pci_eswitch_get(unsigned int gid, const char *oid, char *value,
+                 const char *unused1, const char *unused2,
+                 const char *addr_str)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+#ifndef USE_LIBNETCONF
+    UNUSED(addr_str);
+
+    *value = '\0';
+    return 0;
+#else
+    te_errno rc = 0;
+    netconf_list *list = NULL;
+
+    rc = netconf_devlink_get_eswitch(nh_genl, "pci", addr_str, &list);
+    netconf_list_free(list);
+
+    rc = te_snprintf(value, RCF_MAX_VAL, "%u", (rc == 0) ? 1 : 0);
+    if (rc != 0)
+    {
+        ERROR("%s(): te_snprintf() failed, rc=%r", __FUNCTION__, rc);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return 0;
+#endif
+}
+
 /* List parameter names of a PCI device */
 static te_errno
 pci_param_list(unsigned int gid, const char *oid,
@@ -3343,6 +3462,12 @@ RCF_PCH_CFG_NODE_RO(node_pci_sriov, "sriov",
                     &node_pci_sriov_vf, &node_pci_driver,
                     pci_sriov_get);
 
+RCF_PCH_CFG_NODE_RW(node_pci_eswitch_mode, "mode",
+                    NULL, NULL, pci_eswitch_mode_get, pci_eswitch_mode_set);
+
+RCF_PCH_CFG_NODE_RO(node_pci_eswitch, "eswitch",
+                    &node_pci_eswitch_mode, &node_pci_sriov, pci_eswitch_get);
+
 
 #define PCI_ID_NODE_RO(_name, _field, _fmt, _sibling)                   \
     static te_errno                                                     \
@@ -3370,7 +3495,7 @@ RCF_PCH_CFG_NODE_RO(node_pci_sriov, "sriov",
                         (_sibling),                                     \
                         pci_##_name##_get)
 
-PCI_ID_NODE_RO(class, device_class, "%08x", &node_pci_sriov);
+PCI_ID_NODE_RO(class, device_class, "%08x", &node_pci_eswitch);
 PCI_ID_NODE_RO(subsystem_device, subsystem_device, "%04x", &node_pci_class);
 PCI_ID_NODE_RO(subsystem_vendor, subsystem_vendor, "%04x",
                &node_pci_subsystem_device);
