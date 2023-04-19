@@ -130,6 +130,9 @@ typedef struct netconf_link {
     char               *ifname;         /**< Device name as string */
     char               *info_kind;      /**< Value of IFLA_INFO_KIND
                                              attribute */
+    char               *switch_id;      /**< Switch ID (hex) */
+    char               *port_id;        /**< Port ID (hex) */
+    char               *port_name;      /**< Port name */
     uint32_t            mtu;            /**< MTU of the device */
 } netconf_link;
 

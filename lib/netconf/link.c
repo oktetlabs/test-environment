@@ -58,6 +58,18 @@ link_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
                 link->ifname = netconf_dup_rta(rta);
                 break;
 
+            case IFLA_PHYS_SWITCH_ID:
+                link->switch_id = netconf_bytes2str_rta(rta);
+                break;
+
+            case IFLA_PHYS_PORT_ID:
+                link->port_id = netconf_bytes2str_rta(rta);
+                break;
+
+            case IFLA_PHYS_PORT_NAME:
+                link->port_name = netconf_dup_rta(rta);
+                break;
+
             case IFLA_LINKINFO:
             {
                 struct rtattr *linkinfo[IFLA_INFO_MAX + 1];
@@ -103,6 +115,8 @@ netconf_link_node_free(netconf_node *node)
     free(node->data.link.broadcast);
     free(node->data.link.ifname);
     free(node->data.link.info_kind);
+    free(node->data.link.switch_id);
+    free(node->data.link.port_name);
 
     free(node);
 }
