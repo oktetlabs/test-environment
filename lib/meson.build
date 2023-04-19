@@ -76,6 +76,7 @@ te_engine_libs = [
     'tapi_media',
     'tapi_wifi',
     'tapi_dns',
+    'tapi_ovs',
 ]
 
 # Test Agent libraries
