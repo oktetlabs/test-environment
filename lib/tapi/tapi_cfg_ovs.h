@@ -61,6 +61,18 @@ typedef struct tapi_cfg_ovs_cfg {
 extern te_errno tapi_cfg_ovs_convert_eal_args(int argc, const char *const *argv,
                                               tapi_cfg_ovs_cfg *ovs_cfg);
 
+/**
+ * Find the name of the OvS bridge that's running on the given agent.
+ * This function assumes there is only one bridge. The memory for the name is
+ * allocated by this function and needs to be freed by the user.
+ *
+ * @param[in]  ta       Test Agent name.
+ * @param[out] bridge   Where the bridge name should be stored.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_ovs_default_bridge(const char *ta, char **bridge);
+
 /**@} <!-- END tapi_conf_ovs --> */
 
 #ifdef __cplusplus

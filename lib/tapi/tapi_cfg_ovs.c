@@ -121,3 +121,42 @@ out:
 
     return TE_RC(TE_TAPI, rc);
 }
+
+te_errno
+tapi_cfg_ovs_default_bridge(const char *ta, char **bridge_name)
+{
+    te_errno      rc;
+    cfg_handle   *bridges;
+    unsigned int  n_bridges;
+
+    rc = cfg_find_pattern_fmt(&n_bridges, &bridges,
+                              "/agent:%s/ovs:/bridge:*", ta);
+    if (rc != 0)
+    {
+        ERROR("Failed to find OvS bridges on TA %s: %r", ta, rc);
+        return rc;
+    }
+
+    if (n_bridges == 0)
+    {
+        ERROR("TA %s does not have an OvS bridge", ta);
+        return TE_RC(TE_TAPI, TE_ENOENT);
+    }
+    else if (n_bridges > 1)
+    {
+        ERROR("TA %s has too many OvS bridges (%u)", ta, n_bridges);
+        free(bridges);
+        return TE_RC(TE_TAPI, TE_ETOOMANY);
+    }
+
+    rc = cfg_get_inst_name(bridges[0], bridge_name);
+    free(bridges);
+    if (rc != 0)
+    {
+        ERROR("Failed to extract the name of OvS bridge with handle 0x%x: %r",
+              bridges[0], rc);
+        return rc;
+    }
+
+    return 0;
+}
