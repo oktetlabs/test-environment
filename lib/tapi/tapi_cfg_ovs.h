@@ -42,16 +42,7 @@ typedef enum tapi_cfg_ovs_cfg_type {
  * Configuration entry name. Names correspond to Open vSwitch configuration
  * entries.
  */
-const char *const tapi_cfg_ovs_cfg_name[] = {
-    [TAPI_CFG_OVS_CFG_DPDK_ALLOC_MEM] = TAPI_OVS_OTHER_CFG ":dpdk-alloc-mem",
-    [TAPI_CFG_OVS_CFG_DPDK_SOCKET_MEM] = TAPI_OVS_OTHER_CFG ":dpdk-socket-mem",
-    [TAPI_CFG_OVS_CFG_DPDK_LCORE_MASK] = TAPI_OVS_OTHER_CFG ":dpdk-lcore-mask",
-    [TAPI_CFG_OVS_CFG_DPDK_HUGEPAGE_DIR] =
-        TAPI_OVS_OTHER_CFG ":dpdk-hugepage-dir",
-    [TAPI_CFG_OVS_CFG_DPDK_SOCKET_LIMIT] =
-        TAPI_OVS_OTHER_CFG ":dpdk-socket-limit",
-    [TAPI_CFG_OVS_CFG_DPDK_EXTRA] = TAPI_OVS_OTHER_CFG ":dpdk-extra",
-};
+extern const char *const tapi_cfg_ovs_cfg_name[];
 
 /** Open vSwitch Configuration entry array */
 typedef struct tapi_cfg_ovs_cfg {
