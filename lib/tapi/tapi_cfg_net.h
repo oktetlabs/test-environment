@@ -70,7 +70,9 @@ typedef struct cfg_nets_t {
 typedef struct cfg_net_pci_info_t {
     enum net_node_type  node_type;
     char               *pci_addr;
-    char               *ta_driver;
+    char               *bound_driver;
+    char               *net_driver;
+    char               *dpdk_driver;
 } cfg_net_pci_info_t;
 
 /**

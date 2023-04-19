@@ -1470,14 +1470,25 @@ tapi_cfg_net_node_get_pci_info(cfg_net_t *net, cfg_net_node_t *node,
 
     snprintf(pci_info->pci_addr, 16, "%s:%s:%s.%d", domain, bus, slot, fn);
 
-    agent = CFG_OID_GET_INST_NAME(oid, 1);
-    rc = tapi_cfg_pci_get_ta_driver(agent, NET_DRIVER_TYPE_NET,
-                                    &pci_info->ta_driver);
+    rc = cfg_get_string(&pci_info->bound_driver, "%s/driver:", *pci_oids);
     if (rc != 0)
         goto fail_get_driver;
 
+    agent = CFG_OID_GET_INST_NAME(oid, 1);
+    rc = tapi_cfg_pci_get_ta_driver(agent, NET_DRIVER_TYPE_NET,
+                                    &pci_info->net_driver);
+    if (rc != 0)
+        goto fail_get_net_driver;
+
+    rc = tapi_cfg_pci_get_ta_driver(agent, NET_DRIVER_TYPE_DPDK,
+                                    &pci_info->dpdk_driver);
+    if (rc != 0)
+        goto fail_get_dpdk_driver;
+
     return 0;
 
+fail_get_dpdk_driver:
+fail_get_net_driver:
 fail_get_driver:
     tapi_cfg_net_free_pci_info(pci_info);
 fail_get_fn:
@@ -2613,12 +2624,16 @@ void
 tapi_cfg_net_init_pci_info(cfg_net_pci_info_t *pci_info)
 {
     pci_info->pci_addr = NULL;
-    pci_info->ta_driver = NULL;
+    pci_info->bound_driver = NULL;
+    pci_info->dpdk_driver = NULL;
+    pci_info->net_driver = NULL;
 }
 
 void
 tapi_cfg_net_free_pci_info(cfg_net_pci_info_t *pci_info)
 {
     free(pci_info->pci_addr);
-    free(pci_info->ta_driver);
+    free(pci_info->bound_driver);
+    free(pci_info->net_driver);
+    free(pci_info->dpdk_driver);
 }
