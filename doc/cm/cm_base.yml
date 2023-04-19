@@ -74,6 +74,19 @@
          Name:  empty
          Limit: 1
 
+    - oid: "/agent/switchdev_name"
+      access: read_only
+      type: string
+      # Exclude from the rollback process to avoid timing issues
+      volatile: true
+      depends:
+        - oid: "/agent/hardware/pci/device/driver"
+        - oid: "/agent/hardware/pci/device/sriov/num_vfs"
+      d: |
+        Name of the interface identified by switchid/portname pair.
+        Name: switchid:portname
+        Value: interface name
+
     - oid: "/agent/interface"
       access: read_only
       type: none
@@ -88,6 +101,24 @@
       d: |
          Network interface
          Name: "eth0"-like
+
+    - oid: "/agent/interface/switch_id"
+      access: read_only
+      type: string
+      d: |
+        Switchdev switch ID
+
+    - oid: "/agent/interface/port_id"
+      access: read_only
+      type: string
+      d: |
+        Switchdev port ID
+
+    - oid: "/agent/interface/port_name"
+      access: read_only
+      type: string
+      d: |
+        Switchdev port name
 
     - oid: "/agent/interface/index"
       access: read_only
