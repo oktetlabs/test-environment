@@ -17,6 +17,8 @@
             <iter result="PASSED">
                 <arg name="env"/>
                 <arg name="verbosity" type="verbose_level"/>
+                <arg name="auth_zone_name">example.</arg>
+                <arg name="auth_zone_url">https://example.zonefile</arg>
             </iter>
         </test>
     </iter>

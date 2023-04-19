@@ -26,6 +26,12 @@
             <arg name="verbosity" type="verbose_level">
                 <value>MORE_VERBOSE</value>
             </arg>
+            <arg name="auth_zone_name">
+                <value>example.</value>
+            </arg>
+            <arg name="auth_zone_url">
+                <value>https://example.zonefile</value>
+            </arg>
         </run>
     </session>
 </package>

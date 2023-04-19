@@ -12,7 +12,7 @@
  *
  * @par Test sequence:
  *
-* @author Ivan Khodyrev <Ivan.Khodyrev@oktetlabs.ru>
+ * @author Ivan Khodyrev <Ivan.Khodyrev@oktetlabs.ru>
  */
 
 #ifndef DOXYGEN_TEST_SPEC
@@ -50,6 +50,7 @@
 #include "tapi_env.h"
 #include "tapi_dns_unbound.h"
 #include "tapi_cfg_base.h"
+#include "tapi_dns_zone_file.h"
 
 #include "tapi_file.h"
 #include "tapi_sockaddr.h"
@@ -81,6 +82,8 @@
 #define OPT_SO_RCVBUF 1024
 #define OPT_SO_SNDBUF 1024
 
+#define OPT_AUTH_ZONE_TTL 40
+
 #define START_DNS_UNBOUND_TIMEOUT TE_SEC2MS(1)
 
 static void
@@ -95,6 +98,55 @@ log_file(const char *ta, const char *filename)
 
     RING("%s", buf);
     free(buf);
+}
+
+static char *
+create_zone_file_example(const char *ta)
+{
+    tapi_dns_zone_file_rr resource[4];
+    struct sockaddr_in addr;
+    char *res_path;
+
+    addr.sin_family = AF_INET;
+    inet_aton(OPT_ADDR, &addr.sin_addr);
+
+    resource[0].owner = "example.";
+    resource[0].ttl = TAPI_JOB_OPT_UINT_VAL(OPT_AUTH_ZONE_TTL);
+    resource[0].class = TAPI_DNS_ZONE_FILE_RRC_IN;
+    resource[0].rdata.type = TAPI_DNS_ZONE_FILE_RRT_SOA;
+    resource[0].rdata.u.soa.primary_name_server = "ns.example.";
+    resource[0].rdata.u.soa.hostmaster_email = "hostmaster.example.";
+    resource[0].rdata.u.soa.serial = 20230530;
+    resource[0].rdata.u.soa.refresh = 5;
+    resource[0].rdata.u.soa.retry = 6;
+    resource[0].rdata.u.soa.expire = 7;
+    resource[0].rdata.u.soa.minimum = 8;
+
+    resource[1].owner = "example.";
+    resource[1].ttl = TAPI_JOB_OPT_UINT_VAL(OPT_AUTH_ZONE_TTL);
+    resource[1].class = TAPI_DNS_ZONE_FILE_RRC_IN;
+    resource[1].rdata.type = TAPI_DNS_ZONE_FILE_RRT_NS;
+    resource[1].rdata.u.ns.nsdname = "ns";
+
+    resource[2].owner = "ns";
+    resource[2].ttl = TAPI_JOB_OPT_UINT_VAL(OPT_AUTH_ZONE_TTL);
+    resource[2].class = TAPI_DNS_ZONE_FILE_RRC_IN;
+    resource[2].rdata.type = TAPI_DNS_ZONE_FILE_RRT_A;
+    resource[2].rdata.u.a = (tapi_dns_zone_file_rr_a){
+                                .addr = (struct sockaddr *)&addr
+                            };
+
+    resource[3].owner = "www";
+    resource[3].ttl = TAPI_JOB_OPT_UINT_VAL(OPT_AUTH_ZONE_TTL);
+    resource[3].class = TAPI_DNS_ZONE_FILE_RRC_IN;
+    resource[3].rdata.type = TAPI_DNS_ZONE_FILE_RRT_A;
+    resource[3].rdata.u.a = (tapi_dns_zone_file_rr_a){
+                                .addr = (struct sockaddr *)&addr
+                            };
+
+    tapi_dns_zone_file_create(ta, resource, 4, NULL, NULL, &res_path);
+
+    return res_path;
 }
 
 int
@@ -115,16 +167,23 @@ main(int argc, char **argv)
     tapi_dns_unbound_verbose verbosity;
     const struct sockaddr *addresses[1];
     tapi_dns_unbound_cfg_address address[2];
+    tapi_dns_unbound_cfg_auth_zone auth_zone[2];
     tapi_dns_unbound_cfg_ac access_control;
     char *includes[2];
     te_string include_path = TE_STRING_INIT;
     size_t i = 0;
+
+    char *zone_file = NULL;
+    const char *auth_zone_name;
+    const char *auth_zone_url;
 
     TEST_START;
     TEST_GET_PCO(pco_iut);
     TEST_GET_IF(if_a);
     TEST_GET_VERBOSE_LEVEL_PARAM(verbosity);
     TEST_GET_ADDR(pco_iut, iut_addr);
+    TEST_GET_STRING_PARAM(auth_zone_name);
+    TEST_GET_STRING_PARAM(auth_zone_url);
 
     port = SIN(iut_addr)->sin_port;
 
@@ -135,7 +194,27 @@ main(int argc, char **argv)
     outside_addr.sin_family = AF_INET;
     inet_aton(OPT_OUTSIDE_ADDR, &outside_addr.sin_addr);
 
+    TEST_STEP("Create zone file");
+    zone_file = create_zone_file_example(pco_iut->ta);
+    log_file(pco_iut->ta, zone_file);
+
     TEST_STEP("Create unbound app");
+    auth_zone[0] = (tapi_dns_unbound_cfg_auth_zone){
+                       .name = auth_zone_name,
+                       .primaries.n = 0,
+                       .primary_urls.n = 0,
+                       .zonefile = zone_file,
+                   };
+    auth_zone[1] = (tapi_dns_unbound_cfg_auth_zone){
+                       .name = auth_zone_name,
+                       .primaries.n = 0,
+                       .primary_urls.url = &auth_zone_url,
+                       .primary_urls.n = 1,
+                       .zonefile = NULL,
+                   };
+    cfg_opts.auth_zones.zone = auth_zone;
+    cfg_opts.auth_zones.n = 2;
+
     /* Set interfaces for example. */
     address[0] = (tapi_dns_unbound_cfg_address){ .addr = if_a->if_name };
     address[1] = (tapi_dns_unbound_cfg_address){
@@ -215,10 +294,12 @@ main(int argc, char **argv)
 
 cleanup:
     CLEANUP_CHECK_RC(tapi_dns_unbound_destroy(app));
+    CLEANUP_CHECK_RC(tapi_dns_zone_file_destroy(pco_iut->ta, zone_file));
     tapi_job_factory_destroy(factory);
     free(ta_dir);
     for (i = 0; i  < TE_ARRAY_LEN(includes); i++)
         free(includes[i]);
+    free(zone_file);
 
     TEST_END;
 }
