@@ -528,6 +528,12 @@ static te_errno iface_parent_get(unsigned int, const char *, char *,
                                  const char *);
 static te_errno iface_kind_get(unsigned int, const char *, char *,
                                const char *);
+static te_errno iface_switch_id_get(unsigned int, const char *, char *,
+                                    const char *);
+static te_errno iface_port_id_get(unsigned int, const char *, char *,
+                                  const char *);
+static te_errno iface_port_name_get(unsigned int, const char *, char *,
+                                    const char *);
 
 static te_errno interface_list(unsigned int, const char *,
                                const char *, char **);
@@ -947,8 +953,20 @@ RCF_PCH_CFG_NODE_RO(node_iface_kind, "kind", NULL,
 RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_iface_kind,
                     ifindex_get);
 
+RCF_PCH_CFG_NODE_RO(node_iface_port_name, "port_name",
+                    NULL, &node_ifindex,
+                    iface_port_name_get);
+
+RCF_PCH_CFG_NODE_RO(node_iface_port_id, "port_id",
+                    NULL, &node_iface_port_name,
+                    iface_port_id_get);
+
+RCF_PCH_CFG_NODE_RO(node_iface_switch_id, "switch_id",
+                    NULL, &node_iface_port_id,
+                    iface_switch_id_get);
+
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
-                            &node_ifindex, &node_arp_ignore_all,
+                            &node_iface_switch_id, &node_arp_ignore_all,
                             NULL, NULL, interface_list, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_ip4_fw, "ip4_fw", NULL, &node_interface,
@@ -3374,6 +3392,9 @@ typedef enum {
     IF_PROP_PARENT = 0, /**< Parent interface. */
     IF_PROP_BCAST_ADDR, /**< Broadcast address. */
     IF_PROP_KIND,       /**< Interface kind (vlan, macvlan, ipvlan, etc). */
+    IF_PROP_SWITCH_ID,  /**< Switchdev switch ID */
+    IF_PROP_PORT_ID,    /**< Switchdev port ID */
+    IF_PROP_PORT_NAME,  /**< Switchdev port name */
 } if_property;
 
 /**
@@ -3473,6 +3494,48 @@ iface_get_property_netconf(const char *ifname,
                                   value, RCF_MAX_VAL);
                     break;
 
+                case IF_PROP_SWITCH_ID:
+                    if (link->switch_id != NULL)
+                    {
+                        size_t ret;
+                        ret = te_strlcpy(value, link->switch_id, RCF_MAX_VAL);
+                        if (ret == RCF_MAX_VAL)
+                        {
+                            ERROR("%s(): switch_id was too long",
+                                  __FUNCTION__);
+                            rc = TE_ESMALLBUF;
+                        }
+                    }
+                    break;
+
+                case IF_PROP_PORT_ID:
+                    if (link->port_id != NULL)
+                    {
+                        size_t ret;
+                        ret = te_strlcpy(value, link->port_id, RCF_MAX_VAL);
+                        if (ret == RCF_MAX_VAL)
+                        {
+                            ERROR("%s(): port_id was too long",
+                                  __FUNCTION__);
+                            rc = TE_ESMALLBUF;
+                        }
+                    }
+                    break;
+
+                case IF_PROP_PORT_NAME:
+                    if (link->port_name != NULL)
+                    {
+                        size_t ret;
+                        ret = te_strlcpy(value, link->port_name, RCF_MAX_VAL);
+                        if (ret == RCF_MAX_VAL)
+                        {
+                            ERROR("%s(): port_name was too long",
+                                  __FUNCTION__);
+                            rc = TE_ESMALLBUF;
+                        }
+                    }
+                    break;
+
                 default:
 
                     ERROR("%s(): unknown interface property requested",
@@ -3539,6 +3602,96 @@ get_interface_kind(const char *ifname, char *value)
 
 #ifdef USE_LIBNETCONF
     return iface_get_property_netconf(ifname, value, IF_PROP_KIND);
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Get instance value for object "agent/interface/switch_id".
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full identifier of the father instance (unused).
+ * @param value         Location for the switch ID.
+ * @param ifname        Interface name.
+ *
+ * @return              Status code.
+ */
+static te_errno
+iface_switch_id_get(unsigned int gid, const char *oid, char *value,
+                    const char *ifname)
+{
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    *value = '\0';
+    return iface_get_property_netconf(ifname, value, IF_PROP_SWITCH_ID);
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Get instance value for object "agent/interface/port_id".
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full identifier of the father instance (unused).
+ * @param value         Location for the port id.
+ * @param ifname        Interface name.
+ *
+ * @return              Status code.
+ */
+static te_errno
+iface_port_id_get(unsigned int gid, const char *oid, char *value,
+                  const char *ifname)
+{
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    *value = '\0';
+    return iface_get_property_netconf(ifname, value, IF_PROP_PORT_ID);
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Get instance value for object "agent/interface/port_name".
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full identifier of the father instance (unused).
+ * @param value         Location for the port name.
+ * @param ifname        Interface name.
+ *
+ * @return              Status code.
+ */
+static te_errno
+iface_port_name_get(unsigned int gid, const char *oid, char *value,
+                    const char *ifname)
+{
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    *value = '\0';
+    return iface_get_property_netconf(ifname, value, IF_PROP_PORT_NAME);
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
