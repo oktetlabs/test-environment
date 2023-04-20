@@ -4,6 +4,7 @@
 tests = [
     'prologue',
     'unbound',
+    'zone_file',
 ]
 
 foreach test : tests

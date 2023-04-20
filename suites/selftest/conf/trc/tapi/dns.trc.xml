@@ -21,5 +21,20 @@
                 <arg name="auth_zone_url">https://example.zonefile</arg>
             </iter>
         </test>
+
+        <test name="zone_file" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="domain">example.</arg>
+                <arg name="subdomain">www</arg>
+                <arg name="primary">ns</arg>
+                <arg name="hostmaster">hostmaster</arg>
+                <arg name="addr">127.0.0.1</arg>
+                <arg name="ttl">40</arg>
+                <arg name="expected_zone_file_data"/>
+            </iter>
+        </test>
     </iter>
 </test>

@@ -33,5 +33,37 @@
                 <value>https://example.zonefile</value>
             </arg>
         </run>
+
+        <run>
+            <script name="zone_file"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+            <arg name="domain">
+                <value>example.</value>
+            </arg>
+            <arg name="subdomain">
+                <value>www</value>
+            </arg>
+            <arg name="primary">
+                <value>ns</value>
+            </arg>
+            <arg name="hostmaster">
+                <value>hostmaster</value>
+            </arg>
+            <arg name="ttl">
+                <value>40</value>
+            </arg>
+            <arg name="addr">
+                <value>127.0.0.1</value>
+            </arg>
+            <arg name="expected_zone_file_data">
+                <value>
+                    example. 40 IN SOA ns.example. hostmaster.example. (1234 5 6 7 8)
+                    example. 40 IN NS ns
+                    www 40 IN A 127.0.0.1
+                </value>
+            </arg>
+        </run>
     </session>
 </package>
