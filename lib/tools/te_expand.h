@@ -125,7 +125,7 @@ extern te_errno te_string_expand_parameters(const char *src,
  */
 extern te_errno te_string_expand_env_vars(const char *src,
                                           const char *posargs
-                                          [static TE_EXPAND_MAX_POS_ARGS],
+                                          [TE_EXPAND_MAX_POS_ARGS],
                                           te_string *dest);
 
 
@@ -144,7 +144,7 @@ extern te_errno te_string_expand_env_vars(const char *src,
  */
 extern te_errno te_string_expand_kvpairs(const char *src,
                                          const char *posargs
-                                         [static TE_EXPAND_MAX_POS_ARGS],
+                                         [TE_EXPAND_MAX_POS_ARGS],
                                          const te_kvpair_h *kvpairs,
                                          te_string *dest);
 

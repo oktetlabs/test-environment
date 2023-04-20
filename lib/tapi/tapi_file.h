@@ -225,7 +225,7 @@ extern te_errno tapi_file_copy_ta(const char *ta_src, const char *src,
 extern te_errno tapi_file_expand_kvpairs(const char *ta,
                                          const char *template,
                                          const char *posargs
-                                         [static TE_EXPAND_MAX_POS_ARGS],
+                                         [TE_EXPAND_MAX_POS_ARGS],
                                          const te_kvpair_h *kvpairs,
                                          const char *filename_fmt, ...);
 

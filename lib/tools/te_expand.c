@@ -460,7 +460,7 @@ te_string_expand_parameters(const char *src,
 /* See description in te_expand.h */
 te_errno
 te_string_expand_env_vars(const char *src,
-                          const char *posargs[static TE_EXPAND_MAX_POS_ARGS],
+                          const char *posargs[TE_EXPAND_MAX_POS_ARGS],
                           te_string *dest)
 {
     return te_string_expand_parameters(src, expand_env_value, posargs, dest);
@@ -469,7 +469,7 @@ te_string_expand_env_vars(const char *src,
 /* See description in te_expand.h */
 te_errno
 te_string_expand_kvpairs(const char *src,
-                         const char *posargs[static TE_EXPAND_MAX_POS_ARGS],
+                         const char *posargs[TE_EXPAND_MAX_POS_ARGS],
                          const te_kvpair_h *kvpairs, te_string *dest)
 {
     kvpairs_expand_ctx ctx = {.posargs = posargs, .kvpairs = kvpairs};

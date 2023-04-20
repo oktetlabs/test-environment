@@ -380,7 +380,7 @@ tapi_file_append_ta(const char *ta, const char *filename, const char *fmt, ...)
 
 te_errno
 tapi_file_expand_kvpairs(const char *ta, const char *template,
-                         const char *posargs[static TE_EXPAND_MAX_POS_ARGS],
+                         const char *posargs[TE_EXPAND_MAX_POS_ARGS],
                          const te_kvpair_h *kvpairs,
                          const char *filename_fmt, ...)
 {
