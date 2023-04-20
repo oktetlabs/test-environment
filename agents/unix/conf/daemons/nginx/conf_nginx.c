@@ -26,7 +26,7 @@
 #define NGINX_EXEC_NAME             "nginx"
 
 /** Default timeout of process graceful termination */
-#define NGINX_TIMEOUT_MS 1000
+#define NGINX_TIMEOUT_MS 10000
 
 /** Format string of path to PID file */
 #define NGINX_PID_PATH_FMT          "/tmp/nginx_%s.pid"
