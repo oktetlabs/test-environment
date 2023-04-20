@@ -37,7 +37,7 @@ pipeline {
                     lastStage = env.STAGE_NAME
                 }
                 dir("$TS_RUNDIR") {
-                    sh '${TS_TOPDIR}/run.sh --build-only'
+                    sh '${TS_TOPDIR}/run.sh --cfg=gimli1 --build-only'
                 }
             }
         }
@@ -60,7 +60,7 @@ pipeline {
                                 {
                                     dir("$TS_RUNDIR") {
                                         try {
-                                            sh '${TS_TOPDIR}/run.sh --build-only'
+                                            sh '${TS_TOPDIR}/run.sh --cfg=localhost --build-only'
                                         }
                                         catch (error) {
                                             unstable("Build failed")
