@@ -490,6 +490,90 @@ nginx_inst_restart(nginx_inst *inst)
 }
 
 /**
+ * Attach @p filter to nginx @p channel_id.
+ *
+ * @param[in]  inst         Nginx instance.
+ * @param[in]  filter       Filter name.
+ * @param[in]  channel_id   ID of output channel to attach the filter to.
+ * @param[in]  level        Filter output log level.
+ * @param[out] filter_id    ID of the attached filter.
+ *
+ * @return Status code.
+ */
+static te_errno
+nginx_attach_filter(const nginx_inst *inst, const char *filter,
+                    unsigned int channel_id, unsigned int level,
+                    unsigned int *filter_id)
+{
+    te_errno rc;
+    char filter_name[RCF_MAX_VAL];
+
+    TE_SPRINTF(filter_name, "%s %s", inst->name, filter);
+    rc = ta_job_attach_filter(manager, filter_name, 1, &channel_id,
+                              TRUE, level, filter_id);
+    if (rc != 0)
+    {
+        ERROR("Failed to attach %s filter to NGINX instance '%s': %r",
+              filter, inst->name, rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+/**
+ * Enable nginx logging to stdout and stderr fds.
+ *
+ * @param inst    Nginx instance
+ *
+ * @return Status code.
+ */
+static te_errno
+nginx_enable_logging(nginx_inst *inst)
+{
+    te_errno rc;
+
+    unsigned int channel_ids[2]; /* stdout and stderr channels */
+
+    unsigned int stdout_filter_id;
+    unsigned int stderr_filter_id;
+
+    rc = ta_job_allocate_channels(manager, inst->id, FALSE, 2, channel_ids);
+    if (rc != 0)
+    {
+        ERROR("Failed to allocate output channels for NGINX instance '%s': %r",
+              inst->name, rc);
+        return rc;
+    }
+
+    rc = nginx_attach_filter(inst, "stdout", channel_ids[0],
+                             TE_LL_RING, &stdout_filter_id);
+    if (rc != 0)
+    {
+        ERROR("Failed to enable logging for NGINX instance '%s': %r",
+              inst->name, rc);
+        goto cleanup;
+    }
+
+    rc = nginx_attach_filter(inst, "stderr", channel_ids[1],
+                             TE_LL_RING, &stderr_filter_id);
+    if (rc != 0)
+    {
+        ERROR("Failed to enable logging for NGINX instance '%s': %r",
+              inst->name, rc);
+        ta_job_filter_remove_channels(manager, stdout_filter_id, 1,
+                                      &channel_ids[0]);
+        goto cleanup;
+    }
+
+cleanup:
+    if (rc != 0)
+        ta_job_deallocate_channels(manager, 2, channel_ids);
+
+    return rc;
+}
+
+/**
  * Start nginx daemon with specified configuration file.
  *
  * @param inst    Nginx instance.
@@ -519,6 +603,16 @@ nginx_inst_start(nginx_inst *inst)
     }
 
     inst->is_created = TRUE;
+
+    rc = nginx_enable_logging(inst);
+    if (rc != 0)
+    {
+        rc = TE_RC_UPSTREAM(TE_TA_UNIX, rc);
+        ERROR("Failed to enable logging of TA job corresponding to "
+              "the process '%s', error: %r", inst->name, rc);
+        goto cleanup;
+    }
+
     rc = ta_job_start(manager, inst->id);
     if (rc != 0)
     {
