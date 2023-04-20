@@ -1252,32 +1252,6 @@ persons_info_to_json(const persons_info *persons)
 }
 
 /**
- * Space in the string required for test parameter.
- *
- * @param arg           Test argument
- */
-static size_t
-test_param_space(const test_iter_arg *arg)
-{
-    int    i;
-    size_t extra = 0;
-
-    /*
-     * Calculate the number of extra bytes necessary to escape
-     * quotation marks '"' and back slashes "\":
-     * we need to add an extra back slash for each of these symbols.
-     */
-    for (i = 0; arg->value[i] != '\0'; i++)
-    {
-        if (arg->value[i] == '"' || arg->value[i] == '\\')
-            extra++;
-    }
-
-    return 1 /* space */ + strlen(arg->name) + 1 /* = */ +
-           1 /* " */ + strlen(arg->value) + extra + 1 /* " */ + 1 /* \0 */;
-}
-
-/**
  * Convert test parameters to string representation using te_string.
  * The first symbol is a space, if @p str is not NULL.
  *
@@ -2128,7 +2102,6 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     char        gdb_init[32] = "";
     char        postfix[32] = "";
     char        vg_filename[32] = "";
-    char       *tmp;
     pid_t       pid;
 
     assert(status != NULL);
