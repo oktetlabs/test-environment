@@ -1464,49 +1464,48 @@ wrapper_process_regular_msg(gpointer data, gpointer user_data)
     if (reg_msg_proc != NULL)
     {
         msg = log_msg_read(msg_ptr);
-        if (msg->id != TE_LOG_ID_UNDEFINED)
+
+        if (~msg->level & TE_LL_CONTROL)
         {
-            if (~msg->level & TE_LL_CONTROL)
+            msg->nest_lvl = rgt_ctx.current_nest_lvl;
+        }
+        else
+        {
+            if (strcmp(msg->user, TE_USER_STEP) == 0)
+            {
+                msg->nest_lvl = 0;
+                rgt_ctx.current_nest_lvl = 1;
+            }
+            else if (strcmp(msg->user, TE_USER_SUBSTEP) == 0)
+            {
+                msg->nest_lvl = 1;
+                rgt_ctx.current_nest_lvl = 2;
+            }
+            else if (strcmp(msg->user, TE_USER_STEP_PUSH) == 0)
             {
                 msg->nest_lvl = rgt_ctx.current_nest_lvl;
+                rgt_ctx.current_nest_lvl++;
+            }
+            else if (strcmp(msg->user, TE_USER_STEP_POP) == 0)
+            {
+                rgt_ctx.current_nest_lvl--;
+                msg->nest_lvl = rgt_ctx.current_nest_lvl;
+            }
+            else if (strcmp(msg->user, TE_USER_STEP_NEXT) == 0)
+            {
+                msg->nest_lvl = rgt_ctx.current_nest_lvl - 1;
+            }
+            else if (strcmp(msg->user, TE_USER_STEP_RESET) == 0)
+            {
+                msg_visible = FALSE;
+                rgt_ctx.current_nest_lvl = 0;
             }
             else
             {
-                if (strcmp(msg->user, TE_USER_STEP) == 0)
-                {
-                    msg->nest_lvl = 0;
-                    rgt_ctx.current_nest_lvl = 1;
-                }
-                else if (strcmp(msg->user, TE_USER_SUBSTEP) == 0)
-                {
-                    msg->nest_lvl = 1;
-                    rgt_ctx.current_nest_lvl = 2;
-                }
-                else if (strcmp(msg->user, TE_USER_STEP_PUSH) == 0)
-                {
-                    msg->nest_lvl = rgt_ctx.current_nest_lvl;
-                    rgt_ctx.current_nest_lvl++;
-                }
-                else if (strcmp(msg->user, TE_USER_STEP_POP) == 0)
-                {
-                    rgt_ctx.current_nest_lvl--;
-                    msg->nest_lvl = rgt_ctx.current_nest_lvl;
-                }
-                else if (strcmp(msg->user, TE_USER_STEP_NEXT) == 0)
-                {
-                    msg->nest_lvl = rgt_ctx.current_nest_lvl - 1;
-                }
-                else if (strcmp(msg->user, TE_USER_STEP_RESET) == 0)
-                {
-                    msg_visible = FALSE;
-                    rgt_ctx.current_nest_lvl = 0;
-                }
-                else
-                {
-                    msg->nest_lvl = rgt_ctx.current_nest_lvl;
-                }
+                msg->nest_lvl = rgt_ctx.current_nest_lvl;
             }
         }
+
         if (msg_visible)
             reg_msg_proc(msg);
         free_log_msg(msg);
