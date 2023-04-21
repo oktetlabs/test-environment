@@ -20,6 +20,12 @@ test_deps = [
     dependency('threads'),
 ]
 
+# The line below would produce empty dependencies on systems
+# having no tirpc - it is not a problem.
+dep_tirpc = dependency('libtirpc', required: false)
+
+test_deps += [ dep_tirpc ]
+
 te_libs = [
     'rcfapi',
     'conf_oid',
