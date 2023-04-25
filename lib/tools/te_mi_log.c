@@ -27,11 +27,10 @@
 #include "tq_string.h"
 #include "te_mi_log.h"
 #include "te_vector.h"
+#include "te_json.h"
 #include "math.h"
 
 #define TE_MI_LOG_VERSION 1
-
-#define TE_MI_STR_FMT "\"%s\""
 
 typedef struct te_mi_meas_value {
     TAILQ_ENTRY(te_mi_meas_value) next;
@@ -126,67 +125,70 @@ static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
     [TE_MI_MEAS_IOPS] = TE_MI_MEAS_BASE_UNIT_IOPS,
 };
 
-static const char *meas_base_unit_names[] = {
-    [TE_MI_MEAS_BASE_UNITLESS] = "",
-    [TE_MI_MEAS_BASE_UNIT_PPS] = "pps",
-    [TE_MI_MEAS_BASE_UNIT_SECOND] = "second",
-    [TE_MI_MEAS_BASE_UNIT_BPS] =  "bps",
-    [TE_MI_MEAS_BASE_UNIT_CELSIUS] = "degrees celsius",
-    [TE_MI_MEAS_BASE_UNIT_RPS] = "rps",
-    [TE_MI_MEAS_BASE_UNIT_HZ] = "Hz",
-    [TE_MI_MEAS_BASE_UNIT_IOPS] = "iops",
+static const te_enum_map meas_base_unit_names[] = {
+    {.value = TE_MI_MEAS_BASE_UNITLESS, .name = ""},
+    {.value = TE_MI_MEAS_BASE_UNIT_PPS, .name = "pps"},
+    {.value = TE_MI_MEAS_BASE_UNIT_SECOND, .name = "second"},
+    {.value = TE_MI_MEAS_BASE_UNIT_BPS, .name = "bps"},
+    {.value = TE_MI_MEAS_BASE_UNIT_CELSIUS, .name = "degrees celsius"},
+    {.value = TE_MI_MEAS_BASE_UNIT_RPS, .name = "rps"},
+    {.value = TE_MI_MEAS_BASE_UNIT_HZ, .name = "Hz"},
+    {.value = TE_MI_MEAS_BASE_UNIT_IOPS, .name = "iops"},
+    TE_ENUM_MAP_END
 };
 
-static const char *mi_type_names[] = {
-   [TE_MI_TYPE_MEASUREMENT] = "measurement",
+static const te_enum_map mi_type_names[] = {
+   {.value = TE_MI_TYPE_MEASUREMENT, .name = "measurement"},
+   TE_ENUM_MAP_END
 };
 
-static const char *meas_aggr_names[] = {
-    [TE_MI_MEAS_AGGR_SINGLE] = "single",
-    [TE_MI_MEAS_AGGR_MIN] = "min",
-    [TE_MI_MEAS_AGGR_MAX] = "max",
-    [TE_MI_MEAS_AGGR_MEAN] = "mean",
-    [TE_MI_MEAS_AGGR_MEDIAN] = "median",
-    [TE_MI_MEAS_AGGR_CV] = "cv",
-    [TE_MI_MEAS_AGGR_STDEV] = "stdev",
-    [TE_MI_MEAS_AGGR_OUT_OF_RANGE] = "out of range",
-    [TE_MI_MEAS_AGGR_PERCENTILE] = "percentile",
-    [TE_MI_MEAS_AGGR_END] = NULL,
-    [TE_MI_MEAS_AGGR_SV_START] = NULL,
-    [TE_MI_MEAS_AGGR_SV_UNSPECIFIED] = "unspecified",
+static const te_enum_map meas_aggr_names[] = {
+    {.value = TE_MI_MEAS_AGGR_SINGLE, .name = "single"},
+    {.value = TE_MI_MEAS_AGGR_MIN, .name = "min"},
+    {.value = TE_MI_MEAS_AGGR_MAX, .name = "max"},
+    {.value = TE_MI_MEAS_AGGR_MEAN, .name = "mean"},
+    {.value = TE_MI_MEAS_AGGR_MEDIAN, .name = "median"},
+    {.value = TE_MI_MEAS_AGGR_CV, .name = "cv"},
+    {.value = TE_MI_MEAS_AGGR_STDEV, .name = "stdev"},
+    {.value = TE_MI_MEAS_AGGR_OUT_OF_RANGE, .name = "out of range"},
+    {.value = TE_MI_MEAS_AGGR_PERCENTILE, .name = "percentile"},
+    {.value = TE_MI_MEAS_AGGR_SV_UNSPECIFIED, .name = "unspecified"},
+    TE_ENUM_MAP_END
 };
 
-static const char *meas_type_names[] = {
-    [TE_MI_MEAS_PPS] = "pps",
-    [TE_MI_MEAS_LATENCY] = "latency",
-    [TE_MI_MEAS_THROUGHPUT] = "throughput",
-    [TE_MI_MEAS_BANDWIDTH_USAGE] = "bandwidth-usage",
-    [TE_MI_MEAS_TEMP] = "temperature",
-    [TE_MI_MEAS_RPS] = "rps",
-    [TE_MI_MEAS_RTT] = "rtt",
-    [TE_MI_MEAS_RETRANS] = "TCP retransmissions",
-    [TE_MI_MEAS_FREQ] = "events-per-second",
-    [TE_MI_MEAS_EPE] = "events-per-event",
-    [TE_MI_MEAS_IOPS] = "iops",
+static const te_enum_map meas_type_names[] = {
+    {.value = TE_MI_MEAS_PPS, .name = "pps"},
+    {.value = TE_MI_MEAS_LATENCY, .name = "latency"},
+    {.value = TE_MI_MEAS_THROUGHPUT, .name = "throughput"},
+    {.value = TE_MI_MEAS_BANDWIDTH_USAGE, .name = "bandwidth-usage"},
+    {.value = TE_MI_MEAS_TEMP, .name = "temperature"},
+    {.value = TE_MI_MEAS_RPS, .name = "rps"},
+    {.value = TE_MI_MEAS_RTT, .name = "rtt"},
+    {.value = TE_MI_MEAS_RETRANS, .name = "TCP retransmissions"},
+    {.value = TE_MI_MEAS_FREQ, .name = "events-per-second"},
+    {.value = TE_MI_MEAS_EPE, .name = "events-per-event"},
+    {.value = TE_MI_MEAS_IOPS, .name = "iops"},
+    TE_ENUM_MAP_END
 };
 
-/** Array for storing string representations of view types */
-static const char *meas_view_type_names[] = {
-    [TE_MI_MEAS_VIEW_LINE_GRAPH] = "line-graph",
-    [TE_MI_MEAS_VIEW_POINT] = "point",
+static const te_enum_map meas_view_type_names[] = {
+    {.value = TE_MI_MEAS_VIEW_LINE_GRAPH, .name = "line-graph"},
+    {.value = TE_MI_MEAS_VIEW_POINT, .name = "point"},
+    TE_ENUM_MAP_END
 };
 
-static const char *meas_multiplier_names[] = {
-    [TE_MI_MEAS_MULTIPLIER_NANO] = "1e-9",
-    [TE_MI_MEAS_MULTIPLIER_MICRO] = "1e-6",
-    [TE_MI_MEAS_MULTIPLIER_MILLI] = "1e-3",
-    [TE_MI_MEAS_MULTIPLIER_PLAIN] = "1",
-    [TE_MI_MEAS_MULTIPLIER_KILO] = "1e+3",
-    [TE_MI_MEAS_MULTIPLIER_KIBI] = "0x1p10",
-    [TE_MI_MEAS_MULTIPLIER_MEGA] = "1e+6",
-    [TE_MI_MEAS_MULTIPLIER_MEBI] = "0x1p20",
-    [TE_MI_MEAS_MULTIPLIER_GIGA] = "1e+9",
-    [TE_MI_MEAS_MULTIPLIER_GIBI] = "0x1p30",
+static const te_enum_map meas_multiplier_names[] = {
+    {.value = TE_MI_MEAS_MULTIPLIER_NANO, .name = "1e-9"},
+    {.value = TE_MI_MEAS_MULTIPLIER_MICRO, .name = "1e-6"},
+    {.value = TE_MI_MEAS_MULTIPLIER_MILLI, .name = "1e-3"},
+    {.value = TE_MI_MEAS_MULTIPLIER_PLAIN, .name = "1"},
+    {.value = TE_MI_MEAS_MULTIPLIER_KILO, .name = "1e+3"},
+    {.value = TE_MI_MEAS_MULTIPLIER_KIBI, .name = "0x1p10"},
+    {.value = TE_MI_MEAS_MULTIPLIER_MEGA, .name = "1e+6"},
+    {.value = TE_MI_MEAS_MULTIPLIER_MEBI, .name = "0x1p20"},
+    {.value = TE_MI_MEAS_MULTIPLIER_GIGA, .name = "1e+9"},
+    {.value = TE_MI_MEAS_MULTIPLIER_GIBI, .name = "0x1p30"},
+    TE_ENUM_MAP_END
 };
 
 static const char *
@@ -203,7 +205,7 @@ te_mi_meas_get_base_unit_str(te_mi_meas_type type, te_mi_meas_aggr aggr)
     else
         base = meas_base_unit_by_type_map[type];
 
-    return meas_base_unit_names[base];
+    return te_enum_map_from_any_value(meas_base_unit_names, base, NULL);
 }
 
 static te_bool
@@ -268,36 +270,6 @@ te_mi_check_meas_type_name(te_mi_meas_type type, const char *name)
     return TRUE;
 }
 
-static const char *
-te_mi_type2str(te_mi_type type)
-{
-    return mi_type_names[type];
-}
-
-static const char *
-te_mi_meas_aggr2str(te_mi_meas_aggr aggr)
-{
-    return meas_aggr_names[aggr];
-}
-
-static const char *
-te_mi_meas_type2str(te_mi_meas_type meas_type)
-{
-    return meas_type_names[meas_type];
-}
-
-static const char *
-te_mi_meas_multiplier2str(te_mi_meas_multiplier multiplier)
-{
-    return meas_multiplier_names[multiplier];
-}
-
-static const char *
-te_mi_meas_view_type2str(te_mi_meas_view_type type)
-{
-    return meas_view_type_names[type];
-}
-
 static void
 te_mi_set_logger_error(te_mi_logger *logger, te_errno *retval, te_errno val)
 {
@@ -308,154 +280,87 @@ te_mi_set_logger_error(te_mi_logger *logger, te_errno *retval, te_errno val)
         logger->error_ignored = TRUE;
 }
 
-static te_errno
+static void
 te_mi_meas_value_str_append(const te_mi_meas_value *value, te_mi_meas_type type,
-                            te_string *str)
+                            te_json_ctx_t *ctx)
 {
-    te_errno rc;
+    te_json_start_object(ctx);
+    te_json_add_key_enum(ctx, meas_aggr_names, "aggr", value->aggr);
 
-    if (!isfinite(value->val))
-    {
-        rc = te_string_append(str,
-                "{\"aggr\":"TE_MI_STR_FMT",\"value\":null,",
-                te_mi_meas_aggr2str(value->aggr));
-    }
-    else
-    {
-        rc = te_string_append(str,
-                "{\"aggr\":"TE_MI_STR_FMT",\"value\":%.3f,",
-                te_mi_meas_aggr2str(value->aggr), value->val);
-    }
+    te_json_add_key(ctx, "value");
+    te_json_add_float(ctx, value->val, 6);
 
-    if (rc == 0)
-    {
-        rc = te_string_append(str,
-            "\"base_units\":"TE_MI_STR_FMT",\"multiplier\":"TE_MI_STR_FMT"},",
-            te_mi_meas_get_base_unit_str(type, value->aggr),
-            te_mi_meas_multiplier2str(value->multiplier));
-    }
+    te_json_add_key_str(ctx, "base_units",
+                        te_mi_meas_get_base_unit_str(type, value->aggr));
 
-    if (rc != 0)
-        ERROR("Failed to append measurement value");
-
-    return rc;
+    te_json_add_key_enum(ctx, meas_multiplier_names, "multiplier",
+                         value->multiplier);
+    te_json_end(ctx);
 }
 
-static te_errno
+static void
 te_mi_meas_values_str_append(const te_mi_meas_value_h *values,
-                             te_mi_meas_type type, te_string *str)
+                             te_mi_meas_type type,
+                             te_json_ctx_t *ctx)
 {
     const te_mi_meas_value *value;
-    te_errno rc;
 
-    rc = te_string_append(str, "\"entries\":[");
+    te_json_add_key(ctx, "entries");
 
+    te_json_start_array(ctx);
     TAILQ_FOREACH(value, values, next)
     {
-        if (rc == 0)
-            rc = te_mi_meas_value_str_append(value, type, str);
+        te_mi_meas_value_str_append(value, type, ctx);
     }
-
-    if (!TAILQ_EMPTY(values))
-        te_string_cut(str, 1);
-
-    if (rc == 0)
-        rc = te_string_append(str, "]");
-
-    if (rc != 0)
-        ERROR("Failed to append measurement values");
-
-    return rc;
+    te_json_end(ctx);
 }
 
-static te_errno
-te_mi_meas_str_append(const te_mi_meas_impl *meas, te_string *str)
+static void
+te_mi_meas_str_append(const te_mi_meas_impl *meas,
+                      te_json_ctx_t *ctx)
 {
-    te_errno rc;
+    te_json_start_object(ctx);
+    te_json_add_key_enum(ctx, meas_type_names, "type", meas->type);
 
-    rc = te_string_append(str, "{\"type\":"TE_MI_STR_FMT",",
-                          te_mi_meas_type2str(meas->type));
-    if (rc == 0 && meas->name != NULL)
-        rc = te_string_append(str, "\"name\":"TE_MI_STR_FMT",", meas->name);
-    if (rc == 0 && meas->descr != NULL)
-    {
-        rc = te_string_append(str, "\"description\":"TE_MI_STR_FMT",",
-                              meas->descr);
-    }
+    te_json_add_key_str(ctx, "name", meas->name);
+    te_json_add_key_str(ctx, "description", meas->descr);
 
-    if (rc == 0)
-        rc = te_mi_meas_values_str_append(&meas->values, meas->type, str);
+    te_mi_meas_values_str_append(&meas->values, meas->type, ctx);
 
-    if (rc == 0)
-        rc = te_string_append(str, "},");
-
-    if (rc != 0)
-        ERROR("Failed to append a measurement");
-
-    return rc;
+    te_json_end(ctx);
 }
 
-static te_errno
-te_mi_meas_q_str_append(const te_mi_meas_impl_h *meas_q, te_string *str)
+static void
+te_mi_meas_q_str_append(const te_mi_meas_impl_h *meas_q,
+                        te_json_ctx_t *ctx)
 {
     const te_mi_meas_impl *meas;
-    te_errno rc;
 
-    rc = te_string_append(str, "\"results\":[");
+    te_json_add_key(ctx, "results");
 
+    te_json_start_array(ctx);
     TAILQ_FOREACH(meas, meas_q, next)
     {
-        if (rc == 0)
-            rc = te_mi_meas_str_append(meas, str);
+        te_mi_meas_str_append(meas, ctx);
     }
-    if (!TAILQ_EMPTY(meas_q))
-        te_string_cut(str, 1);
-
-    if (rc == 0)
-        rc = te_string_append(str, "],");
-
-    if (rc != 0)
-        ERROR("Failed to append measurement array");
-
-    return rc;
+    te_json_end(ctx);
 }
 
-static te_errno
+static void
 te_mi_kvpairs_str_append(const te_kvpair_h *pairs, const char *dict_name,
-                         te_string *str)
+                         te_json_ctx_t *ctx)
 {
-    const te_kvpair *pair;
-    te_errno rc;
-
     if (TAILQ_EMPTY(pairs))
-        return 0;
+        return;
 
-    rc = te_string_append(str, TE_MI_STR_FMT":{", dict_name);
-
-    TAILQ_FOREACH(pair, pairs, links)
-    {
-        if (rc == 0)
-            rc = te_string_append(str, TE_MI_STR_FMT":"TE_MI_STR_FMT",",
-                                  pair->key, pair->value);
-    }
-
-    te_string_cut(str, 1);
-
-    if (rc == 0)
-        rc = te_string_append(str, "},");
-
-    if (rc != 0)
-        ERROR("Failed to append key-value pairs '%s'", dict_name);
-
-    return rc;
+    te_json_add_key(ctx, dict_name);
+    te_json_add_kvpair(ctx, pairs);
 }
 
 static te_errno
 te_mi_meas_ref_str_append(const te_mi_meas_ref *ref,
-                          te_string *str)
+                          te_json_ctx_t *ctx)
 {
-    te_errno rc;
-
     if (ref->meas == NULL)
     {
         ERROR("%s(): measurement pointer is NULL in a reference",
@@ -463,29 +368,24 @@ te_mi_meas_ref_str_append(const te_mi_meas_ref *ref,
         return TE_EINVAL;
     }
 
-    rc = te_string_append(str, "{\"type\":"TE_MI_STR_FMT,
-                          te_mi_meas_type2str(ref->meas->type));
-    if (rc == 0 && ref->meas->name != NULL)
+    te_json_start_object(ctx);
+    te_json_add_key_enum(ctx, meas_type_names, "type",
+                         ref->meas->type);
+    te_json_add_key_str(ctx, "name", ref->meas->name);
+
+    if (te_mi_meas_aggr_is_specified(ref->aggr))
     {
-        rc = te_string_append(str, ",\"name\":"TE_MI_STR_FMT,
-                              ref->meas->name);
+        te_json_add_key_enum(ctx, meas_aggr_names, "aggr",
+                             ref->aggr);
     }
+    te_json_end(ctx);
 
-    if (rc == 0 && te_mi_meas_aggr_is_specified(ref->aggr))
-    {
-        rc = te_string_append(str, ",\"aggr\":"TE_MI_STR_FMT,
-                              te_mi_meas_aggr2str(ref->aggr));
-    }
-
-    if (rc == 0)
-        rc = te_string_append(str, "},");
-
-    return rc;
+    return 0;
 }
 
 static te_errno
 te_mi_meas_view_line_graph_str_append(const te_mi_meas_view *view,
-                                      te_string *str)
+                                      te_json_ctx_t *ctx)
 {
     const te_mi_meas_view_line_graph *line_graph = NULL;
     te_errno rc = 0;
@@ -493,112 +393,90 @@ te_mi_meas_view_line_graph_str_append(const te_mi_meas_view *view,
 
     line_graph = &view->data.line_graph;
 
-    rc = te_string_append(str, "\"axis_x\":");
-    if (rc != 0)
-        return rc;
-
+    te_json_add_key(ctx, "axis_x");
     if (line_graph->axis_x_auto_seqno)
     {
-        rc = te_string_append(str,
-                              "{\"name\":\"auto-seqno\"},");
+        te_json_start_object(ctx);
+        te_json_add_key_str(ctx, "name", "auto-seqno");
+        te_json_end(ctx);
     }
     else
     {
-        rc = te_mi_meas_ref_str_append(&line_graph->axis_x, str);
+        rc = te_mi_meas_ref_str_append(&line_graph->axis_x, ctx);
+        if (rc != 0)
+            return rc;
     }
 
-    if (rc == 0 && te_vec_size(&line_graph->axis_y) > 0)
+    if (te_vec_size(&line_graph->axis_y) > 0)
     {
-        rc = te_string_append(str, "\"axis_y\":[");
+        te_json_add_key(ctx, "axis_y");
+
+        te_json_start_array(ctx);
         TE_VEC_FOREACH(&line_graph->axis_y, ref)
         {
-            if (rc == 0)
-                rc = te_mi_meas_ref_str_append(ref, str);
+            rc = te_mi_meas_ref_str_append(ref, ctx);
+            if (rc != 0)
+                return rc;
         }
-        if (rc == 0)
-        {
-            te_string_cut(str, 1);
-            rc = te_string_append(str, "],");
-        }
+        te_json_end(ctx);
     }
 
-    if (rc != 0)
-    {
-        ERROR("%s(): failed to append fields specific to line-graph view",
-              __FUNCTION__);
-    }
-
-    return rc;
+    return 0;
 }
 
 static te_errno
 te_mi_meas_view_point_str_append(const te_mi_meas_view *view,
-                                 te_string *str)
+                                 te_json_ctx_t *ctx)
 {
     te_errno rc;
 
-    rc = te_string_append(str, "\"value\":");
+    te_json_add_key(ctx, "value");
+    rc = te_mi_meas_ref_str_append(&view->data.point.value, ctx);
     if (rc != 0)
         return rc;
 
-    rc = te_mi_meas_ref_str_append(&view->data.point.value, str);
-    if (rc != 0)
-    {
-        ERROR("%s(): failed to append fields specific to point view: %s",
-              __FUNCTION__, te_rc_err2str(rc));
-    }
-
-    return rc;
+    return 0;
 }
 
 static te_errno
-te_mi_meas_view_str_append(const te_mi_meas_view *view, te_string *str)
+te_mi_meas_view_str_append(const te_mi_meas_view *view,
+                           te_json_ctx_t *ctx)
 {
-    const char *type_str = te_mi_meas_view_type2str(view->type);
     te_errno rc;
 
-    rc = te_string_append(str, "{\"name\":"TE_MI_STR_FMT
-                          ",\"type\":"TE_MI_STR_FMT
-                          ",\"title\":"TE_MI_STR_FMT",",
-                          view->name, type_str, view->title);
+    te_json_start_object(ctx);
+    te_json_add_key_str(ctx, "name", view->name);
+    te_json_add_key_enum(ctx, meas_view_type_names, "type",
+                         view->type);
+    te_json_add_key_str(ctx, "title", view->title);
 
-    if (rc == 0)
+    switch (view->type)
     {
-        switch (view->type)
-        {
-            case TE_MI_MEAS_VIEW_LINE_GRAPH:
-                rc = te_mi_meas_view_line_graph_str_append(view, str);
-                break;
+        case TE_MI_MEAS_VIEW_LINE_GRAPH:
+            rc = te_mi_meas_view_line_graph_str_append(view, ctx);
+            if (rc != 0)
+                return rc;
+            break;
 
-            case TE_MI_MEAS_VIEW_POINT:
-                rc = te_mi_meas_view_point_str_append(view, str);
-                break;
+        case TE_MI_MEAS_VIEW_POINT:
+            rc = te_mi_meas_view_point_str_append(view, ctx);
+            if (rc != 0)
+                return rc;
+            break;
 
-            default:
-                ERROR("%s(): not supported view type %d",
-                      __FUNCTION__, view->type);
-                rc = TE_EINVAL;
-                break;
-        }
+        default:
+            ERROR("%s(): not supported view type %d",
+                  __FUNCTION__, view->type);
+            return TE_EINVAL;
     }
+    te_json_end(ctx);
 
-    if (rc == 0)
-    {
-        te_string_cut(str, 1);
-        rc = te_string_append(str, "},");
-    }
-
-    if (rc != 0)
-    {
-        ERROR("%s(): failed to append view '%s' of type '%s'",
-              __FUNCTION__, view->name, type_str);
-    }
-
-    return rc;
+    return 0;
 }
 
 static te_errno
-te_mi_meas_views_str_append(const te_mi_meas_view_h *views, te_string *str)
+te_mi_meas_views_str_append(const te_mi_meas_view_h *views,
+                            te_json_ctx_t *ctx)
 {
     const te_mi_meas_view *view;
     te_errno rc;
@@ -606,22 +484,16 @@ te_mi_meas_views_str_append(const te_mi_meas_view_h *views, te_string *str)
     if (TAILQ_EMPTY(views))
         return 0;
 
-    rc = te_string_append(str, "\"views\":[");
+    te_json_add_key(ctx, "views");
 
+    te_json_start_array(ctx);
     TAILQ_FOREACH(view, views, next)
     {
-        if (rc == 0)
-            rc = te_mi_meas_view_str_append(view, str);
+        rc = te_mi_meas_view_str_append(view, ctx);
+        if (rc != 0)
+            return rc;
     }
-
-    if (rc == 0)
-    {
-        te_string_cut(str, 1);
-        rc = te_string_append(str, "],");
-    }
-
-    if (rc != 0)
-        ERROR("Failed to append views");
+    te_json_end(ctx);
 
     return rc;
 }
@@ -630,42 +502,30 @@ static char *
 te_mi_logger_data2str(const te_mi_logger *logger)
 {
     te_string str = TE_STRING_INIT;
-    te_errno rc;
+    te_json_ctx_t ctx = TE_JSON_INIT_STR(&str);
 
-    rc = te_string_append(&str, "{\"type\":"TE_MI_STR_FMT",",
-                          te_mi_type2str(logger->type));
+    te_json_start_object(&ctx);
+    te_json_add_key_enum(&ctx, mi_type_names, "type", logger->type);
 
-    if (rc == 0)
-        rc = te_string_append(&str, "\"version\":%u,", logger->version);
+    te_json_add_key(&ctx, "version");
+    te_json_add_integer(&ctx, logger->version);
 
-    if (rc == 0)
-        rc = te_string_append(&str, "\"tool\":"TE_MI_STR_FMT",", logger->tool);
+    te_json_add_key_str(&ctx, "tool", logger->tool);
 
-    if (rc == 0)
-        rc = te_mi_meas_q_str_append(&logger->meas_q, &str);
+    te_mi_meas_q_str_append(&logger->meas_q, &ctx);
 
-    if (rc == 0)
-        rc = te_mi_kvpairs_str_append(&logger->meas_keys, "keys", &str);
+    te_mi_kvpairs_str_append(&logger->meas_keys, "keys", &ctx);
 
-    if (rc == 0)
-        rc = te_mi_kvpairs_str_append(&logger->comments, "comments", &str);
+    te_mi_kvpairs_str_append(&logger->comments, "comments", &ctx);
 
-    if (rc == 0)
-        rc = te_mi_meas_views_str_append(&logger->views, &str);
-
-    if (rc == 0)
-    {
-        te_string_cut(&str, 1);
-        rc = te_string_append(&str, "}");
-    }
-
-    if (rc != 0)
+    if (te_mi_meas_views_str_append(&logger->views, &ctx) != 0)
     {
         ERROR("Failed to convert logger data to string");
         te_string_free(&str);
         return NULL;
     }
 
+    te_json_end(&ctx);
     return str.ptr;
 }
 
@@ -748,7 +608,8 @@ te_mi_meas_impl_find_ext(te_mi_meas_impl_h *meas_q, te_mi_meas_type type,
        if (result == NULL)
        {
             ERROR("%s(): Failed to found a measurement with name '%s' and "
-                  "type '%s'", __FUNCTION__, name, te_mi_meas_type2str(type));
+                  "type '%s'", __FUNCTION__, name,
+                  te_enum_map_from_any_value(meas_type_names, type, "???"));
             return NULL;
        }
     }
@@ -817,7 +678,8 @@ te_mi_meas_value_find_uniq(te_mi_meas_value_h *values, te_mi_meas_type type,
     else
     {
         ERROR("%s():  can't search for value by aggregation: "
-              "aggr = %s", __FUNCTION__, te_mi_meas_aggr2str(aggr));
+              "aggr = %s", __FUNCTION__,
+              te_enum_map_from_any_value(meas_aggr_names, aggr, "????"));
         return NULL;
     }
 
@@ -825,9 +687,8 @@ te_mi_meas_value_find_uniq(te_mi_meas_value_h *values, te_mi_meas_type type,
     {
         ERROR("%s(): failed to find an aggregation '%s' for a measurement "
               "with type %s and name '%s'", __FUNCTION__,
-              te_mi_meas_aggr2str(aggr),
-              (type == TE_MI_MEAS_END ? "(null)" :
-                                      te_mi_meas_type2str(type)),
+              te_enum_map_from_any_value(meas_aggr_names, aggr, "????"),
+              te_enum_map_from_any_value(meas_type_names, type, "(null)"),
               (name == NULL ? "(null)" : name));
         return NULL;
     }
@@ -835,9 +696,8 @@ te_mi_meas_value_find_uniq(te_mi_meas_value_h *values, te_mi_meas_type type,
     {
         ERROR("%s(): value found by aggregation '%s' for a measurement "
               " with type %s and name %s is not unique", __FUNCTION__,
-              te_mi_meas_aggr2str(aggr),
-              (type == TE_MI_MEAS_END ? "(null)" :
-              te_mi_meas_type2str(type)),
+              te_enum_map_from_any_value(meas_aggr_names, aggr, "????"),
+              te_enum_map_from_any_value(meas_type_names, type, "(null)"),
               (name == NULL ? "(null)" : name));
         return NULL;
     }
@@ -1046,7 +906,8 @@ te_mi_logger_add_meas_view(te_mi_logger *logger, te_errno *retval,
     if (view != NULL)
     {
         ERROR("A view with type '%s' and name '%s' is already present",
-              te_mi_meas_view_type2str(type), name);
+              te_enum_map_from_any_value(meas_view_type_names, type, "????"),
+              name);
         rc = TE_EEXIST;
         goto out;
     }
@@ -1169,7 +1030,8 @@ te_mi_logger_meas_graph_axis_add(te_mi_logger *logger,
     {
         ERROR("%s(): failed to find measurement view with type '%s' and "
               "name '%s'", __FUNCTION__,
-              te_mi_meas_view_type2str(view_type),
+              te_enum_map_from_any_value(meas_view_type_names, view_type,
+                                         "????"),
               (view_name == NULL ? "(null)" : view_name));
         te_mi_set_logger_error(logger, retval, TE_ENOENT);
         return;
@@ -1260,7 +1122,8 @@ te_mi_logger_meas_point_add(te_mi_logger *logger,
     {
         ERROR("%s(): failed to find measurement view with type '%s' and "
               "name '%s'", __FUNCTION__,
-              te_mi_meas_view_type2str(TE_MI_MEAS_VIEW_POINT),
+              te_enum_map_from_value(meas_view_type_names,
+                                     TE_MI_MEAS_VIEW_POINT),
               (view_name == NULL ? "(null)" : view_name));
         te_mi_set_logger_error(logger, retval, TE_ENOENT);
         return;
