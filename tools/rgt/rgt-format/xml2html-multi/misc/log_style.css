@@ -1,8 +1,30 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved. */
+
+td {
+  padding: 2px !important;
+  padding-left: 1px;
+  padding-right: 1px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+.col-sm-1 {
+  white-space: nowrap;
+}
+.te_fold {
+  font-family: monospace;
+}
+.te_filter_button {
+  margin-top: 0.5em;
+  font-family: monospace;
+}
+.te_params {
+  width: 50% !important;
+}
+
 .ERROR { background-color: #FFD2C8; valign: top; }
 .WARN { background-color: #FCA85A80; valign: top; }
-/* .RING { background-color: #AB94FF; valign: top; } */
+.RING { background-color: #FFFFFF; valign: top; }
 .INFO { background-color: #ECEDEC !important; valign: top; }
 .VERB { background-color: #EFF2FF; valign: top; }
 .PACKET { background-color: #E5E5E5; valign: top; }
@@ -11,4 +33,19 @@
 .log_h2 {font-size: 1.05em; font-weight: bold; display: block; margin-top: 0.5em;}
 .log_h3 {font-size: 1em; font-weight: bold; display: block; margin-top: 0.3em;}
 
+.renderjson .disclosure { color: firebrick; font-size: 150% }
+.renderjson .string { color: crimson; }
+.renderjson .number { color: blueviolet; }
+.renderjson .boolean { color: darkorange; }
+.renderjson .key { color: blue; }
+.renderjson .keyword { color: blue; }
+.renderjson .object.syntax { color: green; }
+.renderjson .array.syntax  { color: brown; }
+
+.show_link { cursor: pointer; color: blue; }
+.hide_link { cursor: pointer; color: crimson; }
+
+.graph_warn { color: crimson; }
+
 .te_log_table { font-size: 1em; font-family: monospace; }
+.te_log_table tr:hover { filter: brightness(0.9); }
