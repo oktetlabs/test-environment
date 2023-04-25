@@ -297,6 +297,50 @@ extern int te_enum_translate(const te_enum_trn trn[],
                              int unknown_val);
 
 /**
+ * A mapping between two bitmasks corresponding to each other via
+ * named bits.
+ *
+ * This structure permits the mapping of one or more bits from one
+ * side to one or more bits on the other side, with the constraint
+ * that the bits on each side do not overlap. This constraint results
+ * in the prohibition of mapping two or more set bits to the same
+ * corresponding bits on the other side.
+ *
+ * An array of mappings should end with #TE_ENUM_BITMASK_CONV_END and
+ * should not contain @c UINT64_MAX as a value of one of the fields.
+ */
+typedef struct te_enum_bitmask_conv {
+    /** Left-hand side bits mask. */
+    uint64_t bits_from;
+    /** Right-hand side bits mask. */
+    uint64_t bits_to;
+} te_enum_bitmask_conv;
+
+/** Terminating element of an enum bitmask conversion array. */
+#define TE_ENUM_BITMASK_CONV_END { .bits_from = UINT64_MAX, \
+                                   .bits_to = UINT64_MAX }
+
+/**
+ * Convert a @p bm into a correpsonding bitmask according to @p bm_conv.
+ *
+ * @param[in] bm_conv     Conversion table.
+ * @param[in] bm          Bitmask to convert.
+ * @param[in] reverse     If @c TRUE, the @a to_bits field of the conversion
+ *                        is used as a key, i.e. a reverse conversion is
+ *                        performed.
+ * @param[out] result     Resulting bitmask. May be @c NULL to check that
+ *                        there are no bits that can not be converted.
+ *
+ * @return Status code.
+ * @retval TE_EINVAL      @p bm_conv contains zero values or overlapped bits.
+ * @retval TE_ERANGE      Conversion was done, but some bits of @p bm can not
+ *                        be converted using @p conv_map.
+ */
+extern te_errno te_enum_bitmask_convert(const te_enum_bitmask_conv bm_conv[],
+                                        uint64_t bm, te_bool reverse,
+                                        uint64_t *result);
+
+/**
  * Fill in an enum translation array based on the translation function.
  *
  * The purpose of the function is to bridge te_enum API and pre-existing

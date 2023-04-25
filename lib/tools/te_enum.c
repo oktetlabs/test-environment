@@ -109,6 +109,46 @@ te_enum_translate(const te_enum_trn trn[], int value, te_bool reverse,
     return unknown_val;
 }
 
+te_errno
+te_enum_bitmask_convert(const te_enum_bitmask_conv conv[],
+                        uint64_t bm, te_bool reverse,
+                        uint64_t *result)
+{
+    uint64_t bitmask = bm;
+    uint64_t result_bm = 0;
+    uint64_t check_mask;
+    uint64_t from_converted = 0;
+    uint64_t to_converted = 0;
+
+    for (; conv->bits_from != UINT64_MAX; conv++)
+    {
+        if (conv->bits_from == 0 || conv->bits_to == 0 ||
+            (from_converted & conv->bits_from) != 0 ||
+            (to_converted & conv->bits_to) != 0)
+        {
+            return TE_EINVAL;
+        }
+
+        check_mask = reverse ? conv->bits_to : conv->bits_from;
+        if ((bitmask & check_mask) == check_mask)
+        {
+            bitmask &= ~check_mask;
+            result_bm |= reverse ? conv->bits_from : conv->bits_to;
+        }
+
+        from_converted |= conv->bits_from;
+        to_converted |= conv->bits_to;
+    }
+
+    if (bitmask != 0)
+        return TE_ERANGE;
+
+    if (result != NULL)
+        *result = result_bm;
+
+    return 0;
+}
+
 void
 te_enum_trn_fill_by_conversion(te_enum_trn trn[],
                                int minval, int maxval,

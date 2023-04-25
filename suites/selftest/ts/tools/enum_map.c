@@ -29,6 +29,24 @@
 #include "te_enum.h"
 #include "te_rpc_signal.h"
 
+/* Bits for the first bitmask. */
+#define ENUM_MAP_MASK_A_BITS_A 0x1
+#define ENUM_MAP_MASK_A_BITS_B 0x2
+#define ENUM_MAP_MASK_A_BITS_C 0xC
+
+/* Bits for second bitmask. */
+#define ENUM_MAP_MASK_B_BITS_A 0xC
+#define ENUM_MAP_MASK_B_BITS_B 0x2
+#define ENUM_MAP_MASK_B_BITS_C 0x1
+
+/* Unknown bits that is not to be used in any masks. */
+#define ENUM_MAP_MASK_BITS__UNKNOWN 0x10
+
+/* Overlapped bit. */
+#define ENUM_MAP_MASK_BITS__OVERLAPPED (ENUM_MAP_MASK_A_BITS_A | \
+                                        ENUM_MAP_MASK_A_BITS_B | \
+                                        ENUM_MAP_MASK_A_BITS_C)
+
 typedef te_errno (*action_fn)(unsigned int i);
 
 static te_errno
@@ -159,6 +177,33 @@ main(int argc, char **argv)
     };
     te_enum_trn dynamic_trn[RPC_SIGUNKNOWN - RPC_SIGHUP + 2] =
         {TE_ENUM_TRN_END,};
+    static te_enum_bitmask_conv mask_conv_map[] = {
+        {.bits_from = ENUM_MAP_MASK_A_BITS_A,
+         .bits_to = ENUM_MAP_MASK_B_BITS_A},
+        {.bits_from = ENUM_MAP_MASK_A_BITS_B,
+         .bits_to = ENUM_MAP_MASK_B_BITS_B},
+        {.bits_from = ENUM_MAP_MASK_A_BITS_C,
+         .bits_to = ENUM_MAP_MASK_B_BITS_C},
+        TE_ENUM_BITMASK_CONV_END
+    };
+    static uint64_t masks_a[] = {
+        ENUM_MAP_MASK_A_BITS_A,
+        ENUM_MAP_MASK_A_BITS_B,
+        ENUM_MAP_MASK_A_BITS_C,
+        ENUM_MAP_MASK_A_BITS_A | ENUM_MAP_MASK_A_BITS_B,
+        ENUM_MAP_MASK_A_BITS_B | ENUM_MAP_MASK_A_BITS_C,
+        ENUM_MAP_MASK_A_BITS_A | ENUM_MAP_MASK_A_BITS_B |
+        ENUM_MAP_MASK_A_BITS_C,
+    };
+    static uint64_t masks_b[] = {
+        ENUM_MAP_MASK_B_BITS_A,
+        ENUM_MAP_MASK_B_BITS_B,
+        ENUM_MAP_MASK_B_BITS_C,
+        ENUM_MAP_MASK_B_BITS_A | ENUM_MAP_MASK_B_BITS_B,
+        ENUM_MAP_MASK_B_BITS_B | ENUM_MAP_MASK_B_BITS_C,
+        ENUM_MAP_MASK_B_BITS_A | ENUM_MAP_MASK_B_BITS_B |
+        ENUM_MAP_MASK_B_BITS_C,
+    };
 
     unsigned i;
     te_errno status = 0;
@@ -288,6 +333,62 @@ main(int argc, char **argv)
     if (dynamic_trn[i].from != INT_MIN)
         TEST_VERDICT("Dynamic translation is not properly terminated");
 
+    TEST_STEP("Checking bitmasks conversion");
+    assert(sizeof(masks_a) == sizeof(masks_b));
+    for (i = 0; i < sizeof(masks_a) / sizeof(masks_a[0]); i++)
+    {
+        uint64_t converted;
+
+        CHECK_RC(te_enum_bitmask_convert(mask_conv_map, masks_a[i],
+                                         FALSE, &converted));
+        if (converted != masks_b[i])
+        {
+            TEST_VERDICT("Forward converstion of %" PRIu64 " failed: "
+                         "expected %" PRIu64 ", got %" PRIu64, masks_a[i],
+                         masks_b[i], converted);
+        }
+
+        CHECK_RC(te_enum_bitmask_convert(mask_conv_map, masks_b[i],
+                                         TRUE, &converted));
+        if (converted != masks_a[i])
+        {
+            TEST_VERDICT("Backward converstion of %" PRIu64" failed: "
+                         "expected %" PRIu64", got %" PRIu64, masks_b[i],
+                         masks_a[i], converted);
+        }
+    }
+
+    TEST_STEP("Checking forward conversion of a bitmask with unknown bit");
+    if (te_enum_bitmask_convert(mask_conv_map,
+                                (masks_a[0] | ENUM_MAP_MASK_BITS__UNKNOWN),
+                                FALSE, NULL) != TE_ERANGE)
+    {
+        TEST_VERDICT("Unknown bit forward-converted as it is known");
+    }
+
+    TEST_STEP("Checking backward conversion of a bitmask with unknown bit");
+    if (te_enum_bitmask_convert(mask_conv_map,
+                                (masks_b[0] | ENUM_MAP_MASK_BITS__UNKNOWN),
+                                TRUE, NULL) != TE_ERANGE)
+    {
+        TEST_VERDICT("Unknown bit backward-converted as it is known");
+    }
+
+    TEST_STEP("Checking bitmasks conversion using maps with overlapped bits");
+    /* Left-side bits are overlapped. */
+    mask_conv_map[0].bits_from = ENUM_MAP_MASK_BITS__OVERLAPPED;
+    status = TE_EINVAL;
+    status &= te_enum_bitmask_convert(mask_conv_map, masks_a[0], FALSE, NULL);
+    status &= te_enum_bitmask_convert(mask_conv_map, masks_b[0], TRUE, NULL);
+
+    /* Right-side bits are overlapped. */
+    mask_conv_map[0].bits_from = ENUM_MAP_MASK_A_BITS_A;
+    mask_conv_map[0].bits_to = ENUM_MAP_MASK_BITS__OVERLAPPED;
+    status &= te_enum_bitmask_convert(mask_conv_map, masks_a[0], FALSE, NULL);
+    status &= te_enum_bitmask_convert(mask_conv_map, masks_b[0], TRUE, NULL);
+
+    if (status != TE_EINVAL)
+        TEST_VERDICT("Maps with overlapped bits were processed as valid");
 
     TEST_SUCCESS;
 
