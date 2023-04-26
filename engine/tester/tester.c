@@ -82,6 +82,8 @@ tester_global_init(tester_global *global)
     TAILQ_INIT(&global->paths);
     TAILQ_INIT(&global->reqs);
 
+    global->verdict = NULL;
+
     global->targets = NULL;
 
     global->trc_db = NULL;
@@ -108,6 +110,7 @@ tester_global_free(tester_global *global)
     test_suites_info_free(&global->suites);
     test_paths_free(&global->paths);
     logic_expr_free(global->targets);
+    free(global->verdict);
 #if WITH_TRC
     trc_db_close(global->trc_db);
     tq_strings_free(&global->trc_tags, free);
@@ -211,6 +214,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
          */
 
         TESTER_OPT_RUN_WHILE,
+        TESTER_OPT_RUN_UNTIL_VERDICT,
 
         TESTER_OPT_SUITE_PATH,
 
@@ -315,6 +319,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         { "run-while", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_RUN_WHILE,
           "Run tests while they produce a given result.",
           "passed|failed|expected|unexpected"},
+
+        { "run-until-verdict", '\0', POPT_ARG_STRING, NULL,
+          TESTER_OPT_RUN_UNTIL_VERDICT,
+          "Run tests until a test produces the given verdict."},
 
 #if 0
         { "mix", '\0', POPT_ARG_STRING, NULL,
@@ -605,6 +613,14 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     return TE_RC(TE_TESTER, TE_EINVAL);
                 }
 
+                break;
+            }
+            case TESTER_OPT_RUN_UNTIL_VERDICT:
+            {
+                const char *s = poptGetOptArg(optCon);
+
+                global->flags |= TESTER_RUN_UNTIL_VERDICT;
+                global->verdict = strdup(s);
                 break;
             }
             case TESTER_OPT_REQ:
@@ -1126,7 +1142,8 @@ main(int argc, char *argv[])
                         &tester_global_context.paths,
                         tester_global_context.trc_db,
                         &tester_global_context.trc_tags,
-                        tester_global_context.flags);
+                        tester_global_context.flags,
+                        tester_global_context.verdict);
         stop_cmd_monitors(&tester_global_context.cmd_monitors);
         if (rc != 0)
         {

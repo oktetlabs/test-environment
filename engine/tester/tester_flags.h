@@ -112,8 +112,14 @@ typedef uint64_t tester_flags;
 #define TESTER_RUN_WHILE_EXPECTED     (1LLU << 35)
 #define TESTER_RUN_WHILE_UNEXPECTED   (1LLU << 36)
 
+/**
+ * If the flag is set, tester stops at the first test producing
+ * verdict matching the verdict provided in tester args.
+ */
+#define TESTER_RUN_UNTIL_VERDICT      (1LLU << 37)
+
 /** Gather the execution plan */
-#define TESTER_ASSEMBLE_PLAN          (1LLU << 37)
+#define TESTER_ASSEMBLE_PLAN          (1LLU << 38)
 
 #ifdef __cplusplus
 } /* extern "C" */

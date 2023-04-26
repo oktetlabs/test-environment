@@ -39,6 +39,7 @@ typedef struct tester_global {
     testing_scenario    scenario;   /**< Testing scenario */
     test_requirements   reqs;       /**< List of requirements known by
                                      *   the tester */
+    char               *verdict;    /**< Verdict to stop tester run on */
 
     cmd_monitor_descrs  cmd_monitors;   /**< Command monitors specifier via
                                              command line */

@@ -174,6 +174,8 @@ typedef struct tester_ctx {
  */
 typedef struct tester_run_data {
     tester_flags                flags;      /**< Flags */
+    char                       *verdict;    /**< Verdict to stop tester run
+                                                 on */
     const tester_cfgs          *cfgs;       /**< Tester configurations */
     test_paths                 *paths;      /**< Testing paths */
     testing_scenario           *scenario;   /**< Testing scenario */
@@ -4132,6 +4134,20 @@ trc_exp_result_to_log_buf(te_log_buf *lb, const trc_exp_result *result)
 }
 #endif
 
+static te_bool
+result_has_verdict(te_test_result *result, char *verdict_str)
+{
+    te_test_verdict *verdict = NULL;
+
+    TAILQ_FOREACH(verdict, &result->verdicts, links)
+    {
+        if (strcmp(verdict->str, verdict_str) == 0)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 static tester_cfg_walk_ctl
 run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                void *opaque)
@@ -4139,6 +4155,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
     unsigned int        step;
+    te_bool             has_verdict = FALSE;
     te_errno            rc;
 
     assert(gctx != NULL);
@@ -4273,6 +4290,12 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 #endif
                              );
 
+        if (gctx->verdict != NULL)
+        {
+            has_verdict = result_has_verdict(&ctx->current_result.result,
+                                             gctx->verdict);
+        }
+
         te_test_result_clean(&ctx->current_result.result);
     }
 
@@ -4329,6 +4352,10 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                 return TESTER_CFG_WALK_FIN;
             }
 #endif
+            if ((ctx->flags & TESTER_RUN_UNTIL_VERDICT) && has_verdict)
+            {
+                return TESTER_CFG_WALK_FIN;
+            }
         }
 
         if (ri->type == RUN_ITEM_SCRIPT)
@@ -4494,7 +4521,8 @@ tester_run(testing_scenario   *scenario,
            test_paths         *paths,
            const te_trc_db    *trc_db,
            const tqh_strings  *trc_tags,
-           const tester_flags  flags)
+           const tester_flags  flags,
+           const char         *verdict)
 {
     te_errno                rc, rc2;
     tester_run_data         data;
@@ -4543,6 +4571,7 @@ tester_run(testing_scenario   *scenario,
     if (all_faked == TRUE)
         data.flags |= TESTER_FAKE;
 
+    data.verdict = verdict;
     data.cfgs = cfgs;
     data.paths = paths;
     data.scenario = scenario;

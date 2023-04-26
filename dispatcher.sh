@@ -187,6 +187,9 @@ Generic options:
                                   is not the one that declared in TRC)
                                 - unexpected (stop test if obtained
                                   result is the one that declared in TRC)
+  --tester-run-until-verdict=<verdict>
+                                Continue testing until a test produces a verdict matching the given
+                                verdict string.
 
   --test-sigusr2-stop           Stop all the testing when SIGUSR2 signal is received.
                                 The default behaviour is to print a verdict in the

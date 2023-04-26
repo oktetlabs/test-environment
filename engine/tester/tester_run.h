@@ -305,7 +305,8 @@ extern te_errno tester_run(testing_scenario         *scenario,
                            struct test_paths        *paths,
                            const te_trc_db          *trc_db,
                            const tqh_strings        *trc_tags,
-                           const tester_flags        flags);
+                           const tester_flags        flags,
+                           const char               *verdict);
 
 
 #ifdef __cplusplus
