@@ -27,18 +27,10 @@
 #include "te_str.h"
 #include "te_string.h"
 
-/*
- * FIXME: the template should a parameter too, but
- * due to OL bug #12847 a parameter inside package.xml
- * cannot contain shell-like variable references
- */
-static const char template[] = "var1=${var1} var2=${var2:-unknown} "
-    "pos=${0} unknown=${unknown:-${var2}} known=${var2:+known} "
-    "nested=${var2:+${unknown:-${var1}}} notempty=${var2|notempty:-empty} end";
-
 int
 main(int argc, char **argv)
 {
+    const char *template;
     const char *var1;
     const char *var2;
     const char *posarg;
@@ -50,6 +42,7 @@ main(int argc, char **argv)
     te_kvpair_init(&kvpairs);
 
     TEST_START;
+    TEST_GET_STRING_PARAM(template);
     TEST_GET_OPT_STRING_PARAM(var1);
     TEST_GET_OPT_STRING_PARAM(var2);
     TEST_GET_STRING_PARAM(posarg);

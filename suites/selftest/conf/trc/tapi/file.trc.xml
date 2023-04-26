@@ -29,6 +29,7 @@
             <notes/>
             <iter result="PASSED">
                 <arg name="env"/>
+                <arg name="template"/>
                 <arg name="varname"/>
                 <arg name="value"/>
                 <arg name="expected"/>

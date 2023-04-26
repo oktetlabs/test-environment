@@ -60,6 +60,9 @@
             <session>
                 <run>
                     <script name="expand"/>
+                    <arg name="template">
+                        <value>var1=${var1} var2=${var2:-unknown} pos=${0} unknown=${unknown:-${var2}} known=${var2:+known} nested=${var2:+${unknown:-${var1}}} notempty=${var2|notempty:-empty} end</value>
+                    </arg>
                     <arg name="var1" list="">
                         <value>value1</value>
                         <value>-</value>

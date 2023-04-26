@@ -29,6 +29,9 @@
         <run>
             <script name="file_expand"/>
             <arg name="env" ref="env" />
+            <arg name="template" list="">
+                <value>var=${var}</value>
+            </arg>
             <arg name="varname" list="">
                 <value>var</value>
             </arg>

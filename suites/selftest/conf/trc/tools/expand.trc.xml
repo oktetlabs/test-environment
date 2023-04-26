@@ -5,6 +5,7 @@
     <objective>Testing variable expansion routines.</objective>
     <notes/>
     <iter result="PASSED">
+        <arg name="template" />
         <arg name="var1" />
         <arg name="var2" />
         <arg name="posarg" />
