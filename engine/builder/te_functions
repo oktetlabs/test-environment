@@ -11,7 +11,7 @@
 #
 te_ta_sanitize()
 {
-    sed 's/[-.]/_/g'
+    sed 's/[-.]/_/g ; s/+/_plus_/g'
 }
 
 ##
