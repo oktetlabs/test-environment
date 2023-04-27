@@ -709,6 +709,17 @@ RGT_DEF_FUNC(proc_log_msg_start)
     if (depth_user->fd != NULL)
     {
         attrs = rgt_tmpls_attrs_new(xml_attrs);
+
+        if (strcmp(user, "Verdict") == 0 || strcmp(user, "Artifact") == 0)
+        {
+            rgt_tmpls_attrs_add_fstr(attrs, "style_class_add", " %s",
+                                     user);
+        }
+        else
+        {
+            rgt_tmpls_attrs_add_fstr(attrs, "style_class_add", "");
+        }
+
         rgt_tmpls_attrs_add_uint32(attrs, "level_id",
                                    te_log_level_str2h(level));
         rgt_tmpls_attrs_add_uint32(attrs, "linum",

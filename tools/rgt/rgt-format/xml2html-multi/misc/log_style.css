@@ -29,6 +29,9 @@ td {
 .VERB { background-color: #EFF2FF; valign: top; }
 .PACKET { background-color: #E5E5E5; valign: top; }
 
+.RING.Verdict { background-color: #C0FA98; }
+.RING.Artifact { background-color: #C0FA98; }
+
 .log_h1 {font-size: 1.1em; font-weight: bold; display: block;}
 .log_h2 {font-size: 1.05em; font-weight: bold; display: block; margin-top: 0.5em;}
 .log_h3 {font-size: 1em; font-weight: bold; display: block; margin-top: 0.3em;}
