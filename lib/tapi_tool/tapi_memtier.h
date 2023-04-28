@@ -102,6 +102,9 @@ typedef struct tapi_memtier_opt {
     /** Set:Get ratio (for example, "1:10") */
     const char *ratio;
 
+    /** Prefix for keys (default: "memtier-") */
+    const char *key_prefix;
+
     /**
      * Set-Get key pattern. For example, "S:R" means
      * that sets are sequential and gets are random.
