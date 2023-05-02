@@ -85,6 +85,7 @@ main(int argc, char **argv)
         tapi_job_opt_double_t dbl2;
         const char *str;
         const char *str2;
+        const char *str3;
         te_bool flag1;
         te_bool flag2;
         size_t n_array;
@@ -129,6 +130,11 @@ main(int argc, char **argv)
             TAPI_JOB_OPT_DOUBLE("-d", FALSE, NULL, data_sample, dbl2),
             TAPI_JOB_OPT_STRING("-s", FALSE, data_sample, str),
             TAPI_JOB_OPT_STRING("-s", FALSE, data_sample, str2),
+            TAPI_JOB_OPT_QUOTED_STRING("--quoted-str=", "\"", data_sample, str),
+            TAPI_JOB_OPT_QUOTED_STRING("--quoted-str=", "\"",
+                                       data_sample, str2),
+            TAPI_JOB_OPT_QUOTED_STRING("--quoted-str=", "\"",
+                                       data_sample, str3),
             TAPI_JOB_OPT_BOOL("--flag1", data_sample, flag1),
             TAPI_JOB_OPT_BOOL("--flag2", data_sample, flag2),
             TAPI_JOB_OPT_ARRAY(data_sample, n_array, array,
@@ -180,6 +186,7 @@ main(int argc, char **argv)
         .dbl2 = TAPI_JOB_OPT_DOUBLE_UNDEF,
         .str = "string",
         .str2 = NULL,
+        .str3 = "",
         .flag1 = TRUE,
         .flag2 = FALSE,
         .n_array = 3,
@@ -211,6 +218,8 @@ main(int argc, char **argv)
         "--uint64=18446744073709551615",
         "-d", "1.000000",
         "-s", "string",
+        "--quoted-str=\"string\"",
+        "--quoted-str=\"\"",
         "--flag1",
         "--item=value1", "--item=value2", "--item=value3",
         "--items={value1,value2,value3}",

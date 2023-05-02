@@ -478,6 +478,24 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
       TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                  \
                                      TAPI_JOB_OPT_STRING_TYPE), NULL }
 
+/** Value type used in TAPI_JOB_OPT_QUOTED_STRING(). */
+#define TAPI_JOB_OPT_QUOTED_STRING_TYPE char *
+
+/**
+ * Bind @ref char * argument (formatted as
+ * @c <quotation_mark>string<quotation_mark>).
+ *
+ * @param[in] prefix_            Argument prefix.
+ * @param[in] quotation_mark_    Quote symbol.
+ * @param[in] struct_            Option struct.
+ * @param[in] field_             Field name of the string in option struct.
+ */
+#define TAPI_JOB_OPT_QUOTED_STRING(prefix_, quotation_mark_, struct_, field_) \
+    { tapi_job_opt_create_string,                                             \
+      prefix_ quotation_mark_, TRUE, quotation_mark_,                         \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(struct_, field_,                         \
+                                     TAPI_JOB_OPT_QUOTED_STRING_TYPE), NULL }
+
 /**
  * An adaptor for indirect struct fields.
  *
