@@ -58,7 +58,7 @@ pipeline {
             steps {
                 script {
                     dir('te') {
-                        sh "./gen_docs -s"
+                        sh "./gen_docs"
                     }
                 }
             }
