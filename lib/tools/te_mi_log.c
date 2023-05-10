@@ -123,6 +123,7 @@ static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
     [TE_MI_MEAS_FREQ] = TE_MI_MEAS_BASE_UNIT_HZ,
     [TE_MI_MEAS_EPE] = TE_MI_MEAS_BASE_UNITLESS,
     [TE_MI_MEAS_IOPS] = TE_MI_MEAS_BASE_UNIT_IOPS,
+    [TE_MI_MEAS_LOADAVG] = TE_MI_MEAS_BASE_UNITLESS,
 };
 
 static const te_enum_map meas_base_unit_names[] = {
@@ -168,6 +169,7 @@ static const te_enum_map meas_type_names[] = {
     {.value = TE_MI_MEAS_FREQ, .name = "events-per-second"},
     {.value = TE_MI_MEAS_EPE, .name = "events-per-event"},
     {.value = TE_MI_MEAS_IOPS, .name = "iops"},
+    {.value = TE_MI_MEAS_LOADAVG, .name = "load-average"},
     TE_ENUM_MAP_END
 };
 
@@ -742,6 +744,9 @@ te_mi_meas_type2descr(te_mi_meas_type type)
 
         case TE_MI_MEAS_IOPS:
             return "Input/Output operations per second";
+
+        case TE_MI_MEAS_LOADAVG:
+            return "Load average";
 
         default:
             return "Unknown type";
