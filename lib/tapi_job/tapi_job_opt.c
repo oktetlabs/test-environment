@@ -186,6 +186,22 @@ tapi_job_opt_create_sockport_ptr(const void *value, const void *priv,
 }
 
 te_errno
+tapi_job_opt_create_sockaddr_subnet(const void *value, const void *priv,
+                                    te_vec *args)
+{
+    const te_sockaddr_subnet *subnet = (const te_sockaddr_subnet *)value;
+
+    UNUSED(priv);
+
+    if (subnet->addr == NULL)
+        return TE_ENOENT;
+
+    return te_vec_append_str_fmt(args, "%s/%u",
+                                 te_sockaddr_get_ipstr(subnet->addr),
+                                 subnet->prefix_len);
+}
+
+te_errno
 tapi_job_opt_create_enum(const void *value, const void *priv, te_vec *args)
 {
     int ival = *(const int *)value;

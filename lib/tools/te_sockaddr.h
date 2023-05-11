@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Functions to opearate generic "struct sockaddr"
  *
@@ -7,9 +8,6 @@
  * @{
  *
  * Definition of API for working with struct sockaddr.
- *
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TOOLS_SOCKADDR_H__
@@ -86,6 +84,15 @@ extern "C" {
  * of sockaddr structure
  */
 #define TE_SOCKADDR_STR_LEN 300
+
+/** An address with a network prefix. */
+typedef struct te_sockaddr_subnet {
+    /** Address of the network. */
+    const struct sockaddr *addr;
+
+    /** Prefix length. */
+    unsigned int prefix_len;
+} te_sockaddr_subnet;
 
 /**
  * Is address family is supported by this TAPI?

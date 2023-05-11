@@ -276,6 +276,11 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, const void *priv,
 te_errno tapi_job_opt_create_sockport_ptr(const void *value, const void *priv,
                                           te_vec *args);
 
+/** Value type: te_sockaddr_subnet */
+te_errno tapi_job_opt_create_sockaddr_subnet(const void *value,
+                                             const void *priv,
+                                             te_vec *args);
+
 /** value type: any enum */
 te_errno tapi_job_opt_create_enum(const void *value, const void *priv,
                                   te_vec *args);
@@ -754,6 +759,28 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
     { tapi_job_opt_create_sockport_ptr, _prefix, _concat_prefix, NULL,       \
       TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                        \
                                      TAPI_JOB_OPT_SOCKPORT_PTR_TYPE), NULL }
+
+/**
+ * Value type used in TAPI_JOB_OPT_SOCKADDR_SUBNET().
+ *
+ * @ingroup tapi_job_opt_bind_constructors_wrappers
+ */
+#define TAPI_JOB_OPT_SOCKADDR_SUBNET_TYPE te_sockaddr_subnet
+
+/**
+ * Bind te_sockaddr_subnet argument (formatted as @c addr/prefix_len).
+ *
+ * @note The argument won't be included in command line if the field is @c NULL.
+ *
+ * @param[in] prefix_           Argument prefix.
+ * @param[in] concat_prefix_    Concatenate prefix with argument if @c TRUE.
+ * @param[in] struct_           Option struct.
+ * @param[in] field_            Field name of the subnet in option struct.
+ */
+#define TAPI_JOB_OPT_SOCKADDR_SUBNET(prefix_, concat_prefix_, struct_, field_) \
+    { tapi_job_opt_create_sockaddr_subnet, prefix_, concat_prefix_, NULL,      \
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(struct_, field_,                          \
+                                     TAPI_JOB_OPT_SOCKADDR_SUBNET_TYPE), NULL }
 
 /** Undefined value for enum option */
 #define TAPI_JOB_OPT_ENUM_UNDEF INT_MIN
