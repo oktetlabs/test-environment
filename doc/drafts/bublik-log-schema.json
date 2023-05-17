@@ -1,0 +1,538 @@
+{
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": ["v1"],
+      "description": "Version of the API used"
+    },
+    "root": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "te-log"
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "cur_page": {
+                    "type": "number"
+                  },
+                  "pages_count": {
+                    "type": "number"
+                  }
+                },
+                "required": ["cur_page", "pages_count"],
+                "additionalProperties": false,
+                "description": "Pagination object `cur_page: 0` represents to display all pages"
+              },
+              "content": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "te-log-meta"
+                        },
+                        "entity_model": {
+                          "$ref": "#/definitions/LogEntitySchema"
+                        },
+                        "meta": {
+                          "type": "object",
+                          "properties": {
+                            "start": {
+                              "type": "string",
+                              "description": "date string"
+                            },
+                            "end": {
+                              "type": "string",
+                              "description": "date string"
+                            },
+                            "duration": {
+                              "type": "string",
+                              "description": "duration of the test"
+                            },
+                            "parameters": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["name", "value"],
+                                "additionalProperties": false
+                              },
+                              "description": "Optional list of parameters"
+                            },
+                            "verdicts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "verdict": {
+                                    "type": "string"
+                                  },
+                                  "level": {
+                                    "$ref": "#/definitions/LevelSchema"
+                                  }
+                                },
+                                "required": ["verdict", "level"],
+                                "additionalProperties": false
+                              },
+                              "description": "Optional list of verdicts"
+                            },
+                            "objective": {
+                              "type": "string",
+                              "description": "Optional objective"
+                            },
+                            "authors": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "email": {
+                                    "type": "string",
+                                    "format": "email"
+                                  }
+                                },
+                                "required": ["email"],
+                                "additionalProperties": false
+                              },
+                              "description": "Optional List of authors"
+                            },
+                            "artifacts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "level": {
+                                    "$ref": "#/definitions/LevelSchema"
+                                  },
+                                  "artifact": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["level", "artifact"],
+                                "additionalProperties": false
+                              },
+                              "description": "Optional list of artifacts"
+                            },
+                            "description": {
+                              "type": "object",
+                              "properties": {
+                                "url": {
+                                  "type": "string",
+                                  "format": "uri"
+                                },
+                                "text": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["url", "text"],
+                              "additionalProperties": false,
+                              "description": "Optional description with external url"
+                            }
+                          },
+                          "required": ["start", "end", "duration"],
+                          "additionalProperties": false,
+                          "description": "Meta information"
+                        }
+                      },
+                      "required": ["type", "entity_model", "meta"],
+                      "additionalProperties": false,
+                      "description": "Block representing log's header"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "te-log-entity-list"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/definitions/LogEntitySchema"
+                          }
+                        }
+                      },
+                      "required": ["type", "items"],
+                      "additionalProperties": false,
+                      "description": "Block representing list of package/session children"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "te-log-table"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "line_number": {
+                                "type": "number"
+                              },
+                              "level": {
+                                "$ref": "#/definitions/LevelSchema"
+                              },
+                              "entity_name": {
+                                "type": "string"
+                              },
+                              "user_name": {
+                                "type": "string"
+                              },
+                              "timestamp": {
+                                "type": "string"
+                              },
+                              "log_content": {
+                                "type": "array",
+                                "items": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "te-log-table-content-text"
+                                        },
+                                        "content": {
+                                          "type": "string",
+                                          "description": "Text content"
+                                        }
+                                      },
+                                      "required": ["type", "content"],
+                                      "additionalProperties": false,
+                                      "description": "Block representing text content inside log table"
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "te-log-table-content-memory-dump"
+                                        },
+                                        "dump": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "description": "Array of arrays of strings"
+                                        }
+                                      },
+                                      "required": ["type", "dump"],
+                                      "additionalProperties": false,
+                                      "description": "Block representing memory dump content inside log table"
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "te-log-table-content-file"
+                                        },
+                                        "content": {
+                                          "type": "string",
+                                          "description": "Content string will display as preformatted text"
+                                        }
+                                      },
+                                      "required": ["type", "content"],
+                                      "additionalProperties": false,
+                                      "description": "Block representing file content inside log table"
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "te-log-table-content-mi"
+                                        },
+                                        "content": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "measurement"
+                                                },
+                                                "version": {
+                                                  "type": "number"
+                                                },
+                                                "tool": {
+                                                  "type": "string"
+                                                },
+                                                "name": {
+                                                  "type": "string"
+                                                },
+                                                "description": {
+                                                  "type": "string"
+                                                },
+                                                "results": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "type": {
+                                                        "type": "string"
+                                                      },
+                                                      "description": {
+                                                        "type": "string"
+                                                      },
+                                                      "name": {
+                                                        "type": "string"
+                                                      },
+                                                      "entries": {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "aggr": {
+                                                              "type": "string"
+                                                            },
+                                                            "value": {
+                                                              "type": "number"
+                                                            },
+                                                            "base_units": {
+                                                              "type": "string"
+                                                            },
+                                                            "multiplier": {
+                                                              "type": "string"
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "aggr",
+                                                            "value",
+                                                            "base_units",
+                                                            "multiplier"
+                                                          ],
+                                                          "additionalProperties": false
+                                                        }
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "type",
+                                                      "description",
+                                                      "entries"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  "description": "Array of entries"
+                                                },
+                                                "views": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "name": {
+                                                        "type": "string"
+                                                      },
+                                                      "type": {
+                                                        "type": "string",
+                                                        "enum": ["line-graph"]
+                                                      },
+                                                      "title": {
+                                                        "type": "string"
+                                                      },
+                                                      "axis_x": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "type": {
+                                                            "type": "string"
+                                                          },
+                                                          "name": {
+                                                            "type": "string"
+                                                          }
+                                                        },
+                                                        "additionalProperties": false
+                                                      },
+                                                      "axis_y": {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "type": {
+                                                              "type": "string"
+                                                            },
+                                                            "name": {
+                                                              "type": "string"
+                                                            }
+                                                          },
+                                                          "required": ["type"],
+                                                          "additionalProperties": false
+                                                        }
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "name",
+                                                      "type",
+                                                      "title",
+                                                      "axis_x"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  "description": "Array of views"
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "version",
+                                                "tool",
+                                                "results",
+                                                "views"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "additionalProperties": {}
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": ["type", "content"],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "const": "te-log-table-content-packet-sniffer"
+                                        },
+                                        "content": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "label": {
+                                                "type": "string"
+                                              },
+                                              "content": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              }
+                                            },
+                                            "required": ["label", "content"],
+                                            "additionalProperties": false
+                                          }
+                                        }
+                                      },
+                                      "required": ["type", "content"],
+                                      "additionalProperties": false
+                                    }
+                                  ]
+                                },
+                                "description": "Log content accepts series of blocks for displaying data"
+                              },
+                              "children": {
+                                "type": "array",
+                                "items": {
+                                  "$ref": "#/properties/root/items/anyOf/0/properties/content/items/anyOf/2/properties/data/items"
+                                },
+                                "description": "Represents nesting level"
+                              }
+                            },
+                            "required": [
+                              "line_number",
+                              "level",
+                              "entity_name",
+                              "user_name",
+                              "timestamp",
+                              "log_content"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Log table data"
+                          }
+                        }
+                      },
+                      "required": ["type", "data"],
+                      "additionalProperties": false,
+                      "description": "Block representing log table"
+                    }
+                  ]
+                }
+              }
+            },
+            "required": ["type", "content"],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "description": "Root entry for all block"
+    }
+  },
+  "required": ["version", "root"],
+  "additionalProperties": false,
+  "description": "This is root block of log",
+  "definitions": {
+    "LevelSchema": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": ["ERROR", "WARN", "INFO", "VERB", "PACKET", "RING"]
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Log level"
+    },
+    "LogEntitySchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Test or package id"
+        },
+        "name": {
+          "type": "string",
+          "description": "Test or package name"
+        },
+        "entity": {
+          "type": "string",
+          "description": "Entity type"
+        },
+        "result": {
+          "type": "string",
+          "description": "Result of the test or package"
+        },
+        "error": {
+          "type": "string",
+          "description": "If error message is present result will be in red badge"
+        },
+        "extended_properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "number"]
+          },
+          "description": "Additional properties to add such as hash/tin"
+        }
+      },
+      "required": ["id", "name", "entity", "result", "extended_properties"],
+      "additionalProperties": false,
+      "description": "Model representing test/package/session"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
