@@ -20,6 +20,7 @@
 #include "te_string.h"
 #include "te_json.h"
 #include "te_str.h"
+#include "te_vector.h"
 
 #include "xml2gen.h"
 #include "mi_msg.h"
@@ -66,6 +67,13 @@ typedef struct depth_ctx_user {
 
     /** Current nesting level */
     unsigned int cur_nl;
+
+    /**
+     * Stack with nesting levels of messages for which children lists
+     * are currently filled.
+     */
+    te_vec nl_stack;
+
     /** TE JSON context */
     te_json_ctx_t json_ctx;
 } depth_ctx_user;
@@ -101,10 +109,16 @@ static depth_ctx_user *
 alloc_depth_user_data(uint32_t depth)
 {
     depth_ctx_user *depth_user;
+    te_bool reused = FALSE;
 
     assert(depth >= 1);
 
-    depth_user = rgt_xml2fmt_alloc_depth_data(&depth_data, depth, NULL);
+    depth_user = rgt_xml2fmt_alloc_depth_data(&depth_data, depth, &reused);
+
+    if (reused)
+        te_vec_reset(&depth_user->nl_stack);
+    else
+        depth_user->nl_stack = (te_vec)TE_VEC_INIT(unsigned int);
 
     depth_user->linum = 1;
     return depth_user;
@@ -258,6 +272,15 @@ RGT_DEF_FUNC(proc_document_start)
     }
 }
 
+/* Release resources associated with given log depth. */
+static void
+free_depth_user_data(void *data)
+{
+    depth_ctx_user *depth_user = data;
+
+    te_vec_free(&depth_user->nl_stack);
+}
+
 RGT_DEF_FUNC(proc_document_end)
 {
     depth_ctx_user *depth_user = (depth_ctx_user *)depth_ctx->user_data;
@@ -273,7 +296,7 @@ RGT_DEF_FUNC(proc_document_end)
         depth_user->f = NULL;
     }
 
-    rgt_xml2fmt_free_depth_data(&depth_data, NULL);
+    rgt_xml2fmt_free_depth_data(&depth_data, &free_depth_user_data);
 }
 
 /* Start of package/session/test */
@@ -468,14 +491,45 @@ maybe_terminate_msg(depth_ctx_user *depth_user, unsigned int nl_num)
      * Terminate children lists of previous messages with
      * greater or equal nesting level.
      */
-    while (depth_user->cur_nl > nl_num)
-    {
-        /* Terminate children */
-        te_json_end(json_ctx);
-        /* Terminate message */
-        te_json_end(json_ctx);
 
-        depth_user->cur_nl--;
+    if (depth_user->cur_nl > nl_num)
+    {
+        unsigned int i;
+        unsigned int vec_size = te_vec_size(&depth_user->nl_stack);
+        unsigned int prev_nl;
+
+        /*
+         * Log can contain unexpected nesting "jumps" like
+         *
+         * message N: nesting level 0
+         * message N+1: nesting level 2
+         *
+         * This tool should not crash on encountering this, so a stack is
+         * used to keep track of nesting levels of messages for which
+         * lists of children are currently filled. It allows to decide
+         * which messages (and their lists of children) should be
+         * terminated when nesting level decreases.
+         */
+
+        for (i = vec_size; i > 0; i--)
+        {
+            prev_nl = TE_VEC_GET(unsigned int, &depth_user->nl_stack,
+                                 i - 1);
+            if (prev_nl >= nl_num)
+            {
+                /* Terminate children */
+                te_json_end(json_ctx);
+                /* Terminate message */
+                te_json_end(json_ctx);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (i < vec_size)
+            te_vec_remove(&depth_user->nl_stack, i, vec_size - i);
     }
 }
 
@@ -510,11 +564,18 @@ RGT_XML2JSON_CB(proc_log_msg_start,
 
     if (depth_user->cur_nl < nl_num)
     {
-        assert(depth_user->cur_nl == nl_num - 1);
+        if (depth_user->cur_nl != nl_num - 1)
+        {
+            fprintf(stderr, "Message at %d has nesting level %u "
+                    "while the current nesting level is %u\n",
+                    depth_user->linum, nl_num, depth_user->cur_nl);
+        }
 
         /* Start filling children of the previous message */
         te_json_add_key(json_ctx, "children");
         te_json_start_array(json_ctx);
+
+        TE_VEC_APPEND(&depth_user->nl_stack, depth_user->cur_nl);
     }
     else
     {
