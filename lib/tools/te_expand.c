@@ -25,6 +25,44 @@
 #include "te_expand.h"
 #include "te_json.h"
 
+/**
+ * @name Variable expansion metacharacters.
+ *
+ * The abstract syntax of variable expansions is:
+ *
+ * @code
+ * VARREF OPENING varname (FILTER filter-name)*
+ *        [MODIFIER_INTRO (DEFAULT_VALUE | ALTERNATE_VALUE) string]
+ *        CLOSING
+ * @endcode
+ *
+ * which is represended on surface as:
+ * - `${varname}`
+ * - `${varname|filter-name}`
+ * - `${varname:-default value}`
+ * - `${varname:+alternate value}`
+ * and so on.
+ *
+ * See the description of te_string_expand_parameters() for more details.
+ *
+ * @{
+ */
+/** Start of a variable reference. */
+#define VARREF "$"
+/** Opening brace after VARREF. */
+#define OPENING "{"
+/** Closing brace. */
+#define CLOSING "}"
+/** Start of a reference modifier. */
+#define MODIFIER_INTRO ":"
+/** Default-value modifier. */
+#define DEFAULT_VALUE "-"
+/** Alternate-value modifier. */
+#define ALTERNATE_VALUE "+"
+/** Filter separator. */
+#define FILTER "|"
+/** @} */
+
 static const char *
 get_positional_arg(const char *param_name, const char * const *posargs)
 {
@@ -88,30 +126,6 @@ expand_kvpairs_value(const char *param_name, const void *ctx, te_string *dest)
     te_string_append(dest, "%s", te_str_empty_if_null(value));
 
     return value != NULL;
-}
-
-static const char *
-find_ref_end(const char *start)
-{
-    unsigned int brace_level = 1;
-
-    for (; brace_level != 0; start++)
-    {
-        switch (*start)
-        {
-            case '\0':
-                return NULL;
-            case '{':
-                brace_level++;
-                break;
-            case '}':
-                brace_level--;
-                break;
-            default:
-                break;
-        }
-    }
-    return start;
 }
 
 typedef te_errno (*expand_filter)(const te_string *src, te_string *dest);
@@ -341,7 +355,13 @@ static te_errno
 expand_with_filter(te_string *dest, char *ref,
                    te_expand_param_func expand_param, const void *ctx)
 {
-    char *filter = strrchr(ref, '|');
+    const char *filter = NULL;
+    te_errno rc;
+
+    rc = te_strpbrk_rev_balanced(ref, *OPENING, *CLOSING, '\0',
+                                 FILTER, &filter);
+    if (rc == TE_EILSEQ)
+        return rc;
 
     if (filter == NULL)
     {
@@ -355,7 +375,7 @@ expand_with_filter(te_string *dest, char *ref,
         te_errno rc;
         expand_filter fn;
 
-        *filter = '\0';
+        *TE_CONST_PTR_CAST(char, filter) = '\0';
         fn = lookup_filter(filter + 1);
         if (fn == NULL)
         {
@@ -381,27 +401,32 @@ static const char *
 process_reference(const char *start, te_expand_param_func expand_param,
                   const void *ctx, te_string *dest)
 {
-    const char *end = find_ref_end(start);
+    const char *end;
 
-    if (end == NULL)
+    if (te_strpbrk_balanced(start, *OPENING, *CLOSING, '\0', NULL, &end) != 0)
         return NULL;
     else
     {
-        char *default_value = NULL;
-        char ref[end - start];
+        const char *default_value = NULL;
+        char ref[end - start - 1];
         size_t prev_len;
         te_errno expand_rc;
 
-        memcpy(ref, start, end - start - 1);
-        ref[end - start - 1] = '\0';
+        memcpy(ref, start + 1, end - start - 2);
+        ref[end - start - 2] = '\0';
 
-        default_value = strchr(ref, ':');
+        if (te_strpbrk_balanced(ref, *OPENING, *CLOSING, '\0', MODIFIER_INTRO,
+                                &default_value) == TE_EILSEQ)
+            return NULL;
+
         if (default_value != NULL)
         {
-            if (default_value[1] != '+' && default_value[1] != '-')
-                default_value = NULL;
-            else
-                *default_value++ = '\0';
+            if (default_value[1] != *DEFAULT_VALUE &&
+                default_value[1] != *ALTERNATE_VALUE)
+                return NULL;
+
+            *TE_CONST_PTR_CAST(char, default_value) = '\0';
+            default_value++;
         }
 
         prev_len = dest->len;
@@ -411,14 +436,14 @@ process_reference(const char *start, te_expand_param_func expand_param,
 
         if (default_value != NULL)
         {
-            if (*default_value == '+' && expand_rc == 0)
+            if (*default_value == *ALTERNATE_VALUE && expand_rc == 0)
             {
                 te_string_cut(dest, dest->len - prev_len);
                 if (te_string_expand_parameters(default_value + 1,
                                                 expand_param, ctx, dest) != 0)
                     return NULL;
             }
-            else if (*default_value == '-' && expand_rc != 0)
+            else if (*default_value == *DEFAULT_VALUE && expand_rc != 0)
             {
                 if (te_string_expand_parameters(default_value + 1,
                                                 expand_param, ctx, dest) != 0)
@@ -440,14 +465,14 @@ te_string_expand_parameters(const char *src,
 
     for (;;)
     {
-        next = strstr(src, "${");
+        next = strstr(src, VARREF OPENING);
         if (next == NULL)
         {
             te_string_append(dest, "%s", src);
             break;
         }
         te_string_append(dest, "%.*s", next - src, src);
-        next += 2;
+        next++;
 
         src = process_reference(next, expand_param, ctx, dest);
         if (src == NULL)
