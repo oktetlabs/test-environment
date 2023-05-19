@@ -1130,6 +1130,29 @@ typedef enum {
 #define TEST_GET_TUNNEL_TYPE(var_name_) \
     TEST_GET_ENUM_PARAM(var_name_, TUNNEL_TYPE_MAPPING_LIST)
 
+
+/**
+ * The macro to get a parameter representing some expected result.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ *
+ * See test_get_expected_result_param() for the parameter value syntax.
+ *
+ * @return tapi_test_expected_result value
+ */
+#define TEST_EXPECTED_RESULT_PARAM(var_name_) \
+    test_get_expected_result_param(argc, argv, #var_name_)
+
+/**
+ * The macro to assign a parameter representing some expected result.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ */
+#define TEST_GET_EXPECTED_RESULT_PARAM(var_name_) \
+    (var_name_) = TEST_EXPECTED_RESULT_PARAM(var_name_)
+
 /** ID assigned by the Tester to the test instance */
 extern unsigned int te_test_id;
 
@@ -1367,6 +1390,102 @@ extern double test_get_value_unit_param(int argc, char **argv,
  */
 extern uintmax_t test_get_value_bin_unit_param(int argc, char **argv,
                                                const char *name);
+
+
+/**
+ * The description of an expected result.
+ *
+ * The structure should be considered opaque and only
+ * handled by dedicated functions such as test_get_expected_result_param(),
+ * TEST_EXPECTED_RESULT_PARAM(), TEST_GET_EXPECTED_RESULT_PARAM(),
+ * tapi_test_check_expected_result(), tapi_test_check_expected_int_result().
+ *
+ * The values of this type may be freely copied, they do not contain any
+ * dynamically-allocated resources.
+ */
+typedef struct tapi_test_expected_result {
+    /**
+     * The expected module code.
+     *
+     * TE_MIN_MODULE means any module.
+     */
+    te_module error_module;
+    /** The expected error code (without a module). */
+    te_errno error_code;
+    /** The expected output string. */
+    const char *output;
+} tapi_test_expected_result;
+
+/**
+ * Check whether the actual result matches the expected one.
+ *
+ * The function will log details in case of a result mismatch, but
+ * it won't automatically fail the test.
+ *
+ * @param expected  the description of the expected result
+ * @param rc        actual status code
+ * @param output    actual output
+ *
+ * @return @c TRUE if the actual result matches the expected one.
+ */
+extern te_bool
+tapi_test_check_expected_result(const tapi_test_expected_result *expected,
+                                te_errno rc, const char *output);
+
+/**
+ * Check whether the actual integral result matches the expected one.
+ *
+ * The expected output in @p expected must be a string representing an
+ * integral value; otherwise the function will fail the test.
+ *
+ * If @p expected contains @c NULL expected output, @p ival is not
+ * checked at all.
+ *
+ * @param expected  the description of the expected result
+ * @param rc        actual status code
+ * @param ival      actual integral result
+ *
+ * @return @c TRUE if the actual result matches the expected one.
+ */
+extern te_bool
+tapi_test_check_expected_int_result(const tapi_test_expected_result *expected,
+                                    te_errno rc, intmax_t ival);
+
+/**
+ * Get a parameter representing some expected result.
+ *
+ * The value has one of the following two forms:
+ *
+ * @code
+ * [[MODULE_CODE "-" ] ERROR_CODE [ ":" EXPECTED_OUTPUT ]
+ * [ "OK:" ] EXPECTED_OUTPUT
+ * @endcode
+ *
+ * The module code and the error code correspond to names of
+ * members of te_module and te_errno_codes without the @c TE_ prefix.
+ *
+ * If @c EXPECTED_OUTPUT is not provided, it is taken to be @c NULL.
+ *
+ *
+ * For example:
+ * - `OK:This is the output`
+ * - `This is the output`
+ * - `This is the output: it contains colons`
+ * - `OK:ENOENT:This is the output` --- `ENOENT` here is part of the output.
+ * - `ENOENT` --- the output is expected to be @ NULL
+ * - `TAPI-ENOENT`
+ * - `TAPI-ENOENT:Expected error message`
+ *
+ * Also see @path{suites/selftest/ts/minimal/parameters.c} fore more examples.
+ *
+ * @param argc       number of arguments
+ * @param argv       list of arguments
+ * @param name       name of the parameter
+ *
+ * @return the expected result description
+ */
+extern tapi_test_expected_result
+test_get_expected_result_param(int argc, char **argv, const char *name);
 
 /** @name Optional parameters.
  *

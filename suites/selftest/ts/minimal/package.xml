@@ -99,6 +99,27 @@
             <arg name="opt_bin_unit_val_param">
                 <value>1M</value>
             </arg>
+            <arg name="good_result">
+                <value>OK:value</value>
+            </arg>
+            <arg name="good_result_noprefix">
+                <value>value</value>
+            </arg>
+            <arg name="good_int_result">
+                <value>42</value>
+            </arg>
+            <arg name="bad_result">
+                <value>TAPI-ENOENT</value>
+            </arg>
+            <arg name="bad_result_nomodule">
+                <value>ENOENT</value>
+            </arg>
+            <arg name="bad_result_output">
+                <value>ENOENT:value</value>
+            </arg>
+            <arg name="bad_int_result">
+                <value>ENOENT:42</value>
+            </arg>
         </run>
     </session>
 </package>

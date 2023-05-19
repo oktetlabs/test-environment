@@ -1257,6 +1257,149 @@ test_get_value_bin_unit_param(int argc, char **argv, const char *name)
 }
 
 static te_bool
+check_expected_status(const tapi_test_expected_result *expected,
+                      te_errno rc)
+{
+    if (TE_RC_GET_ERROR(rc) != expected->error_code)
+    {
+        ERROR("Expected status %r, but got %r", expected->error_code, rc);
+        return FALSE;
+    }
+
+    if (expected->error_module != TE_MIN_MODULE &&
+        TE_RC_GET_MODULE(rc) != expected->error_module)
+    {
+        ERROR("Unexpected module of the status: %s instead of %s",
+              te_rc_mod2str(rc),
+              te_rc_mod2str(TE_RC(expected->error_module, 0)));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/* See description in tapi_test.h */
+te_bool
+tapi_test_check_expected_result(const tapi_test_expected_result *expected,
+                                te_errno rc, const char *output)
+{
+    te_bool is_status_ok = check_expected_status(expected, rc);
+
+    if (expected->output == NULL)
+    {
+        if (output != NULL)
+        {
+            ERROR("The output is not NULL: %s", output);
+            return FALSE;
+        }
+    }
+    else
+    {
+        if (output == NULL)
+        {
+            ERROR("The output should be '%s', but it is NULL",
+                  expected->output);
+            return FALSE;
+        }
+
+        if (strcmp(output, expected->output) != 0)
+        {
+            ERROR("The output is expected to be '%s', but it is '%s'",
+                  expected->output, output);
+            return FALSE;
+        }
+    }
+
+    return is_status_ok;
+}
+
+/* See description in tapi_test.h */
+te_bool
+tapi_test_check_expected_int_result(const tapi_test_expected_result *expected,
+                                    te_errno rc, intmax_t ival)
+{
+    te_bool is_status_ok = check_expected_status(expected, rc);
+
+    if (expected->output != NULL)
+    {
+        intmax_t expected_ival;
+
+        CHECK_RC(te_strtoimax(expected->output, 0, &expected_ival));
+
+        if (expected_ival != ival)
+        {
+            ERROR("The result is expected to be %jd, but it is %jd",
+                  expected_ival, ival);
+            return FALSE;
+        }
+    }
+
+    return is_status_ok;
+}
+
+/* See description in tapi_test.h */
+tapi_test_expected_result
+test_get_expected_result_param(int argc, char **argv, const char *name)
+{
+    tapi_test_expected_result expected = {
+        .error_module = TE_MIN_MODULE,
+        .error_code = 0,
+        .output = NULL,
+    };
+    const char *value = test_get_param(argc, argv, name);
+    te_module mod;
+    te_errno rc;
+    const char *skip;
+#define OK_PREFIX "OK"
+
+    if (value == NULL)
+        TEST_FAIL("Failed to get the value of param '%s'", name);
+
+    if (strcmp(value, OK_PREFIX) == 0)
+        return expected;
+    skip = te_str_strip_prefix(value, OK_PREFIX ":");
+    if (skip != NULL)
+    {
+        expected.output = skip;
+        return expected;
+    }
+
+    for (mod = TE_MIN_MODULE + 1; mod < TE_MAX_MODULE; mod++)
+    {
+        const char *label = te_rc_mod2str(TE_RC(mod, TE_EOK));
+
+        skip = te_str_strip_prefix(value, label);
+        if (skip != NULL && *skip == '-')
+        {
+            value = skip + 1;
+            break;
+        }
+    }
+
+    for (rc = TE_MIN_ERRNO + 1; rc < TE_MAX_ERRNO; rc++)
+    {
+        const char *label = te_rc_err2str(rc);
+
+        skip = te_str_strip_prefix(value, label);
+        if (skip != NULL)
+        {
+            if (*skip == '\0' || *skip == ':')
+            {
+                if (mod < TE_MAX_MODULE)
+                    expected.error_module = mod;
+                expected.error_code = rc;
+                value = *skip == '\0' ? NULL : skip + 1;
+                break;
+            }
+        }
+    }
+
+    expected.output = value;
+    return expected;
+#undef OK_PREFIX
+}
+
+static te_bool
 is_opt_param_none(int argc, char **argv, const char *name)
 {
     const char *value = test_get_param(argc, argv, name);

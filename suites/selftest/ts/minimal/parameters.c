@@ -49,6 +49,13 @@ main(int argc, char **argv)
     te_optional_double_t opt_unit_val_param = TE_OPTIONAL_DOUBLE_UNDEF;
     te_optional_uintmax_t opt_bin_unit_none_param = TE_OPTIONAL_UINTMAX_VAL(0);
     te_optional_uintmax_t opt_bin_unit_val_param = TE_OPTIONAL_UINTMAX_UNDEF;
+    tapi_test_expected_result good_result;
+    tapi_test_expected_result good_result_noprefix;
+    tapi_test_expected_result good_int_result;
+    tapi_test_expected_result bad_result;
+    tapi_test_expected_result bad_result_nomodule;
+    tapi_test_expected_result bad_result_output;
+    tapi_test_expected_result bad_int_result;
 
     TEST_START;
 
@@ -77,6 +84,15 @@ main(int argc, char **argv)
     TEST_GET_OPT_VALUE_UNIT_PARAM(opt_unit_val_param);
     TEST_GET_OPT_VALUE_BIN_UNIT_PARAM(opt_bin_unit_none_param);
     TEST_GET_OPT_VALUE_BIN_UNIT_PARAM(opt_bin_unit_val_param);
+
+    TEST_STEP("Getting expected result parameters");
+    TEST_GET_EXPECTED_RESULT_PARAM(good_result);
+    TEST_GET_EXPECTED_RESULT_PARAM(good_result_noprefix);
+    TEST_GET_EXPECTED_RESULT_PARAM(good_int_result);
+    TEST_GET_EXPECTED_RESULT_PARAM(bad_result);
+    TEST_GET_EXPECTED_RESULT_PARAM(bad_result_nomodule);
+    TEST_GET_EXPECTED_RESULT_PARAM(bad_result_output);
+    TEST_GET_EXPECTED_RESULT_PARAM(bad_int_result);
 
     TEST_STEP("Verify parameter values");
 
@@ -145,6 +161,53 @@ main(int argc, char **argv)
     CHECK_OPTNUMERIC_PARAMS(opt_bin_unit_none_param, opt_bin_unit_val_param,
                             1ull << 20, "%ju");
 #undef CHECK_OPTNUMERIC_PARAMS
+
+    TEST_STEP("Checking expected results");
+#define CHECK_EXPECTED(_var, _rc, _value) \
+    do {                                                                \
+        if (!tapi_test_check_expected_result(&(_var), (_rc), (_value))) \
+            TEST_VERDICT("Expected result for '%s' "                    \
+                         "is not recognized", #_var);                   \
+    } while (0)
+#define CHECK_UNEXPECTED(_var, _rc, _value)                               \
+    do {                                                                \
+        if (tapi_test_check_expected_result(&(_var), (_rc), (_value)))  \
+            TEST_VERDICT("Unexpected result for '%s' "                  \
+                         "is recognized as expected", #_var);           \
+    } while (0)
+    CHECK_EXPECTED(good_result, 0, "value");
+    CHECK_EXPECTED(good_result_noprefix, 0, "value");
+    CHECK_UNEXPECTED(good_result, 0, "mismatched value");
+    CHECK_UNEXPECTED(good_result, TE_ENOENT, NULL);
+
+    if (!tapi_test_check_expected_int_result(&good_int_result, 0, 42))
+        TEST_VERDICT("Expected integral result is not recognized");
+    if (tapi_test_check_expected_int_result(&good_int_result, 0, 43))
+        TEST_VERDICT("Unexpected integral result considered expected");
+
+    CHECK_EXPECTED(bad_result, TE_RC(TE_TAPI, TE_ENOENT), NULL);
+    CHECK_UNEXPECTED(bad_result, 0, NULL);
+    CHECK_UNEXPECTED(bad_result, TE_RC(TE_TA_UNIX, TE_ENOENT), NULL);
+    CHECK_UNEXPECTED(bad_result, TE_RC(TE_TAPI, TE_ENOENT), "value");
+    CHECK_EXPECTED(bad_result_nomodule, TE_RC(TE_TAPI, TE_ENOENT), NULL);
+    CHECK_EXPECTED(bad_result_nomodule, TE_RC(TE_TA_UNIX, TE_ENOENT), NULL);
+    CHECK_EXPECTED(bad_result_output, TE_RC(TE_TAPI, TE_ENOENT), "value");
+    CHECK_UNEXPECTED(bad_result_output, TE_RC(TE_TAPI, TE_ENOENT),
+                     "mismatched value");
+    CHECK_UNEXPECTED(bad_result_output, TE_RC(TE_TAPI, TE_ENOENT), NULL);
+
+    if (!tapi_test_check_expected_int_result(&bad_int_result, TE_ENOENT, 42))
+        TEST_VERDICT("Expected integral result is not recognized");
+    if (tapi_test_check_expected_int_result(&bad_int_result, TE_ENOENT, 43))
+        TEST_VERDICT("Unexpected integral result considered expected");
+    if (!tapi_test_check_expected_int_result(&bad_result,
+                                             TE_RC(TE_TAPI, TE_ENOENT), 42))
+        TEST_VERDICT("Expected integral result is not recognized");
+    if (!tapi_test_check_expected_int_result(&bad_result,
+                                             TE_RC(TE_TAPI, TE_ENOENT), 43))
+        TEST_VERDICT("Expected integral result is not recognized");
+#undef CHECK_EXPECTED
+#undef CHECK_UNEXPECTED
 
     TEST_SUCCESS;
 
