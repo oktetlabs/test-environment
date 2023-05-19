@@ -53,6 +53,10 @@ typedef te_bool (*te_expand_param_func)(const char *name, const void *ctx,
  *
  * The parameter names must be enclosed in `${` and `}`.
  *
+ * Names are not necessary simple strings, specific expanders may define
+ * pretty complex syntaxes for variable names e.g. with subscripts etc
+ * (see te_string_expand_kvpairs()).
+ *
  * Conditional expansion is supported:
  * - `${NAME:-VALUE}` is expanded into @c VALUE if @c NAME variable is not set,
  *   otherwise to its value
@@ -133,6 +137,80 @@ extern te_errno te_string_expand_env_vars(const char *src,
  * Expand key references in a string.
  *
  * See te_string_expand_parameters() for the expansion syntax.
+ *
+ * The expanders support multi-valued keys in @p kvpairs using
+ * the following syntax for names:
+ * - an empty name is expanded to the current loop index;
+ * - a name staring with @c # is expanded to the count of values
+ *   associated with the rest of the name;
+ * - `NAME[INDEX]` is processed in the following way:
+ *   + first, @c INDEX is recursively expanded
+ *   + then if the result is a valid nonnegative number @c N, it is
+ *     used to select the @c Nth value;
+ *   + else if the result is a negative number @c -N, it is used
+ *     to select the @c Nth value counting from the last, i.e.
+ *     @c -1 refers to the last associated value;
+ *   + otherwise the expanded index is treated as a separator and
+ *     all values associated with the @c NAME are output separated
+ *     by the given separator. Note that literal @c | and @c : cannot
+ *     be used as separators, because they would be processed by the
+ *     general syntax.
+ * - `NAME*EXPR` is a loop construct. @c EXPR is recursively expanded
+ *   as many times as there are values associated with @c NAME, varying
+ *   the current loop index (which may be accessed with @c ${}).
+ *   If there is no values associated with @c NAME, it is treated as
+ *   a missing variable references, so e.g. a default value may be
+ *   substituted.
+ *
+ * @par Examples of list references.
+ * The @c // comments below mark the expected content of the destination
+ * buffer.
+ *
+ * @code
+ * te_kvpair_push(data, "ip_address", "%s", "172.16.1.1");
+ * te_kvpair_push(data, "netmask", "%d", 16);
+ * te_kvpair_push(data, "ip_address", "%s", "192.168.1.1");
+ * te_kvpair_push(data, "netmask", "%d", 24);
+ * te_kvpair_push(data, "ip_address", "%s", "127.0.0.1");
+ * te_kvpair_push(data, "netmask", "%d", 32);
+ * te_kvpair_push(data, "index", "%d", 1);
+ *
+ * te_string_expand_kvpairs("${ip_address}", NULL, data, dest);
+ * // 127.0.0.1
+ *
+ * te_string_expand_kvpairs("${ip_address[0]}", NULL, data, dest);
+ * // 127.0.0.1
+ *
+ * te_string_expand_kvpairs("${ip_address[1]}", NULL, data, dest);
+ * // 192.168.1.1
+ *
+ * te_string_expand_kvpairs("${ip_address[-1]}", NULL, data, dest);
+ * // 172.16.1.1
+ *
+ * te_string_expand_kvpairs("${ip_address[3]:-missing}", NULL, data, dest);
+ * // missing
+ *
+ * te_string_expand_kvpairs("${ip_address[${index}]}", NULL, data, dest);
+ * // 192.168.1.1
+ *
+ * te_string_expand_kvpairs("${ip_address[3]:-missing}", NULL, data, dest);
+ * // missing
+ *
+ * te_string_expand_kvpairs("${ip_address[, ]}", NULL, data, dest);
+ * // 127.0.0.1, 192.168.1.1, 172.16.1.1
+ *
+ * te_string_expand_kvpairs("${#ip_address}", NULL, data, dest);
+ * // 3
+ *
+ * te_string_expand_kvpairs("${ip_address*address ${ip_address[${}]}/"
+ *                          "${netmask[${}]}\n}", NULL, data, dest);
+ * // address 127.0.0.1/32
+ * // address 192.168.1.1/24
+ * // address 172.16.1.1/16
+ * @endcode
+ *
+ * More examples can also be found in
+ * @path{suites/selftest/ts/tool/expand_list.c}.
  *
  * @param[in]  src               source string
  * @param[in]  posargs           positional arguments

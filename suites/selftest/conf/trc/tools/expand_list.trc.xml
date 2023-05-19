@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="expand_list" type="script">
+    <objective>Testing list variable expansion routines.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="template" />
+        <arg name="values1" />
+        <arg name="values2" />
+        <arg name="index_value" />
+        <arg name="expanded" />
+    </iter>
+</test>

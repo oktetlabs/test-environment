@@ -43,7 +43,23 @@
  * - `${varname:+alternate value}`
  * and so on.
  *
- * See the description of te_string_expand_parameters() for more details.
+ * te_string_expand_kvpairs() in addition support special syntax
+ * of @c varname for list operations:
+ *
+ * @code
+ * COUNT_INTRO basevarname
+ * basevarname SUBSCRIPT_START string SUBSCRIPT_END
+ * varname LOOPINTRO string
+ * @endcode
+ *
+ * which is represented on surface as:
+ * - `${#basevarname}`
+ * - `${basevarname[1]}`
+ * - `${varname*${othervar[${}}]}`
+ * and so on.
+ *
+ * See the description of te_string_expand_parameters() and
+ * te_string_expand_kvpairs() for more details.
  *
  * @{
  */
@@ -61,6 +77,14 @@
 #define ALTERNATE_VALUE "+"
 /** Filter separator. */
 #define FILTER "|"
+/** First character of a counting reference. */
+#define COUNT_INTRO "#"
+/** Start of a list subscript. */
+#define SUBSCRIPT_START "["
+/** End of a list subscript. */
+#define SUBSCRIPT_END "]"
+/** Start of a looping construct. */
+#define LOOP_INTRO "*"
 /** @} */
 
 static const char *
@@ -103,7 +127,135 @@ typedef struct kvpairs_expand_ctx {
     const char **posargs;
     /** Head of key value pairs */
     const te_kvpair_h *kvpairs;
+    /** Innermost loop index */
+    unsigned int loop_index;
 } kvpairs_expand_ctx;
+
+static te_bool expand_kvpairs_value(const char *param_name, const void *ctx,
+                                    te_string *dest);
+
+static te_bool
+expand_kvpairs_index(const te_kvpair_h *kvpairs, const char *name,
+                     long int ival, te_string *dest)
+{
+    unsigned int idx;
+    const char *value;
+
+    if (ival >= 0)
+    {
+        if (ival > UINT_MAX)
+        {
+            ERROR("The index %ld is too large", ival);
+            return FALSE;
+        }
+        idx = (unsigned int)ival;
+    }
+    else
+    {
+        idx = te_kvpairs_count(kvpairs, name);
+        if (-ival > idx)
+        {
+            ERROR("The index %ls is too small", ival);
+            return FALSE;
+        }
+        idx += (int)ival;
+    }
+
+    value = te_kvpairs_get_nth(kvpairs, name, idx);
+
+    te_string_append(dest, "%s", te_str_empty_if_null(value));
+    return value != NULL;
+}
+
+static te_bool
+expand_kvpairs_sep(const te_kvpair_h *kvpairs, const char *name,
+                   const char *sep, te_string *dest)
+{
+    te_vec all_values = TE_VEC_INIT(const char *);
+    te_bool result;
+
+    result = (te_kvpairs_get_all(kvpairs, name, &all_values) == 0);
+
+    te_string_join_vec(dest, &all_values, sep);
+    te_vec_free(&all_values);
+
+    return result;
+}
+
+static te_bool
+expand_kvpairs_subscript(const char *param_name, const char *sub_start,
+                         const kvpairs_expand_ctx *ctx, te_string *dest)
+{
+    const char *end;
+    char base_param_name[sub_start - param_name];
+
+    memcpy(base_param_name, param_name, sizeof(base_param_name) - 1);
+    base_param_name[sizeof(base_param_name) - 1] = '\0';
+
+    te_strpbrk_balanced(sub_start, *OPENING, *CLOSING, '\0',
+                        SUBSCRIPT_END, &end);
+    if (end == NULL || end[1] != '\0')
+    {
+        ERROR("Invalid list subscript: %s", sub_start);
+        return FALSE;
+    }
+    else
+    {
+        char sub_expr[end - sub_start + 1];
+        te_string index = TE_STRING_INIT;
+        long int ival;
+        te_bool result;
+
+        memcpy(sub_expr, sub_start, sizeof(sub_expr) - 1);
+        sub_expr[sizeof(sub_expr) - 1] = '\0';
+
+        if (te_string_expand_parameters(sub_expr, expand_kvpairs_value,
+                                        ctx, &index) != 0)
+        {
+            te_string_free(&index);
+            return FALSE;
+        }
+
+        if (te_strtol_silent(index.ptr, 0, &ival) == 0)
+        {
+            result = expand_kvpairs_index(ctx->kvpairs, base_param_name,
+                                          ival, dest);
+        }
+        else
+        {
+            result = expand_kvpairs_sep(ctx->kvpairs, base_param_name,
+                                        index.ptr, dest);
+        }
+        te_string_free(&index);
+        return result;
+    }
+}
+
+static te_bool
+expand_kvpairs_loop(const char *param_name, const char *loop_start,
+                         const kvpairs_expand_ctx *ctx, te_string *dest)
+{
+    kvpairs_expand_ctx inner_ctx = *ctx;
+    char base_param_name[loop_start - param_name];
+    unsigned int count;
+
+    memcpy(base_param_name, param_name, sizeof(base_param_name) - 1);
+    base_param_name[sizeof(base_param_name) - 1] = '\0';
+
+    count = te_kvpairs_count(ctx->kvpairs, base_param_name);
+    if (count == 0)
+        return FALSE;
+
+    for (inner_ctx.loop_index = 0;
+         inner_ctx.loop_index < count;
+         inner_ctx.loop_index++)
+    {
+        te_string_expand_parameters(loop_start, expand_kvpairs_value,
+                                    &inner_ctx, dest);
+    }
+
+    return TRUE;
+}
 
 /**
  * Expand a value of a key or a positional argument into @p dest.
@@ -118,10 +270,50 @@ static te_bool
 expand_kvpairs_value(const char *param_name, const void *ctx, te_string *dest)
 {
     const kvpairs_expand_ctx *kvpairs_ctx = ctx;
-    const char *value = get_positional_arg(param_name, kvpairs_ctx->posargs);
+    const char *value;
+
+    if (*param_name == '\0')
+    {
+        te_string_append(dest, "%u", kvpairs_ctx->loop_index);
+        return TRUE;
+    }
+
+    value = get_positional_arg(param_name, kvpairs_ctx->posargs);
 
     if (value == NULL)
-        value = te_kvpairs_get(kvpairs_ctx->kvpairs, param_name);
+    {
+        if (*param_name == '\0')
+        {
+            te_string_append(dest, "%u", kvpairs_ctx->loop_index);
+            return TRUE;
+        }
+        else if (*param_name == '#')
+        {
+            te_string_append(dest, "%u",
+                             te_kvpairs_count(kvpairs_ctx->kvpairs,
+                                              param_name + 1));
+            return TRUE;
+        }
+        else
+        {
+            const char *sep = NULL;
+
+            te_strpbrk_balanced(param_name, *OPENING, *CLOSING, '\0',
+                                LOOP_INTRO SUBSCRIPT_START, &sep);
+            if (sep == NULL)
+                value = te_kvpairs_get(kvpairs_ctx->kvpairs, param_name);
+            else if (*sep == *SUBSCRIPT_START)
+            {
+                return expand_kvpairs_subscript(param_name, sep + 1,
+                                                kvpairs_ctx, dest);
+            }
+            else if (*sep == *LOOP_INTRO)
+            {
+                return expand_kvpairs_loop(param_name, sep + 1,
+                                           kvpairs_ctx, dest);
+            }
+        }
+    }
 
     te_string_append(dest, "%s", te_str_empty_if_null(value));
 

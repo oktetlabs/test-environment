@@ -142,6 +142,31 @@
                         <value>NEI0QzRENEU0Rg==</value>
                     </arg>
                 </run>
+
+                <run>
+                    <script name="expand_list"/>
+                    <arg name="template" list="">
+                        <value>${#var1} ${#var3:-nothing}</value>
+                        <value>${var1} ${var1[0]} ${var1[1]} ${var1[-1]} ${var1[2]} ${var1[${index}]} ${var1[-${index}]} ${var1[10]:-missing}</value>
+                        <value>${var1[]} ${var1[,]} ${var1[ ]}</value>
+                        <value>${var1*${}} ${var1*${var2[${}]:-missing}} ${var3*${}:-missing} ${var1*${var1[${}]|length}} ${var1*${var1[${}]}|length}</value>
+                    </arg>
+                    <arg name="values1">
+                        <value>a,b,c,d</value>
+                    </arg>
+                    <arg name="values2">
+                        <value>x,y,z</value>
+                    </arg>
+                    <arg name="index_value">
+                        <value>1</value>
+                    </arg>
+                    <arg name="expanded" list="">
+                        <value>4 0</value>
+                        <value>a a b d c b d missing</value>
+                        <value>abcd a,b,c,d a b c d</value>
+                        <value>0123 xyzmissing missing 1111 4</value>
+                    </arg>
+                </run>
             </session>
         </run>
 

@@ -7,6 +7,7 @@ tests = [
     'enum_map',
     'expand',
     'expand_filters',
+    'expand_list',
     'extract_glob',
     'file',
     'hexdump',
