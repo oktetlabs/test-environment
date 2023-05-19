@@ -244,6 +244,29 @@ extern te_errno te_snprintf(char *dst, size_t size, const char *fmt, ...)
 extern char *te_str_strip_spaces(const char *str);
 
 /**
+ * Skips the @p prefix from the string @p str if it has one.
+ *
+ * The function does not allocate any memory, just returning a pointer
+ * into the original string or @c NULL if @p str does not start with
+ * @p prefix, so it can freely be used just to test for a string prefix.
+ *
+ * @param str    Source string.
+ * @param prefix Expected prefix.
+ *
+ * @return A pointer into @p str after the @p prefix or @c NULL.
+ */
+static inline const char *
+te_str_strip_prefix(const char *str, const char *prefix)
+{
+    size_t prefix_len = strlen(prefix);
+
+    if (strncmp(str, prefix, prefix_len) != 0)
+        return NULL;
+
+    return str + prefix_len;
+}
+
+/**
  * Wrapper over strtoumax().
  *
  * @param str       String to convert.
