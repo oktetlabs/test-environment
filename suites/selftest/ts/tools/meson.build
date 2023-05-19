@@ -12,6 +12,7 @@ tests = [
     'hexdump',
     'intset',
     'json',
+    'kvpair',
     'make_bufs',
     'readlink',
     'resolvepath',

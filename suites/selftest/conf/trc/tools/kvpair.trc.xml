@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="kvpair" type="script">
+    <objective>Testing key-value pair routines.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="n_keys" />
+        <arg name="min_key_len" />
+        <arg name="max_key_len" />
+        <arg name="min_value_len" />
+        <arg name="max_value_len" />
+    </iter>
+</test>
