@@ -402,6 +402,22 @@ crlf_filter(const te_string *src, te_string *dest)
 }
 
 static te_errno
+even_filter(const te_string *src, te_string *dest)
+{
+    intmax_t ival;
+    te_errno rc = te_strtoimax(src->ptr, 0, &ival);
+
+    if (rc != 0)
+        return rc;
+
+    if (ival % 2 != 0)
+        return TE_ENODATA;
+
+    te_string_append_buf(dest, src->ptr, src->len);
+    return 0;
+}
+
+static te_errno
 hex_filter(const te_string *src, te_string *dest)
 {
     const char *iter;
@@ -425,6 +441,22 @@ static te_errno
 length_filter(const te_string *src, te_string *dest)
 {
     te_string_append(dest, "%zu", src->len);
+    return 0;
+}
+
+static te_errno
+nonzero_filter(const te_string *src, te_string *dest)
+{
+    intmax_t ival;
+    te_errno rc = te_strtoimax(src->ptr, 0, &ival);
+
+    if (rc != 0)
+        return rc;
+
+    if (ival == 0)
+        return TE_ENODATA;
+
+    te_string_append_buf(dest, src->ptr, src->len);
     return 0;
 }
 
@@ -462,9 +494,57 @@ notempty_filter(const te_string *src, te_string *dest)
 }
 
 static te_errno
+odd_filter(const te_string *src, te_string *dest)
+{
+    intmax_t ival;
+    te_errno rc = te_strtoimax(src->ptr, 0, &ival);
+
+    if (rc != 0)
+        return rc;
+
+    if (ival % 2 == 0)
+        return TE_ENODATA;
+
+    te_string_append_buf(dest, src->ptr, src->len);
+    return 0;
+}
+
+static te_errno
+pred_filter(const te_string *src, te_string *dest)
+{
+    intmax_t ival;
+    te_errno rc = te_strtoimax(src->ptr, 0, &ival);
+
+    if (rc != 0)
+        return rc;
+
+    if (ival == 0)
+        return TE_EDOM;
+
+    te_string_append(dest, "%jd", ival - 1);
+    return 0;
+}
+
+static te_errno
 shell_filter(const te_string *src, te_string *dest)
 {
     te_string_append_shell_arg_as_is(dest, te_string_value(src));
+    return 0;
+}
+
+static te_errno
+succ_filter(const te_string *src, te_string *dest)
+{
+    intmax_t ival;
+    te_errno rc = te_strtoimax(src->ptr, 0, &ival);
+
+    if (rc != 0)
+        return rc;
+
+    if (ival == -1)
+        return TE_EDOM;
+
+    te_string_append(dest, "%jd", ival + 1);
     return 0;
 }
 
@@ -521,12 +601,17 @@ lookup_filter(const char *name)
         {"c", c_literal_filter},
         {"cid", c_identifier_filter},
         {"crlf", crlf_filter},
+        {"even", even_filter},
         {"hex", hex_filter},
         {"json", json_filter},
         {"length", length_filter},
+        {"nonzero", nonzero_filter},
         {"normalize", normalize_filter},
         {"notempty", notempty_filter},
+        {"odd", odd_filter},
+        {"pred", pred_filter},
         {"shell", shell_filter},
+        {"succ", succ_filter},
         {"upper", uppercase_filter},
         {"uri", uri_filter},
         {"xml", xml_filter},

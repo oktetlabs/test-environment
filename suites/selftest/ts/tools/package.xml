@@ -150,6 +150,7 @@
                         <value>${var1} ${var1[0]} ${var1[1]} ${var1[-1]} ${var1[2]} ${var1[${index}]} ${var1[-${index}]} ${var1[10]:-missing}</value>
                         <value>${var1[]} ${var1[,]} ${var1[ ]}</value>
                         <value>${var1*${}} ${var1*${var2[${}]:-missing}} ${var3*${}:-missing} ${var1*${var1[${}]|length}} ${var1*${var1[${}]}|length}</value>
+                        <value>${var1[${index|succ|succ}]} ${var1*${|nonzero:+,}${var1[${}]}} ${var1*${|nonzero|pred}} ${var1*${|even:+${var1[${}]}}} ${var1*${|odd:+${var1[${}]}}}</value>
                     </arg>
                     <arg name="values1">
                         <value>a,b,c,d</value>
@@ -165,6 +166,7 @@
                         <value>a a b d c b d missing</value>
                         <value>abcd a,b,c,d a b c d</value>
                         <value>0123 xyzmissing missing 1111 4</value>
+                        <value>d a,b,c,d 012 ac bd</value>
                     </arg>
                 </run>
             </session>

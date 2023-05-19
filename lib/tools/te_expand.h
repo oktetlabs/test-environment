@@ -90,6 +90,22 @@ typedef te_bool (*te_expand_param_func)(const char *name, const void *ctx,
  * as is, but an empty string is discarded, as if the original reference
  * did not exist, thus allowing the default value to be substituted.
  *
+ * There are also the following filters that require integral input values:
+ *
+ * Name     | Meaning
+ * ---------|-----------------------------------------------
+ * even     | Pass even values as is, drop odd values.
+ * nonzero  | Pass non-zero values as is.
+ * odd      | Pass odd values as is, drop even values.
+ * pred     | Decrement a non-zero value by one.
+ * succ     | Increment a value not equal to @c -1 by one.
+ *
+ * These filters are intended to be used together with looping constructs.
+ * Hence seemingly illogical behaviour for @c pred and @c succ: since negative
+ * indexes are treated as the count from the end, @c 0 should never become
+ * @c -1, nor @c -1 become @c 0.
+ * See the descrition of te_string_expand_kvpairs() for examples.
+ *
  * @todo Support registering additional filters.
  * @note @c base64, @c base64uri and @c hex filters can properly handle
  *       values with embedded zeroes, however, standard expanders used in
@@ -203,10 +219,21 @@ extern te_errno te_string_expand_env_vars(const char *src,
  * // 3
  *
  * te_string_expand_kvpairs("${ip_address*address ${ip_address[${}]}/"
- *                          "${netmask[${}]}\n}", NULL, data, dest);
+ *                          "${netmask[${}]}}\n}", NULL, data, dest);
  * // address 127.0.0.1/32
  * // address 192.168.1.1/24
  * // address 172.16.1.1/16
+ *
+ * te_string_expand_kvpairs("${ip_address*${|nonzero:+,}"
+ *                          "\"${ip_address[${}]}\"}", NULL, data, dest);
+ * // "127.0.0.1","192.168.1.1","172.16.1.1"
+ *
+ * te_string_expand_kvpairs("${ip_address*${ip_address[${|pred}]:-none} - "
+ *                          "${ip_address[${|succ}]:-none}\n}",
+ *                          NULL, data, dest);
+ * // none - 192.168.1.1
+ * // 127.0.0.1 - 172.16.1.1
+ * // 192.168.1.1 - none
  * @endcode
  *
  * More examples can also be found in
