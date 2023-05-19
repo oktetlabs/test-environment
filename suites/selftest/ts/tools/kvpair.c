@@ -43,6 +43,8 @@ main(int argc, char **argv)
     unsigned int i;
     te_string expected_content = TE_STRING_INIT;
     te_string actual_content = TE_STRING_INIT;
+    unsigned int count;
+    unsigned int n_unique_keys = 0;
 
     te_kvpair_init(&kvpairs);
 
@@ -73,6 +75,19 @@ main(int argc, char **argv)
             ERROR("Key '%s' is found in an empty kvpairs", key);
             TEST_VERDICT("Found a key in an empty kvpairs");
         }
+
+        count = te_kvpairs_count(&kvpairs, key);
+        if (count != 0)
+        {
+            ERROR("Key '%s' counted as %u in an empty kvpairs", key, count);
+            TEST_VERDICT("Key is counted in an empty kvpairs");
+        }
+    }
+    count = te_kvpairs_count(&kvpairs, NULL);
+    if (count != 0)
+    {
+        ERROR("%u keys counted in an empty kvpairs", count);
+        TEST_VERDICT("Keys counted in an empty kvpairs");
     }
 
     TEST_STEP("Adding keys");
@@ -93,6 +108,7 @@ main(int argc, char **argv)
             continue;
         }
         CHECK_RC(rc);
+        n_unique_keys++;
     }
 
     TEST_STEP("Trying to add keys the second time");
@@ -130,6 +146,21 @@ main(int argc, char **argv)
                   key, value, got);
             TEST_VERDICT("Obtained unexpected key value");
         }
+
+        count = te_kvpairs_count(&kvpairs, key);
+        if (count != 1)
+        {
+            ERROR("Key '%s' counted %u times", key, count);
+            TEST_VERDICT("Unexpected count of key bindings");
+        }
+    }
+
+    TEST_STEP("Counting keys");
+    count = te_kvpairs_count(&kvpairs, NULL);
+    if (count != n_unique_keys)
+    {
+        ERROR("Counted %u keys, but expected %u", count, n_unique_keys);
+        TEST_VERDICT("Unexpected count of keys");
     }
 
     TEST_STEP("Deleting keys");
@@ -157,12 +188,146 @@ main(int argc, char **argv)
             ERROR("Deleted key '%s' can be deleted twice, rc=%r", key, rc);
             TEST_VERDICT("Deleted key can be deleted twice");
         }
+
+        count = te_kvpairs_count(&kvpairs, key);
+        if (count != 0)
+        {
+            ERROR("Deleted key '%s' counted %u times", key, count);
+            TEST_VERDICT("Unexpected count of key bindings");
+        }
+    }
+    count = te_kvpairs_count(&kvpairs, NULL);
+    if (count != 0)
+    {
+        ERROR("Emptied kvpairs report %u keys", count);
+        TEST_VERDICT("Unexpected count of key bindings");
     }
 
     TEST_STEP("Adding keys again");
     for (i = 0; i < n_keys; i++)
     {
         const char *key = TE_VEC_GET(char *, &keys, i);
+        const char *value = TE_VEC_GET(char *, &values, i);
+
+        if (key == NULL)
+            continue;
+
+        CHECK_RC(te_kvpair_add(&kvpairs, key, "%s", value));
+    }
+
+    TEST_STEP("Testing multiple-valued keys");
+    for (i = 0; i < n_keys; i++)
+    {
+        char *key = TE_VEC_GET(char *, &keys, i);
+        const char *old_value = TE_VEC_GET(char *, &values, i);
+        char *new_value = te_make_printable_buf(min_value_len, max_value_len,
+                                                NULL);
+        const char *got;
+        te_vec all_vals = TE_VEC_INIT(const char *);
+
+        if (key == NULL)
+        {
+            free(new_value);
+            continue;
+        }
+
+        te_kvpair_push(&kvpairs, key, "%s", new_value);
+
+        CHECK_NOT_NULL(got = te_kvpairs_get(&kvpairs, key));
+        if (strcmp(got, new_value) != 0)
+        {
+            ERROR("Key '%s' should be associated with '%s' at index 0, "
+                  "but got '%s'", key, new_value, got);
+            TEST_VERDICT("Obtained unexpected key value");
+        }
+        CHECK_NOT_NULL(got = te_kvpairs_get_nth(&kvpairs, key, 1));
+        if (strcmp(got, old_value) != 0)
+        {
+            ERROR("Key '%s' should be associated with '%s' at index 1, "
+                  "but got '%s'", key, old_value, got);
+            TEST_VERDICT("Obtained unexpected key value");
+        }
+        got = te_kvpairs_get_nth(&kvpairs, key, 2);
+        if (got != NULL)
+        {
+            ERROR("Key '%s' should not be associated with any value at "
+                  "index 2, but got '%s'", key, got);
+            TEST_VERDICT("Obtained unexpected key value");
+        }
+        count = te_kvpairs_count(&kvpairs, key);
+        if (count != 2)
+        {
+            ERROR("Key '%s' should count twice, but counted %u", key, count);
+            TEST_VERDICT("Unexpected count of key bindings");
+        }
+
+        CHECK_RC(te_kvpairs_get_all(&kvpairs, key, &all_vals));
+        if (te_vec_size(&all_vals) != 2)
+            TEST_VERDICT("Invalid all-values vector size");
+        if (strcmp(TE_VEC_GET(const char *, &all_vals, 0), new_value) != 0 ||
+            strcmp(TE_VEC_GET(const char *, &all_vals, 1), old_value) != 0)
+            TEST_VERDICT("Unexpected value(s) in all-values vector");
+
+        CHECK_RC(te_kvpairs_del(&kvpairs, key));
+        CHECK_NOT_NULL(got = te_kvpairs_get(&kvpairs, key));
+        if (strcmp(got, old_value) != 0)
+        {
+            ERROR("Key '%s' should now be associated with '%s' at index 0, "
+                  "but got '%s'", key, old_value, got);
+            TEST_VERDICT("Obtained unexpected key value");
+        }
+        count = te_kvpairs_count(&kvpairs, key);
+        if (count != 1)
+        {
+            ERROR("Key '%s' should count once, but counted %u", key, count);
+            TEST_VERDICT("Unexpected count of key bindings");
+        }
+
+        free(new_value);
+        te_vec_free(&all_vals);
+    }
+
+    TEST_STEP("Testing delete-all for multiple-valued keys");
+    TEST_SUBSTEP("Adding multiple copies of keys");
+    for (i = 0; i < n_keys; i++)
+    {
+        char *key = TE_VEC_GET(char *, &keys, i);
+        const char *value = TE_VEC_GET(char *, &values, i);
+
+        if (key == NULL)
+            continue;
+
+        te_kvpair_push(&kvpairs, key, "%s", value);
+        te_kvpair_push(&kvpairs, key, "%s", value);
+    }
+    TEST_SUBSTEP("Deleteing keys");
+    for (i = 0; i < n_keys; i++)
+    {
+        char *key = TE_VEC_GET(char *, &keys, i);
+        te_errno rc;
+
+        if (key == NULL)
+            continue;
+
+        CHECK_RC(te_kvpairs_del_all(&kvpairs, key));
+        count = te_kvpairs_count(&kvpairs, key);
+        if (count != 0)
+        {
+            ERROR("Deleted key '%s' counted %u times", key, count);
+            TEST_VERDICT("Key was not properly deleted");
+        }
+
+        rc = te_kvpairs_del_all(&kvpairs, key);
+        if (rc != TE_ENOENT)
+        {
+            ERROR("Deleted key '%s' was deleted again", key);
+            TEST_VERDICT("Key was not properly deleted");
+        }
+    }
+    TEST_SUBSTEP("Adding keys back");
+    for (i = 0; i < n_keys; i++)
+    {
+        char *key = TE_VEC_GET(char *, &keys, i);
         const char *value = TE_VEC_GET(char *, &values, i);
 
         if (key == NULL)

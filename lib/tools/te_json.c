@@ -252,7 +252,7 @@ te_json_add_kvpair(te_json_ctx_t *ctx, const te_kvpair_h *head)
     assert(head != NULL);
 
     te_json_start_object(ctx);
-    TAILQ_FOREACH(p, head, links)
+    TAILQ_FOREACH_REVERSE(p, head, te_kvpair_h, links)
     {
         te_json_add_key(ctx, p->key);
         te_json_add_string(ctx, "%s", p->value);

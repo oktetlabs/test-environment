@@ -39,73 +39,214 @@ typedef struct te_kvpair {
 typedef TAILQ_HEAD(te_kvpair_h, te_kvpair) te_kvpair_h;
 
 /**
- * Initializes empty key-value pairs list
+ * Initializes empty key-value pairs list.
  *
- * @param head      Head of the list
+ * @param head      Head of the list.
  */
 extern void te_kvpair_init(te_kvpair_h *head);
 
 /**
- * Free resources allocated for key-value pairs list
+ * Free resources allocated for key-value pairs list.
  *
- * @param head      Head of the list
+ * @param head      Head of the list.
  */
 extern void te_kvpair_fini(te_kvpair_h *head);
 
 /**
- * Add key-value pair
+ * Add a key-value pair.
+
+ * If there are values bound to @p key, they are shadowed.
  *
- * @param head          Head of the list
- * @param key           Key of value
- * @param value_fmt     Format (*printf-like) string for value string
- * @param ...           Respective parameters for format string
- *
- * @retval TE_EEXIST    The key already exists
+ * @param head          Head of the list.
+ * @param key           Key of value.
+ * @param value_fmt     Format (*printf-like) string for value string.
+ * @param ...           Respective parameters for format string.
  */
-extern te_errno te_kvpair_add(te_kvpair_h *head, const char *key,
-                              const char *value_fmt, ...);
+extern void te_kvpair_push(te_kvpair_h *head, const char *key,
+                           const char *value_fmt, ...)
+                           __attribute__((format(printf, 3, 4)));
 
 /**
  * Add key-value pair using variadic list.
  *
- * @param head          Head of the list
- * @param key           Key of value
- * @param value_fmt     Format (*printf-like) string for value string
- * @param ap            List of arguments
+ * If there are values bound to @p key, they are shadowed.
  *
+ * @param head          Head of the list.
+ * @param key           Key of value.
+ * @param value_fmt     Format (*printf-like) string for value string.
+ * @param ap            List of arguments.
+ */
+extern void te_kvpair_push_va(te_kvpair_h *head, const char *key,
+                              const char *value_fmt, va_list ap)
+                              __attribute__((format(printf, 3, 0)));
+
+
+/**
+ * Add a key-value pair.
+ *
+ * Unlike te_kvpair_push(), the function will fail if there are
+ * existing bindings for @p key.
+ *
+ * @param head          Head of the list.
+ * @param key           Key of value.
+ * @param value_fmt     Format (*printf-like) string for value string.
+ * @param ...           Respective parameters for format string.
+ *
+ * @return Status code
+ * @retval TE_EEXIST    The key already exists
+ */
+extern te_errno te_kvpair_add(te_kvpair_h *head, const char *key,
+                              const char *value_fmt, ...)
+                              __attribute__((format(printf, 3, 4)));
+
+/**
+ * Add key-value pair using variadic list.
+ *
+ * Unlike te_kvpair_push_va(), the function will fail if there are
+ * existing bindings for @p key.
+ *
+ * @param head          Head of the list.
+ * @param key           Key of value.
+ * @param value_fmt     Format (*printf-like) string for value string.
+ * @param ap            List of arguments.
+ *
+ * @return Status code.
  * @retval TE_EEXIST    The key already exists
  */
 extern te_errno te_kvpair_add_va(te_kvpair_h *head, const char *key,
-                                 const char *value_fmt, va_list ap);
+                                 const char *value_fmt, va_list ap)
+                                 __attribute__((format(printf, 3, 0)));
 
 /**
- * Remove key-value pair by key
+ * Remove the most recently added key-value pair with
+ * a given @p key.
  *
- * @param head          Head of the list
- * @param key           Key of value
+ * @param head          Head of the list.
+ * @param key           Key of value.
  *
- * @retval TE_ENOENT    No entry with such key
- * @retval 0            Pair removed successfully
+ * @return Status code.
+ * @retval TE_ENOENT    No entry with such key.
+ * @retval 0            Pair removed successfully.
  */
 extern te_errno te_kvpairs_del(te_kvpair_h *head, const char *key);
 
 /**
- * Get value associated with the @p key
+ * Remove all key-value pairs with a given @p key.
  *
- * @param key    Key of required value
+ * @param head          Head of the list.
+ * @param key           Key to delete
+ *                      (may be @c NULL in which case all pairs are deleted).
  *
- * @retval       Requested @p key value or @c NULL if there is no such key
+ * @return Status code.
+ * @retval TE_ENOENT    No entries with a given key.
+ * @retval 0            Pair removed successfully.
  */
-extern const char *te_kvpairs_get(const te_kvpair_h *head, const char *key);
+extern te_errno te_kvpairs_del_all(te_kvpair_h *head, const char *key);
+
 
 /**
- * Convert list of kv_pairs to string representation (i.e. key1=val1:key2=val2)
+ * Get the @p index'th value associated with the @p key.
+ *
+ * The most recently added value has the index @c 0.
+ *
+ * @param head   Head of the list.
+ * @param key    Key of required value.
+ * @param index  Ordinal index of a value to fetch.
+ *
+ * @return       Requested @p key value or @c NULL if there is no such key.
+ */
+extern const char *te_kvpairs_get_nth(const te_kvpair_h *head, const char *key,
+                                      unsigned int index);
+
+/**
+ * Get the most recent value associated with the @p key.
+ *
+ * @param head   Head of the list.
+ * @param key    Key of required value.
+ *
+ * @return       Requested @p key value or @c NULL if there is no such key.
+ */
+static inline const char *
+te_kvpairs_get(const te_kvpair_h *head, const char *key)
+{
+    return te_kvpairs_get_nth(head, key, 0);
+}
+
+/**
+ * Get all the values associated with @p key.
+ *
+ * The values are appended to the vector @p result.
+ *
+ * @note The values are not strduped, so @p result must not
+ *       be freed with te_vec_deep_free().
+ *
+ * @param[in]  head   Head of the list.
+ * @param[in]  key    Key (may be @c NULL, in which case
+ *                    all values are returned).
+ * @param[out] result The output vector.
+ *
+ * @return Status code.
+ * @retval TE_ENOENT  No value with a given key exists in @p head.
+ */
+extern te_errno te_kvpairs_get_all(const te_kvpair_h *head, const char *key,
+                                   te_vec *result);
+
+/**
+ * Count the number of values associated with @p key.
+ *
+ * @param head   Head of the list.
+ * @param key    Key (may be @c NULL in which case all values are counted).
+ *
+ * @return The number of values associated with @p key.
+ */
+extern unsigned int te_kvpairs_count(const te_kvpair_h *head, const char *key);
+
+/**
+ * Function type of callbacks used by te_kvpairs_foreach().
+ *
+ * @param key    Current key.
+ * @param value  Current value.
+ * @param user   User data.
+ *
+ * @return Status code.
+ * @retval TE_EOK te_kvpairs_foreach() will stop immediately and
+ *                return success to the caller.
+ */
+typedef te_errno te_kvpairs_iter_fn(const char *key, const char *value,
+                                    void *user);
+
+/**
+ * Call @p callback for all values bound to @p key.
+ *
+ * If @p callback returns non-zero status, the function
+ * returns immediately, but TE_EOK status is treated as success.
+ *
+ * @param head     Head of the list.
+ * @param callback Callback function.
+ * @param key      Key to scan (may be @c NULL, in which case
+ *                 all key-value pairs are scanned).
+ * @param user     User data for @p callback.
+ *
+ * @return Status code.
+ * @retval TE_ENOENT No values have been processed.
+ */
+extern te_errno te_kvpairs_foreach(const te_kvpair_h *head,
+                                   te_kvpairs_iter_fn *callback,
+                                   const char *key,
+                                   void *user);
+
+/**
+ * Convert list of kv_pairs to string representation (i.e. key1=val1:key2=val2).
+ *
+ * If there are multiple values for the same key, they all be represented
+ * as separate @c key=value pairs.
+ *
  * @sa TE_KVPAIR_STR_DELIMITER
  *
- * @param[in] head  Head of the list
- * @param[out] str  Pointer to string
+ * @param[in]  head Head of the list.
+ * @param[out] str  Pointer to string.
  *
- * @retval          Status code
+ * @return          Status code.
  */
 extern te_errno te_kvpair_to_str(const te_kvpair_h *head, te_string *str);
 
