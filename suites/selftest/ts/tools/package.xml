@@ -248,6 +248,131 @@
         </run>
 
         <run>
+            <script name="strpbrk_balanced"/>
+            <arg name="opening">
+                <value>(</value>
+            </arg>
+            <arg name="closing">
+                <value>)</value>
+            </arg>
+            <arg name="escape" list="">
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+                <value>-</value>
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+                <value>-</value>
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+                <value>\</value>
+            </arg>
+            <arg name="separator" list="">
+                <value>,;</value>
+                <value>,;</value>
+                <value>,;</value>
+                <value>,;</value>
+                <value>,;</value>
+                <value>,;</value>
+                <value>-</value>
+                <value>,;</value>
+                <value>-</value>
+                <value>-</value>
+                <value>-</value>
+                <value>-</value>
+                <value>,;</value>
+                <value>,;</value>
+                <value>,;</value>
+                <value>,;</value>
+                <value>,;</value>
+                <value>,;</value>
+                <value>,;</value>
+                <value>,;</value>
+                <value>-</value>
+            </arg>
+            <arg name="input" list="">
+                <value>seg1(seg2,seg3)seg4,seg5;(seg6)</value>
+                <value>seg1(seg2,(seg3,seg4))seg5;seg6,((seg7),seg8)seg9</value>
+                <value>seg1\(seg2,seg3\)seg4,seg5\;\(seg6\)</value>
+                <value>seg1\(seg2,seg3\)seg4\\,seg5\\\;\(seg6\\\)</value>
+                <value>seg1\(seg2,seg3\)seg4{,seg5\;\(seg6\)</value>
+                <value>word</value>
+                <value>word</value>
+                <value>(word)</value>
+                <value>(word)</value>
+                <value>prefix(word)</value>
+                <value>\x(word)</value>
+                <value>\x(word)</value>
+                <value>(</value>
+                <value>)</value>
+                <value>(()</value>
+                <value>())</value>
+                <value>(\)</value>
+                <value>\()</value>
+                <value>\</value>
+                <value>\\\</value>
+                <value>x)(x</value>
+            </arg>
+            <arg name="leftmost" list="">
+                <value>,seg5;(seg6)</value>
+                <value>;seg6,((seg7),seg8)seg9</value>
+                <value>,seg3\)seg4,seg5\;\(seg6\)</value>
+                <value>,seg3\)seg4\\,seg5\\\;\(seg6\\\)</value>
+                <value>,seg5\;\(seg6\)</value>
+                <value>ENOENT</value>
+                <value>word</value>
+                <value>ENOENT</value>
+                <value>OK:</value>
+                <value>prefix(word)</value>
+                <value>\x(word)</value>
+                <value>\x(word)</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>x)(x</value>
+            </arg>
+            <arg name="rightmost" list="">
+                <value>;(seg6)</value>
+                <value>,((seg7),seg8)seg9</value>
+                <value>,seg5\;\(seg6\)</value>
+                <value>,seg5\\\;\(seg6\\\)</value>
+                <value>;\(seg6\)</value>
+                <value>ENOENT</value>
+                <value>d</value>
+                <value>ENOENT</value>
+                <value>ENOENT</value>
+                <value>x(word)</value>
+                <value>\x(word)</value>
+                <value>x(word)</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>EILSEQ</value>
+                <value>x</value>
+            </arg>
+        </run>
+
+        <run>
             <package name="timer"/>
         </run>
 

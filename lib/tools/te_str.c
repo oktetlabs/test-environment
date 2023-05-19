@@ -256,6 +256,131 @@ te_str_strip_spaces(const char *str)
     return res;
 }
 
+te_errno
+te_strpbrk_balanced(const char *str, char opening, char closing,
+                    char escape, const char *seps,
+                    const char **result)
+{
+    unsigned int level = 0;
+
+    if (result != NULL)
+        *result = NULL;
+
+    for (; *str != '\0'; str++)
+    {
+        if (escape != '\0' && *str == escape)
+        {
+            if (str[1] == '\0')
+            {
+                ERROR("Dangling '%c'", escape);
+                return TE_EILSEQ;
+            }
+            if (level == 0 && seps == NULL)
+            {
+                if (result != NULL)
+                    *result = str;
+                return 0;
+            }
+            str++;
+            continue;
+        }
+
+        if (*str == opening)
+            level++;
+        else if (*str == closing)
+        {
+            if (level == 0)
+                ERROR("Unbalanced '%c'", closing);
+            level--;
+        }
+        else if (level == 0 && (seps == NULL || strchr(seps, *str) != NULL))
+        {
+            if (result != NULL)
+                *result = str;
+            return 0;
+        }
+    }
+
+    if (level != 0)
+    {
+        ERROR("Unbalanced '%c'", opening);
+        return TE_EILSEQ;
+    }
+
+    if (seps == NULL)
+    {
+        if (result != NULL)
+            *result = str;
+        return 0;
+    }
+
+    return TE_ENOENT;
+}
+
+te_errno
+te_strpbrk_rev_balanced(const char *str, char opening, char closing,
+                        char escape, const char *seps,
+                        const char **result)
+{
+    const char *ptr = str + strlen(str);
+    unsigned int level = 0;
+
+    if (result != NULL)
+        *result = NULL;
+
+    for (; ptr != str; ptr--)
+    {
+        te_bool is_escaped = FALSE;
+
+        if (escape != '\0' && ptr > str + 1)
+        {
+            const char *check;
+
+            for (check = ptr - 1; check != str && check[-1] == escape; check--)
+                is_escaped = !is_escaped;
+        }
+        if (!is_escaped)
+        {
+            if (ptr[-1] == escape)
+            {
+                ERROR("Dangling '%c' at %s", escape, ptr - 1);
+                return TE_EILSEQ;
+            }
+
+            if (ptr[-1] == closing)
+            {
+                level++;
+                continue;
+            }
+            if (ptr[-1] == opening)
+            {
+                if (level == 0)
+                    ERROR("Unbalanced '%c'", opening);
+                level--;
+                continue;
+            }
+        }
+        if (level == 0 &&
+            (seps == NULL ||
+             (!is_escaped && strchr(seps, ptr[-1]) != NULL)))
+        {
+            if (result != NULL)
+                *result = ptr - 1 - (int)is_escaped;
+            return 0;
+        }
+        if (is_escaped)
+            ptr--;
+    }
+
+    if (level != 0)
+    {
+        ERROR("Unbalanced '%c'", closing);
+        return TE_EILSEQ;
+    }
+
+    return TE_ENOENT;
+}
+
 /* See description in te_str.h */
 te_errno
 te_strtoumax(const char *str, int base, uintmax_t *value)

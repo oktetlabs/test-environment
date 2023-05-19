@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="strpbrk_balanced" type="script">
+    <objective>Testing balanced strpbrk() equivalents.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="opening" />
+        <arg name="closing" />
+        <arg name="escape" />
+        <arg name="separator" />
+        <arg name="input" />
+        <arg name="leftmost" />
+        <arg name="rightmost" />
+    </iter>
+</test>

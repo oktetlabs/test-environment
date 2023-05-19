@@ -267,6 +267,94 @@ te_str_strip_prefix(const char *str, const char *prefix)
 }
 
 /**
+ * Search for the leftmost char from @p seps outside balanced parentheses.
+ *
+ * The function scans characters starting from @p str searching for any char
+ * in @p seps that is outside any nested group of parentheses defined by
+ * @p opening and @p closing. If @p seps is @c NULL, the leftmost character
+ * outside any parentheses is returned.
+ *
+ * If @p escape is not @c NUL, it is used to escape parentheses and
+ * separator characters.
+ *
+ * @code
+ * te_strpbrk_balanced("a(b,c),d", '(', ')', '\0', ",", result);
+ * result == ",d";
+ *
+ * te_strpbrk_balanced("a(b,(c,d)),e", '(', ')', '\0', ",", result);
+ * result == ",e";
+ *
+ * te_strpbrk_balanced("a(b,\\),c,d)\\,e,f", '(', ')', '\\', ",", result);
+ * result == ",f";
+
+ * te_strpbrk_balanced("(abc)def", '(', ')', '\0', NULL, result);
+ * result == "def";
+ * @endcode
+ *
+ * @param[in]  str      Source string.
+ * @param[in]  opening  Opening parenthesis character.
+ * @param[in]  closing  Closing parenthesis character.
+ * @param[in]  escape   Escape character (use @c NUL for no escape character).
+ * @param[in]  seps     List of separators to search for (may be @c NULL).
+ * @param[out] result   The location of a pointer to the leftmost found
+ *                      character or @c NULL if none found.
+ *                      If @p result itself may be @c NULL, the found
+ *                      pointer is discarded.
+ *
+ * @return Status code.
+ * @retval TE_ENOENT  No suitable character found.
+ * @retval TE_EILSEQ  @p str contains unbalanced parentheses or dangling
+ *                    escape characters.
+ */
+extern te_errno te_strpbrk_balanced(const char *str, char opening, char closing,
+                                    char escape, const char *seps,
+                                    const char **result);
+
+/**
+ * Like te_strpbrk_balanced(), but search for the rightmost character.
+ *
+ * @code
+ * te_strpbrk_rev_balanced("a,(b,c)d", '(', ')', '\0', ",", result);
+ * result == ",(b,c)d";
+ *
+ * te_strpbrk_rev_balanced("a,(b,(c,d))e", '(', ')', '\0', ",", result);
+ * result == ",(b,(c,d))e";
+ *
+ * te_strpbrk_rev_balanced("a,(b,\\(,c,d)\\,e", '(', ')', '\\', ",", result);
+ * result == ",(b,\\(,c,d)\\,e";
+
+ * te_strpbrk_rev_balanced("abc(def)", '(', ')', '\0', NULL, result);
+ * result == "c(def)";
+ * @endcode
+ *
+ * @param[in]  str      Source string.
+ * @param[in]  opening  Opening parenthesis character.
+ * @param[in]  closing  Closing parenthesis character.
+ * @param[in]  escape   Escape character (use @c NUL for no escape character).
+ * @param[in]  seps     List of separators to search for (may be @c NULL).
+ * @param[out] result   The location of a pointer to the rightmost found
+ *                      character or @c NULL if none found.
+ *                      If @p result itself may be @c NULL, the found
+ *                      pointer is discarded.
+ *
+ * @return Status code.
+ * @retval TE_ENOENT  No suitable character found.
+ * @retval TE_EILSEQ  @p str contains unbalanced parentheses or dangling
+ *                    escape characters.
+ *
+ * @note There is slight asymmtetry between forward and reverse
+ *       search functions: if @p seps is empty and the whole string
+ *       is enclosed in parentheses, then forward searching would
+ *       point to a terminating zero, but reverse searching would
+ *       return @c NULL, because we cannot assume there may be any
+ *       characters before the string.
+ */
+extern te_errno te_strpbrk_rev_balanced(const char *str,
+                                        char opening, char closing,
+                                        char escape, const char *seps,
+                                        const char **result);
+
+/**
  * Wrapper over strtoumax().
  *
  * @param str       String to convert.

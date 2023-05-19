@@ -19,6 +19,7 @@ tests = [
     'scandir',
     'str_compare_versions',
     'string',
+    'strpbrk_balanced',
     'units',
     'uri',
     'vector',
