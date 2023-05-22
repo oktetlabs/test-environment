@@ -71,6 +71,35 @@ extern char *tapi_file_make_custom_pathname(te_string *dest,
  */
 extern char *tapi_file_make_pathname(te_string *dest);
 
+
+/**
+ * Construct a pathname from parts.
+ *
+ * If @p path is not @c NULL, uses te_file_join_filename()
+ * to construct a complete filename.
+ * Otherwise, it behaves like tapi_file_make_custom_pathname(),
+ * generating a unique filename under @p dirname.
+ *
+ * If @p path is not @c NULL, it may be either a relative or
+ * an absolute pathname. In the latter case @p dirname is ignored.
+ *
+ * If @p dest is @c NULL, a fresh string is allocated and returned.
+ *
+ * @param[out] dest      The string to hold the name or @c NULL.
+ * @param[in]  dirname   Directory name (may be @c NULL)
+ * @param[in]  path      Pathname (absolute, relative or @c NULL)
+ * @param[in]  suffix    A suffix to append to a pathname
+ *                       (may be @c NULL).
+ *
+ * @note The name is appended to the string contents.
+ *
+ * @return the pointer to the contents of @p dest or a heap-allocated buffer
+ */
+extern char *tapi_file_join_pathname(te_string *dest,
+                                     const char *dirname,
+                                     const char *path,
+                                     const char *suffix);
+
 /**
  * Generate unique basename for file.
  *

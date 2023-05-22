@@ -125,6 +125,34 @@ te_dirname(const char *pathname)
 }
 
 /* See description in te_file.h */
+char *
+te_file_join_filename(te_string *result, const char *dirname, const char *path,
+                      const char *suffix)
+{
+    te_string tmp = TE_STRING_INIT;
+
+    if (result == NULL)
+        result = &tmp;
+
+    if (path == NULL || *path != '/')
+        te_string_append(result, "%s", te_str_empty_if_null(dirname));
+
+    if (!te_str_is_null_or_empty(path))
+    {
+        te_bool need_slash = result->len > 0 &&
+            result->ptr[result->len - 1] != '/';\
+        te_string_append(result, "%s%s", need_slash ? "/" : "", path);
+    }
+    if (!te_str_is_null_or_empty(suffix))
+    {
+        te_string_chop(result, "/");
+        te_string_append(result, "%s", suffix);
+    }
+
+    return result->ptr;
+}
+
+/* See description in te_file.h */
 int
 te_file_create_unique_fd_va(char **filename, const char *prefix_format,
                             const char *suffix, va_list ap)

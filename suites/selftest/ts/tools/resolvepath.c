@@ -70,6 +70,20 @@ check_nofile(const char *file, const char *path, int mode, const char *basename,
     }
 }
 
+static void
+check_join(const char *dirname, const char *path, const char *suffix,
+           const char *expected)
+{
+    char *result = te_file_join_filename(NULL, dirname, path, suffix);
+
+    CHECK_NOT_NULL(result);
+    if (strcmp(result, expected) != 0)
+    {
+        TEST_VERDICT("'%s' + '%s' + '%s' should be '%s', but got '%s'",
+                     dirname, path, suffix, expected, result);
+    }
+    free(result);
+}
 
 int
 main(int argc, char **argv)
@@ -126,6 +140,22 @@ main(int argc, char **argv)
     TEST_STEP("Testing relative non-existing filename resolving");
     check_nofile(tmp_basename, augmented_path, F_OK, NULL, TE_ENOENT);
     check_nofile(tmp_basename, path_env, F_OK, tmpfile, TE_ENOENT);
+
+    TEST_STEP("Testing syntactic pathname joining");
+    check_join(NULL, NULL, NULL, "");
+    check_join(NULL, "/absolute", NULL, "/absolute");
+    check_join(NULL, "relative", NULL, "relative");
+    check_join("dironly", NULL, NULL, "dironly");
+    check_join("dirname", "/absolute", NULL, "/absolute");
+    check_join("dirname", "relative", NULL, "dirname/relative");
+    check_join("", "relative", NULL, "relative");
+    check_join("dirname/", "relative", NULL, "dirname/relative");
+    check_join(NULL, "/absolute", ".suffix", "/absolute.suffix");
+    check_join(NULL, "/absolute/", ".suffix", "/absolute.suffix");
+    check_join("dirname", NULL, ".suffix", "dirname.suffix");
+    check_join("dirname/", NULL, ".suffix", "dirname.suffix");
+    check_join("dirname", "relative", ".suffix", "dirname/relative.suffix");
+    check_join("/", "relative", NULL, "/relative");
 
     TEST_SUCCESS;
 

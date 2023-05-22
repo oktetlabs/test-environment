@@ -88,6 +88,15 @@ tapi_file_make_pathname(te_string *dest)
     return tapi_file_make_custom_pathname(dest, te_tmp, NULL);
 }
 
+char *tapi_file_join_pathname(te_string *dest, const char *dirname,
+                              const char *path, const char *suffix)
+{
+    if (path == NULL)
+        return tapi_file_make_custom_pathname(dest, dirname, suffix);
+
+    return te_file_join_filename(dest, dirname, path, suffix);
+}
+
 char *
 tapi_file_generate_name(void)
 {

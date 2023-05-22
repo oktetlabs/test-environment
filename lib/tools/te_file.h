@@ -63,6 +63,41 @@ extern char *te_readlink_fmt(const char *path_fmt, ...)
 extern char *te_dirname(const char *pathname);
 
 /**
+ * Construct a filename from components.
+ *
+ * Unlike te_file_resolve_pathname(), the function does a purely
+ * syntactic operation, so no checks are made that a pathname exists
+ * or is accessible. Therefore it is suitable for constructing filenames
+ * on one host that will be used on another.
+ *
+ * The constructing algorithm is as follows:
+ * - if @p path is @c NULL, it is treated as an empty string;
+ * - if @p dirname is @c NULL or @p path is an absolute path,
+ *   @p path is used as is;
+ * - otherwise, @p dirname and @p path are joined using @c / separator;
+ * - then if @p suffix is not @c NULL, it is appended to the
+ *   filename obtained at the previous step; if that name ends with
+ *   a @c /, it is first stripped; i.e. a suffix never creates a new
+ *   pathname component.
+ *
+ * If @p dest is @c NULL, a fresh string is allocated and returned.
+ *
+ * @param dest    the string to hold the name or @c NULL.
+ * @param dirname directory name
+ * @param path    pathname (relative or absolute)
+ * @param suffix  suffix
+ *
+ * @note The name is appended to the string contents.
+ *
+ * @warning If @p dest is not empty upon entry and @p dirname is empty,
+ *          an extra slash may be added before the resulting pathname.
+ *
+ * @return the pointer to the contents of @p dest or a heap-allocated buffer
+ */
+extern char *te_file_join_filename(te_string *dest, const char *dirname,
+                                   const char *path, const char *suffix);
+
+/**
  * Create a file of unique name. It builds a template of file name in mkstemps
  * compatible format which has the form "prefixXXXXXXsuffix",
  * or "prefixXXXXXX" if @p suffix is @c NULL
