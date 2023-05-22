@@ -219,24 +219,21 @@ build_cfg_group(const char *prefix,
 static char *
 gen_filepath(const char *ta, const char *base_dir, const char *filename)
 {
-    te_string res_path = TE_STRING_INIT;
-    char *gen_dir;
+    char *result = NULL;
+    char *ta_dir = NULL;
 
     if ((filename != NULL) && (filename[0] == '/'))
         return strdup(filename);
 
     if (base_dir == NULL)
-        gen_dir = tapi_cfg_base_get_ta_dir(ta, TAPI_CFG_BASE_TA_DIR_TMP);
-    else
-        gen_dir = strdup(base_dir);
+    {
+        ta_dir = tapi_cfg_base_get_ta_dir(ta, TAPI_CFG_BASE_TA_DIR_TMP);
+        base_dir = ta_dir;
+    }
+    result = tapi_file_join_pathname(NULL, base_dir, filename, NULL);
 
-    if (filename == NULL)
-        tapi_file_make_custom_pathname(&res_path, gen_dir, NULL);
-    else
-        te_string_append(&res_path, "%s/%s", gen_dir, filename);
-
-    free(gen_dir);
-    return res_path.ptr;
+    free(ta_dir);
+    return result;
 }
 
 te_errno
