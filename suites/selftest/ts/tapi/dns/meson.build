@@ -2,6 +2,7 @@
 # Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
 
 tests = [
+    'prologue',
     'unbound',
 ]
 

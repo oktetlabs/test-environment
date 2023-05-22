@@ -14,6 +14,10 @@
             <value>MORE_VERBOSE</value>
         </enum>
 
+        <prologue>
+            <script name="prologue"/>
+        </prologue>
+
         <run>
             <script name="unbound"/>
             <arg name="env">
