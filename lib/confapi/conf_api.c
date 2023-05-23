@@ -43,6 +43,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "te_log_stack.h"
 #include "conf_api.h"
@@ -2363,13 +2364,14 @@ cfg_create_backup(char **name)
 /**
  * Verify/release/restore backup.
  *
+ * @param oid       Subtree OID (e.g. @c "/agent:Agt_A").
  * @param name      name returned by cfg_create_backup
  * @param op        backup operation
  *
  * @return status code (see te_errno.h)
  */
 static te_errno
-cfg_backup(const char *name, uint8_t op)
+cfg_backup(const char *oid, const char *name, uint8_t op)
 {
     cfg_backup_msg *msg;
 
@@ -2399,6 +2401,17 @@ cfg_backup(const char *name, uint8_t op)
 
     msg->subtrees_num = 0;
     msg->subtrees_offset = msg->len;
+
+    if (!te_str_is_null_or_empty(oid))
+    {
+        msg->subtrees_num = 1;
+        len = strlen(oid) + 1;
+        msg->subtrees_offset = msg->len;
+        msg->len += len;
+
+        memcpy((char *)msg + msg->subtrees_offset, oid, len);
+    }
+
     msg->filename_offset = msg->len;
 
     len = strlen(name) + 1;
@@ -2425,7 +2438,7 @@ cfg_backup(const char *name, uint8_t op)
 te_errno
 cfg_verify_backup(const char *name)
 {
-    return cfg_backup(name, CFG_BACKUP_VERIFY);
+    return cfg_backup(NULL, name, CFG_BACKUP_VERIFY);
 }
 
 /* See description in conf_api.h */
@@ -2437,7 +2450,7 @@ cfg_release_backup(char **name)
     if (name == NULL)
         return TE_RC(TE_CONF_API, TE_EINVAL);
 
-    rc = cfg_backup(*name, CFG_BACKUP_RELEASE);
+    rc = cfg_backup(NULL, *name, CFG_BACKUP_RELEASE);
     if (rc == 0)
     {
         free(*name);
@@ -2451,14 +2464,25 @@ cfg_release_backup(char **name)
 te_errno
 cfg_restore_backup(const char *name)
 {
-    return cfg_backup(name, CFG_BACKUP_RESTORE);
+    return cfg_backup(NULL, name, CFG_BACKUP_RESTORE);
+}
+
+/* See description in conf_api.h */
+te_errno
+cfg_restore_backup_ta(const char *ta, const char *name)
+{
+    char oid[CFG_OID_MAX];
+
+    TE_SPRINTF(oid, "/agent:%s", ta);
+
+    return cfg_backup(oid, name, CFG_BACKUP_RESTORE_NOHISTORY);
 }
 
 /* See description in conf_api.h */
 te_errno
 cfg_restore_backup_nohistory(const char *name)
 {
-    return cfg_backup(name, CFG_BACKUP_RESTORE_NOHISTORY);
+    return cfg_backup(NULL, name, CFG_BACKUP_RESTORE_NOHISTORY);
 }
 
 

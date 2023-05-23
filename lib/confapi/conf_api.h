@@ -945,6 +945,17 @@ extern te_errno cfg_verify_backup(const char *name);
 extern te_errno cfg_restore_backup(const char *name);
 
 /**
+ * Restore the TA backup.
+ *
+ * @param ta        Test Agent name
+ * @param name      name returned by cfg_create_backup()
+ *
+ * @return Status code (see te_errno.h)
+ */
+
+extern te_errno cfg_restore_backup_ta(const char *ta, const char *name);
+
+/**
  * Restore the backup w/o processing history.
  *
  * @param name      name returned by cfg_create_backup
