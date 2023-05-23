@@ -21,7 +21,7 @@
 
 #define TAPI_DNS_UNBOUND_PATH "unbound"
 
-#define TAPI_DNS_UNBOUND_TERM_TIMEOUT_MS 3000
+#define TAPI_DNS_UNBOUND_TERM_TIMEOUT_MS 10000
 
 const tapi_dns_unbound_opt tapi_dns_unbound_default_opt = {
     .unbound_path = NULL,
