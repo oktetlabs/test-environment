@@ -52,6 +52,17 @@
                 <notes/>
             </iter>
         </test>
+
+        <test name="partial_restore" type="script">
+            <objective>Check configurator partial restoring works correctly</objective>
+
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="oid_name"/>
+                <notes/>
+            </iter>
+        </test>
+
         <test name="pci" type="script">
             <objective>Check that PCI management routines work correctly</objective>
 

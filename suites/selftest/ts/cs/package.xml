@@ -6,6 +6,22 @@
     <author mailto="te-maint@oktetlabs.ru"/>
 
     <session track_conf="silent">
+
+        <var name="env.peer2peer">
+            <value>{
+                {
+                  {'pco_iut':IUT},
+                   addr:'iut_addr':inet:unicast,
+                   if:'iut_if'
+                },
+                {
+                  {'pco_tst':tester},
+                  addr:'tst_addr':inet:unicast,
+                  if:'tst_if'
+                }
+            }</value>
+        </var>
+
         <run>
             <script name="changed">
             </script>
@@ -41,6 +57,14 @@
         <run>
             <script name="oid">
             </script>
+        </run>
+
+        <run>
+            <script name="partial_restore"/>
+            <arg name="env" ref="env.peer2peer"/>
+            <arg name="oid_name">
+                <value>/selftest:/incr_obj:/a</value>
+            </arg>
         </run>
 
         <run>

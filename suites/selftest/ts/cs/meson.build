@@ -9,6 +9,7 @@ tests = [
     'loop',
     'num_jobs',
     'oid',
+    'partial_restore',
     'pci',
     'phy',
     'process',
