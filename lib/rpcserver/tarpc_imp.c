@@ -3763,12 +3763,17 @@ TARPC_FUNC(__sysv_signal,
 
 /*-------------- siginterrupt() --------------------------------*/
 
+/* Disable the compiler warning about deprecated siginterrupt() */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 TARPC_FUNC(siginterrupt, {},
 {
     MAKE_CALL(out->retval = func(signum_rpc2h(in->signum), in->flag));
 }
 )
 
+#pragma GCC diagnostic pop
 
 /*-------------- sigaction() --------------------------------*/
 
