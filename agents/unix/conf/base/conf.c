@@ -326,6 +326,8 @@ extern te_errno ta_unix_conf_if_xdp_cleanup(void);
 extern te_errno ta_unix_conf_nginx_init(void);
 #endif
 
+extern te_errno ta_unix_conf_loadavg_init(void);
+
 #ifdef WITH_UPNP_CP
 # include "conf_upnp_cp.h"
 #endif /* WITH_UPNP_CP */
@@ -1396,6 +1398,9 @@ rcf_ch_conf_init(void)
             goto fail;
 
         if (ta_unix_conf_iommu_init() != 0)
+            goto fail;
+
+        if (ta_unix_conf_loadavg_init() != 0)
             goto fail;
 
         rcf_pch_rsrc_init();

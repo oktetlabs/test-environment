@@ -850,6 +850,62 @@
          Name: none
          Value: any value means that reset is requested
 
+    - oid: "/agent/loadavg"
+      access: read_only
+      type: none
+      volatile: true
+      d: |
+         Agent's load average.
+         Name: None
+
+    - oid: "/agent/loadavg/min1"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Agent's load average for the last 1 min.
+         Name: None
+
+    - oid: "/agent/loadavg/min5"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Agent's load average for the last 5 min.
+         Name: None
+
+    - oid: "/agent/loadavg/min15"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Agent's load average for the last 15 min.
+         Name: None
+
+    - oid: "/agent/loadavg/runnable"
+      access: read_only
+      type: uint64
+      volatile: true
+      d: |
+         The number of currently executing kernel scheduling entities.
+         Name: None
+
+    - oid: "/agent/loadavg/total"
+      access: read_only
+      type: uint64
+      volatile: true
+      d: |
+         The number of currently executing kernel scheduling entities.
+         Name: None
+
+    - oid: "/agent/loadavg/latest_pid"
+      access: read_only
+      type: uint64
+      volatile: true
+      d: |
+         The PID of the most recently created process.
+         Name: None
+
     - oid: "/agent/stats"
       access: read_only
       type: string
