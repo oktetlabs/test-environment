@@ -491,7 +491,7 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char **pbuf,
         *pbuf = NULL;
     memset(&rc, 0, sizeof(rc));
     rc.flag = RPC_WAIT_STATUS_UNKNOWN;
-    if (rpcs == NULL || buf == NULL)
+    if (rpcs == NULL)
     {
         ERROR("%s(): Invalid parameters", __FUNCTION__);
         return rc;
@@ -571,7 +571,7 @@ rpc_shell_get_all3(rcf_rpc_server *rpcs, char **pbuf,
         *pbuf = NULL;
     memset(&rc, 0, sizeof(rc));
     rc.flag = RPC_WAIT_STATUS_UNKNOWN;
-    if (rpcs == NULL || buf == NULL)
+    if (rpcs == NULL)
     {
         ERROR("%s(): Invalid parameters", __FUNCTION__);
         return rc;

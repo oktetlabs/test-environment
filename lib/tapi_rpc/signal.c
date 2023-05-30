@@ -887,8 +887,7 @@ rpc_struct_sigaction_to_tarpc_sigaction(
 
     memset(tarpc_struct, 0, sizeof(*tarpc_struct));
 
-    tarpc_struct->handler = strdup(rpc_struct->mm_handler == NULL ?
-                                       "" : rpc_struct->mm_handler);
+    tarpc_struct->handler = strdup(rpc_struct->mm_handler);
     if (tarpc_struct->handler == NULL)
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
