@@ -462,15 +462,11 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
 
     if (par_node->more_branches == TRUE)
     {
-        branch_info *old_ptr = par_node->branches;
-
         /* Create new branch */
-        par_node->branches =
-            realloc(old_ptr, sizeof(branch_info) *
-                             (par_node->n_branches + 1));
+        par_node->branches = realloc(par_node->branches, sizeof(branch_info) *
+                                                    (par_node->n_branches + 1));
         if (par_node->branches == NULL)
         {
-            par_node->branches = old_ptr;
             *err_code = ENOMEM;
             TRACE("No memory available");
             return NULL;
