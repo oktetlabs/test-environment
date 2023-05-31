@@ -162,6 +162,10 @@ Reviewers may ask to add their references to issue tracker.
 
 References to internal code review systems may be added in a similar way.
 
+A reference to a public pull request or some other publicly available
+discussion may be provided with the `Link: <url>` trailer, as it is done
+by the Linux kernel community.
+
 
 #### Co-authorship trailers (if applicable)
 
