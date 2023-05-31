@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test API for FIO tool
  *
@@ -7,8 +8,6 @@
  * @{
  *
  * Test API to control 'fio' tool.
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TAPI_FIO_H__
@@ -182,30 +181,31 @@ typedef enum {
 /** The maximum value of numjobs, used to estimate the timeout */
 #define TAPI_FIO_MAX_NUMJOBS    (1024)
 
-/** Multiplication factor for numjobs */
-typedef enum tapi_fio_numjobs_factor {
-    TAPI_FIO_NUMJOBS_NPROC_FACTOR,      /**< Multiply value on CPU Cores */
-    TAPI_FIO_NUMJOBS_WITHOUT_FACTOR     /**< No multiply */
-} tapi_fio_numjobs_factor;
 
-/** Contain FIO numjobs */
+/**
+ * Contain FIO numjobs.
+ *
+ * @note numjobs.expr is used to calculate the actual number of jobs if it is
+ *       not @c NULL, otherwise numjobs.value is used.
+*/
 typedef struct tapi_fio_numjobs_t {
-    unsigned int value;                     /**< Number of jobs */
-    enum tapi_fio_numjobs_factor factor;    /**< Type of multiply */
+    const char *expr;   /**< Expression to calculate the number of jobs. */
+    unsigned int value; /**< Number of jobs. */
 } tapi_fio_numjobs_t;
 
 /**
- * Get the value of parameter of type 'tapi_fio_numjobs_t'
- * @note Support format `[number]n | <number>`,
- * where @c n - count of cores on TA,
- * input example: @c 2n, @c n, @c 42
+ * The syntax of the parameter is an expression accepted by
+ * tapi_cfg_cpu_calculate_numjobs().
  *
  * @param var_name_  Name of the parameter
  *
  * @return value of parameter of type 'tapi_fio_numjobs_t'
  */
 #define TEST_FIO_NUMJOBS_PARAM(var_name_) \
-    test_get_fio_numjobs_param(argc, argv, #var_name_)
+    (tapi_fio_numjobs_t){                     \
+        .expr = TEST_STRING_PARAM(var_name_), \
+        .value = 0,                           \
+    }
 
 /**
  * Get test parameter numjobs
@@ -246,10 +246,7 @@ typedef struct tapi_fio_opts {
     .name = "default.fio",                              \
     .filename = NULL,                                   \
     .blocksize = 512,                                   \
-    .numjobs = {                                        \
-        .value = 1,                                     \
-        .factor = TAPI_FIO_NUMJOBS_WITHOUT_FACTOR,      \
-    },                                                  \
+    .numjobs = {.expr = NULL, .value = 1},              \
     .iodepth = 1,                                       \
     .runtime_sec = 0,                                   \
     .rwmixread = 50,                                    \
@@ -351,21 +348,6 @@ typedef struct tapi_fio {
     tapi_fio_app app;                   /**< Tool context */
     const tapi_fio_methods *methods;    /**< Methods to operate FIO */
 } tapi_fio;
-
-/**
- * Get parameters of type 'tapi_fio_numjobs_t'
- * @note Support format `[number]n | <number>`,
- * where @c n - count of cores on TA,
- * input example: @c 2n, @c n, @c 42
- *
- * @param argc       Count of arguments
- * @param argv       List of arguments
- * @param name       Name of parameter
- *
- * @return value of parameter of type 'tapi_fio_numjobs_t'
- */
-extern tapi_fio_numjobs_t test_get_fio_numjobs_param(int argc, char **argv,
-                                                     const char *name);
 
 /**
  * Create FIO context based on options.

@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test API for FIO tool
  *
  * Test API to control 'fio' tool.
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER "TAPI FIO"
@@ -22,25 +21,11 @@
 #define TAPI_FIO_TOOL_PATH_DEFAULT "fio"
 
 static void
-numjobs_transform(tapi_job_factory_t *factory, tapi_fio_numjobs_t *numjobs)
-{
-    const char *ta;
-    size_t n_cpus;
-
-    if (numjobs->factor != TAPI_FIO_NUMJOBS_NPROC_FACTOR)
-        return;
-
-    CHECK_NOT_NULL(ta = tapi_job_factory_ta(factory));
-    CHECK_RC(tapi_cfg_get_all_threads(ta, &n_cpus, NULL));
-
-    numjobs->value *= n_cpus;
-    numjobs->factor = TAPI_FIO_NUMJOBS_WITHOUT_FACTOR;
-}
-
-static void
 app_init(tapi_fio_app *app, const tapi_fio_opts *opts,
          tapi_job_factory_t *factory, const char *path)
 {
+    const char *ta = tapi_job_factory_ta(factory);
+
     app->factory = factory;
     app->running = FALSE;
     app->args = TE_VEC_INIT(char *);
@@ -57,7 +42,11 @@ app_init(tapi_fio_app *app, const tapi_fio_opts *opts,
     if (app->opts.output_path.ptr == NULL)
         tapi_file_make_custom_pathname(&app->opts.output_path, NULL, ".json");
 
-    numjobs_transform(app->factory, &app->opts.numjobs);
+    if (app->opts.numjobs.expr != NULL)
+    {
+        CHECK_RC(tapi_cfg_cpu_calculate_numjobs(ta, app->opts.numjobs.expr,
+                                                &app->opts.numjobs.value));
+    }
 }
 
 static void
@@ -274,40 +263,6 @@ tapi_fio_log_report(tapi_fio_report *rp)
 
     RING("SHORT FIO REPORT:\n%s", report.ptr);
     te_string_free(&report);
-}
-
-/* See description in tapi_fio.h */
-tapi_fio_numjobs_t
-test_get_fio_numjobs_param(int argc, char **argv, const char *name)
-{
-    char *end_ptr = NULL;
-    const char *str_val = NULL;
-    unsigned long value = 0;
-    tapi_fio_numjobs_t result = {
-        .value = 0,
-        .factor = TAPI_FIO_NUMJOBS_WITHOUT_FACTOR
-    };
-
-    str_val = test_get_param(argc, argv, name);
-    CHECK_NOT_NULL(str_val);
-
-    value = strtoul(str_val, &end_ptr, 0);
-
-    if (strcmp(end_ptr, "nproc") == 0)
-        result.factor = TAPI_FIO_NUMJOBS_NPROC_FACTOR;
-    else if (*end_ptr != '\0')
-        TEST_FAIL("Failed to convert '%s' to a numjobs", str_val);
-
-    if (value > UINT_MAX) {
-        TEST_FAIL("'%s' parameter value is greater"
-                  " than %u and cannot be stored in"
-                  " an 'unsigned int' variable",
-                  name, UINT_MAX);
-    }
-
-    result.value = str_val != end_ptr ? (unsigned)value : 1;
-
-    return result;
 }
 
 te_errno

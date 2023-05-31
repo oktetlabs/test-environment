@@ -21,6 +21,8 @@
             <arg name="numjobs">
                 <value>1</value>
                 <value>1nproc</value>
+                <value>2ncores</value>
+                <value>nproc-1</value>
             </arg>
             <arg name="rwtype">
                 <value>randread</value>
