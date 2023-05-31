@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2018-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test API to configure CPUs.
  *
  * Definition of API to configure CPUs.
- *
- * Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_CFG_CPU_H__
@@ -26,6 +25,11 @@ extern "C" {
 
 /** Unspecified CPU index used in tapi_cpu_index_t */
 #define TAPI_CPU_ID_UNSPEC ((unsigned long)ULONG_MAX)
+
+/** Factor to calculate number of jobs depending on CPU cores number. */
+#define TAPI_CFG_CPU_NCORES_FACTOR "ncores"
+/** Factor to calculate number of jobs depending on CPU threads number. */
+#define TAPI_CFG_CPU_NPROC_FACTOR "nproc"
 
 /** Identifier of a logical CPU (CPU thread) */
 typedef struct tapi_cpu_index_t {
@@ -135,6 +139,48 @@ extern te_errno tapi_cfg_cpu_grab_multiple_on_single_node(const char *ta,
                                            const tapi_cpu_prop_t *prop,
                                            unsigned int n_cpus,
                                            tapi_cpu_index_t *cpu_ids);
+
+/**
+ * Calculate number of jobs depending on number of CPU cores or threads.
+ *
+ * The syntax of the expression string:
+ * @code
+ * COUNT | (FACTOR? ("nproc" | "ncores") ("/" DIVISOR)? (("+" | "-") DISP)?
+ *          ("<" MAX)? (">" MIN)?)`
+ * @endcode
+ * where @c COUNT - exact number of jobs,
+ *       @c FACTOR - multiplier for @c nproc or @c ncores,
+ *       @c nproc - number of CPU threads,
+ *       @c ncores - number of CPU cores,
+ *       @c DIVISOR - divisor for @c nproc or @c ncores,
+ *       @c DISP - displacement from the calculated number,
+ *       @c MAX - upper bound for jobs number,
+ *       @c MIN - lower bound for jobs number.
+ *
+ * Examples:
+ *
+ * Expression  | nproc | ncores | Result
+ * ------------|-------|--------|-------
+ * `2`         |       |        | 2
+ * `nproc`     | 8     |        | 8
+ * `3ncores`   |       | 2      | 6
+ * `2nproc/3`  | 6     |        | 4
+ * `ncores-1`  |       |4       | 3
+ * `nproc<16`  | 32    |        | 16
+ * `2ncores>4` |       | 1      | 4
+ *
+ * In case of division, the value is truncated towards zero.
+ * If the resulting value is less than @c 1, it is set to @c 1.
+ *
+ * @param[in]  ta        Test Agent.
+ * @param[in]  expr      Expression for calculating the number of jobs.
+ * @param[out] n_jobs    Calculated number of jobs.
+ *
+ * @return    Status code.
+ */
+extern te_errno tapi_cfg_cpu_calculate_numjobs(const char *ta,
+                                               const char *expr,
+                                               unsigned int *n_jobs);
 
 /**@} <!-- END tapi_conf_cpu --> */
 

@@ -130,5 +130,102 @@
             <script name="loadavg"/>
         </run>
 
+        <run>
+            <script name="num_jobs" />
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+            <arg name="value" list="">
+                <value>4</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+            </arg>
+            <arg name="factor" list="">
+                <value>0</value>
+                <value>0</value>
+                <value>2</value>
+                <value>2</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>2</value>
+            </arg>
+            <arg name="type" list="">
+                <value>-</value>
+                <value>ncores</value>
+                <value>nproc</value>
+                <value>nproc</value>
+                <value>ncores</value>
+                <value>ncores</value>
+                <value>nproc</value>
+                <value>nproc</value>
+                <value>ncores</value>
+                <value>ncores</value>
+                <value>nproc</value>
+            </arg>
+            <arg name="divisor" list="">
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>2</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>3</value>
+            </arg>
+            <arg name="displacement" list="">
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>-5</value>
+                <value>2</value>
+                <value>0</value>
+                <value>6</value>
+                <value>0</value>
+                <value>5</value>
+                <value>2</value>
+            </arg>
+            <arg name="max" list="">
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>5</value>
+                <value>5</value>
+                <value>0</value>
+                <value>0</value>
+                <value>5</value>
+            </arg>
+            <arg name="min" list="">
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+                <value>3</value>
+                <value>3</value>
+                <value>2</value>
+            </arg>
+        </run>
     </session>
 </package>

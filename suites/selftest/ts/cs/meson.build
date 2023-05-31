@@ -7,6 +7,7 @@ tests = [
     'key',
     'loadavg',
     'loop',
+    'num_jobs',
     'oid',
     'pci',
     'phy',

@@ -123,5 +123,120 @@
                 <notes/>
             </iter>
         </test>
+
+        <test name="num_jobs" type="script">
+            <objective>Check that job number counts correctly.</objective>
+
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="value">4</arg>
+                <arg name="factor">0</arg>
+                <arg name="type">-</arg>
+                <arg name="divisor">0</arg>
+                <arg name="displacement">0</arg>
+                <arg name="max">0</arg>
+                <arg name="min">0</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="value">0</arg>
+                <arg name="factor">0</arg>
+                <arg name="type">ncores</arg>
+                <arg name="divisor">0</arg>
+                <arg name="displacement">0</arg>
+                <arg name="max">0</arg>
+                <arg name="min">0</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="value">0</arg>
+                <arg name="factor">2</arg>
+                <arg name="type">nproc</arg>
+                <arg name="divisor">0</arg>
+                <arg name="displacement">0</arg>
+                <arg name="max">0</arg>
+                <arg name="min">0</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="value">0</arg>
+                <arg name="factor">2</arg>
+                <arg name="type">nproc</arg>
+                <arg name="divisor">2</arg>
+                <arg name="displacement">0</arg>
+                <arg name="max">0</arg>
+                <arg name="min">0</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="value">0</arg>
+                <arg name="factor">0</arg>
+                <arg name="type">ncores</arg>
+                <arg name="divisor">0</arg>
+                <arg name="displacement">-5</arg>
+                <arg name="max">0</arg>
+                <arg name="min">0</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="value">0</arg>
+                <arg name="factor">0</arg>
+                <arg name="type">ncores</arg>
+                <arg name="divisor">0</arg>
+                <arg name="displacement">2</arg>
+                <arg name="max">0</arg>
+                <arg name="min">0</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="value">0</arg>
+                <arg name="factor">0</arg>
+                <arg name="type">nproc</arg>
+                <arg name="divisor">0</arg>
+                <arg name="displacement">0</arg>
+                <arg name="max">5</arg>
+                <arg name="min">0</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="value">0</arg>
+                <arg name="factor">0</arg>
+                <arg name="type">nproc</arg>
+                <arg name="divisor">0</arg>
+                <arg name="displacement">6</arg>
+                <arg name="max">5</arg>
+                <arg name="min">0</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="value">0</arg>
+                <arg name="factor">0</arg>
+                <arg name="type">ncores</arg>
+                <arg name="divisor">0</arg>
+                <arg name="displacement">0</arg>
+                <arg name="max">0</arg>
+                <arg name="min">3</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="value">0</arg>
+                <arg name="factor">0</arg>
+                <arg name="type">ncores</arg>
+                <arg name="divisor">0</arg>
+                <arg name="displacement">5</arg>
+                <arg name="max">0</arg>
+                <arg name="min">3</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="value">0</arg>
+                <arg name="factor">2</arg>
+                <arg name="type">nproc</arg>
+                <arg name="divisor">3</arg>
+                <arg name="displacement">2</arg>
+                <arg name="max">5</arg>
+                <arg name="min">2</arg>
+            </iter>
+        </test>
     </iter>
 </test>

@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2018-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test API to configure CPUs.
  *
  * Implementation of API to configure CPUs.
- *
- * Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER      "Conf CPUs TAPI"
@@ -532,4 +531,119 @@ out:
     free(indices);
 
     return rc;
+}
+
+te_errno
+tapi_cfg_cpu_calculate_numjobs(const char *ta, const char *expr,
+                               unsigned int *n_jobs)
+{
+    char *current = NULL;
+    const char *next = NULL;
+    long expr_value = 1;
+    long op_value = 1;
+    size_t factor = 0;
+    te_errno rc = 0;
+
+    assert(n_jobs != NULL);
+
+    rc = te_strtol_raw_silent(expr, &current, 0, &expr_value);
+    if (current == expr)
+        expr_value = 1;
+
+    if (current[0] != '\0')
+    {
+        next = te_str_strip_prefix(current, TAPI_CFG_CPU_NPROC_FACTOR);
+        if (next != NULL)
+        {
+            rc = tapi_cfg_get_all_threads(ta, &factor, NULL);
+            if (rc != 0)
+            {
+                ERROR("Failed to obtain number of CPU threads");
+                return rc;
+            }
+        }
+        else
+        {
+            next = te_str_strip_prefix(current, TAPI_CFG_CPU_NCORES_FACTOR);
+            if (next != NULL)
+            {
+                rc = tapi_cfg_get_cpu_cores(ta, &factor, NULL);
+                if (rc != 0)
+                {
+                    ERROR("Failed to obtain number of CPU cores");
+                    return rc;
+                }
+            }
+        }
+
+        if (next == NULL)
+        {
+            ERROR("Wrong factor, must be \"%s\" or \"%s\"",
+                  TAPI_CFG_CPU_NPROC_FACTOR, TAPI_CFG_CPU_NCORES_FACTOR);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+
+        current = TE_CONST_PTR_CAST(char, next);
+        expr_value *= factor;
+
+        if (current[0] == '/')
+        {
+            rc = te_strtol_raw(&current[1], &current, 0, &op_value);
+            if (rc != 0)
+            {
+                ERROR("Failed to obtain divisor value");
+                return rc;
+            }
+            expr_value /= op_value;
+        }
+
+        if ((current[0] == '+') || (current[0] == '-'))
+        {
+            rc = te_strtol_raw(current, &current, 0, &op_value);
+            if (rc != 0)
+            {
+                ERROR("Failed to obtain displacement value");
+                return rc;
+            }
+            expr_value += op_value;
+        }
+
+        if (current[0] == '<')
+        {
+            rc = te_strtol_raw(&current[1], &current, 0, &op_value);
+            if (rc != 0)
+            {
+                ERROR("Failed to obtain upper bound value");
+                return rc;
+            }
+            expr_value = MIN(op_value, expr_value);
+        }
+
+        if (current[0] == '>')
+        {
+            rc = te_strtol_raw(&current[1], &current, 0, &op_value);
+            if (rc != 0)
+            {
+                ERROR("Failed to obtain lower bound value");
+                return rc;
+            }
+            expr_value = MAX(op_value, expr_value);
+        }
+
+        if (current[0] != '\0')
+        {
+            ERROR("Failed to parse expression: \"%s\"", current);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+    }
+
+    expr_value = MAX(1, expr_value);
+    if ((unsigned long)expr_value > UINT_MAX)
+    {
+        ERROR("Calculated number of jobs is greater than %u", UINT_MAX);
+        return TE_RC(TE_TAPI, TE_ERANGE);
+    }
+
+    *n_jobs = expr_value;
+    return 0;
 }
