@@ -1180,7 +1180,6 @@ te_rgt_parse_mi_trc_tags_message(te_rgt_mi *mi)
     }
 
 cleanup:
-    json_decref(tags);
     if (mi->rc != 0)
         te_rgt_mi_clean(mi);
 }
