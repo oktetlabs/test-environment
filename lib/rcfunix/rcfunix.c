@@ -782,7 +782,7 @@ start_core_watcher(unix_ta *ta, const char *core_pattern)
 
     te_string_append(&cores_log, "ta_cores.%s", ta->ta_name);
 
-    te_string_append(&cmd, "%s%s%s/ta_core_watcher \"%s\" \"%s\" "
+    te_string_append(&cmd, "%s%s%s/ta_core_watcher \\\"%s\\\" \\\"%s\\\" "
                      " %s 2>&1 | te_tee %s %s 10 >%s",
                      te_string_value(&ta->cmd_prefix),
                      rcfunix_ta_sudo(ta),
