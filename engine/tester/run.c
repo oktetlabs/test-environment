@@ -174,7 +174,7 @@ typedef struct tester_ctx {
  */
 typedef struct tester_run_data {
     tester_flags                flags;      /**< Flags */
-    char                       *verdict;    /**< Verdict to stop tester run
+    const char                 *verdict;    /**< Verdict to stop tester run
                                                  on */
     const tester_cfgs          *cfgs;       /**< Tester configurations */
     test_paths                 *paths;      /**< Testing paths */
@@ -4135,7 +4135,7 @@ trc_exp_result_to_log_buf(te_log_buf *lb, const trc_exp_result *result)
 #endif
 
 static te_bool
-result_has_verdict(te_test_result *result, char *verdict_str)
+result_has_verdict(te_test_result *result, const char *verdict_str)
 {
     te_test_verdict *verdict = NULL;
 
