@@ -126,5 +126,9 @@
             </arg>
         </run>
 
+        <run>
+            <script name="loadavg"/>
+        </run>
+
     </session>
 </package>

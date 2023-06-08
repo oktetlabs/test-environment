@@ -5,6 +5,7 @@ tests = [
     'changed',
     'dir',
     'key',
+    'loadavg',
     'loop',
     'oid',
     'pci',

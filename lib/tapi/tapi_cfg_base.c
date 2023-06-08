@@ -1482,3 +1482,72 @@ tapi_cfg_base_if_await_link_up(const char *ta, const char *iface,
 
     return rc;
 }
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_get_loadavg(const char *agent, tapi_cfg_base_loadavg *loadavg)
+{
+    te_errno rc;
+    char *buf;
+
+    rc = cfg_get_instance_string_fmt(&buf, "/agent:%s/loadavg:/min1:", agent);
+    if (rc != 0)
+        return rc;
+    rc = te_strtod(buf, &loadavg->min1);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_get_instance_string_fmt(&buf, "/agent:%s/loadavg:/min5:", agent);
+    if (rc != 0)
+        return rc;
+    rc = te_strtod(buf, &loadavg->min5);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_get_instance_string_fmt(&buf, "/agent:%s/loadavg:/min15:", agent);
+    if (rc != 0)
+        return rc;
+    rc = te_strtod(buf, &loadavg->min15);
+    if (rc != 0)
+        return rc;
+
+    return 0;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_get_proc_number(const char *agent, uint64_t *runnable,
+                              uint64_t *total)
+{
+    te_errno rc;
+
+    if (runnable != NULL)
+    {
+        rc = cfg_get_instance_uint64_fmt(runnable,
+                                         "/agent:%s/loadavg:/runnable:", agent);
+        if (rc != 0)
+            return rc;
+    }
+
+    if (total != NULL)
+    {
+        rc = cfg_get_instance_uint64_fmt(total, "/agent:%s/loadavg:/total:",
+                                                 agent);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_get_latest_pid(const char *agent, uint64_t *latest_pid)
+{
+    te_errno rc;
+
+    rc = cfg_get_instance_uint64_fmt(latest_pid,
+                                     "/agent:%s/loadavg:/latest_pid:", agent);
+
+    return rc;
+}

@@ -1054,6 +1054,48 @@ extern te_errno tapi_cfg_base_if_set_mtu_leastwise(const char   *ta,
 extern te_errno tapi_cfg_base_if_down_up(const char *agent,
                                          const char *interface);
 
+/** Storage for getting loadavg stats */
+typedef struct tapi_cfg_base_loadavg {
+    double min1;    /**< Load average for the last 1 min*/
+    double min5;    /**< Load average for the last 5 min */
+    double min15;   /**< Load average for the last 15 min */
+} tapi_cfg_base_loadavg;
+
+/**
+ * Get loadavg stats from a given agent.
+ *
+ * @param[in]  agent    agent name
+ * @param[out] loadavg  resulting loadavg stats
+ *
+ * @return status code
+ */
+extern te_errno tapi_cfg_base_get_loadavg(const char *agent,
+                                          tapi_cfg_base_loadavg *loadavg);
+
+/**
+ * Get kernel scheduler figures from a given agent.
+ *
+ * @param[in]  agent    agent name
+ * @param[out] runnable number of runnable processes
+ * @param[out] total    total number of processes
+ *
+ * @return status code
+ */
+extern te_errno tapi_cfg_base_get_proc_number(const char *agent,
+                                              uint64_t *runnable,
+                                              uint64_t *total);
+
+/**
+ * Get latest PID from a given agent.
+ *
+ * @param[in]  agent        agent name
+ * @param[out] latest_pid   obtained PID pointer
+ *
+ * @return status code
+ */
+extern te_errno tapi_cfg_base_get_latest_pid(const char *agent,
+                                             uint64_t *latest_pid);
+
 /**@} <!-- END tapi_conf_iface --> */
 
 #ifdef __cplusplus
