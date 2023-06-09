@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief API to deal with strings
  *
@@ -7,9 +8,6 @@
  * @{
  *
  * Function to operate the strings.
- *
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_STR_H__
@@ -465,6 +463,19 @@ extern te_errno te_strtoui(const char   *str,
  */
 extern te_errno te_strtol_raw(const char *input, char **endptr, int base,
                               long int *result);
+
+/**
+ * Convert a prefix of string to a long int without logging any errors.
+ *
+ * @param[in]  input     String to convert.
+ * @param[out] endptr    Pointer to the end of a parsed prefix.
+ * @param[in]  base      Conversion base (@c 0 to auto-detect).
+ * @param[out] result    Storage for result.
+ *
+ * @return    Status code.
+ */
+extern te_errno te_strtol_raw_silent(const char *str, char **endptr,  int base,
+                                     long int *result);
 
 /**
  * Convert string to long int without error logs input is not a number.

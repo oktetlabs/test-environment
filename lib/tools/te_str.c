@@ -1,11 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief API to deal with strings
  *
  * Function to operate the strings.
- *
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_config.h"
@@ -686,8 +684,8 @@ te_strtoui(const char   *str,
     return 0;
 }
 
-
-static te_errno
+/* See description in te_str.h */
+te_errno
 te_strtol_raw_silent(const char *str, char **endptr,  int base,
                      long int *result)
 {
