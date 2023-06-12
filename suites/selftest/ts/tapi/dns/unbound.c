@@ -118,6 +118,7 @@ main(int argc, char **argv)
     tapi_dns_unbound_cfg_ac access_control;
     char *includes[2];
     te_string include_path = TE_STRING_INIT;
+    size_t i = 0;
 
     TEST_START;
     TEST_GET_PCO(pco_iut);
@@ -159,7 +160,7 @@ main(int argc, char **argv)
     rpc_mkstemp(pco_iut, include_path.ptr, &includes[1]);
     te_string_free(&include_path);
     cfg_opts.includes.filename = (const char **)includes;
-    cfg_opts.includes.n = 2;
+    cfg_opts.includes.n = TE_ARRAY_LEN(includes);
 
     /* Set outgoing interface and private address for example. */
     addresses[0] = (struct sockaddr *)&outside_addr;
@@ -216,6 +217,8 @@ cleanup:
     CLEANUP_CHECK_RC(tapi_dns_unbound_destroy(app));
     tapi_job_factory_destroy(factory);
     free(ta_dir);
+    for (i = 0; i  < TE_ARRAY_LEN(includes); i++)
+        free(includes[i]);
 
     TEST_END;
 }
