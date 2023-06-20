@@ -287,6 +287,9 @@
     - oid: "/agent/ovs/bridge/flow"
       access: read_create
       type: string
+      depends:
+        - oid: "/agent/ovs/status"
+        - oid: "/agent/ovs/bridge"
       d: |
          Open vSwitch bridge flow rule registry.
 
