@@ -1,11 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Tester Subsystem
  *
  * Tester flags definitions.
- *
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TESTER_FLAGS_H__
@@ -120,6 +118,9 @@ typedef uint64_t tester_flags;
 
 /** Gather the execution plan */
 #define TESTER_ASSEMBLE_PLAN          (1LLU << 38)
+
+/** Fail test scripts if valgrind detects a memory leak. */
+#define TESTER_FAIL_ON_LEAK           (1LLU << 39)
 
 #ifdef __cplusplus
 } /* extern "C" */

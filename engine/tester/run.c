@@ -1,11 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Tester Subsystem
  *
  * Code dealing with running of the requested configuration.
- *
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER "Run"
@@ -2158,15 +2156,24 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     }
     else if (flags & TESTER_VALGRIND)
     {
-        if (snprintf(shell, sizeof(shell),
-                     "valgrind --num-callers=16 --leak-check=yes "
-                     "--show-reachable=yes --tool=memcheck ") >=
-                (int)sizeof(shell))
+        te_string shell_str = TE_STRING_INIT;
+
+        te_string_append(&shell_str, "valgrind --num-callers=16 "
+                         "--leak-check=yes --show-reachable=yes "
+                         "--tool=memcheck ");
+        if (flags & TESTER_FAIL_ON_LEAK)
+            te_string_append(&shell_str, "--error-exitcode=%d ", EXIT_FAILURE);
+
+        if (shell_str.len >= sizeof(shell))
         {
             ERROR("Too short buffer is reserved for shell command prefix");
             te_string_free(&params_str);
+            te_string_free(&shell_str);
             return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
+        strcpy(shell, shell_str.ptr);
+        te_string_free(&shell_str);
+
         if (snprintf(vg_filename, sizeof(vg_filename),
                      TESTER_VG_FILENAME_FMT, exec_id) >=
                 (int)sizeof(vg_filename))
@@ -2499,6 +2506,9 @@ run_script(run_item *ri, test_script *script,
         ctx->current_result.status = TESTER_TEST_PASSED;
         return TESTER_CFG_WALK_CONT;
     }
+
+    if (ctx->flags & TESTER_FAIL_ON_LEAK)
+        def_flags |= TESTER_FAIL_ON_LEAK;
 
     assert(ri != NULL);
     assert(ri->n_args == ctx->n_args);

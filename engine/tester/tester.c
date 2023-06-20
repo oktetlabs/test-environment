@@ -1,11 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Tester Subsystem
  *
  * Application main file
- *
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_config.h"
@@ -198,6 +196,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
         TESTER_OPT_VALGRIND,
         TESTER_OPT_GDB,
+        TESTER_OPT_FAIL_ON_LEAK,
 
         TESTER_OPT_MIX,
         TESTER_OPT_MIX_VALUES,
@@ -315,6 +314,9 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         { "gdb", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_GDB,
           "Run test scripts under specified path using gdb.",
           "<testpath>" },
+        { "fail-on-leak", 'v', POPT_ARG_NONE, NULL, TESTER_OPT_FAIL_ON_LEAK,
+          "Test scripts fail if valgrind detects a memory leak (must be "
+          "specified together with tester-vg).", NULL },
 
         { "run-while", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_RUN_WHILE,
           "Run tests while they produce a given result.",
@@ -507,6 +509,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
             case TESTER_OPT_INTERACTIVE:
                 global->flags |= TESTER_INTERACTIVE;
+                break;
+
+            case TESTER_OPT_FAIL_ON_LEAK:
+                global->flags |= TESTER_FAIL_ON_LEAK;
                 break;
 
             case TESTER_OPT_SUITE_PATH:

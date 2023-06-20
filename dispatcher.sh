@@ -169,6 +169,9 @@ Generic options:
   --tester-gdb=<testpath>       Run test scripts under specified path using
                                 gdb.
 
+  --tester-fail-on-leak         Test scripts fail if valgrind detects a memory
+                                leak (must be specified together with tester-vg).
+
   --tester-random-seed=<number> Random seed to initialize pseudo-random number
                                 generator
   --tester-verbose              Increase verbosity of the Tester (the first
