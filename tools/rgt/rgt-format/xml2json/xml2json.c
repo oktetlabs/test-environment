@@ -557,6 +557,7 @@ RGT_XML2JSON_CB(proc_log_msg_start,
     const char *entity = rgt_tmpls_xml_attrs_get(xml_attrs, "entity");
     const char *user = rgt_tmpls_xml_attrs_get(xml_attrs, "user");
     const char *ts = rgt_tmpls_xml_attrs_get(xml_attrs, "ts");
+    const char *ts_val = rgt_tmpls_xml_attrs_get(xml_attrs, "ts_val");
     const char *nl = rgt_tmpls_xml_attrs_get(xml_attrs, "nl");
     unsigned int nl_num;
 
@@ -592,7 +593,25 @@ RGT_XML2JSON_CB(proc_log_msg_start,
     te_json_add_key_str(json_ctx, "level", level);
     te_json_add_key_str(json_ctx, "entity_name", entity);
     te_json_add_key_str(json_ctx, "user_name", user);
-    te_json_add_key_str(json_ctx, "timestamp", ts);
+
+    if (te_str_is_null_or_empty(ts_val))
+    {
+        te_json_add_key_str(json_ctx, "timestamp", ts);
+    }
+    else
+    {
+        te_json_add_key(json_ctx, "timestamp");
+        te_json_start_object(json_ctx);
+
+        te_json_add_key(json_ctx, "timestamp");
+        te_json_start_raw(json_ctx);
+        te_json_append_raw(json_ctx, ts_val, 0);
+        te_json_end(json_ctx);
+
+        te_json_add_key_str(json_ctx, "formatted", ts);
+
+        te_json_end(json_ctx);
+    }
 
     te_json_add_key(json_ctx, "log_content");
     te_json_start_array(json_ctx);
