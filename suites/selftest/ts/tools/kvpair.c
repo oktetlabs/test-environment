@@ -40,6 +40,7 @@ main(int argc, char **argv)
     te_vec keys = TE_VEC_INIT(char *);
     te_vec values = TE_VEC_INIT(char *);
     te_kvpair_h kvpairs;
+    te_kvpair_h copy;
     unsigned int i;
     te_string expected_content = TE_STRING_INIT;
     te_string actual_content = TE_STRING_INIT;
@@ -376,6 +377,39 @@ main(int argc, char **argv)
 
         CHECK_RC(te_kvpair_add(&kvpairs, key, "%s", value));
     }
+
+    TEST_SUBSTEP("Checking key copying");
+    for (i = 0; i < n_keys; i++)
+    {
+        char *key = TE_VEC_GET(char *, &keys, i);
+        const char *value = TE_VEC_GET(char *, &values, i);
+        const char *copied_val = NULL;
+
+        te_kvpair_init(&copy);
+        te_kvpairs_copy_key(&copy, &kvpairs, key);
+        CHECK_NOT_NULL(copied_val = te_kvpairs_get(&copy, key));
+
+        if (strcmp(value, copied_val) != 0)
+        {
+            ERROR("Copied value '%s' differs from the original '%s'",
+                  copied_val, value);
+            TEST_VERDICT("Copying a key failed");
+        }
+
+        te_kvpairs_copy_key(&copy, &kvpairs, key);
+        if (te_kvpairs_count(&copy, key) != 2)
+            ERROR("Some key bindings are lost during copy");
+
+        te_kvpair_fini(&copy);
+    }
+
+    te_kvpair_init(&copy);
+    te_kvpairs_copy(&copy, &kvpairs);
+    if (!te_kvpairs_is_submap(&kvpairs, &copy))
+        TEST_VERDICT("The original is not a submap of the copy");
+    if (!te_kvpairs_is_submap(&copy, &kvpairs))
+        TEST_VERDICT("The copy is not a submap of the original");
+    te_kvpair_fini(&copy);
 
     TEST_STEP("Checking kvpair-to-string serialization");
     for (i = 0; i < n_keys; i++)

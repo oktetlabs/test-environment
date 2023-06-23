@@ -145,6 +145,34 @@ extern te_errno te_kvpairs_del_all(te_kvpair_h *head, const char *key);
 
 
 /**
+ * Copy all key-values pairs from @p src to @p dest.
+ *
+ * All existing key-value pairs in @p dest are retained, so there are
+ * overlapping keys, the bindings from @p dest will be shadowed by the
+ * bindings from @p src.
+ *
+ * @param[out] dest     Destination key-value pairs.
+ * @param[in]  src      Source key-value pairs.
+ */
+extern void te_kvpairs_copy(te_kvpair_h *dest, const te_kvpair_h *src);
+
+/**
+ * Copy all values bound to @p key in @p src to @p dest.
+ *
+ * If @p key is @c NULL, the function behaves as te_kvpairs_copy(),
+ * i.e. all keys are copied.
+ *
+ * If there are bindings in @p dest for @p key, they will be shadowed.
+ *
+ * If there are no bindings for @p key in @p src, @p dest is unchanged.
+ * @param[out] dest     Destination key-value pairs.
+ * @param[in]  src      Source key-value pairs.
+ * @param[in]  key      Key to copy.
+ */
+extern void te_kvpairs_copy_key(te_kvpair_h *dest, const te_kvpair_h *src,
+                                const char *key);
+
+/**
  * Get the @p index'th value associated with the @p key.
  *
  * The most recently added value has the index @c 0.

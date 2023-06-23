@@ -123,6 +123,30 @@ te_kvpairs_del_all(te_kvpair_h *head, const char *key)
 }
 
 /* See the description in te_kvpair.h */
+void
+te_kvpairs_copy(te_kvpair_h *dest, const te_kvpair_h *src)
+{
+    te_kvpairs_copy_key(dest, src, NULL);
+}
+
+static te_errno
+kvpairs_copy(const char *key, const char *value, void *user)
+{
+    te_kvpair_h *dest = user;
+
+    te_kvpair_push(dest, key, "%s", value);
+
+    return 0;
+}
+
+/* See the description in te_kvpair.h */
+void
+te_kvpairs_copy_key(te_kvpair_h *dest, const te_kvpair_h *src, const char *key)
+{
+    te_kvpairs_foreach(src, kvpairs_copy, key, dest);
+}
+
+/* See the description in te_kvpair.h */
 te_errno
 te_kvpairs_foreach(const te_kvpair_h *head, te_kvpairs_iter_fn *callback,
                    const char *key, void *user)
