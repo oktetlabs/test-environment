@@ -394,7 +394,7 @@ te_kvpair_from_str(const char *str, te_kvpair_h *head)
         }
 
         key = strtok_r(token, "=", &val);
-        if ((rc = te_kvpair_add(head, key, val)) != 0)
+        if ((rc = te_kvpair_add(head, key, "%s", val)) != 0)
         {
             free(dup);
             te_kvpair_fini(head);
