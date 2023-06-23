@@ -1,31 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2022-2023 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
 
 tests = [
-    'base64',
-    'compare_bufs',
-    'enum_map',
-    'expand',
-    'expand_filters',
-    'expand_list',
-    'extract_glob',
-    'file',
-    'hexdump',
-    'intset',
-    'json',
     'kvpair',
-    'lines',
-    'make_bufs',
-    'readlink',
-    'resolvepath',
-    'scandir',
-    'str_compare_versions',
-    'string',
-    'strpbrk_balanced',
-    'units',
-    'uri',
-    'vector',
-    'vector_search',
+    'traverse',
 ]
 
 foreach test : tests
@@ -44,15 +22,3 @@ tests_info_xml = custom_target(package_dir.underscorify() + 'tests-info-xml',
                                           meson.current_source_dir() ])
 
 install_data([ 'package.xml' ], install_dir: package_dir)
-
-packages = [
-    'timer',
-    'trees',
-]
-
-tools_mydir = package_dir
-foreach package : packages
-    package_dir = join_paths(tools_mydir, package)
-    package_tests_c = []
-    subdir(package)
-endforeach

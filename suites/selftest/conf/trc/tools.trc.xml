@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (C) 2022 OKTET Labs Ltd. All rights reserved. -->
+<!-- Copyright (C) 2022-2023 OKTET Labs Ltd. All rights reserved. -->
 <test name="tools" type="package">
     <objective>Self-tests for lib/tools functions</objective>
     <iter result="PASSED">
@@ -46,6 +46,8 @@
                     href="tools/strpbrk_balanced.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/timer.trc.xml" parse="xml"/>
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tools/trees.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/units.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"

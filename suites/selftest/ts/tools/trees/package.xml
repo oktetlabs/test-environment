@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>Tree API selftests</description>
+    <author mailto="Artem.Andreev@oktetlabs.ru"/>
+    <session>
+        <run>
+            <script name="traverse"/>
+            <arg name="max_depth">
+                <value>4</value>
+            </arg>
+            <arg name="max_branching">
+                <value>5</value>
+            </arg>
+            <arg name="n_iterations">
+                <value>1000</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="kvpair"/>
+            <arg name="max_name_len">
+                <value>32</value>
+            </arg>
+            <arg name="max_value_len">
+                <value>128</value>
+            </arg>
+            <arg name="max_items">
+                <value>16</value>
+            </arg>
+            <arg name="n_iterations">
+                <value>1000</value>
+            </arg>
+        </run>
+    </session>
+</package>

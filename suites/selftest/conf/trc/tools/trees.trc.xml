@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="trees" type="package">
+    <objective>Tree API selftests</objective>
+    <iter result="PASSED">
+        <test name="traverse" type="script">
+            <objective>Testing tree building and traversal correctness.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="max_depth" />
+                <arg name="max_branching" />
+                <arg name="n_iterations" />
+            </iter>
+        </test>
+
+        <test name="kvpair" type="script">
+            <objective>Testing the correctness of kvpair and trees interactions.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="max_name_len" />
+                <arg name="max_value_len" />
+                <arg name="max_items" />
+                <arg name="n_iterations" />
+            </iter>
+        </test>
+    </iter>
+</test>

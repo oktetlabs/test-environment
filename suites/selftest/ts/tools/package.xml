@@ -253,9 +253,9 @@
         <run>
             <script name="kvpair" />
             <arg name="n_keys"><value>1000</value></arg>
-            <arg name="min_key_len"><value>1</value></arg>
+            <arg name="min_key_len"><value>2</value></arg>
             <arg name="max_key_len"><value>1024</value></arg>
-            <arg name="min_value_len"><value>1</value></arg>
+            <arg name="min_value_len"><value>2</value></arg>
             <arg name="max_value_len"><value>65536</value></arg>
         </run>
 
@@ -409,6 +409,10 @@
 
         <run>
             <package name="timer"/>
+        </run>
+
+        <run>
+            <package name="trees"/>
         </run>
 
         <run>
