@@ -980,15 +980,38 @@ exec_priority_param_alloc(tapi_job_exec_param *exec_param,
 }
 
 static te_errno
+exec_workdir_param_alloc(tapi_job_exec_param *exec_param,
+                         tarpc_job_exec_param *exec_tarpc,
+                         tarpc_job_exec_workdir **workdir)
+{
+    tarpc_job_exec_workdir *result;
+    tapi_job_exec_workdir_param *p = exec_param->data;
+
+    result = TE_ALLOC(sizeof(*result));
+
+    result->workdir = p->workdir;
+    exec_tarpc->data.type = TARPC_JOB_EXEC_WORKDIR;
+
+    exec_tarpc->data.tarpc_job_exec_param_data_u.workdir = *result;
+    *workdir = result;
+
+    return 0;
+}
+
+
+static te_errno
 tapi_job_exec_param2tarpc_job_exec_param(tapi_job_exec_param *exec_tapi,
                                          tarpc_job_exec_param **exec_tarpc,
                                          size_t *exec_tarpc_len,
                                          tarpc_job_exec_affinity **affinity,
-                                         tarpc_job_exec_priority **priority)
+                                         tarpc_job_exec_priority **priority,
+                                         tarpc_job_exec_workdir **workdir)
 {
     tarpc_job_exec_param *exec = NULL;
     tarpc_job_exec_affinity *af = NULL;
     tarpc_job_exec_priority *pr = NULL;
+    tarpc_job_exec_workdir *dir = NULL;
+
     size_t count = 0;
     size_t i;
     te_errno rc;
@@ -1022,6 +1045,15 @@ tapi_job_exec_param2tarpc_job_exec_param(tapi_job_exec_param *exec_tapi,
                 break;
             }
 
+            case TAPI_JOB_EXEC_WORKDIR:
+            {
+                rc = exec_workdir_param_alloc(&exec_tapi[i], &exec[i], &dir);
+                if (rc != 0)
+                    goto out;
+
+                break;
+            }
+
             default:
                 ERROR("Unsupported process parameter");
                 rc = TE_EINVAL;
@@ -1035,6 +1067,7 @@ out:
         free(exec);
         free(af);
         free(pr);
+        free(dir);
     }
     else
     {
@@ -1042,6 +1075,7 @@ out:
         *exec_tarpc_len = count;
         *affinity = af;
         *priority = pr;
+        *workdir = dir;
     }
 
     return rc;
@@ -1060,6 +1094,7 @@ rpc_job_add_exec_param(const tapi_job_t *job,
     size_t exec_param_len;
     tarpc_job_exec_affinity *affinity = NULL;
     tarpc_job_exec_priority *priority = NULL;
+    tarpc_job_exec_workdir *workdir = NULL;
 
     tarpc_job_add_exec_param_in in;
     tarpc_job_add_exec_param_out out;
@@ -1069,7 +1104,7 @@ rpc_job_add_exec_param(const tapi_job_t *job,
 
     rc = tapi_job_exec_param2tarpc_job_exec_param(exec_tapi, &exec_param,
                                                   &exec_param_len, &affinity,
-                                                  &priority);
+                                                  &priority, &workdir);
     if (rc != 0)
         return rc;
 
@@ -1087,6 +1122,7 @@ rpc_job_add_exec_param(const tapi_job_t *job,
     free(exec_param);
     free(affinity);
     free(priority);
+    free(workdir);
 
     RETVAL_TE_ERRNO(job_add_exec_param, out.retval);
 }

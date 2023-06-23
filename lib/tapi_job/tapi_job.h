@@ -818,6 +818,7 @@ extern te_errno tapi_job_wrapper_delete(tapi_job_wrapper_t *wrapper);
 typedef enum tapi_job_exec_param_type {
     TAPI_JOB_EXEC_AFFINITY,
     TAPI_JOB_EXEC_PRIORITY,
+    TAPI_JOB_EXEC_WORKDIR,
     TAPI_JOB_EXEC_END
 } tapi_job_exec_param_type;
 
@@ -874,6 +875,12 @@ typedef struct tapi_job_exec_priority_param {
  * @deprecated
  */
 typedef tapi_job_exec_priority_param tapi_job_sched_priority_param;
+
+/** Data specific for workdir process type */
+typedef struct tapi_job_exec_workdir_param {
+     /** Process working directory. */
+    char *workdir;
+} tapi_job_exec_workdir_param;
 
 /**
  * Add a process parameters for the specified job.
