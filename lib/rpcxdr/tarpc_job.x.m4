@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief RPC for Agent job control
  *
  * Definition of RPC structures and functions for Agent job control
- *
- * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 struct tarpc_char_array {
@@ -350,40 +349,40 @@ struct tarpc_job_process_setting {
     int8_t process_priority;
 };
 
-struct tarpc_job_sched_affinity {
+struct tarpc_job_exec_affinity {
     int cpu_ids<>;
 };
 
-struct tarpc_job_sched_priority {
+struct tarpc_job_exec_priority {
     int priority;
 };
 
-enum tarpc_job_sched_param_type {
-    TARPC_JOB_SCHED_AFFINITY = 0,
-    TARPC_JOB_SCHED_PRIORITY = 1
+enum tarpc_job_exec_param_type {
+    TARPC_JOB_EXEC_AFFINITY = 0,
+    TARPC_JOB_EXEC_PRIORITY = 1
 };
 
-union tarpc_job_sched_param_data
-    switch (tarpc_job_sched_param_type type)
+union tarpc_job_exec_param_data
+    switch (tarpc_job_exec_param_type type)
 {
-    case TARPC_JOB_SCHED_AFFINITY: struct tarpc_job_sched_affinity affinity;
-    case TARPC_JOB_SCHED_PRIORITY: struct tarpc_job_sched_priority prio;
+    case TARPC_JOB_EXEC_AFFINITY: struct tarpc_job_exec_affinity affinity;
+    case TARPC_JOB_EXEC_PRIORITY: struct tarpc_job_exec_priority prio;
 
     default: void;
 };
 
-struct tarpc_job_sched_param {
-    tarpc_job_sched_param_data data;
+struct tarpc_job_exec_param {
+    tarpc_job_exec_param_data data;
 };
 
-struct tarpc_job_add_sched_param_in {
+struct tarpc_job_add_exec_param_in {
     struct tarpc_in_arg common;
 
     tarpc_uint job_id;
-    struct tarpc_job_sched_param param<>;
+    struct tarpc_job_exec_param param<>;
 };
 
-struct tarpc_job_add_sched_param_out {
+struct tarpc_job_add_exec_param_out {
     struct tarpc_out_arg common;
 
     tarpc_int retval;
@@ -414,6 +413,6 @@ program job
         RPC_DEF(job_destroy)
         RPC_DEF(job_wrapper_add)
         RPC_DEF(job_wrapper_delete)
-        RPC_DEF(job_add_sched_param)
+        RPC_DEF(job_add_exec_param)
     } = 1;
 } = 2;

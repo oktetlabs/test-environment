@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2022-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Functions that TAPI Job backend might implement
  *
@@ -7,8 +8,6 @@
  * @{
  *
  * Functions that TAPI Job backend might implement.
- *
- * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TAPI_JOB_METHODS__
@@ -177,18 +176,26 @@ typedef te_errno (tapi_job_method_wrapper_delete)(const tapi_job_t *job,
                                                   unsigned int wrapper_id);
 
 /**
- * Method that adds a scheduling parameters for the specified job
+ * Method that adds a process parameters for the specified job
  *
  * @param        job               Job instance handle
- * @param        sched_param       Array of scheduling parameters. The last
+ * @param        exec_param        Array of process parameters. The last
  *                                 element must have the type
- *                                 @c TAPI_JOB_SCHED_END and data pointer to
+ *                                 TAPI_JOB_EXEC_END and data pointer to
  *                                 @c NULL.
  *
  * @return       Status code
  */
+typedef te_errno (tapi_job_method_add_exec_param)(const tapi_job_t *job,
+                                             tapi_job_exec_param *exec_param);
+
+/**
+ * Use @p tapi_job_method_add_exec_param in the new code
+ *
+ * @deprecated
+ */
 typedef te_errno (tapi_job_method_add_sched_param)(const tapi_job_t *job,
-                                             tapi_job_sched_param *sched_param);
+                                            tapi_job_sched_param *sched_param);
 
 /**
  * Method that sets autorestart timeout.
@@ -258,8 +265,8 @@ typedef struct tapi_job_methods_t {
     tapi_job_method_wrapper_add *wrapper_add;
     /** Method that deletes the wrapper instance handle */
     tapi_job_method_wrapper_delete *wrapper_delete;
-    /** Method that adds a scheduling parameters for the specified job */
-    tapi_job_method_add_sched_param *add_sched_param;
+    /** Method that adds a process parameters for the specified job */
+    tapi_job_method_add_exec_param *add_exec_param;
     /** Method that sets the autorestart timeout */
     tapi_job_method_set_autorestart *set_autorestart;
     /** Method that obtains the autorestart timeout */

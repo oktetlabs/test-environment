@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief API to execute a program in a child process
  *
@@ -7,8 +8,6 @@
  * @{
  *
  * Routines to execute a program in a child process
- *
- * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_EXEC_CHILD_H__
@@ -33,40 +32,74 @@ extern "C" {
 
 #define TE_EXEC_CHILD_DEV_NULL_FD ((int *)-1)
 
-/** Type of scheduling */
-typedef enum te_sched_param_type {
-    /** Type to set CPU affinity */
-    TE_SCHED_AFFINITY,
-    /** Type to set process priority */
-    TE_SCHED_PRIORITY,
+/** Kinds of process parameters. */
+typedef enum te_exec_param_type {
+    /** Set CPU affinity */
+    TE_EXEC_AFFINITY,
+    /** Set process priority */
+    TE_EXEC_PRIORITY,
 
-    /** Last type of scheduling */
-    TE_SCHED_END
-} te_sched_param_type;
+    /** Last kind marker */
+    TE_EXEC_END
+} te_exec_param_type;
 
 /**
- * This structure describes type of scheduling
+ * Use @p te_exec_param_type in the new code.
+ *
+ * @deprecated
  */
-typedef struct te_sched_param {
-    /** Type of scheduling */
-    te_sched_param_type type;
-    /** Data specific to the specified type */
-    void *data;
-} te_sched_param;
+typedef enum te_sched_param_type {
+    /** Type to set CPU affinity */
+    TE_SCHED_AFFINITY = TE_EXEC_AFFINITY,
+    /** Type to set process priority */
+    TE_SCHED_PRIORITY = TE_EXEC_PRIORITY,
 
-/** Data specific for CPU affinity type (@c TE_SCHED_AFFINITY) */
-typedef struct te_sched_affinity_param {
+    /** Last type of scheduling. */
+    TE_SCHED_END = TE_EXEC_END
+} te_sched_param_type;
+
+/** Process parameter. */
+typedef struct te_exec_param {
+    /** Parameter kind */
+    te_exec_param_type type;
+    /** Parameter-specific data */
+    void *data;
+} te_exec_param;
+
+/**
+ * Use @p te_exec_param in the new code.
+ *
+ * @deprecated
+ */
+typedef te_exec_param te_sched_param;
+
+/** Data specific for CPU affinity type (@p TE_EXEC_AFFINITY). */
+typedef struct te_exec_affinity_param {
     /** Array of CPU IDs */
     int *cpu_ids;
     /** Array size */
     size_t cpu_ids_len;
-} te_sched_affinity_param;
+} te_exec_affinity_param;
 
-/** Data specific for priority type (@c TE_SCHED_PRIORITY) */
-typedef struct te_sched_priority_param {
+/**
+ * Use @p te_exec_affinity_param in the new code.
+ *
+ * @deprecated
+ */
+typedef te_exec_affinity_param te_sched_affinity_param;
+
+/** Data specific for priority type (@p TE_EXEC_PRIORITY). */
+typedef struct te_exec_priority_param {
     /** Process priority. */
     int priority;
-} te_sched_priority_param;
+} te_exec_priority_param;
+
+/**
+ * Use @p te_exec_priority_param in the new code.
+ *
+ * @deprecated
+ */
+typedef te_exec_priority_param te_sched_priority_param;
 
 /**
  * Function to base system()-like and popen()-like functions on it.
@@ -101,8 +134,8 @@ typedef struct te_sched_priority_param {
  *                     the process; see note
  * @param out_fd       location to store file descriptor of pipe to stderr of
  *                     the process; see note
- * @param sched_param  Array of scheduling parameters. The last element must
- *                     have the type @c TE_SCHED_END and data pointer to
+ * @param exec_param   Array of process parameters. The last element must
+ *                     have the type TE_EXEC_END and data pointer to
  *                     @c NULL. May be @c NULL.
  *
  * @return pid value, positive on success, negative on failure
@@ -110,7 +143,7 @@ typedef struct te_sched_priority_param {
 extern pid_t te_exec_child(const char *file, char *const argv[],
                            char *const envp[], uid_t uid, int *in_fd,
                            int *out_fd, int *err_fd,
-                           const te_sched_param *sched_param);
+                           const te_exec_param *exec_param);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief RPC client API for Agent job control
  *
  * RPC client API for Agent job control functions (implementation)
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_config.h"
@@ -44,7 +43,7 @@ const tapi_job_methods_t rpc_job_methods = {
     .destroy = rpc_job_destroy,
     .wrapper_add = rpc_job_wrapper_add,
     .wrapper_delete = rpc_job_wrapper_delete,
-    .add_sched_param = rpc_job_add_sched_param,
+    .add_exec_param = rpc_job_add_exec_param,
 };
 
 static void
@@ -941,84 +940,82 @@ rpc_job_wrapper_delete(const tapi_job_t *job, unsigned int wrapper_id)
 }
 
 static te_errno
-sched_affinity_param_alloc(tapi_job_sched_param *sched_param,
-                           tarpc_job_sched_param *sched,
-                           tarpc_job_sched_affinity **affinity)
+exec_affinity_param_alloc(tapi_job_exec_param *exec_param,
+                          tarpc_job_exec_param *exec_tarpc,
+                          tarpc_job_exec_affinity **affinity)
 {
-    tarpc_job_sched_affinity *result;
-    tapi_job_sched_affinity_param *af = sched_param->data;
+    tarpc_job_exec_affinity *result;
+    tapi_job_exec_affinity_param *af = exec_param->data;
 
     result = TE_ALLOC(sizeof(*result));
 
     result->cpu_ids.cpu_ids_val = af->cpu_ids;
     result->cpu_ids.cpu_ids_len = af->cpu_ids_len;
 
-    sched->data.type = TARPC_JOB_SCHED_AFFINITY;
+    exec_tarpc->data.type = TARPC_JOB_EXEC_AFFINITY;
 
-    memcpy(&sched->data.tarpc_job_sched_param_data_u,
-           result, sizeof(tarpc_job_sched_affinity));
+    memcpy(&exec_tarpc->data.tarpc_job_exec_param_data_u,
+           result, sizeof(tarpc_job_exec_affinity));
     *affinity = result;
     return 0;
 }
 
 static te_errno
-sched_priority_param_alloc(tapi_job_sched_param *sched_param,
-                           tarpc_job_sched_param *sched,
-                           tarpc_job_sched_priority **priority)
+exec_priority_param_alloc(tapi_job_exec_param *exec_param,
+                          tarpc_job_exec_param *exec_tarpc,
+                          tarpc_job_exec_priority **priority)
 {
-    tarpc_job_sched_priority *result;
-    tapi_job_sched_priority_param *p = sched_param->data;
+    tarpc_job_exec_priority *result;
+    tapi_job_exec_priority_param *p = exec_param->data;
 
     result = TE_ALLOC(sizeof(*result));
 
     result->priority = p->priority;
 
-    sched->data.type = TARPC_JOB_SCHED_PRIORITY;
+    exec_tarpc->data.type = TARPC_JOB_EXEC_PRIORITY;
 
-    memcpy(&sched->data.tarpc_job_sched_param_data_u,
-           result, sizeof(tarpc_job_sched_priority));
+    memcpy(&exec_tarpc->data.tarpc_job_exec_param_data_u,
+           result, sizeof(tarpc_job_exec_priority));
     return 0;
 }
 
 static te_errno
-tapi_job_sched_param2tarpc_job_sched_param(tapi_job_sched_param *sched_tapi,
-                                           tarpc_job_sched_param **sched_tarpc,
-                                           size_t *sched_tarpc_len,
-                                           tarpc_job_sched_affinity **affinity,
-                                           tarpc_job_sched_priority **priority)
+tapi_job_exec_param2tarpc_job_exec_param(tapi_job_exec_param *exec_tapi,
+                                         tarpc_job_exec_param **exec_tarpc,
+                                         size_t *exec_tarpc_len,
+                                         tarpc_job_exec_affinity **affinity,
+                                         tarpc_job_exec_priority **priority)
 {
-    tarpc_job_sched_param *sched = NULL;
-    tarpc_job_sched_affinity *af = NULL;
-    tarpc_job_sched_priority *pr = NULL;
+    tarpc_job_exec_param *exec = NULL;
+    tarpc_job_exec_affinity *af = NULL;
+    tarpc_job_exec_priority *pr = NULL;
     size_t count = 0;
     size_t i;
     te_errno rc;
 
-    tapi_job_sched_param *item;
+    tapi_job_exec_param *item;
 
-    for (item = sched_tapi; item->type != TAPI_JOB_SCHED_END; item++)
+    for (item = exec_tapi; item->type != TAPI_JOB_EXEC_END; item++)
         count++;
 
-    sched = TE_ALLOC(count * sizeof(*sched));
+    exec = TE_ALLOC(count * sizeof(*exec));
 
     for (i = 0; i < count; i++)
     {
-        switch (sched_tapi[i].type)
+        switch (exec_tapi[i].type)
         {
-            case TAPI_JOB_SCHED_AFFINITY:
+            case TAPI_JOB_EXEC_AFFINITY:
             {
-                rc = sched_affinity_param_alloc(&sched_tapi[i], &sched[i],
-                                                &af);
+                rc = exec_affinity_param_alloc(&exec_tapi[i], &exec[i], &af);
                 if (rc != 0)
                     goto out;
 
                 break;
             }
 
-            case TAPI_JOB_SCHED_PRIORITY:
+            case TAPI_JOB_EXEC_PRIORITY:
             {
-                rc = sched_priority_param_alloc(&sched_tapi[i], &sched[i],
-                                                &pr);
+                rc = exec_priority_param_alloc(&exec_tapi[i], &exec[i], &pr);
                 if (rc != 0)
                     goto out;
 
@@ -1026,7 +1023,7 @@ tapi_job_sched_param2tarpc_job_sched_param(tapi_job_sched_param *sched_tapi,
             }
 
             default:
-                ERROR("Unsupported scheduling parameter");
+                ERROR("Unsupported process parameter");
                 rc = TE_EINVAL;
                 goto out;
         }
@@ -1035,14 +1032,14 @@ tapi_job_sched_param2tarpc_job_sched_param(tapi_job_sched_param *sched_tapi,
 out:
     if (rc != 0)
     {
-        free(sched);
+        free(exec);
         free(af);
         free(pr);
     }
     else
     {
-        *sched_tarpc = sched;
-        *sched_tarpc_len = count;
+        *exec_tarpc = exec;
+        *exec_tarpc_len = count;
         *affinity = af;
         *priority = pr;
     }
@@ -1052,44 +1049,51 @@ out:
 }
 
 te_errno
-rpc_job_add_sched_param(const tapi_job_t *job,
-                        tapi_job_sched_param *sched_tapi)
+rpc_job_add_exec_param(const tapi_job_t *job,
+                       tapi_job_exec_param *exec_tapi)
 {
     te_errno rc;
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
     te_bool silent_pass = rpcs->silent_pass;
 
-    tarpc_job_sched_param *sched_param = NULL;
-    size_t sched_param_len;
-    tarpc_job_sched_affinity *affinity = NULL;
-    tarpc_job_sched_priority *priority = NULL;
+    tarpc_job_exec_param *exec_param = NULL;
+    size_t exec_param_len;
+    tarpc_job_exec_affinity *affinity = NULL;
+    tarpc_job_exec_priority *priority = NULL;
 
-    tarpc_job_add_sched_param_in in;
-    tarpc_job_add_sched_param_out out;
+    tarpc_job_add_exec_param_in in;
+    tarpc_job_add_exec_param_out out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
-    rc = tapi_job_sched_param2tarpc_job_sched_param(sched_tapi, &sched_param,
-                                                    &sched_param_len, &affinity,
-                                                    &priority);
+    rc = tapi_job_exec_param2tarpc_job_exec_param(exec_tapi, &exec_param,
+                                                  &exec_param_len, &affinity,
+                                                  &priority);
     if (rc != 0)
         return rc;
 
     in.job_id = tapi_job_get_id(job);
-    in.param.param_len = sched_param_len;
-    in.param.param_val = sched_param;
+    in.param.param_len = exec_param_len;
+    in.param.param_val = exec_param;
 
     rpcs->silent_pass = tapi_job_get_silent_pass(job);
-    rcf_rpc_call(rpcs, "job_add_sched_param", &in, &out);
-    CHECK_RPC_ERRNO_UNCHANGED(job_add_sched_param, out.retval);
+    rcf_rpc_call(rpcs, "job_add_exec_param", &in, &out);
+    CHECK_RPC_ERRNO_UNCHANGED(job_add_exec_param, out.retval);
 
-    TAPI_RPC_LOG(rpcs, job_add_sched_param, "%u", "%r", in.job_id, out.retval);
+    TAPI_RPC_LOG(rpcs, job_add_exec_param, "%u", "%r", in.job_id, out.retval);
     rpcs->silent_pass = silent_pass;
 
-    free(sched_param);
+    free(exec_param);
     free(affinity);
     free(priority);
 
-    RETVAL_TE_ERRNO(job_add_sched_param, out.retval);
+    RETVAL_TE_ERRNO(job_add_exec_param, out.retval);
+}
+
+te_errno
+rpc_job_add_sched_param(const tapi_job_t *job,
+                        tapi_job_sched_param *sched_tapi)
+{
+    return rpc_job_add_exec_param(job, sched_tapi);
 }

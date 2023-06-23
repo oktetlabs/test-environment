@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Agent job control
  *
@@ -7,8 +8,6 @@
  * @{
  *
  * API to manage subordinate jobs at the agent side
- *
- * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TAPI_JOB_H__
@@ -815,49 +814,91 @@ extern te_errno tapi_job_wrapper_add(tapi_job_t *job, const char *tool,
  */
 extern te_errno tapi_job_wrapper_delete(tapi_job_wrapper_t *wrapper);
 
-/** Scheduling type */
+/** TAPI job kinds of process parameters */
+typedef enum tapi_job_exec_param_type {
+    TAPI_JOB_EXEC_AFFINITY,
+    TAPI_JOB_EXEC_PRIORITY,
+    TAPI_JOB_EXEC_END
+} tapi_job_exec_param_type;
+
+/**
+ * Use @p tapi_job_exec_param_type in the new code
+ *
+ * @deprecated
+ */
 typedef enum tapi_job_sched_param_type {
-    TAPI_JOB_SCHED_AFFINITY,
-    TAPI_JOB_SCHED_PRIORITY,
-    TAPI_JOB_SCHED_END
+    TAPI_JOB_SCHED_AFFINITY = TAPI_JOB_EXEC_AFFINITY,
+    TAPI_JOB_SCHED_PRIORITY = TAPI_JOB_EXEC_PRIORITY,
+    TAPI_JOB_SCHED_END = TAPI_JOB_EXEC_END
 } tapi_job_sched_param_type;
 
-/** Scheduling parameters */
-typedef struct tapi_job_sched_param {
-    /** Type of scheduling */
-    tapi_job_sched_param_type type;
+/** TAPI job process parameter */
+typedef struct tapi_job_exec_param {
+    /** Parameter kind */
+    tapi_job_exec_param_type type;
     /** Data specific to the specified type */
     void *data;
-} tapi_job_sched_param;
+} tapi_job_exec_param;
 
-/** Data specific for CPU affinity scheduling type */
-typedef struct tapi_job_sched_affinity_param {
+/**
+ * Use @p tapi_job_exec_param in the new code
+ *
+ * @deprecated
+ */
+typedef tapi_job_exec_param tapi_job_sched_param;
+
+/** Data specific for CPU affinity process type */
+typedef struct tapi_job_exec_affinity_param {
     /** Array of CPU IDs */
     int *cpu_ids;
      /** Array size */
     int cpu_ids_len;
-} tapi_job_sched_affinity_param;
-
-/** Data specific for priority scheduling type */
-typedef struct tapi_job_sched_priority_param {
-     /** Process priority. */
-    int priority;
-} tapi_job_sched_priority_param;
+} tapi_job_exec_affinity_param;
 
 /**
- * Add a scheduling parameters for the specified job.
+ * Use @p tapi_job_exec_affinity_param in the new code
+ *
+ * @deprecated
+ */
+typedef tapi_job_exec_affinity_param tapi_job_sched_affinity_param;
+
+/** Data specific for priority process type */
+typedef struct tapi_job_exec_priority_param {
+     /** Process priority. */
+    int priority;
+} tapi_job_exec_priority_param;
+
+/**
+ * Use @p tapi_job_exec_priority_param in the new code
+ *
+ * @deprecated
+ */
+typedef tapi_job_exec_priority_param tapi_job_sched_priority_param;
+
+/**
+ * Add a process parameters for the specified job.
  *
  * @note This function supports only jobs created by RPC factory
  *
  * @param job          Job instance handle
- * @param sched_param  Array of scheduling parameters. The last element must
- *                     have the type @c TAPI_JOB_SCHED_END and data pointer to
+ * @param exec_param   Array of process parameters. The last element must
+ *                     have the type TAPI_JOB_EXEC_END and data pointer to
  *                     @c NULL.
  *
  * @return Status code
  */
-extern te_errno tapi_job_add_sched_param(tapi_job_t *job,
-                                         tapi_job_sched_param *sched_param);
+extern te_errno tapi_job_add_exec_param(tapi_job_t *job,
+                                        tapi_job_exec_param *exec_param);
+/**
+ * Use tapi_job_add_exec_param() in the new code
+ *
+ * @deprecated
+ */
+static inline te_errno
+tapi_job_add_sched_param(tapi_job_t *job, tapi_job_exec_param *exec_param)
+{
+    return tapi_job_add_exec_param(job, exec_param);
+}
 
 /**
  * Set autorestart timeout for the job.

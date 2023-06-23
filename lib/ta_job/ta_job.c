@@ -1,11 +1,10 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  *
  * Library to be used by backends for TAPI job.
  * The library provides types and functions that should be used by
  * TAPI job backends for agent job management.
- *
- * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER "TA JOB"
@@ -182,7 +181,7 @@ typedef struct ta_job_t {
 
     LIST_HEAD(wrapper_list, wrapper_t) wrappers;
 
-    te_sched_param *sched_params;
+    te_exec_param *exec_params;
 } ta_job_t;
 
 struct ta_job_manager_t {
@@ -861,7 +860,7 @@ ta_job_alloc(const char *spawner, const char *tool, char **argv,
     result->n_out_channels = 0;
     result->n_in_channels = 0;
     LIST_INIT(&result->wrappers);
-    result->sched_params = NULL;
+    result->exec_params = NULL;
 
     *job = result;
 
@@ -876,13 +875,13 @@ ta_job_dealloc(ta_job_t *job)
 
     free(job->spawner);
     free(job->tool);
-    if (job->sched_params != NULL)
+    if (job->exec_params != NULL)
     {
-        te_sched_param *item;
+        te_exec_param *item;
 
-        for (item = job->sched_params; item->type != TE_SCHED_END; item++)
+        for (item = job->exec_params; item->type != TE_EXEC_END; item++)
             free(item->data);
-        free(job->sched_params);
+        free(job->exec_params);
     }
     free(job);
 }
@@ -1606,7 +1605,7 @@ ta_job_start(ta_job_manager_t *manager, unsigned int id)
     // TODO: use spawner method
     pid = te_exec_child(tool, (char **)args.data.ptr, job->env,
                         -1, stdin_fd_p, stdout_fd_p, stderr_fd_p,
-                        job->sched_params);
+                        job->exec_params);
     te_vec_deep_free(&args);
     if (pid < 0)
     {
@@ -2747,8 +2746,8 @@ ta_job_wrapper_delete(ta_job_manager_t *manager, unsigned int job_id,
 
 /* See description in ta_job.h */
 te_errno
-ta_job_add_sched_param(ta_job_manager_t *manager, unsigned int job_id,
-                       te_sched_param *sched_params)
+ta_job_add_exec_param(ta_job_manager_t *manager, unsigned int job_id,
+                      te_exec_param *exec_params)
 {
     ta_job_t *job;
 
@@ -2756,6 +2755,6 @@ ta_job_add_sched_param(ta_job_manager_t *manager, unsigned int job_id,
     if (job == NULL)
         return TE_EINVAL;
 
-    job->sched_params = sched_params;
+    job->exec_params = exec_params;
     return 0;
 }

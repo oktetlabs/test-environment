@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Library for Agent job control on agent side
  *
@@ -9,8 +10,6 @@
  * Library to be used by backends for TAPI job.
  * The library provides types and functions that should be used by
  * TAPI job backends for agent job management.
- *
- * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TA_JOB_H__
@@ -482,19 +481,19 @@ extern te_errno ta_job_wrapper_delete(ta_job_manager_t *manager,
                                       unsigned int wrapper_id);
 
 /**
- * Add a scheduling parameter for a job
+ * Add a process parameter for a job
  *
  * @param      manager         Job manager handle
- * @param      job_id          ID of the job to add the parametern to
- * @param      sched_params    Array of scheduling parameters. The last element
- *                             must have the type set to @c TE_SCHED_END
+ * @param      job_id          ID of the job to add the parameters to
+ * @param      exec_params     Array of process parameters. The last element
+ *                             must have the type set to TE_EXEC_END
  *                             and the data set to @c NULL.
  *
  * @return     Status code
  */
-extern te_errno ta_job_add_sched_param(ta_job_manager_t *manager,
-                                       unsigned int job_id,
-                                       te_sched_param *sched_params);
+extern te_errno ta_job_add_exec_param(ta_job_manager_t *manager,
+                                      unsigned int job_id,
+                                      te_exec_param *exec_params);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief RPC for Agent job control
  *
  * RPC routines implementation to call Agent job control functions
- *
- * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "RPC JOB"
@@ -347,42 +346,42 @@ job_wrapper_delete(unsigned int job_id, unsigned int wrapper_id)
 }
 
 static te_errno
-job_add_sched_param(unsigned int job_id, te_sched_param *sched_params)
+job_add_exec_param(unsigned int job_id, te_exec_param *exec_params)
 {
     INIT_MANAGER_IF_NEEDED(manager);
 
-    return ta_job_add_sched_param(manager, job_id, sched_params);
+    return ta_job_add_exec_param(manager, job_id, exec_params);
 }
 
 static te_errno
-sched_affinity_param_alloc(te_sched_affinity_param **af,
-                           tarpc_job_sched_param_data *data)
+exec_affinity_param_alloc(te_exec_affinity_param **af,
+                          tarpc_job_exec_param_data *data)
 {
     int cpu_ids_len;
-    te_sched_affinity_param *affinity;
-    affinity = TE_ALLOC(sizeof(te_sched_affinity_param));
+    te_exec_affinity_param *affinity;
+    affinity = TE_ALLOC(sizeof(te_exec_affinity_param));
 
-    cpu_ids_len = data->tarpc_job_sched_param_data_u.
+    cpu_ids_len = data->tarpc_job_exec_param_data_u.
                     affinity.cpu_ids.cpu_ids_len;
 
     affinity->cpu_ids_len = cpu_ids_len;
     affinity->cpu_ids = TE_ALLOC(cpu_ids_len * sizeof(int));
 
     memcpy(affinity->cpu_ids,
-           data->tarpc_job_sched_param_data_u.affinity.cpu_ids.cpu_ids_val,
+           data->tarpc_job_exec_param_data_u.affinity.cpu_ids.cpu_ids_val,
            cpu_ids_len * sizeof(int));
     *af = affinity;
     return 0;
 }
 
 static te_errno
-sched_priority_param_alloc(te_sched_priority_param **prio,
-                           tarpc_job_sched_param_data *data)
+exec_priority_param_alloc(te_exec_priority_param **prio,
+                          tarpc_job_exec_param_data *data)
 {
-    te_sched_priority_param *priority;
-    priority = TE_ALLOC(sizeof(te_sched_priority_param));
+    te_exec_priority_param *priority;
+    priority = TE_ALLOC(sizeof(te_exec_priority_param));
 
-    priority->priority = data->tarpc_job_sched_param_data_u.prio.priority;
+    priority->priority = data->tarpc_job_exec_param_data_u.prio.priority;
     *prio = priority;
     return 0;
 }
@@ -613,60 +612,65 @@ TARPC_FUNC_STATIC(job_wrapper_delete, {},
     MAKE_CALL(out->retval = func(in->job_id, in->wrapper_id));
 })
 
-TARPC_FUNC_STATIC(job_add_sched_param, {},
+TARPC_FUNC_STATIC(job_add_exec_param, {},
 {
-    te_sched_param *sched_param = NULL;
-    te_sched_affinity_param *affinity = NULL;
-    te_sched_priority_param *prio = NULL;
+    te_exec_param *exec_param = NULL;
+    te_exec_affinity_param *affinity = NULL;
+    te_exec_priority_param *prio = NULL;
     int i;
     int len = in->param.param_len;
     te_errno rc;
 
-    sched_param = TE_ALLOC((len + 1) * sizeof(te_sched_param));
+    exec_param = TE_ALLOC((len + 1) * sizeof(te_exec_param));
+    if (exec_param == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto err;
+    }
 
     for (i = 0; i < len; i++)
     {
         switch (in->param.param_val[i].data.type)
         {
-            case TARPC_JOB_SCHED_AFFINITY:
+            case TARPC_JOB_EXEC_AFFINITY:
             {
-                sched_param[i].type = TE_SCHED_AFFINITY;
-                rc = sched_affinity_param_alloc(&affinity,
-                                                &in->param.param_val[i].data);
+                exec_param[i].type = TE_EXEC_AFFINITY;
+                rc = exec_affinity_param_alloc(&affinity,
+                                               &in->param.param_val[i].data);
                 if (rc != 0)
                     goto err;
 
-                sched_param[i].data = (void *)affinity;
+                exec_param[i].data = (void *)affinity;
                 break;
             }
 
-            case TARPC_JOB_SCHED_PRIORITY:
+            case TARPC_JOB_EXEC_PRIORITY:
             {
-                sched_param[i].type = TE_SCHED_PRIORITY;
+                exec_param[i].type = TE_EXEC_PRIORITY;
 
-                rc = sched_priority_param_alloc(&prio,
-                                                &in->param.param_val[i].data);
+                rc = exec_priority_param_alloc(&prio,
+                                               &in->param.param_val[i].data);
                 if (rc != 0)
                     goto err;
 
-                sched_param[i].data = (void *)prio;
+                exec_param[i].data = (void *)prio;
                 break;
             }
             default:
-                ERROR("Unsupported scheduling parameter");
+                ERROR("Unsupported process parameter");
                 rc = TE_EINVAL;
                 goto err;
         }
     }
 
-    sched_param[len].type = TE_SCHED_END;
-    sched_param[len].data = NULL;
+    exec_param[len].type = TE_EXEC_END;
+    exec_param[len].data = NULL;
 
-    MAKE_CALL(out->retval = func(in->job_id, sched_param));
+    MAKE_CALL(out->retval = func(in->job_id, exec_param));
     out->common.errno_changed = FALSE;
     goto done;
 err:
-    free(sched_param);
+    free(exec_param);
     if (affinity != NULL)
     {
         free(affinity->cpu_ids);

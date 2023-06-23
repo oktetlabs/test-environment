@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test API for Agent job control
  *
  * Test API for Agent job control functions (implementation)
- *
- * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_config.h"
@@ -1578,12 +1577,12 @@ tapi_job_wrapper_delete(tapi_job_wrapper_t *wrapper)
 }
 
 te_errno
-tapi_job_add_sched_param(tapi_job_t *job,
-                         tapi_job_sched_param *sched_param)
+tapi_job_add_exec_param(tapi_job_t *job,
+                        tapi_job_exec_param *exec_param)
 {
-    TAPI_JOB_CHECK_METHOD_SUPPORT(job, add_sched_param);
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, add_exec_param);
 
-    return job->methods.add_sched_param(job, sched_param);
+    return job->methods.add_exec_param(job, exec_param);
 }
 
 te_errno

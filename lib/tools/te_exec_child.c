@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Routines to execute a program in a child process
  *
  * Auxiluary routines to execute a program in a child process
- *
- * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "TE Exec Child"
@@ -106,7 +105,7 @@ out:
 }
 
 static te_errno
-set_affinity(pid_t pid, const te_sched_affinity_param *affinity)
+set_affinity(pid_t pid, const te_exec_affinity_param *affinity)
 {
     int rc;
     cpu_set_t mask;
@@ -131,7 +130,7 @@ set_affinity(pid_t pid, const te_sched_affinity_param *affinity)
 }
 
 static te_errno
-set_priority(const te_sched_priority_param *prio)
+set_priority(const te_exec_priority_param *prio)
 {
     int rc;
     errno = 0;
@@ -152,20 +151,20 @@ set_priority(const te_sched_priority_param *prio)
 }
 
 static te_errno
-add_sched_param(pid_t pid, const te_sched_param *sched_param)
+add_exec_param(pid_t pid, const te_exec_param *exec_param)
 {
     te_errno rc_nice = 0;
     te_errno rc_affinity = 0;
-    const te_sched_param *iter;
+    const te_exec_param *iter;
 
-    for (iter = sched_param; iter->type != TE_SCHED_END; iter++)
+    for (iter = exec_param; iter->type != TE_EXEC_END; iter++)
     {
         switch (iter->type)
         {
-            case TE_SCHED_AFFINITY:
+            case TE_EXEC_AFFINITY:
             {
 #if defined(HAVE_SCHED_SETAFFINITY) && defined(HAVE_SCHED_GETAFFINITY)
-                const te_sched_affinity_param *affinity = iter->data;
+                const te_exec_affinity_param *affinity = iter->data;
 
                 rc_affinity = set_affinity(pid, affinity);
 #else
@@ -175,16 +174,16 @@ add_sched_param(pid_t pid, const te_sched_param *sched_param)
                 break;
             }
 
-            case TE_SCHED_PRIORITY:
+            case TE_EXEC_PRIORITY:
             {
-                const te_sched_priority_param *prio = iter->data;
+                const te_exec_priority_param *prio = iter->data;
 
                 rc_nice = set_priority(prio);
                 break;
             }
 
             default:
-                ERROR("Unsupported scheduling parameter. type = %d", iter->type);
+                ERROR("Unsupported process parameter. type = %d", iter->type);
                 return TE_EINVAL;
         }
     }
@@ -198,7 +197,7 @@ pid_t
 te_exec_child(const char *file, char *const argv[],
               char *const envp[], uid_t uid, int *in_fd,
               int *out_fd, int *err_fd,
-              const te_sched_param *sched_param)
+              const te_exec_param *exec_param)
 {
     int   pid;
     int   in_pipe[2], out_pipe[2], err_pipe[2];
@@ -348,9 +347,9 @@ te_exec_child(const char *file, char *const argv[],
             }
         }
 
-        if (sched_param != NULL)
+        if (exec_param != NULL)
         {
-            rc = add_sched_param(0, sched_param);
+            rc = add_exec_param(0, exec_param);
             if (rc != 0)
                 WARN("Failed to set process settings");
         }

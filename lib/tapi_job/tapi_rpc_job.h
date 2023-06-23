@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief RPC client API for Agent job control
  *
  * RPC client API for Agent job control functions
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_RPC_JOB_H__
@@ -102,9 +101,16 @@ extern tapi_job_method_wrapper_add rpc_job_wrapper_add;
 extern tapi_job_method_wrapper_delete rpc_job_wrapper_delete;
 
 /**
- * Add a scheduling parameters for a job
+ * Add a process parameters for a job
  *
- * @sa tapi_job_method_add_sched_param
+ * @sa tapi_job_method_add_exec_param
+ */
+extern tapi_job_method_add_exec_param rpc_job_add_exec_param;
+
+/**
+ * Use rpc_job_add_exec_param() in the new code
+ *
+ * @deprecated
  */
 extern tapi_job_method_add_sched_param rpc_job_add_sched_param;
 
