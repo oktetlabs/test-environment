@@ -387,15 +387,19 @@ te_strtoumax(const char *str, int base, uintmax_t *value)
     te_errno  rc = 0;
     int       saved_errno = errno;
     int       new_errno = 0;
+    uintmax_t tmp;
 
-    if (str == NULL || value == NULL)
+    if (str == NULL)
     {
         ERROR("%s(): invalid arguments", __FUNCTION__);
         return TE_EINVAL;
     }
 
     errno = 0;
-    *value = strtoumax(str, &endptr, base);
+    tmp = strtoumax(str, &endptr, base);
+    if (value != NULL)
+        *value = tmp;
+
     new_errno = errno;
     errno = saved_errno;
 
@@ -456,23 +460,26 @@ te_strtou_size(const char *str, int base, void *value, size_t size)
         return TE_ERANGE;
     }
 
-    switch (size)
+    if (value != NULL)
     {
-        case sizeof(uint8_t):
-            *(uint8_t *)value = parsed_val;
-            break;
+        switch (size)
+        {
+            case sizeof(uint8_t):
+                *(uint8_t *)value = parsed_val;
+                break;
 
-        case sizeof(uint16_t):
-            *(uint16_t *)value = parsed_val;
-            break;
+            case sizeof(uint16_t):
+                *(uint16_t *)value = parsed_val;
+                break;
 
-        case sizeof(uint32_t):
-            *(uint32_t *)value = parsed_val;
-            break;
+            case sizeof(uint32_t):
+                *(uint32_t *)value = parsed_val;
+                break;
 
-        case sizeof(uint64_t):
-            *(uint64_t *)value = parsed_val;
-            break;
+            case sizeof(uint64_t):
+                *(uint64_t *)value = parsed_val;
+                break;
+        }
     }
 
     return 0;
@@ -524,23 +531,26 @@ te_strtoi_size(const char *str, int base, void *value, size_t size)
         return TE_ERANGE;
     }
 
-    switch (size)
+    if (value != NULL)
     {
-        case sizeof(uint8_t):
-            *(int8_t *)value = parsed_val;
-            break;
+        switch (size)
+        {
+            case sizeof(uint8_t):
+                *(int8_t *)value = parsed_val;
+                break;
 
-        case sizeof(uint16_t):
-            *(int16_t *)value = parsed_val;
-            break;
+            case sizeof(uint16_t):
+                *(int16_t *)value = parsed_val;
+                break;
 
-        case sizeof(uint32_t):
-            *(int32_t *)value = parsed_val;
-            break;
+            case sizeof(uint32_t):
+                *(int32_t *)value = parsed_val;
+                break;
 
-        case sizeof(uint64_t):
-            *(int64_t *)value = parsed_val;
-            break;
+            case sizeof(uint64_t):
+                *(int64_t *)value = parsed_val;
+                break;
+        }
     }
 
     return 0;
@@ -557,7 +567,7 @@ te_strtoimax(const char *str, int base, intmax_t *value)
     intmax_t  value_temp;
 
 
-    if (str == NULL || value == NULL)
+    if (str == NULL)
     {
         ERROR("%s(): invalid arguments", __FUNCTION__);
         return TE_EINVAL;
@@ -592,7 +602,9 @@ te_strtoimax(const char *str, int base, intmax_t *value)
         return TE_EINVAL;
     }
 
-    *value = value_temp;
+    if (value != NULL)
+        *value = value_temp;
+
     return 0;
 }
 
@@ -613,7 +625,8 @@ te_strtoul(const char *str, int base, unsigned long int *value)
         return TE_EOVERFLOW;
     }
 
-    *value = value_um;
+    if (value != NULL)
+        *value = value_um;
 
     return 0;
 }
@@ -636,7 +649,9 @@ te_str_to_uint64(const char *str, int base, uint64_t *value)
         return TE_EOVERFLOW;
     }
 
-    *value = value_um;
+    if (value != NULL)
+        *value = value_um;
+
     return 0;
 }
 
@@ -656,7 +671,8 @@ te_strtoi(const char *str, int base, int *value)
         return TE_EOVERFLOW;
     }
 
-    *value = value_long;
+    if (value != NULL)
+        *value = value_long;
 
     return 0;
 }
@@ -679,7 +695,8 @@ te_strtoui(const char   *str,
         return TE_EOVERFLOW;
     }
 
-    *value = value_um;
+    if (value != NULL)
+        *value = value_um;
 
     return 0;
 }
@@ -692,16 +709,21 @@ te_strtol_raw_silent(const char *str, char **endptr,  int base,
     te_errno  rc = 0;
     int       saved_errno = errno;
     int       new_errno = 0;
+    long int tmp;
 
-    if (str == NULL || endptr == NULL || result == NULL)
+    if (str == NULL)
     {
         ERROR("%s(): invalid arguments", __FUNCTION__);
         return TE_EINVAL;
     }
 
     errno = 0;
-    *endptr = NULL;
-    *result = strtol(str, endptr, base);
+    if (endptr != NULL)
+        *endptr = NULL;
+    tmp = strtol(str, endptr, base);
+    if (result != NULL)
+        *result = tmp;
+
     new_errno = errno;
     errno = saved_errno;
 
@@ -720,6 +742,9 @@ te_errno
 te_strtol_raw(const char *str, char **endptr,  int base, long int *result)
 {
     te_errno rc;
+
+    if (endptr == NULL)
+        return TE_EFAULT;
 
     rc = te_strtol_raw_silent(str, endptr, base, result);
     if (rc != 0)
@@ -779,8 +804,8 @@ te_strtol_bool(const char *input, te_bool *bresult)
     if (te_strtol(input, 10, &res) != 0)
         return TE_EINVAL;
 
-    /* explicitly check for == cause bool is 0 or 1 only! */
-    *bresult = (res == 0) ? FALSE : TRUE;
+    if (bresult != NULL)
+        *bresult = (te_bool)res;
 
     return 0;
 }
@@ -813,8 +838,9 @@ te_strtod_raw(const char *str, char **endptr, double *result)
 {
     int saved_errno = errno;
     int new_errno = 0;
+    double tmp;
 
-    if (str == NULL || endptr == NULL || result == NULL)
+    if (str == NULL || endptr == NULL)
     {
         ERROR("%s(): invalid arguments", __FUNCTION__);
         return TE_EINVAL;
@@ -823,7 +849,10 @@ te_strtod_raw(const char *str, char **endptr, double *result)
     errno = 0;
     *endptr = NULL;
 
-    *result = strtod(str, endptr);
+    tmp = strtod(str, endptr);
+    if (result != NULL)
+        *result = tmp;
+
     new_errno = errno;
     errno = saved_errno;
 

@@ -357,7 +357,7 @@ extern te_errno te_strpbrk_rev_balanced(const char *str,
  *
  * @param str       String to convert.
  * @param base      Base of a numeral system.
- * @param value     Where to save conversion result.
+ * @param value     Where to save conversion result (may be @c NULL).
  *
  * @return Status code.
  */
@@ -369,7 +369,7 @@ extern te_errno te_strtoumax(const char *str, int base,
  *
  * @param str       String to parse.
  * @param base      Base of a numeral system.
- * @param value     Parsed value.
+ * @param value     Parsed value (may be @c NULL).
  * @param size      Size of @p value in bytes (1, 2, 4 and 8 are supported).
  *
  * @return Status code.
@@ -382,7 +382,7 @@ extern te_errno te_strtou_size(const char *str, int base,
  *
  * @param str       String to parse.
  * @param base      Base of a numeral system.
- * @param value     Parsed value.
+ * @param value     Parsed value (may be @c NULL).
  * @param size      Size of @p value in bytes (1, 2, 4 and 8 are supported).
  *
  * @return Status code.
@@ -395,7 +395,7 @@ extern te_errno te_strtoi_size(const char *str, int base,
  *
  * @param str       String to convert.
  * @param base      Base of a numeral system.
- * @param value     Where to save conversion result.
+ * @param value     Where to save conversion result (may be @c NULL).
  *
  * @return Status code.
  */
@@ -405,9 +405,9 @@ extern te_errno te_strtoimax(const char *str, int base,
 /**
  * Wrapper over te_strtoumax() with overflow check.
  *
- * @param str       String to convert
- * @param base      Base of a numeral system
- * @param value     Where to save conversion result
+ * @param str       String to convert.
+ * @param base      Base of a numeral system.
+ * @param value     Where to save conversion result (may be @c NULL).
  *
  * @return Status code.
  */
@@ -417,9 +417,9 @@ extern te_errno te_str_to_uint64(const char *str, int base,
 /**
  * Wrapper over te_strtoumax() with overflow check.
  *
- * @param str       String to convert
- * @param base      Base of a numeral system
- * @param value     Where to save conversion result
+ * @param str       String to convert.
+ * @param base      Base of a numeral system.
+ * @param value     Where to save conversion result (may be @c NULL).
  *
  * @return Status code.
  */
@@ -429,22 +429,22 @@ extern te_errno te_strtoul(const char *str, int base,
 /**
  * Wrapper for te_strtol() with overflow check
  *
- * @param str   String to convert
- * @param base  Base of the numeral system
- * @param value Location for the resulting value
+ * @param str   String to convert.
+ * @param base  Base of the numeral system.
+ * @param value Location for the resulting value (may be @c NULL).
  *
- * @return Status code
+ * @return Status code.
  */
 extern te_errno te_strtoi(const char *str, int base, int *value);
 
 /**
  * Wrapper for te_strtoumax() with overflow check.
  *
- * @param str   String to convert
- * @param base  Base of the numeral system
- * @param value Location for the resulting value
+ * @param str   String to convert.
+ * @param base  Base of the numeral system.
+ * @param value Location for the resulting value (may be @c NULL).
  *
- * @return Status code
+ * @return Status code.
  */
 extern te_errno te_strtoui(const char   *str,
                            int           base,
@@ -454,10 +454,10 @@ extern te_errno te_strtoui(const char   *str,
  * Convert string to long int. Following characters are
  * allowed.
  *
- * @param input        String to convert
- * @param[out] endptr  Pointer to the end of parsed int
- * @param base         Base to be used
- * @param[out] result  Storage for result
+ * @param input        String to convert.
+ * @param[out] endptr  Pointer to the end of parsed int.
+ * @param base         Base to be used.
+ * @param[out] result  Storage for result (may be @c NULL).
  *
  * @return 0 or error
  */
@@ -482,9 +482,9 @@ extern te_errno te_strtol_raw_silent(const char *str, char **endptr,  int base,
  *
  * Should be used to avoid creating extra vars for 'end' parameter in the code.
  *
- * @param input        String to convert
- * @param base         Base to be used
- * @param[out] result  Storage for result
+ * @param input        String to convert.
+ * @param base         Base to be used.
+ * @param[out] result  Storage for result (may be @c NULL).
  *
  * @return 0 or error
  */
@@ -494,19 +494,19 @@ extern te_errno te_strtol_silent(const char *input, int base, long int *result);
  * Convert string to long int. Should be used to avoid
  * creating extra vars for 'end' parameter in the code.
  *
- * @param input        String to convert
- * @param base         Base to be used
- * @param[out] result  Storage for result
+ * @param input        String to convert.
+ * @param base         Base to be used.
+ * @param[out] result  Storage for result (may be @c NULL).
  *
  * @return 0 or error
  */
 extern te_errno te_strtol(const char *input, int base, long int *result);
 
 /**
- * Convert string to bool meaning 0 - FALSE, not 0 - TRUE
+ * Convert string to bool where @c 0 means @c FALSE, not @c 0 --- @c TRUE.
  *
- * @param input        String to convert
- * @param[out] bresult Storage for result
+ * @param input        String to convert.
+ * @param[out] bresult Storage for result (may be @c NULL).
  *
  * @return 0 or error
  */
@@ -515,14 +515,14 @@ extern te_errno te_strtol_bool(const char *input, te_bool *bresult);
 /**
  * Convert a string to an integer which must fit into a given range.
  *
- * @param[in]  input        String to convert
- * @param[in]  minval       Minimum allowed value
- * @param[in]  maxval       Maximum allowed value
- * @param[out] endptr       Pointer to the tail of the string
- * @param[in]  base         Conversion base as per strtol()
- * @param[out] result       Result value (may be @c NULL)
+ * @param[in]  input        String to convert.
+ * @param[in]  minval       Minimum allowed value.
+ * @param[in]  maxval       Maximum allowed value.
+ * @param[out] endptr       Pointer to the tail of the string.
+ * @param[in]  base         Conversion base as per strtol().
+ * @param[out] result       Result value (may be @c NULL).
  *
- * @return Status code
+ * @return Status code.
  * @retval TE_ERANGE  The value is not within @p minval .. @p maxval
  */
 extern te_errno te_strtoi_range_raw(const char *input, int minval, int maxval,
@@ -531,9 +531,9 @@ extern te_errno te_strtoi_range_raw(const char *input, int minval, int maxval,
 /**
  * Convert string to double. Following characters are allowed.
  *
- * @param[in]  str     String to convert
- * @param[out] endptr  Pointer to the end of parsed double
- * @param[out] result  Storage for result
+ * @param[in]  str     String to convert.
+ * @param[out] endptr  Pointer to the end of parsed double.
+ * @param[out] result  Storage for result (may be @c NULL).
  *
  * @return Status code.
  */
@@ -543,8 +543,8 @@ extern te_errno te_strtod_raw(const char *str, char **endptr, double *result);
  * Convert string to double. Should be used to avoid creating extra vars
  * for 'end' parameter in the code.
  *
- * @param[in]  str     String to convert
- * @param[out] result  Storage for result
+ * @param[in]  str     String to convert.
+ * @param[out] result  Storage for result (may be @c NULL).
  *
  * @return Status code.
  */
