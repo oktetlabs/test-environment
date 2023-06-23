@@ -153,8 +153,7 @@ set_priority(const te_exec_priority_param *prio)
 static te_errno
 add_exec_param(pid_t pid, const te_exec_param *exec_param)
 {
-    te_errno rc_nice = 0;
-    te_errno rc_affinity = 0;
+    te_errno rc = 0;
     const te_exec_param *iter;
 
     for (iter = exec_param; iter->type != TE_EXEC_END; iter++)
@@ -166,10 +165,10 @@ add_exec_param(pid_t pid, const te_exec_param *exec_param)
 #if defined(HAVE_SCHED_SETAFFINITY) && defined(HAVE_SCHED_GETAFFINITY)
                 const te_exec_affinity_param *affinity = iter->data;
 
-                rc_affinity = set_affinity(pid, affinity);
+                rc = set_affinity(pid, affinity);
 #else
                 WARN("It's impossible to set CPU affinity for this platform");
-                rc_affinity = TE_ENOSYS;
+                rc = TE_ENOSYS;
 #endif
                 break;
             }
@@ -178,7 +177,15 @@ add_exec_param(pid_t pid, const te_exec_param *exec_param)
             {
                 const te_exec_priority_param *prio = iter->data;
 
-                rc_nice = set_priority(prio);
+                rc = set_priority(prio);
+                break;
+            }
+
+            case TE_EXEC_WORKDIR:
+            {
+                const te_exec_workdir_param *data = iter->data;
+
+                rc = chdir(data->workdir);
                 break;
             }
 
@@ -186,11 +193,12 @@ add_exec_param(pid_t pid, const te_exec_param *exec_param)
                 ERROR("Unsupported process parameter. type = %d", iter->type);
                 return TE_EINVAL;
         }
+
+        if (rc != 0)
+            break;
     }
 
-    if (rc_affinity != 0)
-        return rc_affinity;
-    return rc_nice;
+    return rc;
 }
 
 pid_t

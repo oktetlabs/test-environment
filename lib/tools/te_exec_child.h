@@ -38,6 +38,8 @@ typedef enum te_exec_param_type {
     TE_EXEC_AFFINITY,
     /** Set process priority */
     TE_EXEC_PRIORITY,
+    /** Set process working directory */
+    TE_EXEC_WORKDIR,
 
     /** Last kind marker */
     TE_EXEC_END
@@ -100,6 +102,12 @@ typedef struct te_exec_priority_param {
  * @deprecated
  */
 typedef te_exec_priority_param te_sched_priority_param;
+
+/** Data specific for working directory type (@p TE_EXEC_WORKDIR). */
+typedef struct te_exec_workdir_param {
+    /** Process working directory. */
+    char *workdir;
+} te_exec_workdir_param;
 
 /**
  * Function to base system()-like and popen()-like functions on it.
