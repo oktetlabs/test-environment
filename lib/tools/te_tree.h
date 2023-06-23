@@ -13,7 +13,8 @@
  * Attributes are just strings, but some attributes may have
  * special meaning for various functions, in particular defining
  * - the name of a given subtree;
- * - its textual value.
+ * - its textual value;
+ * - its type.
  *
  * Trees are mostly immutable: there are functions to build
  * them incrementally, but once a tree is complete, it is not
@@ -69,6 +70,41 @@ typedef struct te_tree te_tree;
 #define TE_TREE_ATTR_NAME "name"
 /** Tree value. */
 #define TE_TREE_ATTR_VALUE "value"
+/** Tree value type. */
+#define TE_TREE_ATTR_TYPE "type"
+
+/**@}*/
+
+/**
+ * @name Tree value types.
+ *
+ * The list of possible types is open. All users are advised
+ * to treat unknown types as TE_TREE_ATTR_TYPE_STRING.
+ *
+ * Listed here are basic types that can be checked by
+ * te_tree_validate_types()
+ *
+ * @{
+ */
+
+/** Auto-detect type (the default if no type attribute). */
+#define TE_TREE_ATTR_TYPE_AUTO "auto"
+/** Null type. */
+#define TE_TREE_ATTR_TYPE_NULL "null"
+/** String type. */
+#define TE_TREE_ATTR_TYPE_STRING "string"
+/** Integer type. */
+#define TE_TREE_ATTR_TYPE_INT "int"
+/** Floating-point type. */
+#define TE_TREE_ATTR_TYPE_FLOAT "float"
+/** Boolean type. */
+#define TE_TREE_ATTR_TYPE_BOOL "bool"
+/** Linear array. */
+#define TE_TREE_ATTR_TYPE_ARRAY "array"
+/** Dictionary (an associative array). */
+#define TE_TREE_ATTR_TYPE_DICT "dict"
+/** A node with metadata that should not be serialized in-band. */
+#define TE_TREE_ATTR_TYPE_ANNOTATION "annotation"
 
 /**@}*/
 
@@ -160,6 +196,54 @@ extern void te_tree_add_kvpair_children(te_tree *tree,
                                         const te_kvpair_h *kvpair);
 
 /**
+ * Create a tree with a name and a typed value.
+ *
+ * @p name becomes TE_TREE_ATTR_NAME, @p type become TE_TREE_ATTR_TYPE,
+ * and the value is determined from the type and variadic arguments:
+ * - TE_TREE_ATTR_TYPE_AUTO is not supported;
+ * - TE_TREE_ATTR_TYPE_NULL accepts no additional arguments;
+ * - TE_TREE_ATTR_TYPE_STRING should have a single string argument;
+ * - TE_TREE_ATTR_TYPE_INT should have a single int argument;
+ * - TE_TREE_ATTR_TYPE_FLOAT should have a single double argument;
+ * - TE_TREE_ATTR_TYPE_BOOL should have a single int argument
+ *   treated as boolean;
+ * - TE_TREE_ATTR_TYPE_ARRAY should have a @c NULL-terminated sequence of
+ *   subtrees, none of which must have a TE_TREE_ATTR_NAME;
+ * - TE_TREE_ATTR_TYPE_DICT should have a @c NULL-terminated sequence
+ *   of pairs - name/subtree. Names will be added to subtrees as
+ *   TE_TREE_ATTR_NAME attributes;
+ * - TE_TREE_ATTR_TYPE_ANNOTATION is not supported.
+ *
+ * If @p name is @c NULL, the resulting tree is unnamed.
+ *
+ * @attention In most other places TE_TREE_ATTR_TYPE_INT values are
+ *            represented by @c intmax_t. However, here a plain int
+ *            argument is expected, since it should be a more common
+ *            usecase.
+ *
+ * @par Examples
+ * @code
+ * te_tree_make_typed("node0", TE_TREE_ATTR_TYPE_NULL);
+ * te_tree_make_typed("node1", TE_TREE_ATTR_TYPE_STRING,
+ *                    "string value");
+ * te_tree_make_typed("node2", TE_TREE_ATTR_TYPE_INT, 42);
+ * te_tree_make_typed("node3", TE_TREE_ATTR_TYPE_FLOAT, 42.0);
+ * te_tree_make_typed("node4", TE_TREE_ATTR_TYPE_BOOL, TRUE);
+ * te_tree_make_typed("node6", TE_TREE_ATTR_TYPE_ARRAY,
+ *                    item1, item2, item3, NULL);
+ * te_tree_make_typed("node7", TE_TREE_ATTR_TYPE_DICT,
+ *                    "subnode1", subnode1, "subnode2", subnode2, NULL);
+ * @endcode
+ *
+ * @param name   name of a tree (may be @c NULL)
+ * @param type   type of its value
+ * @param ...    variadic arguments defining value
+ *
+ * @return a fresh tree or @c NULL if there are any inconsistencies
+ */
+extern te_tree *te_tree_make_typed(const char *name, const char *type, ...);
+
+/**
  * Get a value of an attribute of a tree.
  *
  * @param tree   tree
@@ -176,6 +260,10 @@ extern const char *te_tree_get_attr(const te_tree *tree, const char *attr);
  * belonging to a certain type, such as integer. Note that all attributes
  * are still just strings, they have no attached type informations, so
  * all these functions just inspect the current value of an attribute.
+ * In particular, the accessors are orthogonal to the type of the node
+ * as specified by  * TE_TREE_ATTR_TYPE attribute, for example,
+ * if a node has TE_TREE_ATTR_TYPE_INT type, its value attribute may be
+ * accessed by te_tree_get_float_attr() as well as by te_tree_get_int_attr().
  *
  * All the functions accept a pointer to an output location which may be
  * @c NULL, in which case the functions may be used just to check that
@@ -236,6 +324,32 @@ extern te_errno te_tree_get_bool_attr(const te_tree *tree, const char *attr,
                                       te_bool *result);
 
 /**@}*/
+
+/**
+ * Get the type of a tree.
+ *
+ * If the tree has TE_TREE_ATTR_TYPE attribute and its value is
+ * not TE_TREE_ATTR_TYPE_AUTO, it is returned.
+ *
+ * Otherwise:
+ * - if it has TE_TREE_ATTR_VALUE and no children, the type is
+ *   assumed to be TE_TREE_ATTR_TYPE_STRING;
+ * - otherwise if if has at least one child with a TE_TREE_ATTR_NAME
+ *   which is not of TE_TREE_ATTR_TYPE_ANNOTATION type,
+ *   the type is TE_TREE_ATTR_TYPE_DICT;
+ * - otherwise the type is TE_TREE_ATTR_TYPE_ARRAY; in particular,
+ *   if a node has no TE_TREE_ATTR_VALUE and no children, it is
+ *   assumed to represent an empty array.
+ *
+ * @note All scalar nodes without explicit type are detected as
+ *       TE_TREE_ATTR_TYPE_STRING, even if the value matches some
+ *       more specific type such as an integer.
+ *
+ * @param tree  tree to inspect
+ *
+ * @return type label of @p tree (never @c NULL)
+ */
+extern const char *te_tree_get_type(const te_tree *tree);
 
 /**
  * Test whether a tree has an attribute with a given name and value.
@@ -531,6 +645,44 @@ typedef te_errno te_tree_map_fn(const te_kvpair_h *src, te_kvpair_h *dst,
  */
 extern te_tree *te_tree_map(const te_tree *tree, te_tree_map_fn *fn,
                             void *data);
+
+/**
+ * Check that all subtrees have correct types and values.
+ *
+ * The type of each node is detected by te_tree_get_type() and
+ * then the following constraints apply:
+ * - if the type is TE_TREE_ATTR_TYPE_NULL, the node must have
+ *   no TE_TREE_ATTR_VALUE and no children;
+ * - if the type is scalar (one of TE_TREE_ATTR_TYPE_STRING,
+ *   TE_TREE_ATTR_TYPE_BOOL, TE_TREE_ATTR_TYPE_INT,
+ *   TE_TREE_ATTR_TYPE_FLOAT) it must have a TE_TREE_ATTR_VALUE
+ *   and no children;
+ * - if the type is TE_TREE_ATTR_TYPE_BOOL, the value must be valid
+ *   as per te_tree_get_bool_attr();
+ * - if the type is TE_TREE_ATTR_TYPE_INT, the value must be valid
+ *   as per te_tree_get_int_attr();
+ * - if the type is TE_TREE_ATTR_TYPE_FLOAT, the value must be valid
+ *   as per te_tree_get_float_attr();
+ * - if the type is TE_TREE_ATTR_TYPE_ARRAY, all children that are
+ *   not annotations must have no names;
+ * - if the type is TE_TREE_ATTR_TYPE_DICT, all children that are
+ *   not annotations must have names;
+ * - if the type is unknown and @p allow_unknown is true, the node
+ *   itself is always considered valid; children are recursively checked;
+ *   otherwise the node is invalid;
+ * - if the type is TE_TREE_ATTR_TYPE_ANNOTATION, the node is considered
+ *   valid and no children are further checked.
+ *
+ * @param[in]  tree            tree to check
+ * @param[in]  allow_unknown   allow unknown types for tree nodes
+ * @param[out] bad_node        location for a pointer to the first detected
+ *                             bad node
+ *
+ * @return @c TRUE if the tree is valid
+ */
+extern te_bool te_tree_validate_types(const te_tree *tree,
+                                      te_bool allow_unknown,
+                                      const te_tree **bad_node);
 
 #ifdef __cplusplus
 } /* extern "C" */

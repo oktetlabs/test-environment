@@ -33,5 +33,9 @@
                 <value>1000</value>
             </arg>
         </run>
+
+        <run>
+            <script name="typed"/>
+        </run>
     </session>
 </package>

@@ -24,5 +24,11 @@
                 <arg name="n_iterations" />
             </iter>
         </test>
+
+        <test name="typed" type="script">
+            <objective>Testing the correctness of typed value handling.</objective>
+            <notes/>
+            <iter result="PASSED" />
+        </test>
     </iter>
 </test>

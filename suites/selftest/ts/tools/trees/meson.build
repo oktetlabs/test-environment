@@ -4,6 +4,7 @@
 tests = [
     'kvpair',
     'traverse',
+    'typed',
 ]
 
 foreach test : tests
