@@ -183,10 +183,10 @@ te_json_add_integer(te_json_ctx_t *ctx, intmax_t val)
  *
  * @param ctx       JSON context
  * @param val       Value
- * @param precision Floating-point precision
+ * @param precision Floating-point precision (unlimited if negative)
  */
 static inline void
-te_json_add_float(te_json_ctx_t *ctx, double val, unsigned int precision)
+te_json_add_float(te_json_ctx_t *ctx, double val, int precision)
 {
     if (!isfinite(val))
         te_json_add_null(ctx);
