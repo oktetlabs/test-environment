@@ -29,6 +29,33 @@
 #include "te_enum.h"
 #include "te_rpc_signal.h"
 
+typedef te_errno (*action_fn)(unsigned int i);
+
+static te_errno
+action1(unsigned int i)
+{
+    return i == 0 ? 0 : TE_EINVAL;
+}
+
+static te_errno
+action2(unsigned int i)
+{
+    return i == 1 ? 0 : TE_EINVAL;
+}
+
+static te_errno
+action3(unsigned int i)
+{
+    return i == 2 ? 0 : TE_EINVAL;
+}
+
+static te_errno
+unknown_action(unsigned int i)
+{
+    UNUSED(i);
+    return TE_ENOENT;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -36,6 +63,12 @@ main(int argc, char **argv)
         {.name = "A", .value = 1},
         {.name = "B", .value = 2},
         {.name = "C", .value = 3},
+        TE_ENUM_MAP_END
+    };
+    static const TE_ENUM_MAP_ACTION(action_fn) actions[] = {
+        {.name = "A", .action = action1},
+        {.name = "B", .action = action2},
+        {.name = "C", .action = action3},
         TE_ENUM_MAP_END
     };
     te_enum_map dynamic_map[RPC_SIGUNKNOWN - RPC_SIGHUP + 2] =
@@ -50,6 +83,7 @@ main(int argc, char **argv)
         {TE_ENUM_TRN_END,};
 
     unsigned i;
+    te_errno status = 0;
 
     TEST_START;
 
@@ -110,6 +144,16 @@ main(int argc, char **argv)
     }
     if (dynamic_map[i].name != NULL)
         TEST_VERDICT("Dynamic map is not properly terminated");
+
+    TEST_STEP("Checking string-to-action mapping");
+    for (i = 0; actions[i].name != NULL; i++)
+    {
+        TE_ENUM_DISPATCH(actions, unknown_action, actions[i].name, status, i);
+        CHECK_RC(status);
+    }
+    TE_ENUM_DISPATCH(actions, unknown_action, "does not exist", status, 0);
+    if (status!= TE_ENOENT)
+        TEST_VERDICT("Non-existing string reported as found");
 
     TEST_STEP("Checking enum value translation");
     for (i = 0; translation[i].from != INT_MIN; i++)

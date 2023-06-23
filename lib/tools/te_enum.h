@@ -107,6 +107,81 @@ extern void te_enum_map_fill_by_conversion(te_enum_map map[],
                                            int minval, int maxval,
                                            const char *(*val2str)(int val));
 
+/**
+ * Define a structure to map names to actions.
+ *
+ * The structure will have two fields:
+ * - @a name
+ * - @a action
+ *
+ * The structure is intended to be used with TE_ENUM_DISPATCH.
+ *
+ * An array of such structures should be terminated with TE_ENUM_MAP_END.
+ *
+ * @param ftype_  type of actions: a pointer to function type
+ */
+#define TE_ENUM_MAP_ACTION(ftype_) \
+    struct {                       \
+        const char *name;          \
+        ftype_ action;             \
+    }
+
+/**
+ * Execute an action associated with a given @p name_.
+ *
+ * The @p table_ should be an array of structures defined by
+ * TE_ENUM_MAP_ACTION terminated with TE_ENUM_MAP_END.
+ *
+ * If @p name_ is not found in @p table_, @p unknown_ is called
+ * which may be a function, a pointer to function or a macro name.
+ *
+ * Actions cannot be @c void functions.
+ *
+ * @code
+ * typedef te_errno (*handler_fn)(int arg);
+ *
+ * static te_errno handler1(int arg)
+ * {
+ *     ...
+ * }
+ *
+ * static te_errno handler1(int arg)
+ * {
+ *     ...
+ * }
+ * ...
+ * static const TE_ENUM_ACTION(handler_fn) actions[] = {
+ *     {.name= "handler1", .action = handler1},
+ *     {.name= "handler2", .action = handler2},
+ *     TE_ENUM_MAP_END
+ * };
+ * te_errno rc;
+ * int arg;
+ *
+ * TE_ENUM_DISPATCH(actions, unknown_handler, rc, arg);
+ * @encode
+ *
+ * @param[in]  table_    a table of name-to-action mappings
+ * @param[in]  unknown_  a handler for unknown names
+ * @param[out] retval_   lvalue to store the return value of an action
+ * @param[in]  ...       parameters passed to actions
+ */
+#define TE_ENUM_DISPATCH(table_, unknown_, name_, retval_, ...) \
+    do {                                                        \
+        unsigned int i_;                                        \
+                                                                \
+        for (i_ = 0; (table_)[i_].name != NULL; i_++)           \
+        {                                                       \
+            if (strcmp((table_)[i_].name, (name_)) == 0)        \
+            {                                                   \
+                (retval_) = (table_)[i_].action(__VA_ARGS__);   \
+                break;                                          \
+            }                                                   \
+        }                                                       \
+                                                                \
+        if ((table_)[i_].name == NULL)                          \
+            (retval_) = unknown_(__VA_ARGS__);                  \
+    } while (0)
 
 /**
  * A translation between two sets of integral values
