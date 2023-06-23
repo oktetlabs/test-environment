@@ -134,6 +134,7 @@ main(int argc, char **argv)
         const char *key = TE_VEC_GET(char *, &keys, i);
         const char *value = TE_VEC_GET(char *, &values, i);
         const char *got;
+        te_kvpair_h submap;
 
         if (key == NULL)
             continue;
@@ -153,7 +154,47 @@ main(int argc, char **argv)
             ERROR("Key '%s' counted %u times", key, count);
             TEST_VERDICT("Unexpected count of key bindings");
         }
+
+        if (!te_kvpairs_has_kv(&kvpairs, key, value))
+        {
+            ERROR("Key-value pairs '%s':'%s' should be present",
+                  key, value);
+            TEST_VERDICT("Expected key-value pair not found");
+        }
+
+        if (!te_kvpairs_has_kv(&kvpairs, key, NULL))
+        {
+            ERROR("Key '%s' should be present",
+                  key, value);
+            TEST_VERDICT("Expected key not found");
+        }
+
+        te_kvpair_init(&submap);
+        if (!te_kvpairs_is_submap(&submap, &kvpairs))
+            TEST_VERDICT("Empty mapping should be a submap of any map");
+
+        if (te_kvpairs_is_submap(&kvpairs, &submap))
+            TEST_VERDICT("No non-empty map can be a submap of an empty map");
+
+        CHECK_RC(te_kvpair_add(&submap, key, "%s", value));
+        if (!te_kvpairs_is_submap(&submap, &kvpairs))
+            TEST_VERDICT("A singleton kvpair is not a submap of the whole map");
+        if (n_unique_keys > 1 && te_kvpairs_is_submap(&kvpairs, &submap))
+        {
+            TEST_VERDICT("A map with more than one pair cannot be a submap "
+                         "of a singleton");
+        }
+        te_kvpair_push(&submap, key, "%s", value);
+        if (!te_kvpairs_is_submap(&submap, &kvpairs))
+            TEST_VERDICT("Cardinality should not matter for submaps");
+        te_kvpair_push(&submap, "", "%s", "");
+        if (te_kvpairs_is_submap(&submap, &kvpairs))
+            TEST_VERDICT("An extra element has not been accounted for");
+
+        te_kvpair_fini(&submap);
     }
+    if (!te_kvpairs_is_submap(&kvpairs, &kvpairs))
+        TEST_VERDICT("A mapping is not a submap of itself");
 
     TEST_STEP("Counting keys");
     count = te_kvpairs_count(&kvpairs, NULL);

@@ -202,6 +202,34 @@ extern te_errno te_kvpairs_get_all(const te_kvpair_h *head, const char *key,
 extern unsigned int te_kvpairs_count(const te_kvpair_h *head, const char *key);
 
 /**
+ * Test whether @p heads contains a pair of @p key and @p value.
+ *
+ * @param head   Head of the list.
+ * @param key    Key to check (if @c NULL, any key will suit).
+ * @param value  Value to check (if @c NULL, any value will suit).
+ *
+ * @return @c TRUE if the kvpairs contain a given key-value pair.
+ */
+extern te_bool te_kvpairs_has_kv(const te_kvpair_h *head, const char *key,
+                                 const char *value);
+
+/**
+ * Test whether @p submap is a submap of @p supermap.
+ *
+ * A supermap contains all the key-value pairs of the submap.
+ * Order and cardinality are __not__ checked, so if @p supermap
+ * contains less identical key-value pairs as @p submap, it is
+ * still considered a supermap.
+ *
+ * @param submap    Submap.
+ * @param supermap  Supermap.
+ *
+ * @return @c TRUE if @p submap is a submap of @p supermap.
+ */
+extern te_bool te_kvpairs_is_submap(const te_kvpair_h *submap,
+                                    const te_kvpair_h *supermap);
+
+/**
  * Function type of callbacks used by te_kvpairs_foreach().
  *
  * @param key    Current key.

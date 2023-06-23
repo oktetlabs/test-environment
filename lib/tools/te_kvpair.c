@@ -171,6 +171,50 @@ te_kvpairs_count(const te_kvpair_h *head, const char *key)
 }
 
 static te_errno
+kvpairs_check(const char *key, const char *value, void *user)
+{
+    const char **exp_value = user;
+
+    UNUSED(key);
+
+    if (*exp_value == NULL || strcmp(value, *exp_value) == 0)
+        return TE_EEXIST;
+
+    return 0;
+}
+
+/* See the description in te_kvpair.h */
+te_bool
+te_kvpairs_has_kv(const te_kvpair_h *head, const char *key, const char *value)
+{
+    te_errno rc = te_kvpairs_foreach(head, kvpairs_check, key, &value);
+
+    return rc == TE_EEXIST;
+}
+
+static te_errno
+kvpairs_check_submap(const char *key, const char *value, void *user)
+{
+    const te_kvpair_h **supermap = user;
+
+    if (te_kvpairs_has_kv(*supermap, key, value))
+        return 0;
+
+    return TE_ENODATA;
+}
+
+/* See the description in te_kvpair.h */
+te_bool
+te_kvpairs_is_submap(const te_kvpair_h *submap, const te_kvpair_h *supermap)
+{
+    te_errno rc = te_kvpairs_foreach(submap, kvpairs_check_submap, NULL,
+                                     &supermap);
+
+    /* TE_ENOENT case is only possible if submap is empty */
+    return rc == 0 || rc == TE_ENOENT;
+}
+
+static te_errno
 kvpairs_to_vec(const char *key, const char *value, void *user)
 {
     te_vec *v = user;
