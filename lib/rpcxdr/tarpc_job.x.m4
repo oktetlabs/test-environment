@@ -357,9 +357,14 @@ struct tarpc_job_exec_priority {
     int priority;
 };
 
+struct tarpc_job_exec_workdir {
+    string workdir<>;
+};
+
 enum tarpc_job_exec_param_type {
     TARPC_JOB_EXEC_AFFINITY = 0,
-    TARPC_JOB_EXEC_PRIORITY = 1
+    TARPC_JOB_EXEC_PRIORITY = 1,
+    TARPC_JOB_EXEC_WORKDIR = 2
 };
 
 union tarpc_job_exec_param_data
@@ -367,6 +372,7 @@ union tarpc_job_exec_param_data
 {
     case TARPC_JOB_EXEC_AFFINITY: struct tarpc_job_exec_affinity affinity;
     case TARPC_JOB_EXEC_PRIORITY: struct tarpc_job_exec_priority prio;
+    case TARPC_JOB_EXEC_WORKDIR: struct tarpc_job_exec_workdir workdir;
 
     default: void;
 };

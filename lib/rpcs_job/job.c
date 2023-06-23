@@ -386,6 +386,17 @@ exec_priority_param_alloc(te_exec_priority_param **prio,
     return 0;
 }
 
+static te_errno
+exec_workdir_param_alloc(te_exec_workdir_param **workdir,
+                         tarpc_job_exec_param_data *data)
+{
+    te_exec_workdir_param *result = TE_ALLOC(sizeof(te_exec_workdir_param));
+
+    result->workdir = strdup(data->tarpc_job_exec_param_data_u.workdir.workdir);
+    *workdir = result;
+    return 0;
+}
+
 TARPC_FUNC_STATIC(job_create, {},
 {
     char **argv = NULL;
@@ -617,6 +628,8 @@ TARPC_FUNC_STATIC(job_add_exec_param, {},
     te_exec_param *exec_param = NULL;
     te_exec_affinity_param *affinity = NULL;
     te_exec_priority_param *prio = NULL;
+    te_exec_workdir_param *dir = NULL;
+
     int i;
     int len = in->param.param_len;
     te_errno rc;
@@ -656,6 +669,20 @@ TARPC_FUNC_STATIC(job_add_exec_param, {},
                 exec_param[i].data = (void *)prio;
                 break;
             }
+
+            case TARPC_JOB_EXEC_WORKDIR:
+            {
+                exec_param[i].type = TE_EXEC_WORKDIR;
+
+                rc = exec_workdir_param_alloc(&dir,
+                                              &in->param.param_val[i].data);
+                if (rc != 0)
+                    goto err;
+
+                exec_param[i].data = dir;
+                break;
+            }
+
             default:
                 ERROR("Unsupported process parameter");
                 rc = TE_EINVAL;
@@ -675,6 +702,11 @@ err:
     {
         free(affinity->cpu_ids);
         free(affinity);
+    }
+    if (dir != NULL)
+    {
+        free(dir->workdir);
+        free(dir);
     }
     free(prio);
 
