@@ -1051,7 +1051,13 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
 #ifdef CURLOPT_DEFAULT_PROTOCOL
     SET_CURL_OPT(CURLOPT_DEFAULT_PROTOCOL, "https");
 #endif
+#if defined(CURLOPT_PROTOCOLS_STR)
+    SET_CURL_OPT(CURLOPT_PROTOCOLS_STR, "http,https");
+#elif defined(CURLOPT_PROTOCOLS)
     SET_CURL_OPT(CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+#else
+    WARN("TE is built against libcurl that doesn't support HTTP(s) protocols");
+#endif
     /* Allow GSSAPI authentication */
 #if defined(CURLAUTH_NEGOTIATE)
     SET_CURL_OPT(CURLOPT_HTTPAUTH, CURLAUTH_NEGOTIATE);
@@ -1067,7 +1073,13 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
      * REDIR_PROTOCOLS is checked by libcurl during authentication method
      * probing, so HTTP and HTTPS must be enabled.
      */
+#if defined(CURLOPT_REDIR_PROTOCOLS_STR)
+    SET_CURL_OPT(CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
+#elif defined(CURLOPT_REDIR_PROTOCOLS)
     SET_CURL_OPT(CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+#else
+    WARN("TE is built against libcurl that doesn't support HTTP(s) redirects");
+#endif
     /* Disallow HTTP redirects */
     SET_CURL_OPT(CURLOPT_FOLLOWLOCATION, 0L);
     /* Disallow redirects for POST requests */
