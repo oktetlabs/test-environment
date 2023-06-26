@@ -272,7 +272,7 @@ lseek_mode_h2rpc(int mode)
 }
 
 unsigned int
-splice_flags_rpc2h(unsigned int flags)
+splice_flags_rpc2h(rpc_splice_flags flags)
 {
     UNUSED(flags);  /* Possibly unused */
     return 0
