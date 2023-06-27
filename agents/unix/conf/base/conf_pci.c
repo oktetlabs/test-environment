@@ -2505,8 +2505,11 @@ pci_sriov_pf_get(unsigned int gid, const char *oid, char *value,
     else
         base++;
 
-    snprintf(value, RCF_MAX_VAL, "/agent:%s/hardware:/pci:/device:%s", ta_name,
-             base);
+    rc = te_snprintf(value, RCF_MAX_VAL, "/agent:%s/hardware:/pci:/device:%s",
+                     ta_name, base);
+    if (rc != 0)
+        return TE_OS_RC(TE_TA_UNIX, rc);
+
     return 0;
 }
 
