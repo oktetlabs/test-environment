@@ -46,7 +46,7 @@ function print_usage ()
     cat <<EOF
 Usage: $0 [--target=BRANCH] [-1 | --single] [--maintainer]
           [--option-NAME=VALUE] [--enable-NAME] [--disable-NAME]
-          [--user-hooks]
+          [--user-hooks] [--verbose]
           [REVISION | START-REV..END-REV]
 
 This script checks the specified revisions against the same set of checks
@@ -97,6 +97,8 @@ The revision range may be specified in the following ways:
                        (may also be enabled with hooks.check-user-hooks option)
 
  --list-checks         List all available checks
+
+ --verbose             Enable verbose checking
 EOF
 }
 
@@ -146,6 +148,9 @@ for arg; do
             ;;
         --user-hooks)
             USERHOOKS=true
+            ;;
+        --verbose)
+            export PUSH_VERBOSE_CHECKS=true
             ;;
         -*)
             echo "Unknown option ${arg}" >&2

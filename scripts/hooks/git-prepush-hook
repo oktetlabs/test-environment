@@ -67,6 +67,16 @@ if [[ "${MAINTAINER_PUSH}" == "true" ]]; then
     esac
 fi
 
+### If hooks.push-verbose-checks is enabled,
+### the hashes of revisions being checked will be printed.
+### This may be useful when a long series of commits is checked.
+###
+
+if [[ -z "${PUSH_VERBOSE_CHECKS:-}" ]]; then
+    PUSH_VERBOSE_CHECKS="$(git config --default false --type bool \
+                               --get hooks.push-verbose-checks)"
+fi
+
 Z40='0000000000000000000000000000000000000000'
 EMPTYTREE='4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 ERRORS=
@@ -609,6 +619,7 @@ while read -r localref localsha remoteref remotesha; do
         ERRORS=""
         WARNINGS=""
 
+        [[ "${PUSH_VERBOSE_CHECKS}" == "true" ]] && echo "Checking ${rev}" >&2
         check_signed_off "${rev}"
         check_co_developers "${rev}"
         check_reviewed_by "${rev}"
