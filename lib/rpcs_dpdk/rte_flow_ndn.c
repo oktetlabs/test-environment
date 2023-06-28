@@ -676,20 +676,11 @@ rte_flow_item_ipv4_from_pdu(const asn_value *ipv4_pdu,
     struct rte_flow_item_ipv4 *spec = NULL;
     struct rte_flow_item_ipv4 *mask = NULL;
     struct rte_flow_item_ipv4 *last = NULL;
+    struct rte_flow_item_ipv4 zero = {};
     int rc;
 
     if (item == NULL)
         return TE_EINVAL;
-
-#define FILL_FLOW_ITEM_IPV4(_field) \
-    do {                                    \
-        if (_field->hdr.src_addr != 0 ||    \
-            _field->hdr.dst_addr != 0 ||    \
-            _field->hdr.next_proto_id != 0) \
-            item->_field = _field;          \
-        else                                \
-            free(_field);                   \
-    } while(0)
 
 #define ASN_READ_IPV4_ADDR_RANGE_FIELD(_asn_val, _name, _field) \
     do {                                                                    \
@@ -730,10 +721,22 @@ rte_flow_item_ipv4_from_pdu(const asn_value *ipv4_pdu,
 #undef ASN_READ_IPV4_ADDR_RANGE_FIELD
 
     item->type = RTE_FLOW_ITEM_TYPE_IPV4;
-    FILL_FLOW_ITEM_IPV4(spec);
-    FILL_FLOW_ITEM_IPV4(mask);
-    FILL_FLOW_ITEM_IPV4(last);
-#undef FILL_FLOW_ITEM_IPV4
+
+    if (memcmp(mask, &zero, sizeof(zero)) == 0)
+        goto out;
+
+    item->mask = mask;
+    item->spec = spec;
+
+    if (memcmp(last, &zero, sizeof(zero)) != 0)
+    {
+        item->last = last;
+    }
+    else
+    {
+        item->last = NULL;
+        free(last);
+    }
 
     return 0;
 out:
