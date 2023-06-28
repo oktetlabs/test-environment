@@ -565,6 +565,7 @@ function check_prohibited_trailers ()
 ###   may be used to require some bug reference id in all patches;
 ###       git config --local --add hooks.push-require-trailer Reviewed-by
 ###   would add a second required trailer (Reviewed-by in this case);
+###
 
 function check_extra_trailers ()
 {
@@ -587,6 +588,23 @@ function check_extra_trailers ()
             serious_error "${reqtrailer} is not present"
         fi
     done
+}
+
+### - the absence of suspicious trailer-like lines separated from the rest of
+###   trailers by empty lines (such lines are not interpreted as trailers by
+###   Git and are most probably a result of an accidental extra line break) (M)
+###
+
+function check_discontiguous_trailers ()
+{
+    local rev="$1"
+
+    while read -r; do
+        if [[ -z "$(get_trailer "${REPLY}" "${rev}")" ]]; then
+            nonmaintainer_error "${REPLY} looks like a trailer but is not recognized by Git"
+        fi
+    done < <(git log -1 --format=%b  "${rev}" | \
+                 sed -n 's/^\([[:upper:]][[:alpha:]-]*\):[[:space:]].*/\1/p')
 }
 
 #shellcheck disable=SC2034
@@ -635,6 +653,7 @@ while read -r localref localsha remoteref remotesha; do
         check_required_review "${rev}"
         check_prohibited_trailers "${rev}"
         check_extra_trailers "${rev}"
+        check_discontiguous_trailers "${rev}"
 
         if [[ -n "${ERRORS}${WARNINGS}" ]]; then
             echo "${header}${ERRORS}${WARNINGS}" >&2
