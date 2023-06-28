@@ -260,6 +260,14 @@
         </run>
 
         <run>
+            <script name="lines" />
+            <arg name="n_iterations"><value>100</value></arg>
+            <arg name="max_lines"><value>10</value></arg>
+            <arg name="max_line_size"><value>100</value></arg>
+            <arg name="crlf" type="boolean" />
+        </run>
+
+        <run>
             <script name="scandir"/>
             <arg name="n_files">
                 <value>10</value>

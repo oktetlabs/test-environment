@@ -529,6 +529,96 @@ extern void te_string_add_centered(te_string *str, const char *src,
                                    size_t padlen, char padchar);
 
 /**
+ * Function type for handlers called by te_string_process_lines().
+ *
+ * The function may freely modify @p line, but it must treat it
+ * as a pointer to a local buffer, that is it must not try to free()
+ * or realloc() it, nor store it outside of the scope.
+ *
+ * @param line          Line buffer without a newline terminator.
+ * @param user          User data.
+ *
+ * @return Status code.
+ * @retval TE_EOK te_string_process_lines() will stop immediately and
+ *                return success to the caller.
+ */
+typedef te_errno te_string_line_handler_fn(char *line, void *user);
+
+/**
+ * Call @p callback for every line in @p buffer.
+ *
+ * If @p complete_lines is true, the last incomplete line without
+ * a newline terminator is not processed.
+ *
+ * The line terminator is @c '\n', however, if it is preceded by @c '\r',
+ * it is removed as well.
+ *
+ * All processed lines are removed from @p buffer.
+ *
+ * Empty lines are never skipped, but if the @p buffer is empty,
+ * @p callback is not called at all.
+ *
+ * If a @p callback returns a non-zero status, the processing stop,
+ * however, the current line is still removed. TE_EOK is treated as
+ * success.
+ *
+ * @par Example.
+ *
+ * The following snippet would read data from a POSIX fd in arbitrary
+ * chunks, split the input into lines, count them, log any occurred error
+ * messages and bail out early on fatal errors.
+ *
+ * @code
+ * static te_errno
+ * handle_line(char *line, void *data)
+ * {
+ *     unsigned int *linecount = data;
+ *     const char *msg = te_str_strip_prefix(line, "FATAL: ");
+ *
+ *     if (msg != NULL)
+ *     {
+ *         ERROR("Fatal error at line %u: %s", *linecount, msg);
+ *         return TE_EBADMSG;
+ *     }
+ *
+ *     msg = te_str_strip_prefix(line, "ERROR: ");
+ *     if (msg != NULL)
+ *         ERROR("Error at line %u: %s", *linecount, msg);
+ *
+ *     (*linecount)++;
+ *     return 0;
+ * }
+ *
+ * ...
+ *
+ * te_string buffer = TE_STRING_INIT;
+ * char buf[BUFSIZE];
+ * ssize_t read_bytes;
+ * unsigned int linecount = 1;
+ *
+ * while ((read_bytes = read(fd, buf, sizeof(buf))) > 0)
+ * {
+ *     te_string_append_buf(&buffer, buf, read_bytes);
+ *     CHECK_RC(te_string_process_lines(&buffer, TRUE,
+ *                                      handle_line, data));
+ * }
+ * CHECK_RC(te_string_process_lines(&buffer, FALSE, handle_line, &linecount));
+ * @endcode
+ *
+ * @param[in,out] buffer          TE string.
+ * @param[in]     complete_lines  Do not process incomplete lines
+ *                                if @c TRUE.
+ * @param[in]     callback        Callback function.
+ * @param[in]     user_data       User data.
+ *
+ * @return Status code.
+ */
+extern te_errno te_string_process_lines(te_string *buffer,
+                                        te_bool complete_lines,
+                                        te_string_line_handler_fn *callback,
+                                        void *user_data);
+
+/**
  * Free TE string.
  *
  * @note It will not release buffer supplied by user with

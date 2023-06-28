@@ -14,6 +14,7 @@ tests = [
     'intset',
     'json',
     'kvpair',
+    'lines',
     'make_bufs',
     'readlink',
     'resolvepath',

@@ -663,6 +663,30 @@ te_string_add_centered(te_string *str, const char *src,
     str->ptr[str->len] = '\0';
 }
 
+te_errno
+te_string_process_lines(te_string *buffer, te_bool complete_lines,
+                        te_string_line_handler_fn *callback, void *user_data)
+{
+    te_errno rc = 0;
+
+    while (rc == 0 && buffer->len > 0)
+    {
+        size_t line_len = strcspn(buffer->ptr, "\n");
+        if (buffer->ptr[line_len] == '\0' && complete_lines)
+            return 0;
+
+        buffer->ptr[line_len] = '\0';
+        if (line_len > 0 && buffer->ptr[line_len - 1] == '\r')
+            buffer->ptr[line_len - 1] = '\0';
+
+        rc = callback(buffer->ptr, user_data);
+
+        te_string_cut_beginning(buffer, line_len + 1);
+    }
+
+    return rc == TE_EOK ? 0 : rc;
+}
+
 char *
 raw2string(const uint8_t *data, size_t size)
 {
