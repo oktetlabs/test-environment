@@ -287,7 +287,7 @@ tarpc_rte_eth_dev_desc_lim2str(te_log_buf *tlbp,
 
 static const struct te_log_buf_bit2str tapi_rpc_rte_eth_speeds2str[] = {
 #define TARPC_RTE_ETH_LINK_SPEED_BIT2STR(_bit) \
-        { TARPC_RTE_ETH_LINK_SPEED_##_bit, #_bit }
+        { TARPC_RTE_ETH_LINK_SPEED_##_bit##_BIT, #_bit }
         TARPC_RTE_ETH_LINK_SPEED_BIT2STR(FIXED),
         TARPC_RTE_ETH_LINK_SPEED_BIT2STR(10M_HD),
         TARPC_RTE_ETH_LINK_SPEED_BIT2STR(10M),
