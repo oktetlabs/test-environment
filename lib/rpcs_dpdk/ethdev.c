@@ -33,392 +33,168 @@
 #define CASE_TARPC2RTE(_rte) \
     case TARPC_##_rte: *rte = RTE_##_rte; break
 
-static uint64_t
-tarpc_rte_rx_offloads2rpc(uint64_t rte)
-{
-    uint64_t rpc = 0;
-
-#define RTE_ETH_RX_OFFLOAD2RPC(_bit) \
-    do {                                                            \
-        uint64_t flag = RTE_ETH_RX_OFFLOAD_##_bit;                  \
-                                                                    \
-        if (rte & flag)                                             \
-        {                                                           \
-            rte &= ~flag;                                           \
-            rpc |= (1ULL << TARPC_RTE_ETH_RX_OFFLOAD_##_bit##_BIT); \
-        }                                                           \
-    } while (0)
+static const te_enum_bitmask_conv rx_offloads_map[] = {
+#define RX_OFFLOAD_BIT_MAP(_bit) {                                     \
+    .bits_from = UINT64_C(1) << TARPC_RTE_ETH_RX_OFFLOAD_##_bit##_BIT, \
+    .bits_to = RTE_ETH_RX_OFFLOAD_##_bit                               \
+}
 #ifdef RTE_ETH_RX_OFFLOAD_VLAN_STRIP
-    RTE_ETH_RX_OFFLOAD2RPC(VLAN_STRIP);
+    RX_OFFLOAD_BIT_MAP(VLAN_STRIP),
 #endif /* RTE_ETH_RX_OFFLOAD_VLAN_STRIP */
 #ifdef RTE_ETH_RX_OFFLOAD_IPV4_CKSUM
-    RTE_ETH_RX_OFFLOAD2RPC(IPV4_CKSUM);
+    RX_OFFLOAD_BIT_MAP(IPV4_CKSUM),
 #endif /* RTE_ETH_RX_OFFLOAD_IPV4_CKSUM */
 #ifdef RTE_ETH_RX_OFFLOAD_UDP_CKSUM
-    RTE_ETH_RX_OFFLOAD2RPC(UDP_CKSUM);
+    RX_OFFLOAD_BIT_MAP(UDP_CKSUM),
 #endif /* RTE_ETH_RX_OFFLOAD_UDP_CKSUM */
 #ifdef RTE_ETH_RX_OFFLOAD_TCP_CKSUM
-    RTE_ETH_RX_OFFLOAD2RPC(TCP_CKSUM);
+    RX_OFFLOAD_BIT_MAP(TCP_CKSUM),
 #endif /* RTE_ETH_RX_OFFLOAD_TCP_CKSUM */
 #ifdef RTE_ETH_RX_OFFLOAD_TCP_LRO
-    RTE_ETH_RX_OFFLOAD2RPC(TCP_LRO);
+    RX_OFFLOAD_BIT_MAP(TCP_LRO),
 #endif /* RTE_ETH_RX_OFFLOAD_TCP_LRO */
 #ifdef RTE_ETH_RX_OFFLOAD_QINQ_STRIP
-    RTE_ETH_RX_OFFLOAD2RPC(QINQ_STRIP);
+    RX_OFFLOAD_BIT_MAP(QINQ_STRIP),
 #endif /* RTE_ETH_RX_OFFLOAD_QINQ_STRIP */
 #ifdef RTE_ETH_RX_OFFLOAD_OUTER_IPV4_CKSUM
-    RTE_ETH_RX_OFFLOAD2RPC(OUTER_IPV4_CKSUM);
+    RX_OFFLOAD_BIT_MAP(OUTER_IPV4_CKSUM),
 #endif /* RTE_ETH_RX_OFFLOAD_OUTER_IPV4_CKSUM */
 #ifdef RTE_ETH_RX_OFFLOAD_MACSEC_STRIP
-    RTE_ETH_RX_OFFLOAD2RPC(MACSEC_STRIP);
+    RX_OFFLOAD_BIT_MAP(MACSEC_STRIP),
 #endif /* RTE_ETH_RX_OFFLOAD_MACSEC_STRIP */
 #ifdef RTE_ETH_RX_OFFLOAD_HEADER_SPLIT
-    RTE_ETH_RX_OFFLOAD2RPC(HEADER_SPLIT);
+    RX_OFFLOAD_BIT_MAP(HEADER_SPLIT),
 #endif /* RTE_ETH_RX_OFFLOAD_HEADER_SPLIT */
 #ifdef RTE_ETH_RX_OFFLOAD_VLAN_FILTER
-    RTE_ETH_RX_OFFLOAD2RPC(VLAN_FILTER);
+    RX_OFFLOAD_BIT_MAP(VLAN_FILTER),
 #endif /* RTE_ETH_RX_OFFLOAD_VLAN_FILTER */
 #ifdef RTE_ETH_RX_OFFLOAD_VLAN_EXTEND
-    RTE_ETH_RX_OFFLOAD2RPC(VLAN_EXTEND);
+    RX_OFFLOAD_BIT_MAP(VLAN_EXTEND),
 #endif /* RTE_ETH_RX_OFFLOAD_VLAN_EXTEND */
 #ifdef RTE_ETH_RX_OFFLOAD_JUMBO_FRAME
-    RTE_ETH_RX_OFFLOAD2RPC(JUMBO_FRAME);
+    RX_OFFLOAD_BIT_MAP(JUMBO_FRAME),
 #endif /* RTE_ETH_RX_OFFLOAD_JUMBO_FRAME */
 #ifdef RTE_ETH_RX_OFFLOAD_CRC_STRIP
-    RTE_ETH_RX_OFFLOAD2RPC(CRC_STRIP);
+    RX_OFFLOAD_BIT_MAP(CRC_STRIP),
 #endif /* RTE_ETH_RX_OFFLOAD_CRC_STRIP */
 #ifdef RTE_ETH_RX_OFFLOAD_SCATTER
-    RTE_ETH_RX_OFFLOAD2RPC(SCATTER);
+    RX_OFFLOAD_BIT_MAP(SCATTER),
 #endif /* RTE_ETH_RX_OFFLOAD_SCATTER */
 #ifdef RTE_ETH_RX_OFFLOAD_TIMESTAMP
-    RTE_ETH_RX_OFFLOAD2RPC(TIMESTAMP);
+    RX_OFFLOAD_BIT_MAP(TIMESTAMP),
 #endif /* RTE_ETH_RX_OFFLOAD_TIMESTAMP */
 #ifdef RTE_ETH_RX_OFFLOAD_SECURITY
-    RTE_ETH_RX_OFFLOAD2RPC(SECURITY);
+    RX_OFFLOAD_BIT_MAP(SECURITY),
 #endif /* RTE_ETH_RX_OFFLOAD_SECURITY */
 #ifdef RTE_ETH_RX_OFFLOAD_KEEP_CRC
-    RTE_ETH_RX_OFFLOAD2RPC(KEEP_CRC);
+    RX_OFFLOAD_BIT_MAP(KEEP_CRC),
 #endif /* RTE_ETH_RX_OFFLOAD_KEEP_CRC */
 #ifdef RTE_ETH_RX_OFFLOAD_SCTP_CKSUM
-    RTE_ETH_RX_OFFLOAD2RPC(SCTP_CKSUM);
+    RX_OFFLOAD_BIT_MAP(SCTP_CKSUM),
 #endif /* RTE_ETH_RX_OFFLOAD_SCTP_CKSUM */
 #ifdef RTE_ETH_RX_OFFLOAD_OUTER_UDP_CKSUM
-    RTE_ETH_RX_OFFLOAD2RPC(OUTER_UDP_CKSUM);
+    RX_OFFLOAD_BIT_MAP(OUTER_UDP_CKSUM),
 #endif /* RTE_ETH_RX_OFFLOAD_OUTER_UDP_CKSUM */
 #ifdef RTE_ETH_RX_OFFLOAD_RSS_HASH
-    RTE_ETH_RX_OFFLOAD2RPC(RSS_HASH);
+    RX_OFFLOAD_BIT_MAP(RSS_HASH),
 #endif /* RTE_ETH_RX_OFFLOAD_RSS_HASH */
 #ifdef RTE_ETH_RX_OFFLOAD_BUFFER_SPLIT
-    RTE_ETH_RX_OFFLOAD2RPC(BUFFER_SPLIT);
+    RX_OFFLOAD_BIT_MAP(BUFFER_SPLIT),
 #endif /* RTE_ETH_RX_OFFLOAD_BUFFER_SPLIT */
-#undef RTE_ETH_RX_OFFLOAD2RPC
-    if (rte != 0)
-        rpc |= (1ULL << TARPC_RTE_ETH_RX_OFFLOAD__UNKNOWN_BIT);
-    return rpc;
+#undef RX_OFFLOAD_BIT_MAP
+    TE_ENUM_BITMASK_CONV_END
+};
+
+static const te_enum_bitmask_conv tx_offloads_map[] = {
+#define TX_OFFLOAD_BIT_MAP(_bit) {                                     \
+    .bits_from = UINT64_C(1) << TARPC_RTE_ETH_TX_OFFLOAD_##_bit##_BIT, \
+    .bits_to = RTE_ETH_TX_OFFLOAD_##_bit                               \
 }
-
-#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
-static te_errno
-tarpc_rte_rx_offloads2rte(uint64_t rpc, uint64_t *rte)
-{
-    uint64_t rte_tmp = 0;
-
-#define RTE_ETH_RX_OFFLOAD2RTE(_bit) \
-    do {                                                                 \
-        uint64_t flag = (1ULL << TARPC_RTE_ETH_RX_OFFLOAD_##_bit##_BIT); \
-                                                                         \
-        if (rpc & flag)                                                  \
-        {                                                                \
-            rpc &= ~flag;                                                \
-            rte_tmp |= RTE_ETH_RX_OFFLOAD_##_bit;                        \
-        }                                                                \
-    } while (0)
-
-#ifdef RTE_ETH_RX_OFFLOAD_VLAN_STRIP
-    RTE_ETH_RX_OFFLOAD2RTE(VLAN_STRIP);
-#endif /* RTE_ETH_RX_OFFLOAD_VLAN_STRIP */
-#ifdef RTE_ETH_RX_OFFLOAD_IPV4_CKSUM
-    RTE_ETH_RX_OFFLOAD2RTE(IPV4_CKSUM);
-#endif /* RTE_ETH_RX_OFFLOAD_IPV4_CKSUM */
-#ifdef RTE_ETH_RX_OFFLOAD_UDP_CKSUM
-    RTE_ETH_RX_OFFLOAD2RTE(UDP_CKSUM);
-#endif /* RTE_ETH_RX_OFFLOAD_UDP_CKSUM */
-#ifdef RTE_ETH_RX_OFFLOAD_TCP_CKSUM
-    RTE_ETH_RX_OFFLOAD2RTE(TCP_CKSUM);
-#endif /* RTE_ETH_RX_OFFLOAD_TCP_CKSUM */
-#ifdef RTE_ETH_RX_OFFLOAD_TCP_LRO
-    RTE_ETH_RX_OFFLOAD2RTE(TCP_LRO);
-#endif /* RTE_ETH_RX_OFFLOAD_TCP_LRO */
-#ifdef RTE_ETH_RX_OFFLOAD_QINQ_STRIP
-    RTE_ETH_RX_OFFLOAD2RTE(QINQ_STRIP);
-#endif /* RTE_ETH_RX_OFFLOAD_QINQ_STRIP */
-#ifdef RTE_ETH_RX_OFFLOAD_OUTER_IPV4_CKSUM
-    RTE_ETH_RX_OFFLOAD2RTE(OUTER_IPV4_CKSUM);
-#endif /* RTE_ETH_RX_OFFLOAD_OUTER_IPV4_CKSUM */
-#ifdef RTE_ETH_RX_OFFLOAD_MACSEC_STRIP
-    RTE_ETH_RX_OFFLOAD2RTE(MACSEC_STRIP);
-#endif /* RTE_ETH_RX_OFFLOAD_MACSEC_STRIP */
-#ifdef RTE_ETH_RX_OFFLOAD_HEADER_SPLIT
-    RTE_ETH_RX_OFFLOAD2RTE(HEADER_SPLIT);
-#endif /* RTE_ETH_RX_OFFLOAD_HEADER_SPLIT */
-#ifdef RTE_ETH_RX_OFFLOAD_VLAN_FILTER
-    RTE_ETH_RX_OFFLOAD2RTE(VLAN_FILTER);
-#endif /* RTE_ETH_RX_OFFLOAD_VLAN_FILTER */
-#ifdef RTE_ETH_RX_OFFLOAD_VLAN_EXTEND
-    RTE_ETH_RX_OFFLOAD2RTE(VLAN_EXTEND);
-#endif /* RTE_ETH_RX_OFFLOAD_VLAN_EXTEND */
-#ifdef RTE_ETH_RX_OFFLOAD_JUMBO_FRAME
-    RTE_ETH_RX_OFFLOAD2RTE(JUMBO_FRAME);
-#endif /* RTE_ETH_RX_OFFLOAD_JUMBO_FRAME */
-#ifdef RTE_ETH_RX_OFFLOAD_CRC_STRIP
-    RTE_ETH_RX_OFFLOAD2RTE(CRC_STRIP);
-#endif /* RTE_ETH_RX_OFFLOAD_CRC_STRIP */
-#ifdef RTE_ETH_RX_OFFLOAD_SCATTER
-    RTE_ETH_RX_OFFLOAD2RTE(SCATTER);
-#endif /* RTE_ETH_RX_OFFLOAD_SCATTER */
-#ifdef RTE_ETH_RX_OFFLOAD_TIMESTAMP
-    RTE_ETH_RX_OFFLOAD2RTE(TIMESTAMP);
-#endif /* RTE_ETH_RX_OFFLOAD_TIMESTAMP */
-#ifdef RTE_ETH_RX_OFFLOAD_SECURITY
-    RTE_ETH_RX_OFFLOAD2RTE(SECURITY);
-#endif /* RTE_ETH_RX_OFFLOAD_SECURITY */
-#ifdef RTE_ETH_RX_OFFLOAD_KEEP_CRC
-    RTE_ETH_RX_OFFLOAD2RTE(KEEP_CRC);
-#endif /* RTE_ETH_RX_OFFLOAD_KEEP_CRC */
-#ifdef RTE_ETH_RX_OFFLOAD_SCTP_CKSUM
-    RTE_ETH_RX_OFFLOAD2RTE(SCTP_CKSUM);
-#endif /* RTE_ETH_RX_OFFLOAD_SCTP_CKSUM */
-#ifdef RTE_ETH_RX_OFFLOAD_OUTER_UDP_CKSUM
-    RTE_ETH_RX_OFFLOAD2RTE(OUTER_UDP_CKSUM);
-#endif /* RTE_ETH_RX_OFFLOAD_OUTER_UDP_CKSUM */
-#ifdef RTE_ETH_RX_OFFLOAD_RSS_HASH
-    RTE_ETH_RX_OFFLOAD2RTE(RSS_HASH);
-#endif /* RTE_ETH_RX_OFFLOAD_RSS_HASH */
-#ifdef RTE_ETH_RX_OFFLOAD_BUFFER_SPLIT
-    RTE_ETH_RX_OFFLOAD2RTE(BUFFER_SPLIT);
-#endif /* RTE_ETH_RX_OFFLOAD_BUFFER_SPLIT */
-
-#undef RTE_ETH_RX_OFFLOAD2RTE
-
-    if (rpc != 0)
-        return TE_EINVAL;
-    else
-        *rte = rte_tmp;
-
-    return 0;
-}
-#endif
-
-static uint64_t
-tarpc_rte_tx_offloads2rpc(uint64_t rte)
-{
-    uint64_t rpc = 0;
-
-#define RTE_ETH_TX_OFFLOAD2RPC(_bit) \
-    do {                                                            \
-        uint64_t flag = RTE_ETH_TX_OFFLOAD_##_bit;                  \
-                                                                    \
-        if (rte & flag)                                             \
-        {                                                           \
-            rte &= ~flag;                                           \
-            rpc |= (1ULL << TARPC_RTE_ETH_TX_OFFLOAD_##_bit##_BIT); \
-        }                                                           \
-    } while (0)
 #ifdef RTE_ETH_TX_OFFLOAD_VLAN_INSERT
-    RTE_ETH_TX_OFFLOAD2RPC(VLAN_INSERT);
+    TX_OFFLOAD_BIT_MAP(VLAN_INSERT),
 #endif /* RTE_ETH_TX_OFFLOAD_VLAN_INSERT */
 #ifdef RTE_ETH_TX_OFFLOAD_IPV4_CKSUM
-    RTE_ETH_TX_OFFLOAD2RPC(IPV4_CKSUM);
+    TX_OFFLOAD_BIT_MAP(IPV4_CKSUM),
 #endif /* RTE_ETH_TX_OFFLOAD_IPV4_CKSUM */
 #ifdef RTE_ETH_TX_OFFLOAD_UDP_CKSUM
-    RTE_ETH_TX_OFFLOAD2RPC(UDP_CKSUM);
+    TX_OFFLOAD_BIT_MAP(UDP_CKSUM),
 #endif /* RTE_ETH_TX_OFFLOAD_UDP_CKSUM */
 #ifdef RTE_ETH_TX_OFFLOAD_TCP_CKSUM
-    RTE_ETH_TX_OFFLOAD2RPC(TCP_CKSUM);
+    TX_OFFLOAD_BIT_MAP(TCP_CKSUM),
 #endif /* RTE_ETH_TX_OFFLOAD_TCP_CKSUM */
 #ifdef RTE_ETH_TX_OFFLOAD_SCTP_CKSUM
-    RTE_ETH_TX_OFFLOAD2RPC(SCTP_CKSUM);
+    TX_OFFLOAD_BIT_MAP(SCTP_CKSUM),
 #endif /* RTE_ETH_TX_OFFLOAD_SCTP_CKSUM */
 #ifdef RTE_ETH_TX_OFFLOAD_TCP_TSO
-    RTE_ETH_TX_OFFLOAD2RPC(TCP_TSO);
+    TX_OFFLOAD_BIT_MAP(TCP_TSO),
 #endif /* RTE_ETH_TX_OFFLOAD_TCP_TSO */
 #ifdef RTE_ETH_TX_OFFLOAD_UDP_TSO
-    RTE_ETH_TX_OFFLOAD2RPC(UDP_TSO);
+    TX_OFFLOAD_BIT_MAP(UDP_TSO),
 #endif /* RTE_ETH_TX_OFFLOAD_UDP_TSO*/
 #ifdef RTE_ETH_TX_OFFLOAD_OUTER_IPV4_CKSUM
-    RTE_ETH_TX_OFFLOAD2RPC(OUTER_IPV4_CKSUM);
+    TX_OFFLOAD_BIT_MAP(OUTER_IPV4_CKSUM),
 #endif /* RTE_ETH_TX_OFFLOAD_OUTER_IPV4_CKSUM */
 #ifdef RTE_ETH_TX_OFFLOAD_QINQ_INSERT
-    RTE_ETH_TX_OFFLOAD2RPC(QINQ_INSERT);
+    TX_OFFLOAD_BIT_MAP(QINQ_INSERT),
 #endif /* RTE_ETH_TX_OFFLOAD_QINQ_INSERT */
 #ifdef RTE_ETH_TX_OFFLOAD_VXLAN_TNL_TSO
-    RTE_ETH_TX_OFFLOAD2RPC(VXLAN_TNL_TSO);
+    TX_OFFLOAD_BIT_MAP(VXLAN_TNL_TSO),
 #endif /* RTE_ETH_TX_OFFLOAD_VXLAN_TNL_TSO */
 #ifdef RTE_ETH_TX_OFFLOAD_GRE_TNL_TSO
-    RTE_ETH_TX_OFFLOAD2RPC(GRE_TNL_TSO);
+    TX_OFFLOAD_BIT_MAP(GRE_TNL_TSO),
 #endif /* RTE_ETH_TX_OFFLOAD_GRE_TNL_TSO */
 #ifdef RTE_ETH_TX_OFFLOAD_IPIP_TNL_TSO
-    RTE_ETH_TX_OFFLOAD2RPC(IPIP_TNL_TSO);
+    TX_OFFLOAD_BIT_MAP(IPIP_TNL_TSO),
 #endif /* RTE_ETH_TX_OFFLOAD_IPIP_TNL_TSO */
 #ifdef RTE_ETH_TX_OFFLOAD_GENEVE_TNL_TSO
-    RTE_ETH_TX_OFFLOAD2RPC(GENEVE_TNL_TSO);
+    TX_OFFLOAD_BIT_MAP(GENEVE_TNL_TSO),
 #endif /* RTE_ETH_TX_OFFLOAD_GENEVE_TNL_TSO */
 #ifdef RTE_ETH_TX_OFFLOAD_MACSEC_INSERT
-    RTE_ETH_TX_OFFLOAD2RPC(MACSEC_INSERT);
+    TX_OFFLOAD_BIT_MAP(MACSEC_INSERT),
 #endif /* RTE_ETH_TX_OFFLOAD_MACSEC_INSERT */
 #ifdef RTE_ETH_TX_OFFLOAD_MT_LOCKFREE
-    RTE_ETH_TX_OFFLOAD2RPC(MT_LOCKFREE);
+    TX_OFFLOAD_BIT_MAP(MT_LOCKFREE),
 #endif /* RTE_ETH_TX_OFFLOAD_MT_LOCKFREE */
 #ifdef RTE_ETH_TX_OFFLOAD_MULTI_SEGS
-    RTE_ETH_TX_OFFLOAD2RPC(MULTI_SEGS);
+    TX_OFFLOAD_BIT_MAP(MULTI_SEGS),
 #endif /* RTE_ETH_TX_OFFLOAD_MULTI_SEGS */
 #ifdef RTE_ETH_TX_OFFLOAD_MBUF_FAST_FREE
-    RTE_ETH_TX_OFFLOAD2RPC(MBUF_FAST_FREE);
+    TX_OFFLOAD_BIT_MAP(MBUF_FAST_FREE),
 #endif /* RTE_ETH_TX_OFFLOAD_MBUF_FAST_FREE */
 #ifdef RTE_ETH_TX_OFFLOAD_SECURITY
-    RTE_ETH_TX_OFFLOAD2RPC(SECURITY);
+    TX_OFFLOAD_BIT_MAP(SECURITY),
 #endif /* RTE_ETH_TX_OFFLOAD_SECURITY */
 #ifdef RTE_ETH_TX_OFFLOAD_UDP_TNL_TSO
-    RTE_ETH_TX_OFFLOAD2RPC(UDP_TNL_TSO);
+    TX_OFFLOAD_BIT_MAP(UDP_TNL_TSO),
 #endif /* RTE_ETH_TX_OFFLOAD_UDP_TNL_TSO */
 #ifdef RTE_ETH_TX_OFFLOAD_IP_TNL_TSO
-    RTE_ETH_TX_OFFLOAD2RPC(IP_TNL_TSO);
+    TX_OFFLOAD_BIT_MAP(IP_TNL_TSO),
 #endif /* RTE_ETH_TX_OFFLOAD_IP_TNL_TSO */
 #ifdef RTE_ETH_TX_OFFLOAD_OUTER_UDP_CKSUM
-    RTE_ETH_TX_OFFLOAD2RPC(OUTER_UDP_CKSUM);
+    TX_OFFLOAD_BIT_MAP(OUTER_UDP_CKSUM),
 #endif /* RTE_ETH_TX_OFFLOAD_IP_TNL_TSO */
 #ifdef RTE_ETH_TX_OFFLOAD_SEND_ON_TIMESTAMP
-    RTE_ETH_TX_OFFLOAD2RPC(SEND_ON_TIMESTAMP);
+    TX_OFFLOAD_BIT_MAP(SEND_ON_TIMESTAMP),
 #endif /* RTE_ETH_TX_OFFLOAD_SEND_ON_TIMESTAMP */
-
-#undef RTE_ETH_TX_OFFLOAD2RPC
-    if (rte != 0)
-        rpc |= (1ULL << TARPC_RTE_ETH_TX_OFFLOAD__UNKNOWN_BIT);
-    return rpc;
-}
-
-#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
-static te_errno
-tarpc_rte_tx_offloads2rte(uint64_t rpc, uint64_t *rte)
-{
-    uint64_t rte_tmp = 0;
-
-#define RTE_ETH_TX_OFFLOAD2RTE(_bit) \
-    do {                                                                 \
-        uint64_t flag = (1ULL << TARPC_RTE_ETH_TX_OFFLOAD_##_bit##_BIT); \
-                                                                         \
-        if (rpc & flag)                                                  \
-        {                                                                \
-            rpc &= ~flag;                                                \
-            rte_tmp |= RTE_ETH_TX_OFFLOAD_##_bit;                        \
-        }                                                                \
-    } while (0)
-
-#ifdef RTE_ETH_TX_OFFLOAD_VLAN_INSERT
-    RTE_ETH_TX_OFFLOAD2RTE(VLAN_INSERT);
-#endif /* RTE_ETH_TX_OFFLOAD_VLAN_INSERT */
-#ifdef RTE_ETH_TX_OFFLOAD_IPV4_CKSUM
-    RTE_ETH_TX_OFFLOAD2RTE(IPV4_CKSUM);
-#endif /* RTE_ETH_TX_OFFLOAD_IPV4_CKSUM */
-#ifdef RTE_ETH_TX_OFFLOAD_UDP_CKSUM
-    RTE_ETH_TX_OFFLOAD2RTE(UDP_CKSUM);
-#endif /* RTE_ETH_TX_OFFLOAD_UDP_CKSUM */
-#ifdef RTE_ETH_TX_OFFLOAD_TCP_CKSUM
-    RTE_ETH_TX_OFFLOAD2RTE(TCP_CKSUM);
-#endif /* RTE_ETH_TX_OFFLOAD_TCP_CKSUM */
-#ifdef RTE_ETH_TX_OFFLOAD_SCTP_CKSUM
-    RTE_ETH_TX_OFFLOAD2RTE(SCTP_CKSUM);
-#endif /* RTE_ETH_TX_OFFLOAD_SCTP_CKSUM */
-#ifdef RTE_ETH_TX_OFFLOAD_TCP_TSO
-    RTE_ETH_TX_OFFLOAD2RTE(TCP_TSO);
-#endif /* RTE_ETH_TX_OFFLOAD_TCP_TSO */
-#ifdef RTE_ETH_TX_OFFLOAD_UDP_TSO
-    RTE_ETH_TX_OFFLOAD2RTE(UDP_TSO);
-#endif /* RTE_ETH_TX_OFFLOAD_UDP_TSO*/
-#ifdef RTE_ETH_TX_OFFLOAD_OUTER_IPV4_CKSUM
-    RTE_ETH_TX_OFFLOAD2RTE(OUTER_IPV4_CKSUM);
-#endif /* RTE_ETH_TX_OFFLOAD_OUTER_IPV4_CKSUM */
-#ifdef RTE_ETH_TX_OFFLOAD_QINQ_INSERT
-    RTE_ETH_TX_OFFLOAD2RTE(QINQ_INSERT);
-#endif /* RTE_ETH_TX_OFFLOAD_QINQ_INSERT */
-#ifdef RTE_ETH_TX_OFFLOAD_VXLAN_TNL_TSO
-    RTE_ETH_TX_OFFLOAD2RTE(VXLAN_TNL_TSO);
-#endif /* RTE_ETH_TX_OFFLOAD_VXLAN_TNL_TSO */
-#ifdef RTE_ETH_TX_OFFLOAD_GRE_TNL_TSO
-    RTE_ETH_TX_OFFLOAD2RTE(GRE_TNL_TSO);
-#endif /* RTE_ETH_TX_OFFLOAD_GRE_TNL_TSO */
-#ifdef RTE_ETH_TX_OFFLOAD_IPIP_TNL_TSO
-    RTE_ETH_TX_OFFLOAD2RTE(IPIP_TNL_TSO);
-#endif /* RTE_ETH_TX_OFFLOAD_IPIP_TNL_TSO */
-#ifdef RTE_ETH_TX_OFFLOAD_GENEVE_TNL_TSO
-    RTE_ETH_TX_OFFLOAD2RTE(GENEVE_TNL_TSO);
-#endif /* RTE_ETH_TX_OFFLOAD_GENEVE_TNL_TSO */
-#ifdef RTE_ETH_TX_OFFLOAD_MACSEC_INSERT
-    RTE_ETH_TX_OFFLOAD2RTE(MACSEC_INSERT);
-#endif /* RTE_ETH_TX_OFFLOAD_MACSEC_INSERT */
-#ifdef RTE_ETH_TX_OFFLOAD_MT_LOCKFREE
-    RTE_ETH_TX_OFFLOAD2RTE(MT_LOCKFREE);
-#endif /* RTE_ETH_TX_OFFLOAD_MT_LOCKFREE */
-#ifdef RTE_ETH_TX_OFFLOAD_MULTI_SEGS
-    RTE_ETH_TX_OFFLOAD2RTE(MULTI_SEGS);
-#endif /* RTE_ETH_TX_OFFLOAD_MULTI_SEGS */
-#ifdef RTE_ETH_TX_OFFLOAD_MBUF_FAST_FREE
-    RTE_ETH_TX_OFFLOAD2RTE(MBUF_FAST_FREE);
-#endif /* RTE_ETH_TX_OFFLOAD_MBUF_FAST_FREE */
-#ifdef RTE_ETH_TX_OFFLOAD_SECURITY
-    RTE_ETH_TX_OFFLOAD2RTE(SECURITY);
-#endif /* RTE_ETH_TX_OFFLOAD_SECURITY */
-#ifdef RTE_ETH_TX_OFFLOAD_UDP_TNL_TSO
-    RTE_ETH_TX_OFFLOAD2RTE(UDP_TNL_TSO);
-#endif /* RTE_ETH_TX_OFFLOAD_UDP_TNL_TSO */
-#ifdef RTE_ETH_TX_OFFLOAD_IP_TNL_TSO
-    RTE_ETH_TX_OFFLOAD2RTE(IP_TNL_TSO);
-#endif /* RTE_ETH_TX_OFFLOAD_IP_TNL_TSO */
-#ifdef RTE_ETH_TX_OFFLOAD_OUTER_UDP_CKSUM
-    RTE_ETH_TX_OFFLOAD2RTE(OUTER_UDP_CKSUM);
-#endif /* RTE_ETH_TX_OFFLOAD_OUTER_UDP_CKSUM */
-#ifdef RTE_ETH_TX_OFFLOAD_SEND_ON_TIMESTAMP
-    RTE_ETH_TX_OFFLOAD2RTE(SEND_ON_TIMESTAMP);
-#endif /* RTE_ETH_TX_OFFLOAD_SEND_ON_TIMESTAMP */
-
-#undef RTE_ETH_TX_OFFLOAD2RTE
-
-    if (rpc != 0)
-        return TE_EINVAL;
-    else
-        *rte = rte_tmp;
-
-    return 0;
-}
-#endif
+#undef TX_OFFLOAD_BIT_MAP
+    TE_ENUM_BITMASK_CONV_END
+};
 
 #ifdef HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA
-static uint64_t
-tarpc_rte_eth_dev_capa2rpc(uint64_t dev)
-{
-    uint64_t rpc = 0;
-
-#define RTE_ETH_DEV_CAPA2RPC(_bit) \
-    do {                                                            \
-        uint64_t flag = RTE_ETH_DEV_CAPA_##_bit;                    \
-                                                                    \
-        if (dev & flag)                                             \
-        {                                                           \
-            dev &= ~flag;                                           \
-            rpc |= (1ULL << TARPC_RTE_ETH_DEV_CAPA_##_bit##_BIT);   \
-        }                                                           \
-    } while (0)
+static const te_enum_bitmask_conv dev_capa_map[] = {
+#define DEV_CAPA_BIT_MAP(_bit) {                                     \
+    .bits_from = UINT64_C(1) << TARPC_RTE_ETH_DEV_CAPA_##_bit##_BIT, \
+    .bits_to = RTE_ETH_DEV_CAPA_##_bit                               \
+}
 #ifdef RTE_ETH_DEV_CAPA_RUNTIME_RX_QUEUE_SETUP
-    RTE_ETH_DEV_CAPA2RPC(RUNTIME_RX_QUEUE_SETUP);
+    DEV_CAPA_BIT_MAP(RUNTIME_RX_QUEUE_SETUP),
 #endif /* RTE_ETH_DEV_CAPA_RUNTIME_RX_QUEUE_SETUP */
 #ifdef RTE_ETH_DEV_CAPA_RUNTIME_TX_QUEUE_SETUP
-    RTE_ETH_DEV_CAPA2RPC(RUNTIME_TX_QUEUE_SETUP);
+    DEV_CAPA_BIT_MAP(RUNTIME_TX_QUEUE_SETUP),
 #endif /* RTE_ETH_DEV_CAPA_RUNTIME_TX_QUEUE_SETUP */
-#undef RTE_ETH_DEV_CAPA2RPC
-    if (dev != 0)
-        rpc |= (1ULL << TARPC_RTE_ETH_DEV_CAPA__UNKNOWN_BIT);
-    return rpc;
-}
+#undef DEV_CAPA_BIT_MAP
+    TE_ENUM_BITMASK_CONV_END
+};
 #endif /* HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA */
 
 static void
@@ -430,77 +206,65 @@ tarpc_rte_eth_thresh2rpc(const struct rte_eth_thresh *rte,
     rpc->wthresh = rte->wthresh;
 }
 
-tarpc_rss_hash_protos_t
-rte_rss_hf_h2rpc(uint64_t rte)
-{
-    tarpc_rss_hash_protos_t rpc = 0;
-#define RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(_hf)                       \
-    do {                                                            \
-        uint64_t hf = RTE_ETH_RSS_##_hf;                            \
-                                                                    \
-        if ((rte & hf) == hf)                                       \
-        {                                                           \
-            rte &= ~hf;                                             \
-            rpc |= (1ULL << TARPC_RTE_ETH_RSS_##_hf);               \
-        }                                                           \
-    } while (0)
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV4);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(FRAG_IPV4);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV4_TCP);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV4_UDP);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV4_SCTP);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV4_OTHER);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV6);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(FRAG_IPV6);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV6_TCP);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV6_UDP);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV6_SCTP);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV6_OTHER);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L2_PAYLOAD);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV6_EX);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV6_TCP_EX);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV6_UDP_EX);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(PORT);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(VXLAN);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(GENEVE);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NVGRE);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(GTPU);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(ETH);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(S_VLAN);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(C_VLAN);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(ESP);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(AH);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L2TPV3);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(PFCP);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(PPPOE);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(ECPRI);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(MPLS);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV4_CHKSUM);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L4_CHKSUM);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L2TPV2);
-
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L3_SRC_ONLY);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L3_DST_ONLY);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L4_SRC_ONLY);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L4_DST_ONLY);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L2_SRC_ONLY);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L2_DST_ONLY);
-
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L3_PRE32);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L3_PRE40);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L3_PRE48);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L3_PRE56);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L3_PRE64);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(L3_PRE96);
-
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(LEVEL_OUTERMOST);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(LEVEL_INNERMOST);
-#undef RTE_RSS_HF2TARPC_RSS_HASH_PROTOS
-    if (rte != 0)
-        rpc |= TARPC_RTE_ETH_RSS__UNKNOWN;
-
-    return rpc;
+static const te_enum_bitmask_conv rss_hf_proto_map[] = {
+#define RSS_HF_PROTO_BIT_MAP(_bit) {                      \
+    .bits_from = UINT64_C(1) << TARPC_RTE_ETH_RSS_##_bit, \
+    .bits_to = RTE_ETH_RSS_##_bit                         \
 }
+    RSS_HF_PROTO_BIT_MAP(IPV4),
+    RSS_HF_PROTO_BIT_MAP(FRAG_IPV4),
+    RSS_HF_PROTO_BIT_MAP(NONFRAG_IPV4_TCP),
+    RSS_HF_PROTO_BIT_MAP(NONFRAG_IPV4_UDP),
+    RSS_HF_PROTO_BIT_MAP(NONFRAG_IPV4_SCTP),
+    RSS_HF_PROTO_BIT_MAP(NONFRAG_IPV4_OTHER),
+    RSS_HF_PROTO_BIT_MAP(IPV6),
+    RSS_HF_PROTO_BIT_MAP(FRAG_IPV6),
+    RSS_HF_PROTO_BIT_MAP(NONFRAG_IPV6_TCP),
+    RSS_HF_PROTO_BIT_MAP(NONFRAG_IPV6_UDP),
+    RSS_HF_PROTO_BIT_MAP(NONFRAG_IPV6_SCTP),
+    RSS_HF_PROTO_BIT_MAP(NONFRAG_IPV6_OTHER),
+    RSS_HF_PROTO_BIT_MAP(L2_PAYLOAD),
+    RSS_HF_PROTO_BIT_MAP(IPV6_EX),
+    RSS_HF_PROTO_BIT_MAP(IPV6_TCP_EX),
+    RSS_HF_PROTO_BIT_MAP(IPV6_UDP_EX),
+    RSS_HF_PROTO_BIT_MAP(PORT),
+    RSS_HF_PROTO_BIT_MAP(VXLAN),
+    RSS_HF_PROTO_BIT_MAP(GENEVE),
+    RSS_HF_PROTO_BIT_MAP(NVGRE),
+    RSS_HF_PROTO_BIT_MAP(GTPU),
+    RSS_HF_PROTO_BIT_MAP(ETH),
+    RSS_HF_PROTO_BIT_MAP(S_VLAN),
+    RSS_HF_PROTO_BIT_MAP(C_VLAN),
+    RSS_HF_PROTO_BIT_MAP(ESP),
+    RSS_HF_PROTO_BIT_MAP(AH),
+    RSS_HF_PROTO_BIT_MAP(L2TPV3),
+    RSS_HF_PROTO_BIT_MAP(PFCP),
+    RSS_HF_PROTO_BIT_MAP(PPPOE),
+    RSS_HF_PROTO_BIT_MAP(ECPRI),
+    RSS_HF_PROTO_BIT_MAP(MPLS),
+    RSS_HF_PROTO_BIT_MAP(IPV4_CHKSUM),
+    RSS_HF_PROTO_BIT_MAP(L4_CHKSUM),
+    RSS_HF_PROTO_BIT_MAP(L2TPV2),
+
+    RSS_HF_PROTO_BIT_MAP(L3_SRC_ONLY),
+    RSS_HF_PROTO_BIT_MAP(L3_DST_ONLY),
+    RSS_HF_PROTO_BIT_MAP(L4_SRC_ONLY),
+    RSS_HF_PROTO_BIT_MAP(L4_DST_ONLY),
+    RSS_HF_PROTO_BIT_MAP(L2_SRC_ONLY),
+    RSS_HF_PROTO_BIT_MAP(L2_DST_ONLY),
+
+    RSS_HF_PROTO_BIT_MAP(L3_PRE32),
+    RSS_HF_PROTO_BIT_MAP(L3_PRE40),
+    RSS_HF_PROTO_BIT_MAP(L3_PRE48),
+    RSS_HF_PROTO_BIT_MAP(L3_PRE56),
+    RSS_HF_PROTO_BIT_MAP(L3_PRE64),
+    RSS_HF_PROTO_BIT_MAP(L3_PRE96),
+
+    RSS_HF_PROTO_BIT_MAP(LEVEL_OUTERMOST),
+    RSS_HF_PROTO_BIT_MAP(LEVEL_INNERMOST),
+#undef RSS_HF_PROTO_BIT_MAP
+    TE_ENUM_BITMASK_CONV_END
+};
 
 static void
 tarpc_rte_eth_rxconf2rpc(const struct rte_eth_rxconf *rte,
@@ -511,41 +275,31 @@ tarpc_rte_eth_rxconf2rpc(const struct rte_eth_rxconf *rte,
     rpc->rx_drop_en = rte->rx_drop_en;
     rpc->rx_deferred_start = rte->rx_deferred_start;
 #if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
-    rpc->offloads = tarpc_rte_rx_offloads2rpc(rte->offloads);
+    rpc->offloads = rpc_dpdk_bitmask64_rte2rpc(
+                        rte->offloads, rx_offloads_map,
+                        TARPC_RTE_ETH_RX_OFFLOAD__UNKNOWN_BIT);
 #endif
 }
 
 #if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
-static uint64_t
-tarpc_rte_eth_txq_flags2rpc(uint32_t rte)
-{
-    uint32_t    rpc = 0;
-
-#define RTE_ETH_TXQ_FLAG2STR(_bit) \
-    do {                                                        \
-        uint32_t flag = ETH_TXQ_FLAGS_##_bit;                   \
-                                                                \
-        if (rte & flag)                                         \
-        {                                                       \
-            rte &= ~flag;                                       \
-            rpc |= (1 << TARPC_RTE_ETH_TXQ_FLAGS_##_bit##_BIT); \
-        }                                                       \
-    } while (0)
-    RTE_ETH_TXQ_FLAG2STR(NOMULTSEGS);
-    RTE_ETH_TXQ_FLAG2STR(NOREFCOUNT);
-    RTE_ETH_TXQ_FLAG2STR(NOMULTMEMP);
-    RTE_ETH_TXQ_FLAG2STR(NOVLANOFFL);
-    RTE_ETH_TXQ_FLAG2STR(NOXSUMSCTP);
-    RTE_ETH_TXQ_FLAG2STR(NOXSUMUDP);
-    RTE_ETH_TXQ_FLAG2STR(NOXSUMTCP);
-#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
-    RTE_ETH_TXQ_FLAG2STR(IGNORE);
-#endif
-#undef RTE_ETH_TXQ_FLAG2STR
-    if (rte != 0)
-        rpc |= (1 << TARPC_RTE_ETH_TXQ_FLAGS__UNKNOWN_BIT);
-    return rpc;
+static const te_enum_bitmask_conv txq_flags_map[] = {
+#define TXQ_FLAG_BIT_MAP(_bit) {                                      \
+    .bits_from = UINT64_C(1) << TARPC_RTE_ETH_TXQ_FLAGS_##_bit##_BIT, \
+    .bits_to = ETH_TXQ_FLAGS_##_bit                                   \
 }
+    TXQ_FLAG_BIT_MAP(NOMULTSEGS),
+    TXQ_FLAG_BIT_MAP(NOREFCOUNT),
+    TXQ_FLAG_BIT_MAP(NOMULTMEMP),
+    TXQ_FLAG_BIT_MAP(NOVLANOFFL),
+    TXQ_FLAG_BIT_MAP(NOXSUMSCTP),
+    TXQ_FLAG_BIT_MAP(NOXSUMUDP),
+    TXQ_FLAG_BIT_MAP(NOXSUMTCP);
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    TXQ_FLAG_BIT_MAP(IGNORE),
+#endif
+#undef TXQ_FLAG_BIT_MAP
+    TE_ENUM_BITMASK_CONV_END
+};
 #endif
 
 static void
@@ -556,11 +310,15 @@ tarpc_rte_eth_txconf2rpc(const struct rte_eth_txconf *rte,
     rpc->tx_rs_thresh = rte->tx_rs_thresh;
     rpc->tx_free_thresh = rte->tx_free_thresh;
 #if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
-    rpc->txq_flags = tarpc_rte_eth_txq_flags2rpc(rte->txq_flags);
+    rpc->txq_flags = rpc_dpdk_bitmask32_rte2rpc(
+                        rte->txq_flags, tx_offloads_map,
+                        TARPC_RTE_ETH_TXQ_FLAGS__UNKNOWN_BIT);
 #endif
     rpc->tx_deferred_start = rte->tx_deferred_start;
 #if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
-    rpc->offloads = tarpc_rte_tx_offloads2rpc(rte->offloads);
+    rpc->offloads = rpc_dpdk_bitmask64_rte2rpc(
+                        rte->offloads, tx_offloads_map,
+                        TARPC_RTE_ETH_TX_OFFLOAD__UNKNOWN_BIT);
 #endif
 }
 
@@ -575,41 +333,29 @@ tarpc_rte_eth_desc_lim2rpc(const struct rte_eth_desc_lim *rte,
     rpc->nb_mtu_seg_max = rte->nb_mtu_seg_max;
 }
 
-static uint32_t
-tarpc_rte_eth_link_speeds2rpc(uint32_t rte)
-{
-    uint32_t    rpc = 0;
-
-#define RTE_ETH_LINK_SPEED2RPC(_bit) \
-    do {                                                          \
-        uint32_t flag = RTE_ETH_LINK_SPEED_##_bit;                \
-                                                                  \
-        if (rte & flag)                                           \
-        {                                                         \
-            rte &= ~flag;                                         \
-            rpc |= (1 << TARPC_RTE_ETH_LINK_SPEED_##_bit##_BIT);  \
-        }                                                         \
-    } while (0)
-    RTE_ETH_LINK_SPEED2RPC(FIXED);
-    RTE_ETH_LINK_SPEED2RPC(10M_HD);
-    RTE_ETH_LINK_SPEED2RPC(10M);
-    RTE_ETH_LINK_SPEED2RPC(100M_HD);
-    RTE_ETH_LINK_SPEED2RPC(100M);
-    RTE_ETH_LINK_SPEED2RPC(1G);
-    RTE_ETH_LINK_SPEED2RPC(2_5G);
-    RTE_ETH_LINK_SPEED2RPC(5G);
-    RTE_ETH_LINK_SPEED2RPC(10G);
-    RTE_ETH_LINK_SPEED2RPC(20G);
-    RTE_ETH_LINK_SPEED2RPC(25G);
-    RTE_ETH_LINK_SPEED2RPC(40G);
-    RTE_ETH_LINK_SPEED2RPC(50G);
-    RTE_ETH_LINK_SPEED2RPC(56G);
-    RTE_ETH_LINK_SPEED2RPC(100G);
-#undef RTE_ETH_LINK_SPEED2RPC
-    if (rte != 0)
-        rpc |= (1 << TARPC_RTE_ETH_LINK_SPEED__UNKNOWN_BIT);
-    return rpc;
+static const te_enum_bitmask_conv speed_link_map[] = {
+#define LINK_SPEED_BIT_MAP(_bit) {                                     \
+    .bits_from = UINT64_C(1) << TARPC_RTE_ETH_LINK_SPEED_##_bit##_BIT, \
+    .bits_to = RTE_ETH_LINK_SPEED_##_bit                               \
 }
+    LINK_SPEED_BIT_MAP(FIXED),
+    LINK_SPEED_BIT_MAP(10M_HD),
+    LINK_SPEED_BIT_MAP(10M),
+    LINK_SPEED_BIT_MAP(100M_HD),
+    LINK_SPEED_BIT_MAP(100M),
+    LINK_SPEED_BIT_MAP(1G),
+    LINK_SPEED_BIT_MAP(2_5G),
+    LINK_SPEED_BIT_MAP(5G),
+    LINK_SPEED_BIT_MAP(10G),
+    LINK_SPEED_BIT_MAP(20G),
+    LINK_SPEED_BIT_MAP(25G),
+    LINK_SPEED_BIT_MAP(40G),
+    LINK_SPEED_BIT_MAP(50G),
+    LINK_SPEED_BIT_MAP(56G),
+    LINK_SPEED_BIT_MAP(100G),
+#undef LINK_SPEED_BIT_MAP
+    TE_ENUM_BITMASK_CONV_END
+};
 
 #ifdef HAVE_STRUCT_RTE_ETH_DEV_PORTCONF
 static void
@@ -644,26 +390,36 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
     out->dev_info.max_vmdq_pools = dev_info.max_vmdq_pools;
 #ifdef HAVE_STRUCT_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA
     out->dev_info.rx_queue_offload_capa =
-        tarpc_rte_rx_offloads2rpc(dev_info.rx_queue_offload_capa);
+        rpc_dpdk_bitmask64_rte2rpc(dev_info.rx_queue_offload_capa,
+                                   rx_offloads_map,
+                                   TARPC_RTE_ETH_RX_OFFLOAD__UNKNOWN_BIT);
 #else /* !HAVE_STRUCT_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.rx_queue_offload_capa =
         (1ULL << TARPC_RTE_ETH_RX_OFFLOAD__UNSUPPORTED_BIT);
 #endif /* HAVE_STRUCT_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.rx_offload_capa =
-        tarpc_rte_rx_offloads2rpc(dev_info.rx_offload_capa);
+        rpc_dpdk_bitmask64_rte2rpc(dev_info.rx_offload_capa,
+                                   rx_offloads_map,
+                                   TARPC_RTE_ETH_RX_OFFLOAD__UNKNOWN_BIT);
 #ifdef HAVE_STRUCT_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA
     out->dev_info.tx_queue_offload_capa =
-        tarpc_rte_tx_offloads2rpc(dev_info.tx_queue_offload_capa);
+        rpc_dpdk_bitmask64_rte2rpc(dev_info.tx_queue_offload_capa,
+                                   tx_offloads_map,
+                                   TARPC_RTE_ETH_TX_OFFLOAD__UNKNOWN_BIT);
 #else /* !HAVE_STRUCT_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.tx_queue_offload_capa =
         (1ULL << TARPC_RTE_ETH_TX_OFFLOAD__UNSUPPORTED_BIT);
 #endif /* HAVE_STRUCT_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.tx_offload_capa =
-        tarpc_rte_tx_offloads2rpc(dev_info.tx_offload_capa);
+        rpc_dpdk_bitmask64_rte2rpc(dev_info.tx_offload_capa,
+                                   tx_offloads_map,
+                                   TARPC_RTE_ETH_TX_OFFLOAD__UNKNOWN_BIT);
     out->dev_info.reta_size = dev_info.reta_size;
     out->dev_info.hash_key_size = dev_info.hash_key_size;
     out->dev_info.flow_type_rss_offloads =
-        rte_rss_hf_h2rpc(dev_info.flow_type_rss_offloads);
+        rpc_dpdk_bitmask64_rte2rpc(dev_info.flow_type_rss_offloads,
+                                   rss_hf_proto_map,
+                                   TARPC_RTE_ETH_RSS__UNKNOWN);
     tarpc_rte_eth_rxconf2rpc(&dev_info.default_rxconf,
                              &out->dev_info.default_rxconf);
     tarpc_rte_eth_txconf2rpc(&dev_info.default_txconf,
@@ -675,12 +431,14 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
     tarpc_rte_eth_desc_lim2rpc(&dev_info.tx_desc_lim,
                                &out->dev_info.tx_desc_lim);
     out->dev_info.speed_capa =
-        tarpc_rte_eth_link_speeds2rpc(dev_info.speed_capa);
+        rpc_dpdk_bitmask32_rte2rpc(dev_info.speed_capa, speed_link_map,
+                                   TARPC_RTE_ETH_LINK_SPEED__UNKNOWN_BIT);
     out->dev_info.nb_rx_queues = dev_info.nb_rx_queues;
     out->dev_info.nb_tx_queues = dev_info.nb_tx_queues;
 #ifdef HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA
     out->dev_info.dev_capa =
-        tarpc_rte_eth_dev_capa2rpc(dev_info.dev_capa);
+        rpc_dpdk_bitmask64_rte2rpc(dev_info.dev_capa, dev_capa_map,
+                                   TARPC_RTE_ETH_DEV_CAPA__UNKNOWN_BIT);
 #else /* !HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA */
     out->dev_info.dev_capa =
         (1ULL << TARPC_RTE_ETH_DEV_CAPA__UNSUPPORTED_BIT);
@@ -697,14 +455,6 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
            sizeof(out->dev_info.default_txportconf));
 #endif /* HAVE_STRUCT_RTE_ETH_DEV_PORTCONF */
 })
-
-static te_bool
-tarpc_eth_link_speeds2rte(uint32_t rpc, uint32_t *rte)
-{
-    /* TODO Do real mapping */
-    *rte = rpc;
-    return 1;
-}
 
 static te_errno
 tarpc_eth_rx_mq_mode2rte(const enum tarpc_rte_eth_rx_mq_mode rpc,
@@ -772,9 +522,11 @@ tarpc_eth_rxmode2rte(const struct tarpc_rte_eth_rxmode *rpc,
     rc = tarpc_eth_rx_mq_mode2rte(rpc->mq_mode, &rte->mq_mode);
     if (rc != 0)
         return rc;
+
     rte->mtu = rpc->mtu;
 #if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
-    rc = tarpc_rte_rx_offloads2rte(rpc->offloads, &rte->offloads);
+    rc = rpc_dpdk_bitmask64_rpc2rte(rpc->offloads, rx_offloads_map,
+                                    &rte->offloads);
     if (rc != 0)
         return rc;
 #endif
@@ -836,7 +588,8 @@ tarpc_eth_txmode2rte(const struct tarpc_rte_eth_txmode *rpc,
     if (rc != 0)
         return rc;
 #if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
-    rc = tarpc_rte_tx_offloads2rte(rpc->offloads, &rte->offloads);
+    rc = rpc_dpdk_bitmask64_rpc2rte(rpc->offloads, tx_offloads_map,
+                                    &rte->offloads);
     if (rc != 0)
         return rc;
 #endif
@@ -849,76 +602,6 @@ tarpc_eth_txmode2rte(const struct tarpc_rte_eth_txmode *rpc,
 }
 
 static te_errno
-rte_rss_hf_rpc2h(tarpc_rss_hash_protos_t rpc, uint64_t *rte)
-{
-    *rte = 0;
-
-#define TARPC_RSS_HASH_PROTO2RTE_RSS_HF(_proto)                              \
-    do {                                                                     \
-        tarpc_rss_hash_protos_t proto = 1ULL << TARPC_RTE_ETH_RSS_##_proto;  \
-                                                                             \
-        if (rpc & proto)                                                     \
-        {                                                                    \
-            rpc &= ~proto;                                                   \
-            *rte |= RTE_ETH_RSS_##_proto;                                    \
-        }                                                                    \
-    } while (0)
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV4);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(FRAG_IPV4);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV4_TCP);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV4_UDP);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV4_SCTP);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV4_OTHER);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV6);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(FRAG_IPV6);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV6_TCP);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV6_UDP);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV6_SCTP);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV6_OTHER);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L2_PAYLOAD);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV6_EX);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV6_TCP_EX);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV6_UDP_EX);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(PORT);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(VXLAN);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(GENEVE);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NVGRE);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(GTPU);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(ETH);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(S_VLAN);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(C_VLAN);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(ESP);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(AH);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L2TPV3);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(PFCP);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(PPPOE);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(ECPRI);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(MPLS);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV4_CHKSUM);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L4_CHKSUM);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L2TPV2);
-
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L3_SRC_ONLY);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L3_DST_ONLY);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L4_SRC_ONLY);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L4_DST_ONLY);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L2_SRC_ONLY);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L2_DST_ONLY);
-
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L3_PRE32);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L3_PRE40);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L3_PRE48);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L3_PRE56);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L3_PRE64);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(L3_PRE96);
-
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(LEVEL_OUTERMOST);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(LEVEL_INNERMOST);
-#undef TARPC_RSS_HASH_PROTO2RTE_RSS_HF
-    return (rpc == 0) ? 0 : TE_EINVAL;
-}
-
-static te_errno
 tarpc_eth_rss_conf2rte(const struct tarpc_rte_eth_rss_conf *rpc,
                        struct rte_eth_rss_conf *rte)
 {
@@ -928,7 +611,8 @@ tarpc_eth_rss_conf2rte(const struct tarpc_rte_eth_rss_conf *rpc,
     rte->rss_key = rpc->rss_key.rss_key_val;
     rte->rss_key_len = rpc->rss_key_len;
 
-    rc = rte_rss_hf_rpc2h(rpc->rss_hf, &rte->rss_hf);
+    rc = rpc_dpdk_bitmask64_rpc2rte(rpc->rss_hf, rss_hf_proto_map,
+                                    &rte->rss_hf);
     if (rc != 0)
         return rc;
 
@@ -966,7 +650,8 @@ tarpc_eth_conf2rte(const struct tarpc_rte_eth_conf *rpc,
 
     memset(rte, 0, sizeof(*rte));
 
-    rc = tarpc_eth_link_speeds2rte(rpc->link_speeds, &rte->link_speeds);
+    rc = rpc_dpdk_bitmask32_rpc2rte(rpc->link_speeds, speed_link_map,
+                                    &rte->link_speeds);
     if (rc != 0)
         return rc;
 
@@ -1075,38 +760,6 @@ tarpc_eth_thresh2rte(const struct tarpc_rte_eth_thresh *rpc,
     return 0;
 }
 
-#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
-static te_errno
-tarpc_eth_txq_flags2rte(uint32_t rpc, uint32_t *rte)
-{
-    *rte = 0;
-
-#define RPC_DEV_TXQ_FLAG2STR(_bit) \
-    do {                                                            \
-        uint32_t flag = (1 << TARPC_RTE_ETH_TXQ_FLAGS_##_bit##_BIT);\
-                                                                    \
-        if (rpc & flag)                                             \
-        {                                                           \
-            rpc &= ~flag;                                           \
-            *rte |= ETH_TXQ_FLAGS_##_bit;                           \
-        }                                                           \
-    } while (0)
-    RPC_DEV_TXQ_FLAG2STR(NOMULTSEGS);
-    RPC_DEV_TXQ_FLAG2STR(NOREFCOUNT);
-    RPC_DEV_TXQ_FLAG2STR(NOMULTMEMP);
-    RPC_DEV_TXQ_FLAG2STR(NOVLANOFFL);
-    RPC_DEV_TXQ_FLAG2STR(NOXSUMSCTP);
-    RPC_DEV_TXQ_FLAG2STR(NOXSUMUDP);
-    RPC_DEV_TXQ_FLAG2STR(NOXSUMTCP);
-#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
-    RPC_DEV_TXQ_FLAG2STR(IGNORE);
-#endif
-#undef RPC_DEV_TXQ_FLAG2STR
-
-    return (rpc == 0) ? 0 : TE_EINVAL;
-}
-#endif
-
 static te_errno
 tarpc_eth_txconf2rte(const struct tarpc_rte_eth_txconf *rpc,
                      struct rte_eth_txconf *rte)
@@ -1122,13 +775,15 @@ tarpc_eth_txconf2rte(const struct tarpc_rte_eth_txconf *rpc,
     rte->tx_rs_thresh = rpc->tx_rs_thresh;
     rte->tx_free_thresh = rpc->tx_free_thresh;
 #if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
-    rc = tarpc_eth_txq_flags2rte(rpc->txq_flags, &rte->txq_flags);
+    rc = rpc_dpdk_bitmask32_rpc2rte(rpc->txq_flags, txq_flags_map,
+                                    &rte->txq_flags);
     if (rc != 0)
         return rc;
 #endif
     rte->tx_deferred_start = rpc->tx_deferred_start;
 #if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
-    rc = tarpc_rte_tx_offloads2rte(rpc->offloads, &rte->offloads);
+    rc = rpc_dpdk_bitmask64_rpc2rte(rpc->offloads, tx_offloads_map,
+                                    &rte->offloads);
     if (rc != 0)
         return rc;
 #endif
@@ -1178,7 +833,8 @@ tarpc_eth_rxconf2rte(const struct tarpc_rte_eth_rxconf *rpc,
     rte->rx_drop_en = rpc->rx_drop_en;
     rte->rx_deferred_start = rpc->rx_deferred_start;
 #if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
-    rc = tarpc_rte_rx_offloads2rte(rpc->offloads, &rte->offloads);
+    rpc_dpdk_bitmask64_rpc2rte(rpc->offloads, rx_offloads_map,
+                               &rte->offloads);
     if (rc != 0)
         return rc;
 #endif
@@ -1478,35 +1134,25 @@ done:
     ;
 })
 
-static te_errno
-tarpc_eth_vlan_offload_mask2rte(uint16_t rpc, uint16_t *rte)
-{
-#define TARPC_RTE_ETH_VLAN_OFFLOAD_BIT2RTE_BIT(_bit) \
-    do {                                                            \
-        uint16_t flag = (1 << TARPC_ETH_VLAN_##_bit##_OFFLOAD_BIT); \
-                                                                    \
-        if (rpc & flag)                                             \
-        {                                                           \
-            rpc &= ~flag;                                           \
-            *rte |= RTE_ETH_VLAN_##_bit##_OFFLOAD;                  \
-        }                                                           \
-    } while (0)
-
-    *rte = 0;
-
-    TARPC_RTE_ETH_VLAN_OFFLOAD_BIT2RTE_BIT(STRIP);
-    TARPC_RTE_ETH_VLAN_OFFLOAD_BIT2RTE_BIT(FILTER);
-    TARPC_RTE_ETH_VLAN_OFFLOAD_BIT2RTE_BIT(EXTEND);
-#undef TARPC_RTE_ETH_VLAN_OFFLOAD_BIT2RTE_BIT
-    return (rpc == 0) ? 0 : TE_EINVAL;
+static const te_enum_bitmask_conv vlan_offload_map[] = {
+#define VLAN_OFFLOAD_BIT_MAP(_bit) {                                 \
+    .bits_from = UINT64_C(1) << TARPC_ETH_VLAN_##_bit##_OFFLOAD_BIT, \
+    .bits_to = RTE_ETH_VLAN_##_bit##_OFFLOAD                         \
 }
+    VLAN_OFFLOAD_BIT_MAP(STRIP),
+    VLAN_OFFLOAD_BIT_MAP(FILTER),
+    VLAN_OFFLOAD_BIT_MAP(EXTEND),
+#undef VLAN_OFFLOAD_BIT_MAP
+    TE_ENUM_BITMASK_CONV_END
+};
 
 TARPC_FUNC(rte_eth_dev_set_vlan_offload, {},
 {
     uint16_t rte_vlan_offload_mask;
     te_errno rc;
 
-    rc = tarpc_eth_vlan_offload_mask2rte(in->offload_mask, &rte_vlan_offload_mask);
+    rc = rpc_dpdk_bitmask16_rpc2rte(in->offload_mask, vlan_offload_map,
+                                    &rte_vlan_offload_mask);
     if (rc != 0)
     {
         out->retval = -TE_RC(TE_RPCS, rc);
@@ -1648,29 +1294,10 @@ TARPC_FUNC(rte_eth_macaddr_get,
                sizeof(out->mac_addr.mac_addr_val[0].addr_bytes));
 })
 
-static te_errno
-rte_eth_vlan_offload_mask2tarpc(int rte, uint16_t *rpc)
-{
-#define RTE_ETH_VLAN_OFFLOAD_BIT2TARPC_BIT(_bit) \
-    do {                                                            \
-        uint16_t flag = RTE_ETH_VLAN_##_bit##_OFFLOAD;              \
-                                                                    \
-        if (rte & flag)                                             \
-        {                                                           \
-            rte &= ~flag;                                           \
-            *rpc |= (1 << TARPC_ETH_VLAN_##_bit##_OFFLOAD_BIT);     \
-        }                                                           \
-    } while (0)
-    RTE_ETH_VLAN_OFFLOAD_BIT2TARPC_BIT(STRIP);
-    RTE_ETH_VLAN_OFFLOAD_BIT2TARPC_BIT(FILTER);
-    RTE_ETH_VLAN_OFFLOAD_BIT2TARPC_BIT(EXTEND);
-#undef RTE_ETH_VLAN_OFFLOAD_BIT2TARPC_BIT
-    return (rte == 0) ? 0 : TE_EINVAL;
-}
-
 TARPC_FUNC(rte_eth_dev_get_vlan_offload, {},
 {
-    uint16_t mask = 0;
+    uint64_t mask = 0;
+    te_errno rc;
 
     MAKE_CALL(out->retval = func(in->port_id));
 
@@ -1678,13 +1305,14 @@ TARPC_FUNC(rte_eth_dev_get_vlan_offload, {},
     {
         neg_errno_h2rpc(&out->retval);
     }
-    else if (rte_eth_vlan_offload_mask2tarpc(out->retval, &mask) != 0)
-    {
-        out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
-    }
     else
     {
-        out->retval = mask;
+        mask = out->retval;
+        rc = rpc_dpdk_bitmask64_convert(mask, vlan_offload_map, TRUE, &mask);
+        if (rc != 0)
+            out->retval = -TE_RC(TE_RPCS, rc);
+        else
+            out->retval = mask;
     }
 })
 
@@ -1801,7 +1429,9 @@ TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,
          * Ignore result since conversion of theoretically unused value
          * is not that important.
          */
-        rte_rss_hf_rpc2h(out->rss_conf.rss_conf_val->rss_hf, &rss_conf.rss_hf);
+        rpc_dpdk_bitmask64_rpc2rte(out->rss_conf.rss_conf_val->rss_hf,
+                                   rss_hf_proto_map,
+                                   &rss_conf.rss_hf);
         rss_conf_p = &rss_conf;
     }
     else
@@ -1833,7 +1463,8 @@ TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,
         }
         out->rss_conf.rss_conf_val->rss_key_len = rss_conf_p->rss_key_len;
         out->rss_conf.rss_conf_val->rss_hf =
-            rte_rss_hf_h2rpc(rss_conf_p->rss_hf);
+            rpc_dpdk_bitmask64_rte2rpc(rss_conf_p->rss_hf, rss_hf_proto_map,
+                                       TARPC_RTE_ETH_RSS__UNKNOWN);
     }
 
 done:
@@ -2595,81 +2226,23 @@ TARPC_FUNC_STANDALONE(rte_eth_dev_tx_offload_name, {},
 #endif
 })
 
-static te_errno
-tarpc_rte_eth_rx_metadata_bits_rpc2rte(uint64_t  *bits_inout)
-{
-    uint64_t   rpc = *bits_inout;
-    uint64_t  *rte = bits_inout;
-
-    *rte = 0;
-
-#define RTE_ETH_RX_METADATA_BIT_RPC2RTE(_bit)                              \
-    do {                                                                   \
-        uint64_t  flag = (1ULL << TARPC_RTE_ETH_RX_METADATA_##_bit##_BIT); \
-                                                                           \
-        if (rpc & flag)                                                    \
-        {                                                                  \
-            rpc &= ~flag;                                                  \
-            *rte |= RTE_ETH_RX_METADATA_##_bit;                            \
-        }                                                                  \
-    } while (0)
-
-#ifdef RTE_ETH_RX_METADATA_USER_FLAG
-    RTE_ETH_RX_METADATA_BIT_RPC2RTE(USER_FLAG);
-#endif /* RTE_ETH_RX_METADATA_USER_FLAG */
-
-#ifdef RTE_ETH_RX_METADATA_USER_MARK
-    RTE_ETH_RX_METADATA_BIT_RPC2RTE(USER_MARK);
-#endif /* RTE_ETH_RX_METADATA_USER_MARK */
-
-#ifdef RTE_ETH_RX_METADATA_TUNNEL_ID
-    RTE_ETH_RX_METADATA_BIT_RPC2RTE(TUNNEL_ID);
-#endif /* RTE_ETH_RX_METADATA_TUNNEL_ID */
-
-#undef RTE_ETH_RX_METADATA_BIT_RPC2RTE
-
-    if (rpc != 0)
-        return TE_EINVAL;
-
-    return 0;
+static const te_enum_bitmask_conv rx_metadata_map[] = {
+#define RX_METADATA_BIT_MAP(_bit) {                                     \
+    .bits_from = UINT64_C(1) << TARPC_RTE_ETH_RX_METADATA_##_bit##_BIT, \
+    .bits_to = RTE_ETH_RX_METADATA_##_bit                               \
 }
-
-static void
-tarpc_rte_eth_rx_metadata_bits_rte2rpc(uint64_t  *bits_inout)
-{
-    uint64_t   rte = *bits_inout;
-    uint64_t  *rpc = bits_inout;
-
-    *rpc = 0;
-
-#define RTE_ETH_RX_METADATA_BIT_RTE2RPC(_bit)                         \
-    do {                                                              \
-        uint64_t  flag = RTE_ETH_RX_METADATA_##_bit;                  \
-                                                                      \
-        if (rte & flag)                                               \
-        {                                                             \
-            rte &= ~flag;                                             \
-            *rpc |= (1ULL << TARPC_RTE_ETH_RX_METADATA_##_bit##_BIT); \
-        }                                                             \
-    } while (0)
-
 #ifdef RTE_ETH_RX_METADATA_USER_FLAG
-    RTE_ETH_RX_METADATA_BIT_RTE2RPC(USER_FLAG);
+    RX_METADATA_BIT_MAP(USER_FLAG),
 #endif /* RTE_ETH_RX_METADATA_USER_FLAG */
-
 #ifdef RTE_ETH_RX_METADATA_USER_MARK
-    RTE_ETH_RX_METADATA_BIT_RTE2RPC(USER_MARK);
+    RX_METADATA_BIT_MAP(USER_MARK),
 #endif /* RTE_ETH_RX_METADATA_USER_MARK */
-
 #ifdef RTE_ETH_RX_METADATA_TUNNEL_ID
-    RTE_ETH_RX_METADATA_BIT_RTE2RPC(TUNNEL_ID);
+    RX_METADATA_BIT_MAP(TUNNEL_ID),
 #endif /* RTE_ETH_RX_METADATA_TUNNEL_ID */
-
-#undef RTE_ETH_RX_METADATA_BIT_RTE2RPC
-
-    if (rte != 0)
-        *rpc |= (1ULL << TARPC_RTE_ETH_RX_METADATA__UNKNOWN_BIT);
-}
+#undef RX_METADATA_BIT_MAP
+    TE_ENUM_BITMASK_CONV_END
+};
 
 TARPC_FUNC(rte_eth_rx_metadata_negotiate,
 {
@@ -2686,7 +2259,7 @@ TARPC_FUNC(rte_eth_rx_metadata_negotiate,
 
         features = out->features.features_val;
 
-        rc = tarpc_rte_eth_rx_metadata_bits_rpc2rte(features);
+        rc = rpc_dpdk_bitmask64_rpc2rte(*features, rx_metadata_map, features);
         if (rc != 0)
         {
             out->retval = -TE_RC(TE_RPCS, rc);
@@ -2698,7 +2271,11 @@ TARPC_FUNC(rte_eth_rx_metadata_negotiate,
     MAKE_CALL(out->retval = func(in->port_id, features));
 
     if (out->features.features_len != 0)
-        tarpc_rte_eth_rx_metadata_bits_rte2rpc(features);
+    {
+        *features = rpc_dpdk_bitmask64_rte2rpc(
+                        *features, rx_metadata_map,
+                         TARPC_RTE_ETH_RX_METADATA__UNKNOWN_BIT);
+    }
 
     neg_errno_h2rpc(&out->retval);
 
