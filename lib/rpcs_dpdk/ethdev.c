@@ -581,14 +581,14 @@ tarpc_rte_eth_link_speeds2rpc(uint32_t rte)
     uint32_t    rpc = 0;
 
 #define RTE_ETH_LINK_SPEED2RPC(_bit) \
-    do {                                                    \
-        uint32_t flag = RTE_ETH_LINK_SPEED_##_bit;          \
-                                                            \
-        if (rte & flag)                                     \
-        {                                                   \
-            rte &= ~flag;                                   \
-            rpc |= (1 << TARPC_RTE_ETH_LINK_SPEED_##_bit);  \
-        }                                                   \
+    do {                                                          \
+        uint32_t flag = RTE_ETH_LINK_SPEED_##_bit;                \
+                                                                  \
+        if (rte & flag)                                           \
+        {                                                         \
+            rte &= ~flag;                                         \
+            rpc |= (1 << TARPC_RTE_ETH_LINK_SPEED_##_bit##_BIT);  \
+        }                                                         \
     } while (0)
     RTE_ETH_LINK_SPEED2RPC(FIXED);
     RTE_ETH_LINK_SPEED2RPC(10M_HD);
@@ -607,7 +607,7 @@ tarpc_rte_eth_link_speeds2rpc(uint32_t rte)
     RTE_ETH_LINK_SPEED2RPC(100G);
 #undef RTE_ETH_LINK_SPEED2RPC
     if (rte != 0)
-        rpc |= (1 << TARPC_RTE_ETH_LINK_SPEED__UNKNOWN);
+        rpc |= (1 << TARPC_RTE_ETH_LINK_SPEED__UNKNOWN_BIT);
     return rpc;
 }
 
