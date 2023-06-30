@@ -366,3 +366,14 @@
     - oid: "/agent/sys/net/ipv6/fib_multipath_hash_policy"
       access: read_write
       type: int32
+
+    - oid: "/agent/sys/debug"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/debug.
+         Name: empty
+
+    - oid: "/agent/sys/debug/exception-trace"
+      access: read_write
+      type: int32
