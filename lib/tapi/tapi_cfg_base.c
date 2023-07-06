@@ -1488,26 +1488,19 @@ te_errno
 tapi_cfg_base_get_loadavg(const char *agent, tapi_cfg_base_loadavg *loadavg)
 {
     te_errno rc;
-    char *buf;
 
-    rc = cfg_get_instance_string_fmt(&buf, "/agent:%s/loadavg:/min1:", agent);
-    if (rc != 0)
-        return rc;
-    rc = te_strtod(buf, &loadavg->min1);
+    rc = cfg_get_instance_double_fmt(&loadavg->min1,
+                                     "/agent:%s/loadavg:/min1:", agent);
     if (rc != 0)
         return rc;
 
-    rc = cfg_get_instance_string_fmt(&buf, "/agent:%s/loadavg:/min5:", agent);
-    if (rc != 0)
-        return rc;
-    rc = te_strtod(buf, &loadavg->min5);
+    rc = cfg_get_instance_double_fmt(&loadavg->min5,
+                                     "/agent:%s/loadavg:/min5:", agent);
     if (rc != 0)
         return rc;
 
-    rc = cfg_get_instance_string_fmt(&buf, "/agent:%s/loadavg:/min15:", agent);
-    if (rc != 0)
-        return rc;
-    rc = te_strtod(buf, &loadavg->min15);
+    rc = cfg_get_instance_double_fmt(&loadavg->min15,
+                                     "/agent:%s/loadavg:/min15:", agent);
     if (rc != 0)
         return rc;
 
