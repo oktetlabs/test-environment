@@ -208,6 +208,9 @@ typedef struct rgt_gen_ctx {
     te_bool         proc_cntrl_msg; /**< Whether Rgt should process control
                                          messages or not */
 
+    /** Include MI artifacts in <meta> section */
+    te_bool mi_meta;
+
     te_bool         proc_incomplete; /**< Whether Rgt should process
                                           incomplete log reports as normal
                                           or give error message */

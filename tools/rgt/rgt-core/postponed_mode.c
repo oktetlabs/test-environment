@@ -215,7 +215,7 @@ process_result_msg(gpointer data, gpointer user_data,
     UNUSED(user_data);
 
     msg = log_msg_read(msg_ptr);
-    if (~msg->level & TE_LL_MI)
+    if (~msg->level & TE_LL_MI || rgt_ctx.mi_meta)
     {
         fprintf(rgt_ctx.out_fd, "<%s level=\"%s\">", tag, msg->level_str);
         output_regular_log_msg(msg);
@@ -353,7 +353,8 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
             fputs("</verdicts>\n", rgt_ctx.out_fd);
         }
 
-        if (!msg_queue_is_empty(&data->artifacts) && data->not_mi_artifacts)
+        if (!msg_queue_is_empty(&data->artifacts) &&
+            (data->not_mi_artifacts || rgt_ctx.mi_meta))
         {
             fputs("<artifacts>", rgt_ctx.out_fd);
             msg_queue_foreach(&data->artifacts, process_artifact_cb, NULL);

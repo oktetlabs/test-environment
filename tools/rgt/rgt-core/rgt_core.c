@@ -136,6 +136,10 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
           "Process TESTER control messages as ordinary: do not process "
           "test flow structure.", NULL },
 
+        { "mi-meta", '\0', POPT_ARG_NONE, NULL, 'e',
+          "Include MI artifacts in <meta> section of XML log",
+          NULL },
+
         { "incomplete-log", '\0', POPT_ARG_NONE, NULL, 'i',
           "Do not shout on truncated log report, but complete it "
           "automatically.", NULL },
@@ -220,6 +224,10 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
             case 'n':
                 /* User do not want us to process control messages */
                 ctx->proc_cntrl_msg = FALSE;
+                break;
+
+            case 'e':
+                ctx->mi_meta = TRUE;
                 break;
 
             case 'i':
@@ -519,6 +527,7 @@ rgt_ctx_set_defaults(rgt_gen_ctx_t *ctx)
     ctx->op_mode = RGT_OP_MODE_DEFAULT;
     ctx->op_mode_str = RGT_OP_MODE_DEFAULT_STR;
     ctx->proc_cntrl_msg = TRUE;
+    ctx->mi_meta = FALSE;
     ctx->proc_incomplete = FALSE;
     ctx->verb = FALSE;
     ctx->tmp_dir = NULL;

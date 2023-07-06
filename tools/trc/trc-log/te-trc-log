@@ -27,6 +27,7 @@ OPTIONS:
   -o <output-file>          Specify output file name
   -z                        Compress output using gzip
   -j                        Compress output using bzip2
+  --mi-meta                 Include MI artifacts in log
 
   --help                    Show this help message
 
@@ -53,6 +54,9 @@ while test -z "$end_of_options" -a -n "$1" ; do
                 ;;
         -o)     shift 1
                 output_file="$1"
+                ;;
+
+        --mi-meta) rgt_opts+=("--mi-meta")
                 ;;
 
         --)     end_of_options=yes
