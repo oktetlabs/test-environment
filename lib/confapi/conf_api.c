@@ -1714,57 +1714,57 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
     va_start(list, type);
 
 #define CASE_INTEGER_TYPE(variant_, cvt_type_, type_) \
-         case cvt_type_:                                                    \
-         {                                                                  \
-             type_ *val_ ## variant_ = va_arg(list, type_ *);               \
-                                                                            \
-             if (val_ ## variant_ != NULL)                                  \
-                 *val_ ## variant_ = value.val_ ## variant_;                \
-             break;                                                         \
-         }
+        case cvt_type_:                                                    \
+        {                                                                  \
+            type_ *val_ ## variant_ = va_arg(list, type_ *);               \
+                                                                           \
+            if (val_ ## variant_ != NULL)                                  \
+                *val_ ## variant_ = value.val_ ## variant_;                \
+            break;                                                         \
+        }
 
     switch (msg->val_type)
     {
-         CASE_INTEGER_TYPE(bool, CVT_BOOL, te_bool);
-         CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t);
-         CASE_INTEGER_TYPE(uint8, CVT_UINT8, uint8_t);
-         CASE_INTEGER_TYPE(int16, CVT_INT16, int16_t);
-         CASE_INTEGER_TYPE(uint16, CVT_UINT16, uint16_t);
-         CASE_INTEGER_TYPE(int32, CVT_INT32, int32_t);
-         CASE_INTEGER_TYPE(uint32, CVT_UINT32, uint32_t);
-         CASE_INTEGER_TYPE(int64, CVT_INT64, int64_t);
-         CASE_INTEGER_TYPE(uint64, CVT_UINT64, uint64_t);
-         case CVT_STRING:
-         {
-             char **val_str  = va_arg(list, char **);
+        CASE_INTEGER_TYPE(bool, CVT_BOOL, te_bool);
+        CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t);
+        CASE_INTEGER_TYPE(uint8, CVT_UINT8, uint8_t);
+        CASE_INTEGER_TYPE(int16, CVT_INT16, int16_t);
+        CASE_INTEGER_TYPE(uint16, CVT_UINT16, uint16_t);
+        CASE_INTEGER_TYPE(int32, CVT_INT32, int32_t);
+        CASE_INTEGER_TYPE(uint32, CVT_UINT32, uint32_t);
+        CASE_INTEGER_TYPE(int64, CVT_INT64, int64_t);
+        CASE_INTEGER_TYPE(uint64, CVT_UINT64, uint64_t);
+        case CVT_STRING:
+        {
+            char **val_str  = va_arg(list, char **);
 
-             if (val_str != NULL)
-                 *val_str = value.val_str;
-             else
-                free(value.val_str);
-             break;
-         }
-         case CVT_ADDRESS:
-         {
-             struct sockaddr **val_addr = va_arg(list, struct sockaddr **);
+            if (val_str != NULL)
+                *val_str = value.val_str;
+            else
+               free(value.val_str);
+            break;
+        }
+        case CVT_ADDRESS:
+        {
+            struct sockaddr **val_addr = va_arg(list, struct sockaddr **);
 
-             if (val_addr != NULL)
-                 *val_addr = value.val_addr;
-             else
-                 free(value.val_addr);
-             break;
-         }
-         case CVT_NONE:
-         {
-             break;
-         }
-         default:
-         {
-             ERROR("Get Configurator instance of unknown type %u",
-                   msg->val_type);
-             rc = TE_RC(TE_CONF_API, TE_EINVAL);
-             break;
-         }
+            if (val_addr != NULL)
+                *val_addr = value.val_addr;
+            else
+                free(value.val_addr);
+            break;
+        }
+        case CVT_NONE:
+        {
+            break;
+        }
+        default:
+        {
+            ERROR("Get Configurator instance of unknown type %u",
+                  msg->val_type);
+            rc = TE_RC(TE_CONF_API, TE_EINVAL);
+            break;
+        }
     }
 #undef CASE_INTEGER_TYPE
     va_end(list);
@@ -1928,38 +1928,38 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
 
     switch (msg->val_type)
     {
-         CASE_INTEGER_TYPE(bool, CVT_BOOL, te_bool);
-         CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t);
-         CASE_INTEGER_TYPE(uint8, CVT_UINT8, uint8_t);
-         CASE_INTEGER_TYPE(int16, CVT_INT16, int16_t);
-         CASE_INTEGER_TYPE(uint16, CVT_UINT16, uint16_t);
-         CASE_INTEGER_TYPE(int32, CVT_INT32, int32_t);
-         CASE_INTEGER_TYPE(uint32, CVT_UINT32, uint32_t);
-         CASE_INTEGER_TYPE(int64, CVT_INT64, int64_t);
-         CASE_INTEGER_TYPE(uint64, CVT_UINT64, uint64_t);
-         case CVT_STRING:
-         {
-             char **val_str  = va_arg(list, char **);
+        CASE_INTEGER_TYPE(bool, CVT_BOOL, te_bool);
+        CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t);
+        CASE_INTEGER_TYPE(uint8, CVT_UINT8, uint8_t);
+        CASE_INTEGER_TYPE(int16, CVT_INT16, int16_t);
+        CASE_INTEGER_TYPE(uint16, CVT_UINT16, uint16_t);
+        CASE_INTEGER_TYPE(int32, CVT_INT32, int32_t);
+        CASE_INTEGER_TYPE(uint32, CVT_UINT32, uint32_t);
+        CASE_INTEGER_TYPE(int64, CVT_INT64, int64_t);
+        CASE_INTEGER_TYPE(uint64, CVT_UINT64, uint64_t);
+        case CVT_STRING:
+        {
+            char **val_str  = va_arg(list, char **);
 
-             *val_str = value.val_str;
-             break;
-         }
-         case CVT_ADDRESS:
-         {
-             struct sockaddr **val_addr = va_arg(list, struct sockaddr **);
+            *val_str = value.val_str;
+            break;
+        }
+        case CVT_ADDRESS:
+        {
+            struct sockaddr **val_addr = va_arg(list, struct sockaddr **);
 
-             *val_addr = value.val_addr;
-             break;
-         }
-         case CVT_NONE:
-         {
-             break;
-         }
-         default:
-         {
-             fprintf(stderr, "cfg_get_instance: get unknown type\n");
-             break;
-         }
+            *val_addr = value.val_addr;
+            break;
+        }
+        case CVT_NONE:
+        {
+            break;
+        }
+        default:
+        {
+            fprintf(stderr, "cfg_get_instance: get unknown type\n");
+            break;
+        }
     }
 #undef CASE_INTEGER_TYPE
     va_end(list);
