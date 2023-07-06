@@ -117,6 +117,20 @@ elif [[ "${req_path}" =~ log[.]raw$ ]] ; then
         err_cleanup "Failed to recover original raw log"
     fi
 
+elif [[ "${req_path}" =~ bublik[.]xml$ ]] ; then
+
+    "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
+        --raw-log="${bundle_tmpdir}/recovered_log.raw"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to recover original raw log"
+    fi
+
+    "${bindir}"/te-trc-log --mi-meta "${bundle_tmpdir}/recovered_log.raw" \
+        "${req_path}"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to create XML log for Bublik"
+    fi
+
 elif [[ "${req_path}" =~ /caps[/]?$ ||
         "${req_path}" =~ ^caps[/]?$ ]] ; then
 
