@@ -1202,10 +1202,7 @@ put_object(FILE *f, cfg_object *obj)
                 "access=\"%s\" type=\"%s\"",
                 obj->oid,
                 te_enum_map_from_value(cfg_cva_mapping, obj->access),
-                obj->type == CVT_NONE ? "none" :
-                obj->type == CVT_INT32 ? "int32" :
-                obj->type == CVT_UINT64 ? "uint64" :
-                obj->type == CVT_ADDRESS ? "address" : "string");
+                te_enum_map_from_value(cfg_cvt_mapping, obj->type));
 
         if (obj->def_val != NULL)
         {
