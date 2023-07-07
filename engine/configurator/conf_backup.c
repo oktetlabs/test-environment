@@ -222,13 +222,16 @@ register_objects(xmlNodePtr *node, te_bool reg)
 
         if ((attr = xmlGetProp(cur, (const xmlChar *)"access")) != NULL)
         {
-            if (strcmp((char*)attr, "read_write") == 0)
-                msg->access = CFG_READ_WRITE;
-            else if (strcmp((char *)attr, "read_only") == 0)
-                msg->access = CFG_READ_ONLY;
-            else if (strcmp((char *)attr, "read_create") != 0)
+            int access = te_enum_map_from_str(cfg_cva_mapping,
+                                              (char *)attr, INT_MIN);
+
+            if (access == INT_MIN)
+            {
                 RETERR(TE_EINVAL,
-                       "Wrong value %s of \"access\" attribute", attr);
+                       "Wrong value %s of 'access' attribute", attr);
+            }
+            msg->access = access;
+
             xmlFree(attr);
         }
         attr = NULL;
@@ -1198,8 +1201,7 @@ put_object(FILE *f, cfg_object *obj)
         fprintf(f, "\n  <object oid=\"%s\" "
                 "access=\"%s\" type=\"%s\"",
                 obj->oid,
-                obj->access == CFG_READ_CREATE ? "read_create" :
-                obj->access == CFG_READ_WRITE ? "read_write" : "read_only",
+                te_enum_map_from_value(cfg_cva_mapping, obj->access),
                 obj->type == CVT_NONE ? "none" :
                 obj->type == CVT_INT32 ? "int32" :
                 obj->type == CVT_UINT64 ? "uint64" :

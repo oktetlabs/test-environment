@@ -733,14 +733,17 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 attr = (char *)xmlGetProp(tmp, (const xmlChar *)"access");
                 if (attr != NULL)
                 {
-                    if (strcmp(attr, "read_write") == 0)
-                        msg->access = CFG_READ_WRITE;
-                    else if (strcmp(attr, "read_only") == 0)
-                        msg->access = CFG_READ_ONLY;
-                    else if (strcmp(attr, "read_create") != 0)
+                    int access = te_enum_map_from_str(cfg_cva_mapping,
+                                                      attr, INT_MIN);
+
+                    if (access == INT_MIN)
+                    {
                         RETERR(TE_EINVAL,
                                "Wrong value %s of 'access' attribute",
                                attr);
+                    }
+                    msg->access = access;
+
                     xmlFree((xmlChar *)attr);
                     attr = NULL;
                 }
@@ -1031,10 +1034,7 @@ cfg_dh_create_file(char *filename)
                 fprintf(f, "    <object oid=\"%s\" "
                         "access=\"%s\" type=\"%s\"%s",
                         msg->oid,
-                        msg->access == CFG_READ_CREATE ?
-                            "read_create" :
-                        msg->access == CFG_READ_WRITE ?
-                            "read_write" : "read_only",
+                        te_enum_map_from_value(cfg_cva_mapping, msg->access),
                         msg->val_type == CVT_NONE ?    "none" :
                         msg->val_type == CVT_INT32 ? "int32" :
                         msg->val_type == CVT_UINT64 ? "uint64" :
