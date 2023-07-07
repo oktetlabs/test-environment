@@ -1035,11 +1035,7 @@ cfg_dh_create_file(char *filename)
                         "access=\"%s\" type=\"%s\"%s",
                         msg->oid,
                         te_enum_map_from_value(cfg_cva_mapping, msg->access),
-                        msg->val_type == CVT_NONE ?    "none" :
-                        msg->val_type == CVT_INT32 ? "int32" :
-                        msg->val_type == CVT_UINT64 ? "uint64" :
-                        msg->val_type == CVT_ADDRESS ? "address" :
-                                                       "string",
+                        te_enum_map_from_value(cfg_cvt_mapping, msg->val_type),
                         (msg->no_parent_dep ? " parent-dep=\"no\"" : ""));
                 if (msg->def_val)
                 {
