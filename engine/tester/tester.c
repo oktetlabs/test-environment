@@ -196,7 +196,6 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
         TESTER_OPT_VALGRIND,
         TESTER_OPT_GDB,
-        TESTER_OPT_FAIL_ON_LEAK,
 
         TESTER_OPT_MIX,
         TESTER_OPT_MIX_VALUES,
@@ -211,6 +210,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         /*
          * End of list corresponding to test_path_type.
          */
+        TESTER_OPT_FAIL_ON_LEAK,
 
         TESTER_OPT_RUN_WHILE,
         TESTER_OPT_RUN_UNTIL_VERDICT,
