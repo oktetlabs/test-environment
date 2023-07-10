@@ -93,6 +93,8 @@ struct ps_entry {
     unsigned int            time_until_check;
     te_bool                 autorestart_failed;
     struct ps_ta_job        ta_job;
+
+    te_vec                  exec_params;
 };
 
 static SLIST_HEAD(, ps_entry) processes = SLIST_HEAD_INITIALIZER(processes);
@@ -293,6 +295,137 @@ ps_get_envp(struct ps_entry *ps, char ***envp)
     return 0;
 }
 
+static inline void
+ps_exec_param_replace(te_exec_param *param, const void *new_data)
+{
+    if (param == NULL)
+        return;
+
+    switch (param->type)
+    {
+        case TE_EXEC_WORKDIR:
+        {
+            te_exec_workdir_param *workdir = param->data;
+            te_exec_workdir_param *new_workdir = NULL;
+
+            if (workdir != NULL)
+            {
+                free(workdir->workdir);
+                free(workdir);
+            }
+
+            if (new_data != NULL)
+            {
+                new_workdir = TE_ALLOC(sizeof(te_exec_workdir_param));
+                memcpy(new_workdir, new_data, sizeof(te_exec_workdir_param));
+            }
+
+            param->data = new_workdir;
+            break;
+        }
+
+        case TE_EXEC_AFFINITY:
+        {
+            te_exec_affinity_param *affinity = param->data;
+            te_exec_affinity_param *new_affinity = NULL;
+
+            if (affinity != NULL)
+            {
+                free(affinity->cpu_ids);
+                free(affinity);
+            }
+
+            if (new_data != NULL)
+            {
+                new_affinity = TE_ALLOC(sizeof(te_exec_affinity_param));
+                memcpy(new_affinity, new_data, sizeof(te_exec_affinity_param));
+            }
+
+            param->data = new_affinity;
+            break;
+        }
+
+        case TE_EXEC_PRIORITY:
+        {
+            te_exec_priority_param *prio = param->data;
+            te_exec_priority_param *new_prio = NULL;
+
+            free(prio);
+
+            if (new_data != NULL)
+            {
+                new_prio = TE_ALLOC(sizeof(te_exec_priority_param));
+                memcpy(new_prio, new_data, sizeof(te_exec_priority_param));
+            }
+
+            param->data = new_prio;
+            break;
+        }
+
+        default:
+            ERROR("Failed to recognise te_exec_param type: %d", param->type);
+            break;
+    }
+}
+
+static inline void
+ps_exec_param_free(te_exec_param *param)
+{
+    ps_exec_param_replace(param, NULL);
+}
+
+static inline void
+ps_exec_param_remove(struct ps_entry *ps, te_exec_param_type type)
+{
+    te_exec_param *iter;
+    TE_VEC_FOREACH(&ps->exec_params, iter)
+    {
+        if (iter->type == type)
+        {
+            size_t idx = te_vec_get_index(&ps->exec_params, iter);
+            ps_exec_param_free(iter);
+            te_vec_remove_index(&ps->exec_params, idx);
+
+            break;
+        }
+    }
+}
+
+static void
+ps_free_exec_params(te_vec *exec_params)
+{
+    te_exec_param *param;
+
+    if (exec_params == NULL)
+        return;
+
+    TE_VEC_FOREACH(exec_params, param)
+        ps_exec_param_free(param);
+
+    te_vec_free(exec_params);
+}
+
+static te_exec_param *
+ps_get_exec_params(struct ps_entry *ps)
+{
+    te_vec params = TE_VEC_INIT(te_exec_param);
+    te_exec_param *iter;
+
+    if (te_vec_size(&ps->exec_params) == 0)
+        return NULL;
+
+    TE_VEC_FOREACH(&ps->exec_params, iter)
+    {
+        te_exec_param param = { .type = iter->type, .data = NULL };
+        ps_exec_param_replace(&param, iter->data);
+        TE_VEC_APPEND(&params, param);
+    }
+
+    TE_VEC_APPEND(&params, (te_exec_param){ .type = TE_EXEC_END });
+
+    return (te_exec_param *)params.data.ptr;
+}
+
 static te_errno
 generate_filter_names(struct ps_entry *ps, char **stdout_filter_name,
                       char **stderr_filter_name)
@@ -380,8 +513,11 @@ static te_errno
 ps_ta_job_reconfigure(struct ps_entry *ps)
 {
     te_errno rc;
+
     char **argv = NULL;
     char **envp = NULL;
+    te_exec_param *exec_params = NULL;
+
     struct ps_ta_job *ta_job = &ps->ta_job;
 
     if (ta_job->created)
@@ -421,6 +557,24 @@ ps_ta_job_reconfigure(struct ps_entry *ps)
     }
 
     ta_job->created = TRUE;
+
+    exec_params = ps_get_exec_params(ps);
+    rc = ta_job_add_exec_param(manager, ta_job->id, exec_params);
+    if (rc != 0)
+    {
+        if (exec_params != NULL)
+        {
+            te_exec_param *param;
+            for (param = exec_params; param->type != TE_EXEC_END; param++)
+                ps_exec_param_free(param);
+
+            free(exec_params);
+        }
+
+        ERROR("Failed to add exec params to the process '%s', error: %r",
+              ps->name, rc);
+        return rc;
+    }
 
     return ps_enable_stdout_and_stderr_logging(ps);
 }
@@ -548,6 +702,7 @@ ps_add(unsigned int gid, const char *oid, const char *value,
     ps->autorestart = 0;
     ps->time_until_check = 0;
     ps->autorestart_failed = FALSE;
+    ps->exec_params = TE_VEC_INIT(te_exec_param);
 
     ps_ta_job_init(&ps->ta_job);
 
@@ -662,6 +817,8 @@ ps_free(struct ps_entry *ps)
         SLIST_REMOVE(&ps->opts, opt, ps_opt_entry, links);
         ps_opt_free(opt);
     }
+
+    ps_free_exec_params(&ps->exec_params);
 
     free(ps->name);
     free(ps->exe);
@@ -903,6 +1060,116 @@ ps_autorestart_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     return te_strtoui(value, 10, &ps->autorestart);
+}
+
+static te_errno
+ps_exec_param_set(te_vec *exec_params, te_exec_param *new_param)
+{
+    te_exec_param *iter;
+    te_exec_param param;
+
+    if (exec_params == NULL || new_param == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    TE_VEC_FOREACH(exec_params, iter)
+    {
+        if (iter->type == new_param->type)
+        {
+            ps_exec_param_replace(iter, new_param->data);
+            return 0;
+        }
+    }
+
+    param.type = new_param->type;
+    ps_exec_param_replace(&param, new_param->data);
+    TE_VEC_APPEND(exec_params, param);
+
+    return 0;
+}
+
+static const void *
+ps_exec_param_get(te_vec *exec_params, te_exec_param_type type)
+{
+    te_exec_param *param = NULL;
+
+    if (exec_params == NULL)
+        return NULL;
+
+    TE_VEC_FOREACH(exec_params, param)
+    {
+        if (param->type == type)
+            return param->data;
+    }
+
+    return NULL;
+}
+
+static te_errno
+ps_workdir_get(unsigned int gid, const char *oid, char *value,
+               const char *ps_name)
+{
+    te_errno rc;
+    struct ps_entry *ps;
+
+    const te_exec_workdir_param *p;
+    const char *workdir = NULL;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", ps_name);
+
+    ps = ps_find(ps_name);
+    if (ps == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    p = ps_exec_param_get(&ps->exec_params, TE_EXEC_WORKDIR);
+    if (p != NULL)
+        workdir = p->workdir;
+
+    rc = te_snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(workdir));
+    return  TE_RC_UPSTREAM(TE_TA_UNIX, rc);
+}
+
+static te_errno
+ps_workdir_set(unsigned int gid, const char *oid, const char *value,
+               const char *ps_name)
+{
+    te_errno rc;
+    struct ps_entry *ps;
+
+    te_exec_workdir_param param;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", ps_name);
+
+    ps = ps_find(ps_name);
+    if (ps == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (ps->enabled)
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
+
+    if (te_str_is_null_or_empty(value))
+    {
+        ps_exec_param_remove(ps, TE_EXEC_WORKDIR);
+        return 0;
+    }
+
+    param.workdir = strdup(value);
+    RING("Set new working directory '%s'", value);
+
+    rc = ps_exec_param_set(&ps->exec_params,
+                           &(te_exec_param){
+                            .type = TE_EXEC_WORKDIR,
+                            .data = &param });
+
+    if (rc == 0)
+        ps->ta_job.reconfigure_required = TRUE;
+
+    return rc;
 }
 
 static struct ps_arg_entry *
@@ -1584,8 +1851,11 @@ RCF_PCH_CFG_NODE_RW(node_ps_status, "status", &node_ps_exit_status,
 RCF_PCH_CFG_NODE_RW(node_ps_long_opt_sep, "long_option_value_separator", NULL,
                     &node_ps_status, ps_long_opt_sep_get, ps_long_opt_sep_set);
 
+RCF_PCH_CFG_NODE_RW(node_ps_workdir, "workdir", NULL, &node_ps_long_opt_sep,
+                    ps_workdir_get, ps_workdir_set);
+
 RCF_PCH_CFG_NODE_RW(node_ps_autorestart, "autorestart", NULL,
-                    &node_ps_long_opt_sep, ps_autorestart_get,
+                    &node_ps_workdir, ps_autorestart_get,
                     ps_autorestart_set);
 
 RCF_PCH_CFG_NODE_RW(node_ps_kill_self, "self", NULL, NULL,

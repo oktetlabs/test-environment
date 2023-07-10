@@ -73,6 +73,12 @@
         restart it if this is the case. 0 means that the process should not be
         restarted.
 
+    - oid: "/agent/process/workdir"
+      access: read_write
+      type: string
+      d: |
+        Process working directory.
+
     - oid: "/agent/process/long_option_value_separator"
       access: read_write
       type: string
