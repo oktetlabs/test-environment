@@ -36,6 +36,15 @@
                 <notes/>
             </iter>
         </test>
+
+        <test name="loadavg" type="script">
+            <objective>objective Check that TAPI functions get loadavg information from Configurator.</objective>
+
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+
         <test name="oid" type="script">
             <objective>Testing OID parsing and comparison correctness</objective>
             <notes/>
