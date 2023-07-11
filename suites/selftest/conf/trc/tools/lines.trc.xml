@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="lines" type="script">
+    <objective>Testing line processing function..</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="n_iterations" />
+        <arg name="max_lines" />
+        <arg name="max_line_size" />
+        <arg name="crlf" />
+    </iter>
+</test>
