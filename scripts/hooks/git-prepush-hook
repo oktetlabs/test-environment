@@ -137,6 +137,15 @@ function warning ()
 ### and some are disabled altogether.
 ### Such checks are marked with P in the list below.
 ###
+### The list of production branch names may be
+### specified in a multi-valued parameter hooks.push-production-branch.
+###
+##! push-production-branch Names of branches that are treated as production.
+
+PROD_BRANCHES="$(git config --get-all hooks.push-production-branch)"
+if [[ -z "${PROD_BRANCHES}" ]]; then
+    PROD_BRANCHES=main
+fi
 
 function production_error ()
 {
@@ -626,17 +635,18 @@ while read -r localref localsha remoteref remotesha; do
         range="${remotesha}..${localsha}"
     fi
 
-    case "${remoteref}" in
-        */main | */master | */public-main | */billets )
-            PRODUCTION_BRANCH=1
-        ;;
-        *)
-            if [[ "${MAINTAINER_PUSH}" != "true" ]]; then
-                echo "NOTICE: checking a push to a non-production branch" >&2
-            fi
-            PRODUCTION_BRANCH=
-        ;;
-    esac
+    PRODUCTION_BRANCH=
+    for prod in $PROD_BRANCHES; do
+        case "${remoteref}" in
+            */"${prod}" )
+                PRODUCTION_BRANCH=1
+                break
+                ;;
+        esac
+    done
+    if [[ "${MAINTAINER_PUSH}" != "true" && -z "${PRODUCTION_BRANCH}" ]]; then
+        echo "NOTICE: checking a push to a non-production branch" >&2
+    fi
 
     for rev in $(git rev-list "${range}"); do
         header="$(git log -1 --oneline "${rev}")"
