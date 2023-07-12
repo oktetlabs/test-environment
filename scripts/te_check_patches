@@ -96,7 +96,9 @@ The revision range may be specified in the following ways:
  --user-hooks          Run user-defined chained hooks as well
                        (may also be enabled with hooks.check-user-hooks option)
 
- --list-checks         List all available checks
+ --list-checks         List all available checks with detailed descriptions
+
+ --list-config         List all available configuration options
 
  --verbose             Enable verbose checking
 EOF
@@ -107,6 +109,53 @@ function list_checks ()
     sed -n 's/^[[:space:]]*### \?//p' \
         "$(dirname "$0")/hooks/git-prepush-hook"
 }
+
+function list_config ()
+{
+    local name descr vals val pfx
+
+    cat <<EOF
+Configuration options may be set permanently in Git config files e.g.:
+
+   git config --local hooks.allownonascii true
+
+would allow non-ASCII characters in commits for the current repository.
+
+For a one-shot action, options may be passed directly to git, e.g.:
+
+   git -c hooks.push-maintainer=true push
+
+would enable maintainer mode for this command invocation only.
+
+--option-NAME=VALUE, --enable-NAME, --disable-NAME may be used
+with $0 to override persistent option settings. $(require_git_notice)
+
+For example:
+
+          $0 --enable-allownonascii HEAD
+
+would perform the same set of checks as:
+
+          git -c hooks.allownonascii=true push
+
+The supported options are:
+
+EOF
+    sed -n 's/^[[:space:]]*##! \?//p' \
+        "$(dirname "$0")/hooks/git-prepush-hook" | \
+        while read -r name descr; do
+            printf "%-40s %s\n" "hooks.${name}" "${descr}"
+            vals="$(git config --get-all "hooks.${name}")"
+            if [[ -n "$vals" ]]; then
+                pfx="Current value:"
+                for val in $vals; do
+                    printf "%-40s %14s %s\n" " " "${pfx}" "${val}"
+                    pfx="-"
+                done
+            fi
+        done
+}
+
 
 FROM=
 TO=
@@ -121,6 +170,10 @@ for arg; do
             ;;
         -l | --list-checks)
             list_checks
+            exit 0
+            ;;
+        --list-config)
+            list_config
             exit 0
             ;;
         --target=*)

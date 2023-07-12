@@ -17,15 +17,18 @@ if [[ -x "${0}.chain" ]]; then
 fi
 
 # The lines starting with three hashes will be
-# output by te_install_hook --help.
+# output by te_install_hook --list-checks.
+
+# The lines starting with two dashes and a bang
+# provide a list of configuration options with short
+# descriptions
 
 ### If hooks.push-disable-checks option is set to YES
 ### (mind the upper case!), then all checks are
 ### disabled. Of course, this option shall only be specified
 ### in a command line, not in any config file
 ###
-### E.g. use it like this: git -c hooks.push-disable-checks=YES push
-###
+##! push-disable-checks If set to YES, all checks are disabled.
 
 if [[ "$(git config --default "" --get hooks.push-disable-checks)" == "YES" ]];
 then
@@ -48,9 +51,7 @@ fi
 ### The maintainer mode may only be enable via command line,
 ### not from a config file.
 ###
-### E.g. use it like this: git -c hooks.push-maintainer=true push
-###
-
+##! push-maintainer Downgrade some errors to warnings (consult --list-checks for details)
 
 MAINTAINER_PUSH="$(git config --default false --type bool \
                        --get hooks.push-maintainer)"
@@ -71,6 +72,7 @@ fi
 ### the hashes of revisions being checked will be printed.
 ### This may be useful when a long series of commits is checked.
 ###
+##! push-verbose-checks Enable printing the revisions being checked.
 
 if [[ -z "${PUSH_VERBOSE_CHECKS:-}" ]]; then
     PUSH_VERBOSE_CHECKS="$(git config --default false --type bool \
@@ -445,6 +447,7 @@ function check_whitespaces ()
 ###   the check may be disabled by setting hooks.allownonascii = true,
 ###   just as with the Git default pre-commit hook (see man githooks);
 ###
+##! allownonascii Enable non-ASCII characters in filenames and source code.
 function check_nonascii ()
 {
     local rev="$1"
@@ -469,6 +472,7 @@ function check_nonascii ()
 ###   (which would also enable non-ASCII characters in file names, see
 ###   above) or hooks.allownonascii-body = true (M);
 ###
+##! allownonascii-body Enable non-ASCII characters in source code, but not in filenames.
 function check_nonascii_body ()
 {
     local rev="$1"
@@ -512,6 +516,7 @@ function check_nonascii_body ()
 ### - the approval by specific people; their emails should be listed
 ###   in hooks.push-require-approval option; the check is always skipped
 ###   in maintainer mode and for non-production branches;
+##! push-require-approval Emails of people that must approve a patch.
 
 function check_required_review ()
 {
@@ -540,6 +545,7 @@ function check_required_review ()
 ###   option (such trailers may contain service information, e.g.
 ###   a Reviewboard id which must be cleaned up before pushing);
 ###
+##! push-prohibit-trailer List of trailers that must not appear in commit messages.
 function check_prohibited_trailers ()
 {
     local rev="$1"
@@ -566,7 +572,7 @@ function check_prohibited_trailers ()
 ###       git config --local --add hooks.push-require-trailer Reviewed-by
 ###   would add a second required trailer (Reviewed-by in this case);
 ###
-
+##! push-require-trailer List of trailers that must be present in commit messages.
 function check_extra_trailers ()
 {
     local rev="$1"
