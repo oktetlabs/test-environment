@@ -2594,6 +2594,16 @@ process_register(cfg_register_msg *msg, te_bool update_dh)
     }
 
     obj = CFG_GET_OBJ(msg->handle);
+    if (obj->access != CFG_READ_ONLY && obj->type == CVT_DOUBLE)
+    {
+        msg->rc = TE_EOPNOTSUPP;
+        ERROR("Access rights for object of floating-point type "
+              "must be '%s' but it is '%s': %r",
+              te_enum_map_from_value(cfg_cva_mapping, CFG_READ_ONLY),
+              te_enum_map_from_value(cfg_cva_mapping, obj->access), msg->rc);
+        return;
+    }
+
     if (obj->access == CFG_READ_WRITE || obj->access == CFG_READ_ONLY)
     {
         if ((msg->rc = cfg_add_all_inst_by_obj(obj)) != 0)

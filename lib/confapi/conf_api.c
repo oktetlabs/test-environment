@@ -1036,6 +1036,10 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
         CASE_INTEGER_TYPE(int64, CVT_INT64, int64_t, int64_t);
         CASE_INTEGER_TYPE(uint64, CVT_UINT64, uint64_t, uint64_t);
 
+        case CVT_DOUBLE:
+            value.val_double = va_arg(list, double);
+            break;
+
         case CVT_STRING:
             value.val_str = va_arg(list, char *);
             break;
@@ -1496,6 +1500,10 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
         CASE_INTEGER_TYPE(int64, CVT_INT64, int64_t, int64_t);
         CASE_INTEGER_TYPE(uint64, CVT_UINT64, uint64_t, uint64_t);
 
+        case CVT_DOUBLE:
+            value.val_double = va_arg(list, double);
+            break;
+
         case CVT_STRING:
             value.val_str = va_arg(list, char *);
             break;
@@ -1740,6 +1748,13 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
         CASE_INTEGER_TYPE(uint32, CVT_UINT32, uint32_t);
         CASE_INTEGER_TYPE(int64, CVT_INT64, int64_t);
         CASE_INTEGER_TYPE(uint64, CVT_UINT64, uint64_t);
+        case CVT_DOUBLE:
+        {
+            double *val_double = va_arg(list, double *);
+            if (val_double != NULL)
+                *val_double = value.val_double;
+            break;
+        }
         case CVT_STRING:
         {
             char **val_str  = va_arg(list, char **);
@@ -1833,6 +1848,21 @@ DEFINE_CFG_GET_INT_TYPE(int64, CVT_INT64, int64_t);
 DEFINE_CFG_GET_INT_TYPE(uint64, CVT_UINT64, uint64_t);
 
 #undef DEFINE_CFG_GET_INT_TYPE
+
+/* See description in conf_api.h */
+te_errno
+cfg_get_double(double *val, const char *oid_fmt, ...)
+{
+    cfg_val_type type = CVT_DOUBLE;
+    double val_tmp;
+
+    _CFG_HANDLE_BY_FMT;
+    rc = cfg_get_instance(handle, &type, &val_tmp);
+    if (rc != 0)
+        return rc;
+    *val = val_tmp;
+    return 0;
+}
 
 /* See description in conf_api.h */
 te_errno
@@ -1943,6 +1973,12 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
         CASE_INTEGER_TYPE(uint32, CVT_UINT32, uint32_t);
         CASE_INTEGER_TYPE(int64, CVT_INT64, int64_t);
         CASE_INTEGER_TYPE(uint64, CVT_UINT64, uint64_t);
+        case CVT_DOUBLE:
+        {
+            double *val_double = va_arg(list, double *);
+            *val_double = value.val_double;
+            break;
+        }
         case CVT_STRING:
         {
             char **val_str  = va_arg(list, char **);
@@ -2025,6 +2061,21 @@ DEFINE_CFG_GET_INT_TYPE_SYNC(int64, CVT_INT64, int64_t);
 DEFINE_CFG_GET_INT_TYPE_SYNC(uint64, CVT_UINT64, uint64_t);
 
 #undef DEFINE_CFG_GET_INT_TYPE_SYNC
+
+/* See description in conf_api.h */
+te_errno
+cfg_get_double_sync(double *val, const char *oid_fmt, ...)
+{
+    cfg_val_type type = CVT_DOUBLE;
+    double val_tmp;
+
+    _CFG_HANDLE_BY_FMT;
+    rc = cfg_get_instance_sync(handle, &type, &val_tmp);
+    if (rc != 0)
+        return rc;
+    *val = val_tmp;
+    return 0;
+}
 
 /* See description in conf_api.h */
 te_errno

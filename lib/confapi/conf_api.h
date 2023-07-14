@@ -72,10 +72,12 @@ extern "C" {
  */
 #define cfg_get_instance_int_fmt cfg_get_int
 #define cfg_get_instance_uint64_fmt cfg_get_uint64
+#define cfg_get_instance_double_fmt cfg_get_double
 #define cfg_get_instance_string_fmt cfg_get_string
 #define cfg_get_instance_addr_fmt cfg_get_addr
 #define cfg_get_instance_int_sync_fmt cfg_get_int_sync
 #define cfg_get_instance_uint64_sync_fmt cfg_get_uint64_sync
+#define cfg_get_instance_double_sync_fmt cfg_get_double_sync
 #define cfg_get_instance_string_sync_fmt cfg_get_string_sync
 #define cfg_get_instance_addr_sync_fmt cfg_get_addr_sync
 
@@ -696,6 +698,11 @@ extern te_errno cfg_get_uint64(uint64_t *val,
                                const char *oid_fmt, ...)
                                __attribute__((format(printf, 2, 3)));
 
+/** Type-safe version of cfg_get_instance_fmt() for values of double type */
+extern te_errno cfg_get_double(double *val,
+                               const char *oid_fmt, ...)
+                               __attribute__((format(printf, 2, 3)));
+
 /** Type-safe version of cfg_get_instance_fmt() for string values */
 extern te_errno cfg_get_string(char **val,
                                const char *oid_fmt, ...)
@@ -813,6 +820,13 @@ extern te_errno cfg_get_int64_sync(int64_t *val,
  * Type-safe version of cfg_get_instance_sync_fmt() for values of uint64_t type
  */
 extern te_errno cfg_get_uint64_sync(uint64_t *val,
+                                    const char *oid_fmt, ...)
+                                    __attribute__((format(printf, 2, 3)));
+
+/**
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of double type.
+ */
+extern te_errno cfg_get_double_sync(double *val,
                                     const char *oid_fmt, ...)
                                     __attribute__((format(printf, 2, 3)));
 

@@ -54,6 +54,9 @@
                 (_msg->type == CFG_SET) ? sizeof(cfg_set_msg) : \
                                           sizeof(cfg_get_msg)
 
+/* Zero of type double */
+#define DBL_ZERO 0.0
+
 const te_enum_map cfg_cvt_mapping[] = {
     {.name = "bool",     .value = CVT_BOOL},
     {.name = "int8",     .value = CVT_INT8},
@@ -65,6 +68,7 @@ const te_enum_map cfg_cvt_mapping[] = {
     {.name = "uint32",   .value = CVT_UINT32},
     {.name = "int64",    .value = CVT_INT64},
     {.name = "uint64",   .value = CVT_UINT64},
+    {.name = "double",   .value = CVT_DOUBLE},
     {.name = "string",   .value = CVT_STRING},
     {.name = "address",  .value = CVT_ADDRESS},
     {.name = "none",     .value = CVT_NONE},
@@ -141,6 +145,7 @@ DECLARE_CFG_TYPE_METHODS(int32);
 DECLARE_CFG_TYPE_METHODS(uint32);
 DECLARE_CFG_TYPE_METHODS(int64);
 DECLARE_CFG_TYPE_METHODS(uint64);
+DECLARE_CFG_TYPE_METHODS(double);
 DECLARE_CFG_TYPE_METHODS(string);
 DECLARE_CFG_TYPE_METHODS(addr);
 DECLARE_CFG_TYPE_METHODS(none);
@@ -165,6 +170,7 @@ cfg_primary_type cfg_types[CFG_PRIMARY_TYPES_NUM] = {
     CFG_TYPE_METHODS(uint32, CVT_UINT32),
     CFG_TYPE_METHODS(int64, CVT_INT64),
     CFG_TYPE_METHODS(uint64, CVT_UINT64),
+    CFG_TYPE_METHODS(double, CVT_DOUBLE),
     CFG_TYPE_METHODS(string, CVT_STRING),
     CFG_TYPE_METHODS(addr, CVT_ADDRESS),
     CFG_TYPE_METHODS(none, CVT_NONE),
@@ -530,6 +536,120 @@ DEFINE_INTEGER_VALUE_SIZE(int64, int64_t);
 DEFINE_INTEGER_VALUE_SIZE(uint64, uint64_t);
 
 #undef DEFINE_INTEGER_VALUE_SIZE
+
+/*----------------------- Double type handlers -------------------------*/
+
+static te_errno
+double_copy(cfg_inst_val src, cfg_inst_val *dst)
+{
+    dst->val_double = src.val_double;
+    return 0;
+}
+
+static te_errno
+str_to_double(char *val_str, cfg_inst_val *val)
+{
+    cfg_inst_val ret_val = {.val_double = DBL_ZERO};
+
+    if (!te_str_is_null_or_empty(val_str))
+        CHECK_NZ_RETURN(te_strtod(val_str, &ret_val.val_double));
+
+    double_copy(ret_val, val);
+    return 0;
+}
+
+static te_errno
+double_to_str(cfg_inst_val val, char **val_str)
+{
+    char *out = NULL;
+
+    out = te_string_fmt("%g", val.val_double);
+    if (out == NULL)
+        return TE_EFAIL;
+
+    *val_str = out;
+    return 0;
+}
+
+static te_errno
+double_def_val(cfg_inst_val *val)
+{
+    val->val_double = DBL_ZERO;
+    return 0;
+}
+
+static void
+double_free(cfg_inst_val val)
+{
+    UNUSED(val);
+    return;
+}
+
+static te_errno
+double_get(cfg_msg *msg, cfg_inst_val *val)
+{
+    switch (msg->type)
+    {
+        case CFG_ADD:
+            val->val_double = ((cfg_add_msg *)msg)->val.val_double;
+            break;
+
+        case CFG_GET:
+            val->val_double = ((cfg_get_msg *)msg)->val.val_double;
+            break;
+
+        case CFG_SET:
+            val->val_double = ((cfg_set_msg *)msg)->val.val_double;
+            break;
+
+        default:
+            assert(0);
+    }
+    return 0;
+}
+
+static void
+double_put(cfg_inst_val val, cfg_msg *msg)
+{
+    double *msg_val;
+
+    if (msg == NULL)
+        return;
+
+    switch (msg->type)
+    {
+        case CFG_ADD:
+            msg_val = &(((cfg_add_msg *)msg)->val.val_double);
+            break;
+
+        case CFG_SET:
+            msg_val = &(((cfg_set_msg *)msg)->val.val_double);
+            break;
+
+        case CFG_GET:
+            msg_val = &(((cfg_get_msg *)msg)->val.val_double);
+            break;
+
+        default:
+            assert(0);
+    }
+    *msg_val = val.val_double;
+
+    SET_MSG_LEN(msg);
+}
+
+static te_bool
+double_equal(cfg_inst_val first, cfg_inst_val second)
+{
+    return first.val_double == second.val_double;
+}
+
+static size_t
+double_value_size(cfg_inst_val val)
+{
+    UNUSED(val);
+    return sizeof(double);
+}
 
 /*----------------------- String type handlers --------------------------*/
 

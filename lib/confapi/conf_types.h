@@ -44,6 +44,7 @@ typedef enum {
     CVT_UINT64,      /**< Value of the type 'uint64_t' */
     CVT_STRING,      /**< Value of the type 'char *' */
     CVT_ADDRESS,     /**< Value of the type 'sockaddr *' */
+    CVT_DOUBLE,      /**< Value of the type 'double' */
     CVT_UNSPECIFIED  /**< The type is unknown. It'd be the last enum member */
 } cfg_val_type;
 
@@ -68,6 +69,7 @@ typedef union cfg_inst_val {
         uint32_t         val_uint32;  /**< uint32_t value */
         int64_t          val_int64;   /**< int64_t value */
         uint64_t         val_uint64;  /**< uint64_t value */
+        double           val_double;  /**< double value */
         char            *val_str;     /**< string value */
 } cfg_inst_val;
 

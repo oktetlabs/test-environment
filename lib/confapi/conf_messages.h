@@ -175,6 +175,7 @@ typedef struct cfg_add_msg {
         uint32_t        val_uint32;     /**< uint32_t value */
         int64_t         val_int64;      /**< int64_t value */
         uint64_t        val_uint64;     /**< uint64_t value */
+        double          val_double;     /**< double value */
     } val;
 } cfg_add_msg;
 
@@ -204,6 +205,7 @@ typedef struct cfg_set_msg {
         uint32_t        val_uint32;  /**< uint32_t value */
         int64_t         val_int64;   /**< int64_t value */
         uint64_t        val_uint64;  /**< uint64_t value */
+        double          val_double;  /**< double value */
     } val;
 } cfg_set_msg;
 
@@ -231,6 +233,7 @@ typedef struct cfg_get_msg {
         uint32_t        val_uint32;  /**< uint32_t value */
         int64_t         val_int64;   /**< int64_t value */
         uint64_t        val_uint64;  /**< uint64_t value */
+        double          val_double;  /**< double value */
     } val;
 } cfg_get_msg;
 
