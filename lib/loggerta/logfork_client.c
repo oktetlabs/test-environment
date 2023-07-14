@@ -238,6 +238,7 @@ logfork_log_message(const char *file, unsigned int line,
                     const char *user, const char *fmt, va_list ap)
 {
     logfork_msg msg;
+    te_errno rc;
 
     static te_bool init = FALSE;
 
@@ -250,7 +251,9 @@ logfork_log_message(const char *file, unsigned int line,
 
     memset(&msg, 0, sizeof(msg));
 
-    (void)te_log_vprintf_old(&cm, fmt, ap);
+    rc = te_log_vprintf_old(&cm, fmt, ap);
+    if (rc != 0)
+        ERROR("Failed to construct log message using format \"%s\"", fmt);
 
     msg.pid = getpid();
     msg.tid = thread_self();

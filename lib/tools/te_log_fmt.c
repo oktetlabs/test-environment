@@ -1026,9 +1026,12 @@ case mod_:\
                 fmt_needed = TRUE;
                 break;
 
+            case '%':
+                break;
+
             default:
                 /* TODO */
-                break;
+                return TE_EINVAL;
         }
         /* Skip conversion specifier in for loop step */
     }

@@ -497,6 +497,12 @@ te_log_vprintf_old(struct te_log_out_params *param,
                 modifier = '\0';
                 break;
             }
+
+            case '%':
+                break;
+
+            default:
+                rc = TE_EINVAL;
         }
     }
     VFLUSH(s0, ap0);
