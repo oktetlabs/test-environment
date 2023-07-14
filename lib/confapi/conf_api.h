@@ -119,6 +119,9 @@ typedef struct cfg_obj_descr {
     char        *def_val;     /**< Default value string or NULL */
 } cfg_obj_descr;
 
+/** Array to convert cfg value access rights to string and vice versa */
+extern const te_enum_map cfg_cva_mapping[];
+
 /**
  * Register new object using string object identifiers.
  *

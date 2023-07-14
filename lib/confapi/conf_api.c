@@ -116,6 +116,12 @@ static ipc_client *cfgl_ipc_client = NULL;
 /** Message buffer */
 static char cfgl_msg_buf[CFG_MSG_MAX];
 
+const te_enum_map cfg_cva_mapping[] = {
+    {.name = "read_only",   .value = CFG_READ_ONLY},
+    {.name = "read_write",  .value = CFG_READ_WRITE},
+    {.name = "read_create", .value = CFG_READ_CREATE},
+    TE_ENUM_MAP_END
+};
 
 static te_errno cfg_get_family_member(cfg_handle handle,
                                       uint8_t who,
