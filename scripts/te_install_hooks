@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2022-2023 OKTET Labs Ltd. All rights reserved.
 
 set -u
 
@@ -37,10 +37,18 @@ or other project if they share the same Contributor's guidelines.
 
 Currently only a pre-push hook is implemented.
 
+The following configuration options affect the behaviour of
+the hooks. They may be set permanently in Git repo config files, e.g.:
+
+   git config --local hooks.allownonascii true
+
 EOF
 
-    sed -n 's/^[[:space:]]*### \?//p' \
-        "${src_repo}/scripts/hooks/git-prepush-hook"
+    sed -n 's/^[[:space:]]*##! \?//p' \
+        "${src_repo}/scripts/hooks/git-prepush-hook" |
+        while read -r name descr; do
+            printf "%-40s %s\n" "hooks.${name}" "${descr}"
+        done
 }
 
 dest_repo="$(git rev-parse --show-toplevel)" || exit 1
