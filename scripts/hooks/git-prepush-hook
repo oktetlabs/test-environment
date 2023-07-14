@@ -499,7 +499,7 @@ function check_nonascii_body ()
 
     parent="$(get_parent "${rev}")"
 
-    for edited_file in $(git diff --name-only "${parent}" "${rev}")
+    for edited_file in $(git diff --diff-filter=d --name-only "${parent}" "${rev}")
     do
         local bad_lines
 
