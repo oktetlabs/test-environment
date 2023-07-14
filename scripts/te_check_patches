@@ -1,10 +1,11 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2022 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2022-2023 OKTET Labs Ltd. All rights reserved.
 
 set -u
 
-TARGET_BRANCH=main
+TARGET_BRANCH="$(git rev-parse --symbolic --abbrev-ref '@{push}')"
+TARGET_BRANCH="${TARGET_BRANCH#*/}"
 SINGLE="@{u}"
 
 GIT_VERSION="$(git version)"
@@ -77,7 +78,7 @@ The revision range may be specified in the following ways:
 
 
  --target=BRANCH       Simulate a check for push to a given BRANCH
-                       (default is main)
+                       (default is ${TARGET_BRANCH})
 
  -1, --single          Check a single provided revision
 
