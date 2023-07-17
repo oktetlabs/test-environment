@@ -636,7 +636,7 @@ while read -r localref localsha remoteref remotesha; do
     fi
 
     PRODUCTION_BRANCH=
-    for prod in $PROD_BRANCHES; do
+    for prod in ${PROD_BRANCHES}; do
         case "${remoteref}" in
             */"${prod}" )
                 PRODUCTION_BRANCH=1
@@ -645,7 +645,9 @@ while read -r localref localsha remoteref remotesha; do
         esac
     done
     if [[ "${MAINTAINER_PUSH}" != "true" && -z "${PRODUCTION_BRANCH}" ]]; then
-        echo "NOTICE: checking a push to a non-production branch" >&2
+        echo "NOTICE: checking a push to a non-production branch" \
+             "'${remoteref#refs/branches/}'" >&2
+        echo "        Configured production branches are: ${PROD_BRANCHES//$'\n'/ }" >&2
     fi
 
     for rev in $(git rev-list "${range}"); do
