@@ -1,0 +1,391 @@
+#!/bin/bash
+
+set -u
+
+declare -a TRAILER_ARGS
+declare -a PATCHES
+
+TRAILER_ARGS=()
+PATCHES=()
+
+USE_STGIT="$(git config --get --type bool --default true \
+                 add-trailer.use-stgit)"
+USE_LDAP="$(git config --get --type bool --default true \
+                 add-trailer.use-ldap)"
+DRYRUN=
+SINGLE="$(git config --get --type bool --default false \
+               add-trailer.single)"
+VERBOSE="$(git config --get --type bool --default false \
+                 add-trailer.verbose)"
+
+declare -A TRAILER_MAP=([--reviewed-by]=Reviewed-by
+                        [--acked-by]=Acked-by
+                        [--tested-by]=Tested-by
+                        [--reported-by]=Reported-by
+                        [--suggested-by]=Suggested-by)
+
+function show_usage ()
+{
+    cat <<EOF
+Usage: $0 [-rUSER | --reviewed-by=USER | --acked-by=USER |
+           --tested-by=USER | --suggested-by=USER |
+           -s | --signoff | --coauthor |
+           --redmine-id=ID | --github-id=ID | --link=URL |
+           --breaks=TEXT | --fixes=REV |
+           --trailer=NAME:VALUE | --delete=TRAILER | -dTRAILER]...
+          [-1 | --single] [--stgit | --no-stgit] [--ldap | --no-ldap]
+          [-n | --dry-run] [--verbose]
+          [PATCH-SPEC..]
+
+Add or delete a set of trailers to a series of patches.
+
+If the current branch is managed by stgit and --no-stgit is not given,
+stgit is used to update patches and PATCH-SPECs are treated as stgit
+patch names.
+
+Otherwise PATCH-SPECs are treated as Git revisions. The tool creates
+a temporary tag pointing to the current HEAD, resets the HEAD to the
+first revision to update and then applies all revisions up to the
+original HEAD modifying commit messages as necessary.
+In this case PATCH-SPECs may be a series of revision specifiers or
+a single range specifier REV1..REV2.
+
+If no PATCH-SPEC is provided, all patches from the current branch
+are operated upon, unless --single is also specified, in which case
+only the latest patch is affected.
+
+The tool may modify an arbitrary number of trailers in one pass.
+
+-rUSER,
+--reviewed-by=USER  Add a Reviewed-by trailer for a given USER.
+
+                    A USER shall be either a string of the form:
+
+                          Firstname Lastname <email@example.com>
+
+                    or a user account id, in which case LDAP is
+                    used to detect the correct name and e-mail.
+                    This behaviour can be disabled by using --no-ldap
+                    option.
+
+--acked-by=USER,
+--tested-by=USER,
+--reported-by=USER,
+--suggested-by=USER Similiar to --reviewed-by, but the added trailer
+                    is different.
+
+-s, --signoff       Add a Signed-off-by trailer for the current Git user.
+
+--coauthor          Add a Co-developed-by and Signed-off-by trailers for
+                    the current Git user.
+
+--redmine-id=ID     Add an OL-Redmine-Id trailer with a given issue ID.
+
+--github-id=ID      Add a GitHub-TE-Id trailer with a given ID.
+
+--link=URL          Add a Link trailer with a given URL (e.g. pointing to
+                    a GitHub review request).
+
+--breaks=TEXT       Adds a Breaks trailer with a given TEXT.
+                    Implies --single.
+
+--fixes=REV         Add a properly formatted Fixes trailer for a given
+                    Git revision REV. Implies --single.
+
+--trailer=NAME:VALUE
+                    Add a custom trailer NAME with a given VALUE.
+
+-dTRAILER,
+--delete=TRAILER    Delete a given TRAILER
+
+-1, --single        Operate on the topmost commit only if no explicit
+                    revisions are specified. The option has no effect
+                    if any revisions are provided in the command line
+                    explicitly.
+
+                    The option may be set permanently by using
+                    Git option:
+                         add-trailer.single=true
+
+--stgit             Detect stgit-managed branches and use stgit commands
+                    for them. This is the default.
+
+--no-stgit          Use raw Git commands even on stgit-managed branches
+                    Stgit may be disabled permanently by setting
+                    Git option:
+                        add-trailer.use-stgit=false
+
+--ldap              Use LDAP to resolve user ids. This is the default.
+
+--no-ldap           Do not try to use LDAP.
+                    LDAP may be disabled permanently by setting
+                    Git option add-trailer.use-ldap=false
+
+--dry-run, -n       Do not perform commands, only show what is going
+                    to be done.
+
+--verbose           Turn on verbose messages. It may also be turned on
+                    permanently by setting Git option
+                        add-trailer.verbose=true
+
+--abort             Clean up the branch after a failed $0.
+                    Not applicable to stgit-managed branches.
+
+EOF
+}
+
+function this_user ()
+{
+    local name
+    local email
+
+    name="$(git config --get user.name)"
+    email="$(git config --get user.email)"
+    echo "${name} <${email,,}>"
+}
+
+function map_user ()
+{
+    local id="$1"
+    local mapped
+
+    #shellcheck disable=SC2001
+    case "${id}" in
+        [[:upper:]]*\ [[:upper:]]*\ \<[[:alnum:]]*@[[:alnum:]]*\>)
+            echo "${id}" | sed 's/<[^>]*>/\L&/'
+            ;;
+        [[:lower:]]*)
+            if [[ "${USE_LDAP}" != "true" ]]; then
+                echo "Cannot map user ids without LDAP"
+                exit 1
+            fi
+            mapped="$(ldapsearch "(uid=${id})" givenName sn mail 2>/dev/null | \
+                      awk '$1 == "givenName:" { GIVEN_NAME = $2 }
+                           $1 == "sn:" { SURNAME = $2 }
+                           $1 == "mail:" { MAIL = tolower($2) }
+                           END {
+                               if (GIVEN_NAME && SURNAME && MAIL)
+                                   printf "%s %s <%s>", GIVEN_NAME, SURNAME, MAIL
+                           }')"
+            if [[ -z "${mapped}" ]]; then
+                echo "User id '${id}' cannot be resolved" >&2
+                exit 1
+            fi
+            echo "${mapped}"
+            ;;
+        *)
+            echo "Invalid syntax for user: ${id}" >&2
+            exit 1
+            ;;
+    esac
+}
+
+function verbose ()
+{
+    if [[ "$VERBOSE" == "true" ]]; then
+        echo "$*" >&2
+    fi
+}
+
+function restore_branch ()
+{
+    local status
+    local oldhead
+
+    if [[ -z "$DRYRUN" ]]; then
+        if ! oldhead="$(git rev-parse add_trailer_oldhead >&2)"; then
+            echo "No trailer adding in progress" >&2
+            exit 1
+        fi
+    fi
+    status="${1:-$?}"
+    if [[ "${status}" -ne 0 ]]; then
+        verbose "Reverting the branch to ${oldhead}"
+        $DRYRUN git reset --hard add_trailer_oldhead
+    fi
+    $DRYRUN git tag --delete add_trailer_oldhead
+}
+
+for arg; do
+    case "${arg}" in
+        --help)
+            show_usage
+            exit 0
+            ;;
+        -1 | --single)
+            SINGLE=true
+            ;;
+        -r*)
+            username="${arg#-r}"
+            TRAILER_ARGS+=("--where" "end" "--if-exists" "addIfDifferent"
+                           "--trailer"
+                           "Reviewed-by=$(map_user "${username}")") || exit $?
+            ;;
+        --delete=*)
+            TRAILER_ARGS+=("--if-exists" "replace" "--if-missing" "doNothing"
+                           "--trim-empty" "--trailer" "${arg#--delete=}")
+            ;;
+        -d*)
+            TRAILER_ARGS+=("--if-exists" "replace" "--if-missing" "doNothing"
+                           "--trim-empty" "--trailer" "${arg#-d}")
+            ;;
+        --reviewed-by=* | --acked-by=* | --tested-by=* | \
+            --reported-by=* | --suggested-by=* )
+            username="${arg#--*=}"
+
+            TRAILER_ARGS+=("--where" "end" "--if-exists" "addIfDifferent"
+                           "--trailer"
+                           "${TRAILER_MAP[${arg%%=*}]}=$(map_user "${username}")") ||
+                exit $?
+            ;;
+        -s | --signoff)
+            TRAILER_ARGS+=("--where" "end" "--if-exists" "replace"
+                           "--trailer" "Signed-off-by=$(this_user)") ||
+                exit $?
+            ;;
+        --coauthor)
+            TRAILER_ARGS+=("--where" "end" "--if-exists" "add"
+                           "--trailer" "Co-developed-by=$(this_user)"
+                           "--trailer" "Signed-off-by=$(this_user)") ||
+                exit $?
+            ;;
+        --redmine-id=*)
+            TRAILER_ARGS+=("--where" "start" "--if-exists" "replace"
+                           "--trailer" "OL-Redmine-Id=${arg##--redmine-id=}")
+            ;;
+        --github-id=*)
+            TRAILER_ARGS+=("--where" "start" "--if-exists" "replace"
+                           "--trailer" "GitHub-TE-Id=${arg##--github-id=}")
+            ;;
+        --link=*)
+            case "${arg##--link=}" in
+                http://* | https://* )
+                    true
+                    ;;
+                *)
+                    echo "'${arg##--link=}' does not look like a valid URL" >&2
+                    exit 1
+                    ;;
+            esac
+            TRAILER_ARGS+=("--where" "after" "--if-exists" "addIfDifferent"
+                           "--trailer" "Link=${arg##--link=}")
+            ;;
+        --breaks=*)
+            SINGLE=true
+            TRAILER_ARGS+=("--where" "start" "--if-exists" "replace"
+                           "--trailer" "Breaks=${arg##--breaks=}")
+            ;;
+        --fixes=*)
+            SINGLE=true
+            line="$(git log -1 --abbrev=12 --format='%h ("%s")' \
+                        "${arg#--fixes=}")" || exit $?
+            TRAILER_ARGS+=("--where" "after" "--if-exists" "addIfDifferent"
+                           "--trailer" "Fixes=${line}")
+            ;;
+        --trailer=*:*)
+            TRAILER_ARGS+=("--where" "end" "--if-exists" "add"
+                           "--trailer" "${arg#--trailer=}")
+            ;;
+        --stgit)
+            USE_STGIT=true
+            ;;
+        --no-stgit)
+            USE_STGIT=false
+            ;;
+        --no-ldap)
+            USE_LDAP=false
+            ;;
+        --ldap)
+            USE_LDAP=true
+            ;;
+        --dry-run | -n)
+            DRYRUN="echo"
+            ;;
+        --verbose | -v)
+            VERBOSE="true"
+            ;;
+        --abort)
+            restore_branch 1
+            ;;
+        -*)
+            echo "Unknown option ${arg}" >&2
+            show_usage
+            exit 1
+            ;;
+        *)
+            PATCHES+=("${arg}")
+            ;;
+    esac
+done
+
+if [[ "${USE_STGIT}" == "true" ]]; then
+    if [[ -z "$(stg series -A 2>/dev/null)" ]]; then
+        verbose "No stgit patches"
+        USE_STGIT=false
+    fi
+fi
+
+if [[ "$USE_STGIT" == "true" ]]; then
+
+    function process_stgit ()
+    {
+        local p="$1"
+        local rev
+        verbose "Processing ${p}"
+
+        rev="$(stg id "${p}")" || exit $?
+        $DRYRUN stg edit -m "$(git log -1 --format='%B' "${rev}" | \
+                               git interpret-trailers "${TRAILER_ARGS[@]}")" ||
+            exit $?
+    }
+
+    if [[ -z "${PATCHES:+present}" ]]; then
+        if [[ "${SINGLE}" == "true" ]]; then
+            process_stgit "$(stg top)"
+        else
+            for p in $(stg series -A --noprefix); do
+                process_stgit "${p}"
+            done
+        fi
+    else
+        for p in "${PATCHES[@]}"; do
+            process_stgit "${p}"
+        done
+    fi
+
+else
+    if [[ -z "${PATCHES:+present}" ]]; then
+        if [[ "${SINGLE}" == "true" ]]; then
+            PATCHES=("HEAD")
+        else
+            PATCHES=("@{u}..HEAD")
+        fi
+    fi
+    if ! $DRYRUN git tag add_trailer_oldhead HEAD; then
+        echo "Trailer adding already in progress, use '$0 --abort' to cancel it" >&2
+        exit 1
+    fi
+    trap "exit 1" INT
+    trap "restore_branch \$?" EXIT
+
+    lastrev=
+    for rev in $(git rev-list --no-walk=sorted --reverse "${PATCHES[@]}"); do
+        if [[ -z "${lastrev}" ]]; then
+            $DRYRUN git reset --hard "${rev}"
+        else
+            for skip in $(git rev-list --no-walk=sorted --reverse "${lastrev}..${rev}"); do
+                verbose "Going to ${skip}"
+                $DRYRUN git cherry-pick "${skip}" || exit $?
+            done
+        fi
+        verbose "Processing ${rev}"
+        $DRYRUN git commit --amend -m "$(git log -1 --format='%B' "${rev}" | \
+                               git interpret-trailers "${TRAILER_ARGS[@]}")" ||
+            exit $?
+        lastrev="${rev}"
+    done
+    for skip in $(git rev-list --no-walk=sorted --reverse "${lastrev}..add_trailer_oldhead" 2>/dev/null); do
+        verbose "Going to ${skip}"
+        $DRYRUN git cherry-pick "${skip}" || exit $?
+    done
+fi

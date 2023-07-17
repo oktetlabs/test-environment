@@ -265,3 +265,7 @@ It is strongly recommended to run `./scripts/te_install_hooks`
 right after the clone of TE. This would install hook that would
 prevent pushing the commits that do not comply with the present
 Guidelines.
+
+Also there is a script `./scripts/te_patch_add_trailer` that
+can automatically add needed trailers such as `Reviewed-by` to
+the series of patches at once.
