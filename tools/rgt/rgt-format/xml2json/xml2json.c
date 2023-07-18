@@ -66,7 +66,7 @@ typedef struct depth_ctx_user {
     te_bool entity_list;
 
     /** Current nesting level */
-    unsigned int cur_nl;
+    int cur_nl;
 
     /**
      * Stack with nesting levels of messages for which children lists
@@ -118,7 +118,7 @@ alloc_depth_user_data(uint32_t depth)
     if (reused)
         te_vec_reset(&depth_user->nl_stack);
     else
-        depth_user->nl_stack = (te_vec)TE_VEC_INIT(unsigned int);
+        depth_user->nl_stack = (te_vec)TE_VEC_INIT(int);
 
     depth_user->linum = 1;
     return depth_user;
@@ -477,7 +477,7 @@ maybe_end_msg_content(depth_ctx_user *depth_user)
  * lists of previous messages with greater or equal nesting level.
  */
 static void
-maybe_terminate_msg(depth_ctx_user *depth_user, unsigned int nl_num)
+maybe_terminate_msg(depth_ctx_user *depth_user, int nl_num)
 {
     te_json_ctx_t *json_ctx = &depth_user->json_ctx;
 
@@ -496,7 +496,7 @@ maybe_terminate_msg(depth_ctx_user *depth_user, unsigned int nl_num)
     {
         unsigned int i;
         unsigned int vec_size = te_vec_size(&depth_user->nl_stack);
-        unsigned int prev_nl;
+        int prev_nl;
 
         /*
          * Log can contain unexpected nesting "jumps" like
@@ -513,7 +513,7 @@ maybe_terminate_msg(depth_ctx_user *depth_user, unsigned int nl_num)
 
         for (i = vec_size; i > 0; i--)
         {
-            prev_nl = TE_VEC_GET(unsigned int, &depth_user->nl_stack,
+            prev_nl = TE_VEC_GET(int, &depth_user->nl_stack,
                                  i - 1);
             if (prev_nl >= nl_num)
             {
@@ -559,9 +559,9 @@ RGT_XML2JSON_CB(proc_log_msg_start,
     const char *ts = rgt_tmpls_xml_attrs_get(xml_attrs, "ts");
     const char *ts_val = rgt_tmpls_xml_attrs_get(xml_attrs, "ts_val");
     const char *nl = rgt_tmpls_xml_attrs_get(xml_attrs, "nl");
-    unsigned int nl_num;
+    int nl_num;
 
-    assert(te_strtoui(nl, 10, &nl_num) == 0);
+    assert(te_strtoi(nl, 10, &nl_num) == 0);
 
     if (depth_user->cur_nl < nl_num)
     {
