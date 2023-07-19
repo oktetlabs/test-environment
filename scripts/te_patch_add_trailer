@@ -335,7 +335,7 @@ if [[ "$USE_STGIT" == "true" ]]; then
 
         rev="$(stg id "${p}")" || exit $?
         $DRYRUN stg edit -m "$(git log -1 --format='%B' "${rev}" | \
-                               git interpret-trailers "${TRAILER_ARGS[@]}")" ||
+                               git interpret-trailers "${TRAILER_ARGS[@]}")" "${p}" ||
             exit $?
     }
 
