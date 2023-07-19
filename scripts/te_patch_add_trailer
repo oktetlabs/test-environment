@@ -56,6 +56,15 @@ only the latest patch is affected.
 
 The tool may modify an arbitrary number of trailers in one pass.
 
+Reviewed-by, Acked-by, Tested-by, Reported-by, Suggested-by,
+OL-Redmine-Id, GitHub-TE-Id may be copied from an existing revision
+by using @ prefix, e.g.:
+
+   $0 --redmine-id=@HEAD^ HEAD
+
+would set the value of OL-Redmine-Id of the topmost patch to that of
+its parent.
+
 -rUSER,
 --reviewed-by=USER  Add a Reviewed-by trailer for a given USER.
 
@@ -144,6 +153,21 @@ function this_user ()
     echo "${name} <${email,,}>"
 }
 
+function maybe_copy_trailer ()
+{
+    local trailer="$1"
+    local value="$2"
+
+    case "$value" in
+        @*)
+            git log -1 --format="%(trailers:key=${trailer},valueonly)" "${value#@}"
+            ;;
+        *)
+            echo "$value"
+        ;;
+    esac
+}
+
 function map_user ()
 {
     local id="$1"
@@ -218,7 +242,7 @@ for arg; do
             SINGLE=true
             ;;
         -r*)
-            username="${arg#-r}"
+            username="$(maybe_copy_trailer Reviewed-by "${arg#-r}")"
             TRAILER_ARGS+=("--where" "end" "--if-exists" "addIfDifferent"
                            "--trailer"
                            "Reviewed-by=$(map_user "${username}")") || exit $?
@@ -233,11 +257,12 @@ for arg; do
             ;;
         --reviewed-by=* | --acked-by=* | --tested-by=* | \
             --reported-by=* | --suggested-by=* )
-            username="${arg#--*=}"
+            trailer="${TRAILER_MAP[${arg%%=*}]}"
+            username="$(maybe_copy_trailer "${trailer}" "${arg#--*=}")"
 
             TRAILER_ARGS+=("--where" "end" "--if-exists" "addIfDifferent"
                            "--trailer"
-                           "${TRAILER_MAP[${arg%%=*}]}=$(map_user "${username}")") ||
+                           "${trailer}=$(map_user "${username}")") ||
                 exit $?
             ;;
         -s | --signoff)
@@ -253,19 +278,24 @@ for arg; do
             ;;
         --redmine-id=*)
             TRAILER_ARGS+=("--where" "start" "--if-exists" "replace"
-                           "--trailer" "OL-Redmine-Id=${arg##--redmine-id=}")
+                           "--trailer"
+                           "OL-Redmine-Id=$(maybe_copy_trailer \
+                                           OL-Redmine-Id "${arg##--redmine-id=}")")
             ;;
         --github-id=*)
             TRAILER_ARGS+=("--where" "start" "--if-exists" "replace"
-                           "--trailer" "GitHub-TE-Id=${arg##--github-id=}")
+                           "--trailer"
+                           "GitHub-TE-Id=$(maybe_copy_trailer \
+                                            GitHub-TE-Id "${arg##--github-id=}")")
             ;;
         --link=*)
-            case "${arg##--link=}" in
+            link="$(maybe_copy_trailer Link "${arg##--link=}")"
+            case "${link}" in
                 http://* | https://* )
                     true
                     ;;
                 *)
-                    echo "'${arg##--link=}' does not look like a valid URL" >&2
+                    echo "'${link}' does not look like a valid URL" >&2
                     exit 1
                     ;;
             esac
