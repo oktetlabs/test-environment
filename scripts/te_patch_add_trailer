@@ -197,6 +197,8 @@ function restore_branch ()
             echo "No trailer adding in progress" >&2
             exit 1
         fi
+    else
+        oldhead="$(git rev-parse HEAD)"
     fi
     status="${1:-$?}"
     if [[ "${status}" -ne 0 ]]; then
@@ -369,7 +371,17 @@ else
     trap "restore_branch \$?" EXIT
 
     lastrev=
+    if [[ -z "$DRYRUN" ]]; then
+        headrev=add_trailer_oldhead
+    else
+        headrev=HEAD
+    fi
     for rev in $(git rev-list --no-walk=sorted --reverse "${PATCHES[@]}"); do
+        if ! git merge-base --is-ancestor "${rev}" "${headrev}";  then
+            echo "Revision ${rev} is not part of the current branch" >&2
+            exit 1
+        fi
+
         if [[ -z "${lastrev}" ]]; then
             $DRYRUN git reset --hard "${rev}"
         else
@@ -384,7 +396,7 @@ else
             exit $?
         lastrev="${rev}"
     done
-    for skip in $(git rev-list --no-walk=sorted --reverse "${lastrev}..add_trailer_oldhead" 2>/dev/null); do
+    for skip in $(git rev-list --no-walk=sorted --reverse "${lastrev}..${headrev}" 2>/dev/null); do
         verbose "Going to ${skip}"
         $DRYRUN git cherry-pick "${skip}" || exit $?
     done
