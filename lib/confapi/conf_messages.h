@@ -161,7 +161,7 @@ typedef struct cfg_add_msg {
     cfg_handle      handle;         /**< OUT: object instance handle */
     te_bool         local;          /**< Local add */
     cfg_val_type    val_type;       /**< Object value type */
-    uint8_t         oid_offset;     /**< Offset to OID from the
+    uint16_t        oid_offset;     /**< Offset to OID from the
                                          message start */
     union {
         struct sockaddr val_addr[0];    /**< start of sockaddr value */
