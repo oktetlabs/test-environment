@@ -26,6 +26,7 @@ declare -A TRAILER_MAP=([--reviewed-by]=Reviewed-by
 
 function show_usage ()
 {
+    local full="${1:-}"
     cat <<EOF
 Usage: $0 [-rUSER | --reviewed-by=USER | --acked-by=USER |
            --tested-by=USER | --suggested-by=USER |
@@ -34,7 +35,8 @@ Usage: $0 [-rUSER | --reviewed-by=USER | --acked-by=USER |
            --breaks=TEXT | --fixes=REV |
            --trailer=NAME:VALUE | --delete=TRAILER | -dTRAILER]...
           [-1 | --single] [--stgit | --no-stgit] [--ldap | --no-ldap]
-          [-n | --dry-run] [--verbose]
+          [-n | --dry-run] [--verbose] $([[ -z "${full}" ]] && \
+                                         echo "[--full-help]")
           [PATCH-SPEC..]
 
 Add or delete a set of trailers to a series of patches.
@@ -43,12 +45,13 @@ If the current branch is managed by stgit and --no-stgit is not given,
 stgit is used to update patches and PATCH-SPECs are treated as stgit
 patch names.
 
-Otherwise PATCH-SPECs are treated as Git revisions. The tool creates
+Otherwise PATCH-SPECs are treated as Git revisions. $([[ -n "${full}" ]] && \
+echo "The tool creates
 a temporary tag pointing to the current HEAD, resets the HEAD to the
 first revision to update and then applies all revisions up to the
 original HEAD modifying commit messages as necessary.
 In this case PATCH-SPECs may be a series of revision specifiers or
-a single range specifier REV1..REV2.
+a single range specifier REV1..REV2.")
 
 If no PATCH-SPEC is provided, all patches from the current branch
 are operated upon, unless --single is also specified, in which case
@@ -64,6 +67,17 @@ by using @ prefix, e.g.:
 
 would set the value of OL-Redmine-Id of the topmost patch to that of
 its parent.
+
+EOF
+
+    if [[ -z "$full" ]]; then
+        echo "Described below are the most common options."
+        echo "Use $0 --full-help to see all of them."
+        echo ""
+    fi
+
+    cat <<EOF
+--full-help         Show descriptions of all options.
 
 -rUSER,
 --reviewed-by=USER  Add a Reviewed-by trailer for a given USER.
@@ -92,14 +106,17 @@ its parent.
 
 --github-id=ID      Add a GitHub-TE-Id trailer with a given ID.
 
---link=URL          Add a Link trailer with a given URL (e.g. pointing to
-                    a GitHub review request).
-
---breaks=TEXT       Adds a Breaks trailer with a given TEXT.
-                    Implies --single.
-
 --fixes=REV         Add a properly formatted Fixes trailer for a given
                     Git revision REV. Implies --single.
+
+--link=URL          Add a Link trailer with a given URL (e.g. pointing to
+                    a GitHub review request).
+EOF
+
+    [[ -z "$full" ]] && return 0
+    cat <<EOF
+--breaks=TEXT       Adds a Breaks trailer with a given TEXT.
+                    Implies --single.
 
 --trailer=NAME:VALUE
                     Add a custom trailer NAME with a given VALUE.
@@ -234,8 +251,12 @@ function restore_branch ()
 
 for arg; do
     case "${arg}" in
-        --help)
+        -h | --help)
             show_usage
+            exit 0
+            ;;
+        --full-help)
+            show_usage full
             exit 0
             ;;
         -1 | --single)
