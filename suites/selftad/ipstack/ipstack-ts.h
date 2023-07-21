@@ -74,6 +74,4 @@
 #include "tapi_udp.h"
 #include "tapi_tcp.h"
 
-#include "tapi_test.h"
-
 #endif /* __IPSTACK_SUITE_H__ */
