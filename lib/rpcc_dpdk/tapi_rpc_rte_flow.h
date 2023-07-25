@@ -182,6 +182,71 @@ extern int rpc_rte_flow_tunnel_item_release(
                                      uint32_t                      num_of_items,
                                      struct tarpc_rte_flow_error  *error);
 
+/**
+ * rte_flow_action_handle_create() RPC.
+ *
+ * @param[in]  port_id     Port number.
+ * @param[in]  conf        RTE flow indirect action configuration.
+ * @param[in]  action      Pointer to RTE flow action.
+ * @param[out] error       Perform verbose error reporting if not @c NULL.
+ *
+ * @return RTE flow indirect action handle pointer on success;
+ *.        jumps out when pointer is @c NULL.
+ */
+extern rpc_rte_flow_action_handle_p rpc_rte_flow_action_handle_create(
+                                     rcf_rpc_server *rpcs,
+                                     uint16_t port_id,
+                                     tarpc_rte_flow_indir_action_conf *conf,
+                                     rpc_rte_flow_action_p action,
+                                     struct tarpc_rte_flow_error *error);
+
+/**
+ * rte_flow_action_handle_destroy() RPC.
+ *
+ * @param[in]  port_id     Port number.
+ * @param[in]  handle      Pointer to RTE flow indirect action handle.
+ * @param[out] error       Perform verbose error reporting if not @c NULL.
+ *
+ * @return @c 0 on success; jumps out in case of failure
+ */
+extern int rpc_rte_flow_action_handle_destroy(
+                                     rcf_rpc_server *rpcs,
+                                     uint16_t port_id,
+                                     rpc_rte_flow_action_handle_p handle,
+                                     struct tarpc_rte_flow_error *error);
+
+/**
+ * rte_flow_action_handle_update() RPC.
+ *
+ * @param[in]  port_id     Port number.
+ * @param[in]  handle      Pointer to RTE flow indirect action handle.
+ * @param[in]  update      Pointer to the indirect action object to be updated.
+ * @param[out] error       Perform verbose error reporting if not @c NULL.
+ *
+ * @return @c 0 on success; jumps out in case of failure.
+ */
+extern int rpc_rte_flow_action_handle_update(
+                                     rcf_rpc_server *rpcs, uint16_t port_id,
+                                     rpc_rte_flow_action_handle_p handle,
+                                     rpc_rte_flow_action_handle_update_p update,
+                                     tarpc_rte_flow_error *error);
+
+/**
+ * rte_flow_action_handle_query() RPC.
+ *
+ * @param[in]     port_id  Port number.
+ * @param[in]     handle   Pointer to RTE flow indirect action handle.
+ * @param[in,out] data     Pointer to storage for the associated query data type.
+ * @param[out]    error    Perform verbose error reporting if not @c NULL.
+ *
+ * @return @c 0 on success; jumps out in case of failure.
+ */
+extern int rpc_rte_flow_action_handle_query(
+                                     rcf_rpc_server *rpcs, uint16_t port_id,
+                                     rpc_rte_flow_action_handle_p handle,
+                                     tarpc_rte_flow_query_data *data,
+                                     tarpc_rte_flow_error *error);
+
 /**@} <!-- END te_lib_rpc_rte_flow --> */
 
 #ifdef __cplusplus

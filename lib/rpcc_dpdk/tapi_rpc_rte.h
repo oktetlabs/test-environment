@@ -26,6 +26,8 @@ typedef rpc_ptr rpc_rte_flow_attr_p;
 typedef rpc_ptr rpc_rte_flow_item_p;
 typedef rpc_ptr rpc_rte_flow_action_p;
 typedef rpc_ptr rpc_rte_flow_p;
+typedef rpc_ptr rpc_rte_flow_action_handle_p;
+typedef rpc_ptr rpc_rte_flow_action_handle_update_p;
 
 /**
  * Get TE_ENV_DPDK_REUSE_RPCS feature status

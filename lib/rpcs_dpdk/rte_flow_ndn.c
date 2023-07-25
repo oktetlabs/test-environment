@@ -2245,6 +2245,43 @@ rte_flow_action_jump_from_pdu(const asn_value *conf_pdu,
 }
 
 static te_errno
+rte_flow_action_indirect_from_pdu(const asn_value *conf_pdu,
+                                  struct rte_flow_action *action)
+{
+    struct rte_flow_action_handle *conf = NULL;
+    tarpc_rte_flow_action_handle   handle;
+    asn_tag_value                  tag;
+    size_t                         len;
+    int                            rc;
+    uint32_t                       val;
+
+    if (action == NULL || conf_pdu == NULL)
+        return TE_EINVAL;
+
+    rc = asn_get_choice_value(conf_pdu, NULL, NULL, &tag);
+    if (rc != 0)
+        return rc;
+    else if (tag != NDN_FLOW_ACTION_HANDLE)
+        return TE_EINVAL;
+
+    len = sizeof(handle);
+    rc = asn_read_value_field(conf_pdu, &val, &len, "#handle");
+    if (rc != 0)
+        return rc;
+
+    handle = (tarpc_rte_flow_action_handle)val;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        conf = RCF_PCH_MEM_INDEX_MEM_TO_PTR(handle, ns);
+    });
+
+    action->type = RTE_FLOW_ACTION_TYPE_INDIRECT;
+    action->conf = conf;
+
+    return 0;
+}
+
+static te_errno
 rte_flow_action_end(struct rte_flow_action *action)
 {
     if (action == NULL)
@@ -2295,6 +2332,7 @@ static const struct rte_flow_action_types_mapping {
       rte_flow_action_represented_port_from_pdu },
     { NDN_FLOW_ACTION_TYPE_JUMP, rte_flow_action_jump_from_pdu },
     { NDN_FLOW_ACTION_TYPE_DEC_TTL, rte_flow_action_dec_ttl_from_pdu },
+    { NDN_FLOW_ACTION_TYPE_INDIRECT, rte_flow_action_indirect_from_pdu },
 };
 
 static te_errno
@@ -2480,7 +2518,12 @@ rte_free_flow_rule(struct rte_flow_attr *attr,
     if (actions != NULL)
     {
         for (i = 0; actions[i].type != RTE_FLOW_ACTION_TYPE_END; i++)
+        {
+            if (actions[i].type == RTE_FLOW_ACTION_TYPE_INDIRECT)
+                continue;
+
             free((void *)actions[i].conf);
+        }
         free(actions);
     }
 }
@@ -3377,4 +3420,120 @@ TARPC_FUNC_STANDALONE(rte_flow_release_united_items, {},
     });
 
     free(united_items);
+})
+
+static void
+tarpc_rte_flow_indir_action_conf2rte(
+    const struct tarpc_rte_flow_indir_action_conf *rpc,
+    struct rte_flow_indir_action_conf *rte)
+{
+    rte->ingress = rpc->ingress ? 1 : 0;
+    rte->egress = rpc->egress ? 1 : 0;
+    rte->transfer = rpc->transfer ? 1 : 0;
+}
+
+TARPC_FUNC(rte_flow_action_handle_create, {},
+{
+    struct rte_flow_action            *action = NULL;
+    struct rte_flow_action_handle     *handle = NULL;
+    struct rte_flow_error              error = {};
+    struct rte_flow_indir_action_conf  conf;
+
+    tarpc_rte_flow_indir_action_conf2rte(&in->conf, &conf);
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        action = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->action, ns);
+    });
+
+    MAKE_CALL(handle = func(in->port_id, &conf, action, &error));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        out->handle = RCF_PCH_MEM_INDEX_ALLOC(handle, ns);
+    });
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+})
+
+TARPC_FUNC(rte_flow_action_handle_destroy, {},
+{
+    struct rte_flow_action_handle *handle = NULL;
+    struct rte_flow_error          error = {};
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        handle = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->handle, ns);
+    });
+
+    MAKE_CALL(out->retval = func(in->port_id, handle, &error));
+    neg_errno_h2rpc(&out->retval);
+
+    if (out->retval == 0)
+    {
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+            RCF_PCH_MEM_INDEX_FREE(in->handle, ns);
+        });
+    }
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+})
+
+TARPC_FUNC(rte_flow_action_handle_update, {},
+{
+    struct rte_flow_action_handle *handle = NULL;
+    struct rte_flow_error          error = {};
+    const void                    *update;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        handle = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->handle, ns);
+        update = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->update, ns);
+    });
+
+    MAKE_CALL(out->retval = func(in->port_id, handle, update, &error));
+    neg_errno_h2rpc(&out->retval);
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+})
+
+TARPC_FUNC(rte_flow_action_handle_query,
+{
+    COPY_ARG(data);
+},
+{
+    flow_query_data                     *data_ptr = NULL;
+    struct rte_flow_action_handle       *handle = NULL;
+    struct rte_flow_error                error = {};
+    enum tarpc_rte_flow_query_data_types type;
+    flow_query_data                      data;
+    int                                  rc;
+
+    CHECK_ARG_SINGLE_PTR(out, data);
+    type = TARPC_RTE_FLOW_QUERY_DATA__UNKNOWN;
+
+    if (out->data.data_len != 0)
+    {
+        rc = tarpc_rte_flow_query_data2rte(out->data.data_val, &data);
+        if (rc != 0)
+        {
+            out->retval = -TE_RC(TE_RPCS, rc);
+            out->data.data_val = NULL;
+            goto done;
+        }
+
+        type = out->data.data_val->type;
+        data_ptr = &data;
+    }
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        handle = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->handle, ns);
+    });
+
+    MAKE_CALL(out->retval = func(in->port_id, handle, data_ptr, &error));
+    if (out->retval == 0 && out->data.data_len != 0)
+    {
+        tarpc_rte_flow_query_data2tarpc(data_ptr, type, out->data.data_val);
+    }
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+
+done:
+    neg_errno_h2rpc(&out->retval);
 })

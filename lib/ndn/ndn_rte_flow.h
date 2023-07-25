@@ -53,6 +53,7 @@ typedef enum {
     NDN_FLOW_ACTION_TYPE_REPRESENTED_PORT,
     NDN_FLOW_ACTION_TYPE_JUMP,
     NDN_FLOW_ACTION_TYPE_DEC_TTL,
+    NDN_FLOW_ACTION_TYPE_INDIRECT,
 } ndn_rte_flow_action_type_t;
 
 typedef enum {
@@ -105,6 +106,7 @@ typedef enum {
     NDN_FLOW_ACTION_OF_SET_VLAN_VID,
     NDN_FLOW_ACTION_ETHDEV_PORT_ID,
     NDN_FLOW_ACTION_GROUP,
+    NDN_FLOW_ACTION_HANDLE,
 } ndn_rte_flow_action_t;
 
 typedef enum {

@@ -24,6 +24,12 @@ typedef tarpc_ptr    tarpc_rte_ring;
 /** Bitmask of RSS hash protocols */
 typedef uint64_t     tarpc_rss_hash_protos_t;
 
+/** Handle of the 'rte_flow_action_handle' or 0 */
+typedef tarpc_ptr    tarpc_rte_flow_action_handle;
+
+/** Handle of the 'rte_flow_action_handle_update' or 0 */
+typedef tarpc_ptr    tarpc_rte_flow_action_handle_update;
+
 /* rte_eal_init() */
 struct tarpc_rte_eal_init_in {
     struct tarpc_in_arg         common;
@@ -2257,6 +2263,75 @@ struct tarpc_rte_flow_release_united_items_in {
 
 typedef struct tarpc_void_out tarpc_rte_flow_release_united_items_out;
 
+struct tarpc_rte_flow_indir_action_conf {
+    tarpc_bool ingress;
+    tarpc_bool egress;
+    tarpc_bool transfer;
+};
+
+/** rte_flow_action_handle_create() */
+struct tarpc_rte_flow_action_handle_create_in {
+    struct tarpc_in_arg              common;
+
+    uint16_t                         port_id;
+    tarpc_rte_flow_indir_action_conf conf;
+    tarpc_rte_flow_action            action;
+};
+
+struct tarpc_rte_flow_action_handle_create_out {
+    struct tarpc_out_arg         common;
+
+    tarpc_rte_flow_action_handle handle;
+    struct tarpc_rte_flow_error  error;
+};
+
+/** rte_flow_action_handle_destroy() */
+struct tarpc_rte_flow_action_handle_destroy_in {
+    struct tarpc_in_arg          common;
+
+    uint16_t                     port_id;
+    tarpc_rte_flow_action_handle handle;
+};
+
+struct tarpc_rte_flow_action_handle_destroy_out {
+    struct tarpc_out_arg        common;
+
+    tarpc_int                   retval;
+    struct tarpc_rte_flow_error error;
+};
+
+/** rte_flow_action_handle_update() */
+struct tarpc_rte_flow_action_handle_update_in {
+    struct tarpc_in_arg                 common;
+
+    uint16_t                            port_id;
+    tarpc_rte_flow_action_handle        handle;
+    tarpc_rte_flow_action_handle_update update;
+};
+
+struct tarpc_rte_flow_action_handle_update_out {
+    struct tarpc_out_arg        common;
+
+    tarpc_int                   retval;
+    struct tarpc_rte_flow_error error;
+};
+
+/** rte_flow_action_handle_query() */
+struct tarpc_rte_flow_action_handle_query_in {
+    struct tarpc_in_arg          common;
+
+    uint16_t                     port_id;
+    tarpc_rte_flow_action_handle handle;
+    tarpc_rte_flow_query_data    data<>;
+};
+
+struct tarpc_rte_flow_action_handle_query_out {
+    struct tarpc_out_arg         common;
+
+    tarpc_rte_flow_query_data    data<>;
+    tarpc_int                    retval;
+    struct tarpc_rte_flow_error  error;
+};
 
 /**
  * Handmade DPDK utility RPCs
@@ -2448,6 +2523,10 @@ program dpdk
         RPC_DEF(rte_flow_release_united_actions)
         RPC_DEF(rte_flow_prepend_opaque_items)
         RPC_DEF(rte_flow_release_united_items)
+        RPC_DEF(rte_flow_action_handle_create)
+        RPC_DEF(rte_flow_action_handle_destroy)
+        RPC_DEF(rte_flow_action_handle_update)
+        RPC_DEF(rte_flow_action_handle_query)
 
         RPC_DEF(dpdk_eth_await_link_up)
         RPC_DEF(dpdk_get_version)

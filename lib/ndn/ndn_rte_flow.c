@@ -60,6 +60,7 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"represented-port", NDN_FLOW_ACTION_TYPE_REPRESENTED_PORT},
     {"jump", NDN_FLOW_ACTION_TYPE_JUMP},
     {"dec-ttl", NDN_FLOW_ACTION_TYPE_DEC_TTL},
+    {"indirect", NDN_FLOW_ACTION_TYPE_INDIRECT},
 };
 
 asn_type ndn_rte_flow_action_type_s = {
@@ -207,6 +208,8 @@ static asn_named_entry_t _ndn_rte_flow_action_conf_ne_array[] = {
         {PRIVATE, NDN_FLOW_ACTION_ETHDEV_PORT_ID} },
     { "group", &asn_base_int32_s,
         {PRIVATE, NDN_FLOW_ACTION_GROUP} },
+    { "handle", &asn_base_uint32_s,
+        {PRIVATE, NDN_FLOW_ACTION_HANDLE} },
 };
 
 asn_type ndn_rte_flow_action_conf_s = {
