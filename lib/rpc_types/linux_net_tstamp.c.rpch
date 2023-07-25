@@ -50,6 +50,21 @@
 #ifndef SOF_TIMESTAMPING_OPT_TSONLY
 #define SOF_TIMESTAMPING_OPT_TSONLY (1<<11)
 #endif
+#ifndef SOF_TIMESTAMPING_OPT_STATS
+#define SOF_TIMESTAMPING_OPT_STATS (1<<12)
+#endif
+#ifndef SOF_TIMESTAMPING_OPT_PKTINFO
+#define SOF_TIMESTAMPING_OPT_PKTINFO (1<<13)
+#endif
+#ifndef SOF_TIMESTAMPING_OPT_TX_SWHW
+#define SOF_TIMESTAMPING_OPT_TX_SWHW (1<<14)
+#endif
+#ifndef SOF_TIMESTAMPING_BIND_PHC
+#define SOF_TIMESTAMPING_BIND_PHC (1<<15)
+#endif
+#ifndef SOF_TIMESTAMPING_OPT_ID_TCP
+#define SOF_TIMESTAMPING_OPT_ID_TCP (1<<16)
+#endif
 
 unsigned int
 hwtstamp_instr_rpc2h(unsigned flags)
@@ -92,6 +107,26 @@ hwtstamp_instr_rpc2h(unsigned flags)
 #ifdef  SOF_TIMESTAMPING_OPT_TSONLY
            | (!!(flags & RPC_SOF_TIMESTAMPING_OPT_TSONLY) *
               SOF_TIMESTAMPING_OPT_TSONLY)
+#endif
+#ifdef SOF_TIMESTAMPING_OPT_STATS
+           | (!!(flags & RPC_SOF_TIMESTAMPING_OPT_STATS) *
+              SOF_TIMESTAMPING_OPT_STATS)
+#endif
+#ifdef SOF_TIMESTAMPING_OPT_PKTINFO
+           | (!!(flags & RPC_SOF_TIMESTAMPING_OPT_PKTINFO) *
+              SOF_TIMESTAMPING_OPT_PKTINFO)
+#endif
+#ifdef SOF_TIMESTAMPING_OPT_TX_SWHW
+           | (!!(flags & RPC_SOF_TIMESTAMPING_OPT_TX_SWHW) *
+              SOF_TIMESTAMPING_OPT_TX_SWHW)
+#endif
+#ifdef SOF_TIMESTAMPING_BIND_PHC
+           | (!!(flags & RPC_SOF_TIMESTAMPING_BIND_PHC) *
+              SOF_TIMESTAMPING_BIND_PHC)
+#endif
+#ifdef SOF_TIMESTAMPING_OPT_ID_TCP
+           | (!!(flags & RPC_SOF_TIMESTAMPING_OPT_ID_TCP) *
+              SOF_TIMESTAMPING_OPT_ID_TCP)
 #endif
            | (!!(flags & RPC_ONLOAD_SOF_TIMESTAMPING_STREAM) *
               ONLOAD_SOF_TIMESTAMPING_STREAM)
@@ -142,6 +177,26 @@ hwtstamp_instr_h2rpc(unsigned int flags)
 #ifdef  SOF_TIMESTAMPING_OPT_TSONLY
            | (!!(flags & SOF_TIMESTAMPING_OPT_TSONLY) *
               RPC_SOF_TIMESTAMPING_OPT_TSONLY)
+#endif
+#ifdef SOF_TIMESTAMPING_OPT_STATS
+           | (!!(flags & SOF_TIMESTAMPING_OPT_STATS) *
+              RPC_SOF_TIMESTAMPING_OPT_STATS)
+#endif
+#ifdef SOF_TIMESTAMPING_OPT_PKTINFO
+           | (!!(flags & SOF_TIMESTAMPING_OPT_PKTINFO) *
+              RPC_SOF_TIMESTAMPING_OPT_PKTINFO)
+#endif
+#ifdef SOF_TIMESTAMPING_OPT_TX_SWHW
+           | (!!(flags & SOF_TIMESTAMPING_OPT_TX_SWHW) *
+              RPC_SOF_TIMESTAMPING_OPT_TX_SWHW)
+#endif
+#ifdef SOF_TIMESTAMPING_BIND_PHC
+           | (!!(flags & SOF_TIMESTAMPING_BIND_PHC) *
+              RPC_SOF_TIMESTAMPING_BIND_PHC)
+#endif
+#ifdef SOF_TIMESTAMPING_OPT_ID_TCP
+           | (!!(flags & SOF_TIMESTAMPING_OPT_ID_TCP) *
+              RPC_SOF_TIMESTAMPING_OPT_ID_TCP)
 #endif
            | (!!(flags & ONLOAD_SOF_TIMESTAMPING_STREAM) *
               RPC_ONLOAD_SOF_TIMESTAMPING_STREAM)
