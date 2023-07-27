@@ -366,7 +366,7 @@ function check_fixes ()
 
     while read -r hash subject; do
         [[ -z "${hash}" ]] && continue
-        if ! git rev-parse --verify -q "${hash}" >/dev/null; then
+        if ! git merge-base --is-ancestor "${hash}" "${rev}" 2>/dev/null; then
             serious_error "invalid Fixes commit ${hash}"
         else
             subject0="$(git log -1 --abbrev=12 \
