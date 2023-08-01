@@ -764,9 +764,11 @@ ta_conf_tce(unix_ta *ta, const rcf_talib_param *param)
  * Start ta_core_watcher on TA host. It will look for new core files
  * in the specified location and print logs with backtraces when
  * the new core file comes from one of the binaries in TA directory.
+ * If all flag is set, ta_core_watcher will print backtraces for all
+ * binaries.
  */
 static void
-start_core_watcher(unix_ta *ta, const char *core_pattern)
+start_core_watcher(unix_ta *ta, const char *core_pattern, te_bool all)
 {
     int i;
     long int len = 0;
@@ -782,12 +784,13 @@ start_core_watcher(unix_ta *ta, const char *core_pattern)
 
     te_string_append(&cores_log, "ta_cores.%s", ta->ta_name);
 
-    te_string_append(&cmd, "%s%s%s/ta_core_watcher \\\"%s\\\" \\\"%s\\\" "
+    te_string_append(&cmd, "%s%s%s/ta_core_watcher \\\"%s\\\" %s%s%s "
                      " %s 2>&1 | te_tee %s %s 10 >%s",
                      te_string_value(&ta->cmd_prefix),
                      rcfunix_ta_sudo(ta),
-                     ta->run_dir, core_pattern, ta->run_dir,
-                     ta->cmd_suffix,
+                     ta->run_dir, core_pattern,
+                     all ? "" : "\\\"", all ? "" : ta->run_dir,
+                     all ? "" : "\\\"", ta->cmd_suffix,
                      TE_LGR_ENTITY, ta->ta_name,
                      te_string_value(&cores_log));
 
@@ -1356,8 +1359,17 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     }
 
     val = te_kvpairs_get(conf, "core_watcher");
-    if (!te_str_is_null_or_empty(val) && strcasecmp(val, "yes") == 0)
-        start_core_watcher(ta, te_kvpairs_get(conf, "core_pattern"));
+    if (!te_str_is_null_or_empty(val))
+    {
+        if (strcasecmp(val, "yes") == 0 || strcasecmp(val, "ta_dir") == 0)
+        {
+            start_core_watcher(ta, te_kvpairs_get(conf, "core_pattern"), FALSE);
+        }
+        else if (strcasecmp(val, "all") == 0)
+        {
+            start_core_watcher(ta, te_kvpairs_get(conf, "core_pattern"), TRUE);
+        }
+    }
 
     RING("Command to start TA: %s", cmd.ptr);
     if (!(*flags & TA_FAKE) &&
