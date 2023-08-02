@@ -100,7 +100,7 @@ static unsigned int flags = 0;  /**< Global flags */
 static const char *tce_conf_file = NULL;    /**< The TCE configuration file. */
 static rcf_tce_conf_t *tce_conf = NULL;     /**< The TCE configuration. */
 
-static const char *cfg_file;    /**< Configuration file name */
+static char *cfg_file = NULL;   /**< Configuration file name */
 static ta *agents = NULL;       /**< List of Test Agents */
 static int ta_num = 0;          /**< Number of Test Agents */
 static int shutdown_num = 0;    /**< Number of TA which should be
@@ -2887,6 +2887,8 @@ process_cmd_line_opts(int argc, const char **argv)
     poptContext  optCon;
     int          rc;
 
+    const char *cfg = NULL;
+
     /* Option Table */
     struct poptOption options_table[] = {
         { "foreground", 'f', POPT_ARG_NONE | POPT_BIT_SET, &flags,
@@ -2915,8 +2917,8 @@ process_cmd_line_opts(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
-    cfg_file = poptGetArg(optCon);
-    if (cfg_file == NULL)
+    cfg = poptGetArg(optCon);
+    if (cfg == NULL)
     {
         ERROR("No configuration file in command-line arguments");
         poptFreeContext(optCon);
@@ -2928,6 +2930,12 @@ process_cmd_line_opts(int argc, const char **argv)
         poptFreeContext(optCon);
         return EXIT_FAILURE;
     }
+
+    /*
+     * poptGetArg() returns an internal pointer that
+     * becomes invalid after calling poptFreeContext().
+     */
+    cfg_file = strdup(cfg);
 
     poptFreeContext(optCon);
 
@@ -3181,6 +3189,8 @@ exit:
 
     if (req != NULL && req->message->opcode == RCFOP_SHUTDOWN)
         rcf_answer_user_request(req);
+
+    free(cfg_file);
 
     free_ta_list();
     ipc_close_server(server);

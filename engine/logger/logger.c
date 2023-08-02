@@ -104,7 +104,7 @@ static unsigned int         lgr_flags = 0;
 #define LOGGER_OPT_MAXSIZE     3    /**< Maximum length of the RAW log */
 /*@}*/
 
-static const char          *cfg_file = NULL;
+static char *cfg_file = NULL;
 static struct ipc_server   *logger_ten_srv = NULL;
 
 /* Path to the metadata file for live results */
@@ -923,6 +923,8 @@ process_cmd_line_opts(int argc, const char **argv)
     char        *listener_conf;
     char        *max_size;
 
+    const char *cfg = NULL;
+
     /* Option Table */
     struct poptOption options_table[] = {
         { "foreground", 'f',
@@ -1039,17 +1041,24 @@ process_cmd_line_opts(int argc, const char **argv)
     }
 
     /* Get Logger configuration file name (optional) */
-    cfg_file = poptGetArg(optCon);
+    cfg = poptGetArg(optCon);
 
     /* Interpret empty strings as no arguments provided */
-    if (cfg_file != NULL && strlen(cfg_file) == 0)
-        cfg_file = NULL;
+    if (cfg != NULL && strlen(cfg) == 0)
+        cfg = NULL;
 
-    if ((cfg_file != NULL) && (poptGetArg(optCon) != NULL))
+    if ((cfg != NULL) && (poptGetArg(optCon) != NULL))
     {
         poptFreeContext(optCon);
         return EXIT_FAILURE;
     }
+
+    /*
+     * poptGetArg() returns an internal pointer that
+     * becomes invalid after calling poptFreeContext().
+     */
+    if (cfg != NULL)
+        cfg_file = strdup(cfg);
 
     poptFreeContext(optCon);
 
@@ -1470,6 +1479,8 @@ exit:
             result = EXIT_FAILURE;
         }
     }
+
+    free(cfg_file);
 
     return result;
 }

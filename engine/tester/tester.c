@@ -807,7 +807,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
     /* Get Tester configuration file names */
     while ((cfg_file = poptGetArg(optCon)) != NULL)
     {
-        tester_cfg *cfg = tester_cfg_new(cfg_file);
+        tester_cfg *cfg = tester_cfg_new(strdup(cfg_file));
 
         if (cfg == NULL)
         {

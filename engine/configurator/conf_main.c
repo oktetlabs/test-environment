@@ -44,6 +44,8 @@ static char  tmp_buf[1024];
 static char *tmp_dir = NULL;
 static char *filename;
 
+static char *cfg_files = NULL;
+
 static struct ipc_server *server = NULL; /**< IPC Server handle */
 
 #define MAX_CFG_FILES 16
@@ -2836,7 +2838,8 @@ process_cmd_line_opts(int argc, char **argv)
     poptContext  optCon;
     int          rc;
     int          cfg_file_num = 0;
-    const char  *cfg_files = NULL;
+
+    const char *cfgs = NULL;
 
     int i;
     for (i = 0; i < argc; i++)
@@ -2882,7 +2885,20 @@ process_cmd_line_opts(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    cfg_files = poptGetArg(optCon);
+    cfgs = poptGetArg(optCon);
+    if (cfgs == NULL)
+    {
+         ERROR("No configuration files in command-line arguments");
+         poptFreeContext(optCon);
+         return EXIT_FAILURE;
+    }
+
+    /*
+     * poptGetArg() returns an internal pointer that
+     * becomes invalid after calling poptFreeContext().
+     */
+    cfg_files = strdup(cfgs);
+
     INFO("%s: cfg_files=%s", __FUNCTION__, cfg_files);
     cs_cfg_file[0] = strtok((char *)cfg_files, " ");
     INFO("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[0]);
@@ -3129,6 +3145,9 @@ main(int argc, char **argv)
     }
 
 exit:
+
+    free(cfg_files);
+
     if (result != EXIT_SUCCESS)
         ERROR("Error exit");
     else
