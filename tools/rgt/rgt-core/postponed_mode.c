@@ -257,6 +257,10 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
     if (node->descr.tin != TE_TIN_INVALID)
         fprintf(rgt_ctx.out_fd, " tin=\"%u\"", node->descr.tin);
     fprintf(rgt_ctx.out_fd, " test_id=\"%d\"", node->node_id);
+
+    if (node->plan_id >= 0)
+        fprintf(rgt_ctx.out_fd, " plan_id=\"%d\"", node->plan_id);
+
     if (node->descr.name)
         append_attr("name", node->descr.name);
     if (node->descr.hash != NULL)

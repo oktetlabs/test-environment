@@ -842,7 +842,6 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
     json_t     *page_opt = NULL;
     json_t     *hash_opt = NULL;
     json_t     *tin_opt = NULL;
-    json_t     *ignored = NULL;
     const char *type = NULL;
     const char *name = NULL;
     const char *objective = NULL;
@@ -859,6 +858,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
 
     memcpy(node->start_ts, ts, sizeof(node->start_ts));
     node->result.err = NULL;
+    node->plan_id = -1;
 
     /*
      * Unpack the JSON object.
@@ -868,7 +868,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
      * values and type-checked manually.
      */
     ret = json_unpack_ex(msg, &err, JSON_STRICT,
-                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, s?o, s?o}",
+                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, s?o, s?i}",
                          "id", &node->node_id,
                          "parent", &node->parent_id,
                          "node_type", &type,
@@ -879,7 +879,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
                          "tin", &tin_opt,
                          "authors", &authors,
                          "params", &params,
-                         "plan_id", &ignored);
+                         "plan_id", &node->plan_id);
     if (ret != 0)
     {
         FMT_TRACE("Error unpacking JSON log message: %s (line %d, column %d)",

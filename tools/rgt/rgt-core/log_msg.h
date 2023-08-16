@@ -177,6 +177,8 @@ typedef struct node_info {
     node_descr_t    descr;       /**< Description of the node */
     int             parent_id;   /**< ID of parent node */
     int             node_id;     /**< ID of this node */
+    int             plan_id;     /**< ID of the next run item in
+                                      the execution plan */
     param          *params;      /**< List of parameters */
     uint32_t        start_ts[2]; /**< Timestamp of a "node start" event */
     uint32_t        end_ts[2];   /**< Timestamp of a "node end" event */
