@@ -1573,12 +1573,13 @@ te_errno
 tapi_job_wrapper_delete(tapi_job_wrapper_t *wrapper)
 {
     te_errno rc;
-    tapi_job_t *job = wrapper->job;
-
-    TAPI_JOB_CHECK_METHOD_SUPPORT(job, wrapper_delete);
+    tapi_job_t *job;
 
     if (wrapper == NULL)
         return 0;
+
+    job = wrapper->job;
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, wrapper_delete);
 
     rc = job->methods.wrapper_delete(job, wrapper->id);
     if (rc != 0)
