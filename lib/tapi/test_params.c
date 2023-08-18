@@ -1160,6 +1160,7 @@ test_get_default_string_param(const char *test_name,
                   param_name);
     }
 
+    te_string_free(&modified_test_name);
     return value;
 }
 
