@@ -1,0 +1,189 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
+"""Wait until command started with te_run_wrap terminates.
+
+This script reads command output via FIFO and prints it to stdout,
+waiting until no more reading from FIFO is possible (meaning that
+the command was terminated). Also it periodically sends SIGINT to
+te_run_wrap_read (which runs the command in background) if stopping
+was requested by passing "stop" as the second argument.
+
+Usage:
+./te_run_wait PID [stop]
+where PID was retrieved from te_run_wrap.
+
+This script should be used together with te_run_wrap, see
+comments there.
+"""
+
+import sys
+import os
+import signal
+import time
+import select
+import ctypes
+from multiprocessing import Process, Value
+from multiprocessing import parent_process
+
+def handler(signum, frame):
+    """Handler for terminating signals."""
+    global got_signal
+
+    got_signal = True
+
+def reading(fifo_fp, stopped_flag):
+    """Start process which reads output from the monitored command.
+
+    Output is printed to stdout.
+    """
+    global got_signal
+
+    parent_pid = parent_process().pid
+
+    # Let parent handle this signal and send SIGTERM
+    # to this process.
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+    # Trying to open FIFO only for reading or writing
+    # can block indefinitely until some process opens
+    # it for the opposite purpose.
+    # However opening FIFO in read/write mode succeeds
+    # immediately on Linux.
+    rw_fifo = os.open(fifo_fp, os.O_RDWR)
+    # This will not block as we opened FIFO for writing.
+    r_fifo = os.open(fifo_fp, os.O_RDONLY)
+    # Close read/write FD now so that read() will return zero
+    # bytes once te_run_wrap_read terminates and FIFO is closed
+    # for writing there too.
+    os.close(rw_fifo)
+
+    pobj = select.poll()
+    pobj.register(r_fifo, select.POLLIN)
+
+    while True:
+        if got_signal:
+            break
+
+        if os.getppid() != parent_pid:
+            break
+
+        res = pobj.poll(100)
+
+        if len(res) == 0:
+            continue
+        if (res[0][1] & select.POLLIN) == 0:
+            if res[0][1] & select.POLLHUP != 0:
+                # Let parent know that testing was terminated.
+                stopped_flag.value = True
+            break
+
+        data = os.read(r_fifo, 256)
+        if len(data) == 0:
+            # Let parent know that testing was terminated.
+            stopped_flag.value = True
+            break
+
+        sys.stdout.buffer.write(data)
+        sys.stdout.flush()
+
+    sys.exit(0)
+
+def killing(target_pid):
+    """Start process sending SIGINT to te_run_wrap_read.
+
+    This is used to stop monitored command gracefully.
+    """
+    parent_pid = parent_process().pid
+
+    while True:
+        if os.getppid() != parent_pid:
+            break
+
+        try:
+            os.kill(target_pid, signal.SIGINT)
+        except ProcessLookupError:
+            break
+
+        # Do not send SIGINT too often to avoid
+        # interrupting epilogues unnecessarily
+        time.sleep(30)
+
+    sys.exit(0)
+
+def main():
+    """Main function of this script."""
+    global got_signal
+
+    got_signal = False
+
+    try:
+        fprefix = os.environ["TE_RUN_WRAP_PREFIX"]
+    except:
+        fprefix = "./te_run"
+
+    fifo_fp = fprefix + ".fifo"
+    exit_code_fp = fprefix + ".exit_code"
+
+    if not os.path.exists(fifo_fp):
+        sys.exit(0)
+
+    stop_testing = False
+    got_signal = False
+
+    target_pid = int(sys.argv[1])
+    if len(sys.argv) > 2 and sys.argv[2] == "stop":
+        stop_testing = True
+
+    # Assume that stopping is requested in cleanup and this
+    # application should not terminate until testing is stopped.
+    if stop_testing:
+        handler_func = signal.SIG_IGN
+    else:
+        handler_func = handler
+
+    signal.signal(signal.SIGTERM, handler_func)
+    signal.signal(signal.SIGINT, handler_func)
+    signal.signal(signal.SIGHUP, handler_func)
+
+    stopped_flag = Value(ctypes.c_bool, False)
+
+    reading_child = Process(target = reading,
+                            args = (fifo_fp,
+                                    stopped_flag))
+    reading_child.start()
+
+    if stop_testing:
+        killing_child = Process(target = killing,
+                                args = (target_pid, ))
+        killing_child.start()
+
+    while True:
+        if got_signal:
+            os.kill(reading_child.pid, signal.SIGTERM)
+            reading_child.join()
+            break
+
+        reading_child.join(0.1)
+        if reading_child.exitcode != None:
+            break
+
+    if stop_testing:
+        killing_child.kill()
+        killing_child.join()
+
+    if stopped_flag.value:
+        os.unlink(fifo_fp)
+
+        # If exit code was saved in auxiliary file
+        # by te_run_wrap_read, read it and use as
+        # exit code of this script.
+        if os.path.exists(exit_code_fp):
+            with open(exit_code_fp, mode="r") as f:
+                exit_code = f.read()
+
+            os.unlink(exit_code_fp)
+            sys.exit(int(exit_code))
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,74 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
+"""Run test suite in Jenkins.
+
+This script starts a command passed to it in such a way that
+it will remain hanging in background and Jenkins will not try
+to kill it. Then this script will print PID of the main process
+(te_run_wrap_read script) and exit.
+It ensures that when pipeline is aborted, testing processes are
+not abruptly killed but are terminated in a normal way, not leaving
+agents hanging on hosts and other such issues.
+
+Usage:
+pid=$(te_run_wrap ./run.sh ...)
+te_run_wait $pid
+If te_run_wait was interrupted, in cleanup:
+te_run_wait $pid stop
+"""
+
+import sys
+import os
+import subprocess
+import re
+import signal
+
+try:
+    fprefix = os.environ["TE_RUN_WRAP_PREFIX"]
+except:
+    fprefix = "./te_run"
+
+fifo_fp = fprefix + ".fifo"
+exit_code_fp = fprefix + ".exit_code"
+
+signal.signal(signal.SIGTERM, signal.SIG_IGN)
+signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+if os.path.exists(fifo_fp):
+    os.unlink(fifo_fp)
+if os.path.exists(exit_code_fp):
+    os.unlink(exit_code_fp)
+
+os.mkfifo(fifo_fp)
+
+# Opening FIFO in read/write mode succeeds immediately
+# on Linux. This FD is inherited by child process only
+# to ensure that it is closed only when all descendants
+# die. Then te_run_wait will read zero bytes from FIFO
+# and terminate.
+fd_fifo = os.open(fifo_fp, os.O_RDWR)
+os.set_inheritable(fd_fifo, True)
+
+# These environment variables are reset because Jenkins uses
+# them to detect "runaway" processes and kill them. We do
+# not want testing to be killed without terminating it
+# properly.
+os.environ["BUILD_ID"] = "TE_NO_KILL"
+os.environ["JENKINS_NODE_COOKIE"] = "TE_NO_KILL"
+os.environ["JENKINS_SERVER_COOKIE"] = "TE_NO_KILL"
+
+# After this process terminates, its child is "adopted" by
+# init process, its parent PID is changed, so that Jenkins
+# will not find it when killing all descentants of processes
+# known to it.
+#
+# fork() cannot be used here because only after exec() changes
+# in environment will be observable in /proc/<PID>/environ file
+# into which Jenkins looks when searching for "runaway" processes.
+cmd_path = sys.argv[0]
+cmd_path = re.sub(r"/[^/]*$", "", sys.argv[0]) + "/te_run_wrap_read"
+p = subprocess.Popen([cmd_path] + sys.argv[1:],
+                     stdout = subprocess.DEVNULL,
+                     stderr = subprocess.DEVNULL)
+print(p.pid)

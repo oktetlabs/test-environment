@@ -1,0 +1,88 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
+"""Auxiliary script used by te_run_wrap; see comments there.
+
+This script runs the provided command, reads its output and passes
+it to FIFO (so that te_run_wait can read it). Also it sends Ctrl-C
+to controlling terminal associated with the command once te_run_wait
+sends SIGINT to it.
+
+It is assumed that this script hangs in background and Jenkins itself
+will not kill it even when pipeline is aborted.
+"""
+
+import sys
+import os
+import signal
+import time
+import select
+import pty
+
+fd_pty = -1
+
+def handler(sig, frame):
+    if fd_pty >= 0:
+        # Send Ctrl-C to controlling terminal to interrupt
+        # testing.
+        try:
+            os.write(fd_pty, b"\x03")
+        except:
+            return
+
+signal.signal(signal.SIGINT, handler)
+
+try:
+    fprefix = os.environ["TE_RUN_WRAP_PREFIX"]
+except:
+    fprefix = "./te_run"
+
+fifo_fp = fprefix + ".fifo"
+exit_code_fp = fprefix + ".exit_code"
+
+fd_fifo = os.open(fifo_fp, os.O_RDWR)
+
+# Use PTY here rather than redirecting to FIFO.
+# Using FIFO directly as stdout/stderr breaks TE build for
+# unknown reason, may be meson tries to do with standard
+# file descriptors something not supported for FIFO.
+# Also over PTY it is convenient to send Ctrl-C to interrupt
+# testing in a usual way.
+child_pid, fd_pty = pty.fork()
+if child_pid == 0:
+    os.execvp(sys.argv[1], sys.argv[1:])
+
+# Wait until PTY becomes unreadable (meaning that child
+# process terminated), reading data from it and passing it
+# to FIFO
+while True:
+    try:
+        data = os.read(fd_pty, 256)
+    except:
+        # Here read fails with exception when child
+        # process terminates and other end is closed.
+        break
+
+    os.write(fd_fifo, data)
+
+# Let te_run_wait know the exit code via an auxiliary file.
+pid, wait_st = os.waitpid(child_pid, 0)
+exit_code = os.waitstatus_to_exitcode(wait_st)
+with open(exit_code_fp, mode="w") as f:
+    print(exit_code, file=f)
+
+pobj = select.poll()
+pobj.register(fd_fifo, select.POLLIN)
+
+# Let te_run_wait to read all the accumulated output (data passed
+# to FIFO will be lost once this application terminates).
+while True:
+    res = pobj.poll(1000)
+    if len(res) == 0:
+        break
+    if (res[0][1] & select.POLLIN) == 0:
+        break
+
+    st = os.fstat(fd_fifo)
+    if st.st_nlink == 0:
+        break
