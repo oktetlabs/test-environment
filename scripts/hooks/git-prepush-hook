@@ -638,6 +638,9 @@ while read -r localref localsha remoteref remotesha; do
     # Local branch is deleted, nothing to do
     [[ "${localsha}" == "${Z40}" ]] && continue
 
+    # Do not check tags separately
+    [[ "${remoteref}" == refs/tags/* ]] && continue
+
     # If a new branch is created, we should check
     # all
     if test "${remotesha}" = "${Z40}"; then
