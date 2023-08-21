@@ -186,6 +186,9 @@ for arg; do
         --target=*)
             TARGET_BRANCH="${arg#--target=}"
             ;;
+        --wip)
+            TARGET_BRANCH="user/${LOGNAME}/private"
+            ;;
         -1 | --single)
             SINGLE="^"
             ;;

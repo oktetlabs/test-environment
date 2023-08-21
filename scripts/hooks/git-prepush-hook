@@ -165,6 +165,15 @@ function nonmaintainer_error ()
     fi
 }
 
+function public_error ()
+{
+    if [[ -z "${PRIVATE_BRANCH}" ]]; then
+        serious_error "$1"
+    else
+        warning "$1"
+    fi
+}
+
 ### The following checks are performed:
 ###
 
@@ -277,7 +286,7 @@ function check_reviewed_by ()
     local acked_by
     local tested_by
 
-    if [[ -n "${PRODUCTION_BRANCH}" ]]; then
+    if [[ -z "${PRIVATE_BRANCH}" ]]; then
         reviewed_by="$(get_trailer Reviewed-by "${rev}")"
         acked_by="$(get_trailer Acked-by "${rev}")"
         tested_by="$(get_trailer Tested-by "${rev}")"
@@ -367,7 +376,7 @@ function check_fixes ()
     while read -r hash subject; do
         [[ -z "${hash}" ]] && continue
         if ! git merge-base --is-ancestor "${hash}" "${rev}" 2>/dev/null; then
-            serious_error "invalid Fixes commit ${hash}"
+            public_error "invalid Fixes commit ${hash}"
         else
             subject0="$(git log -1 --abbrev=12 \
                             --format='%h ("%s")' "${hash}")"
@@ -553,6 +562,7 @@ function check_required_review ()
 ### - the absence of any trailer listed in hooks.push-prohibit-trailer
 ###   option (such trailers may contain service information, e.g.
 ###   a Reviewboard id which must be cleaned up before pushing);
+###   the error is downgraded to a warning for user private branches;
 ###
 ##! push-prohibit-trailer List of trailers that must not appear in commit messages.
 function check_prohibited_trailers ()
@@ -564,7 +574,7 @@ function check_prohibited_trailers ()
     for notrailer in $(git config --get-all hooks.push-prohibit-trailer); do
         trailer="$(get_trailer "${notrailer}" "${rev}")"
         if [[ -n "${trailer}" ]]; then
-            serious_error "${notrailer} is prohibited"
+            public_error "${notrailer} is prohibited"
         fi
     done
 }
@@ -580,6 +590,7 @@ function check_prohibited_trailers ()
 ###   may be used to require some bug reference id in all patches;
 ###       git config --local --add hooks.push-require-trailer Reviewed-by
 ###   would add a second required trailer (Reviewed-by in this case);
+###   the error is downgraded to a warning for user private branches;
 ###
 ##! push-require-trailer List of trailers that must be present in commit messages.
 function check_extra_trailers ()
@@ -600,7 +611,7 @@ function check_extra_trailers ()
             fi
         done
         if [[ -z "${found}" ]]; then
-            serious_error "${reqtrailer} is not present"
+            public_error "${reqtrailer} is not present"
         fi
     done
 }
@@ -636,15 +647,20 @@ while read -r localref localsha remoteref remotesha; do
     fi
 
     PRODUCTION_BRANCH=
-    for prod in ${PROD_BRANCHES}; do
-        case "${remoteref}" in
-            */"${prod}" )
+    PRIVATE_BRANCH=
+    if [[ "${remoteref}" == refs/heads/user/${LOGNAME}/* ]]; then
+            PRIVATE_BRANCH=1
+    else
+        for prod in ${PROD_BRANCHES}; do
+            if [[ "${remoteref}" == */${prod} ]]; then
                 PRODUCTION_BRANCH=1
                 break
-                ;;
-        esac
-    done
-    if [[ "${MAINTAINER_PUSH}" != "true" && -z "${PRODUCTION_BRANCH}" ]]; then
+            fi
+        done
+    fi
+
+    if [[ "${MAINTAINER_PUSH}" != "true" && -z "${PRODUCTION_BRANCH}" && \
+              -z "${PRIVATE_BRANCH}" ]]; then
         echo "NOTICE: checking a push to a non-production branch" \
              "'${remoteref#refs/heads/}'" >&2
         echo "        Configured production branches are: ${PROD_BRANCHES//$'\n'/ }" >&2
