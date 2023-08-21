@@ -245,15 +245,16 @@ logfork_log_message(const char *file, unsigned int line,
     struct te_log_out_params cm =
         { NULL, (uint8_t *)msg.__log_msg, sizeof(msg.__log_msg), 0 };
 
-    UNUSED(file);
-    UNUSED(line);
     UNUSED(entity);
 
     memset(&msg, 0, sizeof(msg));
 
     rc = te_log_vprintf_old(&cm, fmt, ap);
     if (rc != 0)
-        ERROR("Failed to construct log message using format \"%s\"", fmt);
+    {
+        ERROR("%s:%u: Failed to construct log message using format \"%s\": %r",
+              file, line, fmt, rc);
+    }
 
     msg.pid = getpid();
     msg.tid = thread_self();
