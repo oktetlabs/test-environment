@@ -245,4 +245,4 @@ else
     checker="$(dirname "$0")/hooks/git-prepush-hook"
 fi
 
-echo "fake ${TO} refs/branches/${TARGET_BRANCH} ${FROM}" | "${checker}"
+echo "fake ${TO} refs/heads/${TARGET_BRANCH} ${FROM}" | "${checker}"

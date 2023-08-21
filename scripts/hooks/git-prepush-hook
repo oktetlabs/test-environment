@@ -646,7 +646,7 @@ while read -r localref localsha remoteref remotesha; do
     done
     if [[ "${MAINTAINER_PUSH}" != "true" && -z "${PRODUCTION_BRANCH}" ]]; then
         echo "NOTICE: checking a push to a non-production branch" \
-             "'${remoteref#refs/branches/}'" >&2
+             "'${remoteref#refs/heads/}'" >&2
         echo "        Configured production branches are: ${PROD_BRANCHES//$'\n'/ }" >&2
     fi
 
