@@ -1,0 +1,315 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
+#
+# Script to generate various kinds of logs from TE raw log
+# or raw log bundle. It is intended to be used in a
+# handler of 404 (not found) error in web interface
+# to generate missing files when user wants to access
+# them.
+
+set -e
+
+readonly BINDIR="$(cd `dirname $0` && pwd)"
+
+raw_path=
+bundle_path=
+req_path=
+shared_url=
+docs_url=
+fix_perms=no
+detect_docs_dir=no
+
+#############################
+# Print usage information.
+# Arguments:
+#   None
+# Outputs:
+#   To stdout.
+#############################
+function usage() {
+cat <<EOF
+Usage: rgt-log-get-item [<options>]
+  --raw-log=<filepath>          Path to the raw log (optional;
+                                may be autodetected if stored
+                                in the directory where requested
+                                item should be generated).
+  --bundle=<filepath>           Path to the raw log bundle (optional;
+                                may be autodetected if stored
+                                in the directory where requested
+                                item should be generated).
+  --req-path=<filepath>         Path to the item which should
+                                be generated from raw log (required).
+  --shared-url=<url>            URL of the directory with
+                                shared files (optional;
+                                makes sense for HTML log).
+  --docs-url=<url>              URL of test suite documentation
+                                (optional; makes sense for HTML and
+                                JSON logs).
+  --detect-docs-dir             If present, makes this script to add
+                                subdirectory named after test suite
+                                to documentation URL (test suite name
+                                is obtained from meta_data.txt if
+                                it is present in the same directory
+                                where raw log or raw log bundle is
+                                stored).
+  --fix-permissions             If specified, try to ensure that
+                                generated files have permissions
+                                making them accessible to the owner
+                                of the directory where raw log is
+                                located.
+EOF
+}
+
+#######################################################################
+# Print error message.
+# Arguments:
+#   All arguments are passed to "echo" after an introductory string.
+# Outputs:
+#   To stderr.
+#######################################################################
+function print_error() {
+    echo "ERROR:" "$@" >&2
+}
+
+#######################################################################
+# Print warning message.
+# Arguments:
+#   All arguments are passed to "echo" after an introductory string.
+# Outputs:
+#   To stderr.
+#######################################################################
+function print_warn() {
+    echo "WARNING:" "$@" >&2
+}
+
+#######################################################################
+# Process command-line options.
+# Globals:
+#   raw_path
+#   bundle_path
+#   req_path
+#   shared_url
+#   docs_url
+#   detect_docs_dir
+#   fix_perms
+# Arguments:
+#   All arguments passed to this script.
+# Outputs:
+#   May output error messages to stderr or usage info to stdout.
+#######################################################################
+function process_opts() {
+    while [[ "$#" -gt 0 ]] ; do
+        case "$1" in
+            "") ;; # Ignore empty arguments
+
+            -h | --help) usage ; exit 0 ;;
+
+            --raw-log=*) raw_path=${1#--raw-log=} ;;
+
+            --bundle=*) bundle_path=${1#--bundle=} ;;
+
+            --req-path=*) req_path=${1#--req-path=} ;;
+
+            --shared-url=*) shared_url=${1#--shared-url=} ;;
+
+            --docs-url=*) docs_url=${1#--docs-url=} ;;
+
+            --detect-docs-dir) detect_docs_dir=yes ;;
+
+            --fix-permissions) fix_perms=yes ;;
+
+        esac
+        shift 1
+    done
+}
+
+#######################################################################
+# Check whether a given file exists. If it does, set a given
+# variable to the path to that file.
+# Arguments:
+#   File path.
+#   Name of the global variable to set.
+# Returns:
+#   0 if file exists and variable is set, 1 otherwise
+#######################################################################
+check_set_file() {
+    local fpath="$1"
+    local varname="$2"
+
+    if [[ -f "${fpath}" ]] ; then
+        declare -g "${varname}"="${fpath}"
+        return 0
+    fi
+
+    return 1
+}
+
+#######################################################################
+# Determine path to raw log or raw log bundle.
+#
+# Arguments:
+#   Directory where to look for log file.
+# Globals:
+#   bundle_path
+#   raw_path
+# Returns:
+#   0 if the file was found, 1 otherwise
+#######################################################################
+detect_raw_log() {
+    local log_dir="$1"
+
+    check_set_file "${log_dir}/raw_log_bundle.tpxz" "bundle_path" \
+        && return 0
+
+    check_set_file "${log_dir}/log.raw" "raw_path" \
+        && return 0
+
+    check_set_file "${log_dir}/log.raw.bz2" "raw_path" \
+        && return 0
+
+    check_set_file "${log_dir}/log.raw.xz" "raw_path" \
+        && return 0
+
+    return 1
+}
+
+#######################################################################
+# Based on metadata, detect subdirectory in which documentation for
+# specific test suite is stored.
+#
+# Arguments:
+#   Path to the directory where metadata can be found
+# Globals:
+#   docs_url
+#######################################################################
+docs_url_add_subdir() {
+    local src_dir="$1"
+    local meta_path="${src_dir}/meta_data.txt"
+
+    if [[ -f "${meta_path}" ]] ; then
+        local tsdir="$(grep -w ^TSDIR "${meta_path}")"
+        tsdir="${tsdir/#TSDIR /}"
+
+        if [[ -n "${tsdir}" ]] ; then
+            docs_url="${docs_url%/}/${tsdir}/"
+        fi
+    fi
+}
+
+#######################################################################
+# Main function.
+# Arguments:
+#   All arguments passed to this script.
+# Outputs:
+#   May output error messages to stderr or usage info to stdout.
+#######################################################################
+function main() {
+    local req_dir
+    local req_subdir
+    local req_target
+    local src_dir
+    local src_file
+    local base_name
+
+    process_opts "$@"
+
+    if [[ -z "${req_path}" ]] ; then
+        print_error "No path to the requested item was specified"
+        exit 1
+    fi
+
+    req_dir="$(dirname "${req_path}")"
+    base_name="$(basename "${req_path}")"
+    if [[ "${base_name}" = "html" || "${base_name}" = "json" ]] ; then
+        # html or json directory is requested
+        src_dir="${req_dir}"
+        req_target="${req_path}"
+        req_subdir="${base_name}"
+    else
+        base_name="$(basename "${req_dir}")"
+        if [[ "${base_name}" = "html" || "${base_name}" = "json" ]] ; then
+            # a file in html or json directory is requested
+            src_dir="$(dirname "${req_dir}")"
+            req_target="${req_dir}"
+            req_subdir="${base_name}"
+        else
+            # not HTML or JSON is requested
+            src_dir="${req_dir}"
+            req_target="${req_path}"
+        fi
+    fi
+
+    if [[ -z "${raw_path}" && -z "${bundle_path}" ]] ; then
+        # If source raw log file was not specified, try to find
+        # it in the directory where requested file should be
+        # generated.
+        if ! detect_raw_log "${src_dir}" ; then
+            print_error "Cannot find raw log or raw log bundle"
+            exit 1
+        fi
+    fi
+
+    src_file="${bundle_path:-${raw_path}}"
+    src_dir="$(dirname "${src_file}")"
+
+    if [[ -z "${src_file}" ]] ; then
+        print_error "No raw log or raw log bundle was specified"
+        exit 1
+    fi
+
+    if [[ "${detect_docs_dir}" = "yes" ]] ; then
+        docs_url_add_subdir "${src_dir}"
+    fi
+
+    if [[ -n "${bundle_path}" ]] ; then
+        "${BINDIR}"/rgt-log-bundle-get-item --bundle="${bundle_path}" \
+            --shared-url="${shared_url}" --docs-url="${docs_url}" \
+            --req-path="${req_path}"
+    else
+        local target
+        local target_opt
+        declare -a add_opts
+
+        if [[ "${req_path}" =~ [.]txt$ ]] ; then
+            target_opt="txt"
+            target="${req_path}"
+        elif [[ -n "${req_subdir}" ]] ; then
+            target_opt="${req_subdir}"
+            target="${req_target}"
+        else
+            print_error "Cannot generate ${req_path}"
+            exit 1
+        fi
+
+        if [[ "${target_opt}" = "html" || "${target_opt}" = "json" ]] ; then
+            if [[ -n "${docs_url}" ]] ; then
+                add_opts+=("--rgt-x2${target_opt}-docs-url=${docs_url}")
+            fi
+
+            if [[ -n "${shared_url}" ]] ; then
+                add_opts+=("--rgt-x2${target_opt}-shared-url=${shared_url}")
+            fi
+        fi
+
+        "${BINDIR}"/rgt-proc-raw-log --raw-log="${raw_path}" \
+            "--${target_opt}=${target}" "${add_opts[@]}"
+    fi
+
+    if [[ "${fix_perms}" = "yes" ]] ; then
+        # Try to change generated file(s) permissions and owner to
+        # make them accessible for special user under which tasks
+        # like cleaning outdated automatically generated files are
+        # scheduled.
+        # This is useful when script generating those files on
+        # request is executed under a different user.
+
+        chmod -R g+rwX,o= "${req_target}"
+
+        chown -R --reference="${src_dir}" "${req_target}" >/dev/null 2>&1 \
+            || chgrp -R --reference="${src_dir}" "${req_target}" \
+                    >/dev/null 2>&1 || true
+    fi
+}
+
+main "$@"
