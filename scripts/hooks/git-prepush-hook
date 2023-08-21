@@ -511,7 +511,7 @@ function check_nonascii_body ()
                      | grep --no-messages --color=always \
                             --perl-regexp '[^\n\t -~]')"
 
-        if [[ -n "$bad_lines" ]]; then
+        if [[ -n "${bad_lines}" ]]; then
             nonmaintainer_error "invalid characters in '${edited_file}':"$'\n'"${bad_lines}"
         fi
     done
@@ -599,7 +599,7 @@ function check_extra_trailers ()
                 break
             fi
         done
-        if [[ -z "$found" ]]; then
+        if [[ -z "${found}" ]]; then
             serious_error "${reqtrailer} is not present"
         fi
     done

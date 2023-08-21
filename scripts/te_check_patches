@@ -5,9 +5,9 @@
 set -u
 
 TARGET_BRANCH="$(git rev-parse --symbolic --abbrev-ref '@{push}' 2>/dev/null)"
-if [[ -z "$TARGET_BRANCH" ]]; then
+if [[ -z "${TARGET_BRANCH}" ]]; then
     TARGET_BRANCH="$(git rev-parse --symbolic --abbrev-ref '@{u}' 2>/dev/null)"
-    if [[ -z "$TARGET_BRANCH" ]]; then
+    if [[ -z "${TARGET_BRANCH}" ]]; then
         TARGET_BRANCH="$(git rev-parse --symbolic --abbrev-ref HEAD)"
     fi
 fi
@@ -153,9 +153,9 @@ EOF
         while read -r name descr; do
             printf "%-40s %s\n" "hooks.${name}" "${descr}"
             vals="$(git config --get-all "hooks.${name}")"
-            if [[ -n "$vals" ]]; then
+            if [[ -n "${vals}" ]]; then
                 pfx="Current value:"
-                for val in $vals; do
+                for val in ${vals}; do
                     printf "%-40s %14s %s\n" " " "${pfx}" "${val}"
                     pfx="-"
                 done
@@ -239,7 +239,7 @@ done
 
 [[ -z "${FROM}" ]] && FROM="${TO}${SINGLE}"
 
-if [[ "$USERHOOKS" == "true" ]]; then
+if [[ "${USERHOOKS}" == "true" ]]; then
     checker="$(git rev-parse --show-toplevel)/.git/hooks/pre-push"
 else
     checker="$(dirname "$0")/hooks/git-prepush-hook"

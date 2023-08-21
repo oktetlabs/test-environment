@@ -70,7 +70,7 @@ its parent.
 
 EOF
 
-    if [[ -z "$full" ]]; then
+    if [[ -z "${full}" ]]; then
         echo "Described below are the most common options."
         echo "Use $0 --full-help to see all of them."
         echo ""
@@ -113,7 +113,7 @@ EOF
                     a GitHub review request).
 EOF
 
-    [[ -z "$full" ]] && return 0
+    [[ -z "${full}" ]] && return 0
     cat <<EOF
 --breaks=TEXT       Adds a Breaks trailer with a given TEXT.
                     Implies --single.
@@ -175,12 +175,12 @@ function maybe_copy_trailer ()
     local trailer="$1"
     local value="$2"
 
-    case "$value" in
+    case "${value}" in
         @*)
             git log -1 --format="%(trailers:key=${trailer},valueonly)" "${value#@}"
             ;;
         *)
-            echo "$value"
+            echo "${value}"
         ;;
     esac
 }
@@ -223,7 +223,7 @@ function map_user ()
 
 function verbose ()
 {
-    if [[ "$VERBOSE" == "true" ]]; then
+    if [[ "${VERBOSE}" == "true" ]]; then
         echo "$*" >&2
     fi
 }
@@ -233,7 +233,7 @@ function restore_branch ()
     local status
     local oldhead
 
-    if [[ -z "$DRYRUN" ]]; then
+    if [[ -z "${DRYRUN}" ]]; then
         if ! oldhead="$(git rev-parse add_trailer_oldhead >&2)"; then
             echo "No trailer adding in progress" >&2
             exit 1
@@ -244,9 +244,9 @@ function restore_branch ()
     status="${1:-$?}"
     if [[ "${status}" -ne 0 ]]; then
         verbose "Reverting the branch to ${oldhead}"
-        $DRYRUN git reset --hard add_trailer_oldhead
+        ${DRYRUN} git reset --hard add_trailer_oldhead
     fi
-    $DRYRUN git tag --delete add_trailer_oldhead
+    ${DRYRUN} git tag --delete add_trailer_oldhead
 }
 
 for arg; do
@@ -378,7 +378,7 @@ if [[ "${USE_STGIT}" == "true" ]]; then
     fi
 fi
 
-if [[ "$USE_STGIT" == "true" ]]; then
+if [[ "${USE_STGIT}" == "true" ]]; then
 
     function process_stgit ()
     {
@@ -387,7 +387,7 @@ if [[ "$USE_STGIT" == "true" ]]; then
         verbose "Processing ${p}"
 
         rev="$(stg id "${p}")" || exit $?
-        $DRYRUN stg edit -m "$(git log -1 --format='%B' "${rev}" | \
+        ${DRYRUN} stg edit -m "$(git log -1 --format='%B' "${rev}" | \
                                git interpret-trailers "${TRAILER_ARGS[@]}")" "${p}" ||
             exit $?
     }
@@ -414,7 +414,7 @@ else
             PATCHES=("@{u}..HEAD")
         fi
     fi
-    if ! $DRYRUN git tag add_trailer_oldhead HEAD; then
+    if ! ${DRYRUN} git tag add_trailer_oldhead HEAD; then
         echo "Trailer adding already in progress, use '$0 --abort' to cancel it" >&2
         exit 1
     fi
@@ -422,7 +422,7 @@ else
     trap "restore_branch \$?" EXIT
 
     lastrev=
-    if [[ -z "$DRYRUN" ]]; then
+    if [[ -z "${DRYRUN}" ]]; then
         headrev=add_trailer_oldhead
     else
         headrev=HEAD
@@ -434,21 +434,21 @@ else
         fi
 
         if [[ -z "${lastrev}" ]]; then
-            $DRYRUN git reset --hard "${rev}"
+            ${DRYRUN} git reset --hard "${rev}"
         else
             for skip in $(git rev-list --no-walk=sorted --reverse "${lastrev}..${rev}"); do
                 verbose "Going to ${skip}"
-                $DRYRUN git cherry-pick "${skip}" || exit $?
+                ${DRYRUN} git cherry-pick "${skip}" || exit $?
             done
         fi
         verbose "Processing ${rev}"
-        $DRYRUN git commit --amend -m "$(git log -1 --format='%B' "${rev}" | \
+        ${DRYRUN} git commit --amend -m "$(git log -1 --format='%B' "${rev}" | \
                                git interpret-trailers "${TRAILER_ARGS[@]}")" ||
             exit $?
         lastrev="${rev}"
     done
     for skip in $(git rev-list --no-walk=sorted --reverse "${lastrev}..${headrev}" 2>/dev/null); do
         verbose "Going to ${skip}"
-        $DRYRUN git cherry-pick "${skip}" || exit $?
+        ${DRYRUN} git cherry-pick "${skip}" || exit $?
     done
 fi
