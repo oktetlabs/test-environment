@@ -301,7 +301,7 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ \
     multi_opts+=("${multi_pref}single-node=${node}")
     multi_opts+=("${multi_pref}docs-url=${docs_url}")
 
-    rgt-proc-raw-log --raw-log="${bundle_tmpdir}/log_merge.raw" \
+    "${bindir}"/rgt-proc-raw-log --raw-log="${bundle_tmpdir}/log_merge.raw" \
         --${out_opt}="${dir_path}" "${multi_opts[@]}" \
         --rgt-conv-incomplete-log "${sniff_opts[@]}"
 
