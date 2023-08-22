@@ -3,9 +3,11 @@
 set -u
 
 declare -a TRAILER_ARGS
+declare -a PATCH_TRAILER_ARGS
 declare -a PATCHES
 
 TRAILER_ARGS=()
+PATCH_TRAILER_ARGS=()
 PATCHES=()
 
 USE_STGIT="$(git config --get --type bool --default true \
@@ -17,6 +19,7 @@ SINGLE="$(git config --get --type bool --default false \
                add-trailer.single)"
 VERBOSE="$(git config --get --type bool --default false \
                  add-trailer.verbose)"
+GUESS_FIXES=
 
 declare -A TRAILER_MAP=([--reviewed-by]=Reviewed-by
                         [--acked-by]=Acked-by
@@ -108,6 +111,10 @@ EOF
 
 --fixes=REV         Add a properly formatted Fixes trailer for a given
                     Git revision REV. Implies --single.
+
+--guess-fixes       Try to guess required Fixes trailers for each revision.
+                    Note that it does not always guess correctly, so manual
+                    post-editing may still be needed.
 
 --link=URL          Add a Link trailer with a given URL (e.g. pointing to
                     a GitHub review request).
@@ -249,6 +256,64 @@ function restore_branch ()
     ${DRYRUN} git tag --delete add_trailer_oldhead
 }
 
+function guess_fixes ()
+{
+    local rev="$1"
+    local prefix
+    local linerange
+    local curfile
+    local start
+    local end
+    local rest
+
+    # The black art in the lines below does
+    # the following:
+    # - detect the original numbers of all
+    #   code lines changed by a given revision;
+    # - run git blame constrained to these lines
+    #   on a revision that precedes the given;
+    # - extract the last revision that touched
+    #   these lines before the given;
+    # - the set of these revisions would form
+    #   the sef of Fixes trailers.
+    while read -r prefix linerange rest; do
+        case "${prefix}" in
+            ---)
+                curfile="${linerange#a/}"
+                ;;
+            @@)
+                linerange="${linerange#-}"
+
+                if [[ "${linerange}" == *,0 ]]; then
+                    continue
+                elif [[ "${linerange}" == *,* ]]; then
+                    start="${linerange%%,*}"
+                    end="${linerange##*,}"
+                    end="$((start + end - 1))"
+                else
+                    start="${linerange}"
+                    end="${linerange}"
+                fi
+                git blame -L"${start},${end}" "${rev}^" "${curfile}"
+                ;;
+        esac
+    done < <(git diff -U0 "${rev}^" "${rev}") | cut -d' ' -f1 | sort -u
+}
+
+function add_guess_fixes ()
+{
+    local rev="$1"
+    local fixrev
+
+    [[ -z "${GUESS_FIXES}" ]] && return 0
+    for fixrev in $(guess_fixes "${rev}"); do
+        PATCH_TRAILER_ARGS+=("--where" "before" "--if-exists" "addIfDifferent"
+                             "--trailer"
+                             "Fixes=$(git log -1 --abbrev=12 \
+                                          --format='%h ("%s")' "${fixrev}")")
+    done
+}
+
 for arg; do
     case "${arg}" in
         -h | --help)
@@ -336,6 +401,9 @@ for arg; do
             TRAILER_ARGS+=("--where" "start" "--if-exists" "replace"
                            "--trailer" "Breaks=${arg##--breaks=}")
             ;;
+        --guess-fixes)
+            GUESS_FIXES=true
+            ;;
         --fixes=*)
             SINGLE=true
             line="$(git log -1 --abbrev=12 --format='%h ("%s")' \
@@ -395,8 +463,12 @@ if [[ "${USE_STGIT}" == "true" ]]; then
         verbose "Processing ${p}"
 
         rev="$(stg id "${p}")" || exit $?
+        PATCH_TRAILER_ARGS=()
+        add_guess_fixes "${rev}"
+
         ${DRYRUN} stg edit -m "$(git log -1 --format='%B' "${rev}" | \
-                               git interpret-trailers "${TRAILER_ARGS[@]}")" "${p}" ||
+                               git interpret-trailers "${TRAILER_ARGS[@]}" \
+                                                      "${PATCH_TRAILER_ARGS[@]}")" "${p}" ||
             exit $?
     }
 
@@ -450,8 +522,11 @@ else
             done
         fi
         verbose "Processing ${rev}"
+        PATCH_TRAILER_ARGS=()
+        add_guess_fixes "${rev}"
         ${DRYRUN} git commit --amend -m "$(git log -1 --format='%B' "${rev}" | \
-                               git interpret-trailers "${TRAILER_ARGS[@]}")" ||
+                               git interpret-trailers "${TRAILER_ARGS[@]}" \
+                                                      "${PATCH_TRAILER_ARGS[@]}")" ||
             exit $?
         lastrev="${rev}"
     done
