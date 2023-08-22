@@ -28,7 +28,7 @@ mi_raw=
 mi_only=false
 
 declare -a rgt_conv_opts
-declare -a rgt_x2hm_opts
+declare -a rgt_x2html_opts
 declare -a rgt_x2json_opts
 
 caps_tmp_dir=
@@ -81,7 +81,7 @@ Usage: te_proc_raw_log.sh [<options>]
   --junit=<filepath>            Where to save JUnit log (if needed).
   --xml=<filepath>              Where to save full XML log (if needed).
   --rgt-conv-*                  Pass an option to rgt-conv.
-  --rgt-x2hm-*                  Pass an option to rgt-xml2html-multi.
+  --rgt-x2html-*                Pass an option to rgt-xml2html-multi.
   --rgt-x2json-*                Pass an option to rgt-xml2json.
 EOF
 }
@@ -128,7 +128,7 @@ function print_warn() {
 #   mi_only
 #   sniff_detailed_packets
 #   rgt_conv_opts
-#   rgt_x2hm_opts
+#   rgt_x2html_opts
 #   rgt_x2json_opts
 # Arguments:
 #   All arguments passed to this script.
@@ -175,7 +175,13 @@ function process_opts() {
                 ;;
 
             --rgt-x2hm-*)
-                rgt_x2hm_opts+=("--${1#--rgt-x2hm-}")
+                print_warn "--rgt-x2hm-* prefix is deprecated, " \
+                           "use --rgt-x2html-* instead"
+                rgt_x2html_opts+=("--${1#--rgt-x2hm-}")
+                ;;
+
+            --rgt-x2html-*)
+                rgt_x2html_opts+=("--${1#--rgt-x2html-}")
                 ;;
 
             --rgt-x2json-*)
@@ -373,7 +379,7 @@ function main() {
             fi
 
             if [[ -n "${html_path}" ]] ; then
-                "${BINDIR}"/rgt-xml2html-multi "${rgt_x2hm_opts[@]}" \
+                "${BINDIR}"/rgt-xml2html-multi "${rgt_x2html_opts[@]}" \
                     "${log_xml_merged}" "${html_path}"
             fi
 

@@ -284,8 +284,8 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ \
     declare -a multi_opts
 
     if [[ "${extension}" = "html" ]] ; then
-        multi_opts+=(--rgt-x2hm-shared-url="${shared_url}")
-        multi_pref="--rgt-x2hm-"
+        multi_opts+=(--rgt-x2html-shared-url="${shared_url}")
+        multi_pref="--rgt-x2html-"
         out_opt="html"
     else
         multi_pref="--rgt-x2json-"
