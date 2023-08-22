@@ -106,10 +106,10 @@ function get_parent ()
     fi
 }
 
-BYLINE_TRAILERS=(Signed-off-by Co-developed-by Reviewed-by Acked-by \
-                              Tested-by Suggested-by Reported-by)
-KNOWN_TRAILERS=("${BYLINE_TRAILERS[@]}" OL-Redmine-Id GitHub-TE-Id AMD-Jira-Id \
-                                        Fixes Breaks Link)
+KNOWN_TRAILERS=(Signed-off-by Co-developed-by Reviewed-by Acked-by \
+                              Tested-by Suggested-by Reported-by OL-Redmine-Id \
+                              GitHub-TE-Id AMD-Jira-Id \
+                              Fixes Breaks Link)
 
 function strip_known_trailers ()
 {
@@ -120,6 +120,21 @@ function strip_known_trailers ()
     done
     git interpret-trailers --unfold | sed "${filters}"
 }
+
+EMAIL_SYNTAX="[[:upper:]]+([[:alpha:] -]) <+([[:lower:][:digit:]+_.-])@+([[:lower:][:digit:]-])+(.+(+([[:lower:][:digit:]-])))>"
+
+declare -A TRAILER_SYNTAX
+TRAILER_SYNTAX=(["OL-Redmine-Id"]="+([[:digit:]])"
+                ["GitHub-TE-Id"]="+([[:digit:]])"
+                ["AMD-Jira-Id"]="+([[:upper:]])-+([[:digit:]])"
+                ["Link"]="@(http|https|git)://+([[:alnum:]-])+(.+([[:alnum:]-]))*([^[:space:]{}])"
+                ["Signed-off-by"]="${EMAIL_SYNTAX}"
+                ["Co-developed-by"]="${EMAIL_SYNTAX}"
+                ["Reviewed-by"]="${EMAIL_SYNTAX}"
+                ["Acked-by"]="${EMAIL_SYNTAX}"
+                ["Tested-by"]="${EMAIL_SYNTAX}"
+                ["Suggested-by"]="${EMAIL_SYNTAX}"
+                ["Reported-by"]="${EMAIL_SYNTAX}")
 
 function serious_error ()
 {
@@ -336,28 +351,30 @@ function check_capitalization ()
     done
 }
 
-### - proper format of Signed-off-by and similiar trailers:
-###   they must contain a lower-case e-mail;
+### - the correctness of syntax of certain trailers:
+###   + Signed-off-by, Co-developed-by, Reviewed-by, Acked-by, Tested-by,
+###     Reported-by, Suggested-by shall all contain a valid lowercase email,
+###     e.g.: Reviewed-by: John R. Hacker <john.r.hacker@example.com>;
+###   + OL-Redmine-Id and GitHub-TE-Id shall contain only numbers;
+###   + AMD-Jira-Id shall be a Jira identifier (like XXX-9999);
+###   + Link shall be a HTTP(S) or Git URL; (M)
 ###
-function check_bylines ()
+function check_trailer_syntax ()
 {
     local rev="$1"
-    local trailer0
-    local rest
+    local trailer
+    local value
 
-    for trailer in "${BYLINE_TRAILERS[@]}"; do
-        while IFS=: read -r trailer0 rest; do
-            [[ -z "${trailer0}" ]] && continue
-            case "${rest}" in
-                [[:space:]][A-Z]*[[:space:]]\<[a-z]*@[a-z]*.*\>)
-                ;;
-                *)
-                    nonmaintainer_error \
-                        "invalid format of ${trailer}: ${rest}"
-                    ;;
-            esac
+    for trailer in "${!TRAILER_SYNTAX[@]}"; do
+        while read -r value; do
+            [[ -z "${value}" ]] && continue
+
+            # shellcheck disable=SC2053
+            if [[ "${value}" != ${TRAILER_SYNTAX[${trailer}]} ]]; then
+                nonmaintainer_error "invalid value '${value}' for ${trailer}"
+            fi
         done < <(git log -1 \
-                     --format="%(trailers:key=${trailer},unfold)" \
+                     --format="%(trailers:key=${trailer},valueonly,unfold)" \
                      "${rev}")
     done
 }
@@ -680,8 +697,8 @@ while read -r localref localsha remoteref remotesha; do
         check_reviewed_by "${rev}"
         check_reviewed_by_dups "${rev}"
         check_capitalization "${rev}"
-        check_bylines "${rev}"
         check_fixes "${rev}"
+        check_trailer_syntax "${rev}"
         check_summary "${rev}"
         check_description "${rev}"
         check_whitespaces "${rev}"
