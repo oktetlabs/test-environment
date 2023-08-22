@@ -59,7 +59,10 @@ function cleanup() {
 function usage() {
 cat <<EOF
 Usage: te_proc_raw_log.sh [<options>]
-  --raw-log=<filepath>          Path to the RAW log (input, required).
+  --raw-log=<filepath>          Path to the RAW log (input, required;
+                                may be path to log compressed with
+                                bzip2 or xz, with corresponding file
+                                extension).
   --sniff-log                   Include sniffer dumps.
                                 WARNING: if you changed sniffer log directory
                                 in the way it could not be guessed easily
@@ -230,6 +233,24 @@ function main() {
     if [[ -z "${raw_path}" ]] ; then
         print_error "--raw-log is not specified"
         exit 1
+    fi
+
+    if [[ "${raw_path}" =~ [.]bz2$ \
+          || "${raw_path}" =~ [.]xz$ ]] ; then
+        raw_log_ext="$(mktemp "${TMPDIR}/log_XXXXXX.raw")"
+        tmp_files+=("${raw_log_ext}")
+
+        if [[ "${raw_path}" =~ [.]bz2$ ]] ; then
+            bunzip2 --keep --stdout "${raw_path}" >"${raw_log_ext}"
+        else
+            unxz --keep --stdout "${raw_path}" >"${raw_log_ext}"
+        fi
+
+        if [[ $? -ne 0 ]] ; then
+            print_error "Failed to extract raw log from ${raw_path}"
+            exit 1
+        fi
+        raw_path="${raw_log_ext}"
     fi
 
     # Check sniffer-related arguments for consistency
