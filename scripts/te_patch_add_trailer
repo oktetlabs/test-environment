@@ -276,12 +276,20 @@ for arg; do
             TRAILER_ARGS+=("--if-exists" "replace" "--if-missing" "doNothing"
                            "--trim-empty" "--trailer" "${arg#-d}")
             ;;
-        --reviewed-by=* | --acked-by=* | --tested-by=* | \
-            --reported-by=* | --suggested-by=* )
+        --reviewed-by=* | --acked-by=* | --tested-by=*)
             trailer="${TRAILER_MAP[${arg%%=*}]}"
             username="$(maybe_copy_trailer "${trailer}" "${arg#--*=}")"
 
             TRAILER_ARGS+=("--where" "end" "--if-exists" "addIfDifferent"
+                           "--trailer"
+                           "${trailer}=$(map_user "${username}")") ||
+                exit $?
+            ;;
+        --reported-by=* | --suggested-by=* )
+            trailer="${TRAILER_MAP[${arg%%=*}]}"
+            username="$(maybe_copy_trailer "${trailer}" "${arg#--*=}")"
+
+            TRAILER_ARGS+=("--where" "start" "--if-exists" "replace"
                            "--trailer"
                            "${trailer}=$(map_user "${username}")") ||
                 exit $?
@@ -320,7 +328,7 @@ for arg; do
                     exit 1
                     ;;
             esac
-            TRAILER_ARGS+=("--where" "after" "--if-exists" "addIfDifferent"
+            TRAILER_ARGS+=("--where" "before" "--if-exists" "addIfDifferent"
                            "--trailer" "Link=${arg##--link=}")
             ;;
         --breaks=*)
@@ -332,7 +340,7 @@ for arg; do
             SINGLE=true
             line="$(git log -1 --abbrev=12 --format='%h ("%s")' \
                         "${arg#--fixes=}")" || exit $?
-            TRAILER_ARGS+=("--where" "after" "--if-exists" "addIfDifferent"
+            TRAILER_ARGS+=("--where" "before" "--if-exists" "addIfDifferent"
                            "--trailer" "Fixes=${line}")
             ;;
         --trailer=*:*)
