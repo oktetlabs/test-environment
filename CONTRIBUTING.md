@@ -246,6 +246,34 @@ Changes that are generally breaking:
    type changes)
  - addition of function attributes, such as `format` or `deprecated`
 
+#### Trailer order
+
+The order of trailers is not rigidly fixed, but it must reflect to some
+extent the development process of a patch. In particular:
+
+ - the trailers that describe the substance of a patch must come first ---
+   these are issue-referencing trailers (e.g. `OL-Redmine-Id`), `Link`,
+   `Fixes`, `Breaks`; the relative order of trailers within this group
+   is not specified;
+ - tribute trailers `Suggested-by` and `Reported-by`;
+ - then `Signed-off-by` and `Co-developed-by` must come; the order of these
+   trailers must reflect the history of contributions, that is, the most recent
+   contributor must be mentioned last;
+ - and at last `Reviewed-by`, `Acked-by` and `Tested-by` must come, again
+   reflecting the timeline of the review process -- the most recent reviewer
+   must be mentioned last.
+
+Note that all `*-by` trailers should always come together, not separated
+by other trailers.
+
+If a patch is a result of a joint effort of several parties, the latter
+two blocks may be interleaved, e.g. first come the author(s) of the original
+patch, then internal reviewers of the first party, then co-authors from the
+second party and then final reviewers.
+
+In all cases the very last `Signed-off-by` must be either from the patch author
+or from the patch committer.
+
 #### Example
 
     component: fix segmentation fault on invalid input
@@ -258,6 +286,25 @@ Changes that are generally breaking:
     OL-Redmine-Id: 12345
     Signed-off-by: John Doe <johnd@example.com>
     Reviewed-by: Jane Doe <janed@example.com>
+
+A more elaborate example with a complex patch workflow:
+
+    component: implement a super important feature
+
+    Here comes the description of a very important and useful
+    feature that has long been worked upon.
+
+    Breaks: a lot of legacy testsuites
+    OL-Redmine-Id: 12345
+    Link: Link: https://github.com/oktetlabs/test-environment/pull/999
+    Suggested-by: Gavin Armstrong <g.armstrong@example.come>
+    Signed-off-by: James Baxter <jbaxter@example.com>
+    Acked-by: Joanne Chappell <joanned@example.come>
+    Co-developed-by: Margaret Doig  <mdoig@example.com>
+    Signed-off-by: Margaret Doig <mdoig@example.com>
+    Signed-off-by: Paul Farrow <paul.farrow@example.com>
+    Reviewed-by: Ian Greenaway <ian-greenaway@example.com>
+    Reviewed-by: Victor Harris <vharris@example.com>
 
 ### Ensure compliance automatically
 
