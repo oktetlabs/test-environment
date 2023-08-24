@@ -121,7 +121,7 @@ function strip_known_trailers ()
     git interpret-trailers --unfold | sed "${filters}"
 }
 
-EMAIL_SYNTAX="[[:upper:]]+([[:alpha:] -]) <+([[:lower:][:digit:]+_.-])@+([[:lower:][:digit:]-])+(.+(+([[:lower:][:digit:]-])))>"
+EMAIL_SYNTAX="[[:upper:]]+([[:alpha:]. -]) <+([[:lower:][:digit:]+_.-])@+([[:lower:][:digit:]-])+(.+(+([[:lower:][:digit:]-])))>"
 
 declare -A TRAILER_SYNTAX
 TRAILER_SYNTAX=(["OL-Redmine-Id"]="+([[:digit:]])"
