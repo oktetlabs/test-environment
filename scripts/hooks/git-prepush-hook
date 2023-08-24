@@ -136,6 +136,37 @@ TRAILER_SYNTAX=(["OL-Redmine-Id"]="+([[:digit:]])"
                 ["Suggested-by"]="${EMAIL_SYNTAX}"
                 ["Reported-by"]="${EMAIL_SYNTAX}")
 
+declare -A TRAILER_ORDER
+declare -A TRAILER_NEXT_ORDER
+
+# Trailers are divided into several groups which
+# should come in a certain order, but the relative
+# ordering of different trailers within one group
+# is not specified. Thus each trailer is assigned its
+# order group number. In general, the group number of
+# a next trailer must not be less than the number of
+# a previous trailer. However, some groups may be
+# repeated, so for some trailers the minimal next
+# allowed group number is one less that the current one.
+
+TRAILER_ORDER=(["OL-Redmine-Id"]=0
+               ["GitHub-TE-Id"]=0
+               ["AMD-Jira-Id"]=0
+               ["Link"]=0
+               ["Fixes"]=0
+               ["Breaks"]=0
+               ["Suggested-by"]=1
+               ["Reported-by"]=1
+               ["Signed-off-by"]=2
+               ["Co-developed-by"]=2
+               ["Reviewed-by"]=3
+               ["Acked-by"]=3
+               ["Tested-by"]=3)
+
+TRAILER_NEXT_ORDER=(["Reviewed-by"]=2
+                    ["Acked-by"]=2
+                    ["Tested-by"]=2)
+
 function serious_error ()
 {
     ERRORS+=$'\n\t'"$1"
@@ -377,6 +408,46 @@ function check_trailer_syntax ()
                      --format="%(trailers:key=${trailer},valueonly,unfold)" \
                      "${rev}")
     done
+}
+
+### - the recommended order of trailer groups:
+###   + Fixes, Breaks, OL-Redmine-Id, GitHub-TE-Id, AMD-Jira-Id in any order;
+###   + Suggested-by and Reported-by;
+###   + Signed-off-by and Co-developed-by;
+###   + Reviewed-by, Acked-by, Tested-by;
+###   this check is always reported as a warning;
+###
+function check_trailer_ordering ()
+{
+    local rev="$1"
+    local prev_trailer
+    local trailer
+    local rest
+    local cur_order
+    local next_order
+    local has_review
+
+    has_review=
+    cur_order=0
+    next_order=0
+    while IFS=: read -r trailer rest; do
+        [[ -z "${trailer}" ]] && continue
+        cur_order="${TRAILER_ORDER[${trailer}]:-}"
+        # Unknown trailers are silently ignored wrt ordering
+        [[ -z "${cur_order}" ]] && continue
+        if [[ ${cur_order} -lt ${next_order} ]]; then
+            warning "${trailer} should come before ${prev_trailer}"
+        fi
+        if [[ ${cur_order} -eq ${TRAILER_ORDER[Reviewed-by]} ]]; then
+            has_review=true
+        fi
+        next_order="${TRAILER_NEXT_ORDER[${trailer}]:-${cur_order}}"
+        prev_trailer="${trailer}"
+    done < <(git log -1 --format="%(trailers:unfold)" "${rev}")
+    if [[ -n "${has_review}" &&
+              ${cur_order} -eq ${TRAILER_ORDER[Signed-off-by]} ]]; then
+        warning "final ${prev_trailer} is not followed by a review trailer"
+    fi
 }
 
 ### - the correctness of Fixes trailers;
@@ -699,6 +770,7 @@ while read -r localref localsha remoteref remotesha; do
         check_capitalization "${rev}"
         check_fixes "${rev}"
         check_trailer_syntax "${rev}"
+        check_trailer_ordering "${rev}"
         check_summary "${rev}"
         check_description "${rev}"
         check_whitespaces "${rev}"
