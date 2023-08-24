@@ -14,6 +14,31 @@
 #include "te_numeric.h"
 #include "logger_api.h"
 
+const te_enum_map te_scalar_type_names[] = {
+#define MEMBER(scalar_type_, c_type_, ...) \
+    {.name = #c_type_, .value = (scalar_type_)},
+    TE_SCALAR_TYPE_LIST(MEMBER)
+#undef MEMBER
+    TE_ENUM_MAP_END
+};
+
+typedef struct te_scalar_type_props {
+    size_t size;
+    intmax_t min_val;
+    uintmax_t max_val;
+} te_scalar_type_props;
+
+static const te_scalar_type_props te_scalar_types_props[] = {
+#define MEMBER(scalar_type_, c_type_, min_, max_) \
+    [scalar_type_] = (te_scalar_type_props) {       \
+        .size = sizeof(c_type_),                    \
+        .min_val = (min_),                          \
+        .max_val = (max_),                          \
+    },
+    TE_SCALAR_TYPE_LIST(MEMBER)
+#undef MEMBER
+};
+
 static te_errno
 generic_double2int(long double val, long double min, long double max,
                    te_bool is_unsigned, void *result)
@@ -78,4 +103,99 @@ te_errno
 te_double2uint_safe(long double val, uintmax_t max, uintmax_t *result)
 {
     return generic_double2int(val, 0.0L, (long double)max, FALSE, result);
+}
+
+uintmax_t
+te_scalar_type_max(te_scalar_type type)
+{
+    return te_scalar_types_props[type].max_val;
+}
+
+intmax_t
+te_scalar_type_min(te_scalar_type type)
+{
+    return te_scalar_types_props[type].min_val;
+}
+
+size_t
+te_scalar_type_sizeof(te_scalar_type type)
+{
+    return te_scalar_types_props[type].size;
+}
+
+te_bool
+te_scalar_type_is_signed(te_scalar_type type)
+{
+    return te_scalar_type_min(type) != 0;
+}
+
+te_errno
+te_scalar_type_fit_size(te_bool is_signed, size_t size, te_scalar_type *type)
+{
+    size_t i;
+
+    for (i = 0; i < TE_ARRAY_LEN(te_scalar_types_props); i++)
+    {
+        if ((te_scalar_type_sizeof(i) == size) &&
+            (te_scalar_type_is_signed(i) == is_signed))
+        {
+            *type = (te_scalar_type)i;
+            return 0;
+        }
+    }
+    return TE_ERANGE;
+}
+
+static te_errno
+te_scalar_val_fit_type_limits(intmax_t val, te_scalar_type src_type,
+                              te_scalar_type dst_type)
+{
+    if (!te_scalar_type_is_signed(src_type) || val >= 0)
+        return (uintmax_t)val > te_scalar_type_max(dst_type) ? TE_EOVERFLOW : 0;
+
+    /* val < 0 here and src_type is signed */
+    if (!te_scalar_type_is_signed(dst_type))
+        return TE_EOVERFLOW;
+
+    /* val < 0 here and dst_type is signed */
+    return val < te_scalar_type_min(dst_type) ? TE_EOVERFLOW : 0;
+}
+
+te_errno
+te_scalar_dynamic_cast(te_scalar_type src_type, const void *src,
+                       te_scalar_type dst_type, void *dst)
+{
+    intmax_t src_val = 0;
+    te_errno rc;
+
+#define CASE(scalar_type_, src_type_, ...) \
+    case (scalar_type_):                        \
+    {                                           \
+        src_val = (intmax_t)*(src_type_ *)src;  \
+        break;                                  \
+    }
+    switch (src_type)
+    {
+        TE_SCALAR_TYPE_LIST(CASE);
+    }
+#undef CASE
+
+    rc = te_scalar_val_fit_type_limits(src_val, src_type, dst_type);
+
+    if (dst == NULL)
+        return rc;
+
+#define CASE(scalar_type_, dst_type_, ...) \
+    case (scalar_type_):                        \
+    {                                           \
+        *(dst_type_ *)dst = (dst_type_)src_val; \
+        break;                                  \
+    }
+    switch (dst_type)
+    {
+        TE_SCALAR_TYPE_LIST(CASE);
+    }
+#undef CASE
+
+    return rc;
 }
