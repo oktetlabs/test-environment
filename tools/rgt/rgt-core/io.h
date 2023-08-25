@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief RGT core: I/O functions.
  *
  * Auxiliary functions for I/O operations.
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RGT_CORE_IO_H__
@@ -48,7 +47,7 @@ typedef enum rgt_io_mode {
  *
  * @return  Number of bytes read is returned.
  *
- * @retval n > 0 operation successfully complited.
+ * @retval n > 0 operation successfully completed.
  * @retval 0     An error occurs, or the end-of-file is reached, or inode of file changed.
  *               User has to check it with feof() or ferror().
  */

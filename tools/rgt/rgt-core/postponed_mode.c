@@ -657,7 +657,7 @@ output_regular_log_msg(log_msg *msg)
                         if (strstr(msg->fmt_str + i, "%Tf") ==
                             (msg->fmt_str + i))
                         {
-                            /* Strart file tag */
+                            /* Start file tag */
                             obstack_printf(log_obstk,
                                            "<file name=\"%s\">", "TODO");
                             write_xml_string(log_obstk,
@@ -755,7 +755,7 @@ output_regular_log_msg(log_msg *msg)
                     {
                         /*
                          * Skip \r after \n, because it does not bring any
-                         * formating, but just follows after ]n on some
+                         * formatting, but just follows after ]n on some
                          * systems
                          */
                         break;

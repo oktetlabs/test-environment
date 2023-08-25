@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /*
  * Test Environment: RGT Core
  * Common data structures and declarations.
  * Different structures that represent log message are declared.
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RGT_LOG_MSG_H__
@@ -107,7 +106,7 @@ typedef enum node_type {
     NT_TEST,    /**< Node of test type */
     NT_BRANCH,  /**< It is used only for generation events
                      "branch start" / "branch end" */
-    NT_LAST     /**< Last marker - the biggest value of the all evements */
+    NT_LAST     /**< Last marker - the biggest value of the all elements */
 } node_type_t;
 
 static inline const char *
@@ -214,10 +213,10 @@ typedef int (* f_process_log_root)(void);
 
 /** The set of generic control event types */
 enum ctrl_event_type {
-    CTRL_EVT_START,  /**< Strart control message */
+    CTRL_EVT_START,  /**< Start control message */
     CTRL_EVT_END,    /**< End control message */
     CTRL_EVT_LAST    /**< Last marker - the biggest value of the all
-                          evements */
+                          elements */
 };
 
 /** External declarations of a set of message processing functions */

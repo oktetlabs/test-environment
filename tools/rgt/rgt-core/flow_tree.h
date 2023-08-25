@@ -1,11 +1,10 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test Environment: Interface for test execution flow.
  *
  * The module is responsible for keeping track of occurred events and
  * checking if new events are legal.
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RGT_FILTER_FLOW_TREE_H__
@@ -121,7 +120,7 @@ void flow_tree_trace(void);
 #ifdef FLOW_TREE_LIBRARY_DEBUG
 
 /*
- * These routines are auxiluary in debugging of the library and should
+ * These routines are auxiliary in debugging of the library and should
  * not be compiled while it's build for working binaries.
  */
 
@@ -131,7 +130,7 @@ enum flow_tree_set_name {
 };
 
 /**
- * Verifies if paritular set of nodes (close or new) equals to user
+ * Verifies if particular set of nodes (close or new) equals to user
  * specified set of nodes.
  *
  * @param   set_name    Name of the set that will be verified.
@@ -158,7 +157,7 @@ flow_tree_check_set(enum flow_tree_set_name set_name, const char *user_set);
  *
  * @return  Status of operation.
  *
- * @retval  1  Operation has complited successfully.
+ * @retval  1  Operation has completed successfully.
  * @retval  0  Buffer overflow is occurred.
  */
 int

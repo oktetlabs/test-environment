@@ -1,11 +1,10 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test Environment: Interface for test execution flow.
  *
  * The module is responsible for keeping track of occurred events and
  * checking if new events are legal.
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "rgt_common.h"
@@ -140,7 +139,7 @@ typedef struct node_t {
                                 to the session underneath */
 
     node_id_t      id;     /**< Node id (key that is used by g_hash
-                                outines) */
+                                routines) */
     struct node_t *self;   /**< Pointer to this structure (self pointer) */
     char          *name;   /**< Node name */
 
@@ -270,7 +269,7 @@ ctrl_msg_data_destroy(ctrl_msg_data *data)
  * @return Nothing
  *
  * @se Add session node with id equals to ROOT_ID into the tree and insert
- *     it into set of patential parent nodes (so-called "new set").
+ *     it into set of potential parent nodes (so-called "new set").
  */
 void
 flow_tree_init(void)
@@ -377,13 +376,13 @@ flow_tree_destroy(void)
  * @param  node_name      Name of the node
  * @param  timestamp      Timestamp
  * @param  user_data      User-specific data
- * @param  err_code       If an error occures in the function, it sets
+ * @param  err_code       If an error occurs in the function, it sets
  *                        *err_code into the code of the error.
  *
  * @return Pointer to the user data structure.
  *
  * @retval NULL  The function returns NULL if the node is rejected
- *               by filters or if an error occures. In the last case
+ *               by filters or if an error occurs. In the last case
  *               it also updates err_code parameter with appropriate code.
  */
 void *
@@ -481,7 +480,7 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
 
         par_node->branches[par_node->n_branches - 1].first_el = cur_node;
 
-        /* Commmon part */
+        /* Common part */
         par_node->branches[par_node->n_branches - 1].last_el = cur_node;
         par_node->branches[par_node->n_branches - 1].status =
             BSTATUS_ACTIVE;
@@ -527,7 +526,7 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
     }
     else
     {
-        /* Error: Attemp to add a parallel node in already closed session */
+        /* Error: Attempt to add a parallel node in already closed session */
         *err_code = EINVAL;
         FMT_TRACE("%s with node_id equals to %d can't spawn "
                   "new branches", CNTR_BIN2STR(par_node->type), parent_id);
@@ -645,7 +644,7 @@ get_node_id_callback(gpointer key, gpointer value, gpointer user_data)
     *p_node = *(node_t **)value;
 }
 
-/* See the decription in flow_tree.h */
+/* See the description in flow_tree.h */
 te_errno
 flow_tree_get_close_node(node_id_t *id, node_id_t *parent_id)
 {
@@ -891,7 +890,7 @@ attach_msg_to_gqueue(GQueue *queue, GList **cache, log_msg_ptr *msg)
                  * The message we want to put into the queue should go
                  * before cached message (as its timestamp is less than
                  * one of the cached message):
-                 * go in backward directon to find the place
+                 * go in backward direction to find the place
                  * for the message.
                  */
 
@@ -938,7 +937,7 @@ attach_msg_to_gqueue(GQueue *queue, GList **cache, log_msg_ptr *msg)
 }
 
 /**
- * Offload to the file corresponging to a given queue all the message
+ * Offload to the file corresponding to a given queue all the message
  * pointers whose timestamp is no greater than end_ts.
  *
  * @param q       Queue of message pointers
@@ -996,7 +995,7 @@ msg_queue_offload(msg_queue *q, uint32_t *end_ts)
 }
 
 /**
- * Reload from the file corresponging to a given queue all the message
+ * Reload from the file corresponding to a given queue all the message
  * pointers whose timestamp is no less than start_ts.
  *
  * @param q         Queue of message pointers
@@ -1659,12 +1658,12 @@ timestamp_cmp(gconstpointer a, gconstpointer b, gpointer user_data)
 #ifdef FLOW_TREE_LIBRARY_DEBUG
 
 /*
- * These routines are auxiluary in debugging of the library and should
+ * These routines are auxiliary in debugging of the library and should
  * not be compiled while it's build for working binaries.
  */
 
 /**
- * Verifies if paritular set of nodes (close or new) equals to user
+ * Verifies if particular set of nodes (close or new) equals to user
  * specified set of nodes.
  *
  * @param   set_name    Name of the set that will be verified.
@@ -1803,7 +1802,7 @@ set_info_callback(gpointer key, gpointer value, gpointer user_data)
  *
  * @return  Status of operation.
  *
- * @retval  1  Operation has complited successfully.
+ * @retval  1  Operation has completed successfully.
  * @retval  0  Buffer overflow is occurred.
  */
 int

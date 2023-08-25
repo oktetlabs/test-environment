@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test Environment: XML2FORMAT module.
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RGT_XML2GEN_H__
@@ -77,7 +77,7 @@ typedef enum rgt_node {
     NT_TEST,    /**< Node of test type */
     NT_BRANCH,  /**< It is used only for generation events
                      "branch start" / "branch end" */
-    NT_LAST     /**< Last marker - the biggest value of the all evements */
+    NT_LAST     /**< Last marker - the biggest value of the all elements */
 } rgt_node_t;
 
 /**
@@ -106,7 +106,7 @@ typedef struct rgt_depth_ctx {
 typedef struct rgt_mem_ctx {
     uint32_t mem_width; /**< Number of elements in a memory row */
     uint32_t cur_num; /**< Current element number in memory row */
-    te_bool  first_row; /* Wheter we are working with the first
+    te_bool  first_row; /* Whether we are working with the first
                            memory row or not */
 } rgt_mem_ctx_t;
 
@@ -129,7 +129,7 @@ typedef enum {
 typedef struct rgt_gen_ctx {
     char           *xml_fname; /**< XML file name */
     char           *out_fname; /**< Output file name */
-    te_bool         expand_entities; /**< Wheter to expand standard
+    te_bool         expand_entities; /**< Whether to expand standard
                                           XML entities
                                           like &lt; and &gt; or not? */
 

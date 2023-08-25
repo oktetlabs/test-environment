@@ -118,7 +118,7 @@ extern void rgt_xml2multi_process_cmdline(rgt_xml2multi_opts *opts,
  * @param tin       TIN of test iteration represented by this node
  * @param node_id   Node ID
  * @param depth     Node depth in log tree
- * @param seq       Node sequential number (in the list of chidren of its
+ * @param seq       Node sequential number (in the list of children of its
  *                  parent)
  *
  * @return TRUE if node should be output, FALSE otherwise.

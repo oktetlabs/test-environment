@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test Environment: RGT common declarations.
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RGT_COMMON_H__
@@ -243,7 +243,7 @@ struct rgt_statistics {
      * in the mode with detailed statistics.
      */
     /**
-     * @todo Number of logs from a particulat entity/user name
+     * @todo Number of logs from a particulate entity/user name
      * May be it should be implemented with Hash tables.
      */
 };
@@ -323,7 +323,7 @@ typedef struct msg_queue {
 } msg_queue;
 
 /**
- * Iterate over message pouinters queue, starting with entries offloaded
+ * Iterate over message pointers queue, starting with entries offloaded
  * to a file.
  *
  * @param q           Queue of message pointers

@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test Environment: rgt-core implementation.
- *    Implementation of main and usage/help functions.
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Implementation of main and usage/help functions.
  */
 
 #include "rgt_common.h"
@@ -95,9 +95,10 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
  * The procedure contains "Option table" that should be updated if some new
  * options are going to be added.
  *
- * @param  argc   Number of elements in array "argv".
- * @param  argv   Array of strings that represents all command line
- *                arguments.
+ * @param[in]       argc            Number of elements in array "argv".
+ * @param[in]       argv            Array of strings that represents all
+                                    command line arguments.
+ * @param[in,out]   ctx             Context to setup.
  *
  * @return  Nothing.
  *
@@ -347,11 +348,11 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
  *   Destroys filter module;
  *   Closes all file descriptors.
  * This function can be called explicitly or as a callback function on
- * arriving SIGINT signal to the programm.
+ * arriving SIGINT signal to the program.
  *
- * @param  signo  Signal number by which the programm is terminated.
+ * @param  signo  Signal number by which the program is terminated.
  *                If signo is equal to zero it means an error was occurred
- *                during the programm operation. We use an assertion that
+ *                during the program operation. We use an assertion that
  *                no one signal has code equal to zero.
  *
  * @return  Nothing.
@@ -384,7 +385,7 @@ static void free_resources(int signo)
  * Processes all messages in order they are placed in RLF.
  *
  * @param argc  Number of arguments passed in command line
- * @param argv  Array of command line argumetns
+ * @param argv  Array of command line arguments
  *
  */
 int
@@ -488,7 +489,7 @@ main(int argc, char **argv)
         if (log_root_proc[CTRL_EVT_END] != NULL)
             log_root_proc[CTRL_EVT_END]();
 
-        /* Successful competion */
+        /* Successful completion */
         free_resources(SIGINT);
     }
     else

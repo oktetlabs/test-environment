@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief RGT core: I/O functions
  *
  * Implementation of auxiliary functions for I/O operations.
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_config.h"
@@ -57,7 +56,7 @@ universal_read(FILE *fd, void *buf, size_t count, rgt_io_mode_t io_mode, const c
              * and the function was called with RGT_IO_MODE_NBLK mode.
              */
 
-            /* Return number of butes successfully read */
+            /* Return number of bytes successfully read */
             return r_count;
         }
 
@@ -101,7 +100,7 @@ write_xml_string(struct obstack *obstk, const char *str, te_bool attr_val)
             case '\n':
                 /*
                  * Skip \r after \n (or \n after \r) because it does not
-                 * bring any formating, but just follows after \r (\n)
+                 * bring any formatting, but just follows after \r (\n)
                  * on some systems.
                  *
                  * So that if we meet \r\n or \r\n we should
@@ -193,7 +192,7 @@ write_xml_string(struct obstack *obstk, const char *str, te_bool attr_val)
                 /* FALLTHROUGH */
                 /*
                  * For non attribute output - process as ordinary
-                 * prinable character
+                 * printable character
                  */
 
             default:

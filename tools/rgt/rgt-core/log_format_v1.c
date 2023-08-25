@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test Environment: Raw log V1 routines.
  *
  * Implementation of "RLF version 1" specific functions.
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_config.h"
@@ -27,7 +26,7 @@ enum e_error_msg_index {
     RLF_V1_RLM_USER_NAME         = 5,  /**< Entity name is too short */
     RLF_V1_RLM_FORMAT_STRING     = 6,  /**< Format string is out
                                             of message */
-    RLF_V1_RLM_ARG_LEN           = 7,  /**< Agrument is out of message */
+    RLF_V1_RLM_ARG_LEN           = 7,  /**< Argument is out of message */
     RLF_V1_RLM_UNKNOWN_LOGLEVEL  = 8,  /**< Unknown log level value */
 };
 
@@ -128,11 +127,11 @@ static struct debug_msg {
  *
  * @return  Status of the operation.
  *
- * @retval  1   Message is successfuly read from Raw log file
+ * @retval  1   Message is successfully read from Raw log file
  * @retval  0   There is no log messages left.
  *
  * @se
- *   If the structure of a log message doesn't comfim to the specification,
+ *   If the structure of a log message doesn't confirm to the specification,
  *   this function never returns, but rather it throws an exception with
  *   longjmp call.
  */
@@ -260,7 +259,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
         /*
          * Here we append parameter with '\0' character:
          * If parameter is a string it terminates string, if
-         * it is interger the '\0' character won't be taken into
+         * it is integer the '\0' character won't be taken into
          * account (according to the len field).
          */
         (*arg)->val = (uint8_t *)obstack_alloc(obstk, nflen + 1);

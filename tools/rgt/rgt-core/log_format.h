@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test Environment: Raw log format specific functions.
  *
  * Declarations of raw log file format version specific routines.
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RGT_CORE_LOG_FORMAT_H__
@@ -48,11 +48,11 @@ rgt_define_rlf_format(rgt_gen_ctx_t *ctx, char **err);
  *
  * @return  Status of the operation.
  *
- * @retval  1   Message is successfuly read from Raw log file
+ * @retval  1   Message is successfully read from Raw log file
  * @retval  0   There is no log messages left.
  *
  * @se
- *   If the structure of a log message doesn't comfim to the specification,
+ *   If the structure of a log message doesn't confirm to the specification,
  *   this function never returns, but rather it throws an exception with
  *   longjmp call.
  */

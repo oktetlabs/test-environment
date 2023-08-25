@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test Environment: Engine of RGT format module.
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #include "te_config.h"
@@ -922,9 +922,10 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
  * The procedure contains "Option table" that should be updated
  * if some new options are going to be added.
  *
- * @param  argc   Number of elements in array "argv".
- * @param  argv   Array of strings that represents all command
- *                line arguments.
+ * @param[in]         argc          Number of elements in array "argv".
+ * @param[in]         argv          Array of strings that represents all
+ *                                  command line arguments.
+ * @param[in,out]     ctx           Context to fill up.
  *
  * @return  Nothing.
  *
@@ -1220,7 +1221,7 @@ main(int argc, char **argv)
                                      sizeof(rgt_depth_ctx_t));
     if (gen_ctx.depth_info == NULL)
     {
-        fprintf(stderr, "Cannot allocate resourses for the programm\n");
+        fprintf(stderr, "Cannot allocate resources for the program\n");
         exit(1);
     }
     rgt_attr_settings_init(rgt_line_separator, rgt_max_attribute_length);
