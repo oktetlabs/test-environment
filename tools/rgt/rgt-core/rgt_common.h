@@ -172,13 +172,13 @@ typedef int (* f_fetch_log_msg)(struct log_msg **msg,
  * Structure that keeps generic data used in processing raw log file.
  */
 typedef struct rgt_gen_ctx {
-    const char    *rawlog_fname; /**< Raw log file name */
+    char          *rawlog_fname; /**< Raw log file name */
     FILE          *rawlog_fd; /**< Raw log file pointer */
     off_t          rawlog_size; /**< Size of Raw log file,
                                      has sense only in postponed mode */
     off_t          rawlog_fpos; /**< Position in raw log file on
                                      reading the current message */
-    const char    *out_fname; /**< Output file name */
+    char          *out_fname; /**< Output file name */
     FILE          *out_fd; /**< Output file pointer */
 
     const char    *fltr_fname; /**< XML filter file name */

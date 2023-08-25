@@ -91,7 +91,7 @@ static te_bool quiet = FALSE;
 /** Name of the file with expected testing result database */
 static char *db_fn = NULL;
 /** Name of the file with XML log to be analyzed */
-static const char *xml_log_fn = NULL;
+static char *xml_log_fn = NULL;
 /** Name of the file with report in TXT format */
 static char *txt_fn = NULL;
 /** Name of the file with report in Perl format */
@@ -121,6 +121,8 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
     poptContext         optCon;
     int                 opt;
     trc_report_html    *report = NULL;
+
+    const char *xml_log = NULL;
 
     /* Option Table */
     struct poptOption options_table[] = {
@@ -527,11 +529,14 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
     }
 
     /* Get name of the file with log */
-    xml_log_fn = poptGetArg(optCon);
-    if ((xml_log_fn != NULL) && (strcmp(xml_log_fn, "-") == 0))
+    xml_log = poptGetArg(optCon);
+    if ((xml_log != NULL) && (strcmp(xml_log, "-") == 0))
     {
-        xml_log_fn = NULL;
+        xml_log = NULL;
     }
+
+    if (xml_log != NULL)
+        xml_log_fn = strdup(xml_log);
 
     if (poptGetArg(optCon) != NULL)
     {
@@ -748,6 +753,7 @@ exit:
     free(db_fn);
     free(txt_fn);
     free(perl_fn);
+    free(xml_log_fn);
 
     xmlCleanupParser();
     logic_expr_int_lex_destroy();

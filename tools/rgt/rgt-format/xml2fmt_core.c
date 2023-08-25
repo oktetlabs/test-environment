@@ -943,6 +943,9 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     poptContext  optCon; /* Context for parsing command-line options */
     int          rc;
 
+    const char *xml_fname = NULL;
+    const char *out_fname = NULL;
+
     /* Option Table */
     struct poptOption optionsTable[] = {
         { "xml-report-file", 'f', POPT_ARG_STRING, NULL, 'f',
@@ -972,7 +975,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     {
         if (rc == 'f')
         {
-            if ((ctx->xml_fname = poptGetOptArg(optCon)) == NULL)
+            if ((xml_fname = poptGetOptArg(optCon)) == NULL)
             {
                 usage(optCon, 1, "Specify XML report file", NULL);
             }
@@ -1005,28 +1008,37 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         exit(1);
     }
 
-    if (ctx->xml_fname == NULL &&
-        (ctx->xml_fname = poptGetArg(optCon)) == NULL)
+    if (xml_fname == NULL &&
+        (xml_fname = poptGetArg(optCon)) == NULL)
     {
         usage(optCon, 1, "Specify XML report file", NULL);
     }
 
     /* Get output file name */
-    ctx->out_fname = poptGetArg(optCon);
+    out_fname = poptGetArg(optCon);
 
-    if (ctx->out_fname != NULL && opt_out_file_name != NULL)
+    if (out_fname != NULL && opt_out_file_name != NULL)
     {
         usage(optCon, 1, "Output file name specified twice: "
               "with -f option and as a command line argument", NULL);
     }
 
     if (opt_out_file_name != NULL)
-        ctx->out_fname = opt_out_file_name;
+        out_fname = opt_out_file_name;
 
     if (poptPeekArg(optCon) != NULL)
     {
         usage(optCon, 1, "Too many parameters specified", NULL);
     }
+
+    /*
+     * poptGetArg() returns an internal pointer that
+     * becomes invalid after calling poptFreeContext().
+     */
+    ctx->xml_fname = strdup(xml_fname);
+
+    if (out_fname != NULL)
+        ctx->out_fname = strdup(out_fname);
 
     poptFreeContext(optCon);
 }
@@ -1218,6 +1230,9 @@ main(int argc, char **argv)
     assert(gen_ctx.depth == 0);
 
     rgt_tmpls_free(xml2fmt_tmpls, xml2fmt_tmpls_num);
+
+    free(gen_ctx.xml_fname);
+    free(gen_ctx.out_fname);
 
     g_array_free(gen_ctx.depth_info, TRUE);
 

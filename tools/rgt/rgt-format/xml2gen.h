@@ -127,8 +127,8 @@ typedef enum {
  * Structure that keeps basic data used in processing XML file.
  */
 typedef struct rgt_gen_ctx {
-    const char     *xml_fname; /**< XML file name */
-    const char     *out_fname; /**< Output file name */
+    char           *xml_fname; /**< XML file name */
+    char           *out_fname; /**< Output file name */
     te_bool         expand_entities; /**< Wheter to expand standard
                                           XML entities
                                           like &lt; and &gt; or not? */

@@ -121,6 +121,9 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     poptContext  optCon; /* context for parsing command-line options */
     int          rc;
 
+    const char *rawlog_fname = NULL;
+    const char *out_fname = NULL;
+
     /* Option Table */
     struct poptOption optionsTable[] = {
         { "filter", 'f', POPT_ARG_STRING, NULL, 'f',
@@ -256,15 +259,15 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     }
 
     /* Get <raw log file> name */
-    if ((ctx->rawlog_fname = poptGetArg(optCon)) == NULL)
+    if ((rawlog_fname = poptGetArg(optCon)) == NULL)
     {
         usage(optCon, 1, "Specify RAW log file", NULL);
     }
 
     /* Try to open Raw log file */
-    if ((ctx->rawlog_fd = fopen(ctx->rawlog_fname, "r")) == NULL)
+    if ((ctx->rawlog_fd = fopen(rawlog_fname, "r")) == NULL)
     {
-        perror(ctx->rawlog_fname);
+        perror(rawlog_fname);
         poptFreeContext(optCon);
         exit(1);
     }
@@ -277,12 +280,12 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     }
 
     ctx->out_fd = stdout;
-    if ((ctx->out_fname = poptGetArg(optCon)) != NULL)
+    if ((out_fname = poptGetArg(optCon)) != NULL)
     {
         /* Try to open file */
-        if ((ctx->out_fd = fopen(ctx->out_fname, "w")) == NULL)
+        if ((ctx->out_fd = fopen(out_fname, "w")) == NULL)
         {
-            perror(ctx->out_fname);
+            perror(out_fname);
             fclose(ctx->rawlog_fd);
             poptFreeContext(optCon);
             exit(1);
@@ -292,9 +295,18 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     if (poptPeekArg(optCon) != NULL)
     {
         if (ctx->out_fd != stdout)
-            unlink(ctx->out_fname);
+            unlink(out_fname);
         usage(optCon, 1, "Too many parameters specified", NULL);
     }
+
+    /*
+     * poptGetArg() returns an internal pointer that
+     * becomes invalid after calling poptFreeContext().
+     */
+    ctx->rawlog_fname = strdup(rawlog_fname);
+
+    if (out_fname != NULL)
+        ctx->out_fname = strdup(out_fname);
 
     poptFreeContext(optCon);
 
@@ -483,6 +495,9 @@ main(int argc, char **argv)
     {
         free_resources(0);
     }
+
+    free(rgt_ctx.rawlog_fname);
+    free(rgt_ctx.out_fname);
 
     return 0;
 }
