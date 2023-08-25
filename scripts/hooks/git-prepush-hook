@@ -16,6 +16,17 @@ if [[ -x "${0}.chain" ]]; then
     NOTOK="$?"
 fi
 
+# Map commit ids to patch names if they are known.
+# Currently only stgit patches are recognized, but
+# other tools may be supported in the future.
+declare -A COMMIT_NAMES
+if command -v stg >/dev/null 2>/dev/null; then
+    for pname in $(stg series -a --noprefix 2>/dev/null); do
+        rev="$(stg id "${pname}")"
+        COMMIT_NAMES[${rev}]="${pname}"
+    done
+fi
+
 # The lines starting with three hashes will be
 # output by te_install_hook --list-checks.
 
@@ -758,11 +769,14 @@ while read -r localref localsha remoteref remotesha; do
     fi
 
     for rev in $(git rev-list "${range}"); do
-        header="$(git log -1 --oneline "${rev}")"
+        header="${COMMIT_NAMES[${rev}]:-}"
+        if [[ -z "${header}" ]]; then
+            header="$(git log -1 --oneline "${rev}")"
+        fi
         ERRORS=""
         WARNINGS=""
 
-        [[ "${PUSH_VERBOSE_CHECKS}" == "true" ]] && echo "Checking ${rev}" >&2
+        [[ "${PUSH_VERBOSE_CHECKS}" == "true" ]] && echo "Checking ${COMMIT_NAMES[${rev}]:-${rev}}" >&2
         check_signed_off "${rev}"
         check_co_developers "${rev}"
         check_reviewed_by "${rev}"
