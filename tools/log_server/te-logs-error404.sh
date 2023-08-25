@@ -18,6 +18,10 @@
 # FIXME set URL to shared files
 #SHARED_URL="https://..."
 
+# FIXME Consider to set custom TMPDIR which is big enough for temporary
+# unpacked log files
+#export TMPDIR=/srv/tmp
+
 #############################
 # Exit with "Not Found" message.
 # Arguments:
@@ -54,9 +58,6 @@ request_file="${REQUEST_URI/$root_dir_uri/$root_dir}"
 request_file="${request_file//%20/ }"
 
 get_item_cmd=()
-# Consider to set custom TMPDIR which is big enough for temporary
-# unpacked log files
-#get_item_cmd+=(TMPDIR=/srv/tmp)
 # It is recommended to run it under nice since really many requests
 # could be generated via Web server
 get_item_cmd+=(nice)
