@@ -97,48 +97,56 @@ rcf_net_engine_connect(const char *addr, const char *port,
 {
     int                 s;
     int                 rc;
-    struct sockaddr_in  peer;
-    struct hostent     *hs = gethostbyname(addr);
+    struct addrinfo     hints;
+    struct addrinfo    *res;
     unsigned int        retry = 0;
 
+    memset(&hints, 0, sizeof(hints));
+    /* Service is always in numeric format */
+    hints.ai_flags = AI_NUMERICSERV;
+    /* Only IPv4 is supported for now */
+    hints.ai_family = AF_INET;
+    /* comm_net_* libraries use TCP */
+    hints.ai_socktype = SOCK_STREAM;
 
-    memset(&peer, 0, sizeof(peer));
-
-    if (hs == NULL || hs->h_addr_list == NULL ||
-        hs->h_addr_list[0] == NULL)
+    rc = getaddrinfo(addr, port, &hints, &res);
+    switch (rc)
     {
-        herror("gethostbyname");
+        case 0:
+            /* success */
+            break;
 
-        switch (h_errno)
-        {
-            case HOST_NOT_FOUND:
-                return TE_RC(TE_COMM, TE_EHOSTUNREACH);
+        case EAI_NONAME:
+            return TE_RC(TE_COMM, TE_EHOSTUNREACH);
 
-            case NO_DATA:
-                return TE_RC(TE_COMM, TE_ENODATA);
+        case EAI_ADDRFAMILY:
+            return TE_RC(TE_COMM, TE_EAFNOSUPPORT);
 
-            case NO_RECOVERY:
-                return TE_RC(TE_COMM, TE_EPROTO);
+        case EAI_NODATA:
+            return TE_RC(TE_COMM, TE_ENODATA);
 
-            case TRY_AGAIN:
-                return TE_RC(TE_COMM, TE_EAGAIN);
+        case EAI_AGAIN:
+            return TE_RC(TE_COMM, TE_EAGAIN);
 
-            default:
-                return TE_RC(TE_COMM, TE_EFAIL);
-        }
+        case EAI_SYSTEM:
+            return TE_OS_RC(TE_COMM, errno);
+
+        default:
+            return TE_RC(TE_COMM, TE_EFAIL);
     }
 
-    s = socket(AF_INET, SOCK_STREAM, 0);
+    /* Use the first addrinfo entry only */
+    s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (s < 0)
-        return TE_OS_RC(TE_COMM, errno);
-
-    peer.sin_family = AF_INET;
-    peer.sin_port = htons(atoi(port));
-    peer.sin_addr = *(struct in_addr *)(hs->h_addr_list[0]);
+    {
+        rc = errno;
+        freeaddrinfo(res);
+        return TE_OS_RC(TE_COMM, rc);
+    }
 
     do {
 
-        rc = connect(s, (struct sockaddr *)&peer, sizeof(peer));
+        rc = connect(s, res->ai_addr, res->ai_addrlen);
 
     } while ((rc != 0) &&
              ((++retry) < TE_COMM_NET_ENGINE_RETRY_MAX) &&
@@ -146,10 +154,14 @@ rcf_net_engine_connect(const char *addr, const char *port,
 
     if (rc != 0)
     {
+        rc = errno;
+        freeaddrinfo(res);
         fprintf(stderr, "%s(): %s %s:%s\n",
-                __FUNCTION__, strerror(errno), addr, port);
-        return TE_OS_RC(TE_COMM, errno);
+                __FUNCTION__, strerror(rc), addr, port);
+        return TE_OS_RC(TE_COMM, rc);
     }
+
+    freeaddrinfo(res);
 
 #if defined(TCP_NODELAY) || defined(SO_KEEPALIVE)
     {
