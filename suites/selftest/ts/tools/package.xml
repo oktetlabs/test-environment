@@ -268,6 +268,54 @@
         </run>
 
         <run>
+            <script name="scalar_types"/>
+            <arg name="src_type">
+                <value>te_bool</value>
+                <value>uint8_t</value>
+                <value>uint16_t</value>
+                <value>uint32_t</value>
+                <value>uint64_t</value>
+                <value>unsigned short</value>
+                <value>unsigned int</value>
+                <value>unsigned long</value>
+                <value>size_t</value>
+                <value>uintptr_t</value>
+                <value>uintmax_t</value>
+                <value>int8_t</value>
+                <value>int16_t</value>
+                <value>int32_t</value>
+                <value>int64_t</value>
+                <value>short</value>
+                <value>int</value>
+                <value>long</value>
+                <value>intptr_t</value>
+                <value>intmax_t</value>
+            </arg>
+            <arg name="dst_type">
+                <value>te_bool</value>
+                <value>uint8_t</value>
+                <value>uint16_t</value>
+                <value>uint32_t</value>
+                <value>uint64_t</value>
+                <value>unsigned short</value>
+                <value>unsigned int</value>
+                <value>unsigned long</value>
+                <value>size_t</value>
+                <value>uintptr_t</value>
+                <value>uintmax_t</value>
+                <value>int8_t</value>
+                <value>int16_t</value>
+                <value>int32_t</value>
+                <value>int64_t</value>
+                <value>short</value>
+                <value>int</value>
+                <value>long</value>
+                <value>intptr_t</value>
+                <value>intmax_t</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="scandir"/>
             <arg name="n_files">
                 <value>10</value>

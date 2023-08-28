@@ -18,6 +18,7 @@ tests = [
     'make_bufs',
     'readlink',
     'resolvepath',
+    'scalar_types',
     'scandir',
     'str_compare_versions',
     'string',

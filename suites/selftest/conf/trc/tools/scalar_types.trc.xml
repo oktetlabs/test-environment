@@ -1,0 +1,8 @@
+<test name="scalar_types" type="script">
+    <objective>Testing the dynamic casting of scalar types</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="src_type"/>
+        <arg name="dst_type"/>
+    </iter>
+</test>
