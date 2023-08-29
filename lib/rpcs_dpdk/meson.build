@@ -159,11 +159,20 @@ if cc.has_function(f, args: te_cflags,
     c_args += [ '-DHAVE_' + f.to_upper() ]
 endif
 
+link_libs = [ '-lrte_ethdev', '-lrte_telemetry', '-lrte_meter',
+              '-lrte_net', '-lrte_mbuf', '-lrte_mempool',
+              '-lrte_ring', '-lrte_kvargs', '-lrte_eal' ]
+
+# Check if the rte_log library exists
+f = 'rte_log'
+has_rte_log = cc.has_function(f, args: te_cflags + te_ldflags + ['-lrte_log'],
+                              prefix: '#include "rte_log.h"')
+if has_rte_log
+    link_libs += [ '-lrte_log' ]
+endif
+
 f = 'rte_flow_isolate'
-if cc.has_function(f, args: te_cflags + te_ldflags +
-                   [ '-lrte_ethdev', '-lrte_telemetry', '-lrte_meter',
-                     '-lrte_net', '-lrte_mbuf', '-lrte_mempool',
-                     '-lrte_ring', '-lrte_kvargs', '-lrte_eal' ],
+if cc.has_function(f, args: te_cflags + te_ldflags + link_libs,
                    prefix: '#include "rte_flow.h"')
     c_args += [ '-DHAVE_' + f.to_upper() ]
 endif
