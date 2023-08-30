@@ -538,15 +538,13 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
 static void
 generate_cmdline_filename(const char *dir, char **cmdline_filename)
 {
-    char *path;
+    te_string path = TE_STRING_INIT;
 
-    if (te_asprintf(&path, "%s/%s_%s", dir, tapi_file_generate_name(),
-                    COMMANDS_FILE_NAME) < 0)
-    {
-        TEST_FAIL("Failed to create testpmd commands file name");
-    }
+    te_string_append(&path, "%s/", dir);
+    tapi_file_make_name(&path);
+    te_string_append(&path, "_%s", COMMANDS_FILE_NAME);
 
-    *cmdline_filename = path;
+    *cmdline_filename = path.ptr;
 }
 
 static void
