@@ -326,6 +326,6 @@ trc_include_external_html(FILE *f, const char *src)
 
     trc_tools_file_to_file(f, finclude);
 
-    fclose(finclude);
+    pclose(finclude);
     return 0;
 }
