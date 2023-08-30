@@ -434,7 +434,7 @@ tapi_cfg_pci_get_net_if(const char *pci_oid, char **interface)
     te_errno rc;
 
     rc = cfg_get_instance_string_fmt(interface, "%s/net:", pci_oid);
-    if (rc != 0)
+    if (rc != 0 && rc != TE_RC(TE_CS, TE_ENOENT))
     {
         ERROR("Failed to get the only interface of a PCI device %s: %r",
               pci_oid, rc);
