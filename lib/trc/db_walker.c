@@ -14,7 +14,7 @@
 
 #include <ctype.h>
 #include <search.h>
-#include <openssl/md5.h>
+#include <openssl/evp.h>
 
 #include "te_errno.h"
 #include "te_alloc.h"
@@ -181,13 +181,14 @@ trc_db_test_params_normalise(char *param)
 static char *
 trc_db_test_params_hash(unsigned int n_args, trc_report_argument *args)
 {
-    MD5_CTX md5;
+    EVP_MD_CTX *md5;
+    unsigned int md5_len;
 
     int   i;
     int   j;
     int   k;
-    unsigned char digest[MD5_DIGEST_LENGTH];
-    char *hash_str = calloc(1, MD5_DIGEST_LENGTH * 2 + 1);
+    unsigned char digest[EVP_MAX_MD_SIZE];
+    char *hash_str = calloc(1, sizeof(digest) * 2 + 1);
     int  *sorted = calloc(n_args, sizeof(int));
     char  buf[8192] = {0, };
     int   len = 0;
@@ -196,8 +197,6 @@ trc_db_test_params_hash(unsigned int n_args, trc_report_argument *args)
         return NULL;
     for (k = 0; k < (int)n_args; k++)
         sorted[k] = k;
-
-    MD5_Init(&md5);
 
     /* Sort arguments first */
     for (i = 0; i < (int)n_args - 1; i++)
@@ -213,30 +212,38 @@ trc_db_test_params_hash(unsigned int n_args, trc_report_argument *args)
         }
     }
 
+    md5 = EVP_MD_CTX_new();
+    EVP_DigestInit_ex(md5, EVP_get_digestbyname("md5"), NULL);
+
     for (i = 0; i < (int)n_args; i++)
     {
         char *name = args[sorted[i]].name;
         char *value = trc_db_test_params_normalise(args[sorted[i]].value);
 
         if (value == NULL)
+        {
+            EVP_MD_CTX_free(md5);
             return NULL;
+        }
 
         VERB("%s %s", name, value);
         len += snprintf(buf + len, sizeof(buf) - len,
                         "%s%s %s", (i != 0) ? " " : "", name, value);
 
         if (i != 0)
-            MD5_Update(&md5, " ", (unsigned long) 1);
-        MD5_Update(&md5, name, (unsigned long) strlen(name));
-        MD5_Update(&md5, " ", (unsigned long) 1);
-        MD5_Update(&md5, value, (unsigned long) strlen(value));
+            EVP_DigestUpdate(md5, " ", 1);
+
+        EVP_DigestUpdate(md5, name, strlen(name));
+        EVP_DigestUpdate(md5, " ", 1);
+        EVP_DigestUpdate(md5, value, strlen(value));
 
         free(value);
     }
 
-    MD5_Final(digest, &md5);
+    EVP_DigestFinal_ex(md5, digest, &md5_len);
+    EVP_MD_CTX_free(md5);
 
-    for (i = 0; i < MD5_DIGEST_LENGTH; i++)
+    for (i = 0; i < md5_len; i++)
     {
         sprintf(hash_str + strlen(hash_str), "%02hhx", digest[i]);
     }
