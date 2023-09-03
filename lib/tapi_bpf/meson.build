@@ -5,15 +5,19 @@ headers += files(
     'tapi_bpf.h',
     'tapi_bpf_rxq_stats.h',
     'tapi_bpf_stim.h',
-    'tapi_rpc_bpf.h',
 )
 sources += files(
     'tapi_bpf.c',
     'tapi_bpf_rxq_stats.c',
     'tapi_bpf_stim.c',
-    'tapi_rpc_bpf.c',
 )
 te_libs += [
+    'rpcxdr',
     'tapi',
     'tapi_rpc',
 ]
+
+if get_option('rpcdefs').split(',').contains('tarpc_bpf.x.m4')
+    headers += files('tapi_rpc_bpf.h')
+    sources += files('tapi_rpc_bpf.c')
+endif
