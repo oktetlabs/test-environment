@@ -14,6 +14,12 @@
                 <iter result="PASSED">
                     <arg name="env"/>
                     <notes/>
+                    <results tags="tag_set_by_prologue">
+                        <result notes="Expected result" value="PASSED">
+                            <verdict>Test verdict with added tag</verdict>
+                        </result>
+                    </results>
+
                 </iter>
             </test>
 

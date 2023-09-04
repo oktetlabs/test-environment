@@ -59,6 +59,10 @@ main(int argc, char **argv)
     TEST_STEP("Add TRC tag");
     CHECK_RC(tapi_tags_add_tag("tag_set_by_prologue", NULL));
 
+    TEST_STEP("Add verdict which will be expected only if "
+              "the added tag has effect");
+    RING_VERDICT("Test verdict with added tag");
+
     /*
      * Check whether some interfaces in networks specifications are defined
      * as PCI devices. Find out names of such interfaces, grab them and
