@@ -3103,49 +3103,6 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
         {
             char *reqs = NULL;
 
-#ifdef WITH_TRC
-            if (id == TE_TEST_ID_ROOT_PROLOGUE)
-            {
-                tqh_strings new_tags;
-
-                TAILQ_INIT(&new_tags);
-
-                rc = get_trc_tags(&new_tags);
-                if (rc != 0)
-                {
-                    ERROR("Get new TRC tags failed: %r", rc);
-                    EXIT("FAULT");
-                    return TESTER_CFG_WALK_FAULT;
-                }
-
-                if (!TAILQ_EMPTY(&new_tags))
-                {
-                    tqe_string *cur_tag;
-
-                    rc = tester_log_trc_tags(&new_tags);
-                    if (rc != 0)
-                    {
-                        ERROR("Logging of TRC tags failed: %r", rc);
-                        EXIT("FAULT");
-                        tq_strings_free(&new_tags, free);
-                        return TESTER_CFG_WALK_FAULT;
-                    }
-
-                    TAILQ_FOREACH(cur_tag, &new_tags, links)
-                    {
-                        rc = trc_add_tag(&gctx->trc_tags, cur_tag->v);
-                        if (rc != 0)
-                        {
-                            ERROR("Update of TRC tags failed: %r", rc);
-                            EXIT("FAULT");
-                            tq_strings_free(&new_tags, free);
-                            return TESTER_CFG_WALK_FAULT;
-                        }
-                    }
-                }
-                tq_strings_free(&new_tags, free);
-            }
-#endif
             rc = cfg_get_instance_string_fmt(&reqs, "/local:/reqs:%u", id);
 
             if (rc == 0)
@@ -3841,15 +3798,10 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                                       args, 0,
                                       0, NULL);
         ctx->do_trc_walker = TRUE;
+    }
 
-        ctx->current_result.exp_result =
-            trc_db_walker_get_exp_result(ctx->trc_walker, &gctx->trc_tags);
-    }
-    else
-    {
-        ctx->current_result.exp_result = NULL;
-    }
     /* Initialize as unknown by default */
+    ctx->current_result.exp_result = NULL;
     ctx->current_result.exp_status = TRC_VERDICT_UNKNOWN;
 #endif
 
@@ -4212,6 +4164,59 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 #if WITH_TRC
         if (~ctx->flags & TESTER_NO_TRC)
         {
+            if (ctx->current_result.id == TE_TEST_ID_ROOT_PROLOGUE)
+            {
+                tqh_strings new_tags;
+
+                TAILQ_INIT(&new_tags);
+
+                rc = get_trc_tags(&new_tags);
+                if (rc != 0)
+                {
+                    ERROR("Get new TRC tags failed: %r", rc);
+                    EXIT("FAULT");
+                    return TESTER_CFG_WALK_FAULT;
+                }
+
+                if (!TAILQ_EMPTY(&new_tags))
+                {
+                    tqe_string *cur_tag;
+
+                    rc = tester_log_trc_tags(&new_tags);
+                    if (rc != 0)
+                    {
+                        ERROR("Logging of TRC tags failed: %r", rc);
+                        EXIT("FAULT");
+                        tq_strings_free(&new_tags, free);
+                        return TESTER_CFG_WALK_FAULT;
+                    }
+
+                    TAILQ_FOREACH(cur_tag, &new_tags, links)
+                    {
+                        rc = trc_add_tag(&gctx->trc_tags, cur_tag->v);
+                        if (rc != 0)
+                        {
+                            ERROR("Update of TRC tags failed: %r", rc);
+                            EXIT("FAULT");
+                            tq_strings_free(&new_tags, free);
+                            return TESTER_CFG_WALK_FAULT;
+                        }
+                    }
+                }
+                tq_strings_free(&new_tags, free);
+            }
+
+            if (ctx->do_trc_walker && test_get_name(ri) != NULL)
+            {
+                /*
+                 * Expected result is obtained here to take into
+                 * account tags which may be added just above.
+                 */
+                ctx->current_result.exp_result =
+                    trc_db_walker_get_exp_result(ctx->trc_walker,
+                                                 &gctx->trc_tags);
+            }
+
             if (ctx->current_result.result.status == TE_TEST_EMPTY)
             {
                 assert(run_item_container(ri));
