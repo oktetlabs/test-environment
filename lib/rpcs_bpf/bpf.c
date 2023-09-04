@@ -565,8 +565,7 @@ static ssize_t
 ta_xsk_rx_fill_simple(tarpc_xsk_rx_fill_simple_in *in,
                       tarpc_xsk_rx_fill_simple_out *out)
 {
-    static rpc_ptr_id_namespace ns_sock = RPC_PTR_ID_NS_INVALID;
-    ta_xsk_socket *sock = NULL;
+    static rpc_ptr_id_namespace ns_umem = RPC_PTR_ID_NS_INVALID;
     ta_xsk_umem *umem = NULL;
     ta_xsk_umem_rings *umem_rings = NULL;
     uint32_t idx;
@@ -575,13 +574,14 @@ ta_xsk_rx_fill_simple(tarpc_xsk_rx_fill_simple_in *in,
 
     UNUSED(out);
 
-    RCF_PCH_MEM_NS_CREATE_IF_NEEDED_RETURN(&ns_sock, RPC_TYPE_NS_XSK_SOCKET,
+    RCF_PCH_MEM_NS_CREATE_IF_NEEDED_RETURN(&ns_umem, RPC_TYPE_NS_XSK_UMEM,
                                            -1);
+    RCF_PCH_MEM_INDEX_TO_PTR_RPC(umem, in->umem_ptr, ns_umem, -1);
 
-    RCF_PCH_MEM_INDEX_TO_PTR_RPC(sock, in->socket_ptr, ns_sock, -1);
-
-    umem = sock->umem;
-    umem_rings = sock->umem_rings;
+    umem_rings = add_or_find_umem_rings(umem, in->if_name, in->queue_id);
+    if (umem_rings == NULL)
+        return -1;
+    umem_rings->refcount--;
 
     real_count = MIN(umem->stack_count, in->frames_cnt);
     if (real_count == 0)

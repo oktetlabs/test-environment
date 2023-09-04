@@ -106,12 +106,16 @@ extern int rpc_xsk_map_set(rcf_rpc_server *rpcs, int map_fd,
  * buffers.
  *
  * @param rpcs        RPC server
- * @param sock        RPC pointer to socket structure on TA
+ * @param umem        RPC pointer to UMEM
+ * @param if_name     Interface name
+ * @param queue_id    Rx queue id
  * @param frames_cnt  Number of frame buffers
  *
  * @return Number of added buffers on success, @c -1 on failure.
  */
-extern ssize_t rpc_xsk_rx_fill_simple(rcf_rpc_server *rpcs, rpc_ptr sock,
+extern ssize_t rpc_xsk_rx_fill_simple(rcf_rpc_server *rpcs, rpc_ptr umem,
+                                      const char *if_name,
+                                      uint32_t queue_id,
                                       size_t frames_cnt);
 
 /**

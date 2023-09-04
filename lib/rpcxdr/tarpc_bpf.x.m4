@@ -83,7 +83,9 @@ typedef struct tarpc_int_retval_out tarpc_xsk_map_set_out;
 struct tarpc_xsk_rx_fill_simple_in {
     struct tarpc_in_arg common;
 
-    tarpc_ptr socket_ptr;
+    tarpc_ptr umem_ptr;
+    string if_name<>;
+    uint32_t queue_id;
     tarpc_size_t frames_cnt;
 };
 

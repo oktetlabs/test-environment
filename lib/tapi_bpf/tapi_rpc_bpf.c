@@ -213,7 +213,8 @@ rpc_xsk_map_set(rcf_rpc_server *rpcs, int map_fd,
 
 /* See description in tapi_rpc_bpf.h */
 ssize_t
-rpc_xsk_rx_fill_simple(rcf_rpc_server *rpcs, rpc_ptr sock,
+rpc_xsk_rx_fill_simple(rcf_rpc_server *rpcs, rpc_ptr umem,
+                       const char *if_name, uint32_t queue_id,
                        size_t frames_cnt)
 {
     tarpc_xsk_rx_fill_simple_in in;
@@ -222,15 +223,19 @@ rpc_xsk_rx_fill_simple(rcf_rpc_server *rpcs, rpc_ptr sock,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
-    in.socket_ptr = sock;
+    in.umem_ptr = umem;
+    in.if_name = (char *)if_name;
+    in.queue_id = queue_id;
     in.frames_cnt = frames_cnt;
 
     rcf_rpc_call(rpcs, "xsk_rx_fill_simple", &in, &out);
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(xsk_rx_fill_simple, out.retval);
 
     TAPI_RPC_LOG(rpcs, xsk_rx_fill_simple,
-                 RPC_PTR_FMT ", frames_cnt=%" TE_PRINTF_SIZE_T "u", "%d",
-                 RPC_PTR_VAL(sock), frames_cnt, out.retval);
+                 RPC_PTR_FMT ", if_name=%s, queue_id=%u, "
+                 "frames_cnt=%" TE_PRINTF_SIZE_T "u", "%d",
+                 RPC_PTR_VAL(umem), if_name, queue_id, frames_cnt,
+                 out.retval);
     RETVAL_INT64(xsk_rx_fill_simple, out.retval);
 }
 
