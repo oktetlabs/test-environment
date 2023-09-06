@@ -863,6 +863,8 @@ cmd_line_opts="$@"
 cmd_line_opts_all=
 process_opts "$@"
 
+# Collect all environment variables starting from TE_
+te_env=$(env | grep '^TE_' | sort)
 
 if test -z "$TE_BASE" -a -n "$BUILDER" ; then
     echo "Cannot find TE sources for building - exiting." >&2
@@ -1032,6 +1034,7 @@ test -z "${DAEMON}" && te_log_init
 te_log_message Dispatcher "Command-line options" "${cmd_line_opts}"
 te_log_message Dispatcher "Expanded command-line options" \
     "${cmd_line_opts_all}"
+te_log_message Dispatcher "TE environment after options processing" "${te_env}"
 
 # Log TRC tags
 if test -n "${TRC_TAGS}" ; then
