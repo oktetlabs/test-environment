@@ -91,6 +91,8 @@ tester_global_init(tester_global *global)
 
     TAILQ_INIT(&global->cmd_monitors);
 
+    global->dial = -1.0;
+
     return 0;
 }
 
@@ -181,6 +183,8 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_REQ_LIST,
         TESTER_OPT_QUIET_SKIP,
         TESTER_OPT_VERB_SKIP,
+
+        TESTER_OPT_DIAL,
 
         /*
          * Values from here to TESTER_OPT_FAKE must correspond
@@ -286,6 +290,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
           "Shout when skiping tests which do not meet "
           "specified requirements.",
           NULL },
+
+        { "dial", '\0', POPT_ARG_DOUBLE, &global->dial, TESTER_OPT_DIAL,
+          "Choose randomly a given percentage of test iterations to run.",
+          "<double in range 0-100>" },
 
         { "fake", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_FAKE,
           "Don't run any test scripts, just emulate test scenario.",
@@ -548,6 +556,17 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                 TAILQ_INSERT_TAIL(&global->suites, p, links);
                 break;
             }
+
+            case TESTER_OPT_DIAL:
+                if (global->dial < 0 || global->dial > 100.0)
+                {
+                    ERROR("Incorrect --dial value %f, must be between "
+                          "0 and 100", global->dial);
+                    poptFreeContext(optCon);
+                    return TE_EINVAL;
+                }
+
+                break;
 
             case TESTER_OPT_RUN:
             case TESTER_OPT_RUN_FORCE:
@@ -1128,6 +1147,15 @@ main(int argc, char *argv[])
     if (rc != 0)
     {
         goto exit;
+    }
+
+    if (tester_global_context.dial >= 0)
+    {
+        rc = scenario_apply_dial(&tester_global_context.scenario,
+                                 &tester_global_context.cfgs,
+                                 tester_global_context.dial);
+        if (rc != 0)
+            goto exit;
     }
 
     /*

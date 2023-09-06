@@ -41,6 +41,9 @@ typedef struct tester_global {
                                      *   the tester */
     char               *verdict;    /**< Verdict to stop tester run on */
 
+    /** Percentage of all test iterations to choose randomly */
+    double dial;
+
     cmd_monitor_descrs  cmd_monitors;   /**< Command monitors specifier via
                                              command line */
 } tester_global;

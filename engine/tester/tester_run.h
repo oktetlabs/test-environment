@@ -287,6 +287,21 @@ struct tester_cfgs;
 struct test_paths;
 
 /**
+ * Replace a given testing scenario with a new one containing randomly
+ * chosen requested percentage of test iterations from the given scenario.
+ *
+ * @param scenario  Scenario to replace.
+ * @param cfgs      Configurations.
+ * @param dial      Percentage of test iterations to choose
+ *                  (should be in [0, 100] range).
+ *
+ * @return Status code.
+ */
+extern te_errno scenario_apply_dial(testing_scenario *scenario,
+                                    const struct tester_cfgs *cfgs,
+                                    double dial);
+
+/**
  * Run test configurations.
  *
  * @param scenario      Testing scenario

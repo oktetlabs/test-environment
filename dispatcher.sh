@@ -194,6 +194,9 @@ Generic options:
                                 Continue testing until a test produces a verdict matching the given
                                 verdict string.
 
+  --tester-dial=<percentage>    Choose randomly a given percentage of all
+                                available test iterations.
+
   --test-sigusr2-stop           Stop all the testing when SIGUSR2 signal is received.
                                 The default behaviour is to print a verdict in the
                                 current test.

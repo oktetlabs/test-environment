@@ -66,6 +66,7 @@ c_args += [ '-DHAVE_CONFIG_H' ]
 
 sources = [
     'build.c',
+    'config_dial.c',
     'config_parse.c',
     'config_prepare.c',
     'config_walk.c',
