@@ -159,6 +159,16 @@ extern te_errno tapi_cfg_pci_addr_by_oid_array(unsigned int n_devices,
 extern char * tapi_cfg_pci_rsrc_name(const cfg_oid *pci_instance);
 
 /**
+ * Allocate a string with resource name for grabbing a PCI instance with netdev.
+ *
+ * @param[in]  pci_instance PCI instance OID
+ *                          (/agent/hardware/pci/vendor/device/instance/netdev)
+ *
+ * @return Allocated resource name string
+ */
+extern char * tapi_cfg_pci_fn_netdev_rsrc_name(const cfg_oid *oid);
+
+/**
  * Grab a PCI device as a resource.
  *
  * @param[in]  pci_instance     PCI instance OID
@@ -242,6 +252,19 @@ extern te_errno tapi_cfg_pci_bind_driver(const char *pci_oid,
 extern te_errno tapi_cfg_pci_bind_ta_driver_on_device(const char *ta,
                                               enum tapi_cfg_driver_type type,
                                               const char *pci_addr);
+
+/**
+ * Get the network interface associated with a PCI device with port.
+ *
+ * @param[in]  pci_fn_oid   PCI device OID (/agent/hardware/pci/device/net)
+ * @param[in]  netdev       Port (net) instance name
+ * @param[out] interface    Network interface name (must not be @c NULL)
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_fn_netdev_get_net_if(const char *pci_fn_oid,
+                                                  const char *netdev,
+                                                  char **interface);
 
 /**
  * Get the first network interface associated with a PCI device.

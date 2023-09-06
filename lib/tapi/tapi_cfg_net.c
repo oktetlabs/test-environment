@@ -74,6 +74,11 @@ tapi_cfg_net_get_node_rsrc_type(cfg_net_node_t *node)
     {
         node->rsrc_type = NET_NODE_RSRC_TYPE_PCI_FN;
     }
+    else if (strcmp(obj_oid,
+                    "/agent/hardware/pci/vendor/device/instance/netdev") == 0)
+    {
+        node->rsrc_type = NET_NODE_RSRC_TYPE_PCI_FN_NETDEV;
+    }
     else if (strcmp(obj_oid, "/local/dpdk/vdev") == 0)
     {
         node->rsrc_type = NET_NODE_RSRC_TYPE_RTE_VDEV;
@@ -791,6 +796,7 @@ tapi_cfg_net_mk_node_rsrc_desc_iface(const cfg_oid         *oid,
 
 static te_errno
 tapi_cfg_net_mk_node_rsrc_desc_pci_fn(const cfg_oid         *oid,
+                                      enum net_node_rsrc_type rsrc_type,
                                       net_node_rsrc_desc_t **rsrc_descp)
 {
     net_node_rsrc_desc_t *d = tapi_cfg_net_node_rsrc_desc_alloc(1);
@@ -805,7 +811,22 @@ tapi_cfg_net_mk_node_rsrc_desc_pci_fn(const cfg_oid         *oid,
         return TE_ENOMEM;
     }
 
-    d->rsrc_names[0] = tapi_cfg_pci_rsrc_name(oid);
+    switch (rsrc_type)
+    {
+        case NET_NODE_RSRC_TYPE_PCI_FN:
+            d->rsrc_names[0] = tapi_cfg_pci_rsrc_name(oid);
+            break;
+
+        case NET_NODE_RSRC_TYPE_PCI_FN_NETDEV:
+            d->rsrc_names[0] = tapi_cfg_pci_fn_netdev_rsrc_name(oid);
+            break;
+
+        default:
+            ERROR("%s() unexpected rsrc_type value: %d", __func__, rsrc_type);
+            tapi_cfg_net_node_rsrc_desc_free(d);
+            return TE_EINVAL;
+    }
+
     if (d->rsrc_names[0] == NULL)
     {
         tapi_cfg_net_node_rsrc_desc_free(d);
@@ -910,7 +931,8 @@ tapi_cfg_net_mk_node_rsrc_names_vals(enum net_node_rsrc_type    rsrc_type,
             break;
 
         case NET_NODE_RSRC_TYPE_PCI_FN:
-            rc = tapi_cfg_net_mk_node_rsrc_desc_pci_fn(oid, rsrc_descp);
+        case NET_NODE_RSRC_TYPE_PCI_FN_NETDEV:
+            rc = tapi_cfg_net_mk_node_rsrc_desc_pci_fn(oid, rsrc_type, rsrc_descp);
             break;
 
         case NET_NODE_RSRC_TYPE_RTE_VDEV:
@@ -1229,6 +1251,23 @@ tapi_cfg_net_bind_driver_by_node(enum net_node_type node_type,
     return tapi_cfg_net_foreach_node(tapi_cfg_net_node_bind_driver, &cfg);
 }
 
+static char *
+make_pci_fn_oid_str_by_pci_fn_netdev_oid(cfg_oid *oid)
+{
+    unsigned int i;
+    te_string str_inst_oid = TE_STRING_INIT;
+
+    /*
+     * Build an inst_oid for pci instance without the last ('netdev') item.
+     */
+    for (i = 1; i < oid->len - 1; i++)
+    {
+        te_string_append(&str_inst_oid, "/%s:%s",
+                         cfg_oid_inst_subid(oid, i),
+                         CFG_OID_GET_INST_NAME(oid, i));
+    }
+    return str_inst_oid.ptr;
+}
 
 /**
  * Callback to switch network node specified using PCI function to
@@ -1246,6 +1285,8 @@ switch_agent_pci_fn_to_interface(cfg_net_t *net, cfg_net_node_t *node,
     const char *agent;
     char *pci_path = NULL;
     te_errno rc = 0;
+    char obj_oid[CFG_OID_MAX];
+    te_bool pci_with_netdev = FALSE;
 
     UNUSED(net);
 
@@ -1259,14 +1300,38 @@ switch_agent_pci_fn_to_interface(cfg_net_t *net, cfg_net_node_t *node,
         goto out;
     }
 
-    rc = cfg_get_instance_str(NULL, &pci_path, oid_str);
+    cfg_oid_inst2obj(oid_str, obj_oid);
+    if (strcmp(obj_oid,
+               "/agent/hardware/pci/vendor/device/instance/netdev") == 0)
+    {
+        char *pci_fn_oid_str;
+
+        pci_with_netdev = TRUE;
+        pci_fn_oid_str = make_pci_fn_oid_str_by_pci_fn_netdev_oid(oid);
+        rc = cfg_get_instance_str(NULL, &pci_path, pci_fn_oid_str);
+        free(pci_fn_oid_str);
+    }
+    else
+    {
+        rc = cfg_get_instance_str(NULL, &pci_path, oid_str);
+    }
+
     if (rc != 0)
     {
         ERROR("Failed to get PCI device path: %r", rc);
         goto out;
     }
 
-    rc = tapi_cfg_pci_get_net_if(pci_path, &interface);
+    if (pci_with_netdev)
+    {
+        rc = tapi_cfg_pci_fn_netdev_get_net_if(pci_path,
+                    CFG_OID_GET_INST_NAME(oid, oid->len - 1), &interface);
+    }
+    else
+    {
+        rc = tapi_cfg_pci_get_net_if(pci_path, &interface);
+    }
+
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)

@@ -41,6 +41,7 @@ enum net_node_rsrc_type {
     NET_NODE_RSRC_TYPE_UNKNOWN = 0, /**< Unknown type of the resource */
     NET_NODE_RSRC_TYPE_INTERFACE,   /**< Network interface */
     NET_NODE_RSRC_TYPE_PCI_FN,      /**< PCI function */
+    NET_NODE_RSRC_TYPE_PCI_FN_NETDEV,   /**< PCI function with port (net) */
     NET_NODE_RSRC_TYPE_RTE_VDEV,    /**< RTE vdev */
 };
 

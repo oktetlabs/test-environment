@@ -3432,6 +3432,10 @@ ta_unix_conf_pci_init()
                       pci_device_grab,
                       pci_device_release);
 
+    rcf_pch_rsrc_info("/agent/hardware/pci/vendor/device/instance/netdev",
+                      pci_device_grab,
+                      pci_device_release);
+
     return rcf_pch_add_node("/agent/hardware", &node_pci);
 }
 

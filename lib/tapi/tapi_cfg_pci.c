@@ -277,23 +277,35 @@ out:
     return rc;
 }
 
-char *
-tapi_cfg_pci_rsrc_name(const cfg_oid *pci_instance)
+static char *
+tapi_cfg_pci_rsrc_name_gen(const cfg_oid *oid, const char *rsrc_pfx)
 {
     te_string rsrc_name = TE_STRING_INIT;
     unsigned int i;
     char *inst_name;
 
-    te_string_append(&rsrc_name, "%s", "pci_fn");
+    te_string_append(&rsrc_name, "%s", rsrc_pfx);
     /* The agent's name (1) is not interesting on the agent itself */
-    for (i = 2; i < pci_instance->len; i++)
+    for (i = 2; i < oid->len; i++)
     {
-        inst_name = CFG_OID_GET_INST_NAME(pci_instance, i);
+        inst_name = CFG_OID_GET_INST_NAME(oid, i);
         if (*inst_name != '\0')
             te_string_append(&rsrc_name, ":%s", inst_name);
     }
 
     return rsrc_name.ptr;
+}
+
+char *
+tapi_cfg_pci_rsrc_name(const cfg_oid *pci_instance)
+{
+    return tapi_cfg_pci_rsrc_name_gen(pci_instance, "pci_fn");
+}
+
+char *
+tapi_cfg_pci_fn_netdev_rsrc_name(const cfg_oid *oid)
+{
+    return tapi_cfg_pci_rsrc_name_gen(oid, "pci_fn_netdev");
 }
 
 te_errno
@@ -431,12 +443,15 @@ tapi_cfg_pci_get_ta_driver(const char *ta,
     return 0;
 }
 
-te_errno
-tapi_cfg_pci_get_net_if(const char *pci_oid, char **interface)
+static te_errno
+tapi_cfg_pci_get_net_if_gen(const char *pci_oid, const char *netdev,
+                            char **interface)
 {
     te_errno rc;
 
-    rc = cfg_get_instance_string_fmt(interface, "%s/net:", pci_oid);
+    rc = cfg_get_instance_string_fmt(interface, "%s/net:%s", pci_oid,
+                             te_str_is_null_or_empty(netdev) ? "" : netdev);
+
     if (rc != 0 && rc != TE_RC(TE_CS, TE_ENOENT))
     {
         ERROR("Failed to get the only interface of a PCI device %s: %r",
@@ -444,6 +459,19 @@ tapi_cfg_pci_get_net_if(const char *pci_oid, char **interface)
     }
 
     return rc;
+}
+
+te_errno
+tapi_cfg_pci_fn_netdev_get_net_if(const char *pci_fn_oid, const char *netdev,
+                                  char **interface)
+{
+    return tapi_cfg_pci_get_net_if_gen(pci_fn_oid, netdev, interface);
+}
+
+te_errno
+tapi_cfg_pci_get_net_if(const char *pci_oid, char **interface)
+{
+    return tapi_cfg_pci_get_net_if_gen(pci_oid, NULL, interface);
 }
 
 /* See description in tapi_cfg_pci.h */
