@@ -40,6 +40,7 @@ typedef enum run_item_role {
     RI_ROLE_PROLOGUE,
     RI_ROLE_EPILOGUE,
     RI_ROLE_KEEPALIVE,
+    RI_ROLE_EXCEPTION,
 } run_item_role;
 
 /** Convert role value to string */
@@ -51,6 +52,7 @@ ri_role2str(run_item_role role)
         [RI_ROLE_PROLOGUE] = "prologue",
         [RI_ROLE_EPILOGUE] = "epilogue",
         [RI_ROLE_KEEPALIVE] = "keepalive",
+        [RI_ROLE_EXCEPTION] = "exception",
     };
 
     return role_names[role];

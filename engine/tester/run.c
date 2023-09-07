@@ -155,8 +155,6 @@ typedef struct tester_ctx {
 
     struct tester_ctx  *keepalive_ctx;  /**< Keep-alive context */
 
-    run_item_role       ri_role;        /**< Current run item's role */
-
 #if WITH_TRC
     te_trc_db_walker   *trc_walker;     /**< Current position in TRC
                                              database */
@@ -617,7 +615,7 @@ tester_plan_register_run_item(tester_plan *plan, run_item *ri, tester_ctx *ctx)
     switch (ri->type)
     {
         case RUN_ITEM_SCRIPT:
-            tester_plan_register_test(plan, name, ctx->ri_role);
+            tester_plan_register_test(plan, name, ri->role);
             return 0;
         case RUN_ITEM_SESSION:
             /*
@@ -634,7 +632,7 @@ tester_plan_register_run_item(tester_plan *plan, run_item *ri, tester_ctx *ctx)
                 return TE_EFAIL;
             }
 
-            rc = tester_plan_register(plan, obj, ctx->ri_role);
+            rc = tester_plan_register(plan, obj, ri->role);
             if (rc != 0)
             {
                 ERROR("Failed to register session \"%s\": %r",
@@ -668,7 +666,7 @@ tester_plan_register_run_item(tester_plan *plan, run_item *ri, tester_ctx *ctx)
                 return TE_EFAIL;
             }
 
-            rc = tester_plan_register(plan, obj, ctx->ri_role);
+            rc = tester_plan_register(plan, obj, ri->role);
             if (rc != 0)
             {
                 ERROR("Failed to register package \"%s\": %r",
@@ -3067,7 +3065,6 @@ run_prologue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     VERB("Running test session prologue...");
     ctx->flags |= TESTER_INLOGUE;
-    ctx->ri_role = RI_ROLE_PROLOGUE;
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
@@ -3206,7 +3203,6 @@ run_epilogue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     VERB("Running test session epilogue...");
     ctx->flags |= TESTER_INLOGUE;
-    ctx->ri_role = RI_ROLE_EPILOGUE;
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
@@ -3278,7 +3274,6 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
             ctx->current_result.status = TESTER_TEST_ERROR;
             return TESTER_CFG_WALK_FAULT;
         }
-        ctx->keepalive_ctx->ri_role = RI_ROLE_KEEPALIVE;
     }
     ctx = ctx->keepalive_ctx;
 

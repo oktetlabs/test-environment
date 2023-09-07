@@ -278,6 +278,7 @@ struct run_item {
     char               *page;       /**< Page, if NULL - taken from script */
     tester_handdown     handdown;   /**< Type of executable inheritance */
     run_item_type       type;       /**< Type of the run item */
+    run_item_role       role;       /**< Role of the run item */
     union {
         test_script     script;     /**< Test script */
         test_session    session;    /**< Test session */

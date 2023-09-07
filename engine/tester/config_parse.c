@@ -71,6 +71,7 @@ static const test_info * find_test_info(const tests_info *ti,
 
 static te_errno alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg,
                                        unsigned int opts,
+                                       run_item_role role,
                                        const test_session *session,
                                        run_items *runs, run_item **p_run);
 
@@ -1835,6 +1836,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
         rc = alloc_and_get_run_item(node, cfg,
                                     TESTER_RUN_ITEM_SERVICE |
                                     TESTER_RUN_ITEM_INHERITABLE,
+                                    RI_ROLE_EXCEPTION,
                                     session, NULL, &session->exception);
         if (rc != 0)
             return rc;
@@ -1847,6 +1849,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
         rc = alloc_and_get_run_item(node, cfg,
                                     TESTER_RUN_ITEM_SERVICE |
                                     TESTER_RUN_ITEM_INHERITABLE,
+                                    RI_ROLE_KEEPALIVE,
                                     session, NULL, &session->keepalive);
         if (rc != 0)
             return rc;
@@ -1858,6 +1861,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
     {
         rc = alloc_and_get_run_item(node, cfg,
                                     TESTER_RUN_ITEM_SERVICE,
+                                    RI_ROLE_PROLOGUE,
                                     session, NULL, &session->prologue);
         if (rc != 0)
             return rc;
@@ -1878,6 +1882,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
     {
         rc = alloc_and_get_run_item(node, cfg,
                                     TESTER_RUN_ITEM_SERVICE,
+                                    RI_ROLE_EPILOGUE,
                                     session, NULL, &session->epilogue);
         if (rc != 0)
             return rc;
@@ -1897,6 +1902,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
            xmlStrcmp(node->name, CONST_CHAR2XML("run")) == 0)
     {
         rc = alloc_and_get_run_item(node, cfg, TESTER_RUN_ITEM_INHERITABLE,
+                                    RI_ROLE_NORMAL,
                                     session, &session->run_items, NULL);
         if (rc != 0)
             return rc;
@@ -1979,6 +1985,7 @@ get_package(xmlNodePtr node, tester_cfg *cfg, const test_session *session,
  */
 static te_errno
 alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
+                       run_item_role role,
                        const test_session *session,
                        run_items *runs, run_item **p_run)
 {
@@ -1994,6 +2001,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     TAILQ_INIT(&p->cmd_monitors);
     p->context = session;
     p->iterate = 1;
+    p->role = role;
 
     /* Just for current clean up in the case of failure */
     p->type = RUN_ITEM_NONE;
@@ -2392,8 +2400,8 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg,
     while (node != NULL &&
            xmlStrcmp(node->name, CONST_CHAR2XML("run")) == 0)
     {
-        rc = alloc_and_get_run_item(node, cfg, 0, NULL,
-                                    &cfg->runs, NULL);
+        rc = alloc_and_get_run_item(node, cfg, 0, RI_ROLE_NORMAL,
+                                    NULL, &cfg->runs, NULL);
         if (rc != 0)
             return rc;
         node = xmlNodeNext(node);
