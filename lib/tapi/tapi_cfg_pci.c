@@ -280,17 +280,20 @@ out:
 char *
 tapi_cfg_pci_rsrc_name(const cfg_oid *pci_instance)
 {
-    char *rsrc_name;
+    te_string rsrc_name = TE_STRING_INIT;
+    unsigned int i;
+    char *inst_name;
 
-    te_asprintf(&rsrc_name, "pci_fn:%s:%s:%s",
-                CFG_OID_GET_INST_NAME(pci_instance, 4),
-                CFG_OID_GET_INST_NAME(pci_instance, 5),
-                CFG_OID_GET_INST_NAME(pci_instance, 6));
+    te_string_append(&rsrc_name, "%s", "pci_fn");
+    /* The agent's name (1) is not interesting on the agent itself */
+    for (i = 2; i < pci_instance->len; i++)
+    {
+        inst_name = CFG_OID_GET_INST_NAME(pci_instance, i);
+        if (*inst_name != '\0')
+            te_string_append(&rsrc_name, ":%s", inst_name);
+    }
 
-    if (rsrc_name == NULL)
-        ERROR("Failed to create PCI function resource string");
-
-    return rsrc_name;
+    return rsrc_name.ptr;
 }
 
 te_errno

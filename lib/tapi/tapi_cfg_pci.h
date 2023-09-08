@@ -154,7 +154,7 @@ extern te_errno tapi_cfg_pci_addr_by_oid_array(unsigned int n_devices,
  * @param[in]  pci_instance     PCI instance OID
  *                              (/agent/hardware/pci/vendor/device/instance)
  *
- * @return Allocated resource name string or @c NULL
+ * @return Allocated resource name string
  */
 extern char * tapi_cfg_pci_rsrc_name(const cfg_oid *pci_instance);
 
