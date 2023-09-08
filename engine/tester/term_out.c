@@ -38,6 +38,7 @@
 #include "te_errno.h"
 #include "logger_api.h"
 
+#include "tester_defs.h"
 #include "tester_flags.h"
 #include "tester_result.h"
 #include "tester_term.h"
@@ -215,25 +216,6 @@ static const colored_verdict_data colored_verdicts[TESTER_TEST_STATUS_MAX]
 };
 
 /**
- * Return string by run item type.
- */
-static const char *
-run_item_type_to_string(run_item_type type)
-{
-    switch (type)
-    {
-        case RUN_ITEM_SCRIPT:
-            return "test";
-        case RUN_ITEM_PACKAGE:
-            return "package";
-        case RUN_ITEM_SESSION:
-            return "session";
-        default:
-            return "(UNKNOWN)";
-    }
-}
-
-/**
  * Colored output.
  */
 static void
@@ -300,7 +282,7 @@ tester_term_out_start(tester_flags flags, run_item_type type,
 
     if (((actual_msg_len =
           snprintf(msg, sizeof(msg), "Starting%s %s %s%s",
-                   ids, run_item_type_to_string(type), name, tin_str))) >=
+                   ids, ri_type2str(type), name, tin_str))) >=
             (int)sizeof(msg))
     {
         ERROR("%s: Too short buffer for output message: msg_len=%d "
@@ -409,7 +391,7 @@ tester_term_out_done(tester_flags flags,
     /* Prepare message to be output in another line */
     if ((actual_msg_len =
          snprintf(msg_out, sizeof(msg_out), "Done%s %s %s%s ",
-                  ids, run_item_type_to_string(type), name, tin_str)) >=
+                  ids, ri_type2str(type), name, tin_str)) >=
             (int)sizeof(msg_out))
     {
         ERROR("%s: Too short buffer for output message: msg_len=%d "

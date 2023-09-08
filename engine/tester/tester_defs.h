@@ -34,6 +34,29 @@ typedef enum run_item_type {
     RUN_ITEM_PACKAGE
 } run_item_type;
 
+/**
+ * Convert run item type to string.
+ *
+ * @param type    Run item type.
+ *
+ * @return String representation of the type.
+ */
+static inline const char *
+ri_type2str(run_item_type type)
+{
+    switch (type)
+    {
+        case RUN_ITEM_SCRIPT:
+            return "test";
+        case RUN_ITEM_PACKAGE:
+            return "package";
+        case RUN_ITEM_SESSION:
+            return "session";
+        default:
+            return "(UNKNOWN)";
+    }
+}
+
 /** Run item role values */
 typedef enum run_item_role {
     RI_ROLE_NORMAL,
