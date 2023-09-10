@@ -864,9 +864,17 @@ process_test_path(const tester_cfgs *cfgs, test_path *path)
 
     /* Destroy the first test path processing context */
     test_path_proc_destroy_ctx(&gctx);
+    rc = gctx.rc;
 
-    EXIT("%r", gctx.rc);
-    return gctx.rc;
+    /*
+     * Select a given percentage of test iterations randomly if
+     * dial was present in path.
+     */
+    if (rc == 0 && path->dial >= 0)
+        rc = scenario_apply_dial(&path->scen, cfgs, path->dial);
+
+    EXIT("%r", rc);
+    return rc;
 }
 
 
@@ -1101,6 +1109,7 @@ test_path_new(test_paths *paths, const char *path_str, test_path_type type)
 
     TAILQ_INIT(&path->head);
     TAILQ_INIT(&path->scen);
+    path->dial = -1;
     path->type = type;
     path->str = strdup(path_str);
     if (path->str == NULL)
@@ -1117,6 +1126,14 @@ test_path_new(test_paths *paths, const char *path_str, test_path_type type)
         if (type != TEST_PATH_RUN && type != TEST_PATH_RUN_FORCE)
         {
             test_path_item *item;
+
+            if (path->dial >= 0)
+            {
+                WARN("Ignore dial value in neither --run nor "
+                     "--run-force paths.\n"
+                     "Path: %s", path_str);
+                path->dial = -1;
+            }
 
             TAILQ_FOREACH(item, &path->head, links)
             {

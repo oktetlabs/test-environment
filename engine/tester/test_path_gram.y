@@ -178,13 +178,23 @@ test_path_new_arg_value(char *value)
 %union {
     char           *str;
     unsigned int    num;
+    double          dnum;
 }
 
-%token SLASH COLON EQUAL GLOB COMMA OPEN CLOSE ITERATE SELECT STEP
+%token SLASH COLON EQUAL GLOB COMMA OPEN CLOSE ITERATE SELECT STEP DIAL
 %token <num> NUMBER
 %token <str> STRING HASH_STR
+%token <dnum> DOUBLE
 
 %%
+
+path_with_dial:
+    path_flexible
+    |
+    path_flexible DIAL DOUBLE
+    {
+        path->dial = $3;
+    }
 
 path_flexible:
     SLASH

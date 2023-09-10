@@ -95,6 +95,8 @@ typedef struct test_path {
     char                   *str;    /**< String representation */
     test_path_type          type;   /**< Type of the test path */
     test_path_items         head;   /**< Head of the path */
+    double                  dial;   /**< Percentage of iterations to
+                                         choose randomly (if nonnegative) */
     testing_scenario        scen;   /**< Testing scenario */
 } test_path;
 

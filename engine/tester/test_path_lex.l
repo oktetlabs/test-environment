@@ -73,6 +73,9 @@ extern int test_path_str_pos;
 
 %x STR
 %x NUM
+%x DNUM
+
+re_double [[:digit:]]+([.][[:digit:]]+)?
 
 %%
 
@@ -90,6 +93,22 @@ extern int test_path_str_pos;
 "*"                     { BEGIN(NUM); return ITERATE; }
 "%"                     { BEGIN(NUM); return SELECT; }
 "+"                     { BEGIN(NUM); return STEP; }
+"@"                     { BEGIN(DNUM); return DIAL; }
+<DNUM>{re_double}       {
+                            char *end;
+
+                            BEGIN(INITIAL);
+                            yylval->dnum = strtod(yytext, &end);
+                            if (*end != '\0' || yylval->dnum > 100.0 ||
+                                yylval->dnum < 0)
+                            {
+                                ERROR("Invalid or too big number in "
+                                      "string '%s'", yytext);
+                                REJECT;
+                            }
+
+                            return DOUBLE;
+                        }
 <NUM>[[:digit:]]+       {
                             unsigned long  tmp;
                             char          *end;
