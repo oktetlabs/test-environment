@@ -13,9 +13,13 @@
 #include "config.h"
 #endif
 
+#include <search.h>
+
 #include "te_alloc.h"
 #include "te_queue.h"
+#include "te_str.h"
 #include "te_string.h"
+#include "tq_string.h"
 #include "logger_api.h"
 #include "tester_conf.h"
 #include "tester_run.h"
@@ -68,6 +72,17 @@ typedef struct dial_node {
     unsigned int sel_weight;
     /** Total selection weight of all children together */
     unsigned int children_sel_weight;
+    /**
+     * Initial selection weight (before any iterations are
+     * chosen and removed).
+     */
+    unsigned int init_sel_weight;
+    /** Initial iterations number */
+    unsigned int init_iters;
+    /** Current iterations number */
+    unsigned int cur_iters;
+    /** Test path */
+    char *path;
 
     /**
      * TRUE if this node was created by splitting parent
@@ -98,6 +113,17 @@ typedef struct dial_ctx {
     unsigned int skip;
 } dial_ctx;
 
+/** Iterations count for test path */
+typedef struct path_iters {
+    /** Test path */
+    char *path;
+    /** Iterations count */
+    uint64_t iters;
+} path_iters;
+
+/* Default initial weight */
+#define DEF_INIT_WEIGHT 100
+
 /* Remove and free all elements from acts_chosen queue */
 static void
 acts_chosen_free(acts_chosen *head)
@@ -121,17 +147,17 @@ node_init(dial_node *node)
 }
 
 /*
- * Print (part of) a selection tree to TE string with a given
+ * Append (part of) a selection tree to TE string with a given
  * indentation.
  */
 static void
-dial_tree2str(te_string *str, dial_node *node, unsigned int ident)
+dial_tree2str(te_string *str, dial_node *node, unsigned int indent)
 {
     dial_node *child;
 
-    te_string_append(str, "%*s[%u, %u]: %u/%u", ident, "",
-                     node->first, node->last, node->sel_weight,
-                     node->children_sel_weight);
+    te_string_append(str, "%*s[%u, %u]: %u/%u",
+                     indent, "", node->first, node->last,
+                     node->sel_weight, node->children_sel_weight);
     if (node->ri != NULL)
     {
         const char *name = run_item_name(node->ri);
@@ -148,7 +174,7 @@ dial_tree2str(te_string *str, dial_node *node, unsigned int ident)
 
     TAILQ_FOREACH(child, &node->children, links)
     {
-        dial_tree2str(str, child, ident + 2);
+        dial_tree2str(str, child, indent + 2);
     }
 }
 
@@ -184,9 +210,11 @@ dial_tree_free(dial_node *node)
 
     TAILQ_FOREACH_SAFE(p, &node->children, links, p_aux)
     {
+        TAILQ_REMOVE(&node->children, p, links);
         dial_tree_free(p);
     }
 
+    free(node->path);
     free(node);
 }
 
@@ -196,6 +224,7 @@ node_add_child(dial_node *node, dial_node *child)
 {
     TAILQ_INSERT_TAIL(&node->children, child, links);
     child->parent = node;
+    assert(UINT_MAX - child->sel_weight >= node->children_sel_weight);
     node->children_sel_weight += child->sel_weight;
 }
 
@@ -217,9 +246,12 @@ node_clone(dial_node *node, unsigned int id_off)
 
     cloned_node->first = node->first + id_off;
     cloned_node->last = node->last + id_off;
+    cloned_node->init_iters = node->init_iters;
+    cloned_node->cur_iters = node->cur_iters;
     /* Will be filled automatically when adding children */
     cloned_node->children_sel_weight = 0;
     cloned_node->sel_weight = node->sel_weight;
+    cloned_node->init_sel_weight = node->init_sel_weight;
     cloned_node->split = node->split;
     cloned_node->leaf = node->leaf;
     cloned_node->ri = node->ri;
@@ -307,7 +339,7 @@ node_start(unsigned int cfg_id_off, unsigned int self_iters,
     node->ri = ri;
     node->first = cfg_id_off;
     node->last = cfg_id_off + inner_iters - 1;
-    node->sel_weight = 1;
+    node->cur_iters = node->init_iters = inner_iters;
 
     if (ri != NULL && ri->type == RUN_ITEM_SCRIPT)
         node->leaf = TRUE;
@@ -409,6 +441,151 @@ cfg_end(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
     return TESTER_CFG_WALK_CONT;
 }
 
+/* Compare two path_iters structures by stored paths */
+static int
+compare_path_iters(const void *a, const void *b)
+{
+    return strcmp(((path_iters *)a)->path, ((path_iters *)b)->path);
+}
+
+/*
+ * Find out all the unique test paths and total iterations count
+ * for every one of them.
+ */
+static void
+count_path_iters(dial_node *node, const char *path, void **path_tree)
+{
+    path_iters *iters;
+    path_iters *iters_found;
+    void *result;
+    te_string str = TE_STRING_INIT;
+    const char *name = NULL;
+    dial_node *child;
+
+    if (node->ri != NULL)
+    {
+        name = run_item_name(node->ri);
+
+        if (!te_str_is_null_or_empty(name))
+        {
+            if (!te_str_is_null_or_empty(path))
+                te_string_append(&str, "%s/", path);
+
+            te_string_append(&str, "%s", name);
+
+            path = str.ptr;
+
+            if (node->ri->type == RUN_ITEM_SCRIPT)
+            {
+                iters = TE_ALLOC(sizeof(*iters));
+                iters->path = strdup(path);
+                iters->iters = node->init_iters;
+                assert(iters->iters != 0);
+
+                node->path = strdup(path);
+
+                result = tsearch(iters, path_tree, compare_path_iters);
+                if (result == NULL)
+                    TE_FATAL_ERROR("Failed to add new path to the tree");
+
+                iters_found = *(path_iters **)result;
+                if (iters_found != iters)
+                {
+                    iters_found->iters += iters->iters;
+                    free(iters);
+                }
+            }
+        }
+    }
+
+    TAILQ_FOREACH(child, &node->children, links)
+    {
+        count_path_iters(child, path, path_tree);
+    }
+
+    te_string_free(&str);
+}
+
+/*
+ * Assign selection weights to nodes taking into account
+ * how many unique test paths are represented by a given
+ * node.
+ */
+static void
+set_weights_by_paths(dial_node *node, void **path_tree)
+{
+    dial_node *child;
+
+    node->children_sel_weight = 0;
+    TAILQ_FOREACH(child, &node->children, links)
+    {
+        set_weights_by_paths(child, path_tree);
+        assert(UINT_MAX - child->sel_weight >= node->children_sel_weight);
+        node->children_sel_weight += child->sel_weight;
+    }
+
+    if (node->path != NULL)
+    {
+        void *result;
+        path_iters *iters;
+        path_iters key;
+
+        key.path = node->path;
+
+        result = tfind(&key, path_tree, compare_path_iters);
+        if (result == NULL)
+            TE_FATAL_ERROR("Path '%s' was not found", node->path);
+
+        iters = *(path_iters **)result;
+
+        /*
+         * If it is the only node matching a given unique test path,
+         * its weight is exactly default initial one. If there are a
+         * few nodes corresponding to the same unique path (for instance,
+         * the single test is described by multiple run items),
+         * then every one of them gets part of the default initial
+         * weight proportional to the share of iterations for
+         * the path contained in this node.
+         */
+        assert(node->init_iters <= iters->iters);
+        node->sel_weight = DEF_INIT_WEIGHT * node->init_iters / iters->iters;
+        if (node->sel_weight == 0)
+            node->sel_weight = 1;
+    }
+    else if (node->act_ptr != NULL)
+    {
+        /*
+         * Auxiliary node representing (part of) a scenario act.
+         * Let its selection weight to be equal to the number
+         * of iterations in it.
+         */
+        node->sel_weight = node->init_iters;
+    }
+    else
+    {
+        /*
+         * For higher level nodes set their weights to
+         * sum of the weights of their children.
+         */
+        node->sel_weight = node->children_sel_weight;
+    }
+
+    assert(node->sel_weight != 0);
+    node->init_sel_weight = node->sel_weight;
+}
+
+/* Set initial weights for tree nodes */
+static void
+set_init_weights(dial_node *node)
+{
+    void *path_tree = NULL;
+
+    count_path_iters(node, NULL, &path_tree);
+    set_weights_by_paths(node, &path_tree);
+
+    tdestroy(path_tree, free);
+}
+
 /* Construct selection tree */
 static te_errno
 dial_tree_construct(const struct tester_cfgs *cfgs,
@@ -436,6 +613,7 @@ dial_tree_construct(const struct tester_cfgs *cfgs,
     node_init(root);
     root->sel_weight = 1;
     root->last = cfgs->total_iters - 1;
+    root->cur_iters = root->init_iters = cfgs->total_iters;
 
     memset(&ctx, 0, sizeof(ctx));
     ctx.cur_node = root;
@@ -452,6 +630,42 @@ dial_tree_construct(const struct tester_cfgs *cfgs,
 
     *root_out = root;
     return 0;
+}
+
+/*
+ * Adjust selection weights for a node and its ancestors after
+ * removing chosen iteration from the node.
+ */
+static void
+adjust_weights(dial_node *node)
+{
+    unsigned int cur_sel_weight;
+    unsigned int weight_diff;
+
+    cur_sel_weight = node->sel_weight;
+    node->cur_iters--;
+
+    if (node->init_sel_weight == node->init_iters)
+    {
+        /* Use integer arithmetic if possible */
+        node->sel_weight--;
+    }
+    else
+    {
+        node->sel_weight = (double)(node->cur_iters) / node->init_iters *
+                                node->init_sel_weight;
+        if (node->sel_weight < node->init_sel_weight)
+            node->sel_weight++;
+        assert(node->sel_weight <= cur_sel_weight);
+    }
+
+    if (node->parent != NULL)
+    {
+        weight_diff = cur_sel_weight - node->sel_weight;
+        node->parent->children_sel_weight -= weight_diff;
+
+        adjust_weights(node->parent);
+    }
 }
 
 /*
@@ -486,6 +700,8 @@ select_test_iter(dial_node *node, unsigned int *iter_out,
         if (act_ptr != NULL)
             *act_ptr = node->act_ptr;
 
+        adjust_weights(node);
+
         if (node->first == node->last)
         {
             /* The only remaining iteration is gone */
@@ -495,28 +711,11 @@ select_test_iter(dial_node *node, unsigned int *iter_out,
         {
             /* First iteration is gone */
             node->first++;
-            if (node->split)
-            {
-                /*
-                 * Reduce selection weight of a node if it is
-                 * an auxiliary node created after splitting its
-                 * parent. Such a node should have weight equal to
-                 * the number of iterations it represents.
-                 */
-                node->sel_weight--;
-                node->parent->children_sel_weight--;
-            }
         }
         else if (iter == node->last)
         {
             /* Last iteration is gone */
             node->last--;
-            if (node->split)
-            {
-                /* See comment about reducing weight above */
-                node->sel_weight--;
-                node->parent->children_sel_weight--;
-            }
         }
         else if (node->split)
         {
@@ -534,11 +733,16 @@ select_test_iter(dial_node *node, unsigned int *iter_out,
              * for the remaining range.
              */
 
+            /* Weight should already be ajusted */
+            assert(node->sel_weight == node->last - node->first);
+
             brother = TE_ALLOC(sizeof(*brother));
             node_init(brother);
             brother->first = iter + 1;
             brother->last = node->last;
             brother->sel_weight = node->last - iter;
+            brother->init_sel_weight = brother->sel_weight;
+            brother->cur_iters = brother->init_iters = brother->sel_weight;
             brother->split = TRUE;
             brother->leaf = TRUE;
             brother->act_ptr = node->act_ptr;
@@ -547,7 +751,6 @@ select_test_iter(dial_node *node, unsigned int *iter_out,
             node->last = iter - 1;
             node->sel_weight = iter - node->first;
 
-            node->parent->children_sel_weight--;
             TAILQ_INSERT_AFTER(&node->parent->children,
                                node, brother, links);
         }
@@ -572,6 +775,8 @@ select_test_iter(dial_node *node, unsigned int *iter_out,
             left->first = node->first;
             left->last = iter - 1;
             left->sel_weight = iter - node->first;
+            left->init_sel_weight = left->sel_weight;
+            left->cur_iters = left->init_iters = left->sel_weight;
             left->parent = node;
             left->leaf = TRUE;
             left->act_ptr = node->act_ptr;
@@ -581,6 +786,8 @@ select_test_iter(dial_node *node, unsigned int *iter_out,
             right->first = iter + 1;
             right->last = node->last;
             right->sel_weight = node->last - iter;
+            right->init_sel_weight = right->sel_weight;
+            right->cur_iters = right->init_iters = right->sel_weight;
             right->parent = node;
             right->leaf = TRUE;
             right->act_ptr = node->act_ptr;
@@ -599,9 +806,13 @@ select_test_iter(dial_node *node, unsigned int *iter_out,
          * randomly taking into account selection weights.
          */
 
-        unsigned int chosen_val = rand_range(1, node->children_sel_weight);
+        unsigned int chosen_val;
         dial_node *child;
         unsigned int total_weight = 0;
+
+        assert(node->children_sel_weight < INT_MAX &&
+               node->children_sel_weight < RAND_MAX + 1LLU);
+        chosen_val = rand_range(1, node->children_sel_weight);
 
         TAILQ_FOREACH(child, &node->children, links)
         {
@@ -648,15 +859,17 @@ add_from_scen(dial_node **cur_node, unsigned int iter,
             if (node->first > iter && iter == node->first - 1)
             {
                 node->first--;
-                node->sel_weight++;
-                node->parent->children_sel_weight++;
+                assert(node->init_iters < UINT_MAX);
+                node->init_iters++;
+                node->cur_iters++;
                 return 0;
             }
             else if (node->last < iter && iter == node->last + 1)
             {
                 node->last++;
-                node->sel_weight++;
-                node->parent->children_sel_weight++;
+                assert(node->init_iters < UINT_MAX);
+                node->init_iters++;
+                node->cur_iters++;
                 return 0;
             }
         }
@@ -682,7 +895,8 @@ add_from_scen(dial_node **cur_node, unsigned int iter,
         {
             child = TE_ALLOC(sizeof(*child));
             node_init(child);
-            child->sel_weight = 1;
+            child->init_iters = 1;
+            child->cur_iters = 1;
             child->first = child->last = iter;
             child->act_ptr = act_ptr;
             node_add_child(node, child);
@@ -718,33 +932,36 @@ add_from_scen(dial_node **cur_node, unsigned int iter,
  * (while unmarking their parents) and remove all nodes
  * not having new leafs as descendants.
  */
-static te_bool
+static unsigned int
 normalize_after_adding(dial_node *node)
 {
     dial_node *child;
     dial_node *child_aux;
-    te_bool result = FALSE;
-    te_bool result_aux = FALSE;
+    unsigned int result = 0;
+    unsigned int result_aux = 0;
 
     if (node->act_ptr != NULL)
     {
         node->leaf = TRUE;
-        return TRUE;
+        return node->init_iters;
     }
 
     TAILQ_FOREACH_SAFE(child, &node->children, links, child_aux)
     {
         result_aux = normalize_after_adding(child);
-        if (!result_aux)
+        if (result_aux == 0)
         {
-            node->children_sel_weight -= child->sel_weight;
             TAILQ_REMOVE(&node->children, child, links);
             free(child);
         }
-        result = result || result_aux;
+
+        assert(UINT_MAX - result_aux >= result);
+        result = result + result_aux;
     }
 
+    node->cur_iters = node->init_iters = result;
     node->leaf = FALSE;
+
     return result;
 }
 
@@ -850,9 +1067,6 @@ process_original_scenario(testing_scenario *scenario,
     normalize_after_adding(root);
     *total_iters = iters_count;
 
-    dial_tree_print(root, TE_LL_INFO,
-                    "after adding iterations from scenario");
-
     return 0;
 }
 
@@ -867,6 +1081,9 @@ choose_iters(dial_node *root, uint64_t select_num)
     uint64_t i;
     act_chosen *act_iters;
     te_errno rc;
+
+    dial_tree_print(root, TE_LL_INFO,
+                    "before choosing and removing iterations");
 
     for (i = 0; i < select_num; i++)
     {
@@ -935,6 +1152,12 @@ scenario_apply_dial(testing_scenario *scenario,
                                    &total_iters);
     if (rc != 0)
         goto cleanup;
+
+    /*
+     * After final tree is constructed, set initial selection weights
+     * for its nodes.
+     */
+    set_init_weights(root);
 
     /*
      * Compute exact number of iterations we should choose.
