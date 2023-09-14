@@ -151,8 +151,6 @@ netconf_devlink_get_info(netconf_handle nh, const char *bus,
     }
 
     list_ptr = TE_ALLOC(sizeof(*list_ptr));
-    if (list_ptr == NULL)
-        return TE_ENOMEM;
 
     os_rc = netconf_talk(nh, req, h->nlmsg_len, info_cb, NULL, list_ptr);
     if (os_rc != 0)
@@ -482,8 +480,6 @@ netconf_devlink_param_dump(netconf_handle nh, netconf_list **list)
         return rc;
 
     list_ptr = TE_ALLOC(sizeof(*list_ptr));
-    if (list_ptr == NULL)
-        return TE_ENOMEM;
 
     os_rc = netconf_talk(nh, req, h->nlmsg_len, param_cb, NULL, list_ptr);
     if (os_rc != 0)

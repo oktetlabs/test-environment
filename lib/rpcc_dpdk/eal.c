@@ -95,8 +95,6 @@ tapi_rte_get_pci_fn_specifiers(const char *property, const char *ta,
     te_vec *result;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-        return TE_ENOMEM;
 
     *result = TE_VEC_INIT(char *);
 
@@ -210,8 +208,6 @@ lcore_mask_to_hex(const lcore_mask_t *mask)
     /* sizeof() string literal includes terminating '\0' */
     str_size = sizeof("0x") + (mask_size * 2);
     result = TE_ALLOC(str_size);
-    if (result == NULL)
-        return NULL;
 
     result[0] = '0';
     result[1] = 'x';
@@ -686,8 +682,6 @@ eal_args_to_str(int argc, char *argv[], char **eal_args_out)
          eal_args_len += strlen(argv[i++]) + 1);
 
     eal_args = TE_ALLOC(eal_args_len);
-    if (eal_args == NULL)
-        return TE_ENOMEM;
 
     eal_args_pos = eal_args;
     for (i = 0; i < (unsigned int)argc; ++i)
@@ -917,11 +911,6 @@ tapi_eal_get_vdev_slaves(tapi_env               *env,
         goto out;
 
     slaves = TE_ALLOC(nb_slaves * sizeof(*slaves));
-    if (slaves == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
 
     for (i = 0; i < nb_slaves; ++i)
     {

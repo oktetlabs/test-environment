@@ -408,11 +408,6 @@ tapi_tad_pdus_relist_outer_inner(asn_value      *pdu_seq,
     {
         nb_pdus_i = pdu_index_tunnel;
         pdus_i = TE_ALLOC(nb_pdus_i * sizeof(*pdus_i));
-        if (pdus_i == NULL)
-        {
-            rc = TE_ENOMEM;
-            goto fail;
-        }
 
         for (i = 0; i < (unsigned int)pdu_index_tunnel; ++i)
         {
@@ -434,11 +429,6 @@ tapi_tad_pdus_relist_outer_inner(asn_value      *pdu_seq,
     {
         nb_pdus_o = nb_pdus - (pdu_index_tunnel + 1);
         pdus_o = TE_ALLOC(nb_pdus_o * sizeof(*pdus_o));
-        if (pdus_o == NULL)
-        {
-            rc = TE_ENOMEM;
-            goto fail;
-        }
 
         for (i = pdu_index_tunnel + 1, j = 0; i < (unsigned int)nb_pdus; ++i, ++j)
         {
@@ -2067,11 +2057,6 @@ tapi_ndn_superframe_gso(asn_value                         *superframe,
 
     payload_buf_len = superframe_payload_len;
     payload_buf = TE_ALLOC(payload_buf_len);
-    if (payload_buf == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
 
     rc = asn_read_value_field(provisional_frame_payload, payload_buf,
                               &payload_buf_len, "");
@@ -2079,11 +2064,6 @@ tapi_ndn_superframe_gso(asn_value                         *superframe,
         goto out;
 
     pkts = TE_ALLOC(nb_pkts_allocated * sizeof(*pkts));
-    if (pkts == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
 
     seg_start = 0;
     seg_end = seg_start;

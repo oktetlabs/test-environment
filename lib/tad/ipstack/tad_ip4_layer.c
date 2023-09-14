@@ -114,8 +114,6 @@ tad_ip4_init_cb(csap_p csap, unsigned int layer)
     const asn_value    *layer_nds;
 
     proto_data = TE_ALLOC(sizeof(*proto_data));
-    if (proto_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     csap_set_proto_spec_data(csap, layer, proto_data);
 
@@ -230,8 +228,6 @@ tad_ip4_nds_to_pdu_data(csap_p csap, tad_ip4_proto_data *proto_data,
     assert(p_pdu_data != NULL);
 
     *p_pdu_data = pdu_data = TE_ALLOC(sizeof(*pdu_data));
-    if (pdu_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_bps_nds_to_data_units(&proto_data->hdr, layer_pdu,
                                    &pdu_data->hdr);
@@ -1041,8 +1037,6 @@ tad_ip4_match_do_cb(csap_p           csap,
         uint16_t    h_cksum;
 
         ip4_header_bin = TE_ALLOC(WORD_4BYTE * pkt_data->hdr.dus[1].val_i32);
-        if (ip4_header_bin == NULL)
-            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
         tad_pkt_read_bits(pdu, 0, WORD_32BIT * pkt_data->hdr.dus[1].val_i32,
                           ip4_header_bin);

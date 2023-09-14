@@ -221,8 +221,6 @@ add_subst(trc_re_namespace *namespace,
 
     subst->max_match++;
     subst->matches = TE_ALLOC(subst->max_match * sizeof(*subst->matches));
-    if (subst->matches == NULL)
-        rc = TE_ENOMEM;
 
 cleanup:
 

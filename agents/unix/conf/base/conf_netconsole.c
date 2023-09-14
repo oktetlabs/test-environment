@@ -446,8 +446,6 @@ netconsole_add(unsigned int gid, const char *oid, char *value,
     free(val_dup);
 
     new_target = TE_ALLOC(sizeof(*new_target));
-    if (new_target == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     new_target->name = strdup(name);
     new_target->value = strdup(value);
     new_target->target_dir_path = tmp_path;

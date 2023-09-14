@@ -85,8 +85,6 @@ log_branch_filter_add(log_branch_filter *filter,
     }
 
     rule = TE_ALLOC(sizeof(*rule));
-    if (rule == NULL)
-        return TE_ENOMEM;
 
     rule->path = strdup(path);
     if (rule->path == NULL)
@@ -146,8 +144,6 @@ log_duration_filter_rules_init(log_duration_filter_rules *rules)
     SLIST_INIT(&rules->list);
 
     rule = TE_ALLOC(sizeof(*rule));
-    if (rule == NULL)
-        return TE_ENOMEM;
 
     rule->min = 0;
     rule->max = UINT32_MAX;
@@ -200,8 +196,7 @@ log_duration_filter_rules_add(log_duration_filter_rules *rules,
                  */
 
                 tmp1 = TE_ALLOC(sizeof(*tmp1));
-                if (tmp1 == NULL)
-                    return TE_ENOMEM;
+
                 tmp1->min = min;
                 tmp1->max = max;
                 tmp1->result = include ? LOG_FILTER_PASS : LOG_FILTER_FAIL;
@@ -221,8 +216,7 @@ log_duration_filter_rules_add(log_duration_filter_rules *rules,
                     if (rule->max > max)
                     {
                         tmp2 = TE_ALLOC(sizeof(*tmp2));
-                        if (tmp2 == NULL)
-                            return TE_ENOMEM;
+
                         tmp2->min = max + 1;
                         tmp2->max = rule->max;
                         tmp2->result = rule->result;
@@ -249,8 +243,7 @@ log_duration_filter_rules_add(log_duration_filter_rules *rules,
                      *   min in the middle.
                      */
                     tmp1 = TE_ALLOC(sizeof(*tmp1));
-                    if (tmp1 == NULL)
-                        return TE_ENOMEM;
+
                     tmp1->min = min;
                     tmp1->max = rule->max;
                     tmp1->result = include ? LOG_FILTER_PASS : LOG_FILTER_FAIL;

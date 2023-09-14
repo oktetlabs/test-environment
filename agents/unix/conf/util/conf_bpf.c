@@ -272,11 +272,6 @@ bpf_init(const char *bpf_id, struct bpf_entry **bpf)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-    {
-        ERROR("Failed to allocate a BPF entry");
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
 
     result->id = id;
     result->state = BPF_STATE_UNLOADED;
@@ -1099,15 +1094,7 @@ bpf_get_map_kv_pair(unsigned int gid, const char *oid, char *value_str,
     }
 
     key = TE_ALLOC(map->key_size);
-    if (key == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
     value = TE_ALLOC(map->value_size * map->n_values);
-    if (value == NULL)
-    {
-        rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        goto fail_free_key;
-    }
 
     rc = te_str_hex_str2raw(key_str, key, map->key_size);
     if (rc != 0)
@@ -1179,15 +1166,7 @@ bpf_list_map_kv_pair(unsigned int gid, const char *oid, const char *sub_id,
     }
 
     key = TE_ALLOC(map->key_size);
-    if (key == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
     prev_key = TE_ALLOC(map->key_size);
-    if (prev_key == NULL)
-    {
-        rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        goto fail;
-    }
 
     i = 0;
     while (bpf_map_get_next_key(map->fd, (i == 0) ? NULL : prev_key, key) == 0)
@@ -1405,8 +1384,6 @@ bpf_del_map_writable_kv_pair(unsigned int gid, const char *oid,
     }
 
     key = TE_ALLOC(map->key_size);
-    if (key == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     rc = te_str_hex_str2raw(key_str, key, map->key_size);
     if (rc != 0)
@@ -1417,8 +1394,6 @@ bpf_del_map_writable_kv_pair(unsigned int gid, const char *oid,
         unsigned char *value;
 
         value = TE_ALLOC(map->value_size * map->n_values);
-        if (value == NULL)
-            rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
         memset(value, 0, map->value_size * map->n_values);
 
@@ -1491,19 +1466,12 @@ bpf_update_map_writable_kv_pair(unsigned int gid, const char *oid,
     }
 
     key = TE_ALLOC(map->key_size);
-    if (key == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     rc = te_str_hex_str2raw(key_str, key, map->key_size);
     if (rc != 0)
         goto fail_free_key;
 
     value = TE_ALLOC(map->value_size * map->n_values);
-    if (value == NULL)
-    {
-        rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        goto fail_free_key;
-    }
 
     rc = te_str_hex_str2raw(value_str, value, map->value_size * map->n_values);
     if (rc != 0)
@@ -1704,8 +1672,6 @@ bpf_xdp_perf_event_handler(void *ctx, int cpu, void *data, uint32_t size)
 
     event_data.cpu = cpu;
     event_data.data = TE_ALLOC(size);
-    if (event_data.data == NULL)
-        return LIBBPF_PERF_EVENT_ERROR;
     memcpy(event_data.data, data, size);
 
     if (TE_VEC_APPEND(&map->events, event_data) != 0)
@@ -1792,12 +1758,7 @@ bpf_xdp_perf_buf_init(bpf_perf_map_entry *map)
     }
 
     map->cpu_bufs = TE_ALLOC(sizeof(*map->cpu_bufs) * cpus_num);
-    if (map->cpu_bufs == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
     map->epoll_evts = TE_ALLOC(sizeof(*map->epoll_evts) * cpus_num);
-    if (map->epoll_evts == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     /*
      * We need this loop to initialize perf_fd field to -1 value
@@ -2330,8 +2291,6 @@ bpf_add_and_link_xdp(cfg_oid *prog_oid, unsigned int ifindex,
     }
 
     xdp = TE_ALLOC(sizeof(*xdp));
-    if (xdp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     xdp->ifindex = ifindex;
     rc = te_strtoui(bpf_id_str, 0, &xdp->bpf_id);

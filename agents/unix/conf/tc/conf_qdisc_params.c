@@ -118,8 +118,6 @@ conf_qdisc_tbf_params_add(const char *ifname)
     struct tbf_params *params;
 
     params = TE_ALLOC(sizeof(*params));
-    if (params == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     TE_STRLCPY(params->ifname, ifname, RCF_MAX_VAL);
 

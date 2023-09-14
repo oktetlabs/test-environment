@@ -223,11 +223,6 @@ init_item(cpu_item_type type, unsigned int id, cpu_properties prop,
     cpu_item *result;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-    {
-        ERROR("Failed to allocate a CPU item");
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
 
 #if SUPPORT_CACHES
     CPU_ZERO(&result->vcpus);
@@ -367,12 +362,6 @@ read_isolated(char **isolated)
     te_errno rc = 0;
 
     result = TE_ALLOC(RCF_MAX_VAL);
-    if (result == NULL)
-    {
-        ERROR("Out of memory");
-        rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        goto out;
-    }
 
     rc = open_system_file("cpu/isolated", &f);
     switch (TE_RC_GET_ERROR(rc))
@@ -838,8 +827,6 @@ init_cache_item(uintmax_t sys_id, char *type, uintmax_t level,
     cache_item *result;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-        TE_FATAL_ERROR("Failed to allocate a cache item");
 
     result->id = 0;
     result->sys_id = sys_id;

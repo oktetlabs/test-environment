@@ -872,8 +872,7 @@ ftp_pwd(tapi_storage_client *client, tapi_local_file *directory)
     }
     /* Save pathname. */
     directory->pathname = TE_ALLOC(path_len);
-    if (directory->pathname == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
+
     memcpy((char *)directory->pathname, path_begin + 1, path_len - 1);
     ((char *)directory->pathname)[path_len - 1] = '\0';
     directory->type = TAPI_FILE_TYPE_DIRECTORY;
@@ -1007,20 +1006,10 @@ extract_list_of_files(char                 *msg,
         if (parse_ftp_list_line(token, &tmp_file) != 0)
             continue;
         f = TE_ALLOC(sizeof(*f));
-        if (f == NULL)
-        {
-            rc = TE_ENOMEM;
-            break;
-        }
         f->file.type = tmp_file.type;
         f->file.pathname = TE_ALLOC(strlen(path) + strlen(sep) +
                                     strlen(tmp_file.pathname) + 1);
-        if (f->file.pathname == NULL)
-        {
-            rc = TE_ENOMEM;
-            free(f);
-            break;
-        }
+
         strcpy((char *)f->file.pathname, path);
         strcat((char *)f->file.pathname, sep);
         strcat((char *)f->file.pathname, tmp_file.pathname);
@@ -1069,8 +1058,6 @@ extract_fileinfo(char            *msg,
             file->type = tmp_file.type;
             file->pathname = TE_ALLOC(strlen(dirname) + strlen(sep) +
                                       strlen(tmp_file.pathname) + 1);
-            if (file->pathname == NULL)
-                return TE_ENOMEM;
             strcpy((char *)file->pathname, dirname);
             strcat((char *)file->pathname, sep);
             strcat((char *)file->pathname, tmp_file.pathname);
@@ -1105,8 +1092,6 @@ split_pathname(const char *pathname, char **dirname, char **filename)
     const char *CURRENT_DIR = ".";
 
     dir = TE_ALLOC(strlen(pathname) + 1);
-    if (dir == NULL)
-        return TE_ENOMEM;
     strcpy(dir, pathname);
     /* Remove trailing '/'. */
     while (len = strlen(dir), len > 1 && dir[len - 1] == '/')
@@ -1123,11 +1108,7 @@ split_pathname(const char *pathname, char **dirname, char **filename)
     {
         /* There is only name. */
         *dirname = TE_ALLOC(strlen(CURRENT_DIR) + 1);
-        if (*dirname == NULL)
-        {
-            free(dir);
-            return TE_ENOMEM;
-        }
+
         strcpy(*dirname, CURRENT_DIR);
         *filename = dir;
         return 0;
@@ -1135,11 +1116,6 @@ split_pathname(const char *pathname, char **dirname, char **filename)
     /* Separator was found. */
     name++;
     *filename = TE_ALLOC(strlen(name) + 1);
-    if (*filename == NULL)
-    {
-        free(dir);
-        return TE_ENOMEM;
-    }
     strcpy(*filename, name);
     /*
      *     name[0] = '\0'    name[-1] = '\0'
@@ -1295,9 +1271,6 @@ ftp_ls(tapi_storage_client  *client,
     {
         /* It is a file. */
         SLIST_INIT(files);
-        f = TE_ALLOC(sizeof(*f));
-        if (f == NULL)
-            return TE_RC(TE_TAPI, TE_ENOMEM);
         f->file.type = file.type;
         f->file.pathname = file.pathname;
         SLIST_INSERT_HEAD(files, f, next);
@@ -1598,14 +1571,7 @@ ftp_mkdir(tapi_storage_client *client, const char *pathname)
      */
     path_len = strlen(pathname);
     current_path = TE_ALLOC(path_len + 1);
-    if (current_path == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
     path = TE_ALLOC(path_len + 1);
-    if (path == NULL)
-    {
-        free(current_path);
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
     strcpy(path, pathname);
 
     for (token = strtok(path, "/");
@@ -1684,8 +1650,6 @@ tapi_storage_client_ftp_context_init(
     tapi_storage_client_ftp_context *ftp_context;
 
     ftp_context = TE_ALLOC(sizeof(*ftp_context));
-    if (ftp_context == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     ftp_context->control_socket = -1;
     ftp_context->data_socket = -1;

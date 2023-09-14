@@ -1009,8 +1009,6 @@ nginx_ssl_entry_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     entry = TE_ALLOC(sizeof(*entry));
-    if (entry == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     entry->name = strdup(entry_name);
     if (entry->name == NULL)
@@ -1107,8 +1105,6 @@ nginx_add(unsigned int gid, const char *oid,
     }
 
     inst = TE_ALLOC(sizeof(nginx_inst));
-    if (inst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     inst->name = strdup(inst_name);
     inst->pid_path = te_sprintf(NGINX_PID_PATH_FMT, inst_name);

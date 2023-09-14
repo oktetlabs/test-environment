@@ -361,16 +361,12 @@ sched_affinity_param_alloc(te_sched_affinity_param **af,
     int cpu_ids_len;
     te_sched_affinity_param *affinity;
     affinity = TE_ALLOC(sizeof(te_sched_affinity_param));
-    if (affinity == NULL)
-        return TE_ENOMEM;
 
     cpu_ids_len = data->tarpc_job_sched_param_data_u.
                     affinity.cpu_ids.cpu_ids_len;
 
     affinity->cpu_ids_len = cpu_ids_len;
     affinity->cpu_ids = TE_ALLOC(cpu_ids_len * sizeof(int));
-    if (affinity->cpu_ids == NULL)
-        return TE_ENOMEM;
 
     memcpy(affinity->cpu_ids,
            data->tarpc_job_sched_param_data_u.affinity.cpu_ids.cpu_ids_val,
@@ -385,8 +381,6 @@ sched_priority_param_alloc(te_sched_priority_param **prio,
 {
     te_sched_priority_param *priority;
     priority = TE_ALLOC(sizeof(te_sched_priority_param));
-    if (priority == NULL)
-        return TE_ENOMEM;
 
     priority->priority = data->tarpc_job_sched_param_data_u.prio.priority;
     *prio = priority;
@@ -629,11 +623,6 @@ TARPC_FUNC_STATIC(job_add_sched_param, {},
     te_errno rc;
 
     sched_param = TE_ALLOC((len + 1) * sizeof(te_sched_param));
-    if (sched_param == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto err;
-    }
 
     for (i = 0; i < len; i++)
     {

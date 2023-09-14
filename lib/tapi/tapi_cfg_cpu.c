@@ -121,11 +121,6 @@ find_cpu_generic(const char *pattern, const char *err_msg, size_t *n_indices,
     }
 
     result = TE_ALLOC(sizeof(*result) * number_of_cpus);
-    if (result == NULL)
-    {
-        rc = TE_RC(TE_TAPI, TE_ENOMEM);
-        goto out;
-    }
 
     for (i = 0; i < number_of_cpus; i++)
     {
@@ -422,11 +417,6 @@ tapi_cfg_cpu_grab_multiple_with_id(const char *ta,
     }
 
     grabbed = TE_ALLOC(sizeof(*grabbed) * thread_count);
-    if (grabbed == NULL)
-    {
-        rc = TE_RC(TE_TAPI, TE_ENOMEM);
-        goto out;
-    }
 
     for (i = 0; i < thread_count && n_grabbed < n_cpus; i++)
     {

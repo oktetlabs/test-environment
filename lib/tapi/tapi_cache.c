@@ -113,21 +113,19 @@ get_method(const char *method)
     {
         VERB("Method '%s' has not been found, register it", method);
         meth = TE_ALLOC(sizeof(*meth));
-        if (meth != NULL)
+
+        meth->method = strdup(method);
+        if (meth->method != NULL)
         {
-            meth->method = strdup(method);
-            if (meth->method != NULL)
-            {
-                SLIST_INIT(&meth->areas);
-                SLIST_INSERT_HEAD(&methods, meth, next);
-            }
-            else
-            {
-                ERROR("%s:%d: Failed to allocate memory",
-                      __FUNCTION__, __LINE__);
-                free(meth);
-                meth = NULL;
-            }
+            SLIST_INIT(&meth->areas);
+            SLIST_INSERT_HEAD(&methods, meth, next);
+        }
+        else
+        {
+            ERROR("%s:%d: Failed to allocate memory",
+                  __FUNCTION__, __LINE__);
+            free(meth);
+            meth = NULL;
         }
     }
 
@@ -217,8 +215,6 @@ set_area(tc_method *method, const char *area, tapi_cache_cb cb_func)
     {
         VERB("Area '%s' has not been found, register it", area);
         ar = TE_ALLOC(sizeof(*ar));
-        if (ar == NULL)
-            return TE_RC(TE_TAPI, TE_ENOMEM);
 
         ar->area = handle;
         ar->func = cb_func;

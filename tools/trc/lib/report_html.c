@@ -1906,8 +1906,6 @@ parse_key_attr(const char *value, char ***keys_out, unsigned int *num_out)
 
     alloc_len = sizeof(char *) * key_num + len + 1;
     keys = TE_ALLOC(alloc_len);
-    if (keys == NULL)
-        return TE_ENOMEM;
 
     value_copy = (char *)(keys + key_num);
     keys[0] = value_copy;
@@ -2936,11 +2934,7 @@ trc_report_exp_got_to_html(FILE             *f,
             if (iter_data == NULL)
             {
                 iter_data = TE_ALLOC(sizeof(*iter_data));
-                if (iter_data == NULL)
-                {
-                    rc = TE_ENOMEM;
-                    break;
-                }
+
                 TAILQ_INIT(&iter_data->runs);
                 iter_data->exp_result =
                     trc_db_walker_get_exp_result(walker, &ctx->tags);

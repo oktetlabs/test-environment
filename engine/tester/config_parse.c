@@ -98,10 +98,6 @@ tester_cfg_new(const char *filename)
 {
     tester_cfg *p = TE_ALLOC(sizeof(*p));
 
-    if (p == NULL)
-    {
-        return NULL;
-    }
     p->filename = filename;
     TAILQ_INIT(&p->maintainers);
     TAILQ_INIT(&p->suites);
@@ -392,8 +388,6 @@ alloc_and_get_tqe_string(xmlNodePtr node, tqh_strings *strs)
     }
 #endif
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
 
     p->v = XML2CHAR_DUP(node->content);
 
@@ -429,8 +423,7 @@ alloc_and_get_test_suite_info(xmlNodePtr        node,
     }
 #endif
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
+
     TAILQ_INSERT_TAIL(suites_info, p, links);
 
     /* Name is mandatory */
@@ -497,8 +490,6 @@ alloc_and_get_person_info(xmlNodePtr node, persons_info *persons)
 #endif
 
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
 
     TAILQ_INSERT_TAIL(persons, p, links);
 
@@ -575,12 +566,7 @@ alloc_and_get_option(xmlNodePtr node, test_options *opts)
     value = xmlGetProp(node, CONST_CHAR2XML("value"));
 
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-    {
-        xmlFree(name);
-        xmlFree(value);
-        return TE_RC(TE_TESTER, TE_ENOMEM);
-    }
+
     p->name = XML2CHAR(name);
     p->value = XML2CHAR(name);
 
@@ -742,8 +728,7 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
     }
 #endif
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
+
     TAILQ_INSERT_TAIL(reqs, p, links);
 
     p->id = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("id")));
@@ -1122,8 +1107,7 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
     char               *tmp;
 
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
+
     TAILQ_INIT(&p->reqs);
     TAILQ_INSERT_TAIL(&values->head, p, links);
 
@@ -1191,11 +1175,6 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
             size_t              len = strcspn(s, ",");
             test_requirement   *req = TE_ALLOC(sizeof(*req));
 
-            if (req == NULL)
-            {
-                free(tmp);
-                return TE_RC(TE_TESTER, TE_ENOMEM);
-            }
             req->id = strndup(s, len);
             if (req->id == NULL)
             {
@@ -1298,8 +1277,6 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
     char               *tmp;
 
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
     p->context = session;
     TAILQ_INIT(&p->values.head);
 
@@ -1402,8 +1379,6 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
 
     ENTRY("session=%p", session);
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
     p->handdown = TRUE;
     p->variable = is_var;
     p->global = FALSE;
@@ -1504,8 +1479,6 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
         test_entity_value *v;
 
         v = TE_ALLOC(sizeof(*v));
-        if (v == NULL)
-            return TE_RC(TE_TESTER, TE_ENOMEM);
         TAILQ_INIT(&v->reqs);
         TAILQ_INSERT_TAIL(&p->values.head, v, links);
         p->values.num++;
@@ -1937,8 +1910,6 @@ get_package(xmlNodePtr node, tester_cfg *cfg, const test_session *session,
     test_package   *p;
 
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
     TAILQ_INIT(&p->authors);
     TAILQ_INIT(&p->reqs);
 
@@ -1994,8 +1965,6 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
 
     assert((runs == NULL) != (p_run == NULL));
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
     TAILQ_INIT(&p->args);
     SLIST_INIT(&p->lists);
     TAILQ_INIT(&p->cmd_monitors);
@@ -2441,8 +2410,6 @@ alloc_and_get_test_info(xmlNodePtr node, tests_info *ti)
     test_info  *p;
 
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
     TAILQ_INSERT_TAIL(ti, p, links);
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));

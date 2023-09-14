@@ -133,8 +133,6 @@ tapi_memtier_create(tapi_job_factory_t *factory,
     }
 
     new_app = TE_ALLOC(sizeof(tapi_memtier_app));
-    if (new_app == NULL)
-        TE_FATAL_ERROR("Out of memory");
 
     if (opt->memtier_path != NULL)
         exec_path = opt->memtier_path;

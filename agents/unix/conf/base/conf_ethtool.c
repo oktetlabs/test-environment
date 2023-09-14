@@ -698,8 +698,6 @@ ta_ethtool_get_strings(unsigned int gid, const char *if_name,
                             ETH_GSTRING_LEN * strs_num;
 
     strings = TE_ALLOC(req_size);
-    if (strings == NULL)
-        return TE_ENOMEM;
 
     strings->cmd = ETHTOOL_GSTRINGS;
     strings->string_set = set_id;
@@ -716,11 +714,6 @@ ta_ethtool_get_strings(unsigned int gid, const char *if_name,
                (ETH_GSTRING_LEN + 1) * strs_num;
 
     result = TE_ALLOC(req_size);
-    if (result == NULL)
-    {
-        free(strings);
-        return rc;
-    }
 
     result->num = strs_num;
     for (i = 0; i < strs_num; i++)
@@ -820,8 +813,6 @@ get_ethtool_rssh(const char *if_name, unsigned int rss_context,
     new_size = sizeof(struct ethtool_rxfh) +
                sizes.indir_size * sizeof(uint32_t) + sizes.key_size;
     full_data = TE_ALLOC(new_size);
-    if (full_data == NULL)
-        return TE_ENOMEM;
 
     full_data->rss_context = rss_context;
     full_data->indir_size = sizes.indir_size;
@@ -1627,11 +1618,6 @@ ta_ethtool_get_rx_cls_rules(unsigned int gid, const char *if_name,
     }
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto cleanup;
-    }
 
     memset(&rules_count, 0, sizeof(rules_count));
 
@@ -1647,22 +1633,10 @@ ta_ethtool_get_rx_cls_rules(unsigned int gid, const char *if_name,
 
     result->rule_cnt = rules_count.rule_cnt;
     if (result->rule_cnt > 0)
-    {
         result->locs = TE_ALLOC(sizeof(unsigned int) * result->rule_cnt);
-        if (result->locs == NULL)
-        {
-            rc = TE_ENOMEM;
-            goto cleanup;
-        }
-    }
 
     req_size = sizeof(*rules) + sizeof(uint32_t) * result->rule_cnt;
     rules = TE_ALLOC(req_size);
-    if (rules == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto cleanup;
-    }
     rules->rule_cnt = result->rule_cnt;
 
     rc = call_ethtool_ioctl(if_name, ETHTOOL_GRXCLSRLALL, rules);
@@ -2280,11 +2254,6 @@ ta_ethtool_get_rx_cls_rule(unsigned int gid, const char *if_name,
     }
 
     ta_rule = TE_ALLOC(sizeof(*ta_rule));
-    if (ta_rule == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto cleanup;
-    }
 
     memset(&rule, 0, sizeof(rule));
     rule.fs.location = location;
@@ -2326,11 +2295,6 @@ ta_ethtool_add_rx_cls_rule(unsigned int gid, const char *if_name,
         goto cleanup;
 
     ta_rule = TE_ALLOC(sizeof(*ta_rule));
-    if (ta_rule == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto cleanup;
-    }
 
     ta_rule->location = location;
     ta_rule->rss_context = -1;

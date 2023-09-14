@@ -154,8 +154,6 @@ netconf_geneve_list(netconf_handle nh,
     UNUSED(filter_opaque);
 
     *list = TE_ALLOC(sizeof(char));
-    if (*list == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     **list = '\0';
 
     return 0;

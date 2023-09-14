@@ -56,11 +56,6 @@ tapi_reqs_modify(const char *reqs)
     len += strlen(reqs) + strlen("()") + 1;
 
     val = TE_ALLOC(len);
-    if (val == NULL)
-    {
-        free(old);
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
 
     if (old == NULL)
         p = snprintf(val, len, "(%s)", reqs);

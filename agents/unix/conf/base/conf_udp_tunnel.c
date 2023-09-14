@@ -274,8 +274,6 @@ udp_tunnel_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     udp_tunnel_e = TE_ALLOC(sizeof(udp_tunnel_entry));
-    if (udp_tunnel_e == NULL)
-        goto fail_alloc_udp_tunnel_entry;
 
     switch (type)
     {
@@ -283,8 +281,6 @@ udp_tunnel_add(unsigned int gid, const char *oid, const char *value,
             default_port = 6081;
             target_data = udp_tunnel_e->data.geneve;
             udp_tunnel_e->data.geneve = TE_ALLOC(sizeof(netconf_geneve));
-            if (udp_tunnel_e->data.geneve == NULL)
-                goto fail_alloc_data;
 
             if (udp_tunnel_generic_init(&(udp_tunnel_e->data.geneve->generic),
                                         ifname, default_port) != 0)
@@ -296,8 +292,6 @@ udp_tunnel_add(unsigned int gid, const char *oid, const char *value,
             default_port = 4789;
             target_data = udp_tunnel_e->data.vxlan;
             udp_tunnel_e->data.vxlan = TE_ALLOC(sizeof(netconf_vxlan));
-            if (udp_tunnel_e->data.vxlan == NULL)
-                goto fail_alloc_data;
 
             if (udp_tunnel_generic_init(&(udp_tunnel_e->data.vxlan->generic),
                                         ifname, default_port) != 0)
@@ -322,11 +316,8 @@ udp_tunnel_add(unsigned int gid, const char *oid, const char *value,
 
 fail_strdup_ifname:
     free(target_data);
-
-fail_alloc_data:
     free(udp_tunnel_e);
 
-fail_alloc_udp_tunnel_entry:
     return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 }
 

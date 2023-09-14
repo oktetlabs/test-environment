@@ -2680,8 +2680,6 @@ tapi_env_add_addresses(rcf_rpc_server *rpcs, tapi_env_net *net, int af,
     int i = 0;
 
     addr_list = TE_ALLOC(addr_num * sizeof(addr_list));
-    if (addr_list == NULL)
-        return NULL;
 
     prefix = af == AF_INET ? net->ip4pfx : net->ip6pfx;
 

@@ -89,11 +89,6 @@ te_log_buf_alloc(void)
     if (buf == NULL || buf->used)
     {
         buf = TE_ALLOC(sizeof(te_log_buf));
-        if (buf == NULL)
-        {
-            pthread_mutex_unlock(&te_log_buf_mutex);
-            return NULL;
-        }
         buf->str = (te_string)TE_STRING_INIT_RESERVE_FREE(LOG_BUF_LEN,
                                                           &te_log_str_free);
         TAILQ_INSERT_HEAD(&bufs_queue, buf, links);

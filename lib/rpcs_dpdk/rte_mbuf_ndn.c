@@ -939,15 +939,8 @@ rte_mbuf_tcp_first_pkt_get_cksum(const struct rte_mbuf_parse_ctx *parse_ctx,
     te_errno    rc = 0;
 
     bounce_buf_pld = TE_ALLOC(first_pkt_pld_size);
-    if (bounce_buf_pld == NULL)
-        return TE_ENOMEM;
 
     bounce_buf_pkt = TE_ALLOC(parse_ctx->header_size + first_pkt_pld_size);
-    if (bounce_buf_pkt == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
 
     rte_memcpy(bounce_buf_pkt, rte_pktmbuf_mtod(cksum_ctx->m, const void *),
                parse_ctx->header_size);

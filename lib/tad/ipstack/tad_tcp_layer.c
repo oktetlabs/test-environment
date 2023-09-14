@@ -357,8 +357,6 @@ tad_tcp_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     *p_opaque = NULL;
 
     tad_du_checksum = TE_ALLOC(sizeof(*tad_du_checksum));
-    if (tad_du_checksum == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_data_unit_convert(layer_pdu, NDN_TAG_TCP_CHECKSUM,
                                tad_du_checksum);

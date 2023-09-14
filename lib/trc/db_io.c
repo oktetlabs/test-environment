@@ -258,8 +258,7 @@ exp_defaults_get(te_test_status status)
     }
 
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        return NULL;
+
     TAILQ_INIT(&p->results);
 
     entry = TE_ALLOC(sizeof(*entry));
@@ -462,8 +461,6 @@ alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
     trc_test_iter_arg  *insert_after = NULL;
 
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TRC, TE_ENOMEM);
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
     if (p->name == NULL)
@@ -612,11 +609,6 @@ get_expected_rentry(xmlNodePtr node, trc_exp_result_entry *rentry)
     while (q != NULL)
     {
         v = TE_ALLOC(sizeof(*v));
-        if (v == NULL)
-        {
-            trc_exp_result_entry_free(rentry);
-            return TE_ENOMEM;
-        }
 
         rc = get_expected_verdict(q, &v->str);
         if (rc != 0)
@@ -668,8 +660,6 @@ get_expected_result(xmlNodePtr node, trc_exp_result *result,
     for (p = xmlNodeChildren(node); p != NULL; p = xmlNodeNext(p))
     {
         entry = TE_ALLOC(sizeof(*entry));
-        if (entry == NULL)
-            return TE_ENOMEM;
 
         rc = get_expected_rentry(p, entry);
         if (rc != 0)
@@ -698,8 +688,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
            xmlStrcmp((*node)->name, CONST_CHAR2XML("results")) == 0)
     {
         result = TE_ALLOC(sizeof(*result));
-        if (result == NULL)
-            return TE_ENOMEM;
+
         TAILQ_INIT(&result->results);
         STAILQ_INSERT_TAIL(results, result, links);
         get_expected_result(*node, result, FALSE);
@@ -833,8 +822,6 @@ get_globals(xmlNodePtr node, trc_test *parent)
         {
             /* alloc global */
             trc_global *g = TE_ALLOC(sizeof(*g));
-
-            assert(g);
 
             g->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
             if (g->name == NULL)
@@ -1382,8 +1369,7 @@ trc_db_open_ext(const char *location, te_trc_db **db, int flags)
     }
 
     *db = TE_ALLOC(sizeof(**db));
-    if (*db == NULL)
-        return TE_ENOMEM;
+
     TAILQ_INIT(&(*db)->tests.head);
     TAILQ_INIT(&(*db)->globals.head);
 
@@ -1457,19 +1443,9 @@ trc_db_open_ext(const char *location, te_trc_db **db, int flags)
         (*db)->tests.node = node;
 
         inc_files = TE_ALLOC(sizeof(*inc_files));
-        if (inc_files == NULL)
-        {
-            ERROR("Out of memory");
-            return TE_ENOMEM;
-        }
 
         TAILQ_INIT(inc_files);
         file = TE_ALLOC(sizeof(*file));
-        if (file == NULL)
-        {
-            ERROR("Out of memory");
-            return TE_ENOMEM;
-        }
 
         file->filename = strdup((*db)->filename);
         if (file->filename == NULL)
@@ -1740,8 +1716,6 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
                 if (flags & TRC_SAVE_POS_ATTR)
                 {
                     user_attr = TE_ALLOC(MAX_POS_LEN);
-                    if (user_attr == NULL)
-                        return TE_ENOMEM;
 
                     snprintf(user_attr, MAX_POS_LEN, "%d", p->file_pos);
                     xmlSetProp(p->tests.node, BAD_CAST "pos",
@@ -1959,8 +1933,6 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
                 if (flags & TRC_SAVE_POS_ATTR)
                 {
                     user_attr = TE_ALLOC(MAX_POS_LEN);
-                    if (user_attr == NULL)
-                        return TE_ENOMEM;
 
                     snprintf(user_attr, MAX_POS_LEN, "%d", p->file_pos);
                     xmlSetProp(p->iters.node, BAD_CAST "pos",

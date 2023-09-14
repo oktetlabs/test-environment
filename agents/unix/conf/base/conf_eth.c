@@ -139,8 +139,6 @@ eth_feature_alloc_get_names(struct eth_if_context *if_context)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     names = TE_ALLOC(sizeof(*names) + nb_features * ETH_GSTRING_LEN);
-    if (names == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     names->cmd = ETHTOOL_GSTRINGS;
     names->string_set = ETH_SS_FEATURES;
@@ -151,11 +149,6 @@ eth_feature_alloc_get_names(struct eth_if_context *if_context)
         goto fail;
 
     features = TE_ALLOC(nb_features * sizeof(*features));
-    if (features == NULL)
-    {
-        rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        goto fail;
-    }
 
     for (i = 0; i < nb_features; i++)
     {
@@ -189,8 +182,6 @@ eth_feature_get_values(struct eth_if_context *if_context)
     e_features = TE_ALLOC(sizeof(*e_features) +
                          E_FEATURE_BITS_TO_DWORDS(if_context->nb_features) *
                          sizeof(e_features->features[0]));
-    if (e_features == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     e_features->cmd = ETHTOOL_GFEATURES;
     e_features->size = E_FEATURE_BITS_TO_DWORDS(if_context->nb_features);
@@ -264,8 +255,6 @@ eth_feature_iface_context_add(const char *ifname)
     te_errno                rc;
 
     if_context = TE_ALLOC(sizeof(*if_context));
-    if (if_context == NULL)
-        return NULL;
 
     te_strlcpy(if_context->ifname, ifname, IFNAMSIZ);
 
@@ -473,8 +462,6 @@ eth_feature_set_values(struct eth_if_context *if_context)
     e_features = TE_ALLOC(sizeof(*e_features) +
                           E_FEATURE_BITS_TO_DWORDS(if_context->nb_features) *
                           sizeof(e_features->features[0]));
-    if (e_features == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     e_features->cmd = ETHTOOL_SFEATURES;
 

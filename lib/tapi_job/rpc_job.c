@@ -949,11 +949,6 @@ sched_affinity_param_alloc(tapi_job_sched_param *sched_param,
     tapi_job_sched_affinity_param *af = sched_param->data;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-    {
-        ERROR("Failed to allocate sched affinity");
-        return TE_ENOMEM;
-    }
 
     result->cpu_ids.cpu_ids_val = af->cpu_ids;
     result->cpu_ids.cpu_ids_len = af->cpu_ids_len;
@@ -975,11 +970,6 @@ sched_priority_param_alloc(tapi_job_sched_param *sched_param,
     tapi_job_sched_priority_param *p = sched_param->data;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-    {
-        ERROR("Failed to allocate sched priority");
-        return TE_ENOMEM;
-    }
 
     result->priority = p->priority;
 
@@ -1010,12 +1000,6 @@ tapi_job_sched_param2tarpc_job_sched_param(tapi_job_sched_param *sched_tapi,
         count++;
 
     sched = TE_ALLOC(count * sizeof(*sched));
-    if (sched == NULL)
-    {
-        ERROR("Failed to allocate sched parameters");
-        rc = TE_ENOMEM;
-        goto out;
-    }
 
     for (i = 0; i < count; i++)
     {

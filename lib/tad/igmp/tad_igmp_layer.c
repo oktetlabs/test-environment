@@ -126,8 +126,6 @@ tad_igmp_init_cb(csap_p csap, unsigned int layer)
     const asn_value        *layer_nds;
 
     proto_data = TE_ALLOC(sizeof(*proto_data));
-    if (proto_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     csap_set_proto_spec_data(csap, layer, proto_data);
 
@@ -206,8 +204,6 @@ tad_igmp_nds_to_pdu_data(csap_p csap, tad_igmp_proto_data *proto_data,
     assert(p_pdu_data != NULL);
 
     *p_pdu_data = pdu_data = TE_ALLOC(sizeof(*pdu_data));
-    if (pdu_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_bps_nds_to_data_units(&proto_data->hdr, layer_pdu,
                                    &pdu_data->hdr);

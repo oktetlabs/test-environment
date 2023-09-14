@@ -244,12 +244,6 @@ add_new_tag_logs(char *tags_str)
 
     tag_logs = TE_ALLOC(sizeof(*tag_logs));
 
-    if (tag_logs == NULL)
-    {
-        ERROR("Failed to allocate memory");
-        return NULL;
-    }
-
     tag_logs_init(tag_logs);
 
     tag_logs->tags_str = tags_str;
@@ -376,11 +370,6 @@ get_opts_from_file(char *fname)
     fseeko(f, 0LL, SEEK_SET);
 
     s = TE_ALLOC(sizeof(*s) * opts_len);
-    if (s == NULL)
-    {
-        printf("%s(): memory allocation failed\n", __FUNCTION__);
-        return -1;
-    }
 
     if (fgets(s, opts_len, f) == NULL)
     {

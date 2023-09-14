@@ -137,11 +137,7 @@ trc_report_collect_stats(trc_report_ctx *ctx)
                         if (test->type != TRC_TEST_SCRIPT)
                         {
                             iter_data = TE_ALLOC(sizeof(*iter_data));
-                            if (iter_data == NULL)
-                            {
-                                rc = TE_ENOMEM;
-                                break;
-                            }
+
                             TAILQ_INIT(&iter_data->runs);
                             rc = trc_db_walker_set_user_data(walker,
                                                              ctx->db_uid,
@@ -170,11 +166,7 @@ trc_report_collect_stats(trc_report_ctx *ctx)
                     if (test_data == NULL)
                     {
                         test_data = TE_ALLOC(sizeof(*test_data));
-                        if (test_data == NULL)
-                        {
-                            rc = TE_ENOMEM;
-                            break;
-                        }
+
                         rc = trc_db_walker_set_user_data(walker,
                                                          ctx->db_uid,
                                                          test_data);

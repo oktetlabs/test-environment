@@ -50,8 +50,6 @@ trc_db_walker_copy(const te_trc_db_walker *walker)
         return NULL;
 
     new_walker = TE_ALLOC(sizeof(*new_walker));
-    if (new_walker == NULL)
-        return NULL;
 
     memcpy(new_walker, walker, sizeof(*walker));
 
@@ -108,8 +106,6 @@ trc_db_new_walker(te_trc_db *trc_db)
     te_trc_db_walker   *walker;
 
     walker = TE_ALLOC(sizeof(*walker));
-    if (walker == NULL)
-        return NULL;
 
     walker->db = trc_db;
     walker->is_iter = TRUE;

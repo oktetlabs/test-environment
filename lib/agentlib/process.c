@@ -607,9 +607,6 @@ register_vfork_hook(void (*prepare)(void), void (*child)(void),
 {
     vfork_hook *new_hook = TE_ALLOC(sizeof(*new_hook));
 
-    if (new_hook == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
     new_hook->hook[VFORK_HOOK_PHASE_PREPARE] = prepare;
     new_hook->hook[VFORK_HOOK_PHASE_CHILD]   = child;
     new_hook->hook[VFORK_HOOK_PHASE_PARENT]  = parent;

@@ -261,12 +261,10 @@ te_make_pattern_buf(size_t min, size_t max, size_t *p_len,
 
     /*
      * There is nothing wrong with asking for a zero-length buffer.
-     * However, ISO C and POSIX allow NULL or non-NULL to be returned
-     * in this case, so we allocate a single-byte buffer instead.
+     * However, TE_ALLOC intentionally fails on zero length requests,
+     * so we allocate a single-byte buffer instead.
      */
     buf = TE_ALLOC(len == 0 ? 1 : len);
-    if (buf == NULL)
-        TE_FATAL_ERROR("No memory");
 
     te_fill_pattern_buf(buf, len, pattern);
 

@@ -90,13 +90,12 @@ make_pathname(const char *path, const char *name)
     assert(path != NULL && name != NULL);
     l = strlen(path);
     pathname = TE_ALLOC(l + strlen(name) + 2); /* +2: '/' and '\0' */
-    if (pathname != NULL)
-    {
-        /* Make pathname as 'path/name'. */
-        strcpy(pathname, path);
-        pathname[l] = '/';
-        strcpy(&pathname[l + 1], name);
-    }
+
+    /* Make pathname as 'path/name'. */
+    strcpy(pathname, path);
+    pathname[l] = '/';
+    strcpy(&pathname[l + 1], name);
+
     return pathname;
 }
 
@@ -183,8 +182,6 @@ local_fs_get_pathname(tapi_local_file_type type, const char *pathname)
     char       *basename = NULL;
 
     str = TE_ALLOC(strlen(pathname) + 1);
-    if (str == NULL)
-        return NULL;
     strcpy(str, pathname);
     if (type == TAPI_FILE_TYPE_FILE)
     {
@@ -274,8 +271,6 @@ get_local_files(tapi_local_file_type  type,
         if (rc != 0)
             return rc;
         file = TE_ALLOC(sizeof(*file));
-        if (file == NULL)
-            return TE_RC(TE_TAPI, TE_ENOMEM);
         file->file.type = type;
         file->file.pathname = make_pathname(path, name);
         if (file->file.pathname == NULL)
@@ -425,12 +420,11 @@ tapi_local_fs_get_file_real_pathname(const tapi_local_file *file,
            file->pathname[0] == '/' ? "" : "/");
     real_path = TE_ALLOC(strlen(mapping_pfx) + strlen(sep) +
                          strlen(file->pathname) + 1);
-    if (real_path != NULL)
-    {
-        strcpy(real_path, mapping_pfx);
-        strcat(real_path, sep);
-        strcat(real_path, file->pathname);
-    }
+
+    strcpy(real_path, mapping_pfx);
+    strcat(real_path, sep);
+    strcat(real_path, file->pathname);
+
     free(content_dir);
     return real_path;
 }

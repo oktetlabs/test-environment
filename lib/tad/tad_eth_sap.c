@@ -405,8 +405,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 
     assert(sap->data == NULL);
     sap->data = data = TE_ALLOC(sizeof(*data));
-    if (data == NULL)
-        return TE_RC(rc_module, TE_ENOMEM);
+
 
 #ifdef USE_PF_PACKET
     data->ifindex = ifindex;
@@ -959,8 +958,6 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
 
     seg_len = (vlan_tag_valid) ? ph->tp_len + TAD_VLAN_TAG_LEN : ph->tp_len;
     seg_data = TE_ALLOC(seg_len);
-    if (seg_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     remaining_len = seg_len;
 

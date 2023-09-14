@@ -73,8 +73,6 @@ trc_test_iter_args_copy(trc_test_iter_args *dst,
     TAILQ_FOREACH(arg, &src->head, links)
     {
         dup_arg = TE_ALLOC(sizeof(*dup_arg));
-        if (dup_arg == NULL)
-            return TE_ENOMEM;
 
         dup_arg->name = strdup(arg->name);
         dup_arg->value = strdup(arg->value);
@@ -101,8 +99,6 @@ trc_test_iter_args_dup(trc_test_iter_args *args)
     te_errno rc;
 
     dup = TE_ALLOC(sizeof(*dup));
-    if (dup == NULL)
-        return NULL;
 
     trc_test_iter_args_init(dup);
 
@@ -386,8 +382,7 @@ te_errno
 trc_db_init(te_trc_db **db)
 {
     *db = TE_ALLOC(sizeof(**db));
-    if (*db == NULL)
-        return TE_RC(TE_TRC, TE_ENOMEM);
+
     TAILQ_INIT(&(*db)->tests.head);
     TAILQ_INIT(&(*db)->globals.head);
 
@@ -415,27 +410,25 @@ trc_db_new_test(trc_tests *tests, trc_test_iter *parent, const char *name)
     trc_test   *p;
 
     p = TE_ALLOC(sizeof(*p));
-    if (p != NULL)
-    {
-        TAILQ_INIT(&p->iters.head);
-        LIST_INIT(&p->users);
-        p->parent = parent;
-        p->path = NULL;
-        p->filename = NULL;
-        if (name != NULL)
-        {
-            p->name = strdup(name);
-            trc_db_test_update_path(p);
 
-            if (p->name == NULL)
-            {
-                ERROR("%s(): strdup(%s) failed", __FUNCTION__, name);
-                free(p);
-                return NULL;
-            }
+    TAILQ_INIT(&p->iters.head);
+    LIST_INIT(&p->users);
+    p->parent = parent;
+    p->path = NULL;
+    p->filename = NULL;
+    if (name != NULL)
+    {
+        p->name = strdup(name);
+        trc_db_test_update_path(p);
+
+        if (p->name == NULL)
+        {
+            ERROR("%s(): strdup(%s) failed", __FUNCTION__, name);
+            free(p);
+            return NULL;
         }
-        TAILQ_INSERT_TAIL(&tests->head, p, links);
     }
+    TAILQ_INSERT_TAIL(&tests->head, p, links);
 
     return p;
 }
@@ -463,16 +456,6 @@ trc_db_test_iter_args(trc_test_iter_args *args, unsigned int n_args,
         trc_test_iter_arg  *insert_after = NULL;
 
         arg = TE_ALLOC(sizeof(*arg));
-        if (arg == NULL)
-        {
-            while ((arg = TAILQ_FIRST(&args->head)) != NULL)
-            {
-                TAILQ_REMOVE(&args->head, arg, links);
-                /* Do not free name and value */
-                free(arg);
-            }
-            return TE_RC(TE_TRC, TE_ENOMEM);
-        }
 
         arg->name = strdup(add_args[i].name);
         arg->value = strdup(add_args[i].value);
@@ -538,27 +521,25 @@ trc_db_new_test_iter(trc_test *test, unsigned int n_args,
     te_errno       rc;
 
     p = TE_ALLOC(sizeof(*p));
-    if (p != NULL)
+
+    trc_test_iter_args_init(&p->args);
+
+    STAILQ_INIT(&p->exp_results);
+    TAILQ_INIT(&p->tests.head);
+    LIST_INIT(&p->users);
+    p->parent = test;
+    p->filename = NULL;
+    rc = trc_db_test_iter_args(&p->args, n_args, args);
+    if (rc != 0)
     {
-        trc_test_iter_args_init(&p->args);
-
-        STAILQ_INIT(&p->exp_results);
-        TAILQ_INIT(&p->tests.head);
-        LIST_INIT(&p->users);
-        p->parent = test;
-        p->filename = NULL;
-        rc = trc_db_test_iter_args(&p->args, n_args, args);
-        if (rc != 0)
-        {
-            free(p);
-            return NULL;
-        }
-
-        if (insert_before == NULL)
-            TAILQ_INSERT_TAIL(&test->iters.head, p, links);
-        else
-            TAILQ_INSERT_BEFORE(insert_before, p, links);
+        free(p);
+        return NULL;
     }
+
+    if (insert_before == NULL)
+        TAILQ_INSERT_TAIL(&test->iters.head, p, links);
+    else
+        TAILQ_INSERT_BEFORE(insert_before, p, links);
 
     return p;
 }
@@ -782,8 +763,7 @@ trc_db_set_user_data(void *db_item, te_bool is_iter, unsigned int user_id,
     if (ud == NULL)
     {
         ud = TE_ALLOC(sizeof(*ud));
-        if (ud == NULL)
-            return TE_ENOMEM;
+
         ud->user_id = user_id;
         LIST_INSERT_HEAD(users, ud, links);
     }
@@ -831,8 +811,7 @@ trc_db_walker_set_prop_ud(const te_trc_db_walker *walker,
         if (ud == NULL)
         {
             ud = TE_ALLOC(sizeof(*ud));
-            if (ud == NULL)
-                return TE_ENOMEM;
+
             ud->user_id = user_id;
             LIST_INSERT_HEAD(list, ud, links);
         }
@@ -862,8 +841,7 @@ trc_db_walker_set_user_data(const te_trc_db_walker *walker,
         trc_users_data *list = trc_db_walker_users_data(walker);
 
         ud = TE_ALLOC(sizeof(*ud));
-        if (ud == NULL)
-            return TE_ENOMEM;
+
         ud->user_id = user_id;
         LIST_INSERT_HEAD(list, ud, links);
     }

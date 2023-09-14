@@ -217,11 +217,6 @@ tapi_ctorrent_create_app(tapi_job_factory_t *factory, tapi_ctorrent_opt *opt,
     tapi_ctorrent_app  *result;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-    {
-        ERROR("Failed to allocate memory for ctorrent app");
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
 
     rc = tapi_job_opt_build_args(ctorrent_binary, ctorrent_binds, opt, &args);
     if (rc != 0)

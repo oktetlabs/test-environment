@@ -761,8 +761,6 @@ te_file_extract_glob(const char *filename, const char *pattern,
     assert(prefix_len + suffix_len <= fname_len);
 
     result = TE_ALLOC(fname_len - prefix_len - suffix_len + 1);
-    if (result == NULL)
-        TE_FATAL_ERROR("Not enough memory");
 
     memcpy(result, filename + prefix_len, fname_len - prefix_len - suffix_len);
     result[fname_len - prefix_len - suffix_len] = '\0';

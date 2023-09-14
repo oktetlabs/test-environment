@@ -180,11 +180,6 @@ tapi_wrk_create(tapi_job_factory_t *factory, const tapi_wrk_opt *opt,
     opt_effective = *opt;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-    {
-        rc = TE_RC(TE_TAPI, TE_ENOMEM);
-        goto out;
-    }
 
     if (opt_effective.script_content != NULL)
     {
@@ -358,8 +353,6 @@ parse_latency_distr(const char *str, size_t size,
         return TE_RC(TE_TAPI, TE_ENOBUFS);
 
     result = TE_ALLOC(size * sizeof(*result));
-    if (result == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     for (i = 0, offset = 0; i < size * 2; i++, offset += strlen(buf))
     {

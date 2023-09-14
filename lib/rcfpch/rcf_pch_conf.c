@@ -1540,8 +1540,6 @@ alloc_rsrc_lock(rsrc_lock_type type)
     rsrc_lock *result;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-        return NULL;
 
     result->pids = TE_VEC_INIT(pid_t);
     result->type = type;
@@ -1718,11 +1716,6 @@ read_rsrc_lock_file(int fd, rsrc_lock **lock, pid_t my_pid)
 
     /* Allocate with null terminator */
     data = TE_ALLOC(size + 1);
-    if (data == NULL)
-    {
-        rc = TE_RC(TE_RCF_PCH, TE_ENOMEM);
-        goto out;
-    }
 
     if (pread(fd, data, size, 0) != size)
     {

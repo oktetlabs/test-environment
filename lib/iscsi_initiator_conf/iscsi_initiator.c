@@ -210,10 +210,7 @@ iscsi_unix_cli(const char *cmd, ...)
     int     status = 0;
     va_list ap;
 
-    if ((cmdline = (char *)TE_ALLOC(ISCSI_MAX_CMD_SIZE)) == NULL)
-    {
-        return TE_ENOMEM;
-    }
+    cmdline = (char *)TE_ALLOC(ISCSI_MAX_CMD_SIZE);
 
     va_start(ap, cmd);
     vsnprintf(cmdline, ISCSI_MAX_CMD_SIZE, cmd, ap);
@@ -467,8 +464,7 @@ iscsi_post_connection_request(int target_id, int cid, int status, te_bool urgent
     }
 
     req = TE_ALLOC(sizeof(*req));
-    if (req == NULL)
-        return TE_OS_RC(ISCSI_AGENT_TYPE, errno);
+
     req->target_id = target_id;
     req->cid       = cid;
     req->status    = status;

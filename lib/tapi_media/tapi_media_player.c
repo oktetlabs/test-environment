@@ -43,11 +43,6 @@ tapi_media_player_create(const char               *ta,
         return NULL;
 
     mp = TE_ALLOC(sizeof(*mp));
-    if (mp == NULL)
-    {
-        rcf_rpc_server_destroy(rpcs);
-        return NULL;
-    }
 
     mp->client = client;
     if (player != NULL)

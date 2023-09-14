@@ -372,11 +372,6 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
 
         /* Pre-allocate entry for result */
         entry = TE_ALLOC(sizeof(*entry));
-        if (entry == NULL)
-        {
-            ctx->rc = TE_ENOMEM;
-            return;
-        }
         te_test_result_init(&entry->result);
         entry->result.status = status;
         entry->tin = tin;
@@ -388,12 +383,7 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
 
         assert(ctx->iter_data == NULL);
         ctx->iter_data = TE_ALLOC(sizeof(*ctx->iter_data));
-        if (ctx->iter_data == NULL)
-        {
-            free(entry);
-            ctx->rc = TE_ENOMEM;
-            return;
-        }
+
         TAILQ_INIT(&ctx->iter_data->runs);
         TAILQ_INSERT_TAIL(&ctx->iter_data->runs, entry, links);
 
@@ -1219,14 +1209,6 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                 te_test_verdict *verdict;
 
                 verdict = TE_ALLOC(sizeof(*verdict));
-                if (verdict == NULL)
-                {
-                    ERROR("Memory allocation failure");
-                    free(ctx->str);
-                    ctx->str = NULL;
-                    ctx->rc = TE_ENOMEM;
-                    return;
-                }
                 verdict->str = ctx->str;
                 ctx->str = NULL;
                 assert(ctx->iter_data != NULL);

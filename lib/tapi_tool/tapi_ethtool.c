@@ -335,11 +335,6 @@ create_app(tapi_job_factory_t *factory,
     tapi_job_simple_desc_t desc;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-    {
-        ERROR("Failed to allocate memory for ethtool app");
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
 
     result->cmd = opt->cmd;
 

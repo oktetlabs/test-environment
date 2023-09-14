@@ -252,11 +252,7 @@ cfg_dh_get_value_from_instance(xmlNodePtr node, te_kvpair_h *expand_vars)
     }
 
     len = sizeof(cfg_get_msg) + CFG_MAX_INST_VALUE;
-    if ((msg = TE_ALLOC(len)) == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto cleanup;
-    }
+    msg = TE_ALLOC(len);
 
     msg->handle = handle;
     msg->type = CFG_GET;

@@ -30,8 +30,7 @@ tapi_media_file_get_from_local(const tapi_local_file  *local_file,
     te_errno         rc;
 
     media = TE_ALLOC(sizeof(*media));
-    if (media == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
+
     media->file = *local_file;
     media->file.pathname = strdup(local_file->pathname);
     if (media->file.pathname == NULL)

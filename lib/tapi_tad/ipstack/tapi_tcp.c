@@ -356,8 +356,6 @@ ndn_tcp_message_to_plain(asn_value *pkt, tcp_message_t **tcp_msg)
     size_t      len;
 
     *tcp_msg = (tcp_message_t *)TE_ALLOC(sizeof(tcp_message_t));
-    if (*tcp_msg == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be TCP PDU */
     if (pdu == NULL)
@@ -474,10 +472,6 @@ ndn_tcp_message_to_plain(asn_value *pkt, tcp_message_t **tcp_msg)
         (*tcp_msg)->pld_len = payload_len;
         (*tcp_msg)->payload = TE_ALLOC(len);
 
-        if ((*tcp_msg)->payload == NULL)
-            ERROR_CLEANUP(rc, TE_ENOMEM, "Fail to allocate memory for TCP "
-                                         "payload");
-
         rc = asn_read_value_field(pkt, (*tcp_msg)->payload,
                                   &len, "payload");
         CHECK_ERROR_CLEANUP(rc, "failed to read payload");
@@ -572,11 +566,6 @@ tapi_tcp_ip_eth_trrecv_cb_data(tcp_callback callback, void *user_data)
     tapi_tad_trrecv_cb_data    *res;
 
     cb_data = (tcp_cb_data_t *)TE_ALLOC(sizeof(tcp_cb_data_t));
-    if (cb_data == NULL)
-    {
-        ERROR("%s(): failed to allocate memory", __FUNCTION__);
-        return NULL;
-    }
     cb_data->callback = callback;
     cb_data->user_data = user_data;
 

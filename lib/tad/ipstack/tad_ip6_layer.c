@@ -299,7 +299,7 @@ tad_ip6_init_cb(csap_p csap, unsigned int layer)
     const asn_value    *layer_nds;
     int                 val;
 
-    IF_NULL_RETURN(proto_data = TE_ALLOC(sizeof(*proto_data)));
+    proto_data = TE_ALLOC(sizeof(*proto_data));
 
     csap_set_proto_spec_data(csap, layer, proto_data);
 
@@ -421,8 +421,7 @@ opts_hdr_process_opts(tad_ip6_proto_data *proto_data,
     if (opts_num <= 0)
         return 0;
 
-    IF_NULL_RETURN(
-        hdr_data->opts = TE_ALLOC(opts_num * sizeof(*hdr_data->opts)));
+    hdr_data->opts = TE_ALLOC(opts_num * sizeof(*hdr_data->opts));
 
     hdr_data->opts_num = opts_num;
 
@@ -757,8 +756,6 @@ tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 
     tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
     *p_opaque = tmpl_data;
-    if (tmpl_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     tmpl_data->ext_hdrs = NULL;
     tmpl_data->ext_hdrs_num = 0;
@@ -778,9 +775,6 @@ tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 
         tmpl_data->ext_hdrs =
                     TE_ALLOC(hdr_num * sizeof(*tmpl_data->ext_hdrs));
-
-        if (tmpl_data->ext_hdrs == NULL)
-            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
         tmpl_data->ext_hdrs_num = hdr_num;
 
@@ -1357,8 +1351,7 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
     memset(&cb_data, 0, sizeof(cb_data));
 
     /* Allocate memory for binary template of the header */
-    if ((cb_data.hdr = TE_ALLOC(hdrlen)) == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    cb_data.hdr = TE_ALLOC(hdrlen);
 
     cb_data.hdr_len = hdrlen;
     cb_data.tmpl_pdu = tmpl_pdu;
@@ -1648,9 +1641,7 @@ tad_ip6_confirm_ptrn_cb(csap_p csap, unsigned int layer,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    IF_NULL_RETURN(*p_opaque =
-                        ptrn_data =
-                            TE_ALLOC(sizeof(*ptrn_data)));
+    *p_opaque = ptrn_data = TE_ALLOC(sizeof(*ptrn_data));
 
     memset(ptrn_data, 0, sizeof(*ptrn_data));
 
@@ -1664,9 +1655,7 @@ tad_ip6_confirm_ptrn_cb(csap_p csap, unsigned int layer,
         if ((hdr_num = asn_get_length(hdrs, "")) <= 0)
             goto ext_hdr_end;
 
-        IF_NULL_RETURN(
-            ptrn_data->ext_hdrs =
-                    TE_ALLOC(hdr_num * sizeof(*ptrn_data->ext_hdrs)));
+        ptrn_data->ext_hdrs = TE_ALLOC(hdr_num * sizeof(*ptrn_data->ext_hdrs));
 
         ptrn_data->ext_hdrs_num = hdr_num;
 
@@ -1799,7 +1788,7 @@ tad_ip6_match_pre_cb(csap_p              csap,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    IF_NULL_RETURN(pkt_data = TE_ALLOC(sizeof(*pkt_data)));
+    pkt_data = TE_ALLOC(sizeof(*pkt_data));
 
     meta_pkt_layer->opaque = pkt_data;
 

@@ -790,8 +790,6 @@ nginx_http_us_server_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     srv = TE_ALLOC(sizeof(*srv));
-    if (srv == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     srv->name = strdup(srv_name);
     if (srv->name == NULL)
@@ -892,8 +890,6 @@ nginx_http_upstream_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     us = TE_ALLOC(sizeof(*us));
-    if (us == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     us->name = strdup(us_name);
     if (us->name == NULL)
@@ -987,8 +983,6 @@ nginx_http_loc_proxy_hdr_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     hdr = TE_ALLOC(sizeof(*hdr));
-    if (hdr == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     hdr->name = strdup(hdr_name);
     if (hdr->name == NULL)
@@ -1088,8 +1082,6 @@ nginx_http_listen_entry_add(unsigned int gid, const char *oid, const char *value
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     entry = TE_ALLOC(sizeof(*entry));
-    if (entry == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     entry->name = strdup(entry_name);
     if (entry->name == NULL)
@@ -1191,8 +1183,6 @@ nginx_http_loc_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     loc = TE_ALLOC(sizeof(*loc));
-    if (loc == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     loc->name = strdup(loc_name);
     if (loc->name == NULL)
@@ -1300,8 +1290,6 @@ nginx_http_server_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     srv = TE_ALLOC(sizeof(*srv));
-    if (srv == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     srv->name = strdup(srv_name);
     srv->hostname = strdup("");

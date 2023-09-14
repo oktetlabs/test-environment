@@ -1894,8 +1894,6 @@ TARPC_FUNC(readlink, {},
     }
 
     buf = TE_ALLOC(in->bufsize);
-    if (buf == NULL)
-        TE_FATAL_ERROR("Failed to allocate readlink input buffer");
 
     MAKE_CALL(out->retval = func(in->path, buf, in->bufsize));
     out->resolved_path = buf;
@@ -7863,13 +7861,6 @@ echoer(tarpc_echoer_in *in)
             if ((events & POLLIN))
             {
                 buf = TE_ALLOC(sizeof(*buf));
-                if (buf == NULL)
-                {
-                    ERROR("%s(): out of memory", __FUNCTION__);
-                    iomux_close(iomux, &iomux_f, &iomux_st);
-                    free_buffers(&buffs);
-                    return - 1;
-                }
 
                 TAILQ_INSERT_HEAD(&buffs, buf, links);
                 received = buf->size = read_func(fd, buf->buf,
@@ -12096,12 +12087,7 @@ drain_fd(tarpc_lib_flags lib_flags, int fd, size_t size, int time2wait,
         }
     }
 
-    if ((buf = TE_ALLOC(size)) == NULL)
-    {
-        if (time2wait > 0)
-            iomux_close(iomux, &iomux_f, &iomux_st);
-        return -1;
-    }
+    buf = TE_ALLOC(size);
 
     *read = 0;
 

@@ -306,8 +306,6 @@ netconf_veth_get_peer(netconf_handle nh, const char *ifname, char *peer,
     netconf_append_rta(h, ifname, strlen(ifname) + 1, IFLA_IFNAME);
 
     list = TE_ALLOC(sizeof(*list));
-    if (list == NULL)
-        return TE_OS_RC(TE_TA_UNIX, errno);
 
     rc = netconf_talk(nh, req, sizeof(req), veth_peer_cb, NULL, list);
     if (rc != 0)

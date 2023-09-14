@@ -45,11 +45,6 @@ tapi_bttrack_create(tapi_job_factory_t *factory,
     const char        *exec_path = bttrack_path;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-    {
-        ERROR("Failed to allocate memory for bttrack app");
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
 
     if (opt->dfile == NULL)
     {

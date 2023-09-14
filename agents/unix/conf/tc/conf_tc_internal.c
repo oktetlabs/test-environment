@@ -165,8 +165,6 @@ add_qdisc(const char *if_name)
         return NULL;
 
     qdisc_cxt = TE_ALLOC(sizeof(*qdisc_cxt));
-    if (qdisc_cxt == NULL)
-        return NULL;
 
     qdisc_cxt->qdisc = qdisc;
     qdisc_cxt->id = ++last_id;

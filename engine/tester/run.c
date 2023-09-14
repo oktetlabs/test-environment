@@ -576,8 +576,6 @@ tester_plan_register(tester_plan *plan, json_t *ri, run_item_role role)
         return rc;
 
     e = TE_ALLOC(sizeof(*e));
-    if (e == NULL)
-        return TE_ENOMEM;
 
     e->json = ri;
     SLIST_INSERT_HEAD(&plan->stack, e, links);
@@ -767,9 +765,6 @@ static tester_ctx *
 tester_run_new_ctx(tester_flags flags, const logic_expr *targets)
 {
     tester_ctx *new_ctx = TE_ALLOC(sizeof(*new_ctx));
-
-    if (new_ctx == NULL)
-        return NULL;
 
     new_ctx->flags = flags;
 
@@ -2015,16 +2010,6 @@ tester_test_status_to_te_test_result(tester_test_status status,
         }
 
         v = TE_ALLOC(sizeof(*v));
-        if (v == NULL)
-        {
-            /*
-             * Make sure that test will report failed because of
-             * internal error.
-             */
-            result->status = TE_TEST_FAILED;
-            *error = "Internal error";
-            return;
-        }
 
         v->str = strdup(*error);
         if (v->str == NULL)

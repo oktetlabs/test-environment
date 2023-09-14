@@ -33,8 +33,7 @@ tapi_nvme_onvme_target_init(struct tapi_nvme_target *target, void *opts)
 {
     tapi_nvme_onvme_target_proc *proc;
 
-    if ((proc = TE_ALLOC(sizeof(*proc))) == NULL)
-        return TE_ENOMEM;
+    proc = TE_ALLOC(sizeof(*proc));
 
     *proc = TAPI_NVME_ONVME_TARGET_PROC_DEFAULTS;
     if (opts != NULL)

@@ -271,8 +271,6 @@ te_kvpair_push_va(te_kvpair_h *head, const char *key,
 
 
     p = TE_ALLOC(sizeof(*p));
-    if (p == NULL)
-        TE_FATAL_ERROR("Can't allocate memory");
 
     p->key = strdup(key);
     if (p->key == NULL)

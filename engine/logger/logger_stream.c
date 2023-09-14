@@ -52,8 +52,6 @@ msg_queue_post(msg_queue *queue, const char *buf, size_t len)
     refcnt_buffer *item;
 
     item = TE_ALLOC(sizeof(*item));
-    if (item == NULL)
-        return TE_ENOMEM;
 
     rc = refcnt_buffer_init_copy(item, buf, len);
     if (rc != 0)

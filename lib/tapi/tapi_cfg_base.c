@@ -674,34 +674,12 @@ tapi_cfg_save_del_if_addresses(const char *ta,
         te_bool         *tmp_broadcasts;
 
         tmp_addrs = TE_ALLOC(sizeof(struct sockaddr) * addr_num);
-        if (tmp_addrs == NULL)
-        {
-            free(addrs);
-            return TE_RC(TE_TAPI, TE_ENOMEM);
-        }
 
         if (saved_prefixes != NULL)
-        {
             tmp_prefixes = TE_ALLOC(sizeof(int) * addr_num);
-            if (saved_prefixes == NULL)
-            {
-                free(addrs);
-                free(tmp_addrs);
-                return TE_RC(TE_TAPI, TE_ENOMEM);
-            }
-        }
 
         if (saved_broadcasts != NULL)
-        {
             tmp_broadcasts = TE_ALLOC(sizeof(te_bool) * addr_num);
-            if (saved_broadcasts == NULL)
-            {
-                free(addrs);
-                free(tmp_addrs);
-                free(tmp_prefixes);
-                return TE_RC(TE_TAPI, TE_ENOMEM);
-            }
-        }
 
         *saved_addrs = tmp_addrs;
         if (saved_prefixes != NULL)

@@ -348,8 +348,6 @@ insert_entry(const char *oid, oid_queue_head_t *queue)
     oid_queue_entry_t *new_elm;
 
     new_elm = TE_ALLOC(sizeof(*new_elm));
-    if (new_elm == NULL)
-        TE_FATAL_ERROR("cannot allocate OID queue entry");
 
     te_strlcpy(new_elm->oid, oid, CFG_OID_MAX);
     TAILQ_INSERT_TAIL(queue, new_elm, links);

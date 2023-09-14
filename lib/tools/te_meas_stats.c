@@ -108,12 +108,7 @@ te_meas_stats_fill_summary_histogram(te_meas_stats_summary_t *summary,
 
     sample_size = data->num_datapoints;
 
-    if ((sorted_sample = TE_ALLOC(sample_size * sizeof(*sorted_sample))) ==
-        NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    sorted_sample = TE_ALLOC(sample_size * sizeof(*sorted_sample));
 
     memcpy(sorted_sample, data->sample, sample_size * sizeof(*sorted_sample));
     qsort(sorted_sample, sample_size, sizeof(*sorted_sample),
@@ -137,11 +132,7 @@ te_meas_stats_fill_summary_histogram(te_meas_stats_summary_t *summary,
 
     freq_size = use_sample_bucket ? bin_edges_num - 1 : bin_edges_num;
 
-    if ((freq = TE_ALLOC(freq_size * sizeof(*freq))) == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    freq = TE_ALLOC(freq_size * sizeof(*freq));
 
     if (use_sample_bucket)
     {
@@ -232,14 +223,10 @@ te_meas_stats_fill_summary_sample_deviation(te_meas_stats_summary_t *summary,
 
     summary->sample_deviation = TE_ALLOC(data->num_datapoints *
                                          sizeof(*summary->sample_deviation));
-    if (summary->sample_deviation == NULL)
-        goto out;
 
     *summary->sample_deviation = TE_ALLOC(data->num_datapoints *
                                           data->num_datapoints *
                                           sizeof(**summary->sample_deviation));
-    if (*summary->sample_deviation == NULL)
-        goto out;
 
     for (i = 0; i < data->num_datapoints; i++)
     {
@@ -357,8 +344,6 @@ te_meas_stats_data_init(te_meas_stats_data_t *data,
     data->max_num_datapoints = max_num_datapoints;
 
     data->sample = TE_ALLOC(sizeof(*data->sample) * max_num_datapoints);
-    if (data->sample == NULL)
-       return TE_ENOMEM;
 
     return 0;
 }

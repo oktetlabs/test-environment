@@ -63,8 +63,6 @@ tad_pcap_init_cb(csap_p csap, unsigned int layer)
     tad_pcap_layer_data    *layer_data;
 
     layer_data = TE_ALLOC(sizeof(*layer_data));
-    if (layer_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     csap_set_proto_spec_data(csap, layer, layer_data);
 

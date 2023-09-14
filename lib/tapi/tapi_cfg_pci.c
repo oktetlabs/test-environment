@@ -103,15 +103,8 @@ tapi_cfg_pci_get_vfs_of_pf(const char *pf_oid, te_bool pci_device,
     }
 
     result = TE_ALLOC(n_vfs * sizeof(*result));
-    if (result == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     ids = TE_ALLOC(n_vfs * sizeof(*ids));
-    if (ids == NULL)
-    {
-        rc = TE_RC(TE_TAPI, TE_ENOMEM);
-        goto out;
-    }
 
     for (i = 0; i < n_vfs; i++)
     {
@@ -254,8 +247,6 @@ tapi_cfg_pci_addr_by_oid_array(unsigned int n_devices, const cfg_oid **pci_devic
     }
 
     result = TE_ALLOC(sizeof(*result) * n_devices);
-    if (result == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     for (i = 0; i < n_devices; i++)
     {
@@ -610,11 +601,6 @@ tapi_cfg_pci_get_devices(const char *pci_oid, unsigned int *count,
         goto out;
 
     result = TE_ALLOC(n_devices * sizeof(*result));
-    if (result == NULL)
-    {
-        rc = TE_RC(TE_TAPI, TE_ENOMEM);
-        goto out;
-    }
 
     for (i = 0; i < n_devices; i++)
     {
@@ -658,11 +644,6 @@ tapi_cfg_pci_devices_by_vendor_device(const char *ta, const char *vendor,
         goto out;
 
     result = TE_ALLOC(n_instances * sizeof(*result));
-    if (result == NULL)
-    {
-        rc = TE_RC(TE_TAPI, TE_ENOMEM);
-        goto out;
-    }
 
     for (i = 0; i < n_instances; i++)
     {

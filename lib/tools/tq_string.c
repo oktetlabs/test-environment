@@ -80,8 +80,6 @@ tq_strings_add_uniq_gen(tqh_strings *list, const char *value,
     if (p == NULL)
     {
         p = TE_ALLOC(sizeof(*p));
-        if (p == NULL)
-            return TE_ENOMEM;
 
         if (duplicate)
         {

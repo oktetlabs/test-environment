@@ -592,10 +592,6 @@ process_cmd_line_opts(int argc, char **argv, trc_diff_ctx *ctx)
             {
                 tqe_string *p = TE_ALLOC(sizeof(*p));
 
-                if (p == NULL)
-                {
-                    return EXIT_FAILURE;
-                }
                 if (rc == TRC_DIFF_OPT_TESTS_INCLUDE)
                     TAILQ_INSERT_TAIL(&ctx->tests_include, p, links);
                 else

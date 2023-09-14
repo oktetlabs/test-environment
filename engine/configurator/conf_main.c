@@ -598,8 +598,7 @@ add_inst_with_src_val(const char *dst_oid, const cfg_instance *src_inst,
 
     len = sizeof(cfg_add_msg) + CFG_MAX_INST_VALUE +
           strlen(dst_oid) + 1;
-    if ((msg = TE_ALLOC(len)) == NULL)
-        return TE_ENOMEM;
+    msg = TE_ALLOC(len);
 
     msg->type = CFG_ADD;
     msg->len = sizeof(cfg_add_msg);
@@ -650,8 +649,7 @@ copy_value(cfg_handle dst_handle, const cfg_instance *src_inst)
          dst_inst->obj->access == CFG_READ_WRITE))
     {
         len = sizeof(cfg_msg) + CFG_MAX_INST_VALUE;
-        if ((msg = TE_ALLOC(len)) == NULL)
-            return TE_ENOMEM;
+        msg = TE_ALLOC(len);
 
         msg->type = CFG_SET;
         msg->len = sizeof(cfg_set_msg);
@@ -736,8 +734,7 @@ copy_subtree_object(const char *dst_oid, const cfg_object *src_obj,
     def_val_len = (src_obj->def_val == NULL) ? 0 : strlen(src_obj->def_val) + 1;
 
     msg_len = sizeof(cfg_register_msg) + dst_oid_len + def_val_len;
-    if ((msg = TE_ALLOC(msg_len)) == NULL)
-        return TE_ENOMEM;
+    msg = TE_ALLOC(msg_len);
 
     msg->type = CFG_REGISTER;
     msg->val_type = src_obj->type;
@@ -809,8 +806,7 @@ copy_inst_subtree_recursively(const char *top_dst_oid,
         src_child_oid_len = strlen(inst->oid);
 
         child_oid = TE_ALLOC(dst_oid_len + src_child_oid_len - src_oid_len + 1);
-        if (child_oid == NULL)
-            return TE_ENOMEM;
+
         memcpy(child_oid, top_dst_oid, dst_oid_len);
         memcpy(child_oid + dst_oid_len, inst->oid + src_oid_len,
                src_child_oid_len - src_oid_len + 1);
@@ -863,8 +859,7 @@ copy_obj_subtree_recursively(const char *top_dst_oid, cfg_handle top_src_handle)
 
         child_oid = TE_ALLOC(dst_oid_len + src_child_oid_len -
                              src_oid_len + 1);
-        if (child_oid == NULL)
-            return TE_ENOMEM;
+
         memcpy(child_oid, top_dst_oid, dst_oid_len);
         memcpy(child_oid + dst_oid_len, obj->oid + src_oid_len,
                src_child_oid_len - src_oid_len + 1);
@@ -2132,8 +2127,6 @@ delete_rcf_conf_agent(cfg_handle handle)
     }
 
     msg = TE_ALLOC(msg_size);
-    if (msg == NULL)
-        return TE_ENOMEM;
 
     cfg_ipc_mk_find_fmt((cfg_find_msg *)msg, msg_size,
                         "%s/status:", agent_instance->oid);
@@ -2185,8 +2178,6 @@ reboot_dead_agents(const te_vec *dead_agents)
     te_errno rc = 0;
 
     msg = TE_ALLOC(msg_size);
-    if (msg == NULL)
-        goto out;
 
     TE_VEC_FOREACH(dead_agents, dead_agent)
     {
@@ -2440,8 +2431,6 @@ create_backup(char **bkp_filename)
     te_errno rc = 0;
     cfg_backup_msg *bkp_msg = TE_ALLOC(sizeof(cfg_backup_msg) +
                                        sizeof(max_commit_subtree));
-    if (bkp_msg == NULL)
-        return TE_ENOMEM;
 
     if (*bkp_filename != NULL)
         cfg_dh_release_backup(*bkp_filename);
@@ -2489,8 +2478,6 @@ process_backup_op(const char *name, uint8_t op)
     size_t len;
     cfg_backup_msg *bkp_msg = TE_ALLOC(sizeof(cfg_backup_msg) +
                                        sizeof(max_commit_subtree));
-    if (bkp_msg == NULL)
-        return TE_ENOMEM;
 
     bkp_msg->type = CFG_BACKUP;
     bkp_msg->op = op;

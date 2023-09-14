@@ -92,11 +92,6 @@ test_path_proc_new_ctx(test_path_proc_data  *gctx,
     assert(path_item != NULL);
 
     new_ctx = TE_ALLOC(sizeof(*new_ctx));
-    if (new_ctx == NULL)
-    {
-        gctx->rc = TE_RC(TE_TESTER, TE_ENOMEM);
-        return NULL;
-    }
 
     new_ctx->item = path_item;
 
@@ -1104,8 +1099,6 @@ test_path_new(test_paths *paths, const char *path_str, test_path_type type)
     ENTRY("path_str=%s type=%u", path_str, type);
 
     path = TE_ALLOC(sizeof(*path));
-    if (path == NULL)
-        return TE_ENOMEM;
 
     TAILQ_INIT(&path->head);
     TAILQ_INIT(&path->scen);

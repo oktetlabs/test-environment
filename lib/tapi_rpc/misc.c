@@ -2501,12 +2501,6 @@ tapi_str2saved_mtus(const char *str, te_saved_mtus *mtus)
                 mtu = atoi(buf);
 
                 saved_mtu = TE_ALLOC(sizeof(*saved_mtu));
-                if (saved_mtu == NULL)
-                {
-                    ERROR("%s(): out of memory", __FUNCTION__);
-                    rc = TE_RC(TE_TAPI, TE_ENOMEM);
-                    goto cleanup;
-                }
 
                 saved_mtu->mtu = mtu;
                 te_strlcpy(saved_mtu->if_name, if_name, IFNAMSIZ);
@@ -2590,8 +2584,6 @@ te_saved_mtus_put(te_saved_mtus *mtus,
         return TE_RC(TE_TAPI, TE_EEXIST);
 
     saved_mtu = TE_ALLOC(sizeof(*saved_mtu));
-    if (saved_mtu == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     te_strlcpy(saved_mtu->ta, ta, RCF_MAX_NAME);
     te_strlcpy(saved_mtu->if_name, if_name, IFNAMSIZ);

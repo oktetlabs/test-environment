@@ -65,11 +65,6 @@ tapi_stress_create(tapi_job_factory_t *factory,
     te_errno rc;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-    {
-        rc = TE_RC(TE_TAPI, TE_ENOMEM);
-        goto out;
-    }
 
     rc = tapi_stress_complete_opts(&effective_opt, factory);
     if (rc != 0)

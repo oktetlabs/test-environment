@@ -272,13 +272,6 @@ tapi_memcached_create(tapi_job_factory_t *factory,
     }
 
     new_app = TE_ALLOC(sizeof(*new_app));
-    if (new_app == NULL)
-    {
-        rc = TE_ENOMEM;
-        ERROR("Failed to allocate memory for memcached app: %r", rc);
-        free(new_app);
-        return TE_RC(TE_TAPI, rc);
-    }
 
     if (opt->memcached_path != NULL)
         exec_path = opt->memcached_path;

@@ -67,8 +67,6 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
 
         helper->addr_rlen = max_addr_len + ARG_EXTRA_LEN;
         helper->addr_data = TE_ALLOC(helper->addr_rlen);
-        if (helper->addr_data == NULL)
-            return TE_ENOMEM;
     }
 
     rc = sockaddr_rpc2h(tarpc_addr, SA(helper->addr_data),
@@ -89,8 +87,6 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
     {
         msg->msg_iov = TE_ALLOC(sizeof(*(msg->msg_iov)) *
                                 tarpc_msg->msg_iov.msg_iov_len);
-        if (msg->msg_iov == NULL)
-            return TE_ENOMEM;
 
         for (i = 0; i < tarpc_msg->msg_iov.msg_iov_len; i++)
         {
@@ -130,8 +126,6 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
         helper->real_controllen = control_len + ARG_EXTRA_LEN;
         msg->msg_control = TE_ALLOC(helper->real_controllen);
         helper->orig_control = TE_ALLOC(control_len);
-        if (msg->msg_control == NULL || helper->orig_control == NULL)
-            return TE_ENOMEM;
         msg->msg_controllen = control_len;
 
         rc = msg_control_rpc2h(
@@ -325,12 +319,6 @@ rpcs_mmsghdrs_tarpc2h(rpcs_msghdr_check_args_mode check_args,
 
     mmsgs_aux = TE_ALLOC(sizeof(struct mmsghdr) * num);
     helpers_aux = TE_ALLOC(sizeof(rpcs_msghdr_helper) * num);
-    if (mmsgs_aux == NULL || helpers_aux == NULL)
-    {
-        ERROR("%s(): out of memory", __FUNCTION__);
-        rc = TE_ENOMEM;
-        goto finish;
-    }
 
     for (i = 0; i < num; i++)
     {

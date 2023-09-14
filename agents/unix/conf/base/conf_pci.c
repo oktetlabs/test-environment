@@ -2631,11 +2631,6 @@ pci_sriov_vf_list(unsigned int gid, const char *oid, const char *sub_id,
     }
 
     result = TE_ALLOC(result_size);
-    if (result == NULL)
-    {
-        rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        goto out;
-    }
 
     for (off = 0, i = 0; i < n; i++)
     {

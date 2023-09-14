@@ -723,23 +723,10 @@ tapi_cfg_net_node_rsrc_desc_alloc(unsigned int nb_rsrcs)
     net_node_rsrc_desc_t *d = NULL;
 
     d = TE_ALLOC(sizeof(*d));
-    if (d == NULL)
-        return NULL;
 
     d->rsrc_names = TE_ALLOC(nb_rsrcs * sizeof(*(d->rsrc_names)));
-    if (d->rsrc_names == NULL)
-    {
-        free(d);
-        return NULL;
-    }
 
     d->rsrc_vals = TE_ALLOC(nb_rsrcs * sizeof(*(d->rsrc_vals)));
-    if (d->rsrc_vals == NULL)
-    {
-        free(d->rsrc_names);
-        free(d);
-        return NULL;
-    }
 
     d->nb_rsrcs = nb_rsrcs;
 
@@ -1029,11 +1016,6 @@ tapi_cfg_net_pci_fn_by_dpdk_vdev_ref(const char *vdev_str, size_t *n_pci_fns,
     }
 
     result = TE_ALLOC(sizeof(*result) * n_vdev_slaves);
-    if (result == NULL)
-    {
-        rc = TE_RC(TE_CONF_API, TE_ENOMEM);
-        goto out;
-    }
 
     for (i = 0; i < n_vdev_slaves; i++)
     {
@@ -1187,11 +1169,6 @@ tapi_cfg_net_node_bind_driver(cfg_net_t *net, cfg_net_node_t *node,
         {
             n_pci_fns = 1;
             pci_fns = TE_ALLOC(sizeof(*pci_fns));
-            if (pci_fns == NULL)
-            {
-                rc = TE_RC(TE_CONF_API, TE_ENOMEM);
-                goto out;
-            }
 
             rc = cfg_get_instance_str(NULL, &pci_fns[0], oid_str);
             if (rc != 0)
@@ -1475,11 +1452,7 @@ tapi_cfg_net_node_get_pci_info(cfg_net_t *net, cfg_net_node_t *node,
         goto fail_get_fn;
 
     pci_info->pci_addr = TE_ALLOC(16);
-    if (pci_info->pci_addr == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto fail_alloc_pci_addr;
-    }
+
     snprintf(pci_info->pci_addr, 16, "%s:%s:%s.%d", domain, bus, slot, fn);
 
     agent = CFG_OID_GET_INST_NAME(oid, 1);
@@ -1492,7 +1465,6 @@ tapi_cfg_net_node_get_pci_info(cfg_net_t *net, cfg_net_node_t *node,
 
 fail_get_driver:
     tapi_cfg_net_free_pci_info(pci_info);
-fail_alloc_pci_addr:
 fail_get_fn:
     free(slot);
 fail_get_slot:
@@ -2591,11 +2563,6 @@ tapi_cfg_net_node_get_pci_oids(const cfg_net_node_t *node, unsigned int *n_pci,
 
         case NET_NODE_RSRC_TYPE_PCI_FN:
             result = TE_ALLOC(sizeof(*result));
-            if (result == NULL)
-            {
-                rc = TE_RC(TE_TAPI, TE_ENOMEM);
-                break;
-            }
 
             rc = cfg_get_instance_str(NULL, &result[0], node_oid);
             if (rc != 0)

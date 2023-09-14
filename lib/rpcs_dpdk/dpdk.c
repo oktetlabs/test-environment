@@ -68,11 +68,6 @@ TARPC_FUNC_STANDALONE(dpdk_find_representors, {},
         out->rep_port_ids.rep_port_ids_len = n_rep;
         out->rep_port_ids.rep_port_ids_val = TE_ALLOC(n_rep *
                 sizeof(*out->rep_port_ids.rep_port_ids_val));
-        if (out->rep_port_ids.rep_port_ids_val == NULL)
-        {
-            rc = -ENOMEM;
-            goto exit;
-        }
 
         i = 0;
         RTE_ETH_FOREACH_DEV(port)
@@ -123,11 +118,6 @@ TARPC_FUNC(rte_eth_representor_info_get, {},
 
     n_ranges = in->info.info_val[0].ranges.ranges_len;
     info = TE_ALLOC(sizeof(*info) + n_ranges * sizeof(info->ranges[0]));
-    if (info == NULL)
-    {
-        rc = -ENOMEM;
-        goto exit;
-    }
     info->nb_ranges_alloc = n_ranges;
 
     MAKE_CALL(ret = func(in->port_id, info));
@@ -140,11 +130,6 @@ TARPC_FUNC(rte_eth_representor_info_get, {},
         out->info.nb_ranges = info->nb_ranges;
 
         ranges = TE_ALLOC(info->nb_ranges * sizeof(*ranges));
-        if (ranges == NULL)
-        {
-            rc = -ENOMEM;
-            goto exit;
-        }
 
         for (i = 0; i < info->nb_ranges; i++)
         {

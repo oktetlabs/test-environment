@@ -93,14 +93,11 @@ register_message(tester_test_results *results,
         {
             te_test_verdict *p = TE_ALLOC(sizeof(*p));
 
-            if (p != NULL)
-            {
-                p->str = msg;
-                if (type == TE_TEST_MSG_VERDICT)
-                    TAILQ_INSERT_TAIL(&test->result.verdicts, p, links);
-                else
-                    TAILQ_INSERT_TAIL(&test->result.artifacts, p, links);
-            }
+            p->str = msg;
+            if (type == TE_TEST_MSG_VERDICT)
+                TAILQ_INSERT_TAIL(&test->result.verdicts, p, links);
+            else
+                TAILQ_INSERT_TAIL(&test->result.artifacts, p, links);
         }
 
         ret = pthread_mutex_unlock(&results->lock);
@@ -252,8 +249,6 @@ tester_test_msg_listener_start(tester_test_msg_listener **ctx,
 
     assert(ctx != NULL);
     *ctx = TE_ALLOC(sizeof(**ctx));
-    if (*ctx == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
     (*ctx)->results = results;
 
     rc = ipc_init();

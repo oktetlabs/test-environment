@@ -51,11 +51,6 @@ tapi_cfg_if_rss_hash_key_get(const char *ta,
 
     req_len = (strlen(val) + 1) / 3;
     result = TE_ALLOC(req_len);
-    if (result == NULL)
-    {
-        free(val);
-        return TE_ENOMEM;
-    }
 
     rc = te_str_hex_str2raw(val, result, req_len);
     free(val);
@@ -292,8 +287,6 @@ tapi_cfg_if_rss_hfuncs_get(const char *ta,
     }
 
     result = TE_ALLOC(sizeof(tapi_cfg_if_rss_hfunc) * funcs_num);
-    if (result == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     for (i = 0; i < funcs_num; i++)
     {

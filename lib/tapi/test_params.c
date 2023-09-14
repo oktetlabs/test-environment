@@ -757,8 +757,7 @@ test_octet_strings2list(const char *str, unsigned int str_len,
         if (len == 0)
             TEST_FAIL("Test parameter list returned zero parameters");
 
-        if ((list = TE_ALLOC(len * sizeof(uint8_t *))) == NULL)
-            TEST_FAIL("Failed to allocate %u bytes", len * sizeof(uint8_t *));
+        list = TE_ALLOC(len * sizeof(uint8_t *));
 
         for (i = 0; i < len; i++)
         {

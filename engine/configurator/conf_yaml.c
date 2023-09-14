@@ -380,10 +380,6 @@ parse_config_yaml_dependency(yaml_document_t            *d,
         }
 
         dep_entry = TE_ALLOC(sizeof(*dep_entry));
-        if (dep_entry == NULL) {
-            ERROR(CS_YAML_ERR_PREFIX "failed to allocate memory");
-            return TE_ENOMEM;
-        }
 
         dep_entry->oid = (const xmlChar *)n->data.scalar.value;
 
@@ -398,10 +394,6 @@ parse_config_yaml_dependency(yaml_document_t            *d,
             yaml_node_t *in = yaml_document_get_node(d, *item);
 
             dep_entry = TE_ALLOC(sizeof(*dep_entry));
-            if (dep_entry == NULL) {
-                ERROR(CS_YAML_ERR_PREFIX "failed to allocate memory");
-                return TE_ENOMEM;
-            }
 
             rc = parse_config_yaml_dependency_entry(d, in, dep_entry);
             if (rc != 0)

@@ -101,12 +101,6 @@ flow_stack_push(flow_stack_t *stack, int id, int pid, const char *type, const ch
     if (item == NULL || item->pid != pid)
     {
         item = TE_ALLOC(sizeof(*item));
-        if (item == NULL)
-        {
-            free(ntype);
-            free(nname);
-            return TE_ENOMEM;
-        }
 
         SLIST_INSERT_HEAD(stack, item, links);
     }

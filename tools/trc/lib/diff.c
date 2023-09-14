@@ -134,17 +134,14 @@ trc_diff_entry_new(const trc_diff_entry *parent)
 {
     trc_diff_entry *p = TE_ALLOC(sizeof(*p));
 
-    if (p != NULL)
+    if (parent == NULL)
     {
-        if (parent == NULL)
-        {
-            trc_diff_entry_init(p, FALSE);
-        }
-        else
-        {
-            trc_diff_entry_init(p, !parent->is_iter);
-            trc_diff_entry_inherit(parent, p);
-        }
+        trc_diff_entry_init(p, FALSE);
+    }
+    else
+    {
+        trc_diff_entry_init(p, !parent->is_iter);
+        trc_diff_entry_inherit(parent, p);
     }
 
     return p;
@@ -344,8 +341,6 @@ tad_diff_key_stat_inc(trc_diff_keys_stats *keys_stats, const char *key)
     if (p == (void *)keys_stats)
     {
         p = TE_ALLOC(sizeof(*p));
-        if (p == NULL)
-            return TE_ENOMEM;
 
         p->key   = key;
         p->count = 0;
@@ -1117,11 +1112,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                      * stack.
                      */
                     state = TE_ALLOC(sizeof(*state));
-                    if (state == NULL)
-                    {
-                        rc = TE_ENOMEM;
-                        break;
-                    }
+
                     state->entry = parent;
                     state->has_diff = has_diff;
                     state->children = children;
@@ -1327,18 +1318,16 @@ trc_diff_ctx_new(void)
 {
     trc_diff_ctx *ctx = TE_ALLOC(sizeof(*ctx));
 
-    if (ctx != NULL)
-    {
-        ctx->flags = 0;
-        ctx->db = NULL;
-        TAILQ_INIT(&ctx->sets);
+    ctx->flags = 0;
+    ctx->db = NULL;
+    TAILQ_INIT(&ctx->sets);
 
-        memset(&ctx->stats, 0, sizeof(ctx->stats));
-        TAILQ_INIT(&ctx->result);
+    memset(&ctx->stats, 0, sizeof(ctx->stats));
+    TAILQ_INIT(&ctx->result);
 
-        TAILQ_INIT(&ctx->tests_include);
-        TAILQ_INIT(&ctx->tests_exclude);
-    }
+    TAILQ_INIT(&ctx->tests_include);
+    TAILQ_INIT(&ctx->tests_exclude);
+
     return ctx;
 }
 

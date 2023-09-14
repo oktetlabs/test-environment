@@ -202,12 +202,6 @@ tapi_memaslap_create(tapi_job_factory_t *factory,
     }
 
     new_app = TE_ALLOC(sizeof(tapi_memaslap_app));
-    if (new_app == NULL)
-    {
-        rc = TE_ENOMEM;
-        ERROR("Failed to allocate memory for memaslap app: %r", rc);
-        return TE_RC(TE_TAPI, rc);
-    }
 
     new_app->ta = ta;
 

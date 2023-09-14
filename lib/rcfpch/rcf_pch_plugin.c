@@ -231,8 +231,6 @@ rpcserver_plugin_list(unsigned int gid, const char *oid,
     UNUSED(sub_id);
 
     buf = TE_ALLOC(buflen);
-    if (buf == NULL)
-        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
 
     *buf = '\0';
     pthread_mutex_lock(lock);

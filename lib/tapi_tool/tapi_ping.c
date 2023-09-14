@@ -75,11 +75,6 @@ tapi_ping_create_with_v(tapi_job_factory_t *factory, const tapi_ping_opt *opt,
     path = use_ping6 ? "ping6" : "ping";
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-    {
-        ERROR("Failed to allocate memory for ping app");
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
 
     rc = tapi_job_opt_build_args(path, ping_binds, opt, &ping_args);
     if (rc != 0)

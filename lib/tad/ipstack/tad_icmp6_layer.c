@@ -443,10 +443,7 @@ tad_icmp6_init_cb(csap_p csap, unsigned int layer)
     const asn_value        *layer_nds = csap->layers[layer].nds;
 #endif
 
-    if ((proto_data = TE_ALLOC(sizeof(*proto_data))) == NULL)
-    {
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
+    proto_data = TE_ALLOC(sizeof(*proto_data));
 
     csap_set_proto_spec_data(csap, layer, proto_data);
 
@@ -684,12 +681,8 @@ tad_icmp6_nds_to_data_prepare(tad_icmp6_proto_data *proto_data,
         if ((pdu_data->n_opts = asn_get_length(nds, "options")) < 0)
             return TE_RC(TE_TAD_CSAP, TE_EFAULT);
 
-        if ((pdu_data->options =
-                    TE_ALLOC(pdu_data->n_opts *
-                                    sizeof(*pdu_data->options))) == NULL)
-        {
-            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-        }
+        pdu_data->options = TE_ALLOC(pdu_data->n_opts *
+                                     sizeof(*pdu_data->options));
 
         for (i = 0; i < pdu_data->n_opts; i++)
         {
@@ -909,10 +902,7 @@ tad_icmp6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    if ((*p_opaque = tmpl_data = TE_ALLOC(sizeof(*tmpl_data))) == NULL)
-    {
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
+    *p_opaque = tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
 
     if ((rc = tad_icmp6_nds_to_data(proto_data, layer_pdu, tmpl_data)) != 0)
     {
@@ -1070,10 +1060,7 @@ tad_icmp6_gen_bin_cb(csap_p csap, unsigned int layer,
     }
 
     /* Allocate memory for binary template of the header */
-    if ((msg = TE_ALLOC(bitlen)) == NULL)
-    {
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
+    msg = TE_ALLOC(bitlen);
 
     /* Generate binary template of the header */
     bitoff = 0;
@@ -1154,10 +1141,7 @@ tad_icmp6_confirm_ptrn_cb(csap_p csap, unsigned int layer,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    if ((*p_opaque = ptrn_data = TE_ALLOC(sizeof(*ptrn_data))) == NULL)
-    {
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
+    *p_opaque = ptrn_data = TE_ALLOC(sizeof(*ptrn_data));
 
     return tad_icmp6_nds_to_data(proto_data, layer_pdu, ptrn_data);
 }
@@ -1175,12 +1159,7 @@ tad_icmp6_match_pre_cb(csap_p              csap,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    if ((meta_pkt_layer->opaque =
-                        pkt_data =
-                            TE_ALLOC(sizeof(*pkt_data))) == NULL)
-    {
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
+    meta_pkt_layer->opaque = pkt_data = TE_ALLOC(sizeof(*pkt_data));
 
     if ((rc = tad_icmp6_nds_to_data_prepare(proto_data,
                                             csap->layers[layer].pdu,

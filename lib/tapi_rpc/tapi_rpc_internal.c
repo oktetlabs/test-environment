@@ -176,8 +176,6 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg,
     if (rpc_msg->msg_iov != NULL)
     {
         iovec_arr = TE_ALLOC(sizeof(tarpc_iovec) * rpc_msg->msg_riovlen);
-        if (iovec_arr == NULL)
-            return TE_ENOMEM;
 
         for (i = 0; i < (int)rpc_msg->msg_riovlen; i++)
         {
@@ -307,8 +305,6 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg,
             uint8_t *tail_dup = NULL;
 
             tail_dup = TE_ALLOC(tail_len);
-            if (tail_dup == NULL)
-                return TE_ENOMEM;
             memcpy(tail_dup, tail_start, tail_len);
 
             tarpc_msg->msg_control_tail.msg_control_tail_val = tail_dup;
@@ -437,8 +433,6 @@ mmsghdrs_rpc2tarpc(const struct rpc_mmsghdr *rpc_mmsgs, unsigned int num,
     }
 
     tarpc_mmsgs_aux = TE_ALLOC(sizeof(tarpc_mmsghdr) * num);
-    if (tarpc_mmsgs_aux == NULL)
-        return TE_ENOMEM;
 
     for (i = 0; i < num; i++)
     {

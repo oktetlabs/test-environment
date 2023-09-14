@@ -122,8 +122,6 @@ tad_atm_rw_init_cb(csap_p csap)
     }
 
     spec_data = TE_ALLOC(sizeof(*spec_data));
-    if (spec_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_eth_sap_attach(device_id, &spec_data->sap);
     if (rc != 0)

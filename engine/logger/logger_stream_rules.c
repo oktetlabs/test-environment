@@ -54,8 +54,6 @@ test_times_add_start(int test_id, double ts)
     else
     {
         times = TE_ALLOC(sizeof(*times));
-        if (times == NULL)
-            return TE_ENOMEM;
         TAILQ_INSERT_HEAD(&test_times, times, links);
     }
 

@@ -307,11 +307,6 @@ tapi_bpf_rxq_stats_read(const char *ta, unsigned int bpf_id,
         return rc;
 
     stats = TE_ALLOC(count * sizeof(*stats));
-    if (stats == NULL)
-    {
-        rc = TE_RC(TE_TAPI, TE_ENOMEM);
-        goto finish;
-    }
 
     for (i = 0; i < count; i++)
     {

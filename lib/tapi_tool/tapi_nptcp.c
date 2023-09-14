@@ -190,8 +190,6 @@ tapi_nptcp_create(tapi_job_factory_t *factory_receiver,
     tapi_nptcp_app *result;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     rc = build_args(opt_receiver, opt_transmitter,
                     &nptcp_args_receiver, &nptcp_args_transmitter);

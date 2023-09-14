@@ -1736,8 +1736,6 @@ rte_flow_action_rss_opt_from_pdu(const asn_value            *conf_pdu_choice,
         return rc;
 
     opt = TE_ALLOC(sizeof(*opt));
-    if (opt == NULL)
-        return TE_ENOMEM;
 
     rss_key_len = asn_get_length(rss_conf, "rss-key");
     if (rss_key_len > 0)
@@ -1745,11 +1743,6 @@ rte_flow_action_rss_opt_from_pdu(const asn_value            *conf_pdu_choice,
         uint8_t *rss_key = NULL;
 
         rss_key = TE_ALLOC(rss_key_len);
-        if (rss_key == NULL)
-        {
-            rc = TE_ENOMEM;
-            goto fail;
-        }
 
         d_len = rss_key_len;
         rc = asn_read_value_field(rss_conf, rss_key, &d_len, "rss-key");
@@ -1777,11 +1770,6 @@ rte_flow_action_rss_opt_from_pdu(const asn_value            *conf_pdu_choice,
         uint8_t *rss_key = NULL;
 
         rss_key = TE_ALLOC(rss_key_len);
-        if (rss_key == NULL)
-        {
-            rc = TE_ENOMEM;
-            goto fail;
-        }
 
         memcpy(rss_key, opt->rss_key, rss_key_len);
 
@@ -1841,12 +1829,8 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
     }
 
     conf = TE_ALLOC(sizeof(*conf));
-    if (conf == NULL)
-        return TE_ENOMEM;
 
     queue = TE_ALLOC(nb_entries * sizeof(*queue));
-    if (queue == NULL)
-        goto fail_alloc_queue;
 
     for (i = 0; i < nb_entries; ++i)
     {
@@ -1889,7 +1873,6 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
 
 fail:
     free(queue);
-fail_alloc_queue:
     free(conf);
 
     return rc;
@@ -2050,11 +2033,6 @@ rte_flow_action_vxlan_encap_from_pdu(const asn_value *conf_pdu,
         return rc;
 
     conf = TE_ALLOC(sizeof(*conf));
-    if (conf == NULL)
-    {
-        rte_flow_free_pattern(pattern, len);
-        return TE_ENOMEM;
-    }
 
     conf->definition = pattern;
     action->conf = conf;
@@ -2109,8 +2087,6 @@ rte_flow_action_of_push_vlan_from_pdu(const asn_value *conf_pdu,
         return TE_EINVAL;
 
     conf = TE_ALLOC(sizeof(*conf));
-    if (conf == NULL)
-        return TE_ENOMEM;
 
     len = sizeof(conf->ethertype);
     rc = asn_read_value_field(conf_pdu, &val, &len, "#ethertype");
@@ -2147,8 +2123,6 @@ rte_flow_action_of_set_vlan_vid_from_pdu(const asn_value *conf_pdu,
         return TE_EINVAL;
 
     conf = TE_ALLOC(sizeof(*conf));
-    if (conf == NULL)
-        return TE_ENOMEM;
 
     len = sizeof(conf->vlan_vid);
     rc = asn_read_value_field(conf_pdu, &val, &len, "#vlan-id");
@@ -2173,8 +2147,6 @@ rte_flow_action_port_from_pdu(const asn_value *pdu, struct rte_flow_action *out)
     size_t sz;
 
     conf = TE_ALLOC(sizeof(*conf));
-    if (conf == NULL)
-        return TE_ENOMEM;
 
     sz = sizeof(conf->port_id);
     rc = asn_read_value_field(pdu, &conf->port_id, &sz, "#ethdev-port-id");
@@ -2867,11 +2839,6 @@ insert_flow_rule_items(struct rte_flow_item **pattern_out,
     }
 
     new_pattern = TE_ALLOC(pattern_size * sizeof(*new_pattern));
-    if (new_pattern == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto fail;
-    }
 
     for (i = 0; i < items_count; i++)
     {
@@ -3282,11 +3249,6 @@ TARPC_FUNC_STANDALONE(rte_flow_prepend_opaque_actions, {},
         ++nb_united_actions;
 
     united_actions = TE_ALLOC(sizeof(*action) * nb_united_actions);
-    if (united_actions == NULL)
-    {
-        out->retval = -TE_RC(TE_RPCS, TE_ENOMEM);
-        goto done;
-    }
 
     for (action = united_actions, i = 0; i < in->nb_opaque_actions; ++i)
         *(action++) = opaque_actions[i];
@@ -3343,11 +3305,6 @@ TARPC_FUNC_STANDALONE(rte_flow_prepend_opaque_items, {},
         ++nb_united_items;
 
     united_items = TE_ALLOC(sizeof(*item) * nb_united_items);
-    if (united_items == NULL)
-    {
-        out->retval = -TE_RC(TE_RPCS, TE_ENOMEM);
-        goto done;
-    }
 
     for (item = united_items, i = 0; i < in->nb_opaque_items; ++i)
         *(item++) = opaque_items[i];

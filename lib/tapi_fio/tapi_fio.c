@@ -72,7 +72,6 @@ tapi_fio_create(const tapi_fio_opts *options, tapi_job_factory_t *factory,
     tapi_fio *fio;
 
     fio = TE_ALLOC(sizeof(*fio));
-    CHECK_NOT_NULL(fio);
 
     app_init(&fio->app, options, factory, path);
     fio->methods = &methods;

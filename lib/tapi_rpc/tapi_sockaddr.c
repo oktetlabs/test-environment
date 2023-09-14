@@ -215,8 +215,6 @@ tapi_sockaddr_clone_typed(const struct sockaddr *addr,
         return NULL;
 
     res_addr = TE_ALLOC(sizeof(*res_addr));
-    if (res_addr == NULL)
-        TEST_STOP;
 
     tapi_sockaddr_clone_exact(addr, res_addr);
 
@@ -264,8 +262,6 @@ tapi_sockaddr_clone2(const struct sockaddr  *src,
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     *dst = TE_ALLOC(sizeof(struct sockaddr_storage));
-    if (*dst == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     memcpy(*dst, src, te_sockaddr_get_size(src));
     return 0;

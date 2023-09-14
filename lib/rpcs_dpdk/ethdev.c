@@ -1222,14 +1222,7 @@ TARPC_FUNC_STATIC(rte_eth_tx_burst, {},
     uint16_t          i;
 
     if (nb_pkts != 0)
-    {
         tx_pkts = (struct rte_mbuf **)TE_ALLOC(nb_pkts * sizeof(*tx_pkts));
-        if (tx_pkts == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            goto done;
-        }
-    }
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
         for (i = 0; i < nb_pkts; i++)
@@ -1256,14 +1249,7 @@ TARPC_FUNC_STATIC(rte_eth_tx_prepare, {},
     uint16_t          i;
 
     if (nb_pkts != 0)
-    {
         tx_pkts = (struct rte_mbuf **)TE_ALLOC(nb_pkts * sizeof(*tx_pkts));
-        if (tx_pkts == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            goto done;
-        }
-    }
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
         for (i = 0; i < nb_pkts; i++)
@@ -1287,22 +1273,12 @@ TARPC_FUNC_STATIC(rte_eth_rx_burst, {},
     uint16_t          i;
 
     rx_pkts = (struct rte_mbuf **)TE_ALLOC(in->nb_pkts * sizeof(*rx_pkts));
-    if (rx_pkts == NULL)
-    {
-        out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-        goto done;
-    }
 
     MAKE_CALL(nb_pkts_rx = func(in->port_id, in->queue_id,
                                 rx_pkts, in->nb_pkts));
     out->rx_pkts.rx_pkts_len = nb_pkts_rx;
 
     out->rx_pkts.rx_pkts_val = TE_ALLOC(nb_pkts_rx * sizeof(tarpc_rte_mbuf));
-    if (out->rx_pkts.rx_pkts_val == NULL)
-    {
-        out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-        goto done;
-    }
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
         for (i = 0; i < MIN(in->nb_pkts, nb_pkts_rx); i++)
@@ -1709,12 +1685,6 @@ TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
     if (reta_conf_len != 0)
     {
         reta_conf_p = TE_ALLOC(reta_conf_len * sizeof(*reta_conf_p));
-        if (reta_conf_p == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
 
         for (cur_group = 0; cur_group < reta_conf_len; cur_group++)
         {
@@ -1731,12 +1701,6 @@ TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
         out->reta_conf.reta_conf_len = reta_conf_len;
         out->reta_conf.reta_conf_val =
             TE_ALLOC(reta_conf_len * sizeof(*out->reta_conf.reta_conf_val));
-        if (out->reta_conf.reta_conf_val == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
 
         for (cur_group = 0;  cur_group < reta_conf_len; cur_group++)
             memcpy(&out->reta_conf.reta_conf_val[cur_group],
@@ -1930,14 +1894,6 @@ TARPC_FUNC(rte_eth_xstats_get_names,{},
         xstats_names = TE_ALLOC(in->size * sizeof(struct rte_eth_xstat_name));
         out->xstats_names.xstats_names_val =
             TE_ALLOC(in->size * sizeof(struct tarpc_rte_eth_xstat_name));
-
-        if (xstats_names == NULL ||
-            out->xstats_names.xstats_names_val == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
     }
 
     MAKE_CALL(out->retval = func(in->port_id, xstats_names, in->size));
@@ -1966,13 +1922,6 @@ TARPC_FUNC(rte_eth_xstats_get,{},
         xstats = TE_ALLOC(in->n * sizeof(struct rte_eth_xstat));
         out->xstats.xstats_val =
             TE_ALLOC(in->n * sizeof(struct tarpc_rte_eth_xstat));
-
-        if (xstats == NULL || out->xstats.xstats_val == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
     }
 
     MAKE_CALL(out->retval = func(in->port_id, xstats, in->n));
@@ -2002,15 +1951,7 @@ TARPC_FUNC(rte_eth_xstats_get_by_id, {},
     uint64_t *values = NULL;
 
     if (in->n > 0)
-    {
         values = TE_ALLOC(in->n * sizeof(*values));
-        if (values == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
-    }
 
     MAKE_CALL(out->retval = func(in->port_id, in->ids.ids_val,
                                  values, in->n));
@@ -2035,15 +1976,7 @@ TARPC_FUNC(rte_eth_xstats_get_names_by_id, {},
     struct rte_eth_xstat_name *xstat_names = NULL;
 
     if (in->size > 0)
-    {
         xstat_names = TE_ALLOC(in->size * sizeof(*xstat_names));
-        if (xstat_names == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
-    }
 
     MAKE_CALL(out->retval = func(in->port_id, xstat_names,
                                  in->size, in->ids.ids_val));
@@ -2054,12 +1987,7 @@ TARPC_FUNC(rte_eth_xstats_get_names_by_id, {},
         int i;
 
         xstat_names_out = TE_ALLOC(out->retval * sizeof(*xstat_names_out));
-        if (xstat_names_out == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
+
         out->xstat_names.xstat_names_val = xstat_names_out;
 
         for (i = 0; i < out->retval; ++i)
@@ -2101,12 +2029,6 @@ TARPC_FUNC(rte_eth_dev_rss_reta_update,{},
     if (reta_conf_len != 0)
     {
         reta_conf_p = TE_ALLOC(reta_conf_len * sizeof(*reta_conf_p));
-        if (reta_conf_p == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
 
         memcpy(reta_conf_p, in->reta_conf.reta_conf_val,
                reta_conf_len * sizeof(*reta_conf_p));
@@ -2438,15 +2360,7 @@ TARPC_FUNC(rte_eth_dev_get_supported_ptypes,{},
     }
 
     if (in->num != 0)
-    {
         ptypes = TE_ALLOC(in->num * sizeof(uint32_t));
-        if (ptypes == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
-    }
 
     MAKE_CALL(out->retval = func(in->port_id, ptype_mask,
                                  ptypes, in->num));
@@ -2475,13 +2389,6 @@ TARPC_FUNC(rte_eth_dev_set_mc_addr_list, {},
     {
         mc_addr_set = TE_ALLOC(in->mc_addr_set.mc_addr_set_len *
                                sizeof(*mc_addr_set));
-        if (mc_addr_set == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-
-        }
 
         for (i = 0; i < in->mc_addr_set.mc_addr_set_len; i++)
             memcpy(mc_addr_set[i].addr_bytes,
@@ -2597,10 +2504,8 @@ TARPC_FUNC(rte_eth_dev_get_port_by_name, {},
 TARPC_FUNC(rte_eth_dev_get_name_by_port, {},
 {
     out->name = TE_ALLOC(RPC_RTE_ETH_NAME_MAX_LEN);
-    if (out->name == NULL)
-        out->retval = -ENOMEM;
-    else
-        MAKE_CALL(out->retval = func(in->port_id, out->name));
+
+    MAKE_CALL(out->retval = func(in->port_id, out->name));
 
     neg_errno_h2rpc(&out->retval);
 })

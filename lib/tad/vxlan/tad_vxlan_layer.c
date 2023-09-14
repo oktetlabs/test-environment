@@ -64,8 +64,6 @@ tad_vxlan_init_cb(csap_p       csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     proto_data = TE_ALLOC(sizeof(*proto_data));
-    if (proto_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_bps_pkt_frag_init(tad_vxlan_bps_header,
                                TE_ARRAY_LEN(tad_vxlan_bps_header),
@@ -148,8 +146,6 @@ tad_vxlan_confirm_tmpl_cb(csap_p         csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
-    if (tmpl_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_bps_nds_to_data_units(&proto_data->header, layer_pdu,
                                    &tmpl_data->header);
@@ -198,8 +194,6 @@ tad_vxlan_gen_bin_cb(csap_p                csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     binary = TE_ALLOC(TAD_VXLAN_HEADER_LEN);
-    if (binary == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     bitoff = 0;
     rc = tad_bps_pkt_frag_gen_bin(&proto_data->header, &tmpl_data->header,
@@ -247,8 +241,6 @@ tad_vxlan_confirm_ptrn_cb(csap_p         csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     ptrn_data = TE_ALLOC(sizeof(*ptrn_data));
-    if (ptrn_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_bps_nds_to_data_units(&proto_data->header, layer_pdu,
                                    &ptrn_data->header);
@@ -335,8 +327,6 @@ tad_vxlan_match_do_cb(csap_p           csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     pkt_data = TE_ALLOC(sizeof(*pkt_data));
-    if (pkt_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_bps_pkt_frag_match_pre(&proto_data->header, &pkt_data->header);
     if (rc != 0)

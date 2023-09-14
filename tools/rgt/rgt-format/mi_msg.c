@@ -438,8 +438,6 @@ get_line_graph(json_t *view_obj, te_rgt_mi *mi,
         if (axis_y_num > 0)
         {
             axis_y_list = TE_ALLOC(axis_y_num * sizeof(*axis_y_list));
-            if (axis_y_list == NULL)
-                return TE_ENOMEM;
 
             for (i = 0; i < axis_y_num; i++)
             {
@@ -864,12 +862,6 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
             goto cleanup;
         }
         data->params = TE_ALLOC(sizeof(te_rgt_mi_kv) * data->params_num);
-        if (data->params == NULL)
-        {
-            te_rgt_mi_parse_error(mi, TE_ENOMEM,
-                                  "Failed to allocate memory for test_start params");
-            goto cleanup;
-        }
 
         json_array_foreach(params, i, item)
         {
@@ -892,12 +884,6 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
     {
         data->authors_num = json_array_size(authors);
         data->authors = TE_ALLOC(sizeof(te_rgt_mi_person) * data->authors_num);
-        if (data->authors == NULL)
-        {
-            te_rgt_mi_parse_error(mi, TE_ENOMEM,
-                                  "Failed to allocate memory for authors");
-            goto cleanup;
-        }
 
         json_array_foreach(authors, i, item)
         {
@@ -987,12 +973,6 @@ te_rgt_parse_mi_test_result(te_rgt_mi *mi, json_t *json,
 
         result->verdicts_num = json_array_size(verdicts);
         result->verdicts = TE_ALLOC(sizeof(const char *) * result->verdicts_num);
-        if (result->verdicts == NULL)
-        {
-            te_rgt_mi_parse_error(mi, TE_ENOMEM,
-                                  "Failed to allocate memory for verdicts");
-            return TE_ENOMEM;
-        }
 
         json_array_foreach(verdicts, i, verdict)
         {
@@ -1083,12 +1063,6 @@ te_rgt_parse_mi_test_end_message(te_rgt_mi *mi)
         data->expected_num = json_array_size(expected);
         data->expected = TE_ALLOC(sizeof(te_rgt_mi_test_result) *
                                   data->expected_num);
-        if (data->expected == NULL)
-        {
-            te_rgt_mi_parse_error(mi, TE_ENOMEM,
-                                  "Failed to allocate memory for expected results");
-            goto cleanup;
-        }
 
         json_array_foreach(expected, i, result)
         {

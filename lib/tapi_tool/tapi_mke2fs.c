@@ -53,8 +53,6 @@ tapi_mke2fs_create(tapi_job_factory_t *factory, const tapi_mke2fs_opt *opt,
     te_vec            mke2fs_args = TE_VEC_INIT(char *);
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     result->use_journal = opt->use_journal;
 

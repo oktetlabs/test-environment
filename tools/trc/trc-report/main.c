@@ -319,10 +319,6 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             {
                 tqe_string *p = TE_ALLOC(sizeof(*p));
 
-                if (p == NULL)
-                {
-                    goto exit;
-                }
                 TAILQ_INSERT_TAIL(&ctx.merge_fns, p, links);
                 p->v = (char *)poptGetOptArg(optCon);
                 if (p->v == NULL)
@@ -340,10 +336,6 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             {
                 tqe_string *p = TE_ALLOC(sizeof(*p));
 
-                if (p == NULL)
-                {
-                    goto exit;
-                }
                 TAILQ_INSERT_TAIL(&ctx.cut_paths, p, links);
                 p->v = (char *)poptGetOptArg(optCon);
                 if (p->v == NULL)
@@ -379,10 +371,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             case TRC_OPT_HTML:
             {
                 report = TE_ALLOC(sizeof(*report));
-                if (report == NULL)
-                {
-                    goto exit;
-                }
+
                 TAILQ_INSERT_TAIL(&reports, report, links);
                 report->filename = (char *)poptGetOptArg(optCon);
                 report->flags = 0;

@@ -120,8 +120,6 @@ tad_l4_match_cksum_advanced(csap_p              csap,
     /* Copy L4 header + L4 payload */
     l4_datagram_len = pdu->segs_len;
     l4_datagram_bin = TE_ALLOC(l4_datagram_len);
-    if (l4_datagram_bin == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     tad_pkt_read_bits(pdu, 0, BITS_PER_BYTE * l4_datagram_len, l4_datagram_bin);
 

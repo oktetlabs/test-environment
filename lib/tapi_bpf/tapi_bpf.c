@@ -133,11 +133,7 @@ tapi_bpf_get_inst_list(const char *ptrn, char ***names,
         return 0;
     }
 
-    if ((str = TE_ALLOC(sizeof(char *) * (count + 1))) == NULL)
-    {
-        rc = TE_RC(TE_TAPI, TE_ENOMEM);
-        goto finish;
-    }
+    str = TE_ALLOC(sizeof(char *) * (count + 1));
     str[count] = NULL;
 
     for (i = 0; i < count; i++)
@@ -1003,19 +999,12 @@ tapi_bpf_map_get_key_list(const char *ta, unsigned int bpf_id, const char *map,
     if (k_count == 0)
         return 0;
 
-    if ((k_keys = TE_ALLOC(sizeof(uint8_t *) * k_count)) == NULL)
-    {
-        rc = TE_RC(TE_TAPI, TE_ENOMEM);
-        goto cleanup;
-    }
+    k_keys = TE_ALLOC(sizeof(uint8_t *) * k_count);
 
     for (i = 0; i < k_count; i++)
     {
-        if ((k_keys[i] = TE_ALLOC(k_size)) == NULL)
-        {
-            rc = TE_RC(TE_TAPI, TE_ENOMEM);
-            goto cleanup;
-        }
+        k_keys[i] = TE_ALLOC(k_size);
+
         if ((rc = te_str_hex_str2raw(k_str[i], k_keys[i], k_size) != 0))
             goto cleanup;
     }

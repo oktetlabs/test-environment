@@ -1981,17 +1981,15 @@ trc_update_iter_data_merge_result(trc_update_ctx *ctx,
             char *s;
 
             s = strdup("NO_TAGS_MATCHED");
-            ctx->merge_expr = TE_ALLOC(sizeof(logic_expr));
-            if (ctx->merge_expr == NULL || s == NULL)
+            if (s == NULL)
             {
                 trc_exp_result_free(merge_result);
-                free(ctx->merge_expr);
-                ctx->merge_expr = NULL;
                 free(s);
 
                 ERROR("%s(): out of memory", __FUNCTION__);
                 return TE_ENOMEM;
             }
+            ctx->merge_expr = TE_ALLOC(sizeof(logic_expr));
 
             ctx->merge_expr->type = LOGIC_EXPR_VALUE;
             ctx->merge_expr->u.value = s;
@@ -3412,8 +3410,7 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
                 else
                 {
                     entry = TE_ALLOC(sizeof(*entry));
-                    if (entry == NULL)
-                        return TE_ENOMEM;
+
                     te_test_result_init(&entry->result);
                     TAILQ_INSERT_TAIL(&rule->def_res->results,
                                       entry, links);
@@ -3793,8 +3790,6 @@ trc_update_gen_rresults(trc_test_iter *iter,
     unsigned int     i;
 
     rule = TE_ALLOC(sizeof(*rule));
-    if (rule == NULL)
-        goto err_cleanup;
 
     rule->def_res =
         trc_exp_result_dup((struct trc_exp_result *)
@@ -3815,8 +3810,6 @@ trc_update_gen_rresults(trc_test_iter *iter,
         rule->apply = FALSE;
 
     rule->new_res = TE_ALLOC(sizeof(*(rule->new_res)));
-    if (rule->new_res == NULL)
-        goto err_cleanup;
     STAILQ_INIT(rule->new_res);
 
     if (flags & TRC_UPDATE_COPY_CONFLS)
@@ -5249,8 +5242,7 @@ trc_update_collect_tags(trc_update_ctx *ctx)
         if (cmp_result != 0)
         {
             tqe_r = TE_ALLOC(sizeof(*tqe_r));
-            if (tqe_r == NULL)
-                return -1;
+
             tqe_r->v = strdup(tqe_p->v);
             if (tqe_q != NULL)
                 TAILQ_INSERT_BEFORE(tqe_q, tqe_r, links);
@@ -5311,12 +5303,6 @@ logs_dump_str_read(FILE *f)
     }
 
     str = TE_ALLOC(str_len + 1);
-    if (str == NULL)
-    {
-        ERROR("Out of memory trying to allocate %u bytes",
-              str_len + 1);
-        return NULL;
-    }
     str[str_len] = '\0';
 
     if ((rc = fread(str, 1, str_len, f)) != str_len)
@@ -5521,8 +5507,6 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
                               "from logs dump");
 
             args = TE_ALLOC(params_count * sizeof(*args));
-            if (args == NULL)
-                LOGS_DUMP_ERR("%s", "Failed to allocate arguments array");
 
             for (j = 0; j < params_count; j++)
             {
@@ -5573,8 +5557,7 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
                 uint32_t k;
 
                 result = TE_ALLOC(sizeof(*result));
-                if (result == NULL)
-                    LOGS_DUMP_ERR("%s", "Out of memory");
+
                 TAILQ_INIT(&result->verdicts);
 
                 LOGS_DUMP_READ_TAG(tag_id, LOGS_DUMP_TAG_UNDEF);
@@ -5618,8 +5601,6 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
                 for (k = 0; k < verdicts_count; k++)
                 {
                     verdict = TE_ALLOC(sizeof(*verdict));
-                    if (verdict == NULL)
-                        LOGS_DUMP_ERR("%s", "Out of memory");
 
                     verdict->str = logs_dump_str_read(f);
                     if (verdict->str == NULL)

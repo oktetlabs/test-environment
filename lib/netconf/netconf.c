@@ -643,8 +643,6 @@ netconf_get_str_attr(struct nlattr *na, char **value)
     len++;
 
     *value = TE_ALLOC(len);
-    if (*value == NULL)
-        return TE_ENOMEM;
 
     memcpy(*value, (void *)na + NLA_HDRLEN, len - 1);
     return 0;

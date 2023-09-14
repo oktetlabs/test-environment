@@ -211,8 +211,6 @@ log_msg_filter_get_entity(log_msg_filter *filter,
 
     /* Create if does not exist */
     entity = TE_ALLOC(sizeof(log_entity_filter));
-    if (entity == NULL)
-        return NULL;
 
     log_entity_filter_init(entity, name, regex);
     entity->level = filter->def_entity.level;
@@ -299,8 +297,6 @@ log_entity_filter_add_user(log_entity_filter *entity, te_bool include,
     if (user == NULL || cmp != 0)
     {
         user = TE_ALLOC(sizeof(log_user_filter));
-        if (user == NULL)
-            return TE_ENOMEM;
 
         log_user_filter_init(user, name, regex);
         user->level = entity->level;

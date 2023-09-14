@@ -1124,8 +1124,6 @@ vm_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
     }
 
     *list = TE_ALLOC(len);
-    if (*list == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     p = *list;
     SLIST_FOREACH(vm, &vms, links)
@@ -1158,8 +1156,6 @@ vm_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     vm = TE_ALLOC(sizeof(*vm));
-    if (vm == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     SLIST_INIT(&vm->nets);
     SLIST_INIT(&vm->drives);
@@ -1666,8 +1662,6 @@ vm_chardev_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     chardev = TE_ALLOC(sizeof(*chardev));
-    if (chardev == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     chardev->name = strdup(chardev_name);
     if (chardev->name == NULL)
@@ -1807,8 +1801,6 @@ vm_net_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     net = TE_ALLOC(sizeof(*net));
-    if (net == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     net->name = strdup(net_name);
     if (net->name == NULL)
@@ -2273,8 +2265,6 @@ vm_drive_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     drive = TE_ALLOC(sizeof(*drive));
-    if (drive == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     drive->name = strdup(drive_name);
     if (drive->name == NULL)
@@ -2506,8 +2496,6 @@ vm_virtfs_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     virtfs = TE_ALLOC(sizeof(*virtfs));
-    if (virtfs == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     virtfs->name = strdup(virtfs_name);
     if (virtfs->name == NULL)
@@ -2826,8 +2814,6 @@ vm_pci_pt_add(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     pt = TE_ALLOC(sizeof(*pt));
-    if (pt == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     pt->name = strdup(pci_pt_name);
     if (pt->name == NULL)
@@ -2983,8 +2969,6 @@ vm_device_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     dev = TE_ALLOC(sizeof(*dev));
-    if (dev == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     dev->name = strdup(device_name);
     if (dev->name == NULL)

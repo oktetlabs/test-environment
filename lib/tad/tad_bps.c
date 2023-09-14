@@ -83,8 +83,6 @@ tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
                 {
                     bps->tx_def[i].val_data.oct_str =
                         TE_ALLOC(bps->tx_def[i].val_data.len);
-                    if (bps->tx_def[i].val_data.oct_str == NULL)
-                        return TE_RC(TE_TAD_BPS, TE_ENOMEM);
                 }
                 else
                 {

@@ -21,8 +21,6 @@ refcnt_buffer_init(refcnt_buffer *rbuf, void *data, size_t len)
     int *refcount;
 
     refcount = TE_ALLOC(sizeof(*refcount));
-    if (refcount == NULL)
-        return TE_ENOMEM;
     *refcount = 1;
 
     memset(rbuf, 0, sizeof(*rbuf));
@@ -41,8 +39,6 @@ refcnt_buffer_init_copy(refcnt_buffer *rbuf, const void *data, size_t len)
     void     *buf;
 
     buf = TE_ALLOC(len);
-    if (buf == NULL)
-        return TE_ENOMEM;
     memcpy(buf, data, len);
 
     rc = refcnt_buffer_init(rbuf, buf, len);
@@ -100,8 +96,6 @@ msg_buffer_add(msg_buffer *buf, const refcnt_buffer *msg)
     refcnt_buffer *item;
 
     item = TE_ALLOC(sizeof(*item));
-    if (item == NULL)
-        return TE_ENOMEM;
 
     refcnt_buffer_copy(item, msg);
     TAILQ_INSERT_TAIL(&buf->items, item, links);

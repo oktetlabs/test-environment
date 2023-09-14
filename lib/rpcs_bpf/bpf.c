@@ -123,8 +123,6 @@ add_or_find_umem_rings(ta_xsk_umem *umem, const char *if_name,
     }
 
     umem_rings = TE_ALLOC(sizeof(*umem_rings));
-    if (umem_rings == NULL)
-        TE_FATAL_ERROR("Failed to allocate memory for ta_xsk_umem_rings");
 
     TE_STRLCPY(umem_rings->if_name, if_name, IF_NAMESIZE);
     umem_rings->queue_id = queue_id;
@@ -168,8 +166,6 @@ ta_xsk_umem__create(tarpc_xsk_umem__create_in *in,
                                            -1);
 
     umem = TE_ALLOC(sizeof(*umem));
-    if (umem == NULL)
-        TE_FATAL_ERROR("Failed to allocate memory for ta_xsk_umem");
 
     umem->buf = rcf_pch_mem_get(in->umem_area);
     if (umem->buf == NULL)
@@ -233,8 +229,6 @@ ta_xsk_umem__create(tarpc_xsk_umem__create_in *in,
 
     umem->frames_count = in->size / umem->config.frame_size;
     umem->frames_stack = TE_ALLOC(umem->frames_count * sizeof(uint64_t));
-    if (umem->frames_stack == NULL)
-        TE_FATAL_ERROR("Failed to allocate frames stack");
 
     umem->stack_count = umem->frames_count;
 
@@ -386,8 +380,6 @@ ta_xsk_socket__create(tarpc_xsk_socket__create_in *in,
         return -1;
 
     sock = TE_ALLOC(sizeof(*sock));
-    if (sock == NULL)
-        TE_FATAL_ERROR("Failed to allocate memory for ta_xsk_socket");
 
     sock_ptr = RCF_PCH_MEM_INDEX_ALLOC(sock, ns_sock);
     if (sock_ptr == RPC_NULL)
@@ -641,8 +633,6 @@ ta_xsk_receive_simple(tarpc_xsk_receive_simple_in *in,
     xsk_ring_cons__release(&sock->rx, 1);
 
     buf = TE_ALLOC(len);
-    if (buf == NULL)
-        TE_FATAL_ERROR("Failed to allocate memory for packet data");
 
     memcpy(buf, pkt, len);
     out->data.data_val = buf;

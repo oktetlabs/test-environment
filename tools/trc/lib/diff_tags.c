@@ -46,8 +46,6 @@ trc_diff_find_set(trc_diff_sets *sets, unsigned int id, te_bool create)
     if (p == NULL && create)
     {
         p = TE_ALLOC(sizeof(*p));
-        if (p == NULL)
-            return NULL;
 
         p->id = id;
         TAILQ_INIT(&p->tags);
@@ -165,8 +163,6 @@ trc_diff_add_tag(trc_diff_sets *sets, unsigned int id, const char *tag)
         return TE_ENOMEM;
 
     e = TE_ALLOC(sizeof(*e));
-    if (e == NULL)
-        return TE_ENOMEM;
 
     /* Discard 'const' qualifier, but take it into account on free */
     e->v = (char *)tag;
@@ -191,8 +187,6 @@ trc_diff_add_ignore(trc_diff_sets *sets, unsigned int id,
         return TE_ENOMEM;
 
     e = TE_ALLOC(sizeof(*e));
-    if (e == NULL)
-        return TE_ENOMEM;
 
     /* Discard 'const' qualifier, but take it into account on free */
     e->v = (char *)ignore;

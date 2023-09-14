@@ -1312,11 +1312,6 @@ rpcserver_config_set(unsigned int gid, const char *oid, char *value,
     free(rpcs->config);
     len = strlen(value) + 1;
     rpcs->config = TE_ALLOC(len);
-    if (rpcs->config == NULL)
-    {
-        pthread_mutex_unlock(&lock);
-        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
-    }
     strncpy(rpcs->config, value, len);
 
     pthread_mutex_unlock(&lock);

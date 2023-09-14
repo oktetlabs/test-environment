@@ -114,9 +114,6 @@ rcf_rpc_server_hook_register(void (*hook_to_register)(rcf_rpc_server *rpcs))
 {
     rcf_rpc_server_hook *new_hook = TE_ALLOC(sizeof(*new_hook));
 
-    if (new_hook == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
     new_hook->hook = hook_to_register;
 
     SLIST_INSERT_HEAD(&rcf_rpc_server_hooks_list, new_hook, next);

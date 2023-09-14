@@ -542,8 +542,6 @@ te_mi_meas_value_add(te_mi_meas_value_h *values, te_mi_meas_aggr aggr,
     te_mi_meas_value *result;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-        return NULL;
 
     result->aggr = aggr;
     result->val = val;
@@ -767,8 +765,6 @@ te_mi_meas_impl_add(te_mi_meas_impl_h *meas_q, te_mi_meas_type type,
     te_mi_meas_impl *result;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-        return NULL;
 
     if (name != NULL)
     {
@@ -925,12 +921,6 @@ te_mi_logger_add_meas_view(te_mi_logger *logger, te_errno *retval,
     }
 
     view = TE_ALLOC(sizeof(*view));
-    if (view == NULL)
-    {
-        ERROR("Failed to allocate memory for a view");
-        rc = TE_ENOMEM;
-        goto out;
-    }
 
     te_mi_meas_view_init(view);
     view->type = type;
@@ -1269,8 +1259,6 @@ te_mi_logger_meas_create(const char *tool, te_mi_logger **logger)
     }
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-        return TE_ENOMEM;
 
     result->tool = strdup(tool);
     if (result->tool == NULL)

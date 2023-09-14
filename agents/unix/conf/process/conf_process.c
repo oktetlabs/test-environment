@@ -148,8 +148,6 @@ ps_get_argv(struct ps_entry *ps, char ***argv)
     }
 
     tmp = TE_ALLOC((ps->argc + len + 2) * sizeof(char *));
-    if (tmp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     tmp[0] = strdup(ps->exe);
     if (tmp[0] == NULL)
@@ -190,11 +188,6 @@ ps_get_argv(struct ps_entry *ps, char ***argv)
     }
 
     args = TE_ALLOC(ps->argc * sizeof(*args));
-    if (args == NULL)
-    {
-        ps_free_argv(tmp);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
 
     i = 0;
     SLIST_FOREACH(arg, &ps->args, links)
@@ -250,8 +243,6 @@ ps_get_envp(struct ps_entry *ps, char ***envp)
         len++;
 
     tmp = TE_ALLOC((env_len + len + 1) * sizeof(char *));
-    if (tmp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     for (len = 0; len < env_len; len++)
     {
@@ -499,8 +490,6 @@ ps_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
     }
 
     *list = TE_ALLOC(len);
-    if (*list == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     p = *list;
     SLIST_FOREACH(ps, &processes, links)
@@ -545,8 +534,6 @@ ps_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     ps = TE_ALLOC(sizeof(*ps));
-    if (ps == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     ps->name = strdup(ps_name);
     if (ps->name == NULL)
@@ -1021,8 +1008,6 @@ ps_arg_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     arg = TE_ALLOC(sizeof(*arg));
-    if (arg == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     arg->value = strdup(value);
     if (arg->value == NULL)
@@ -1166,8 +1151,6 @@ ps_env_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     env = TE_ALLOC(sizeof(*env));
-    if (env == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     env->name = strdup(env_name);
     if (env->name == NULL)
@@ -1308,8 +1291,6 @@ ps_opt_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     opt = TE_ALLOC(sizeof(*opt));
-    if (opt == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     opt->name = strdup(opt_name);
     if (opt->name == NULL)

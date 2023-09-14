@@ -146,8 +146,6 @@ tapi_local_storage_device_get(const char                 *name,
     te_errno  rc;
 
     dev = TE_ALLOC(sizeof(*dev));
-    if (dev == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     rc = get_device_context(name, dev);
     if (rc == 0)
@@ -190,11 +188,6 @@ tapi_local_storage_device_list_get(
     for (i = 0; i < n_handles; i++)
     {
         dev = TE_ALLOC(sizeof(*dev));
-        if (dev == NULL)
-        {
-            rc = TE_RC(TE_TAPI, TE_ENOMEM);
-            break;
-        }
         rc = cfg_get_inst_name(handles[i], &name);
         if (rc == 0)
         {

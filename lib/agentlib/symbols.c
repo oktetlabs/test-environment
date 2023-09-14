@@ -37,9 +37,6 @@ rcf_ch_register_symbol_table(const rcf_symbol_entry *entries)
 {
     symbol_table_list *table = TE_ALLOC(sizeof(*table));
 
-    if (table == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
     table->entries = entries;
     LIST_INSERT_HEAD(&symbol_tables, table, next);
 

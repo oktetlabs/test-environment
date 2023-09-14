@@ -291,9 +291,6 @@ tarpc_defer_call(deferred_call_list *list,
 {
     deferred_call *defer = TE_ALLOC(sizeof(*defer));
 
-    if (defer == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
     defer->jobid = jobid;
     defer->call  = call;
     TAILQ_INSERT_TAIL(list, defer, next);

@@ -196,12 +196,6 @@ split_long_string(char *s, unsigned int max_len)
     const char *p2 = strchr(p1 + 1, ',');
     te_string  *value = TE_ALLOC(sizeof(*value));
 
-    if (value == NULL)
-    {
-        ERROR("%s(): memory allocation failed", __FUNCTION__);
-        return NULL;
-    }
-
     *value = (te_string)TE_STRING_INIT;
 
     do {

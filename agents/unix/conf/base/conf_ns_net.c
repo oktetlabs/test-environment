@@ -217,8 +217,6 @@ netns_namespace_add(const char *ns_name)
     netns_namespace *netns;
 
     netns = TE_ALLOC(sizeof(*netns));
-    if (netns == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     netns->name = strdup(ns_name);
     if (netns->name == NULL)
@@ -300,8 +298,6 @@ netns_interface_add(unsigned int gid, const char *oid, const char *value,
         return rc;
 
     netif = TE_ALLOC(sizeof(*netif));
-    if (netif == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     netif->name = strdup(if_name);
     if (netif->name == NULL)

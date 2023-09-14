@@ -119,8 +119,6 @@ add_hugepage_info(unsigned int size)
     struct hugepage_info *hp_info;
 
     hp_info = TE_ALLOC(sizeof(*hp_info));
-    if (hp_info == NULL)
-        return TE_ENOMEM;
 
     hp_info->size = size;
 
@@ -430,8 +428,6 @@ add_mountpoint_info(struct hugepage_info *hp_info, const char *name,
     te_errno rc;
 
     mp_info = TE_ALLOC(sizeof(*mp_info));
-    if (mp_info == NULL)
-        return TE_ENOMEM;
 
     mp_info->name = strdup(name);
     if (mp_info->name == NULL)

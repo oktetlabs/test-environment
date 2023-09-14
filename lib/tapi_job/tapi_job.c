@@ -167,8 +167,6 @@ tapi_job_factory_rpc_create(rcf_rpc_server *rpcs,
     tapi_job_factory_t *result;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     result->type = TAPI_JOB_FACTORY_RPC;
     result->backend.rpcs = rpcs;
@@ -185,8 +183,6 @@ tapi_job_factory_cfg_create(const char *ta, tapi_job_factory_t **factory)
     tapi_job_factory_t *result;
 
     result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     result->type = TAPI_JOB_FACTORY_CFG;
     result->backend.ta = ta;
@@ -1345,13 +1341,6 @@ tapi_job_receive_many(const tapi_job_channel_set_t filters, int timeout_ms,
     if (bufs_count > 0)
     {
         tapi_bufs = TE_ALLOC(bufs_count * sizeof(*tapi_bufs));
-        if (tapi_bufs == NULL)
-        {
-            if (rc == 0)
-                rc = TE_RC(TE_TAPI, TE_ENOMEM);
-
-            goto out;
-        }
 
         for (i = 0; i < bufs_count; i++)
         {
@@ -1362,8 +1351,6 @@ tapi_job_receive_many(const tapi_job_channel_set_t filters, int timeout_ms,
 
     *buffers = tapi_bufs;
     *count = bufs_count;
-
-out:
 
     tarpc_job_buffers_free(bufs, bufs_count);
 

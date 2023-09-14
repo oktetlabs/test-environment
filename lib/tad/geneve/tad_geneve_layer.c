@@ -102,8 +102,6 @@ tad_geneve_init_cb(csap_p       csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     proto_data = TE_ALLOC(sizeof(*proto_data));
-    if (proto_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_bps_pkt_frag_init(tad_geneve_bps_header,
                                TE_ARRAY_LEN(tad_geneve_bps_header),
@@ -239,8 +237,6 @@ tad_geneve_process_options(tad_geneve_proto_data_t     *proto_data,
         goto options_summary;
 
     options = TE_ALLOC(nb_options * sizeof(*options));
-    if (options == NULL)
-        return TE_ENOMEM;
 
     for (i = 0; i < (unsigned int)nb_options; ++i)
     {
@@ -319,8 +315,6 @@ tad_geneve_confirm_tmpl_cb(csap_p         csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
-    if (tmpl_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_geneve_mk_data_from_nds_and_confirm(&proto_data->header, layer_pdu,
                                                  &tmpl_data->header, TRUE);
@@ -374,8 +368,6 @@ tad_geneve_gen_bin_cb(csap_p                csap,
                  (tmpl_data->options_len_32bit_words << 2);
 
     binary = TE_ALLOC(binary_len);
-    if (binary == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     bitoff = 0;
     rc = tad_bps_pkt_frag_gen_bin(&proto_data->header, &tmpl_data->header,
@@ -442,8 +434,6 @@ tad_geneve_confirm_ptrn_cb(csap_p         csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     ptrn_data = TE_ALLOC(sizeof(*ptrn_data));
-    if (ptrn_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_bps_nds_to_data_units(&proto_data->header, layer_pdu,
                                    &ptrn_data->header);
@@ -599,8 +589,6 @@ tad_geneve_match_do_cb(csap_p           csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     pkt_data = TE_ALLOC(sizeof(*pkt_data));
-    if (pkt_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_bps_pkt_frag_match_pre(&proto_data->header, &pkt_data->header);
     if (rc != 0)
@@ -671,11 +659,7 @@ tad_geneve_match_do_cb(csap_p           csap,
             du_data->val_data.len = option_data_len_32bit_words << 2;
 
             oct_str = TE_ALLOC(option_data_len_32bit_words << 2);
-            if (oct_str == NULL)
-            {
-                rc = TE_ENOMEM;
-                goto fail;
-            }
+
             du_data->val_data.oct_str = oct_str;
             du_data->du_type = TAD_DU_OCTS;
         }

@@ -67,8 +67,6 @@ tad_rte_mbuf_rw_init_cb(csap_p  csap)
     }
 
     spec_data = TE_ALLOC(sizeof(*spec_data));
-    if (spec_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     /* RTE facilities lookup and assignments */
     spec_data->sap.pkt_ring = rte_ring_lookup(pkt_ring);

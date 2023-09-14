@@ -378,11 +378,6 @@ ovs_log_init_modules(ovs_ctx_t *ctx)
     }
 
     modules = TE_ALLOC(nb_modules * sizeof(*modules));
-    if (modules == NULL)
-    {
-        ERROR("Failed to allocate log module context storage");
-        return TE_ENOMEM;
-    }
 
     ret = te_shell_cmd(ctx->vlog_list_cmd.ptr, -1, NULL, &out_fd, NULL);
     if (ret == -1)
@@ -473,11 +468,6 @@ ovs_interface_alloc(const char *name,
     INFO("Allocating the interface list entry for '%s'", name);
 
     interface = TE_ALLOC(sizeof(*interface));
-    if (interface == NULL)
-    {
-        ERROR("Failed to allocate memory for the interface context");
-        return NULL;
-    }
 
     interface->name = strdup(name);
     if (interface->name == NULL)
@@ -886,11 +876,6 @@ ovs_bridge_port_alloc(const char       *parent_bridge_name,
     INFO("Allocating the port '%s' list entry", name);
 
     port = TE_ALLOC(sizeof(*port));
-    if (port == NULL)
-    {
-        ERROR("Failed to allocate memory for the port context");
-        return NULL;
-    }
 
     port->name = strdup(name);
     if (port->name == NULL)
@@ -1157,11 +1142,6 @@ ovs_bridge_alloc(const char      *datapath_type,
     INFO("Allocating the bridge list entry for '%s'", interface->name);
 
     bridge = TE_ALLOC(sizeof(*bridge));
-    if (bridge == NULL)
-    {
-        ERROR("Failed to allocate memory for the bridge context");
-        return NULL;
-    }
 
     bridge->datapath_type = (datapath_type != NULL &&
                              datapath_type[0] != '\0') ?

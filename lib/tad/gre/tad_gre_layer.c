@@ -115,8 +115,6 @@ tad_gre_init_cb(csap_p       csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     proto_data = TE_ALLOC(sizeof(*proto_data));
-    if (proto_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_bps_pkt_frag_init(tad_gre_bps_header,
                                TE_ARRAY_LEN(tad_gre_bps_header),
@@ -314,8 +312,6 @@ tad_gre_confirm_tmpl_cb(csap_p         csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
-    if (tmpl_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_gre_mk_data_from_nds_and_confirm(&proto_data->header, layer_pdu,
                                               &tmpl_data->header, TRUE);
@@ -373,8 +369,6 @@ tad_gre_gen_bin_cb(csap_p                csap,
         binary_len += TAD_GRE_OPT_FIELD_LEN;
 
     binary = TE_ALLOC(binary_len);
-    if (binary == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     bitoff = 0;
     rc = tad_bps_pkt_frag_gen_bin(&proto_data->header, &tmpl_data->header,
@@ -447,8 +441,6 @@ tad_gre_confirm_ptrn_cb(csap_p         csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     ptrn_data = TE_ALLOC(sizeof(*ptrn_data));
-    if (ptrn_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_bps_nds_to_data_units(&proto_data->header, layer_pdu,
                                    &ptrn_data->header);
@@ -641,8 +633,6 @@ tad_gre_match_do_cb(csap_p           csap,
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
 
     pkt_data = TE_ALLOC(sizeof(*pkt_data));
-    if (pkt_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     rc = tad_bps_pkt_frag_match_pre(&proto_data->header, &pkt_data->header);
     if (rc != 0)
@@ -698,11 +688,6 @@ tad_gre_match_do_cb(csap_p           csap,
                 uint16_t  cksum;
 
                 pdu_binary = TE_ALLOC(pdu_len);
-                if (pdu_binary == NULL)
-                {
-                    rc = TE_ENOMEM;
-                    goto fail;
-                }
 
                 tad_pkt_read_bits(pdu, 0, pdu_len << 3, pdu_binary);
 
