@@ -9,6 +9,7 @@ tests = [
     'file_get',
     'file_put',
     'file_read',
+    'file_resolve',
     'file_write',
 ]
 

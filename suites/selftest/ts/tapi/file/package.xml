@@ -58,6 +58,13 @@
             <arg name="env" ref="env" />
         </run>
         <run>
+            <script name="file_resolve"/>
+            <arg name="env" ref="env" />
+            <arg name="len">
+                <value>42</value>
+            </arg>
+        </run>
+        <run>
             <script name="file_write"/>
             <arg name="env" ref="env" />
         </run>

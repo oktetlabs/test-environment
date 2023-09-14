@@ -98,6 +98,23 @@ char *tapi_file_join_pathname(te_string *dest, const char *dirname,
 }
 
 char *
+tapi_file_resolve_ta_pathname(te_string *dest, const char *ta,
+                              tapi_cfg_base_ta_dir base_dir,
+                              const char *relname)
+{
+    char *dir = tapi_cfg_base_get_ta_dir(ta, base_dir);
+    char *result = NULL;
+
+    if (dir == NULL)
+        return NULL;
+
+    result = te_file_join_filename(dest, dir, relname, NULL);
+    free(dir);
+
+    return result;
+}
+
+char *
 tapi_file_generate_name(void)
 {
     static char buf[RCF_MAX_PATH];

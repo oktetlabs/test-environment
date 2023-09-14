@@ -18,6 +18,7 @@
 #include "te_defs.h"
 #include "te_string.h"
 #include "te_expand.h"
+#include "tapi_cfg_base.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -99,6 +100,31 @@ extern char *tapi_file_join_pathname(te_string *dest,
                                      const char *dirname,
                                      const char *path,
                                      const char *suffix);
+
+
+/**
+ * Resolve a pathname relative to one of the agent directories.
+ *
+ * te_file_join_filename() is used for resolving, so pathname
+ * components need not exist and symlinks are not resolved.
+ *
+ * If @p dest is @c NULL, a fresh string is allocated and returned.
+ *
+ * @param[out] dest      The string to hold the name or @c NULL.
+ * @param[in]  ta        Agent name.
+ * @param[in]  base_dir  Agent base directory.
+ * @param[in]  relname   Relative filename.
+ *
+ * @note The name is appended to the string contents.
+ *
+ * @return the pointer to the contents of @p dest or a heap-allocated buffer
+ *
+ * @sa tapi_cfg_base_get_ta_dir()
+ */
+extern char *tapi_file_resolve_ta_pathname(te_string *dest,
+                                           const char *ta,
+                                           tapi_cfg_base_ta_dir base_dir,
+                                           const char *relname);
 
 /**
  * Generate unique basename for file.
