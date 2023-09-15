@@ -568,7 +568,7 @@ alloc_and_get_option(xmlNodePtr node, test_options *opts)
     p = TE_ALLOC(sizeof(*p));
 
     p->name = XML2CHAR(name);
-    p->value = XML2CHAR(name);
+    p->value = XML2CHAR(value);
 
     /* Get optional information about contexts */
     for (q = xmlNodeChildren(node);
