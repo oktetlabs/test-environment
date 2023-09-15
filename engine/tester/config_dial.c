@@ -448,6 +448,16 @@ compare_path_iters(const void *a, const void *b)
     return strcmp(((path_iters *)a)->path, ((path_iters *)b)->path);
 }
 
+/* Release memory allocated for path_iters structure */
+static void
+free_path_iters(void *arg)
+{
+    path_iters *iters = arg;
+
+    free(iters->path);
+    free(iters);
+}
+
 /*
  * Find out all the unique test paths and total iterations count
  * for every one of them.
@@ -492,7 +502,7 @@ count_path_iters(dial_node *node, const char *path, void **path_tree)
                 if (iters_found != iters)
                 {
                     iters_found->iters += iters->iters;
-                    free(iters);
+                    free_path_iters(iters);
                 }
             }
         }
@@ -583,7 +593,7 @@ set_init_weights(dial_node *node)
     count_path_iters(node, NULL, &path_tree);
     set_weights_by_paths(node, &path_tree);
 
-    tdestroy(path_tree, free);
+    tdestroy(path_tree, free_path_iters);
 }
 
 /* Construct selection tree */
