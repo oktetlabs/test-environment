@@ -1145,6 +1145,10 @@ scenario_apply_dial(testing_scenario *scenario,
 
     TAILQ_INIT(&iters);
 
+    /* Nothing to do with empty scenario */
+    if (scenario == NULL || TAILQ_EMPTY(scenario))
+        goto cleanup;
+
     /*
      * Create selection tree containing information about all
      * the existing iterations.
