@@ -41,6 +41,7 @@
 #include "te_alloc.h"
 #include "te_param.h"
 #include "te_expand.h"
+#include "te_str.h"
 #include "tester_conf.h"
 #include "type_lib.h"
 #include "tester_cmd_monitor.h"
@@ -658,6 +659,39 @@ get_uint_prop(xmlNodePtr node, const char *name, unsigned int *value)
         xmlFree(s);
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
+    xmlFree(s);
+    *value = v;
+
+    return 0;
+}
+
+/**
+ * Get double property.
+ *
+ * @param node      Node with double property.
+ * @param name      Name of the property to get.
+ * @param value     Location for value.
+ *
+ * @return Status code.
+ * @retval TE_ENOENT    Property does not exists. Value is not modified.
+ */
+static te_errno
+get_double_prop(xmlNodePtr node, const char *name, double *value)
+{
+    xmlChar *s = xmlGetProp(node, CONST_CHAR2XML(name));
+    double v;
+    te_errno rc;
+
+    if (s == NULL)
+        return TE_RC(TE_TESTER, TE_ENOENT);
+
+    rc = te_strtod(XML2CHAR(s), &v);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to parse property '%s'", __FUNCTION__, name);
+        return TE_RC(TE_TESTER, rc);
+    }
+
     xmlFree(s);
     *value = v;
 
@@ -1971,6 +2005,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     p->context = session;
     p->iterate = 1;
     p->role = role;
+    p->dial_coef = -1;
 
     /* Just for current clean up in the case of failure */
     p->type = RUN_ITEM_NONE;
@@ -2004,6 +2039,11 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
 
         /* 'iterate' is optional */
         rc = get_uint_prop(node, "iterate", &p->iterate);
+        if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
+            return rc;
+
+        /* 'dial_coef' is optional */
+        rc = get_double_prop(node, "dial_coef", &p->dial_coef);
         if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
             return rc;
     }

@@ -287,6 +287,8 @@ struct run_item {
     test_vars_args      args;       /**< Arguments */
     test_var_arg_lists  lists;      /**< "Lists" of variables/arguments */
     unsigned int        iterate;    /**< Number of iterations */
+    double              dial_coef;  /**< Coefficient for default weight for
+                                         --dial option */
     unsigned int        loglevel;   /**< Log level to be used by
                                          the item */
 

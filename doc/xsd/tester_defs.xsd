@@ -684,6 +684,17 @@
                 </documentation>
             </annotation>
         </attribute>
+        <attribute name="dial_coef" type="Number" default="-1">
+            <annotation>
+                <documentation>
+                    Coefficient applied to selection weight used
+                    by --dial Tester option when randomly choosing
+                    iterations.
+                    Ignored if negative.
+                </documentation>
+            </annotation>
+        </attribute>
+
 <!--
         <attribute name="debugging" type="Debugging" default="none">
             <annotation>

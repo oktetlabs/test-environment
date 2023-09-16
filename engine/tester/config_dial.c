@@ -309,7 +309,9 @@ node_start(unsigned int cfg_id_off, unsigned int self_iters,
 {
     dial_node *node;
 
-    if (inner_iters == 0 || (ri != NULL && ri->role != RI_ROLE_NORMAL) ||
+    if (inner_iters == 0 ||
+        (ri != NULL && (ri->role != RI_ROLE_NORMAL ||
+                        ri->dial_coef == 0)) ||
         ctx->skip)
     {
         ctx->skip++;
@@ -525,6 +527,10 @@ static void
 set_weights_by_paths(dial_node *node, void **path_tree)
 {
     dial_node *child;
+    double dial_coef = -1;
+
+    if (node->ri != NULL)
+        dial_coef = node->ri->dial_coef;
 
     node->children_sel_weight = 0;
     TAILQ_FOREACH(child, &node->children, links)
@@ -578,6 +584,16 @@ set_weights_by_paths(dial_node *node, void **path_tree)
          * sum of the weights of their children.
          */
         node->sel_weight = node->children_sel_weight;
+    }
+
+    if (dial_coef > 0)
+    {
+        if (dial_coef * node->sel_weight > UINT_MAX)
+            TE_FATAL_ERROR("Overfilling when applying dial coefficient");
+
+        node->sel_weight *= dial_coef;
+        if (node->sel_weight == 0)
+            node->sel_weight = 1;
     }
 
     assert(node->sel_weight != 0);
@@ -890,11 +906,7 @@ add_from_scen(dial_node **cur_node, unsigned int iter,
         /* Current node is new leaf and it cannot be extended */
         node = *cur_node = node->parent;
         if (node == NULL)
-        {
-            ERROR("%s(): cannot find a place for iteration %u",
-                  __FUNCTION__, iter);
-            return TE_ENOENT;
-        }
+            TE_FATAL_ERROR("new leaf has no parent");
     }
 
     assert(node->act_ptr == NULL);
@@ -925,12 +937,16 @@ add_from_scen(dial_node **cur_node, unsigned int iter,
                 }
             }
 
-            ERROR("%s(): iteration %u fits into a given non-leaf "
-                  "node but not to any of its children", __FUNCTION__,
-                  iter);
+            /*
+             * This is possible if some run items were excluded due to
+             * dial_coef = 0.
+             */
             return TE_ENOENT;
         }
     }
+
+    if (node->parent == NULL)
+        return TE_ENOENT;
 
     *cur_node = node->parent;
     return add_from_scen(cur_node, iter, act_ptr);
@@ -1054,8 +1070,6 @@ process_original_scenario(testing_scenario *scenario,
         act_iters->flags = act->flags;
         act_iters->chosen = TE_ALLOC(num * sizeof(*(act_iters->chosen)));
 
-        iters_count += num;
-
         TAILQ_INSERT_TAIL(iters, act_iters, links);
 
         for (i = act->first; i <= act->last; i++)
@@ -1066,8 +1080,12 @@ process_original_scenario(testing_scenario *scenario,
              * scenario acts).
              */
             rc = add_from_scen(&cur_node, i, act_iters);
-            if (rc != 0)
+            if (rc == TE_ENOENT)
+                continue;
+            else if (rc != 0)
                 return rc;
+
+            iters_count++;
 
             if (i == UINT_MAX)
                 break;
@@ -1165,6 +1183,9 @@ scenario_apply_dial(testing_scenario *scenario,
     rc = process_original_scenario(scenario, root, &iters,
                                    &total_iters);
     if (rc != 0)
+        goto cleanup;
+
+    if (total_iters == 0)
         goto cleanup;
 
     /*
