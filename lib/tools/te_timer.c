@@ -44,7 +44,7 @@ te_timer_start(te_timer_t *timer, unsigned int timeout_s)
     struct sigevent sev = { .sigev_notify = SIGEV_NONE, };
     struct itimerspec trigger;
 
-    if (timer->id != 0)
+    if (timer->is_valid)
     {
         ERROR("Timer is already in progress or initialized incorrectly");
         return TE_EINPROGRESS;
@@ -52,6 +52,7 @@ te_timer_start(te_timer_t *timer, unsigned int timeout_s)
 
     /* Create the timer */
     TE_TIMER_CHECK_ERRNO(timer_create(TE_TIMER_CLOCKID, &sev, &timer->id));
+    timer->is_valid = TRUE;
 
     /* Start the timer */
     trigger.it_value.tv_sec = timeout_s;
@@ -70,7 +71,7 @@ te_timer_restart(te_timer_t *timer, unsigned int timeout_s)
 {
     struct itimerspec trigger;
 
-    if (timer->id == 0)
+    if (!timer->is_valid)
     {
         ERROR("Timer is not running or initialized incorrectly");
         return TE_EINVAL;
@@ -91,10 +92,10 @@ te_timer_restart(te_timer_t *timer, unsigned int timeout_s)
 te_errno
 te_timer_stop(te_timer_t *timer)
 {
-    if (timer->id != 0)
+    if (timer->is_valid)
     {
         TE_TIMER_CHECK_ERRNO(timer_delete(timer->id));
-        timer->id = 0;
+        timer->is_valid = FALSE;
     }
 
     return 0;
@@ -106,7 +107,7 @@ te_timer_expired(te_timer_t *timer)
 {
     struct itimerspec remaining;
 
-    if (timer->id == 0)
+    if (!timer->is_valid)
     {
         ERROR("Timer is not running or initialized incorrectly");
         return TE_EINVAL;

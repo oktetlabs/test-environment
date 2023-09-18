@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test API to operate the Timer service
  *
@@ -7,9 +8,6 @@
  * @{
  *
  * Functions to check if time expired
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
- *
  *
  * @section te_tools_te_timer_example Example of usage
  *
@@ -42,11 +40,12 @@ extern "C" {
 
 /** Timer context */
 typedef struct te_timer_t {
+    te_bool is_valid;   /**< @c TRUE if timer is created */
     timer_t id;         /**< POSIX.1 timer ID */
 } te_timer_t;
 
 /** On-stack timer context initializer */
-#define TE_TIMER_INIT { .id = 0 }
+#define TE_TIMER_INIT { .is_valid = FALSE }
 
 /**
  * Start timer
