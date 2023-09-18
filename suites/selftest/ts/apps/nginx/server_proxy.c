@@ -266,6 +266,7 @@ main(int argc, char **argv)
     TEST_STEP("Start nginx processes");
     CHECK_RC(tapi_cfg_nginx_enable(pco_srv->ta, SRV_NAME));
     CHECK_RC(tapi_cfg_nginx_enable(pco_proxy->ta, PROXY_NAME));
+    VSLEEP(1, "Wait for nginx and nginx-proxy to start");
 
     TEST_STEP("Run HTTP benchmarking test");
     opt.connections = conns_num;

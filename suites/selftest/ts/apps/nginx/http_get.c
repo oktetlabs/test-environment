@@ -55,6 +55,7 @@ main(int argc, char **argv)
 
     TEST_STEP("Start nginx");
     CHECK_RC(tapi_cfg_nginx_enable(iut_rpcs->ta, NGINX_NAME));
+    VSLEEP(1, "Wait for nginx to start");
 
     TEST_STEP("Check that nginx replies on HTTP GET");
     pid = rpc_te_shell_cmd(iut_rpcs, HTTP_GET_CMD, -1, NULL, NULL, NULL);
