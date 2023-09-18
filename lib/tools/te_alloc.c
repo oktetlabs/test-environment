@@ -17,7 +17,8 @@
 
 /* See description in te_alloc.h */
 void *
-te_alloc_internal(size_t size, const char *filename, int line)
+te_alloc_internal(size_t size, te_bool initialize,
+                  const char *filename, int line)
 {
     void *result;
 
@@ -33,7 +34,10 @@ te_alloc_internal(size_t size, const char *filename, int line)
         WARN("Attempted to allocate a zero buffer at %s:%d", filename, line);
     }
 
-    result = calloc(1, size);
+    if (initialize)
+        result = calloc(1, size);
+    else
+        result = malloc(size);
     if (result == NULL)
     {
         TE_FATAL_ERROR("Cannot allocate memory of size %zu at %s:%d",
