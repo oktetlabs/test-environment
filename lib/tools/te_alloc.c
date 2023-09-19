@@ -24,12 +24,13 @@ te_alloc_internal(size_t size, const char *filename, int line)
     /*
      * Allocating zero bytes is formally permitted by ISO C but
      * it may either return NULL or some magic non-null pointer
-     * that cannot be dereferenced.
+     * that cannot be dereferenced. We force the latter variant
+     * by actually allocating a single byte.
      */
     if (size == 0)
     {
-        TE_FATAL_ERROR("Attempted to allocate a zero buffer at %s:%d",
-                       filename, line);
+        size = 1;
+        WARN("Attempted to allocate a zero buffer at %s:%d", filename, line);
     }
 
     result = calloc(1, size);
