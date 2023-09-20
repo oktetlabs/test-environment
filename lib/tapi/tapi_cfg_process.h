@@ -209,6 +209,32 @@ extern te_errno tapi_cfg_ps_get_autorestart(const char *ta,
                                             unsigned int *value);
 
 /**
+ * Set working directory.
+ *
+ * @param ta        Test Agent name.
+ * @param ps_name   Process.
+ * @param workdir   New process working directory.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_ps_set_workdir(const char *ta,
+                                        const char *ps_name,
+                                        const char *workdir);
+
+/**
+ * Get working directory.
+ *
+ * @param ta        Test Agent name.
+ * @param ps_name   Process.
+ * @param workdir   Process current working directory.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_ps_get_workdir(const char *ta,
+                                        const char *ps_name,
+                                        char **workdir);
+
+/**
  * Send a signal to the process.
  *
  * @param      ta                 Test Agent.

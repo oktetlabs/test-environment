@@ -205,6 +205,44 @@ tapi_cfg_ps_set_long_opt_sep(const char *ta, const char *ps_name,
     return rc;
 }
 
+/* See descriptions in tapi_cfg_process.h */
+te_errno
+tapi_cfg_ps_set_workdir(const char *ta, const char *ps_name,
+                        const char *workdir)
+{
+    te_errno rc;
+
+    if (workdir == NULL)
+        workdir = "";
+
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, workdir),
+                              TE_CFG_TA_PS "/workdir:", ta, ps_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot set working directory value (process '%s', TA '%s'): %r",
+              ps_name, ta, rc);
+    }
+
+    return rc;
+}
+
+/* See descriptions in tapi_cfg_process.h */
+te_errno
+tapi_cfg_ps_get_workdir(const char *ta, const char *ps_name,
+                        char **workdir)
+{
+    te_errno rc;
+
+    rc = cfg_get_string(workdir, TE_CFG_TA_PS "/workdir:", ta, ps_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot get working directory value (process '%s', TA '%s'): %r",
+              ps_name, ta, rc);
+    }
+
+    return rc;
+}
+
 te_errno
 tapi_cfg_ps_set_autorestart(const char *ta, const char *ps_name,
                             unsigned int value)
