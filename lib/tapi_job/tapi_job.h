@@ -763,6 +763,20 @@ extern te_errno tapi_job_stop(tapi_job_t *job, int signo, int term_timeout_ms);
 extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
 
 /**
+ * Set working directory for the specified job.
+ *
+ * If you don't need @p tapi_job_exec_param, use this function.
+ * Otherwise use tapi_job_add_exec_param() with
+ * @p tapi_job_exec_workdir_param.
+ *
+ * @param job          Job instance handle
+ * @param dir          New working directory
+ *
+ * @return Status code
+ */
+extern te_errno tapi_job_set_workdir(tapi_job_t *job, const char *dir);
+
+/**
  * Wrappers priority level
  */
 typedef enum {

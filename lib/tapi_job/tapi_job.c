@@ -1529,6 +1529,14 @@ tapi_job_destroy(tapi_job_t *job, int term_timeout_ms)
     return 0;
 }
 
+te_errno
+tapi_job_set_workdir(tapi_job_t *job, const char *dir)
+{
+    TAPI_JOB_CHECK_METHOD_SUPPORT(job, set_workdir);
+
+    return job->methods.set_workdir(job, dir);
+}
+
 /* See description in tapi_job.h */
 te_errno
 tapi_job_wrapper_add(tapi_job_t *job, const char *tool, const char **argv,

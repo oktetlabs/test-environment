@@ -109,6 +109,15 @@ extern tapi_job_method_stop cfg_job_stop;
 extern tapi_job_method_destroy cfg_job_destroy;
 
 /**
+ * Set new working directory for a job.
+ *
+ * @note This function should be called before the job is started.
+ *
+ * @sa tapi_job_method_set_workdir
+ */
+extern tapi_job_method_set_workdir cfg_job_set_workdir;
+
+/**
  * Set autorestart timeout for a job
  *
  * @note This function should be called before the job is started

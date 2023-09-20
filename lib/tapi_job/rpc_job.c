@@ -41,6 +41,7 @@ const tapi_job_methods_t rpc_job_methods = {
     .wait = rpc_job_wait,
     .stop = rpc_job_stop,
     .destroy = rpc_job_destroy,
+    .set_workdir = rpc_job_set_workdir,
     .wrapper_add = rpc_job_wrapper_add,
     .wrapper_delete = rpc_job_wrapper_delete,
     .add_exec_param = rpc_job_add_exec_param,
@@ -817,6 +818,26 @@ rpc_job_destroy(const tapi_job_t *job, int term_timeout_ms)
     rpcs->silent_pass = silent_pass;
 
     RETVAL_TE_ERRNO(job_destroy, out.retval);
+}
+
+te_errno
+rpc_job_set_workdir(const tapi_job_t *job, const char *dir)
+{
+    te_errno rc;
+    char *path = strdup(dir);
+
+    rc = rpc_job_add_exec_param(job,
+                                (tapi_job_exec_param[]){
+                                    {
+                                        .type = TAPI_JOB_EXEC_WORKDIR,
+                                        .data = &(tapi_job_exec_workdir_param){
+                                            .workdir = path
+                                        }
+                                    },
+                                    { .type = TAPI_JOB_EXEC_END }
+                                });
+    free(path);
+    return rc;
 }
 
 static te_errno

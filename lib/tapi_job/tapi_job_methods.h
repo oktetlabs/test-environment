@@ -149,6 +149,17 @@ typedef te_errno (tapi_job_method_destroy)(const tapi_job_t *job,
                                            int term_timeout_ms);
 
 /**
+ * Method that sets working directory.
+ *
+ * @param        job               Job instance handle
+ * @param        dir               Job's working directory after start.
+ *
+ * @return       Status code
+ */
+typedef te_errno (tapi_job_method_set_workdir)(const tapi_job_t *job,
+                                               const char *dir);
+
+/**
  * Method that adds a wrapper for the specified job
  *
  * @param[in]    job               Job instance handle
@@ -269,6 +280,8 @@ typedef struct tapi_job_methods_t {
     tapi_job_method_add_exec_param *add_exec_param;
     /** Method that sets the autorestart timeout */
     tapi_job_method_set_autorestart *set_autorestart;
+    /** Method that sets the working dir (aka chdir) */
+    tapi_job_method_set_workdir *set_workdir;
     /** Method that obtains the autorestart timeout */
     tapi_job_method_get_autorestart *get_autorestart;
     /** Method that recreates a job */

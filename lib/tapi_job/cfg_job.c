@@ -40,6 +40,7 @@ const tapi_job_methods_t cfg_job_methods = {
     .wait = cfg_job_wait,
     .stop = cfg_job_stop,
     .destroy = cfg_job_destroy,
+    .set_workdir = cfg_job_set_workdir,
     .set_autorestart = cfg_job_set_autorestart,
     .get_autorestart = cfg_job_get_autorestart,
     .recreate = cfg_job_recreate,
@@ -502,6 +503,25 @@ cfg_job_set_autorestart(const tapi_job_t *job, unsigned int value)
     {
         ERROR("Cannot set autorestart value (process '%s', TA '%s'): %r",
               ps_name, ta, rc);
+    }
+
+    return rc;
+}
+
+/* See descriptions in tapi_cfg_job.h */
+te_errno
+cfg_job_set_workdir(const tapi_job_t *job, const char *dir)
+{
+    te_errno rc;
+    const char *ta = tapi_job_get_ta(job);
+    const char *ps_name = tapi_job_get_name(job);
+
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, dir),
+                              TE_CFG_TA_PS "/workdir:", ta, ps_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot set working dir '%s' (process '%s', TA '%s'): %r",
+              dir, ps_name, ta, rc);
     }
 
     return rc;

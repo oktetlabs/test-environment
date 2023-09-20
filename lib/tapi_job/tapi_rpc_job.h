@@ -87,6 +87,15 @@ extern tapi_job_method_stop rpc_job_stop;
 extern tapi_job_method_destroy rpc_job_destroy;
 
 /**
+ * Set new working directory for a job.
+ *
+ * @note This function should be called before the job is started.
+ *
+ * @sa tapi_job_method_set_workdir
+ */
+extern tapi_job_method_set_workdir rpc_job_set_workdir;
+
+/**
  * Add a wrapper for a job
  *
  * @sa tapi_job_method_wrapper_add
