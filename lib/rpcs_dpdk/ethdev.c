@@ -1238,7 +1238,6 @@ TARPC_FUNC_STATIC(rte_eth_tx_burst, {},
             RCF_PCH_MEM_INDEX_FREE(in->tx_pkts.tx_pkts_val[i], ns);
     });
 
-done:
     free(tx_pkts);
 })
 
@@ -1262,7 +1261,6 @@ TARPC_FUNC_STATIC(rte_eth_tx_prepare, {},
 
     MAKE_CALL(out->retval = func(in->port_id, in->queue_id, tx_pkts, nb_pkts));
 
-done:
     free(tx_pkts);
 })
 
@@ -1285,7 +1283,6 @@ TARPC_FUNC_STATIC(rte_eth_rx_burst, {},
             out->rx_pkts.rx_pkts_val[i] = RCF_PCH_MEM_INDEX_ALLOC(rx_pkts[i], ns);
     });
 
-done:
     free(rx_pkts);
 })
 
@@ -1708,7 +1705,6 @@ TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
                    sizeof(out->reta_conf.reta_conf_val[cur_group]));
     }
 
-done:
     free(reta_conf_p);
 })
 
@@ -1908,7 +1904,6 @@ TARPC_FUNC(rte_eth_xstats_get_names,{},
 
     out->xstats_names.xstats_names_len = in->size;
 
-done:
     free(xstats_names);
 })
 
@@ -1937,7 +1932,6 @@ TARPC_FUNC(rte_eth_xstats_get,{},
 
     out->xstats.xstats_len = in->n;
 
-done:
     free(xstats);
 })
 
@@ -1967,7 +1961,6 @@ TARPC_FUNC(rte_eth_xstats_get_by_id, {},
         free(values);
     }
 
-done:
     ;
 })
 
@@ -1999,7 +1992,6 @@ TARPC_FUNC(rte_eth_xstats_get_names_by_id, {},
         out->xstat_names.xstat_names_len = out->retval;
     }
 
-done:
     free(xstat_names);
 })
 
@@ -2037,7 +2029,6 @@ TARPC_FUNC(rte_eth_dev_rss_reta_update,{},
     MAKE_CALL(out->retval = func(in->port_id, reta_conf_p, in->reta_size));
     neg_errno_h2rpc(&out->retval);
 
-done:
     free(reta_conf_p);
 })
 
@@ -2401,7 +2392,6 @@ TARPC_FUNC(rte_eth_dev_set_mc_addr_list, {},
 
     neg_errno_h2rpc(&out->retval);
 
-done:
     free(mc_addr_set);
 })
 
