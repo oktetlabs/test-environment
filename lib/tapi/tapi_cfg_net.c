@@ -42,6 +42,9 @@
 #include "tapi_cfg_net.h"
 #include "tapi_host_ns.h"
 
+#define TAPI_CFG_NET_OID_NETDEV \
+                "/agent/hardware/pci/vendor/device/instance/netdev"
+
 /* See description in tapi_cfg_net.h */
 enum net_node_rsrc_type
 tapi_cfg_net_get_node_rsrc_type(cfg_net_node_t *node)
@@ -74,8 +77,7 @@ tapi_cfg_net_get_node_rsrc_type(cfg_net_node_t *node)
     {
         node->rsrc_type = NET_NODE_RSRC_TYPE_PCI_FN;
     }
-    else if (strcmp(obj_oid,
-                    "/agent/hardware/pci/vendor/device/instance/netdev") == 0)
+    else if (strcmp(obj_oid, TAPI_CFG_NET_OID_NETDEV) == 0)
     {
         node->rsrc_type = NET_NODE_RSRC_TYPE_PCI_FN_NETDEV;
     }
@@ -1278,8 +1280,7 @@ switch_agent_pci_fn_to_interface(cfg_net_t *net, cfg_net_node_t *node,
     }
 
     cfg_oid_inst2obj(oid_str, obj_oid);
-    if (strcmp(obj_oid,
-               "/agent/hardware/pci/vendor/device/instance/netdev") == 0)
+    if (strcmp(obj_oid, TAPI_CFG_NET_OID_NETDEV) == 0)
     {
         char *pci_fn_oid_str;
 
