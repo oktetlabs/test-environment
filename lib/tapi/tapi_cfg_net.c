@@ -1125,6 +1125,24 @@ struct bind_cfg_t {
     enum tapi_cfg_driver_type driver;
 };
 
+static char *
+make_pci_fn_oid_str_by_pci_fn_netdev_oid(cfg_oid *oid)
+{
+    unsigned int i;
+    te_string str_inst_oid = TE_STRING_INIT;
+
+    /*
+     * Build an inst_oid for pci instance without the last ('netdev') item.
+     */
+    for (i = 1; i < oid->len - 1; i++)
+    {
+        te_string_append(&str_inst_oid, "/%s:%s",
+                         cfg_oid_inst_subid(oid, i),
+                         CFG_OID_GET_INST_NAME(oid, i));
+    }
+    return str_inst_oid.ptr;
+}
+
 static tapi_cfg_net_node_cb tapi_cfg_net_node_bind_driver;
 static te_errno
 tapi_cfg_net_node_bind_driver(cfg_net_t *net, cfg_net_node_t *node,
@@ -1169,10 +1187,24 @@ tapi_cfg_net_node_bind_driver(cfg_net_t *net, cfg_net_node_t *node,
         }
         else if (strcmp(cfg_oid_inst_subid(oid, 2), "hardware") == 0)
         {
+            char obj_oid[CFG_OID_MAX];
+
             n_pci_fns = 1;
             pci_fns = TE_ALLOC(sizeof(*pci_fns));
 
-            rc = cfg_get_instance_str(NULL, &pci_fns[0], oid_str);
+            cfg_oid_inst2obj(oid_str, obj_oid);
+            if (strcmp(obj_oid, TAPI_CFG_NET_OID_NETDEV) == 0)
+            {
+                char *pci_fn_oid_str;
+
+                pci_fn_oid_str = make_pci_fn_oid_str_by_pci_fn_netdev_oid(oid);
+                rc = cfg_get_instance_str(NULL, &pci_fns[0], pci_fn_oid_str);
+                free(pci_fn_oid_str);
+            }
+            else
+            {
+                rc = cfg_get_instance_str(NULL, &pci_fns[0], oid_str);
+            }
             if (rc != 0)
             {
                 ERROR("Failed to get PCI device path of an agent");
@@ -1228,24 +1260,6 @@ tapi_cfg_net_bind_driver_by_node(enum net_node_type node_type,
     };
 
     return tapi_cfg_net_foreach_node(tapi_cfg_net_node_bind_driver, &cfg);
-}
-
-static char *
-make_pci_fn_oid_str_by_pci_fn_netdev_oid(cfg_oid *oid)
-{
-    unsigned int i;
-    te_string str_inst_oid = TE_STRING_INIT;
-
-    /*
-     * Build an inst_oid for pci instance without the last ('netdev') item.
-     */
-    for (i = 1; i < oid->len - 1; i++)
-    {
-        te_string_append(&str_inst_oid, "/%s:%s",
-                         cfg_oid_inst_subid(oid, i),
-                         CFG_OID_GET_INST_NAME(oid, i));
-    }
-    return str_inst_oid.ptr;
 }
 
 /**
