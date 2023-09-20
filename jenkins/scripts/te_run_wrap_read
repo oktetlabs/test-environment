@@ -20,9 +20,10 @@ import select
 import pty
 
 fd_pty = -1
+shutdown_started = False
 
 def handler(sig, frame):
-    if fd_pty >= 0:
+    if fd_pty >= 0 and not shutdown_started:
         # Send Ctrl-C to controlling terminal to interrupt
         # testing.
         try:
@@ -42,6 +43,11 @@ exit_code_fp = fprefix + ".exit_code"
 
 fd_fifo = os.open(fifo_fp, os.O_RDWR)
 
+# This is done to simplify debugging of this
+# script.
+os.dup2(fd_fifo, sys.stdout.fileno())
+os.dup2(fd_fifo, sys.stderr.fileno())
+
 # Use PTY here rather than redirecting to FIFO.
 # Using FIFO directly as stdout/stderr breaks TE build for
 # unknown reason, may be meson tries to do with standard
@@ -51,6 +57,12 @@ fd_fifo = os.open(fifo_fp, os.O_RDWR)
 child_pid, fd_pty = pty.fork()
 if child_pid == 0:
     os.execvp(sys.argv[1], sys.argv[1:])
+
+# Once we see this in output, we assume that normal shutdown
+# is already started and there is no need to print additional
+# Ctrl-C (it may break logging processing).
+shutdown_marker = b"\n--->>> Shutdown "
+marker_pos = 0
 
 # Wait until PTY becomes unreadable (meaning that child
 # process terminated), reading data from it and passing it
@@ -64,6 +76,17 @@ while True:
         break
 
     os.write(fd_fifo, data)
+
+    if not shutdown_started:
+        for s in data:
+            if s == shutdown_marker[marker_pos]:
+                marker_pos += 1
+            else:
+                marker_pos = 0
+
+            if marker_pos == len(shutdown_marker):
+                shutdown_started = True
+                break
 
 # Let te_run_wait know the exit code via an auxiliary file.
 pid, wait_st = os.waitpid(child_pid, 0)
