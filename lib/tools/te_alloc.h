@@ -81,6 +81,60 @@ extern void *te_alloc_internal(size_t size, te_bool initialize,
     (te_alloc_internal((size_), FALSE, __FILE__, __LINE__))
 
 /**
+ * Reallocate @p oldptr to have the size of @p newsize.
+ *
+ * If @p oldptr is @c NULL, it is an exact equivalent of
+ * te_alloc_internal().
+ *
+ * This function should never be called directly,
+ * use TE_REALLOC() macro instead.
+ *
+ * @param oldptr     An existing memory block or @c NULL.
+ * @param newsize    New size of the block.
+ * @param filename   Caller's filename.
+ * @param line       Caller's line.
+ *
+ * @return A pointer to a reallocated block
+ *        (never @c NULL, may be the same as @p oldptr).
+ *
+ * @exception TE_FATAL_ERROR in an unlikely case of a memory allocation
+ *            failure or zero-size reallocation.
+ *
+ * @warning Unlike system @c realloc, this function aborts
+ *          if a non-null @p oldptr is tried to resize to
+ *          zero bytes -- the behaviour of system @c realloc
+ *          is really ill-defined.
+ */
+extern void *te_realloc_internal(void *oldptr, size_t newsize,
+                                 const char *filename, int line);
+
+/**
+ * Reallocate @p ptr_ to have the size of @p newsize_.
+ *
+ * If @p ptr_ contains @c NULL, it is an exact equivalent of
+ * TE_ALLOC().
+ *
+ * @p ptr_ must be an lvalue and its content is replaced upon
+ * reallocation, so the old invalidated address is not accessible
+ * anymore.
+ *
+ * @param[in,out] ptr_      An lvalue holding an existing memory block
+ *                          or @c NULL.
+ * @param[in]     newsize_  New size of the block.
+ *
+ * @exception TE_FATAL_ERROR in an unlikely case of a memory allocation
+ *            failure or zero-size reallocation.
+ *
+ * @warning Unlike system @c realloc, this function aborts
+ *          if a non-null @p ptr_ is tried to resize to
+ *          zero bytes -- the behaviour of system @c realloc
+ *          is really ill-defined.
+ */
+#define TE_REALLOC(ptr_, newsize_) \
+    ((void)((ptr_) = te_realloc_internal((ptr_), (newsize_),    \
+                                         __FILE__, __LINE__)))
+
+/**
  * Copy a block of memory @p src.
  *
  * This function should never be called directly,
