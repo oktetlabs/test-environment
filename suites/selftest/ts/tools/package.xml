@@ -15,6 +15,19 @@
         </run>
 
         <run>
+            <script name="alloc"/>
+            <arg name="n_iterations">
+                <value>1000</value>
+            </arg>
+            <arg name="min_len">
+                <value>1</value>
+            </arg>
+            <arg name="max_len">
+                <value>65536</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="base64"/>
             <arg name="n_iterations">
                 <value>1000</value>

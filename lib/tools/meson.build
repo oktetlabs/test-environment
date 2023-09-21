@@ -125,6 +125,10 @@ if cc.has_function('getaddrinfo')
     c_args += [ '-DHAVE_GETADDRINFO' ]
 endif
 
+if cc.has_function('strnlen')
+    c_args += [ '-DHAVE_STRNLEN' ]
+endif
+
 deps += [
     cc.find_library('m'),
     cc.find_library('rt'),

@@ -1,0 +1,15 @@
+--- suites/selftest/ts/minimal/package.xml
++++ suites/selftest/ts/minimal/package.xml
+@@ -74,6 +74,12 @@
+             <arg name="opt_uint_val_param">
+                 <value>42</value>
+             </arg>
++            <arg name="opt_uint64_none_param">
++                <value>-</value>
++            </arg>
++            <arg name="opt_uint64_val_param">
++                <value>42</value>
++            </arg>
+             <arg name="opt_dbl_none_param">
+                 <value>-</value>
+             </arg>

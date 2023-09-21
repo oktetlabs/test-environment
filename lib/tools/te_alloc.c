@@ -11,6 +11,7 @@
 #include "te_config.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "logger_api.h"
 #include "te_alloc.h"
@@ -44,4 +45,36 @@ te_alloc_internal(size_t size, te_bool initialize,
                        size, filename, line);
     }
     return result;
+}
+
+/* See description in te_alloc.h */
+void *
+te_memdup_internal(const void *src, te_bool zero_terminated,
+                   size_t maxsize, const char *filename, int line)
+{
+    void *copy;
+    size_t copy_size = maxsize;
+
+    if (src == NULL)
+        return NULL;
+
+    if (zero_terminated)
+    {
+#if defined(HAVE_STRNLEN)
+        copy_size = strnlen(src, maxsize);
+#else
+        for (copy_size = 0;
+             copy_size < maxsize && ((const char *)src)[copy_size] != '\0';
+             copy_size++)
+            ;
+#endif
+        maxsize = copy_size + 1;
+    }
+
+    copy = te_alloc_internal(maxsize, FALSE, filename, line);
+    memcpy(copy, src, copy_size);
+    if (zero_terminated)
+        ((char *)copy)[copy_size] = '\0';
+
+    return copy;
 }
