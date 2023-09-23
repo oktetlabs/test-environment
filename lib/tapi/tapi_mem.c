@@ -1,103 +1,60 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test API to use malloc, calloc, realloc, memcpy and strdup
  *
- * Implementation of API to use memory-related functions in a convenient way
+ * Implementation of API to use memory-related functions in a convenient way.
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Currently these functions delegate all the work to functions from
+ * te_alloc.h, but this may change in the future.
  */
 
 #define TE_LGR_USER     "TAPI Mem"
 
 #include "te_config.h"
 
-#if HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-#if HAVE_STRING_H
-#include <string.h>
-#endif
-
 #include "logger_api.h"
+#include "te_alloc.h"
 #include "tapi_test_log.h"
 
 void *
 tapi_malloc(size_t size)
 {
-    void *ptr;
-
-    ptr = malloc(size);
-    if (ptr == NULL)
-    {
-        TEST_FAIL("Failed to allocate memory");
-    }
-
-    return ptr;
+    return TE_ALLOC_UNINITIALIZED(size);
 }
 
 void *
 tapi_calloc(size_t nmemb, size_t size)
 {
-    void *ptr;
-
-    ptr = calloc(nmemb, size);
-    if (ptr == NULL)
+    if (!te_is_valid_alloc(nmemb, size))
     {
-        TEST_FAIL("Failed to allocate memory");
+        TEST_FAIL("%zu * %zu does not fit into size_t",
+                  nmemb, size);
     }
-
-    return ptr;
+    return TE_ALLOC(nmemb * size);
 }
 
 void *
 tapi_realloc(void *ptr, size_t size)
 {
-    void *new_ptr;
-
-    new_ptr = realloc(ptr, size);
-    if (new_ptr == NULL)
-    {
-        TEST_FAIL("Failed to re-allocate memory");
-    }
-
-    return new_ptr;
+    TE_REALLOC(ptr, size);
+    return ptr;
 }
 
 void *
 tapi_memdup(const void *ptr, size_t size)
 {
-    void *new_ptr;
-
-    new_ptr = tapi_malloc(size);
-    new_ptr = memcpy(new_ptr, ptr, size);
-
-    return new_ptr;
+    return TE_MEMDUP(ptr, size);
 }
 
 char *
 tapi_strdup(const char *s)
 {
-    char *dup;
-
-    dup = strdup(s);
-    if (dup == NULL)
-    {
-        TEST_FAIL("Failed to duplicate string");
-    }
-
-    return dup;
+    return TE_STRDUP(s);
 }
 
 char *
 tapi_strndup(const char *s, size_t size)
 {
-    char *dup;
-
-    dup = strndup(s, size);
-    if (dup == NULL)
-    {
-        TEST_FAIL("Failed to duplicate string");
-    }
-
-    return dup;
+    return TE_STRNDUP(s, size);
 }
