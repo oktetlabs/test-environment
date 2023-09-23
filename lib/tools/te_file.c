@@ -49,7 +49,7 @@ te_basename(const char *pathname)
     if (*name == '/' || *name == '.')
         return NULL;
 
-    return strdup(name);
+    return TE_STRDUP(name);
 }
 
 /* See description in te_file.h */
@@ -121,7 +121,7 @@ te_dirname(const char *pathname)
         return NULL;
 
     memcpy(path, pathname, sizeof(path));
-    return strdup(dirname(path));
+    return TE_STRDUP(dirname(path));
 }
 
 /* See description in te_file.h */
@@ -303,7 +303,7 @@ te_file_resolve_pathname_vec(const char *filename, const te_vec *pathvec,
         if (access(filename, mode))
             rc = TE_OS_RC(TE_MODULE_NONE, errno);
         else if (resolved != NULL)
-            *resolved = strdup(filename);
+            *resolved = TE_STRDUP(filename);
     }
     else
     {
@@ -355,7 +355,7 @@ te_file_resolve_pathname(const char *filename, const char *path,
         else
         {
             if (S_ISDIR(st.st_mode))
-                basedir = strdup(basename);
+                basedir = TE_STRDUP(basename);
             else
                 basedir = te_dirname(basename);
 

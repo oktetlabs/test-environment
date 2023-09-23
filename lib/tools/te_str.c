@@ -32,9 +32,7 @@ te_str_upper(const char *src)
     char *dst;
     char *res;
 
-    res = malloc(strlen(src) + 1);
-    if (res == NULL)
-        return NULL;
+    res = TE_ALLOC_UNINITIALIZED(strlen(src) + 1);
 
     for (dst = res; *src != '\0'; src++, dst++)
         *dst = toupper(*src);
@@ -50,9 +48,7 @@ te_str_lower(const char *src)
     char *dst;
     char *res;
 
-    res = malloc(strlen(src) + 1);
-    if (res == NULL)
-        return NULL;
+    res = TE_ALLOC_UNINITIALIZED(strlen(src) + 1);
 
     for (dst = res; *src != '\0'; src++, dst++)
         *dst = tolower(*src);
@@ -107,9 +103,7 @@ te_str_concat(const char *first, const char *second)
     len1 = strlen(first);
     len2 = strlen(second);
 
-    str = malloc(len1 + len2 + 1);
-    if (str == NULL)
-        return NULL;
+    str = TE_ALLOC_UNINITIALIZED(len1 + len2 + 1);
 
     memcpy(str, first, len1);
     memcpy(&str[len1], second, len2);
@@ -244,9 +238,7 @@ te_str_strip_spaces(const char *str)
     if (offt <= len)
         len -= offt;
 
-    res = malloc(len + 1);
-    if (res == NULL)
-        return NULL;
+    res = TE_ALLOC_UNINITIALIZED(len + 1);
 
     memcpy(res, str + offt, len);
     res[len] = '\0';
@@ -926,7 +918,7 @@ te_str_make_array(const char *fst, ...)
     new = TE_ALLOC(num * sizeof(char *));
     for (num = 0, elem = fst; elem != NULL; num++)
     {
-        new[num] = strdup(elem);
+        new[num] = TE_STRDUP(elem);
         elem = va_arg(ap, char *);
     }
 

@@ -31,10 +31,6 @@ extern "C" {
 /* Default log level */
 #define TE_SERIAL_LLEVEL    "WARN"
 
-#define TE_SERIAL_MALLOC(ptr, size)       \
-    if ((ptr = malloc(size)) == NULL)   \
-        assert(0);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -124,14 +124,12 @@ te_log_msg_fmt(te_log_msg_out *out, const char *fmt, ...)
  * @return Status code (see te_errno.h)
  * @retval 0            Enough space
  * @retval TE_EAGAIN    Enough space after reallocation
- * @retval TE_ENOMEM    Reallocation failed
  */
 static te_errno
 ta_log_msg_raw_buf_check_len(te_log_msg_raw_data *data, size_t len)
 {
     size_t  buflen;
     size_t  off;
-    void   *tmp;
 
     assert(data != NULL);
     assert((data->end == NULL) == (data->buf == NULL));
@@ -162,16 +160,8 @@ fprintf(stderr, "CHECK: BUF=%p END=%p PTR=%p diff=%u len=%u\n",
                   TE_LOG_MSG_RAW_BUF_GROW;
     }
 
-    tmp = realloc(data->buf, buflen);
-    if (tmp == NULL)
-    {
-        free(data->buf);
-        data->buf = data->end = data->ptr = NULL;
+    TE_REALLOC(data->buf, buflen);
 
-        return TE_ENOMEM;
-    }
-
-    data->buf = (uint8_t *)tmp;
     data->end = data->buf + buflen;
     data->ptr = data->buf + off;
 
@@ -215,24 +205,12 @@ te_log_msg_prepare_raw_args(te_log_msg_raw_data *data, const char *fmt, size_t f
     arg_i = data->args_n;
     if (arg_i == data->args_max)
     {
-        void *tmp;
-
         if (data->args_max == 0)
             data->args_max = TE_LOG_MSG_RAW_ARGS_INIT;
         else
             data->args_max += TE_LOG_MSG_RAW_ARGS_GROW;
 
-        tmp = realloc(data->args, data->args_max * sizeof(*data->args));
-        if (tmp == NULL)
-        {
-            free(data->args);
-            data->args = NULL;
-
-            data->args_len = data->args_n = data->args_max = 0;
-
-            return TE_ENOMEM;
-        }
-        data->args = (te_log_arg_descr *)tmp;
+        TE_REALLOC(data->args, data->args_max * sizeof(*data->args));
     }
     /* Now we have to have enough space */
     assert(arg_i < data->args_max);
@@ -727,11 +705,7 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
 
     if (out->fmt != NULL)
     {
-        fmt_dup = strdup(fmt);
-        if (fmt_dup == NULL)
-        {
-            return TE_ENOMEM;
-        }
+        fmt_dup = TE_STRDUP(fmt);
         va_copy(ap_start, ap);
     }
     else

@@ -85,7 +85,7 @@ te_meas_stats_data_update(te_meas_stats_data_t *data, double new_datapoint)
  * @param summary       Pointer to te_meas_stats_summary_t structure
  * @param data          Pointer to te_meas_stats_data_t structure
  *
- * @return      0 on success, TE_ENOMEM if allocation failed
+ * @return Status code.
  */
 static te_errno
 te_meas_stats_fill_summary_histogram(te_meas_stats_summary_t *summary,
@@ -124,11 +124,7 @@ te_meas_stats_fill_summary_histogram(te_meas_stats_summary_t *summary,
         use_sample_bucket = FALSE;
     }
 
-    if ((bin_edges = TE_ALLOC(bin_edges_num * sizeof(*bin_edges))) == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    bin_edges = TE_ALLOC(bin_edges_num * sizeof(*bin_edges));
 
     freq_size = use_sample_bucket ? bin_edges_num - 1 : bin_edges_num;
 
@@ -188,7 +184,6 @@ te_meas_stats_fill_summary_histogram(te_meas_stats_summary_t *summary,
     for (i = 0; i < freq_size; i++)
         freq[i] /= sample_size;
 
-out:
     summary->bin_edges = bin_edges;
     summary->freq = freq;
     summary->bin_edges_num = bin_edges_num;
@@ -206,7 +201,7 @@ out:
  * @param summary       Pointer to te_meas_stats_summary_t structure
  * @param data          Pointer to te_meas_stats_data_t structure
  *
- * @return      0 on success, TE_ENOMEM if allocation failed
+ * @return Status code.
  */
 static te_errno
 te_meas_stats_fill_summary_sample_deviation(te_meas_stats_summary_t *summary,
@@ -261,7 +256,7 @@ out:
  * @param summary       Pointer to te_meas_stats_summary_t structure
  * @param data          Pointer to te_meas_stats_data_t structure
  *
- * @return      0 on success, TE_ENOMEM if allocation failed
+ * @return Status code.
  */
 static te_errno
 te_meas_stats_fill_summary(te_meas_stats_summary_t *summary,

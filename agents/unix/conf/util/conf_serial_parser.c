@@ -18,6 +18,7 @@
 
 #include "te_serial_parser.h"
 #include "te_kernel_log.h"
+#include "te_alloc.h"
 
 #include "logger_api.h"
 #include "te_raw_log.h"
@@ -198,7 +199,7 @@ parser_add(unsigned int gid, const char *oid, char *cname,
     serial_parser_t *parser;
     int              rc;
 
-    TE_SERIAL_MALLOC(parser, sizeof(serial_parser_t));
+    parser = TE_ALLOC_UNINITIALIZED(sizeof(serial_parser_t));
     parser->enable      = FALSE;
     parser->rcf         = FALSE;
     parser->port        = TE_SERIAL_PORT;
@@ -339,8 +340,7 @@ parsers_list(unsigned int gid, const char *oid, const char *sub_id,
     size_t            list_len  = 0;
 
     list_size = PARSER_LIST_SIZE;
-    TE_SERIAL_MALLOC(*list, list_size);
-    memset(*list, 0, list_size);
+    *list = TE_ALLOC(list_size);
 
     list_len = 0;
     SLIST_FOREACH(parser, &parsers_h, ent_pars_l)
@@ -600,8 +600,7 @@ parser_event_list(unsigned int gid, const char *oid, const char *sub_id,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     list_size = PARSER_LIST_SIZE;
-    TE_SERIAL_MALLOC(*list, list_size);
-    memset(*list, 0, list_size);
+    *list = TE_ALLOC(list_size);
 
     list_len = 0;
 
@@ -646,7 +645,7 @@ parser_event_add(unsigned int gid, const char *oid, char *t_name,
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    TE_SERIAL_MALLOC(event, sizeof(serial_event_t));
+    event = TE_ALLOC_UNINITIALIZED(sizeof(serial_event_t));
 
     event->count                      = 0;
     event->status                     = FALSE;
@@ -798,8 +797,7 @@ parser_pattern_list(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     list_size = PARSER_LIST_SIZE;
-    TE_SERIAL_MALLOC(*list, list_size);
-    memset(*list, 0, list_size);
+    *list = TE_ALLOC(list_size);
 
     list_len = 0;
 
@@ -850,7 +848,7 @@ parser_pattern_add(unsigned int gid, const char *oid, const char *pattern,
     if (event == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    TE_SERIAL_MALLOC(pat, sizeof(serial_pattern_t));
+    pat = TE_ALLOC_UNINITIALIZED(sizeof(serial_pattern_t));
 
     te_strlcpy(pat->name, name, sizeof(pat->name));
     te_strlcpy(pat->v, pattern, sizeof(pat->v));

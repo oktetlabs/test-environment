@@ -22,6 +22,7 @@
 #endif
 
 #include "te_defs.h"
+#include "te_alloc.h"
 #include "te_log_stack.h"
 
 #define LOG_STACK_DEPTH 10
@@ -46,9 +47,9 @@ te_log_stack_init_here(const char *point)
         return;
 
     for (i = 0; i < LOG_STACK_DEPTH; i++)
-        log_stack[i] = calloc(1, LOG_STACK_ELEMENT_LEN);
+        log_stack[i] = TE_ALLOC(LOG_STACK_ELEMENT_LEN);
 
-    top_point = strdup(point);
+    top_point = TE_STRDUP(point);
     init_done = TRUE;
 }
 
@@ -81,7 +82,7 @@ te_log_stack_pop(void)
     if (!init_done || log_stack_ptr == 0)
         return NULL;
 
-    return strdup(log_stack[--log_stack_ptr]);
+    return TE_STRDUP(log_stack[--log_stack_ptr]);
 }
 
 void

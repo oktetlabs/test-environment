@@ -16,6 +16,7 @@
 #include "config.h"
 #endif
 
+#include "te_alloc.h"
 #include "te_serial.h"
 #include "te_kernel_log.h"
 
@@ -70,7 +71,7 @@ console_add(unsigned int gid, const char *oid, const char *cname,
     UNUSED(gid);
     UNUSED(oid);
 
-    TE_SERIAL_MALLOC(console, sizeof(serial_console_t));
+    console = TE_ALLOC_UNINITIALIZED(sizeof(serial_console_t));
     console->port                           = TE_SERIAL_PORT;
     te_strlcpy(console->inst_name, inst_name, sizeof(console->inst_name));
     te_strlcpy(console->name, cname, sizeof(console->name));

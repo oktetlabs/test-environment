@@ -309,6 +309,23 @@ te_make_spec_buf(size_t min, size_t max, size_t *p_len, const char *spec)
     return te_make_pattern_buf(min, max, p_len, &pattern);
 }
 
+void *
+te_calloc_fill(size_t num, size_t size, int byte)
+{
+    void *buf;
+
+    if (!te_is_valid_alloc(num, size))
+    {
+        TE_FATAL_ERROR("%zu * %zu does not fit into size_t",
+                       num, size);
+    }
+    buf = TE_ALLOC(num * size);
+
+    memset(buf, byte, num * size);
+    return buf;
+}
+
+
 te_bool
 te_compare_bufs(const void *exp_buf, size_t exp_len,
                 unsigned int n_copies,

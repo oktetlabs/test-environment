@@ -17,6 +17,7 @@
 
 #include "te_ipstack.h"
 #include "te_sockaddr.h"
+#include "te_alloc.h"
 #include "logger_api.h"
 #include "tad_common.h"
 #include "te_defs.h"
@@ -65,14 +66,7 @@ te_ipstack_calc_l4_cksum(const struct sockaddr  *ip_dst_addr,
                          sizeof(struct te_ipstack_pseudo_header_ip6)) +
                          datagram_len;
 
-    pseudo_packet = calloc(1, pseudo_packet_len);
-    if (pseudo_packet == NULL)
-    {
-        rc = TE_ENOMEM;
-        ERROR("%s(): failed to allocate memory for a 'pseudo_packet'; rc = %d",
-              __FUNCTION__, rc);
-        goto out;
-    }
+    pseudo_packet = TE_ALLOC(pseudo_packet_len);
 
     if (ip_dst_addr->sa_family == AF_INET)
     {

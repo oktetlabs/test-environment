@@ -272,9 +272,7 @@ te_kvpair_push_va(te_kvpair_h *head, const char *key,
 
     p = TE_ALLOC(sizeof(*p));
 
-    p->key = strdup(key);
-    if (p->key == NULL)
-        TE_FATAL_ERROR("Can't allocate memory");
+    p->key = TE_STRDUP(key);
 
     te_string_append_va(&value_str, value_fmt, ap);
     p->value = value_str.ptr;
@@ -373,8 +371,7 @@ te_kvpair_from_str(const char *str, te_kvpair_h *head)
     assert(str != NULL);
     assert(head != NULL);
 
-    if ((dup = strdup(str)) == NULL)
-        return TE_ENOMEM;
+    dup = TE_STRDUP(str);
 
     for (token = strtok_r(dup, TE_KVPAIR_STR_DELIMITER, &saveptr1);
          token != NULL;

@@ -15,6 +15,7 @@
 #if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
+#include "te_alloc.h"
 #include "logger_api.h"
 
 
@@ -65,7 +66,7 @@ map_signo_to_name(int signo)
     for (i = 0; i < sizeof(te_signals) / sizeof(*te_signals); i++)
     {
         if (te_signals[i].signo == signo)
-            return strdup(te_signals[i].name);
+            return TE_STRDUP(te_signals[i].name);
     }
     return NULL;
 }

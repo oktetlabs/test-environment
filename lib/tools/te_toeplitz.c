@@ -11,6 +11,7 @@
 
 #include "te_toeplitz.h"
 #include "te_config.h"
+#include "te_alloc.h"
 #include "logger_api.h"
 
 #if HAVE_ARPA_INET_H
@@ -205,17 +206,10 @@ te_toeplitz_cache_init_size(const uint8_t *key, size_t key_size)
         return NULL;
     }
 
-    toeplitz_hash_cache = malloc(sizeof(*toeplitz_hash_cache));
-    if (toeplitz_hash_cache == NULL)
-        return NULL;
+    toeplitz_hash_cache = TE_ALLOC_UNINITIALIZED(sizeof(*toeplitz_hash_cache));
 
-    toeplitz_hash_cache->cache = calloc(TE_TOEPLITZ_CACHE_SIZE(key_size),
-                                        sizeof(uint32_t));
-    if (toeplitz_hash_cache->cache == NULL)
-    {
-        free(toeplitz_hash_cache);
-        return NULL;
-    }
+    toeplitz_hash_cache->cache = TE_ALLOC(TE_TOEPLITZ_CACHE_SIZE(key_size) *
+                                          sizeof(uint32_t));
 
     toeplitz_hash_cache->max_in_size = TE_TOEPLITZ_IN_MAX(key_size);
 

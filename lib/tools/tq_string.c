@@ -82,18 +82,9 @@ tq_strings_add_uniq_gen(tqh_strings *list, const char *value,
         p = TE_ALLOC(sizeof(*p));
 
         if (duplicate)
-        {
-            p->v = strdup((char *)value);
-            if (p->v == NULL)
-            {
-                free(p);
-                return TE_ENOMEM;
-            }
-        }
+            p->v = TE_STRDUP(value);
         else
-        {
             p->v = (char *)value;
-        }
 
         TAILQ_INSERT_TAIL(list, p, links);
 

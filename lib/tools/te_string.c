@@ -23,6 +23,7 @@
 #include "te_string.h"
 #include "te_intset.h"
 #include "te_defs.h"
+#include "te_alloc.h"
 
 void
 te_string_free_heap(te_string *str)
@@ -82,7 +83,6 @@ te_string_reserve(te_string *str, size_t size)
     size_t          pagesize = getpagesize();
     size_t          adj_size;
     size_t          malloc_header_size = 4 * sizeof(void *);
-    char           *ptr;
     size_t          grow_factor = 1;
     size_t          grow = 0;
 
@@ -131,11 +131,8 @@ te_string_reserve(te_string *str, size_t size)
     }
 
     /* Actually reallocate data */
-    ptr = realloc(str->ptr, size);
-    if (ptr == NULL)
-        TE_FATAL_ERROR("Memory allocation failure");
+    TE_REALLOC(str->ptr, size);
 
-    str->ptr = ptr;
     str->size = size;
     return 0;
 }
@@ -157,9 +154,7 @@ te_string_append_va_chk(te_string *str, const char *fmt, va_list ap)
         assert(!str->ext_buf);
 
         new_size = str->size != 0 ? str->size : TE_STRING_INIT_LEN;
-        str->ptr = malloc(new_size);
-        if (str->ptr == NULL)
-            TE_FATAL_ERROR("Memory allocation failure");
+        str->ptr = TE_ALLOC_UNINITIALIZED(new_size);
 
         str->size = new_size;
         str->len = 0;

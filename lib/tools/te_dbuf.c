@@ -11,6 +11,7 @@
 #include "te_config.h"
 #include "logger_api.h"
 #include "te_defs.h"
+#include "te_alloc.h"
 #include "te_dbuf.h"
 
 /* See description in te_dbuf.h. */
@@ -18,7 +19,6 @@ te_errno
 te_dbuf_append(te_dbuf *dbuf, const void *data, size_t data_len)
 {
     size_t   new_size;
-    uint8_t *new_ptr;
 
     if ((dbuf->ptr == NULL && dbuf->size != 0) || dbuf->len > dbuf->size)
     {
@@ -30,17 +30,9 @@ te_dbuf_append(te_dbuf *dbuf, const void *data, size_t data_len)
     if (new_size > dbuf->size)
     {
         new_size += new_size * dbuf->grow_factor / 100;
-        new_ptr = realloc(dbuf->ptr, new_size);
-        if (new_ptr != NULL)
-        {
-            dbuf->ptr = new_ptr;
-            dbuf->size = new_size;
-        }
-        else
-        {
-            ERROR("Memory reallocation failure");
-            return TE_ENOMEM;
-        }
+        TE_REALLOC(dbuf->ptr, new_size);
+
+        dbuf->size = new_size;
     }
     if (data != NULL)
         memcpy(&dbuf->ptr[dbuf->len], data, data_len);
@@ -53,7 +45,6 @@ te_errno
 te_dbuf_expand(te_dbuf *dbuf, size_t n)
 {
     size_t   new_size;
-    uint8_t *new_ptr;
 
     if ((dbuf->ptr == NULL && dbuf->size != 0) || dbuf->len > dbuf->size)
     {
@@ -61,17 +52,9 @@ te_dbuf_expand(te_dbuf *dbuf, size_t n)
         return TE_EINVAL;
     }
     new_size = dbuf->size + n;
-    new_ptr = realloc(dbuf->ptr, new_size);
-    if (new_ptr != NULL)
-    {
-        dbuf->ptr = new_ptr;
-        dbuf->size = new_size;
-    }
-    else
-    {
-        ERROR("Memory reallocation failure");
-        return TE_ENOMEM;
-    }
+    TE_REALLOC(dbuf->ptr, new_size);
+    dbuf->size = new_size;
+
     return 0;
 }
 

@@ -23,6 +23,7 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_alloc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -407,14 +408,7 @@ te_make_printable_buf_by_len(size_t len)
  *
  * @return Pointer to the memory block
  */
-static inline void *
-te_calloc_fill(size_t num, size_t size, int byte)
-{
-    void *buf = calloc(num, size);
-
-    memset(buf, byte, num * size);
-    return buf;
-}
+extern void *te_calloc_fill(size_t num, size_t size, int byte);
 
 /**
  * Compare and probably log the difference of two buffers.

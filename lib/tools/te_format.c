@@ -35,6 +35,7 @@
 #include "te_printf.h"
 #include "te_errno.h"
 
+#include "te_alloc.h"
 #include "te_format.h"
 
 
@@ -183,9 +184,7 @@ te_log_vprintf_old(struct te_log_out_params *param,
         return msg_output(param, "(null)");
     }
 
-    fmt_dup = strdup(fmt);
-    if (fmt_dup == NULL)
-        return TE_ENOMEM;
+    fmt_dup = TE_STRDUP(fmt);
 
     va_copy(ap0, ap);
 
@@ -413,8 +412,8 @@ te_log_vprintf_old(struct te_log_out_params *param,
                         percent_count++;
                     }
                 }
-                fake_str = (char *)malloc(strlen(arg_str) +
-                                          percent_count + 1);
+                fake_str = TE_ALLOC_UNINITIALIZED(strlen(arg_str) +
+                                                  percent_count + 1);
                 for (i = 1, tmp = s00 = arg_str, fs00 = fake_str;
                      *tmp != '\0'; tmp++)
                 {

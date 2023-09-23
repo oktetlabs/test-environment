@@ -52,6 +52,7 @@
 
 #include "te_stdint.h"
 #include "te_defs.h"
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "comm_agent.h"
 #include "te_raw_log.h"
@@ -292,10 +293,10 @@ te_open_conserver(const char *conserver)
     }
     else if (conserver && !conserver_str)
     {
-        conserver_str = strdup(conserver);
+        conserver_str = TE_STRDUP(conserver);
     }
 
-    dup_arg = strdup(conserver);
+    dup_arg = TE_STRDUP(conserver);
     tmp = dup_arg;
     point = strchr(tmp, '.');
     colon = strchr(tmp, ':');
@@ -652,7 +653,7 @@ do {                                                            \
     }                                                           \
 } while (0)
 
-    TE_SERIAL_MALLOC(buffer, LOG_SERIAL_MAX_LEN + 1);
+    buffer = TE_ALLOC_UNINITIALIZED(LOG_SERIAL_MAX_LEN + 1);
 
     if (pthread_mutex_lock(&parser->mutex) != 0)
     {

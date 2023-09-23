@@ -768,26 +768,12 @@ te_mi_meas_impl_add(te_mi_meas_impl_h *meas_q, te_mi_meas_type type,
 
     if (name != NULL)
     {
-        result->name = strdup(name);
-        result->descr = strdup(name);
-        if (result->name == NULL || result->descr == NULL)
-        {
-            ERROR("Failed to duplicate measurement name");
-            free(result->name);
-            free(result->descr);
-            free(result);
-            return NULL;
-        }
+        result->name = TE_STRDUP(name);
+        result->descr = TE_STRDUP(name);
     }
     else
     {
-        result->descr = strdup(te_mi_meas_type2descr(type));
-        if (result->descr == NULL)
-        {
-            ERROR("Failed to duplicate measurement description");
-            free(result);
-            return NULL;
-        }
+        result->descr = TE_STRDUP(te_mi_meas_type2descr(type));
     }
 
     result->type = type;
@@ -925,17 +911,8 @@ te_mi_logger_add_meas_view(te_mi_logger *logger, te_errno *retval,
     te_mi_meas_view_init(view);
     view->type = type;
 
-    view->name = strdup(name);
-    view->title = strdup(title);
-    if (view->name == NULL || view->title == NULL)
-    {
-        ERROR("strdup() failed to copy view name or title");
-        free(view->name);
-        free(view->title);
-        free(view);
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    view->name = TE_STRDUP(name);
+    view->title = TE_STRDUP(title);
 
     TAILQ_INSERT_TAIL(&logger->views, view, next);
 
@@ -1260,12 +1237,7 @@ te_mi_logger_meas_create(const char *tool, te_mi_logger **logger)
 
     result = TE_ALLOC(sizeof(*result));
 
-    result->tool = strdup(tool);
-    if (result->tool == NULL)
-    {
-        free(result);
-        return TE_ENOMEM;
-    }
+    result->tool = TE_STRDUP(tool);
 
     TAILQ_INIT(&result->meas_q);
     te_kvpair_init(&result->meas_keys);

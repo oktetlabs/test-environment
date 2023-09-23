@@ -112,10 +112,7 @@ te_vec_append_strarray(te_vec *vec, const char **elements)
     assert(vec->element_size == sizeof(char *));
     for (i = 0; elements[i] != NULL; i++)
     {
-        char *tmp = strdup(elements[i]);
-
-        if (tmp == NULL)
-            return TE_ENOMEM;
+        char *tmp = TE_STRDUP(elements[i]);
 
         rc = TE_VEC_APPEND(vec, tmp);
         if (rc != 0)
@@ -147,7 +144,7 @@ te_vec_split_string(const char *str, te_vec *strvec, char sep,
         next = strchr(str, sep);
         if (next == NULL)
         {
-            dup = strdup(str);
+            dup = TE_STRDUP(str);
         }
         else
         {

@@ -48,6 +48,7 @@ extern const char *inet_ntop (int, const void *, char *, size_t);
 #endif /* __CYGWIN__ */
 
 #include "logger_api.h"
+#include "te_alloc.h"
 #include "te_sockaddr.h"
 #include "te_ethernet.h"
 #include "te_string.h"
@@ -797,11 +798,8 @@ te_sockaddr_h2str(const struct sockaddr *sa, char **string)
 
     if (rc == 0)
     {
-        s = strdup(buf);
-        if (s == NULL)
-            rc = TE_OS_RC(TE_TOOL_EXT, errno);
-        else
-            *string = s;
+        s = TE_STRDUP(buf);
+        *string = s;
     }
 
     return rc;
@@ -937,7 +935,7 @@ te_ip2str(const struct sockaddr *addr)
         return NULL;
     }
 
-    return strdup(buf);
+    return TE_STRDUP(buf);
 }
 
 /* See description in te_sockaddr.h */

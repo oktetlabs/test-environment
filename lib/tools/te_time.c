@@ -13,6 +13,7 @@
 #include <time.h>
 #endif
 #include "te_time.h"
+#include "te_alloc.h"
 #include "logger_api.h"
 
 
@@ -31,7 +32,7 @@ te_time_current_date2str(void)
     if (strftime(buf, sizeof(buf), "%d/%m/%Y", tm) == 0)
         return NULL;
 
-    return strdup(buf);
+    return TE_STRDUP(buf);
 }
 
 /* See description in te_time.h */
