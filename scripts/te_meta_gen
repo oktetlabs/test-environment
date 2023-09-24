@@ -1,0 +1,99 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
+"""Script generating testing metadata in JSON format."""
+
+import json
+import sys
+import re
+import argparse
+
+def parse_cli_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+                        prog="te_meta_gen",
+                        description="Generating testing metadata")
+
+    parser.add_argument("-o", "--out", help = "Where to save metadata",
+                        type = argparse.FileType('w'), default = sys.stdout)
+    parser.add_argument("-c", "--cmds", help = "Where to get commands",
+                        type = argparse.FileType('r'), default = sys.stdin)
+    parser.add_argument("-f", "--format", help = "Metadata format version",
+                        type = int, default = 2)
+
+    args = parser.parse_args()
+    if args.format != 1 and args.format != 2:
+        print("Wrong meta data format", args.format, file = sys.stderr)
+        sys.exit(1)
+
+    return args
+
+def process_cmds(cmds):
+    """Process add/set commands, return metadata structure."""
+    meta_data = { "version" : 2, "metas" : {} }
+
+    cmd_re = re.compile("^([^ ]+) ([^ ]+)( (.+?))?\n?$")
+    for line in cmds:
+        parsed = cmd_re.match(line)
+        if not parsed:
+            continue
+
+        op = parsed.group(1)
+        name = parsed.group(2)
+
+        if op == "set_val":
+            meta_data["metas"][name] = { "value": parsed.group(4) }
+        elif op == "add_val":
+            if name not in meta_data["metas"]:
+                meta_data["metas"][name] = { "value": [] }
+
+            var = meta_data["metas"][name]
+            if type(var["value"]) != type([]):
+                cur_val = var["value"]
+                var["value"] = []
+                if cur_val is not None:
+                    var["value"] += [ cur_val ]
+
+            var["value"] += [ parsed.group(4) ]
+        elif op == "set_type":
+            if name not in meta_data["metas"]:
+                meta_data["metas"][name] = { "value": None }
+
+            meta_data["metas"][name]["type"] = parsed.group(4)
+
+    return meta_data
+
+def make_var(name, value, typeobj):
+    """Create meta variable object."""
+    var_obj = { "name": name, "value": value }
+    if "type" in typeobj:
+        var_obj["type"] = typeobj["type"]
+
+    return var_obj
+
+def export_json(version, meta_data, dest):
+    """Export metadata to a file in JSON format."""
+    if version == 1:
+        # Converting to old format version 1.
+        saved_json = { "version" : 1, "metas": [] }
+        for key, val in meta_data["metas"].items():
+            if type(val["value"]) == type([]):
+                for subval in val["value"]:
+                    saved_json["metas"] += [ make_var(key, subval, val) ]
+            else:
+                saved_json["metas"] += [ make_var(key, val["value"], val) ]
+
+    else:
+        saved_json = meta_data
+
+    json.dump(saved_json, dest, indent = 4)
+
+def main():
+    """Main function."""
+    args = parse_cli_args()
+
+    meta_data = process_cmds(args.cmds)
+
+    export_json(args.format, meta_data, args.out)
+
+main()

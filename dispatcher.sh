@@ -30,6 +30,65 @@ pushd "$(dirname "$DISPATCHER")" >/dev/null
 DISPATCHER_DIR="${PWD}"
 popd >/dev/null
 
+# Export TE_BASE
+if test -z "${TE_BASE}" ; then
+    if test -e "${DISPATCHER_DIR}/meson.build" ; then
+        echo "TE source directory is ${DISPATCHER_DIR} - exporting TE_BASE."
+        export TE_BASE="${DISPATCHER_DIR}"
+    fi
+fi
+
+# Generate metadata by default.
+TE_RUN_META=yes
+# Look for --no-meta here to decide whether to generate
+# testing metadata as soon as possible (process_opts()
+# function may fail).
+# Note: this ignores additional options passed via
+# --script or --opts.
+for arg in "$@" ; do
+    if [[ "${arg}" = "--no-meta" ]] ; then
+        TE_RUN_META=no
+        break
+    fi
+done
+
+# Generate initial testing metadata file as soon as possible.
+if [[ "${TE_RUN_META}" = "yes" ]] ; then
+    # Include functions for metadata generation
+    . "${TE_BASE}/scripts/lib.meta"
+
+    te_meta_set_ts START_TIMESTAMP
+    if [[ -n "${TE_META_START_TS}" ]] ; then
+        te_meta_set START_TIMESTAMP "${TE_META_START_TS}"
+    fi
+
+    if [[ -n "${TE_META_CAMPAIGN_DATE}" ]] ; then
+        te_meta_set CAMPAIGN_DATE "${TE_META_CAMPAIGN_DATE}"
+    else
+        # 6 hours offset helps to ensure that tests started before midnight
+        # get the same date as tests started after midnight (assuming
+        # that automated testing session starts in the evening every day
+        # and can include a few runs of different test suites).
+        te_meta_set CAMPAIGN_DATE "$(date --date="+6 hours" +%F)"
+    fi
+
+    te_meta_set RUN_STATUS RUNNING
+    te_meta_set RUN_OK false
+    if [[ -n "${TE_DO_TCE}" ]] ; then
+        te_meta_set TCE "${TE_DO_TCE}"
+    fi
+
+    te_meta_set_git "${TE_BASE}" TE
+
+    if [[ "${TE_ENV_REUSE_PCO}" = "yes" ]] ; then
+        te_meta_set REUSE_PCO true
+    else
+        te_meta_set REUSE_PCO false
+    fi
+
+    te_meta_export
+fi
+
 usage()
 {
 cat <<EOF
@@ -253,6 +312,8 @@ Generic options:
   --gdb-tester                  Run Tester under gdb.
   --tce                         Do TCE processing for all TCE-enabled components
   --tce=<list>                  Do TCE processing for specific components (comma-separated) or 'all'
+
+  --no-meta                     Do not generate testing metadata.
 
  --sniff-not-feed-conf          Do not feed the sniffer configuration file
                                 to Configurator.
@@ -584,6 +645,16 @@ process_opts()
             --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
             --log-online) LOG_ONLINE=yes ;;
 
+            --no-meta)
+              # The option is already handled in the beginning,
+              # it must be present directly in command line to
+              # have effect.
+              if [[ "${TE_RUN_META}" = "yes" ]] ; then
+                  echo "Cannot disable metadata generation:" >&2
+                  echo "  --no-meta option is passed not directly." >&2
+              fi
+              ;;
+
             --sniff-log-conv-disable) TE_SNIFF_LOG_CONV_DISABLE=true ;;
             --sniff-log-dir=*) TE_SNIFF_LOG_DIR="${1#--sniff-log-dir=}"
                  ;;
@@ -840,14 +911,6 @@ sniffer_make_conf()
     fi
     return 0
 }
-
-# Export TE_BASE
-if test -z "${TE_BASE}" ; then
-    if test -e "${DISPATCHER_DIR}/meson.build" ; then
-        echo "TE source directory is ${DISPATCHER_DIR} - exporting TE_BASE."
-        export TE_BASE="${DISPATCHER_DIR}"
-    fi
-fi
 
 if test -z "$CONF_DIRS" ; then
     if test -n "${TE_BASE}" ; then
@@ -1351,6 +1414,20 @@ if test ${START_OK} -ne 1 ; then
     if test -n "${TRC_OPTS}" ; then
         te_trc.sh ${TRC_OPTS} "${TE_LOG_RAW}"
     fi
+fi
+
+if [[ "${TE_RUN_META}" = "yes" ]] ; then
+    if [[ "${START_OK}" != "0" ]] ; then
+        te_meta_set RUN_STATUS ERROR
+    else
+        te_meta_set RUN_STATUS DONE
+        te_meta_set RUN_OK true
+    fi
+
+    te_meta_set_ts FINISH_TIMESTAMP
+
+    te_meta_export
+    te_meta_end
 fi
 
 test -n "${SHUTDOWN}" && rm -rf "${TE_TMP}"

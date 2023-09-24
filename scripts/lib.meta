@@ -1,0 +1,156 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
+#
+# Helper functions for generating testing metadata.
+
+##########################################################################
+# Append a command to temporary file.
+# This is an internal function and should not be used outside of
+# this file.
+# Globals:
+#   TE_META_TMP
+#   TMPDIR
+#   TE_TMP
+# Arguments:
+#   Command to write.
+##########################################################################
+te_write_meta_cmd() {
+    # Temporary file with commands is used to speed up execution.
+    # Editing JSON file directly each time we want to change something
+    # consumes time because JSON editing tools (python, jq) are
+    # relatively slow to load. Also using temporary file allows to
+    # choose format of metadata when exporting JSON.
+
+    if [[ -z "${TE_META_TMP}" ]] ; then
+        TMPDIR="${TMPDIR:-${TE_TMP:-/tmp/}}"
+        export TE_META_TMP="$(mktemp "${TMPDIR}/te_run_meta.XXXXXX")"
+    fi
+
+    echo $1 >>"${TE_META_TMP}"
+}
+
+##########################################################################
+# Finish metadata generation.
+# This removes temporary file with commands.
+# Globals:
+#   TE_META_TMP
+##########################################################################
+te_meta_end() {
+    if [[ -n "${TE_META_TMP}" ]] ; then
+        unlink "${TE_META_TMP}"
+        unset TE_META_TMP
+    fi
+}
+
+##########################################################################
+# Generate and export metadata to JSON file.
+# Globals:
+#   TE_META_FILE
+#   TE_META_TMP
+#   TE_BASE
+# Arguments:
+#   Format version (1 or 2).
+##########################################################################
+te_meta_export() {
+    local version="${1:-1}"
+    local out_fname="${TE_META_FILE:-$(pwd)/te_run_meta.json}"
+
+    if [[ -n "${TE_META_TMP}" ]] ; then
+        if [[ -n "${TE_BASE}" ]] ; then
+            "${TE_BASE}/scripts/te_meta_gen" --cmds="${TE_META_TMP}" \
+                --out="${out_fname}" --format=${version}
+        else
+            echo "TE_BASE must be set to use te_meta_export" >&2
+        fi
+    fi
+}
+
+##########################################################################
+# Specify a single value for a meta variable.
+# Arguments:
+#   Variable name.
+#   Variable value.
+##########################################################################
+te_meta_set() {
+    local name="$1"
+    local value="$2"
+
+    te_write_meta_cmd "set_val ${name} ${value}"
+}
+
+##########################################################################
+# Add a value for a variable which can have multiple values.
+# Arguments:
+#   Variable name.
+#   Variable value.
+##########################################################################
+te_meta_add() {
+    local name="$1"
+    local value="$2"
+
+    te_write_meta_cmd "add_val ${name} ${value}"
+}
+
+##########################################################################
+# Specify type for a meta variable.
+# Arguments:
+#   Variable name.
+#   Variable type.
+##########################################################################
+te_meta_set_type() {
+    local name="$1"
+    local type="$2"
+
+    te_write_meta_cmd "set_type ${name} ${type}"
+}
+
+##########################################################################
+# Set meta variables storing information about git repository.
+# Arguments:
+#   Path to git repository.
+#   Prefix for variables.
+#   Additional prefix with which revision variable should be added
+#     the second time.
+##########################################################################
+te_meta_set_git() {
+    local repo_dir="$1"
+    local prefix="$2"
+    local rev_prefix="$3"
+
+    pushd "${repo_dir}" >/dev/null
+
+    git_url="$(git config --get remote.origin.url)"
+    git_branch="$(git branch --show-current)"
+    git_rev="$(git rev-parse HEAD)"
+
+    git_diff="$(git diff --stat)"
+    if [[ -n "${git_diff}" ]] ; then
+        git_rev="${git_rev}+"
+    fi
+
+    te_meta_set "${prefix}_GIT_URL" "${git_url}"
+    te_meta_set "${prefix}_BRANCH" "${git_branch}"
+    te_meta_set_type "${prefix}_BRANCH" "branch"
+    te_meta_set "${prefix}_REV" "${git_rev}"
+    te_meta_set_type "${prefix}_REV" "revision"
+
+    if [[ -n "${rev_prefix}" ]] ; then
+        te_meta_set "${rev_prefix}_REV" "${git_rev}"
+        te_meta_set_type "${rev_prefix}_REV" "revision"
+    fi
+
+    popd >/dev/null
+}
+
+##########################################################################
+# Save current timestamp in meta variable.
+# Arguments:
+#   Meta variable name.
+##########################################################################
+te_meta_set_ts() {
+    local name="$1"
+
+    te_meta_set "${name}" "$(date +%FT%T%:z)"
+    te_meta_set_type "${name}" timestamp
+}

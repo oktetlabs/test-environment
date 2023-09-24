@@ -16,6 +16,7 @@ for keys in ${TE_TS_SSH_KEY_DIR}/*.id_rsa; do
     chmod 600 $keys;
 done
 
+TE_RUN_META=yes
 TS_SITE=auto
 TS_OPTS=
 TS_CFG=
@@ -27,12 +28,21 @@ for opt ; do
         --site=*)
             TS_SITE=${opt#--site=}
             ;;
+        --no-meta)
+            TS_OPTS+="${opt} "
+            TE_RUN_META=no
+            ;;
         *)
             TS_OPTS+="${opt} "
             ;;
     esac
     shift 1
 done
+
+if [[ "${TE_RUN_META}" = "yes" ]] ; then
+    . ${TE_BASE}/scripts/lib.meta
+    te_meta_set TS_NAME selftest
+fi
 
 # FIXME: that gimli1 is explicitly listed below is a hack.
 # Technically it's a site-specific configuration, but
