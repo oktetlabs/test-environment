@@ -64,17 +64,24 @@ if child_pid == 0:
 shutdown_marker = b"\n--->>> Shutdown "
 marker_pos = 0
 
+pobj = select.poll()
+pobj.register(fd_pty, select.POLLIN)
+wait_pid = 0
+
 # Wait until PTY becomes unreadable (meaning that child
 # process terminated), reading data from it and passing it
 # to FIFO
 while True:
-    try:
-        data = os.read(fd_pty, 256)
-    except:
-        # Here read fails with exception when child
-        # process terminates and other end is closed.
+    res = pobj.poll(1000)
+    if len(res) == 0:
+        wait_pid, wait_st = os.waitpid(child_pid, os.WNOHANG)
+        if wait_pid != 0:
+            break
+        continue
+    if (res[0][1] & select.POLLIN) == 0:
         break
 
+    data = os.read(fd_pty, 256)
     os.write(fd_fifo, data)
 
     if not shutdown_started:
@@ -89,7 +96,8 @@ while True:
                 break
 
 # Let te_run_wait know the exit code via an auxiliary file.
-pid, wait_st = os.waitpid(child_pid, 0)
+if wait_pid == 0:
+    wait_pid, wait_st = os.waitpid(child_pid, 0)
 exit_code = os.waitstatus_to_exitcode(wait_st)
 with open(exit_code_fp, mode="w") as f:
     print(exit_code, file=f)
