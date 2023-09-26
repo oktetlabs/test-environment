@@ -17,6 +17,11 @@
                 <arg name="trex_duration"/>
                 <arg name="trex_multiplier"/>
                 <arg name="nginx_port"/>
+                <results tags="no_trex">
+                    <result value="SKIPPED">
+                        <verdict>Path to TRex exec is not specified in environment</verdict>
+                    </result>
+                </results>
             </iter>
         </test>
 
@@ -26,6 +31,11 @@
                 <arg name="env"/>
                 <arg name="trex_duration"/>
                 <arg name="wrk_connections"/>
+                <results tags="no_trex">
+                    <result value="SKIPPED">
+                        <verdict>Path to TRex exec is not specified in environment</verdict>
+                    </result>
+                </results>
             </iter>
         </test>
 

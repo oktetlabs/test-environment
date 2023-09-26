@@ -75,19 +75,15 @@ main(int argc, char **argv)
 
     TEST_STEP("Configure TRex and wrk instances");
 
-    TEST_SUBSTEP("Check that wrk exec exists on iut");
-    if (rpc_te_file_check_executable(pco_iut, wrk_path) != 0)
-        TEST_SKIP("There is no nginx app on iut");
-
     TEST_SUBSTEP("Initialize TRex instances params on tst");
-
-    astf_template_path = getenv("TE_TREX_ASTF_TEMPLATE_PATH");
-    if (te_str_is_null_or_empty(astf_template_path))
-        TEST_SKIP("Path to TRex ASTF template is not specified in environment");
 
     trex_opt.trex_exec = getenv("TE_TREX_EXEC");
     if (te_str_is_null_or_empty(trex_opt.trex_exec))
         TEST_SKIP("Path to TRex exec is not specified in environment");
+
+    astf_template_path = getenv("TE_TREX_ASTF_TEMPLATE_PATH");
+    if (te_str_is_null_or_empty(astf_template_path))
+        TEST_FAIL("Path to TRex ASTF template is not specified in environment");
 
     CHECK_RC(te_file_read_text(astf_template_path, astf_template,
                                sizeof(astf_template)));

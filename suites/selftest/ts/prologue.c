@@ -50,6 +50,7 @@ main(int argc, char **argv)
     te_string str = TE_STRING_INIT;
 
     const char *memtier_path = NULL;
+    const char *trex_path = NULL;
 
     TEST_START;
     TEST_GET_PCO(iut_rpcs);
@@ -86,6 +87,12 @@ main(int argc, char **argv)
     {
         WARN("No path to memtier_benchmark was provided");
         CHECK_RC(tapi_tags_add_tag("no_memtier", ""));
+    }
+    trex_path = getenv("TE_IUT_TREX_EXEC_PATH");
+    if (te_str_is_null_or_empty(trex_path))
+    {
+        WARN("Path to TRex exec is not specified in environment");
+        CHECK_RC(tapi_tags_add_tag("no_trex", ""));
     }
 
     /* Print /local: subtree to see which TRC tags have been added */
