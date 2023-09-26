@@ -102,25 +102,26 @@ static const tapi_job_opt_bind trex_args_binds[] = TAPI_JOB_OPT_SET(
 );
 
 /* Default values of TRex common configuration. */
-const struct tapi_trex_common_config tapi_trex_common_config_default = {
-    .ip_range_beg = NULL,
-    .ip_range_end = NULL,
-    .ip_offset = NULL,
-    .port = TAPI_JOB_OPT_UINT_UNDEF,
-    .payload = NULL,
-    .interface = NULL,
-    .ip = NULL,
-    .gw = NULL
-};
+#define TAPI_TREX_COMMON_CONFIG_DEFAULT \
+    {                                           \
+        .ip_range_beg = NULL,                   \
+        .ip_range_end = NULL,                   \
+        .ip_offset = NULL,                      \
+        .port = TAPI_JOB_OPT_UINT_UNDEF,        \
+        .payload = NULL,                        \
+        .interface = NULL,                      \
+        .ip = NULL,                             \
+        .gw = NULL                              \
+     }
 
 /* Default values of TRex client configuration. */
 const struct tapi_trex_client_config tapi_trex_client_config_default = {
-    .common = tapi_trex_common_config_default
+    .common = TAPI_TREX_COMMON_CONFIG_DEFAULT
 };
 
 /* Default values of TRex server configuration. */
 const struct tapi_trex_server_config tapi_trex_server_config_default = {
-    .common = tapi_trex_common_config_default
+    .common = TAPI_TREX_COMMON_CONFIG_DEFAULT
 };
 
 /* Default values of TRex command line arguments. */
