@@ -154,3 +154,38 @@ te_meta_set_ts() {
     te_meta_set "${name}" "$(date +%FT%T%:z)"
     te_meta_set_type "${name}" timestamp
 }
+
+##########################################################################
+# Set common metadata for a test suite.
+# It is assumed that this function is called in run.sh script of a test
+# suite; it will not work correctly if called from a script not belonging
+# to the test suite.
+# Arguments:
+#   Test suite name.
+#   Prefix to use for git variables (if empty, will be derived from
+#     test suite name).
+# Globals:
+#   TE_TS_RIGSDIR
+#   TE_BUBLIK_PROJECT
+##########################################################################
+te_meta_test_suite() {
+    local ts_name="$1"
+    local ts_prefix="$2"
+    local ts_dir="$(cd "$(dirname "$(which "$0")")"/.. ; pwd -P)"
+
+    if [[ -z "${ts_prefix}" ]] ; then
+        ts_prefix="${ts_name^^}"
+        ts_prefix="${ts_prefix//-/_}"
+    fi
+
+    te_meta_set TS_NAME "${ts_name}"
+    te_meta_set_git "${ts_dir}" "${ts_prefix}"
+
+    if [[ -n "${TE_TS_RIGSDIR}" ]] ; then
+        te_meta_set_git "${TE_TS_RIGSDIR}" TSRIGS
+
+        source_if_exists "${TE_TS_RIGSDIR}/suites/${ts_name}/defs"
+    fi
+
+    te_meta_set PROJECT "${TE_BUBLIK_PROJECT:-${ts_name}}"
+}
