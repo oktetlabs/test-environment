@@ -105,6 +105,13 @@ EOF
 --coauthor          Add a Co-developed-by and Signed-off-by trailers for
                     the current Git user.
 
+--coauthor=USER     Add a Co-developed-by and Signed-off-by trailers for
+                    a given user. Note that if the patch is already
+                    signed off by the patch author, the resulting order
+                    of trailers may be rejected by te_check_patches, so
+                    it's recommended to apply this option to unsigned
+                    patches and the specify --signoff.
+
 --redmine-id=ID     Add an OL-Redmine-Id trailer with a given issue ID.
 
 --github-id=ID      Add a GitHub-TE-Id trailer with a given ID.
@@ -362,6 +369,14 @@ for arg; do
         -s | --signoff)
             TRAILER_ARGS+=("--where" "end" "--if-exists" "addIfDifferent"
                            "--trailer" "Signed-off-by=$(this_user)") ||
+                exit $?
+            ;;
+        --coauthor=*)
+            username="$(maybe_copy_trailer "Co-developed-by" "${arg#--*=}")"
+            username="$(map_user "${username}")"
+            TRAILER_ARGS+=("--where" "end" "--if-exists" "add"
+                           "--trailer" "Co-developed-by=${username}"
+                           "--trailer" "Signed-off-by=${username}") ||
                 exit $?
             ;;
         --coauthor)
