@@ -20,6 +20,7 @@ SINGLE="$(git config --get --type bool --default false \
 VERBOSE="$(git config --get --type bool --default false \
                  add-trailer.verbose)"
 GUESS_FIXES=
+DO_REORDER=
 
 declare -A TRAILER_MAP=([--reviewed-by]=Reviewed-by
                         [--acked-by]=Acked-by
@@ -110,7 +111,7 @@ EOF
                     signed off by the patch author, the resulting order
                     of trailers may be rejected by te_check_patches, so
                     it's recommended to apply this option to unsigned
-                    patches and the specify --signoff.
+                    patches and the specify --signoff, or use --reorder.
 
 --redmine-id=ID     Add an OL-Redmine-Id trailer with a given issue ID.
 
@@ -125,6 +126,11 @@ EOF
 
 --link=URL          Add a Link trailer with a given URL (e.g. pointing to
                     a GitHub review request).
+
+--reorder           Reorder trailers to comply with the order requirements
+                    of Contributor's Guidelines. It can also fix torn-off
+                    trailers.
+
 EOF
 
     [[ -z "${full}" ]] && return 0
@@ -321,6 +327,73 @@ function add_guess_fixes ()
     done
 }
 
+declare -A TRAILER_ORDER
+
+# Non-trailer lines get the rank of 0.
+#
+# All other trailers get the rank of 1,
+# this encompasses well-known semantic
+# trailers such as Fixes as well as any
+# unknown trailers.
+#
+# Signed-off-by from the committer gets
+# the rank between other Signed-off-by and
+# review trailers.
+
+TRAILER_ORDER=(["Suggested-by"]=2
+               ["Reported-by"]=2
+               ["Signed-off-by"]=3
+               ["Co-developed-by"]=3
+               ["Reviewed-by"]=5
+               ["Acked-by"]=5
+               ["Tested-by"]=5)
+
+function rank_commit_lines ()
+{
+    local rev="$1"
+    local committer
+    local prev_rank=0
+    local before_trailers=true
+    local after_empty_line=
+    local rank
+    local trailer
+
+    committer="$(git log -1 --format='%cn <%ce>' "${rev}")"
+
+    while read -r; do
+        if [[ -z "${REPLY}" ]]; then
+            prev_rank=0
+            after_empty_line=true
+        else
+            [[ -n "${after_empty_line}" ]] && echo "0:"
+            case "${REPLY}" in
+                [[:space:]]*)
+                    rank="${prev_rank}"
+                    ;;
+                [[:upper:]]*[[:lower:]]:\ *)
+                    if [[ -n "${before_trailers}" && -z "${after_empty_line}" ]];
+                    then
+                        rank=0
+                    elif [[ "${REPLY}" == "Signed-off-by: ${committer}" ]]; then
+                        rank=4
+                        before_trailers=
+                    else
+                        trailer="${REPLY%%:*}"
+                        rank="${TRAILER_ORDER[${trailer}]:-1}"
+                        before_trailers=
+                    fi
+                    ;;
+                *)
+                    rank=0
+                    ;;
+            esac
+            after_empty_line=
+            echo "${rank}:${REPLY}"
+            prev_rank="${rank}"
+        fi
+    done | sort -t: -k1,1n -s | sed 's/^[0-9]*://'
+}
+
 for arg; do
     case "${arg}" in
         -h | --help)
@@ -430,6 +503,9 @@ for arg; do
             TRAILER_ARGS+=("--where" "end" "--if-exists" "add"
                            "--trailer" "${arg#--trailer=}")
             ;;
+        --reorder)
+            DO_REORDER=true
+            ;;
         --stgit)
             USE_STGIT=true
             ;;
@@ -481,9 +557,16 @@ if [[ "${USE_STGIT}" == "true" ]]; then
         PATCH_TRAILER_ARGS=()
         add_guess_fixes "${rev}"
 
+        local sorted
+        if [[ -n "${DO_REORDER}" ]]; then
+            sorted="rank_commit_lines ${rev}"
+        else
+            sorted="cat"
+        fi
         ${DRYRUN} stg edit -m "$(git log -1 --format='%B' "${rev}" | \
                                git interpret-trailers "${TRAILER_ARGS[@]}" \
-                                                      "${PATCH_TRAILER_ARGS[@]}")" "${p}" ||
+                                   "${PATCH_TRAILER_ARGS[@]}" | \
+                                   ${sorted})" "${p}" ||
             exit $?
     }
 
@@ -539,9 +622,16 @@ else
         verbose "Processing ${rev}"
         PATCH_TRAILER_ARGS=()
         add_guess_fixes "${rev}"
+
+        if [[ -n "${DO_REORDER}" ]]; then
+            sorted="rank_commit_lines ${rev}"
+        else
+            sorted="cat"
+        fi
+
         ${DRYRUN} git commit --amend -m "$(git log -1 --format='%B' "${rev}" | \
                                git interpret-trailers "${TRAILER_ARGS[@]}" \
-                                                      "${PATCH_TRAILER_ARGS[@]}")" ||
+                                   "${PATCH_TRAILER_ARGS[@]}" | ${sorted})" ||
             exit $?
         lastrev="${rev}"
     done
