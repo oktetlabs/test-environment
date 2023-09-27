@@ -28,11 +28,17 @@ def parse_cli_args():
 
     return args
 
+def empty_if_none(val):
+    """Replace None with empty string."""
+    if val is None:
+        return ""
+    return val
+
 def process_cmds(cmds):
     """Process add/set commands, return metadata structure."""
     meta_data = { "version" : 2, "metas" : {} }
 
-    cmd_re = re.compile("^([^ ]+) ([^ ]+)( (.+?))?\n?$")
+    cmd_re = re.compile("^([^ ]+) ([^\n ]+)( ([^\n]+))?")
     for line in cmds:
         parsed = cmd_re.match(line)
         if not parsed:
@@ -42,8 +48,9 @@ def process_cmds(cmds):
         name = parsed.group(2)
 
         if op == "set_val":
-            meta_data["metas"][name] = { "value": parsed.group(4) }
-        elif op == "add_val":
+            meta_data["metas"][name] = {
+                        "value": empty_if_none(parsed.group(4)) }
+        elif op == "add_val" and parsed.group(4):
             if name not in meta_data["metas"]:
                 meta_data["metas"][name] = { "value": [] }
 
@@ -55,7 +62,7 @@ def process_cmds(cmds):
                     var["value"] += [ cur_val ]
 
             var["value"] += [ parsed.group(4) ]
-        elif op == "set_type":
+        elif op == "set_type" and parsed.group(4):
             if name not in meta_data["metas"]:
                 meta_data["metas"][name] = { "value": None }
 
