@@ -360,7 +360,7 @@ for arg; do
                 exit $?
             ;;
         -s | --signoff)
-            TRAILER_ARGS+=("--where" "end" "--if-exists" "replace"
+            TRAILER_ARGS+=("--where" "end" "--if-exists" "addIfDifferent"
                            "--trailer" "Signed-off-by=$(this_user)") ||
                 exit $?
             ;;
