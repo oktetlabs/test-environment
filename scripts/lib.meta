@@ -134,7 +134,19 @@ te_meta_set_git() {
     local prefix="$2"
     local rev_prefix="$3"
 
+    # Do nothing if no repository is provided
+    if [[ -z "${repo_dir}" ]] ; then
+        return
+    fi
+
     pushd "${repo_dir}" >/dev/null
+
+    git_tree="$(git rev-parse --is-inside-work-tree 2>/dev/null)"
+    if [[ "${git_tree}" != "true" ]] ; then
+        echo "${prefix}: ${repo_dir} is not a git repository" >&2
+        popd >/dev/null
+        return
+    fi
 
     git_url="$(git config --get remote.origin.url)"
     git_branch="$(git branch --show-current)"
