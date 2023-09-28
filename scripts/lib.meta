@@ -80,6 +80,22 @@ te_meta_set() {
 }
 
 ##########################################################################
+# Specify a single value for a meta variable; do nothing is the value
+# is empty string.
+# Arguments:
+#   Variable name.
+#   Variable value.
+##########################################################################
+te_meta_set_no_empty() {
+    local name="$1"
+    local value="$2"
+
+    if [[ -n "${value}" ]] ; then
+        te_write_meta_cmd "set_val ${name} ${value}"
+    fi
+}
+
+##########################################################################
 # Add a value for a variable which can have multiple values.
 # Arguments:
 #   Variable name.
