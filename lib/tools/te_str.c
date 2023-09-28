@@ -254,6 +254,21 @@ te_str_strip_spaces(const char *str)
     return res;
 }
 
+/* See description in te_str.h */
+size_t
+te_str_common_prefix(const char *str1, const char *str2)
+{
+    size_t prefix_len = 0;
+
+    if (str1 == NULL || str2 == NULL)
+        return 0;
+
+    for (; *str1 == *str2 && *str1 != '\0' && *str2 != '\0'; str1++, str2++)
+        prefix_len++;
+
+    return prefix_len;
+}
+
 te_errno
 te_strpbrk_balanced(const char *str, char opening, char closing,
                     char escape, const char *seps,

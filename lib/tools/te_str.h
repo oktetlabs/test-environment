@@ -265,6 +265,20 @@ te_str_strip_prefix(const char *str, const char *prefix)
 }
 
 /**
+ * Return the longest common prefix of @p str1 and @p str2.
+ *
+ * Terminating zeroes are never considered part of the prefix.
+ * If any of the strings is @c NULL, the prefix is considered
+ * to be zero.
+ *
+ * @param str1   First string.
+ * @param str2   Second string.
+ *
+ * @return Common prefix length.
+ */
+extern size_t te_str_common_prefix(const char *str1, const char *str2);
+
+/**
  * Search for the leftmost char from @p seps outside balanced parentheses.
  *
  * The function scans characters starting from @p str searching for any char
