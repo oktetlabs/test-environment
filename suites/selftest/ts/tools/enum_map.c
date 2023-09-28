@@ -56,6 +56,84 @@ unknown_action(unsigned int i)
     return TE_ENOENT;
 }
 
+static void
+check_prefix_strip(void)
+{
+    static const te_enum_map mapping[] = {
+        {.name = "ERROR", .value = 1},
+        {.name = "WARNING", .value = 2},
+        {.name = "NOTE", .value = 3},
+        {.name = "NOTICE", .value = 4},
+        {.name = "TRACE", .value = 5},
+        {.name = "TRACEALL", .value = 6},
+        TE_ENUM_MAP_END
+    };
+
+    static const struct {
+        const char *input;
+        te_bool exact_match;
+        const char *expected;
+        int exp_val;
+    } tests[] = {
+        {NULL, TRUE, NULL, -1},
+        {NULL, FALSE, NULL, -1},
+        {"", TRUE, "", -1},
+        {"", FALSE, "", -1},
+        {"ERROR", TRUE, "", 1},
+        {"ERROR", FALSE, "", 1},
+        {"ERR", TRUE, "ERR", -1},
+        {"ERR", FALSE, "", 1},
+        {"WARNING:", TRUE, ":", 2},
+        {"WARN", FALSE, "", 2},
+        {"NOTE", TRUE, "", 3},
+        {"NOTICE", TRUE, "", 4},
+        {"NOT", TRUE, "NOT", -1},
+        {"NOT", FALSE, "", 3},
+        {"NOTI", FALSE, "", 4},
+        {"TRACE0", TRUE, "0", 5},
+        {"TRACEA", TRUE, "A", 5},
+        {"TRACEALL", TRUE, "", 6},
+        {"TRACE", FALSE, "", 5},
+        {"TRACEA", FALSE, "", 6},
+    };
+    unsigned int i;
+
+    for (i = 0; i < TE_ARRAY_LEN(tests); i++)
+    {
+        char *next = NULL;
+        int val = te_enum_parse_longest_match(mapping, -1,
+                                              tests[i].exact_match,
+                                              tests[i].input,
+                                              &next);
+
+        if (tests[i].expected == NULL)
+        {
+            if (next != NULL)
+                TEST_VERDICT("Non-NULL output for NULL input");
+        }
+        else
+        {
+            if (next == NULL)
+                TEST_VERDICT("NULL output for non-NULL input");
+
+            if (strcmp(next, tests[i].expected) != 0)
+            {
+                ERROR("Expected '%s' for '%s', got '%s'",
+                      tests[i].expected, tests[i].input, next);
+                TEST_VERDICT("Unexpected string tail");
+            }
+        }
+
+        if (val != tests[i].exp_val)
+        {
+            ERROR("Expected %d for '%s', got %d",
+                  tests[i].exp_val, te_str_empty_if_null(tests[i].input),
+                  val);
+            TEST_VERDICT("Unexpected mapped value");
+        }
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -120,6 +198,9 @@ main(int argc, char **argv)
     TEST_STEP("Checking mapping of non-existing values");
     if (te_enum_map_from_any_value(mapping, -1, NULL) != NULL)
         TEST_VERDICT("Non-existing value reported as found");
+
+    TEST_STEP("Checking longest prefix stripping");
+    check_prefix_strip();
 
     TEST_STEP("Check dynamic map generation");
     te_enum_map_fill_by_conversion(dynamic_map, RPC_SIGHUP, RPC_SIGUNKNOWN,

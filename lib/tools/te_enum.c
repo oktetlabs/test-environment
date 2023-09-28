@@ -13,6 +13,7 @@
 
 #include "te_defs.h"
 #include "te_enum.h"
+#include "te_str.h"
 
 int
 te_enum_map_from_str(const te_enum_map map[], const char *name,
@@ -36,6 +37,49 @@ te_enum_map_from_any_value(const te_enum_map map[], int value,
             return map->name;
     }
     return unknown;
+}
+
+int
+te_enum_parse_longest_match(const te_enum_map map[], int defval,
+                            te_bool exact_match, const char *str, char **next)
+{
+    int result = defval;
+    size_t max_len = 0;
+
+    if (str == NULL)
+    {
+        *next = NULL;
+        return defval;
+    }
+
+    for (; map->name != NULL; map++)
+    {
+        size_t cur_len;
+
+        if (!exact_match)
+            cur_len = te_str_common_prefix(map->name, str);
+        else
+        {
+            cur_len = strlen(map->name);
+            if (strncmp(str, map->name, cur_len) != 0)
+                cur_len = 0;
+        }
+
+        if (cur_len > max_len)
+        {
+            result = map->value;
+            max_len = cur_len;
+        }
+    }
+
+    /*
+     * Here is the same problem of const/non-const output
+     * pointers as with standard strtol() and similiar functions.
+     */
+    if (next != NULL)
+        *next = TE_CONST_PTR_CAST(char, str + max_len);
+
+    return result;
 }
 
 void

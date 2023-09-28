@@ -88,6 +88,42 @@ check_string_equality(void)
     }
 }
 
+static void
+check_common_prefix(void)
+{
+    static struct {
+        const char *str1;
+        const char *str2;
+        size_t exp_prefix;
+    } tests[] = {
+        {NULL, NULL, 0},
+        {NULL, "a", 0},
+        {"a", NULL, 0},
+        {"", "", 0},
+        {"", "abc", 0},
+        {"abc", "", 0},
+        {"abc", "abc", 3},
+        {"a", "abc", 1},
+        {"abc", "def", 0},
+        {"abcd", "abce", 3}
+    };
+    unsigned int i;
+
+    for (i = 0; i < TE_ARRAY_LEN(tests); i++)
+    {
+        size_t prefix = te_str_common_prefix(tests[i].str1, tests[i].str2);
+
+        if (prefix != tests[i].exp_prefix)
+        {
+            ERROR("Common prefix length for '%s' and '%s' should be %zu, "
+                  "but got %zu", te_str_empty_if_null(tests[i].str1),
+                  te_str_empty_if_null(tests[i].str2), tests[i].exp_prefix,
+                  prefix);
+            TEST_VERDICT("Common prefix improperly calculated");
+        }
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -119,6 +155,9 @@ main(int argc, char **argv)
 
     TEST_STEP("Checking string equality w/o spaces");
     check_string_equality();
+
+    TEST_STEP("Checking common prefix");
+    check_common_prefix();
 
     TEST_SUCCESS;
 

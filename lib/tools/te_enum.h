@@ -91,6 +91,83 @@ te_enum_map_from_value(const te_enum_map map[], int value)
 }
 
 /**
+ * Parse the longest label from @p map at the start of @p str.
+ *
+ * If @p exact_match is @c TRUE, @p str must start
+ * with one of the labels from @p map. If there are several
+ * candidate labels, the longest one is chosen.
+ *
+ * If @p exact_match is @c FALSE, @p str must have
+ * a non-empty common prefix with one of the labels
+ * from @p map. If there are several such labels,
+ * the one with the longest common prefix is chosen
+ * (i.e. in this case the length of the label does not
+ * matter as such).
+ *
+ * If there are multiple matches of the same length, the first one is
+ * chosen.
+ *
+ * If a match is found, a corresponding value from @p map is
+ * returned and if @p next is not @c NULL, it is set to point to
+ * the rest of @p str.
+ *
+ * If no match is found, @p defval is returned and @p next would
+ * contain unchanged @p str.
+ *
+ * For example:
+ *
+ * @code
+ * static const te_enum_map map[] = {
+ *     { "ERROR", LEVEL_ERROR },
+ *     { "WARNING", LEVEL_WARNING },
+ *     TE_ENUM_MAP_END
+ * };
+ * ...
+ * val = te_enum_parse_longest_match(map, -1, FALSE, "ERR message", &next);
+ * // val is LEVEL_ERROR, next is " message"
+ * // "ERR" and "ERROR" have a 3-character common prefix
+ *
+ * val = te_enum_parse_longest_match(map, -1, TRUE, "ERR message", &next);
+ * // exact match is required, but "ERR message" does not start
+ * // with any of labels in map, val is -1, next is "ERR message"
+ *
+ * val = te_enum_parse_longest_match(map, -1, FALSE, "WARN", &next);
+ * // val is LEVEL_WARNING, next is ""
+ *
+ * val = te_enum_parse_longest_match(map, -1, FALSE, "INFO", &next);
+ * // even though match is not exact, there is no label in map
+ * // that would have a non-empty common prefix with "INFO",
+ * // so val is -1, next is "INFO"
+ * @endcode
+ *
+ * This function may be used on non-zero terminated byte arrays,
+ * if it can be ensured there are always valid characters after
+ * the prefix:
+ *
+ * @code
+ * char bytes[13] = "ERROR message"; // no terminating zero
+ * te_enum_parse_longest_match(map, -1, FALSE, bytes, &next);
+ * // ok, we know there are valid characters after the label
+ *
+ * char bytes[3] = "ERR"; // no terminating zero
+ * te_enum_parse_longest_match(map, -1, FALSE, bytes, &next);
+ * // not ok: the function will look past the last valid character
+ * @endcode
+ *
+ * @param[in]  map           Mapping.
+ * @param[in]  defval        Default return value.
+ * @param[in]  exact_match   If @c TRUE, prefixes of map labels are matched.
+ * @param[in]  str           Input string.
+ * @param[out] next          If not @c NULL, the rest of @p str is
+ *                           stored here.
+ *
+ * @return A corresponding enum value from @p map or @p defval.
+ */
+extern int te_enum_parse_longest_match(const te_enum_map map[], int defval,
+                                       te_bool exact_match, const char *str,
+                                       char **next);
+
+/**
  * Fill in an enum mapping array based on the mapping function.
  *
  * The purpose of the function is to bridge te_enum API and pre-existing
