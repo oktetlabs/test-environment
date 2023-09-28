@@ -16,6 +16,10 @@
 #include "config.h"
 #endif
 
+#if HAVE_DIRENT_H
+#include <dirent.h>
+#endif
+
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -86,13 +90,17 @@ typedef te_bool (*include_callback_func)(const char *name, void *data);
  *                          returns @c TRUE.
  * @param callback_data     Pointer which should be passed
  *                          to the callback as the second argument.
+ * @param compar            Comparison function for sorting directory
+ *                          entries (may be @c NULL).
  *
  * @return Status code.
  */
 extern te_errno get_dir_list(const char *path, char *buffer, size_t length,
                              te_bool ignore_absence,
                              include_callback_func include_callback,
-                             void *callback_data);
+                             void *callback_data,
+                             int (*compar)(const struct dirent **,
+                                           const struct dirent **));
 
 /**
  * Replace the given string by another string given

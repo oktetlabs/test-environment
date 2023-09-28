@@ -509,7 +509,7 @@ get_module_subdir_list(const char *module_name, char *buf, size_t len,
         goto cleanup;
 
     rc = get_dir_list(path_str.ptr, buf, len, TRUE,
-                      include_cb, cb_data);
+                      include_cb, cb_data, NULL);
 
 cleanup:
 

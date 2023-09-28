@@ -2267,7 +2267,8 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    rc = get_dir_list(buf.ptr, net_list, RCF_MAX_VAL, TRUE, NULL, NULL);
+    rc = get_dir_list(buf.ptr, net_list, RCF_MAX_VAL, TRUE, NULL, NULL,
+                      alphasort);
     te_string_reset(&buf);
     if (rc != 0)
     {

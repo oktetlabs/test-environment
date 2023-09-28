@@ -316,7 +316,8 @@ sys_if_dir_list(const char *oid, const char *prefix, const char *sub_id,
         return rc;
 
     rc = get_dir_list(path, buf, sizeof(buf), TRUE,
-                      &sys_if_list_include_callback, (void *)prefix_ext.ptr);
+                      &sys_if_list_include_callback, (void *)prefix_ext.ptr,
+                      NULL);
     te_string_free(&prefix_ext);
     if (rc != 0)
         return rc;

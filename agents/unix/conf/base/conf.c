@@ -1751,7 +1751,9 @@ te_errno
 get_dir_list(const char *path, char *buffer, size_t length,
              te_bool ignore_absence,
              include_callback_func include_callback,
-             void *callback_data)
+             void *callback_data,
+             int (*compar)(const struct dirent **,
+                           const struct dirent **))
 {
     struct dirent  **namelist = NULL;
     struct dirent   *de = NULL;
@@ -1763,7 +1765,7 @@ get_dir_list(const char *path, char *buffer, size_t length,
 
     buffer[0] = '\0';
 
-    n = scandir(path, &namelist, NULL, NULL);
+    n = scandir(path, &namelist, NULL, compar);
     if (n < 0)
     {
         if (errno == ENOENT && ignore_absence)

@@ -715,7 +715,7 @@ netns_list(unsigned int gid, const char *oid,
     UNUSED(ns);
 
     rc = get_dir_list(NETNS_FDS_DIR, list_buf, sizeof(list_buf), TRUE,
-                      &netns_check_rsrc_cb, NULL);
+                      &netns_check_rsrc_cb, NULL, NULL);
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)

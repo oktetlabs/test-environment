@@ -62,7 +62,7 @@ block_dev_list(unsigned int gid, const char *oid,
     {
         te_errno rc;
         rc = get_dir_list("/sys/block", buf, sizeof(buf), FALSE,
-                          &ta_block_is_mine, NULL);
+                          &ta_block_is_mine, NULL, NULL);
         if (rc != 0)
             return rc;
     }
