@@ -36,18 +36,26 @@ extern "C" {
  * @exception TE_FATAL_ERROR in an unlikely case of a memory allocation
  *            failure.
  *
- * @note Unlike system malloc(), this function does not permit allocating
- *       zero-sized memory blocks.
+ * @note On requesting zero bytes, the function actually returns a 1-byte
+ *       buffer capturing ISO C permitted behaviour of recent glibc.
  */
 extern void *te_alloc_internal(size_t size, const char *filename, int line);
 
 
 /**
- * A wrapper for te_alloc_internal() tracking source location.
+ * Allocate @p size_ bytes and fill allocated memory with zeroes.
  *
- * @param _size     Number of bytes to allocate
+ * @param size_     Number of bytes to allocate.
+ *
+ * @return A pointer to a fresh memory block (never @c NULL).
+ *
+ * @exception TE_FATAL_ERROR in an unlikely case of a memory allocation
+ *            failure.
+ *
+ * @note On requesting zero bytes, the macro actually returns a 1-byte
+ *       buffer capturing ISO C permitted behaviour of recent glibc.
  */
-#define TE_ALLOC(_size) (te_alloc_internal((_size), __FILE__, __LINE__))
+#define TE_ALLOC(size_) (te_alloc_internal((size_), __FILE__, __LINE__))
 
 #ifdef __cplusplus
 } /* extern "C" */
