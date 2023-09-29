@@ -1271,6 +1271,7 @@ ftp_ls(tapi_storage_client  *client,
     {
         /* It is a file. */
         SLIST_INIT(files);
+        f = TE_ALLOC(sizeof(*f));
         f->file.type = file.type;
         f->file.pathname = file.pathname;
         SLIST_INSERT_HEAD(files, f, next);
