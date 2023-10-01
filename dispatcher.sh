@@ -52,10 +52,52 @@ for arg in "$@" ; do
     fi
 done
 
+TE_META_FINISHED=false
+
+#####################################################
+# Finish metadata file.
+# Arguments:
+#   Status (0 - success, nonzero - failure; if the
+#   function is called as a trap, status is "trap").
+# Globals:
+#   TE_META_FINISHED
+#####################################################
+finish_metadata() {
+    local exit_code="$?"
+    local status="$1"
+    local ok
+
+    if [[ "${TE_RUN_META}" != "yes" \
+          || "${TE_META_FINISHED}" = "true" ]] ; then
+        return
+    fi
+
+    if [[ "${status}" = "trap" ]] ; then
+        ok="${exit_code}"
+    else
+        ok="${status}"
+    fi
+
+    if [[ "${ok}" != "0" ]] ; then
+        te_meta_set RUN_STATUS ERROR
+    else
+        te_meta_set RUN_STATUS DONE
+        te_meta_set RUN_OK true
+    fi
+
+    te_meta_set_ts FINISH_TIMESTAMP
+
+    te_meta_export
+    te_meta_end
+    TE_META_FINISHED=true
+}
+
 # Generate initial testing metadata file as soon as possible.
 if [[ "${TE_RUN_META}" = "yes" ]] ; then
     # Include functions for metadata generation
     . "${TE_BASE}/scripts/lib.meta"
+
+    TE_META_FILE="${TE_META_FILE:-${TE_RUN_DIR}/te_run_meta.json}"
 
     te_meta_set_ts START_TIMESTAMP
     if [[ -n "${TE_META_START_TS}" ]] ; then
@@ -87,6 +129,8 @@ if [[ "${TE_RUN_META}" = "yes" ]] ; then
     fi
 
     te_meta_export
+
+    trap "finish_metadata trap" EXIT ERR
 fi
 
 usage()
@@ -390,6 +434,7 @@ EOF
 
 exit_with_log()
 {
+    finish_metadata 1
     rm -rf "${TE_TMP}"
     cd "${TE_RUN_DIR}"
     exit 1
@@ -1416,19 +1461,8 @@ if test ${START_OK} -ne 1 ; then
     fi
 fi
 
-if [[ "${TE_RUN_META}" = "yes" ]] ; then
-    if [[ "${START_OK}" != "0" ]] ; then
-        te_meta_set RUN_STATUS ERROR
-    else
-        te_meta_set RUN_STATUS DONE
-        te_meta_set RUN_OK true
-    fi
-
-    te_meta_set_ts FINISH_TIMESTAMP
-
-    te_meta_export
-    te_meta_end
-fi
+# Note: this should be called before TE_TMP is removed.
+finish_metadata "${START_OK}"
 
 test -n "${SHUTDOWN}" && rm -rf "${TE_TMP}"
 
