@@ -1,0 +1,149 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
+#
+# This script is used for publishing testing logs in
+# Bublik web application.
+
+set -e
+
+#####################################################################
+# Print error message and exit.
+# Arguments:
+#   All arguments are passed to "echo".
+#####################################################################
+error() {
+    echo "${0}:" "$@" >&2
+    exit 1
+}
+
+#####################################################################
+# Perform cleanup when the script terminates.
+# Globals:
+#   tar_dir
+#####################################################################
+cleanup() {
+    if [[ -n "${tar_dir}" ]] ; then
+        rm -r "${tar_dir}"
+        tar_dir=
+    fi
+}
+
+
+#####################################################################
+# Print usage information.
+#####################################################################
+usage() {
+cat <<EOF
+Create logs archive and publish it to Bublik web application.
+Usage: publish_logs [<options>]
+  --script=<path>       Script to call on logs archive.
+  --meta=<path>         Testing metadata.
+  --bundle=<path>       Raw log bundle.
+  --raw=<path>          Raw log.
+  -h, --help            Show help message and exit.
+
+All the other options will be passed to raw-log-bundle-create
+if no bundle is specified and it should be generated.
+EOF
+}
+
+#####################################################################
+# Process command line options.
+# Arguments:
+#   All arguments passed to the script.
+# Globals:
+#   script
+#   meta
+#   bundle
+#   raw_log
+#   bundle_opts
+#####################################################################
+process_opts() {
+    while [[ "$#" -gt 0 ]] ; do
+        case "$1" in
+            "") ;; # Ignore empty arguments
+
+            -h) ;&
+            --help) usage ; exit 0 ;;
+
+            --script=*) script="${1#--script=}" ;;
+
+            --meta=*) meta="${1#--meta=}" ;;
+
+            --bundle=*) bundle="${1#--bundle=}" ;;
+
+            --raw=*) raw_log="${1#--raw=}" ;;
+
+            *) bundle_opts+=("$1")
+        esac
+        shift 1
+    done
+}
+
+
+#####################################################################
+# Main function.
+# Arguments:
+#   All arguments passed to the script.
+# Globals:
+#   TE_TMP
+#   script
+#   meta
+#   bundle
+#   raw_log
+#   bundle_opts
+#   tar_dir
+#####################################################################
+main() {
+    local tmp_dir="${TE_TMP:-./}"
+    declare -a bundle_opts
+    readonly BUNDLE_NAME="raw_log_bundle.tpxz"
+    readonly META_NAME="meta_data.json"
+
+    tar_dir=
+    script=
+    meta=
+    bundle=
+    raw_log=
+
+    trap cleanup EXIT ERR
+
+    process_opts "$@"
+
+    if [[ -z "${script}" ]] ; then
+        error "Script for publishing logs is not specified"
+    fi
+    if [[ ! -x "${script}" ]] ; then
+        error "'${script}' cannot be executed"
+    fi
+
+    meta="${meta:-${PWD}/${META_NAME}}"
+    if [[ ! -f "${meta}" ]] ; then
+        error "Metadata file not found"
+    fi
+
+    raw_log="${raw_log:-${TE_LOG_RAW:-${PWD}/tmp_raw_log}}"
+
+    tar_dir="$(mktemp -d "${tmp_dir}/te_log_tar.XXXXX")"
+    ln -s "${meta}" "${tar_dir}/${META_NAME}"
+
+    if [[ ! -f "${bundle}" ]] ; then
+        if [[ ! -f "${raw_log}" ]] ; then
+            error "No raw log and no raw bundle"
+        fi
+
+        bundle="${tar_dir}/${BUNDLE_NAME}"
+        rgt-log-bundle-create --raw-log="${raw_log}" --bundle="${bundle}" \
+            "${bundle_opts[@]}"
+    else
+        ln -s "${bundle}" "${tar_dir}/${BUNDLE_NAME}"
+    fi
+
+    tar -cf "${tar_dir}/te_logs.tar" -C "${tar_dir}" --dereference \
+        "${META_NAME}" "${BUNDLE_NAME}"
+
+    "${script}" "${tar_dir}/te_logs.tar"
+}
+
+main "$@"

@@ -358,6 +358,8 @@ Generic options:
   --tce=<list>                  Do TCE processing for specific components (comma-separated) or 'all'
 
   --no-meta                     Do not generate testing metadata.
+  --publish=<script>            Use a given script to publish testing logs
+                                (metadata must be enabled to do this).
 
  --sniff-not-feed-conf          Do not feed the sniffer configuration file
                                 to Configurator.
@@ -539,6 +541,8 @@ RGT_LOG_HTML_PLAIN=
 RGT_LOG_HTML=
 # Name of the file with log in JUnit format to be generated
 RGT_LOG_JUNIT=
+# Path to logs publishing script
+TE_PUBLISH_SCRIPT=
 
 TE_TESTER_SCRIPTS=
 export TE_TA_LIST_FILE=ta.list
@@ -699,6 +703,10 @@ process_opts()
                   echo "  --no-meta option is passed not directly." >&2
               fi
               ;;
+
+            --publish=*)
+                  TE_PUBLISH_SCRIPT="${1#--publish=}"
+                  ;;
 
             --sniff-log-conv-disable) TE_SNIFF_LOG_CONV_DISABLE=true ;;
             --sniff-log-dir=*) TE_SNIFF_LOG_DIR="${1#--sniff-log-dir=}"
@@ -1463,6 +1471,17 @@ fi
 
 # Note: this should be called before TE_TMP is removed.
 finish_metadata "${START_OK}"
+
+if [[ -n "${TE_PUBLISH_SCRIPT}" ]] ; then
+    if [[ "${TE_RUN_META}" != "yes" ]] ; then
+        echo "Metadata must be enabled when publishing logs" >&2
+        START_OK=1
+    else
+        "${TE_BASE}/scripts/publish_logs" --raw="${TE_LOG_RAW}" \
+            --bundle="${TE_LOG_BUNDLE}" --meta="${TE_META_FILE}" \
+            --script="${TE_PUBLISH_SCRIPT}"
+    fi
+fi
 
 test -n "${SHUTDOWN}" && rm -rf "${TE_TMP}"
 
