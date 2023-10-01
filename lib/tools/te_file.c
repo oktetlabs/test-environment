@@ -59,27 +59,13 @@ te_readlink_fmt(const char *path_fmt, ...)
     va_list ap;
     te_string path = TE_STRING_INIT;
     te_dbuf linkbuf = TE_DBUF_INIT(100);
-    te_errno rc;
     te_bool resolved = FALSE;
-#define CHECK_ERR(_msg)                         \
-    do {                                        \
-        if (TE_RC_GET_ERROR(rc) != 0)           \
-        {                                       \
-            ERROR("%s(): " _msg ": %r",         \
-                  __FUNCTION__, rc);            \
-            te_string_free(&path);              \
-            te_dbuf_free(&linkbuf);             \
-            return NULL;                        \
-        }                                       \
-    } while(0)
 
     va_start(ap, path_fmt);
-    rc = te_string_append_va(&path, path_fmt, ap);
+    te_string_append_va(&path, path_fmt, ap);
     va_end(ap);
-    CHECK_ERR("cannot format the path");
 
-    rc = te_dbuf_append(&linkbuf, NULL, path.len + 1);
-    CHECK_ERR("cannot allocate link contents buffer");
+    te_dbuf_append(&linkbuf, NULL, path.len + 1);
 
     while (!resolved)
     {
@@ -101,14 +87,12 @@ te_readlink_fmt(const char *path_fmt, ...)
         }
         else
         {
-            rc = te_dbuf_append(&linkbuf, NULL, linkbuf.len);
-            CHECK_ERR("cannot extend link contents buffer");
+            te_dbuf_append(&linkbuf, NULL, linkbuf.len);
         }
     }
 
     te_string_free(&path);
     return (char *)linkbuf.ptr;
-#undef CHECK_ERR
 }
 
 /* See description in te_file.h */
@@ -158,30 +142,22 @@ te_file_create_unique_fd_va(char **filename, const char *prefix_format,
                             const char *suffix, va_list ap)
 {
     int fd;
-    te_errno rc;
     te_string file = TE_STRING_INIT;
     int suffix_len;
 
     assert(filename != NULL);
 
-    rc = te_string_append_va(&file, prefix_format, ap);
-    if (rc != 0)
-        return -1;
+    te_string_append_va(&file, prefix_format, ap);
 
     if (suffix == NULL)
     {
-        rc = te_string_append(&file, "%s", "XXXXXX");
+        te_string_append(&file, "%s", "XXXXXX");
         suffix_len = 0;
     }
     else
     {
-        rc = te_string_append(&file, "%s%s", "XXXXXX", suffix);
+        te_string_append(&file, "%s%s", "XXXXXX", suffix);
         suffix_len = strlen(suffix);
-    }
-    if (rc != 0)
-    {
-        te_string_free(&file);
-        return -1;
     }
 
     fd = mkstemps(file.ptr, suffix_len);
@@ -260,20 +236,12 @@ FILE *
 te_fopen_fmt(const char *mode, const char *path_fmt, ...)
 {
     te_string path = TE_STRING_INIT;
-    te_errno rc;
     va_list ap;
     FILE *f;
 
     va_start(ap, path_fmt);
-    rc = te_string_append_va(&path, path_fmt, ap);
+    te_string_append_va(&path, path_fmt, ap);
     va_end(ap);
-    if (rc != 0)
-    {
-        ERROR("%s(): te_string_append_va() failed to fill file path, rc=%r",
-              __FUNCTION__, rc);
-        te_string_free(&path);
-        return NULL;
-    }
 
     f = fopen(path.ptr, mode);
     if (f == NULL)
@@ -312,12 +280,8 @@ te_file_resolve_pathname_vec(const char *filename, const te_vec *pathvec,
 
         TE_VEC_FOREACH(pathvec, dir)
         {
-            rc = te_string_append(&fullpath, "%s/%s", *dir, filename);
-            if (rc != 0)
-            {
-                te_string_free(&fullpath);
-                return rc;
-            }
+            te_string_append(&fullpath, "%s/%s", *dir, filename);
+
             if (!access(fullpath.ptr, mode))
             {
                 if (resolved != NULL)
@@ -370,12 +334,7 @@ te_file_resolve_pathname(const char *filename, const char *path,
         }
     }
 
-    rc = te_vec_split_string(path, &pathvec, ':', TRUE);
-    if (rc != 0)
-    {
-        te_vec_deep_free(&pathvec);
-        return rc;
-    }
+    te_vec_split_string(path, &pathvec, ':', TRUE);
 
     rc = te_file_resolve_pathname_vec(filename, &pathvec, mode, resolved);
     te_vec_deep_free(&pathvec);

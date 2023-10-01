@@ -46,19 +46,14 @@ te_vec_append_str_fmt(te_vec *vec, const char *fmt, ...)
 {
     te_string opt = TE_STRING_INIT;
     va_list  ap;
-    te_errno rc;
 
     va_start(ap, fmt);
-    rc = te_string_append_va(&opt, fmt, ap);
+    te_string_append_va(&opt, fmt, ap);
     va_end(ap);
 
-    if (rc == 0)
-        rc = TE_VEC_APPEND(vec, opt.ptr);
+    TE_VEC_APPEND(vec, opt.ptr);
 
-    if (rc != 0)
-        te_string_free(&opt);
-
-    return rc;
+    return 0;
 }
 
 /* See the description in te_vector.h */
@@ -105,7 +100,6 @@ te_vec_deep_free(te_vec *args)
 te_errno
 te_vec_append_strarray(te_vec *vec, const char **elements)
 {
-    te_errno rc = 0;
     size_t   i;
 
     assert(vec != NULL);
@@ -114,14 +108,9 @@ te_vec_append_strarray(te_vec *vec, const char **elements)
     {
         char *tmp = TE_STRDUP(elements[i]);
 
-        rc = TE_VEC_APPEND(vec, tmp);
-        if (rc != 0)
-        {
-            free(tmp);
-            break;
-        }
+        TE_VEC_APPEND(vec, tmp);
     }
-    return rc;
+    return 0;
 }
 
 te_errno
@@ -138,7 +127,6 @@ te_vec_split_string(const char *str, te_vec *strvec, char sep,
 
     while (next != NULL)
     {
-        te_errno rc;
         char *dup;
 
         next = strchr(str, sep);
@@ -153,12 +141,7 @@ te_vec_split_string(const char *str, te_vec *strvec, char sep,
             dup[next - str] = '\0';
             str = next + 1;
         }
-        rc = TE_VEC_APPEND(strvec, dup);
-        if (rc != 0)
-        {
-            free(dup);
-            return rc;
-        }
+        TE_VEC_APPEND(strvec, dup);
     }
 
     return 0;

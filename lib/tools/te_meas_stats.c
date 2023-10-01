@@ -85,9 +85,8 @@ te_meas_stats_data_update(te_meas_stats_data_t *data, double new_datapoint)
  * @param summary       Pointer to te_meas_stats_summary_t structure
  * @param data          Pointer to te_meas_stats_data_t structure
  *
- * @return Status code.
  */
-static te_errno
+static void
 te_meas_stats_fill_summary_histogram(te_meas_stats_summary_t *summary,
                                      te_meas_stats_data_t *data)
 {
@@ -104,7 +103,6 @@ te_meas_stats_fill_summary_histogram(te_meas_stats_summary_t *summary,
     double bin_width;
     unsigned int i;
     double *val;
-    te_errno rc = 0;
 
     sample_size = data->num_datapoints;
 
@@ -190,8 +188,6 @@ te_meas_stats_fill_summary_histogram(te_meas_stats_summary_t *summary,
     summary->freq_size = freq_size;
 
     free(sorted_sample);
-
-    return rc;
 }
 
 /**
@@ -200,10 +196,8 @@ te_meas_stats_fill_summary_histogram(te_meas_stats_summary_t *summary,
  *
  * @param summary       Pointer to te_meas_stats_summary_t structure
  * @param data          Pointer to te_meas_stats_data_t structure
- *
- * @return Status code.
  */
-static te_errno
+static void
 te_meas_stats_fill_summary_sample_deviation(te_meas_stats_summary_t *summary,
                                             te_meas_stats_data_t *data)
 {
@@ -212,9 +206,7 @@ te_meas_stats_fill_summary_sample_deviation(te_meas_stats_summary_t *summary,
     unsigned int i;
     unsigned int j;
 
-    rc = te_meas_stats_init(&meas_stats, data->num_datapoints, 0, 0, 0, 0, 0);
-    if (rc != 0)
-        goto out;
+    te_meas_stats_init(&meas_stats, data->num_datapoints, 0, 0, 0, 0, 0);
 
     summary->sample_deviation = TE_ALLOC(data->num_datapoints *
                                          sizeof(*summary->sample_deviation));
@@ -246,7 +238,6 @@ te_meas_stats_fill_summary_sample_deviation(te_meas_stats_summary_t *summary,
 
 out:
     te_meas_stats_free(&meas_stats);
-    return rc;
 }
 
 /**
@@ -256,22 +247,13 @@ out:
  * @param summary       Pointer to te_meas_stats_summary_t structure
  * @param data          Pointer to te_meas_stats_data_t structure
  *
- * @return Status code.
  */
-static te_errno
+static void
 te_meas_stats_fill_summary(te_meas_stats_summary_t *summary,
                            te_meas_stats_data_t *data)
 {
-    int code;
-
-    if ((code = te_meas_stats_fill_summary_histogram(summary, data)) != 0)
-        return code;
-
-    if ((code = te_meas_stats_fill_summary_sample_deviation(summary, data))
-        != 0)
-        return code;
-
-    return 0;
+    te_meas_stats_fill_summary_histogram(summary, data);
+    te_meas_stats_fill_summary_sample_deviation(summary, data);
 }
 
 te_meas_stats_update_code
@@ -364,8 +346,8 @@ te_meas_stats_stab_init(te_meas_stats_stab_t *stab,
                             deviation_coeff :
                             TE_MEAS_STATS_DEFAULT_DEVIATION_COEFF;
 
-    return te_meas_stats_data_init(&stab->correct_data,
-                                   data->max_num_datapoints);
+    te_meas_stats_data_init(&stab->correct_data, data->max_num_datapoints);
+    return 0;
 }
 
 void
@@ -381,13 +363,9 @@ te_meas_stats_init(te_meas_stats_t *meas_stats,
                    unsigned int allowed_skips,
                    double deviation_coeff)
 {
-    te_errno rc;
-
     memset(meas_stats, 0, sizeof(*meas_stats));
 
-    rc = te_meas_stats_data_init(&meas_stats->data, max_num_datapoints);
-    if (rc != 0)
-        return rc;
+    te_meas_stats_data_init(&meas_stats->data, max_num_datapoints);
 
     meas_stats->stab_required = (flags & TE_MEAS_STATS_INIT_STAB_REQUIRED) != 0;
     meas_stats->summary_required = (flags &
@@ -397,11 +375,9 @@ te_meas_stats_init(te_meas_stats_t *meas_stats,
 
     if (meas_stats->stab_required)
     {
-        rc = te_meas_stats_stab_init(&meas_stats->stab, &meas_stats->data,
-                                     min_num_datapoints, req_cv, allowed_skips,
-                                     deviation_coeff);
-        if (rc != 0)
-            return rc;
+        te_meas_stats_stab_init(&meas_stats->stab, &meas_stats->data,
+                                min_num_datapoints, req_cv, allowed_skips,
+                                deviation_coeff);
     }
 
     return 0;
@@ -428,8 +404,7 @@ te_meas_stats_summary_free(te_meas_stats_summary_t *summary)
 te_meas_stats_update_code
 te_meas_stats_update(te_meas_stats_t *meas_stats, double new_datapoint)
 {
-    te_meas_stats_update_code code1;
-    te_errno code2;
+    te_meas_stats_update_code code;
 
     if (meas_stats->ignore_zeros && !meas_stats->nonzero_reached)
     {
@@ -444,27 +419,24 @@ te_meas_stats_update(te_meas_stats_t *meas_stats, double new_datapoint)
         }
     }
 
-    if ((code1 = te_meas_stats_data_update(&meas_stats->data, new_datapoint)) !=
-         TE_MEAS_STATS_UPDATE_SUCCESS)
+    if ((code = te_meas_stats_data_update(&meas_stats->data, new_datapoint)) !=
+        TE_MEAS_STATS_UPDATE_SUCCESS)
     {
-        return code1;
+        return code;
     }
 
     if (meas_stats->stab_required)
-        code1 = te_meas_stats_stab_update(&meas_stats->stab,
-                                          &meas_stats->data,
-                                          new_datapoint);
+        code = te_meas_stats_stab_update(&meas_stats->stab,
+                                         &meas_stats->data,
+                                         new_datapoint);
 
     if (meas_stats->summary_required &&
-        (code1 == TE_MEAS_STATS_UPDATE_STABLE ||
+        (code == TE_MEAS_STATS_UPDATE_STABLE ||
          (meas_stats->data.num_datapoints + meas_stats->num_zeros) ==
          meas_stats->data.max_num_datapoints))
     {
-        code2  = te_meas_stats_fill_summary(&meas_stats->summary,
-                                            &meas_stats->data);
-        if (code2 == TE_ENOMEM)
-            return TE_MEAS_STATS_UPDATE_NOMEM;
+        te_meas_stats_fill_summary(&meas_stats->summary, &meas_stats->data);
     }
 
-    return code1;
+    return code;
 }

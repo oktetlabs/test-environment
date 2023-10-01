@@ -86,14 +86,7 @@ printf_affinity(pid_t pid)
     for (i = 0; i < nproc; i++)
     {
         if(CPU_ISSET(i, &mask) != 0)
-        {
-            if (te_string_append(&cpu_list, "%d ", i) != 0)
-            {
-                WARN("Failed to generate cpu list");
-                te_rc = TE_EFAIL;
-                goto out;
-            }
-        }
+            te_string_append(&cpu_list, "%d ", i);
     }
 
     RING("pid %d's new affinity mask: %s", pid, cpu_list.ptr);

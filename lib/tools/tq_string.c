@@ -117,23 +117,18 @@ tq_strings_add_uniq_dup(tqh_strings *list, const char *value)
  *
  * @return Status code.
  */
-static te_errno
+static void
 tq_strings_copy_internal(tqh_strings *dst,
                          const tqh_strings *src,
                          te_bool is_shallow_copy)
 {
     tqe_string *str;
     tqe_string *str_aux;
-    te_errno rc;
 
     TAILQ_FOREACH_SAFE(str, src, links, str_aux)
     {
-        rc = tq_strings_add_uniq_gen(dst, str->v, !is_shallow_copy);
-        if (rc != 0)
-            return rc;
+        tq_strings_add_uniq_gen(dst, str->v, !is_shallow_copy);
     }
-
-    return 0;
 }
 
 /* See the description in tq_string.h */
@@ -158,7 +153,8 @@ te_errno
 tq_strings_copy(tqh_strings *dst,
                 const tqh_strings *src)
 {
-    return tq_strings_copy_internal(dst, src, FALSE);
+    tq_strings_copy_internal(dst, src, FALSE);
+    return 0;
 }
 
 /* See the description in tq_string.h */
@@ -166,5 +162,6 @@ te_errno
 tq_strings_shallow_copy(tqh_strings *dst,
                         const tqh_strings *src)
 {
-    return tq_strings_copy_internal(dst, src, TRUE);
+    tq_strings_copy_internal(dst, src, TRUE);
+    return 0;
 }

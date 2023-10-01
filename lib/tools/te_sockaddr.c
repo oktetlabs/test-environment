@@ -671,7 +671,7 @@ te_sockaddr2str_buf(const struct sockaddr *sa,
 
     if (sa == NULL)
     {
-        CHECK_NZ_RETURN(te_string_append(&str, "(nil)"));
+        te_string_append(&str, "(nil)");
         return 0;
     }
 
@@ -681,16 +681,12 @@ te_sockaddr2str_buf(const struct sockaddr *sa,
         {
             int i;
 
-            CHECK_NZ_RETURN(te_string_append(
-                              &str,
-                              "<Address family is AF_UNSPEC raw value="));
+            te_string_append(&str, "<Address family is AF_UNSPEC raw value=");
             for (i = 0; i < (int)sizeof(*sa); i++)
             {
-                CHECK_NZ_RETURN(te_string_append(
-                                    &str, "%2.2x",
-                                    *((uint8_t *)sa + i)));
+                te_string_append(&str, "%2.2x", *((uint8_t *)sa + i));
             }
-            CHECK_NZ_RETURN(te_string_append(&str, ">"));
+            te_string_append(&str, ">");
 
             return 0;
         }
@@ -703,7 +699,7 @@ te_sockaddr2str_buf(const struct sockaddr *sa,
 #ifdef AF_LOCAL
     if (sa->sa_family == AF_LOCAL)
     {
-        CHECK_NZ_RETURN(te_string_append(&str, "%s", SUN(sa)->sun_path));
+        te_string_append(&str, "%s", SUN(sa)->sun_path);
         return 0;
     }
 #endif
@@ -718,16 +714,12 @@ te_sockaddr2str_buf(const struct sockaddr *sa,
     {
         return TE_OS_RC(TE_TOOL_EXT, errno);
     }
-    CHECK_NZ_RETURN(te_string_append(&str, "%s:%hu",
-                                     addr_buf, ntohs(port)));
+    te_string_append(&str, "%s:%hu", addr_buf, ntohs(port));
 
     if (sa->sa_family == AF_INET6 &&
         IN6_IS_ADDR_LINKLOCAL(&SIN6(sa)->sin6_addr))
     {
-
-        CHECK_NZ_RETURN(te_string_append(
-                            &str, "<%u>",
-                            (unsigned)(SIN6(sa)->sin6_scope_id)));
+        te_string_append(&str, "<%u>", (unsigned)(SIN6(sa)->sin6_scope_id));
     }
 
     return 0;
@@ -950,7 +942,8 @@ te_ip_addr2te_str(te_string *str, const void *ip_addr, int af)
     if (result == NULL)
         return te_rc_os2te(errno);
 
-    return te_string_append(str, "%s", ip_addr_str);
+    te_string_append(str, "%s", ip_addr_str);
+    return 0;
 #undef MAX_STR_LEN
 }
 
@@ -959,10 +952,10 @@ te_errno
 te_mac_addr2te_str(te_string *str, const uint8_t *mac_addr)
 {
     if (mac_addr == NULL)
-        return te_string_append(str, "<NULL>");
-
-    return te_string_append(str, TE_PRINTF_MAC_FMT,
-                            TE_PRINTF_MAC_VAL(mac_addr));
+        te_string_append(str, "<NULL>");
+    else
+        te_string_append(str, TE_PRINTF_MAC_FMT, TE_PRINTF_MAC_VAL(mac_addr));
+    return 0;
 }
 
 /* See description in te_sockaddr.h */

@@ -220,7 +220,7 @@ extern te_errno te_ip_addr2te_str(te_string *str,
  * @param str       Pointer to the TE string
  * @param mac_addr  Pointer to the MAC address
  *
- * @return Status code.
+ * @return Status code (always 0).
  */
 extern te_errno te_mac_addr2te_str(te_string *str,
                                    const uint8_t *mac_addr);

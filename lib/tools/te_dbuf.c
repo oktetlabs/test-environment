@@ -21,10 +21,7 @@ te_dbuf_append(te_dbuf *dbuf, const void *data, size_t data_len)
     size_t   new_size;
 
     if ((dbuf->ptr == NULL && dbuf->size != 0) || dbuf->len > dbuf->size)
-    {
-        ERROR("Broken dynamic buffer");
-        return TE_EINVAL;
-    }
+        TE_FATAL_ERROR("Corrupted dynamic buffer");
 
     new_size = dbuf->len + data_len;
     if (new_size > dbuf->size)
@@ -47,10 +44,8 @@ te_dbuf_expand(te_dbuf *dbuf, size_t n)
     size_t   new_size;
 
     if ((dbuf->ptr == NULL && dbuf->size != 0) || dbuf->len > dbuf->size)
-    {
-        ERROR("Broken dynamic buffer");
-        return TE_EINVAL;
-    }
+        TE_FATAL_ERROR("Corrupted dynamic buffer");
+
     new_size = dbuf->size + n;
     TE_REALLOC(dbuf->ptr, new_size);
     dbuf->size = new_size;

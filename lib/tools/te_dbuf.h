@@ -96,7 +96,7 @@ te_dbuf_reset(te_dbuf *dbuf)
  *                      without placing any data.
  * @param data_len      Length of the data.
  *
- * @return Status code.
+ * @return Status code (always 0).
  *
  * @sa te_dbuf_free
  */
@@ -112,7 +112,7 @@ extern te_errno te_dbuf_append(te_dbuf    *dbuf,
  * @param dbuf      Dynamic buffer.
  * @param n         Number of bytes to add to the buffer size to expand it.
  *
- * @return Status code.
+ * @return Status code (always 0).
  */
 extern te_errno te_dbuf_expand(te_dbuf *dbuf, size_t n);
 

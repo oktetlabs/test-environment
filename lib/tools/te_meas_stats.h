@@ -246,7 +246,7 @@ te_meas_stats_value_deviation(double x, double y)
  * @param data                  Pointer to structure to initialize
  * @param max_num_datapoints    Maximum allowed datapoints
  *
- * @return      0 on success
+ * @return Always 0.
  */
 te_errno te_meas_stats_data_init(te_meas_stats_data_t *data,
                                  unsigned int max_num_datapoints);
@@ -271,7 +271,7 @@ void te_meas_stats_data_free(te_meas_stats_data_t *data);
  *                              corresponding field initialized with
  *                              TE_MEAS_STATS_DEFAULT_DEVIATION_COEFF
  *
- * @return      0 on success
+ * @return Always 0.
  */
 te_errno te_meas_stats_stab_init(te_meas_stats_stab_t *stab,
                                  te_meas_stats_data_t *data,
@@ -309,7 +309,7 @@ void te_meas_stats_stab_free(te_meas_stats_stab_t *stab);
  *                              without TE_MEAS_STATS_INIT_STAB_REQUIRED
  *                              flag specified
  *
- * @return      0 on success
+ * @return Always 0.
  */
 te_errno te_meas_stats_init(te_meas_stats_t *meas_stats,
                             unsigned int max_num_datapoints, int flags,

@@ -140,7 +140,6 @@ te_string_reserve(te_string *str, size_t size)
 te_errno
 te_string_append_va_chk(te_string *str, const char *fmt, va_list ap)
 {
-    te_errno rc;
     char    *s;
     size_t   rest;
     int      printed;
@@ -179,9 +178,7 @@ te_string_append_va_chk(te_string *str, const char *fmt, va_list ap)
             }
             else
             {
-                rc = te_string_reserve(str, str->len + printed + 1 /* '\0' */);
-                if (rc != 0)
-                    return rc;
+                te_string_reserve(str, str->len + printed + 1 /* '\0' */);
 
                 rest = str->size - str->len;
                 /* Print again */
@@ -252,25 +249,18 @@ te_string_append_shell_args_as_is(te_string *str, ...)
 {
     va_list args;
     const char *arg;
-    te_errno rc = 0;
 
     va_start(args, str);
     while ((arg = va_arg(args, const char *)) != NULL)
     {
         if (str->len != 0)
-        {
-            rc = te_string_append(str, " ");
-            if (rc != 0)
-                break;
-        }
+            te_string_append(str, " ");
 
-        rc = te_string_append_shell_arg_as_is(str, arg);
-        if (rc != 0)
-            break;
+        te_string_append_shell_arg_as_is(str, arg);
     }
     va_end(args);
 
-    return rc;
+    return 0;
 }
 
 static void
@@ -322,7 +312,6 @@ te_string_join_vec(te_string *str, const te_vec *strvec,
 {
     te_bool need_sep = FALSE;
     const char * const *item;
-    te_errno rc;
 
     TE_VEC_FOREACH(strvec, item)
     {
@@ -333,11 +322,7 @@ te_string_join_vec(te_string *str, const te_vec *strvec,
         if (*item == NULL)
             continue;
 
-        rc = te_string_append(str, "%s%s",
-                              need_sep ? sep : "",
-                              *item);
-        if (rc != 0)
-            return rc;
+        te_string_append(str, "%s%s", need_sep ? sep : "", *item);
         need_sep = TRUE;
     }
 
@@ -578,8 +563,7 @@ te_string_fmt_va(const char *fmt,
 {
     te_string str = TE_STRING_INIT;
 
-    if (te_string_append_va(&str, fmt, ap) != 0)
-        te_string_free(&str);
+    te_string_append_va(&str, fmt, ap);
 
     return str.ptr;
 }
@@ -724,7 +708,6 @@ te_substring_find(te_substring_t *substr, const char *str)
 te_errno
 te_substring_replace(te_substring_t *substr, const char *str)
 {
-    te_errno rc;
     te_string tail = TE_STRING_INIT;
 
     if (substr->start + substr->len > substr->base->len)
@@ -734,18 +717,11 @@ te_substring_replace(te_substring_t *substr, const char *str)
     }
 
     // TODO: Rewrite this using te_string_reserve, memmove and memcpy
-    rc = te_string_append(&tail, "%s",
-                          substr->base->ptr + substr->start + substr->len);
-    if (rc != 0)
-        return rc;
+    te_string_append(&tail, "%s",
+                     substr->base->ptr + substr->start + substr->len);
 
     te_string_cut(substr->base, substr->base->len - substr->start);
-    rc = te_string_append(substr->base, "%s%s", str, tail.ptr);
-    if (rc != 0)
-    {
-        te_string_free(&tail);
-        return rc;
-    }
+    te_string_append(substr->base, "%s%s", str, tail.ptr);
 
     substr->start += strlen(str);
     substr->len = 0;
@@ -767,22 +743,20 @@ te_substring_limit(te_substring_t *substr, const te_substring_t *limit)
     substr->len = limit->start - substr->start;
 }
 
-static te_errno
+static void
 replace_substring(te_substring_t *substr, const char *new,
                   const char *old)
 {
-    te_errno rc;
-
     te_substring_find(substr, old);
 
     if (!te_substring_is_valid(substr))
-        return 0;
+        return;
 
-    rc = te_substring_replace(substr, new);
-    if (rc != 0)
-        ERROR("Failed to replace '%s' to '%s'", new, old);
-
-    return rc;
+    /*
+     * No need to check for return code:
+     * substr is known to be valid.
+     */
+    te_substring_replace(substr, new);
 }
 
 te_errno
@@ -791,7 +765,8 @@ te_string_replace_substring(te_string *str, const char *new,
 {
     te_substring_t iter = TE_SUBSTRING_INIT(str);
 
-    return replace_substring(&iter, new, old);
+    replace_substring(&iter, new, old);
+    return 0;
 }
 
 te_errno
@@ -799,17 +774,14 @@ te_string_replace_all_substrings(te_string *str, const char *new,
                                  const char *old)
 {
     te_substring_t iter = TE_SUBSTRING_INIT(str);
-    te_errno rc = 0;
 
     while (1)
     {
-        rc = replace_substring(&iter, new, old);
-        if (rc != 0)
-            break;
+        replace_substring(&iter, new, old);
 
         if (!te_substring_is_valid(&iter))
             break;
     }
 
-    return rc;
+    return 0;
 }

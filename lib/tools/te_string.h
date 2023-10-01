@@ -470,7 +470,7 @@ extern te_errno te_string_decode_base64(te_string *str, const char *base64str);
  * @param fmt       Format string
  * @param ap        List of arguments
  *
- * @return string on which you can call free(), or @c NULL in case of error
+ * @return Heap-allocated string.
  */
 extern char *te_string_fmt_va(const char *fmt,
                               va_list     ap);
@@ -480,7 +480,7 @@ extern char *te_string_fmt_va(const char *fmt,
  * @param fmt       Format string
  * @param ...       Format string arguments
  *
- * @return string on which you can call free(), or @c NULL in case of error
+ * @return Heap-allocated string.
  */
 extern char *te_string_fmt(const char *fmt,
                            ...) __attribute__((format(printf, 1, 2)));
@@ -690,7 +690,8 @@ extern void te_substring_find(te_substring_t *substr, const char *str);
  * @param substr Substring
  * @param str    Replacement string
  *
- * @return Status code
+ * @return Status code.
+ * @retval TE_EINVAL  Substring position is out of bounds.
  */
 extern te_errno te_substring_replace(te_substring_t *substr,
                                      const char *str);
@@ -721,7 +722,7 @@ extern void te_substring_limit(te_substring_t *substr,
  * @param new The new substring to replace.
  * @param old The substring to be replaced.
  *
- * @return Status code
+ * @return Status code (always 0).
  */
 extern te_errno te_string_replace_all_substrings(te_string *str,
                                                  const char *new,
@@ -734,7 +735,7 @@ extern te_errno te_string_replace_all_substrings(te_string *str,
  * @param new The new substring to replace.
  * @param old The substring to be replaced.
  *
- * @return Status code
+ * @return Status code (always 0).
  */
 extern te_errno te_string_replace_substring(te_string *str,
                                             const char *new,

@@ -68,7 +68,7 @@ extern te_bool tq_strings_equal(const tqh_strings *s1,
  * @return
  *          0 if string was added
  *          1 if string was already presented
- *          error code if error occurred
+ * @bug The return type of the function is actually boolean.
  */
 extern te_errno tq_strings_add_uniq_gen(tqh_strings *list,
                                         const char *value,
@@ -84,7 +84,7 @@ extern te_errno tq_strings_add_uniq_gen(tqh_strings *list,
  * @return
  *          0 if string was added
  *          1 if string was already presented
- *          error code if error occurred
+ * @bug The return type of the function is actually boolean.
  */
 extern te_errno tq_strings_add_uniq(tqh_strings *list, const char *value);
 
@@ -98,7 +98,7 @@ extern te_errno tq_strings_add_uniq(tqh_strings *list, const char *value);
  * @return
  *          0 if string was added
  *          1 if string was already presented
- *          error code if error occurred
+ * @bug The return type of the function is actually boolean.
  */
 extern te_errno tq_strings_add_uniq_dup(tqh_strings *list,
                                         const char *value);

@@ -363,15 +363,14 @@ te_mi_kvpairs_str_append(const te_kvpair_h *pairs, const char *dict_name,
     te_json_add_kvpair(ctx, pairs);
 }
 
-static te_errno
+static void
 te_mi_meas_ref_str_append(const te_mi_meas_ref *ref,
                           te_json_ctx_t *ctx)
 {
     if (ref->meas == NULL)
     {
-        ERROR("%s(): measurement pointer is NULL in a reference",
-              __FUNCTION__);
-        return TE_EINVAL;
+        TE_FATAL_ERROR("%s(): measurement pointer is NULL in a reference",
+                       __FUNCTION__);
     }
 
     te_json_start_object(ctx);
@@ -385,16 +384,13 @@ te_mi_meas_ref_str_append(const te_mi_meas_ref *ref,
                              ref->aggr);
     }
     te_json_end(ctx);
-
-    return 0;
 }
 
-static te_errno
+static void
 te_mi_meas_view_line_graph_str_append(const te_mi_meas_view *view,
                                       te_json_ctx_t *ctx)
 {
     const te_mi_meas_view_line_graph *line_graph = NULL;
-    te_errno rc = 0;
     const te_mi_meas_ref *ref;
 
     line_graph = &view->data.line_graph;
@@ -408,9 +404,7 @@ te_mi_meas_view_line_graph_str_append(const te_mi_meas_view *view,
     }
     else
     {
-        rc = te_mi_meas_ref_str_append(&line_graph->axis_x, ctx);
-        if (rc != 0)
-            return rc;
+        te_mi_meas_ref_str_append(&line_graph->axis_x, ctx);
     }
 
     if (te_vec_size(&line_graph->axis_y) > 0)
@@ -420,36 +414,24 @@ te_mi_meas_view_line_graph_str_append(const te_mi_meas_view *view,
         te_json_start_array(ctx);
         TE_VEC_FOREACH(&line_graph->axis_y, ref)
         {
-            rc = te_mi_meas_ref_str_append(ref, ctx);
-            if (rc != 0)
-                return rc;
+            te_mi_meas_ref_str_append(ref, ctx);
         }
         te_json_end(ctx);
     }
-
-    return 0;
 }
 
-static te_errno
+static void
 te_mi_meas_view_point_str_append(const te_mi_meas_view *view,
                                  te_json_ctx_t *ctx)
 {
-    te_errno rc;
-
     te_json_add_key(ctx, "value");
-    rc = te_mi_meas_ref_str_append(&view->data.point.value, ctx);
-    if (rc != 0)
-        return rc;
-
-    return 0;
+    te_mi_meas_ref_str_append(&view->data.point.value, ctx);
 }
 
-static te_errno
+static void
 te_mi_meas_view_str_append(const te_mi_meas_view *view,
                            te_json_ctx_t *ctx)
 {
-    te_errno rc;
-
     te_json_start_object(ctx);
     te_json_add_key_str(ctx, "name", view->name);
     te_json_add_key_enum(ctx, meas_view_type_names, "type",
@@ -459,49 +441,37 @@ te_mi_meas_view_str_append(const te_mi_meas_view *view,
     switch (view->type)
     {
         case TE_MI_MEAS_VIEW_LINE_GRAPH:
-            rc = te_mi_meas_view_line_graph_str_append(view, ctx);
-            if (rc != 0)
-                return rc;
+            te_mi_meas_view_line_graph_str_append(view, ctx);
             break;
 
         case TE_MI_MEAS_VIEW_POINT:
-            rc = te_mi_meas_view_point_str_append(view, ctx);
-            if (rc != 0)
-                return rc;
+            te_mi_meas_view_point_str_append(view, ctx);
             break;
 
         default:
-            ERROR("%s(): not supported view type %d",
-                  __FUNCTION__, view->type);
-            return TE_EINVAL;
+            TE_FATAL_ERROR("%s(): not supported view type %d",
+                           __FUNCTION__, view->type);
     }
     te_json_end(ctx);
-
-    return 0;
 }
 
-static te_errno
+static void
 te_mi_meas_views_str_append(const te_mi_meas_view_h *views,
                             te_json_ctx_t *ctx)
 {
     const te_mi_meas_view *view;
-    te_errno rc;
 
     if (TAILQ_EMPTY(views))
-        return 0;
+        return;
 
     te_json_add_key(ctx, "views");
 
     te_json_start_array(ctx);
     TAILQ_FOREACH(view, views, next)
     {
-        rc = te_mi_meas_view_str_append(view, ctx);
-        if (rc != 0)
-            return rc;
+        te_mi_meas_view_str_append(view, ctx);
     }
     te_json_end(ctx);
-
-    return rc;
 }
 
 static char *
@@ -524,12 +494,7 @@ te_mi_logger_data2str(const te_mi_logger *logger)
 
     te_mi_kvpairs_str_append(&logger->comments, "comments", &ctx);
 
-    if (te_mi_meas_views_str_append(&logger->views, &ctx) != 0)
-    {
-        ERROR("Failed to convert logger data to string");
-        te_string_free(&str);
-        return NULL;
-    }
+    te_mi_meas_views_str_append(&logger->views, &ctx);
 
     te_json_end(&ctx);
     return str.ptr;
@@ -927,7 +892,6 @@ meas_view_add_meas_to_axis(te_mi_meas_view *view,
 {
     te_mi_meas_view_line_graph *line_graph = NULL;
     te_mi_meas_ref ref;
-    te_errno rc;
 
     if (view->type != TE_MI_MEAS_VIEW_LINE_GRAPH)
     {
@@ -959,13 +923,7 @@ meas_view_add_meas_to_axis(te_mi_meas_view *view,
             ref.meas = impl;
             ref.aggr = TE_MI_MEAS_AGGR_SV_UNSPECIFIED;
 
-            rc = TE_VEC_APPEND(&line_graph->axis_y, ref);
-            if (rc != 0)
-            {
-                ERROR("%s(): TE_VEC_APPEND() failed to add a "
-                      "measurement for axis Y", __FUNCTION__);
-                return rc;
-            }
+            TE_VEC_APPEND(&line_graph->axis_y, ref);
 
             break;
 
@@ -1188,8 +1146,6 @@ te_mi_logger_flush(te_mi_logger *logger)
         return 0;
 
     data = te_mi_logger_data2str(logger);
-    if (data == NULL)
-        return TE_ENOMEM;
 
     LGR_MESSAGE(TE_LL_MI | TE_LL_CONTROL, TE_LOG_ARTIFACT_USER, "%s", data);
     free(data);
@@ -1310,7 +1266,6 @@ te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
                       te_mi_meas_aggr aggr, double val,
                       te_mi_meas_multiplier multiplier)
 {
-    te_mi_meas_impl *meas_new = NULL;
     te_mi_meas_impl *meas;
     te_errno rc = 0;
 
@@ -1352,23 +1307,9 @@ te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
 
     meas = te_mi_meas_impl_find(&logger->meas_q, type, name);
     if (meas == NULL)
-    {
-        meas_new = meas = te_mi_meas_impl_add(&logger->meas_q, type, name);
-        if (meas == NULL)
-        {
-            rc = TE_ENOMEM;
-            goto out;
-        }
-    }
+        meas = te_mi_meas_impl_add(&logger->meas_q, type, name);
 
-    if (te_mi_meas_value_add(&meas->values, aggr, val, multiplier) == NULL)
-    {
-        if (meas_new != NULL)
-            te_mi_meas_impl_remove(&logger->meas_q, meas_new);
-
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    te_mi_meas_value_add(&meas->values, aggr, val, multiplier);
 
 out:
     te_mi_set_logger_error(logger, retval, rc);

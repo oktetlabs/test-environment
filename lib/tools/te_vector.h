@@ -110,7 +110,7 @@ typedef struct te_vec {
  * @param _te_vec   Dynamic vector
  * @param _val      New element
  *
- * @return Status code
+ * @return Status code (always 0).
  */
 #define TE_VEC_APPEND(_te_vec, _val) \
     (te_vec_append_array_safe(_te_vec, &(_val), 1, sizeof(_val)))
@@ -121,7 +121,7 @@ typedef struct te_vec {
  * @param _type     Element type
  * @param _val      New element
  *
- * @return Status code
+ * @return Status code (always 0).
  */
 #define TE_VEC_APPEND_RVALUE(_te_vec, _type, _val) \
     (te_vec_append_array_safe(_te_vec, (_type[]){_val}, 1, sizeof(_type)))
@@ -133,7 +133,7 @@ typedef struct te_vec {
  * @param _elements      Elements of array
  * @param _count         Count of @p elements
  *
- * @return Status code
+ * @return Status code (always 0).
  */
 #define TE_VEC_APPEND_ARRAY(_te_vec, _elements, _count) \
     (te_vec_append_array_safe(_te_vec, _elements, _size, sizeof(*(_elements))))
@@ -236,7 +236,7 @@ te_vec_get_safe_mutable(te_vec *vec, size_t index, size_t element_size)
  * @param vec        Dymanic vector
  * @param element    Element for appending
  *
- * @return Status code
+ * @return Status code (always 0).
  */
 extern te_errno te_vec_append(te_vec *vec, const void *element);
 
@@ -246,7 +246,7 @@ extern te_errno te_vec_append(te_vec *vec, const void *element);
  * @param vec        Dymanic vector
  * @param other      Other dymanic vector
  *
- * @return Status code
+ * @return Status code (always 0).
  */
 extern te_errno te_vec_append_vec(te_vec *vec, const te_vec *other);
 
@@ -257,7 +257,7 @@ extern te_errno te_vec_append_vec(te_vec *vec, const te_vec *other);
  * @param elements   Elements of array
  * @param count      Count of @p elements
  *
- * @return Status code
+ * @return Status code (always 0).
  */
 extern te_errno te_vec_append_array(te_vec *vec, const void *elements,
                                     size_t count);
@@ -269,7 +269,7 @@ extern te_errno te_vec_append_array(te_vec *vec, const void *elements,
  * @param fmt        Format string
  * @param ...        Format string arguments
  *
- * @return Status code
+ * @return Status code (always 0).
  */
 extern te_errno te_vec_append_str_fmt(te_vec *vec, const char *fmt, ...)
                                       __attribute__((format(printf, 2, 3)));
@@ -307,7 +307,7 @@ te_vec_remove_index(te_vec *vec, size_t index)
  * @param count             Count of @p elements
  * @param element_size      Size of one element in @p elements
  *
- * @return Status code
+ * @return Status code (always 0)
  */
 static inline te_errno
 te_vec_append_array_safe(te_vec *vec, const void *elements,
@@ -348,7 +348,7 @@ extern void te_vec_deep_free(te_vec *vec);
  * @param vec           Dynamic vector to append the array of strings to
  * @param elements      @c NULL terminated array of strings
  *
- * @return Status code
+ * @return Status code (always 0).
  */
 extern te_errno te_vec_append_strarray(te_vec *vec, const char **elements);
 
@@ -393,7 +393,7 @@ te_vec_get_index(const te_vec *vec, const void *ptr)
  *                               not changed). Otherwise, an empty string
  *                               is treated as having a single empty chunk.
  *
- * @return Status code
+ * @return Status code (always 0).
  */
 extern te_errno te_vec_split_string(const char *str, te_vec *strvec, char sep,
                                     te_bool empty_is_none);

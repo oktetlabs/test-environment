@@ -261,8 +261,8 @@ te_make_pattern_buf(size_t min, size_t max, size_t *p_len,
 
     /*
      * There is nothing wrong with asking for a zero-length buffer.
-     * However, TE_ALLOC intentionally fails on zero length requests,
-     * so we allocate a single-byte buffer instead.
+     * However, TE_ALLOC intentionally issues a warning on zero-length
+     * requests, so we allocate a single-byte buffer instead.
      */
     buf = TE_ALLOC(len == 0 ? 1 : len);
 
