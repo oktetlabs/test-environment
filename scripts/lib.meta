@@ -128,6 +128,8 @@ te_meta_set_type() {
 #   Prefix for variables.
 #   Additional prefix with which revision variable should be added
 #     the second time.
+# Globals:
+#   JENKINS_[prefix]_BRANCH
 ##########################################################################
 te_meta_set_git() {
     local repo_dir="$1"
@@ -149,8 +151,16 @@ te_meta_set_git() {
     fi
 
     git_url="$(git config --get remote.origin.url)"
-    git_branch="$(git branch --show-current)"
     git_rev="$(git rev-parse HEAD)"
+
+    git_branch="$(git branch --show-current)"
+    if [[ -z "${git_branch}" ]] ; then
+        # Jenkins checks out specific revision, so that repository is
+        # in "detached HEAD" state and current branch name is not known.
+        # Jenkins can specify target branch in environment in such case.
+        local env_name="JENKINS_${prefix}_BRANCH"
+        git_branch="${!env_name}"
+    fi
 
     git_diff="$(git diff --stat)"
     if [[ -n "${git_diff}" ]] ; then
