@@ -285,3 +285,28 @@ if (str == NULL)
    return TE_EFAULT;
 te_string_append(&dest, "%s", str);
 ```
+
+## Memory management
+
+TE provides a set of memory allocation functions in `te_alloc.h`
+which should be used instead of the system functions. All existing
+uses of the system memory allocators are considered legacy and
+are going to be eventually replaced by `te_alloc.h` equivalents.
+
+TE functions take care of (unlikely) memory allocation failures and
+gracefully abort the program, so callers need not check for
+the returned `NULL` pointer. In the future they may also perform some
+additional actions.
+
+| System function                          | TE equivalent               | Notes                                                        |
+|------------------------------------------|-----------------------------|--------------------------------------------------------------|
+| `malloc(x)`                              | `TE_ALLOC_UNINITIALIZED(x)` | `TE_ALLOC` is preferred in most cases                        |
+| `calloc(x, y)`                           | `TE_ALLOC(x * y)`           |                                                              |
+| `strdup(s)`                              | `TE_STRDUP(s)`              | It can handle `NULL` safely                                  |
+| `strndup(s, n)`                          | `TE_STRNDUP(s, n)`          |                                                              |
+| `copy = malloc(n); memcpy(copy, src, n)` | `copy = TE_MEMDUP(src,n)`   |                                                              |
+| `ptr = realloc(ptr, n)`                  | `TE_REALLOC(ptr, n)`        | The first argument must be a lvalue and is modified in place |
+
+There is also a second set of functions in `tapi_mem.h` that are intended to be called
+by tests, but may also be used in high-level TAPI functions. Currently they provide
+exactly the same functionality, but it may change in the future.
