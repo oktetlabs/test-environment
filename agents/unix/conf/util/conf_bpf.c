@@ -1119,8 +1119,6 @@ bpf_get_map_kv_pair(unsigned int gid, const char *oid, char *value_str,
 
 fail_free_key_value:
     free(value);
-
-fail_free_key:
     free(key);
     return rc;
 }
