@@ -42,6 +42,7 @@ done
 if [[ "${TE_RUN_META}" = "yes" ]] ; then
     . ${TE_BASE}/scripts/lib.meta
     te_meta_set TS_NAME selftest
+    te_meta_set CFG "${TS_CFG}"
 fi
 
 # FIXME: that gimli1 is explicitly listed below is a hack.
