@@ -97,7 +97,7 @@ if [[ "${TE_RUN_META}" = "yes" ]] ; then
     # Include functions for metadata generation
     . "${TE_BASE}/scripts/lib.meta"
 
-    TE_META_FILE="${TE_META_FILE:-${TE_RUN_DIR}/te_run_meta.json}"
+    TE_META_FILE="${TE_META_FILE:-${TE_RUN_DIR}/meta_data.json}"
 
     te_meta_set_ts START_TIMESTAMP
     if [[ -n "${TE_META_START_TS}" ]] ; then

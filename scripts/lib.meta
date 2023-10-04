@@ -54,7 +54,7 @@ te_meta_end() {
 ##########################################################################
 te_meta_export() {
     local version="${1:-1}"
-    local out_fname="${TE_META_FILE:-${TE_RUN_DIR:-$(pwd)}/te_run_meta.json}"
+    local out_fname="${TE_META_FILE:-${TE_RUN_DIR:-$(pwd)}/meta_data.json}"
 
     if [[ -n "${TE_META_TMP}" ]] ; then
         if [[ -n "${TE_BASE}" ]] ; then
