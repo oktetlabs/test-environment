@@ -1,0 +1,115 @@
+#!/bin/bash
+
+set -u
+
+TO_REVERT=""
+MESSAGE=""
+DO_EDIT=true
+
+if [[ -z "$(stg series -A 2>/dev/null)" ]]; then
+    USE_STGIT=
+else
+    USE_STGIT=true
+fi
+
+function show_usage ()
+{
+    cat <<EOF
+Usage: $0 [-m MSG | --message=MSG | -F MSGFILE | --file=MSGFILE]
+          [--no-edit] [--no-stgit | --stgit] COMMIT-ID
+
+Revert a commit specified by COMMIT-ID and make a commit message
+conforming to TE Contributor Guidelines.
+
+--message=MSG
+-m MSG           Provide a commit description.
+
+--file=MSGFILE   Read a commit description from MSGFILE.
+-F MSGFILE
+
+--no-edit        Do not invoke interactive editor after making
+                 the commit message draft.
+
+--no-stgit       Do not use stgit even on stgit-enabled branches.
+
+--stgit          Use stgit even if it is not auto-detected.
+EOF
+}
+
+while [[ "$#" -gt 0 ]]; do
+    case "${1}" in
+        -h | --help)
+            show_usage
+            exit 0
+            ;;
+        -F|--file)
+            shift
+            MESSAGE="$(< "$1")"
+            ;;
+        -F*)
+            MESSAGE="$(< "${1#-F}")"
+            ;;
+        --file=*)
+            MESSAGE="$(< "${1#--file=}")"
+            ;;
+        -m|--message)
+            shift
+            MESSAGE="$1"
+            ;;
+        -m*)
+            MESSAGE="${1#-m}"
+            ;;
+        --message=*)
+            MESSAGE="${1#--message=}"
+            ;;
+        --no-edit)
+            DO_EDIT=
+            ;;
+        --no-stgit)
+            USE_STGIT=
+            ;;
+        --stgit)
+            USE_STGIT=true
+            ;;
+        -*)
+            echo "Unknown option $1" >&2
+            show_usage
+            exit 1
+            ;;
+        *)
+            if [[ -n "${TO_REVERT}" ]]; then
+                echo "Only a single commit may be reverted" >&2
+                exit 1
+            fi
+            TO_REVERT="$1"
+            ;;
+    esac
+    shift
+done
+
+if [[ -z "${TO_REVERT}" ]]; then
+    echo "No commit to revert is specified" >&2
+    exit 1
+fi
+
+subject="$(git log -1 --format='%s' "${TO_REVERT}")"
+revert_subject="revert: ${subject#*: }"
+fixes="Fixes: $(git log -1 --abbrev=12 --format='%h ("%s")')"
+
+full_message="${revert_subject}"
+if [[ -n "${MESSAGE}" ]]; then
+    full_message+=$'\n\n'
+    full_message+="${MESSAGE}"
+fi
+full_message+=$'\n\n'
+full_message+="${fixes}"
+
+if [[ -n "${USE_STGIT}" ]]; then
+    stg new --sign -m "${full_message}" || exit 1
+    git revert --no-commit "${TO_REVERT}" || exit 1
+    stg refresh
+    [[ -n "${DO_EDIT}" ]] && stg edit
+else
+    git revert --no-commit "${TO_REVERT}" || exit 1
+    git commit -s --message="${full_message}" ${DO_EDIT:+--edit}
+fi
