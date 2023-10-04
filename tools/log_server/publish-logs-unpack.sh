@@ -235,7 +235,7 @@ function process_tar_file()
     ${DRY_RUN}touch "${destdir}/${DONE_MARKER}"
 
     if [[ -n "${BUBLIK_URL}" ]] ; then
-        ${DRY_RUN}curl curl --negotiate -u : "${BUBLIK_URL}/${subpath}"
+        ${DRY_RUN}curl --negotiate -u : "${BUBLIK_URL}/${subpath}"
     fi
 
     return 0
