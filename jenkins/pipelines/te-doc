@@ -24,7 +24,7 @@ pipeline {
     }
 
     options {
-        buildDiscarder(logRotator(daysToKeepStr:'15', numToKeepStr:'100'))
+        buildDiscarder(logRotator(daysToKeepStr:'15', numToKeepStr:'10'))
         checkoutToSubdirectory('te')
         disableConcurrentBuilds()
         timestamps()
