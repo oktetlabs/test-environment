@@ -259,5 +259,15 @@
             </arg>
         </run>
 
+        <run>
+            <script name="user"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+            <arg name="uid">
+                <value>99999</value>
+            </arg>
+        </run>
+
     </session>
 </package>

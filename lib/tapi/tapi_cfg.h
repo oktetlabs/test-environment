@@ -1244,6 +1244,26 @@ extern te_errno tapi_cfg_alloc_net_addr_pair(struct sockaddr **addr1,
  */
 extern te_errno tapi_cfg_add_new_user(const char *agent, int uid);
 
+
+/**
+ * Add a user on TA if no such user already exists.
+ *
+ * @p added is set to @c TRUE if a user has been added and to @c FALSE
+ * if it existed already, so that the caller might decide whether it
+ * should call tapi_cfg_del_user().
+ *
+ * Refer to tapi_cfg_add_new_user() for details concerning user creation.
+ *
+ * @param[in]  agent   Agent on which to create a new user.
+ * @param[in]  uid     User ID.
+ * @param[out] added   A flag to set if @p uid has been created
+ *                     (may be @c NULL).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_add_user_if_needed(const char *agent, int uid,
+                                            te_bool *added);
+
 /**
  * Remove a user previously added by tapi_cfg_add_new_user().
  *

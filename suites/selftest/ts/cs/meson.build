@@ -18,6 +18,7 @@ tests = [
     'set_restore',
     'uname',
     'unused_backup',
+    'user',
     'vlans',
     'vm',
 ]

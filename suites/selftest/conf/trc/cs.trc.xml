@@ -267,5 +267,15 @@
                 <notes/>
             </iter>
         </test>
+
+        <test name="user" type="script">
+            <objective>Check that user management routines work correctly</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="uid"/>
+                <notes/>
+            </iter>
+        </test>
     </iter>
 </test>

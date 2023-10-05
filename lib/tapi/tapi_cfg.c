@@ -1,11 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test API to access Configurator
  *
  * Implementation
- *
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "Configuration TAPI"
@@ -2878,6 +2876,28 @@ tapi_cfg_add_new_user(const char *agent, int uid)
                                 "/agent:%s/user:%s", agent,
                                 user_name.ptr);
 }
+
+te_errno
+tapi_cfg_add_user_if_needed(const char *agent, int uid, te_bool *added)
+{
+    te_errno rc;
+
+    if (added != NULL)
+        *added = FALSE;
+    if (cfg_find_fmt(NULL, "/agent:%s/user:%s%d", agent,
+                     TE_USER_PREFIX, uid) == 0)
+        return 0;
+
+    rc = tapi_cfg_add_new_user(agent, uid);
+    if (rc == 0)
+    {
+        if (added != NULL)
+            *added = TRUE;
+    }
+
+    return rc;
+}
+
 
 /* See description in tapi_cfg.h */
 te_errno
