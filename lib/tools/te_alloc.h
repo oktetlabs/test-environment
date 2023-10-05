@@ -135,6 +135,35 @@ extern void *te_realloc_internal(void *oldptr, size_t newsize,
                                          __FILE__, __LINE__)))
 
 /**
+ * Check whether an array of @p nmemb elements of @p size bytes
+ * can be allocated.
+ *
+ * Basically, it checks that @p nmemb * @p size would fit into
+ * @c size_t; it does not check for available memory and so on.
+ *
+ * The primary purpose of this function is to ensure that
+ * `TE_ALLOC(x * y)` would not errneously return a small buffer
+ * due to overflow:
+ * @code
+ * if (!te_is_valid_alloc(nmemb, size))
+ *     TEST_FAIL("Array is too large");
+ * arr = TE_ALLOC(nmemb * size);
+ * @endcode
+ *
+ * @alg See <cite>Hacker's Delight, 2nd Edition, section 2.12.4</cite>
+ *
+ * @param nmemb  Number of elements.
+ * @param size   Size of an element.
+ *
+ * @return @c TRUE if an array of @p nmemb elements may be allocated.
+ */
+static inline te_bool
+te_is_valid_alloc(size_t nmemb, size_t size)
+{
+    return size <= 1 || nmemb <= 1 || nmemb < (SIZE_MAX / size);
+}
+
+/**
  * Copy a block of memory @p src.
  *
  * This function should never be called directly,

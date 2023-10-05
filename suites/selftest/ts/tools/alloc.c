@@ -108,6 +108,39 @@ main(int argc, char **argv)
         free(buf);
     }
 
+    TEST_STEP("Checking overflow checker");
+    for (i = 0; i < n_iterations; i++)
+    {
+        /* Mask for the lower-half bits of size_t */
+        static const size_t low_mask =
+            ((size_t)1 << (sizeof(size_t) * CHAR_BIT / 2)) - 1;
+        static const size_t high_bit =
+            (size_t)1 << (sizeof(size_t) * CHAR_BIT - 1);
+        size_t nmemb = (size_t)rand() & low_mask;
+        size_t size = (size_t)rand() & low_mask;
+
+        if (!te_is_valid_alloc(nmemb, size))
+        {
+            ERROR("%zu * %zu erroneously detected as overflow",
+                  nmemb, size);
+            TEST_VERDICT("Check for overflow failed");
+        }
+
+        if (te_is_valid_alloc(nmemb | high_bit, size + 2))
+        {
+            ERROR("%zu * %zu not detected as overflow",
+                  nmemb | high_bit, size + 1);
+            TEST_VERDICT("Check for overflow failed");
+        }
+
+        if (te_is_valid_alloc(nmemb + 2, size | high_bit))
+        {
+            ERROR("%zu * %zu not detected as overflow",
+                  nmemb + 1, size | high_bit);
+            TEST_VERDICT("Check for overflow failed");
+        }
+    }
+
     TEST_SUCCESS;
 
 cleanup:
