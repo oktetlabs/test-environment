@@ -227,7 +227,14 @@ function process_tar_file()
         return 1
     fi
 
-    ${DRY_RUN}mkdir -p "${destdir}" || return 1
+    # Make sure that the last directory in the path has writable
+    # permission for group - it may be necessary for generating
+    # HTML logs on request in the same directory.
+    #
+    # chmod cannot be used here because it may break SetGID
+    # if that bit is used and requires root rights to be set.
+    ( ${DRY_RUN}umask 0027 && ${DRY_RUN}mkdir -p "$(dirname "${destdir}")" \
+      && ${DRY_RUN}umask 0007 && ${DRY_RUN}mkdir "${destdir}" ) || return 1
 
     # Extract everything except done marker
     ${DRY_RUN}tar -C "${destdir}" -xf "${tarfile}" "${files[@]/${DONE_MARKER}|}"
@@ -235,7 +242,8 @@ function process_tar_file()
     ${DRY_RUN}touch "${destdir}/${DONE_MARKER}"
 
     if [[ -n "${BUBLIK_URL}" ]] ; then
-        ${DRY_RUN}curl --negotiate -u : "${BUBLIK_URL}/${subpath}"
+        ${DRY_RUN}curl -s -S --negotiate -u : "${BUBLIK_URL}/${subpath}" \
+            | grep -v "<"
     fi
 
     return 0
