@@ -42,7 +42,6 @@ main(int argc, char **argv)
     TEST_GET_UINT_PARAM(max_len);
     TEST_GET_UINT_PARAM(n_iterations);
 
-    sleep(10);
     TEST_STEP("Testing memdup");
     for (i = 0; i < n_iterations; i++)
     {
