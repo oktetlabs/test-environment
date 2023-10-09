@@ -13,7 +13,7 @@ META_DATA_JSON="meta_data.json"
 META_VERSION=1
 DATE_REGEX="^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"
 TIME_REGEX="^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$"
-NAME_REGEX="^[-_0-9a-zA-Z]{1,32}$"
+NAME_REGEX="^[-_:0-9a-zA-Z]{1,32}$"
 
 # Required files in log archive
 MANDATORY_FILES=()
