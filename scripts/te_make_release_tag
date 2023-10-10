@@ -107,6 +107,9 @@ def classify_issues(url, issues):
             headers={"X-Redmine-API-Key": os.environ["OL_REDMINE_APIKEY"]},
             auth=requests_kerberos.HTTPKerberosAuth(),
         )
+        if r.status_code != requests.codes.ok:
+            print(f"Warning: got status code {r.status_code} for issue #{issue_id}", file=sys.stderr)
+            continue
         issue = r.json()["issue"]
         if issue["status"]["name"] == "Resolved":
             if issue["tracker"]["name"] in ("Task", "Story"):
