@@ -114,6 +114,8 @@ if [[ "${TE_RUN_META}" = "yes" ]] ; then
         te_meta_set CAMPAIGN_DATE "$(date --date="+6 hours" +%F)"
     fi
 
+    te_meta_set USER "$(whoami)"
+
     te_meta_set RUN_STATUS RUNNING
     te_meta_set RUN_OK false
     if [[ -n "${TE_DO_TCE}" ]] ; then
