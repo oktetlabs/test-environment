@@ -545,6 +545,8 @@ RGT_LOG_HTML=
 RGT_LOG_JUNIT=
 # Path to logs publishing script
 TE_PUBLISH_SCRIPT=
+# File passed with --logger-meta-file option
+LOGGER_META_FILE=
 
 TE_TESTER_SCRIPTS=
 export TE_TA_LIST_FILE=ta.list
@@ -768,8 +770,13 @@ process_opts()
 
             --logger-*=[^\"]*)
                 opt_name="${1%%=*}"
-                opt_str="--${opt_name#--logger-}=\"${1#${opt_name}=}\""
-                LOGGER_OPTS="${LOGGER_OPTS} ${opt_str}" ;;
+                opt_value="${1#${opt_name}=}"
+                opt_str="--${opt_name#--logger-}=\"${opt_value}\""
+                LOGGER_OPTS="${LOGGER_OPTS} ${opt_str}"
+                if [[ "${opt_name}" = "--logger-meta-file" ]] ; then
+                    LOGGER_META_FILE="${opt_value}"
+                fi
+                ;;
             --logger-*) LOGGER_OPTS="${LOGGER_OPTS} --${1#--logger-}" ;;
 
             --trc-log=*) TRC_LOG="${1#--trc-log=}" ;;
@@ -983,6 +990,15 @@ fi
 cmd_line_opts="$@"
 cmd_line_opts_all=
 process_opts "$@"
+
+if [[ "${TE_RUN_META}" = "yes" ]] ; then
+    if [[ -z "${LOGGER_META_FILE}" ]] ; then
+        LOGGER_OPTS="${LOGGER_OPTS} --meta-file=\"${TE_META_FILE}\""
+    else
+        echo "--logger-meta-file should not be used when" \
+             "TE generates metadata." >&2
+    fi
+fi
 
 # Collect all environment variables starting from TE_
 te_env=$(env | grep '^TE_' | sort)
