@@ -73,6 +73,8 @@ main(int argc, char **argv)
     chk_rc = te_file_read_string(&inbuf, binary, strlen(content), "%s", path);
     if (chk_rc != TE_EFBIG)
         TEST_VERDICT("The maximum size of a file is not detected: %r", chk_rc);
+    if (inbuf.len != expected.len)
+        TEST_VERDICT("Buffer not rewound after error");
 
     if (binary)
     {

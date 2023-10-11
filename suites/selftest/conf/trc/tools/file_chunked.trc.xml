@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="file_chunked" type="script">
+    <objective>Testing te_file_read_string correctness on chunked reads.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="pathname" />
+    </iter>
+</test>

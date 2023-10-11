@@ -239,15 +239,29 @@
             </arg>
         </run>
 
-        <run>
-            <script name="file"/>
-            <arg name="content">
-                <value>Test data</value>
-            </arg>
-            <arg name="binary">
-                <value>FALSE</value>
-                <value>TRUE</value>
-            </arg>
+        <run name="files">
+            <session>
+                <run>
+                    <script name="file"/>
+                    <arg name="content">
+                        <value>Test data</value>
+                    </arg>
+                    <arg name="binary">
+                        <value>FALSE</value>
+                        <value>TRUE</value>
+                    </arg>
+                </run>
+                <run>
+                    <script name="file_chunked"/>
+                    <!--
+                        This should be a file on a special filesystem like /proc
+                        but that does not change too frequently
+                    -->
+                    <arg name="pathname">
+                        <value>/proc/self/mounts</value>
+                    </arg>
+                </run>
+            </session>
         </run>
 
         <run>

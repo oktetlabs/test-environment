@@ -11,6 +11,7 @@ tests = [
     'expand_list',
     'extract_glob',
     'file',
+    'file_chunked',
     'hexdump',
     'intset',
     'json',

@@ -27,6 +27,8 @@
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/file.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tools/file_chunked.trc.xml" parse="xml"/>
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/hexdump.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/intset.trc.xml" parse="xml"/>

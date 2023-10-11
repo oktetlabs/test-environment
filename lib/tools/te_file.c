@@ -396,7 +396,7 @@ te_file_read_string(te_string *dest, te_bool binary,
     struct stat st;
     te_errno rc = 0;
     int fd = -1;
-    ssize_t actual;
+    ssize_t actual = 0;
 
     va_start(args, path_fmt);
     te_string_append_va(&pathname, path_fmt, args);
@@ -409,13 +409,6 @@ te_file_read_string(te_string *dest, te_bool binary,
         goto out;
     }
 
-    if (!S_ISREG(st.st_mode))
-    {
-        WARN("'%s' is not a regular file or symlink, "
-             "%s() may not return the expected data",
-             pathname.ptr, __func__);
-    }
-
     if (maxsize != 0 && st.st_size > maxsize)
     {
         ERROR("File %s's size (%zu) is larger than %zu",
@@ -423,7 +416,6 @@ te_file_read_string(te_string *dest, te_bool binary,
         rc = TE_EFBIG;
         goto out;
     }
-    te_string_reserve(dest, dest->len + st.st_size + 1);
 
     fd  = open(pathname.ptr, O_RDONLY);
     if (fd < 0)
@@ -434,20 +426,55 @@ te_file_read_string(te_string *dest, te_bool binary,
         goto out;
     }
 
-    actual = read(fd, dest->ptr + dest->len, st.st_size);
-    if (actual < 0)
+    if (st.st_size > 0)
     {
-        rc = te_rc_os2te(errno);
-        ERROR("Cannot read from '%s': %r", pathname.ptr, rc);
-        goto out;
-    }
+        te_string_reserve(dest, dest->len + st.st_size + 1);
+        actual = read(fd, dest->ptr + dest->len, st.st_size);
+        if (actual < 0)
+        {
+            rc = te_rc_os2te(errno);
+            ERROR("Cannot read from '%s': %r", pathname.ptr, rc);
+            goto out;
+        }
 
-    if ((size_t)actual != (size_t)st.st_size)
+        if ((size_t)actual != (size_t)st.st_size)
+        {
+            ERROR("Could not read %zu bytes from %s, only %zu were read",
+                  (size_t)st.st_size, pathname.ptr, (size_t)actual);
+            rc = TE_EIO;
+            goto out;
+        }
+    }
+    else
     {
-        ERROR("Could not read %zu bytes from %s, only %zu were read",
-              (size_t)st.st_size, pathname.ptr, (size_t)actual);
-        rc = TE_EIO;
-        goto out;
+        /* The value is pretty arbitrary */
+        ssize_t chunk_size = 4096;
+        ssize_t actual_chunk;
+
+        do
+        {
+            if (maxsize != 0 && actual + chunk_size > maxsize)
+            {
+                chunk_size = maxsize - actual;
+                if (chunk_size == 0)
+                {
+                    ERROR("Cannot read more than %zu bytes from %s",
+                          maxsize, pathname.ptr);
+                    rc = TE_EFBIG;
+                    goto out;
+                }
+            }
+            te_string_reserve(dest, dest->len + actual + chunk_size);
+            actual_chunk = read(fd, dest->ptr + dest->len + actual, chunk_size);
+            if (actual_chunk < 0)
+            {
+                rc = te_rc_os2te(errno);
+                ERROR("Cannot read from '%s' after %zd bytes: %r",
+                      pathname.ptr, actual, rc);
+                goto out;
+            }
+            actual += actual_chunk;
+        } while (actual_chunk > 0);
     }
 
     dest->len += actual;

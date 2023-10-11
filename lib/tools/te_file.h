@@ -275,8 +275,10 @@ extern te_errno te_unlink_fmt(const char *fmt, ...)
  * is a statically allocated TE string and in general to prevent memory
  * bombs if a file comes from an untrusted source.
  *
- * @note The file should be random-access, so the function cannot read
- *       reliably from sockets, named FIFOs and most kinds of character devices.
+ * @note The function should be used with caution on non-regular files
+ *       such as named FIFOs or character devices, as it may block
+ *       indefinitely or return partial data. Using it with regular files
+ *       on special filesystems such as @c /proc is completely reliable.
  *
  * @param dest     TE string (the content of the file will be appended to it)
  * @param binary   reading mode (binary or text mode)
