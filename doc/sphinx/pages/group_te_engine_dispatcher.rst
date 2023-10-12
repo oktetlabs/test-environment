@@ -100,7 +100,23 @@ The following sequence of events happen each time when you launch Test Environme
 #. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` script finishes its work.
 
 
+.. _doxid-group__te__engine__dispatcher_1logs_publishing:
 
+Publishing logs to Bublik web application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Testing logs may be published to Bublik web application using Dispatcher
+option `--publish` or a standalone script `scripts/publish_logs`. A path
+to test suite and site specific logs publishing script should be passed via
+`--publish` option of Dispatcher or `--script` option of
+`scripts/publish_logs`. TE will then create a tar archive containing
+testing metadata (`meta_data.json`) and raw log bundle
+(`raw_log_bundle.tpxz`), and pass it as the only argument to the
+script that you provide.
+
+It is assumed that your script will then copy the tar archive to log
+storage server, extract it there in a proper place and request
+Bublik web application to import logs from the corresponding URL.
 
 
 .. _doxid-group__te__engine__dispatcher_1te_engine_dispatcher_options:
@@ -351,12 +367,13 @@ The Dispatcher script accepts a lot of command-line options. Some of them are it
 	vg-tester                   Run :ref:`Tester <doxid-group__te__engine__tester>` under valgrind (without by default)
 	gdb-tester                  Run :ref:`Tester <doxid-group__te__engine__tester>` under gdb.
 	tce                         Do TCE processing for all TCE-enabled components
-	tce=
+	tce=                        Do TCE processing for specific components (comma-separated) or 'all'
 
+.. code-block:: none
 
-
-
-	                Do TCE processing for specific components (comma-separated) or 'all'
+	no-meta                     Do not generate testing metadata.
+	publish=<script>            Use a given script to publish testing logs
+	                            (metadata must be enabled to do this).
 
 .. code-block:: none
 
