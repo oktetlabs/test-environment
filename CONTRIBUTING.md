@@ -351,3 +351,11 @@ Guidelines.
 Also there is a script `./scripts/te_patch_add_trailer` that
 can automatically add needed trailers such as `Reviewed-by` to
 the series of patches at once.
+
+## Submitting a patch series
+
+When a series of patches is submitted for review via GitHub
+or some other way, the pull request should contain a meaningful
+description of the whole series and not just a concatenation
+of all included commit messages. Trailers should be wiped out
+from such a description, especially those containing emails.
