@@ -2561,6 +2561,8 @@ tapi_cfg_net_node_get_pci_oids(const cfg_net_node_t *node, unsigned int *n_pci,
                                char ***pci_oids)
 {
     char *node_oid;
+    char *pci_oid_str;
+    cfg_oid *pci_oid;
     te_errno rc;
     char **result;
     size_t n;
@@ -2580,6 +2582,26 @@ tapi_cfg_net_node_get_pci_oids(const cfg_net_node_t *node, unsigned int *n_pci,
             result = TE_ALLOC(sizeof(*result));
 
             rc = cfg_get_instance_str(NULL, &result[0], node_oid);
+            if (rc != 0)
+            {
+                free(result);
+                ERROR("Failed to get PCI device");
+                break;
+            }
+
+            *n_pci = 1;
+            *pci_oids = result;
+            break;
+
+        case NET_NODE_RSRC_TYPE_PCI_FN_NETDEV:
+            result = TE_ALLOC(sizeof(*result));
+
+            pci_oid = cfg_convert_oid_str(node_oid);
+            pci_oid_str = make_pci_fn_oid_str_by_pci_fn_netdev_oid(pci_oid);
+            cfg_free_oid(pci_oid);
+
+            rc = cfg_get_instance_str(NULL, &result[0], pci_oid_str);
+            free(pci_oid_str);
             if (rc != 0)
             {
                 free(result);
