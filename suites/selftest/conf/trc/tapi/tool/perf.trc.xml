@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="perf" type="package">
+    <objective>Test Suite to test TAPI to control a network throughput test tool</objective>
+    <iter result="PASSED">
+
+        <test name="perf_prologue">
+            <objective/>
+            <iter result="PASSED"/>
+        </test>
+
+        <test name="perf_simple">
+            <objective/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="duration_s"/>
+                <arg name="proto"/>
+                <arg name="tool"/>
+                <arg name="stream_n"/>
+            </iter>
+        </test>
+    </iter>
+</test>

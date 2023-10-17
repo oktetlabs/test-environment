@@ -4,6 +4,7 @@
 packages = [
     'memcached',
     'nptcp',
+    'perf',
     'redis',
     'torrent',
     'trex',

@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+
+    <description>Test Suite to test TAPI to control a network throughput test tool</description>
+    <author mailto="Ivan.Khodyrev@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+
+        <var name="env.peer2peer">
+            <value>{
+                {
+                  {'pco_iut':IUT},
+                   addr:'iut_addr':inet:unicast,
+                   if:'iut_if'
+                },
+                {
+                  {'pco_tst':tester},
+                  addr:'tst_addr':inet:unicast,
+                  if:'tst_if'
+                }
+            }</value>
+        </var>
+
+        <enum name="protocol_type">
+            <value>TCP</value>
+            <value>UDP</value>
+        </enum>
+
+        <enum name="tool_type">
+            <value>iperf</value>
+            <value>iperf3</value>
+        </enum>
+
+        <prologue>
+            <script name="perf_prologue"/>
+        </prologue>
+
+        <run>
+            <script name="perf_simple"/>
+            <arg name="env" ref="env.peer2peer"/>
+            <arg name="duration_s">
+                <value>10</value>
+            </arg>
+            <arg name="proto" type="protocol_type"/>
+            <arg name="tool" type="tool_type"/>
+            <arg name="stream_n">
+                <value>1</value>
+                <value>5</value>
+            </arg>
+        </run>
+
+
+    </session>
+</package>
