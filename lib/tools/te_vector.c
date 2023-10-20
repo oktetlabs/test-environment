@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
- * @brief Dymanic vector
+ * @brief Dynamic vectors.
  *
- * Implementation of dymanic array
+ * Implementation of dynamic vectors.
  */
 
 #define TE_LGR_USER     "TE vectors"
@@ -12,7 +12,6 @@
 #include "te_defs.h"
 #include "te_alloc.h"
 
-#include "te_defs.h"
 #include "te_vector.h"
 #include "te_string.h"
 

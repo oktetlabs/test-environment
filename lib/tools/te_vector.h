@@ -1,34 +1,33 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
- * @brief Dynamic array
+ * @brief Dynamic vectors.
  *
- * @defgroup te_tools_te_vec Dymanic array
+ * @defgroup te_tools_te_vec Dynamic vectors.
  * @ingroup te_tools
  * @{
  *
- * Implementation of dymanic array
+ * Implementation of dynamic vectors.
  *
- * Example of using:
+ * Example of usage:
  * @code
- * // Initialize the dynamic vector to store a value of type int
+ * // Initialize the dynamic vector to store a value of type int.
  * te_vec vec = TE_VEC_INIT(int)
  * int number = 42;
  * ...
- * // Put number into dynamic array
- * CHECK_RC(TE_VEC_APPEND(&vec, number));
+ * // Put a number into the dynamic vector.
+ * TE_VEC_APPEND(&vec, number);
  * ...
- * // Copy from c array
+ * // Copy from a C array
  * int numbers[] = {4, 2};
- * CHECK_RC(te_vec_append_array(&vec, numbers, TE_ARRAY_LEN(numbers)));
+ * te_vec_append_array(&vec, numbers, TE_ARRAY_LEN(numbers));
  * ...
- * // Change the first element
+ * // Change the first element.
  * TE_VEC_GET(int, &vec, 0) = 100;
  * ...
- * // Finish work with vector, free the memory.
+ * // Free the memory.
  * te_vec_free(&vec);
  * @endcode
- *
- * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_VEC_H__
@@ -74,10 +73,10 @@ typedef void te_vec_item_destroy_fn(const void *item);
  */
 extern te_vec_item_destroy_fn te_vec_item_free_ptr;
 
-/** Dymanic array */
+/** Dynamic vector. */
 typedef struct te_vec {
-    te_dbuf data;           /**< Data of array */
-    size_t element_size;    /**< Size of one element in bytes */
+    te_dbuf data;           /**< Data of a vector. */
+    size_t element_size;    /**< Size of one element. */
     te_vec_item_destroy_fn *destroy; /**< Element destructor. */
 } te_vec;
 
@@ -95,13 +94,24 @@ typedef struct te_vec {
         .destroy = (destroy_),                              \
     }
 
-/** Initialization from type and custom grow factor and type */
+/**
+ * Vector initializer with a custom grow factor.
+ *
+ * @note Most users shall stick to TE_DBUF_DEFAULT_GROW_FACTOR.
+ *
+ * @param type_          Element type.
+ * @param grow_factor_   Grow factor (see TE_DBUF_DEFAULT_GROW_FACTOR).
+ */
 #define TE_VEC_INIT_GROW_FACTOR(type_, grow_factor_) \
     TE_VEC_INIT_COMPLETE(type_, grow_factor_, NULL)
 
-/** Initialization from type only */
-#define TE_VEC_INIT(_type) \
-    TE_VEC_INIT_GROW_FACTOR(_type, TE_DBUF_DEFAULT_GROW_FACTOR)
+/**
+ * Vector initializer with the default grow factor.
+ *
+ * @param type_          Element type.
+ */
+#define TE_VEC_INIT(type_) \
+    TE_VEC_INIT_GROW_FACTOR(type_, TE_DBUF_DEFAULT_GROW_FACTOR)
 
 /**
  * Vector initializer with a possibly non-null destructor.
@@ -135,24 +145,24 @@ extern void te_vec_set_destroy_fn_safe(te_vec *vec,
                                        te_vec_item_destroy_fn *destroy);
 
 /**
- * Access for element in array
+ * Vector element accessor.
  *
- * @param _type     Type of element
- * @param _te_vec   Dynamic vector
- * @param _index    Index of element
+ * @param type_     Type of element.
+ * @param te_vec_   Dynamic vector.
+ * @param index_    Index of element.
  *
- * @return Element of array
+ * @return Element of a vector.
  *
  * @note For vectors with a non-null destructor
  *       te_vec_replace() should be used instead of
  *       mutable TE_VEC_GET(), as it guarantees proper
  *       disposal of old element contents.
  */
-#define TE_VEC_GET(_type, _te_vec, _index) \
-    (*(_type *)te_vec_get_safe(_te_vec, _index, sizeof(_type)))
+#define TE_VEC_GET(type_, te_vec_, index_) \
+    (*(type_ *)te_vec_get_safe(te_vec_, index_, sizeof(type_)))
 
 /**
- * For each element in vector
+ * Iterate over all elements in a vector.
  *
  * Example:
  * @code
@@ -172,56 +182,57 @@ extern void te_vec_set_destroy_fn_safe(te_vec *vec,
  * }
  * @endcode
  *
- * @param _te_vec   Dynamic vector
- * @param _elem     Pointer of type contain in vector
+ * @param te_vec_   Dynamic vector.
+ * @param elem_     Pointer of type contain in vector.
  */
-#define TE_VEC_FOREACH(_te_vec, _elem)                                        \
-    for ((_elem) = te_vec_size(_te_vec) != 0 ?                                \
-            te_vec_get_safe(_te_vec, 0, sizeof(*(_elem))) : NULL;             \
-         te_vec_size(_te_vec) != 0 &&                                         \
-         ((void *)(_elem)) <= te_vec_get(_te_vec, te_vec_size(_te_vec) - 1);  \
-         (_elem)++)
+#define TE_VEC_FOREACH(te_vec_, elem_) \
+    for ((elem_) = te_vec_size(te_vec_) != 0 ?                                \
+            te_vec_get_safe(te_vec_, 0, sizeof(*(elem_))) : NULL;             \
+         te_vec_size(te_vec_) != 0 &&                                         \
+         ((void *)(elem_)) <= te_vec_get(te_vec_, te_vec_size(te_vec_) - 1);  \
+         (elem_)++)
 
 /**
- * Add element to the vector's tail
+ * Add element to the vector's tail.
  *
- * @param _te_vec   Dynamic vector
- * @param _val      New element
+ * @param te_vec_   Dynamic vector.
+ * @param val_      New element.
  *
  * @return Status code (always 0).
  */
-#define TE_VEC_APPEND(_te_vec, _val) \
-    (te_vec_append_array_safe(_te_vec, &(_val), 1, sizeof(_val)))
+#define TE_VEC_APPEND(te_vec_, val_) \
+    (te_vec_append_array_safe(te_vec_, &(val_), 1, sizeof(val_)))
 
 /**
- * Add element to the vector's tail
- * @param _te_vec   Dynamic vector
- * @param _type     Element type
- * @param _val      New element
+ * Add element to the vector's tail.
+ *
+ * @param te_vec_   Dynamic vector.
+ * @param type_     Element type.
+ * @param val_      New element.
  *
  * @return Status code (always 0).
  */
-#define TE_VEC_APPEND_RVALUE(_te_vec, _type, _val) \
-    (te_vec_append_array_safe(_te_vec, (_type[]){_val}, 1, sizeof(_type)))
+#define TE_VEC_APPEND_RVALUE(te_vec_, type_, val_) \
+    (te_vec_append_array_safe(te_vec_, (type_[]){val_}, 1, sizeof(type_)))
 
 /**
- * Append elements from C-like array to the dynamic array (safe version)
+ * Append elements from a C array to the dynamic vector (safe version).
  *
- * @param _te_vec        Dymanic vector
- * @param _elements      Elements of array
- * @param _count         Count of @p elements
+ * @param te_vec_        Dynamic vector.
+ * @param elements_      C array.
+ * @param count_         Count of @p elements
  *
  * @return Status code (always 0).
  */
-#define TE_VEC_APPEND_ARRAY(_te_vec, _elements, _count) \
-    (te_vec_append_array_safe(_te_vec, _elements, _size, sizeof(*(_elements))))
+#define TE_VEC_APPEND_ARRAY(te_vec_, elements_, count_) \
+    (te_vec_append_array_safe(te_vec_, elements_, size_, sizeof(*(elements_))))
 
 /**
- * Count of elements contains in dynamic array
+ * Count elements in a dynamic vector.
  *
- * @param vec       Dynamic vector
+ * @param vec       Dynamic vector.
  *
- * @return Count of elements
+ * @return Number of elements.
  */
 static inline size_t
 te_vec_size(const te_vec *vec)
@@ -232,24 +243,27 @@ te_vec_size(const te_vec *vec)
 }
 
 /**
- * Access to a pointer of element in array
+ * Access an element of a dynamic vector.
  *
- * @param _vec       Dynamic vector
- * @param _index     Index of element
+ * The macro returns either mutable or immutable
+ * pointer depending on the constness of @p vec_.
  *
- * @return Pointer to element
+ * @param vec_       Dynamic vector.
+ * @param index_     Index of element.
+ *
+ * @return Pointer to the content of an element.
  */
 #if __STDC_VERSION__ >= 201112L
-#define te_vec_get(_vec, _index)                                \
-    (_Generic((_vec),                                            \
-             te_vec*: te_vec_get_mutable,                        \
-             const te_vec*: te_vec_get_immutable)(_vec, _index))
+#define te_vec_get(vec_, index_) \
+    (_Generic((vec_),                                               \
+              te_vec*: te_vec_get_mutable,                          \
+              const te_vec*: te_vec_get_immutable)(vec_, index_))
 #else
-#define te_vec_get(_vec, _index)                                        \
+#define te_vec_get(_vec, _index) \
     (__builtin_choose_expr(                                             \
-        __builtin_types_compatible_p(__typeof__(_vec), const te_vec *), \
-                                     te_vec_get_immutable,              \
-                                     te_vec_get_mutable)(_vec, _index))
+        __builtin_types_compatible_p(__typeof__(vec_), const te_vec *), \
+        te_vec_get_immutable,                                           \
+        te_vec_get_mutable)(vec_, index_))
 #endif
 
 static inline const void *
@@ -269,27 +283,27 @@ te_vec_get_mutable(te_vec *vec, size_t index)
 }
 
 /**
- * Safe version of @ref te_vec_get
+ * Safe version of te_vec_get().
  *
- * @param _vec              Dynamic vector
- * @param _index            Index of element
- * @param _element_size     Expected size of type in array
+ * @param vec_              Dynamic vector.
+ * @param index_            Index of element.
+ * @param element_size_     Expected size of type in array.
  *
- * @return Pointer to element
+ * @return Pointer to element.
  */
 #if __STDC_VERSION__ >= 201112L
-#define te_vec_get_safe(_vec, _index, _element_size) \
-    (_Generic((_vec),                                  \
-             te_vec*: te_vec_get_safe_mutable,         \
-             const te_vec*: te_vec_get_safe_immutable) \
-             (_vec, _index, _element_size))
+#define te_vec_get_safe(vec_, index_, element_size_) \
+    (_Generic((vec_),                                   \
+              te_vec*: te_vec_get_safe_mutable,         \
+              const te_vec*: te_vec_get_safe_immutable) \
+     (vec_, index_, element_size_))
 #else
-#define te_vec_get_safe(_vec, _index, _element_size) \
-    (__builtin_choose_expr(                    \
-        __builtin_types_compatible_p(          \
-            __typeof__(_vec), const te_vec *), \
-            te_vec_get_safe_immutable,         \
-            te_vec_get_safe_mutable)(_vec, _index, _element_size))
+#define te_vec_get_safe(vec_, index_, element_size_) \
+    (__builtin_choose_expr(                                         \
+        __builtin_types_compatible_p(                               \
+            __typeof__(_vec), const te_vec *),                      \
+        te_vec_get_safe_immutable,                                  \
+        te_vec_get_safe_mutable)(vec_, index_, element_size_))
 #endif
 
 static inline const void *
@@ -309,22 +323,22 @@ te_vec_get_safe_mutable(te_vec *vec, size_t index, size_t element_size)
 }
 
 /**
- * Append one element to the dynamic array
+ * Append one element to the dynamic array.
  *
  * If @p element is @c NULL, the new element will be zeroed.
  *
- * @param vec        Dymanic vector
- * @param element    Element for appending (may be @c NULL)
+ * @param vec        Dynamic vector.
+ * @param element    Element to append (may be @c NULL).
  *
  * @return Status code (always 0).
  */
 extern te_errno te_vec_append(te_vec *vec, const void *element);
 
 /**
- * Append elements from @p other dynamic array
+ * Append elements from @p other dynamic array,
  *
- * @param vec        Dymanic vector
- * @param other      Other dymanic vector
+ * @param vec        Dynamic vector.
+ * @param other      Other dynamic vector.
  *
  * @return Status code (always 0).
  *
@@ -333,13 +347,13 @@ extern te_errno te_vec_append(te_vec *vec, const void *element);
 extern te_errno te_vec_append_vec(te_vec *vec, const te_vec *other);
 
 /**
- * Append elements from C-like array to the dynamic array
+ * Append elements from a plain C array to the dynamic array.
  *
  * If @p elements is @c NULL, the news element will be zeroed.
  *
- * @param vec        Dymanic vector
- * @param elements   Elements of array (may be @c NULL)
- * @param count      Count of @p elements
+ * @param vec        Dynamic vector.
+ * @param elements   Elements of array (may be @c NULL).
+ * @param count      Number of @p elements.
  *
  * @return Status code (always 0).
  */
@@ -347,17 +361,18 @@ extern te_errno te_vec_append_array(te_vec *vec, const void *elements,
                                     size_t count);
 
 /**
- * Append a formatted C-string to the dynamic array
+ * Append a formatted C string to the dynamic array.
  *
- * @param vec        Dynamic vector of C-strings
- * @param fmt        Format string
- * @param ...        Format string arguments
+ * The string in the vector will be heap-allocated.
+ *
+ * @param vec        Dynamic vector of C strings.
+ * @param fmt        Format string.
+ * @param ...        Format string arguments.
  *
  * @return Status code (always 0).
  */
 extern te_errno te_vec_append_str_fmt(te_vec *vec, const char *fmt, ...)
                                       __attribute__((format(printf, 2, 3)));
-
 
 /**
  * Replace the content of @p index'th element of @p vec with @p new_val.
@@ -371,17 +386,17 @@ extern te_errno te_vec_append_str_fmt(te_vec *vec, const char *fmt, ...)
  * @param index       Index to replace.
  * @param new_val     New content (may be @c NULL).
  *
- * @return A pointer to the new contents of the element.
+ * @return A pointer to the new content of the element.
  */
 extern void *te_vec_replace(te_vec *vec, size_t index, const void *new_val);
 
 /**
- * Move the contents of a vector element to @p dest.
+ * Move the content of a vector element to @p dest.
  *
  * This function is mostly useful for vectors with non-null destructors.
  * Basically, it implements move semantics for vector elements.
  *
- * If @p dest is not @c NULL, the contents of @p index'th element is copied
+ * If @p dest is not @c NULL, the content of @p index'th element is copied
  * to @p dest; destructors are not called.
  *
  * If @p dest is @c NULL, the destructor is called on @p index'th element.
@@ -421,7 +436,7 @@ extern size_t te_vec_transfer_append(te_vec *vec, size_t start_index,
                                      size_t count, te_vec *dest_vec);
 
 /**
- * Remove elements from a vector
+ * Remove elements from a vector.
  *
  * If @p vec has a non-null element destructor,
  * it will be called for each element.
@@ -429,18 +444,17 @@ extern size_t te_vec_transfer_append(te_vec *vec, size_t start_index,
  * If @p start_index + @p count is greater than the vector size,
  * @p count is decreased as needed.
  *
- * @param vec           Dynamic vector
- * @param start_index   Starting index of elements to remove
- * @param count         Number of elements to remove
+ * @param vec           Dynamic vector.
+ * @param start_index   Starting index of elements to remove.
+ * @param count         Number of elements to remove.
  */
-extern void
-te_vec_remove(te_vec *vec, size_t start_index, size_t count);
+extern void te_vec_remove(te_vec *vec, size_t start_index, size_t count);
 
 /**
- * Remove an element from a vector
+ * Remove an element from a vector.
  *
- * @param vec           Dynamic vector
- * @param index         Index of a element to remove
+ * @param vec           Dynamic vector.
+ * @param index         Index of an element to remove.
  */
 static inline void
 te_vec_remove_index(te_vec *vec, size_t index)
@@ -449,14 +463,14 @@ te_vec_remove_index(te_vec *vec, size_t index)
 }
 
 /**
- * Safe version of @ref te_vec_append_array
+ * Safe version of te_vec_append_array().
  *
- * @param vec               Dymanic vector
- * @param elements          Elements of array
- * @param count             Count of @p elements
- * @param element_size      Size of one element in @p elements
+ * @param vec               Dynamic vector.
+ * @param elements          Elements of an array.
+ * @param count             Number of @p elements.
+ * @param element_size      Size of one element in @p elements.
  *
- * @return Status code (always 0)
+ * @return Status code (always 0).
  */
 static inline te_errno
 te_vec_append_array_safe(te_vec *vec, const void *elements,
@@ -468,20 +482,24 @@ te_vec_append_array_safe(te_vec *vec, const void *elements,
 }
 
 /**
- * Reset dynamic array (makes it empty), memory is not freed
+ * Reset a dynamic array.
  *
+ * The number of elements in the array becomes zero.
  * A destructor function is called for each element if it is defined.
+ * The memory of the vector itself is not released.
  *
- * @param vec          Dynamic vector
+ * @param vec          Dynamic vector.
+ *
+ * @sa te_vec_free()
  */
 extern void te_vec_reset(te_vec *vec);
 
 /**
- * Cleanup dynamic array and storage memory
+ * Cleanup a dynamic array and free its storage memory.
  *
  * A destructor function is called for each element if it is defined.
  *
- * @param vec       Dynamic vector
+ * @param vec       Dynamic vector.
  */
 extern void te_vec_free(te_vec *vec);
 
@@ -492,25 +510,29 @@ extern void te_vec_free(te_vec *vec);
  * @p vec has a null destructor, in which case it treats elements
  * as pointers to heap memory and free() them.
  *
- * @param vec        Dynamic vector of pointers
+ * @param vec        Dynamic vector of pointers.
  *
  * @deprecated Use te_vec_free() with a proper destructor.
  */
 extern void te_vec_deep_free(te_vec *vec);
 
 /**
- * Append to a dynamic array of strings
+ * Append to a dynamic array of strings.
  *
- * @param vec           Dynamic vector to append the array of strings to
+ * The elements in the array will be strdup()'ed.
+ *
+ * @param vec           Dynamic vector to append the array of strings to.
  * @param elements      @c NULL terminated array of strings
  *
  * @return Status code (always 0).
  */
 extern te_errno te_vec_append_strarray(te_vec *vec, const char **elements);
 
-
 /**
  * Return an index of an element of @p vec pointed to by @p ptr.
+ *
+ * @param vec           Dynamic vector.
+ * @param ptr           Pointer to the content of some of its elements.
  *
  * @return Zero-based index. The result is undefined if @p ptr is
  *         not pointing to the actual vector data
@@ -524,7 +546,6 @@ te_vec_get_index(const te_vec *vec, const void *ptr)
     return offset / vec->element_size;
 }
 
-
 /**
  * Split a string into chunks separated by @p sep.
  *
@@ -537,11 +558,11 @@ te_vec_get_index(const te_vec *vec, const void *ptr)
  *       a separator. The only special case is an empty string
  *       which may be treated as no chunks depending on @p empty_is_none.
  *
- * @param[in]     str            String to split
+ * @param[in]     str            String to split.
  * @param[in,out] strvec         Target vector for string chunks.
- *                               The original contents is **not** destroyed,
+ *                               The original content is **not** destroyed,
  *                               new items are added to the end.
- * @param[in]     sep            Separator character
+ * @param[in]     sep            Separator character.
  * @param[in]     empty_is_none  If @c TRUE, empty string is treated
  *                               as having no chunks (so @p strvec is
  *                               not changed). Otherwise, an empty string
@@ -555,10 +576,11 @@ extern te_errno te_vec_split_string(const char *str, te_vec *strvec, char sep,
 /**
  * Sort the elements of @p vec in place according to @p compar.
  *
- * @param vec      Vector to sort
- * @param compar   Comparison function (as for qsort())
+ * @param vec      Vector to sort.
+ * @param compar   Comparison function (as for @c qsort).
  */
-extern void te_vec_sort(te_vec *vec, int (*compar)(const void *elt1, const void *elt2));
+extern void te_vec_sort(te_vec *vec, int (*compar)(const void *elt1,
+                                                   const void *elt2));
 
 /**
  * Search a sorted vector @p vec for an item equal to @p key
@@ -581,9 +603,9 @@ extern void te_vec_sort(te_vec *vec, int (*compar)(const void *elt1, const void 
  * functions need not to be truly identical: the search comparison function
  * may treat more elements as equal than the sort comparison.
  *
- * @param[in]  vec     Vector to search in
- * @param[in]  key     Key to search
- * @param[in]  compar  Comparison function (as for bsearch())
+ * @param[in]  vec     Vector to search in.
+ * @param[in]  key     Key to search.
+ * @param[in]  compar  Comparison function (as for @c bsearch).
  * @param[out] minpos  The lowest index of a matching element.
  * @param[out] maxpos  The highest index of a matchin element.
  *                     Any of @p minpos and @p maxpos may be @c NULL.
