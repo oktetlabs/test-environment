@@ -45,22 +45,94 @@
 extern "C" {
 #endif
 
+/**
+ * Function type for vector element destructors.
+ *
+ * The destructor accepts a pointer to a vector element
+ * which it is not supposed to modify, *not* a pointer
+ * to a deallocatable memory, so e.g. a destructor
+ * that frees a `char *` typed element would look like:
+ * @code
+ * static void item_destroy_str(const void *item)
+ * {
+ *     char *buf = *(void * const *)item;
+ *     free(buf);
+ * }
+ * @endcode
+ *
+ * The destructor function shall be prepared to deal
+ * correctly with all-zero initialized elements.
+ *
+ * @param item   A pointer to a vector element data.
+ */
+typedef void te_vec_item_destroy_fn(const void *item);
+
+
+/**
+ * A destructor to release vector elements that contain
+ * a single heap memoy pointer.
+ */
+extern te_vec_item_destroy_fn te_vec_item_free_ptr;
+
 /** Dymanic array */
 typedef struct te_vec {
     te_dbuf data;           /**< Data of array */
     size_t element_size;    /**< Size of one element in bytes */
+    te_vec_item_destroy_fn *destroy; /**< Element destructor. */
 } te_vec;
 
+/**
+ * Complete initializer for a te_vec.
+ *
+ * @param type_         Element type.
+ * @param grow_factor_  Grow factor (see TE_DBUF_DEFAULT_GROW_FACTOR).
+ * @param destroy_      Element destructor (or @c NULL).
+ */
+#define TE_VEC_INIT_COMPLETE(type_, grow_factor_, destroy_) \
+    (te_vec){                                               \
+        .data = TE_DBUF_INIT(grow_factor_),                 \
+        .element_size = sizeof(type_),                      \
+        .destroy = (destroy_),                              \
+    }
+
 /** Initialization from type and custom grow factor and type */
-#define TE_VEC_INIT_GROW_FACTOR(_type, _grow_factor) (te_vec)   \
-{                                                               \
-    .data = TE_DBUF_INIT(_grow_factor),                         \
-    .element_size = sizeof(_type),                              \
-}
+#define TE_VEC_INIT_GROW_FACTOR(type_, grow_factor_) \
+    TE_VEC_INIT_COMPLETE(type_, grow_factor_, NULL)
 
 /** Initialization from type only */
 #define TE_VEC_INIT(_type) \
     TE_VEC_INIT_GROW_FACTOR(_type, TE_DBUF_DEFAULT_GROW_FACTOR)
+
+/**
+ * Vector initializer with a possibly non-null destructor.
+ *
+ * @param type_     Element type.
+ * @param destroy_  Element destructor or @c NULL.
+ */
+#define TE_VEC_INIT_DESTROY(type_, destroy_) \
+    TE_VEC_INIT_COMPLETE(type_, TE_DBUF_DEFAULT_GROW_FACTOR, destroy_)
+
+/*
+ * Set a vector element destructor with sanity checks.
+ *
+ * The following rules are used to minimize the risk of
+ * calling a destructor on improper data:
+ * - it is always possible to set a destructor to @c NULL;
+ * - if a vector already has a non-null destructor,
+ *   the new destructor must be the same;
+ * - if a vector has a null destructor and has some elements,
+ *   the destructor remains null to support wider range of
+ *   legacy cases;
+ * - otherwise the null destructor is replaced with the new one.
+ *
+ * @param vec       Vector.
+ * @param destroy   New destructor function.
+ *
+ * @exception TE_FATAL_ERROR if the new destructor and the old
+ *            one are not the same.
+ */
+extern void te_vec_set_destroy_fn_safe(te_vec *vec,
+                                       te_vec_item_destroy_fn *destroy);
 
 /**
  * Access for element in array
@@ -70,6 +142,11 @@ typedef struct te_vec {
  * @param _index    Index of element
  *
  * @return Element of array
+ *
+ * @note For vectors with a non-null destructor
+ *       te_vec_replace() should be used instead of
+ *       mutable TE_VEC_GET(), as it guarantees proper
+ *       disposal of old element contents.
  */
 #define TE_VEC_GET(_type, _te_vec, _index) \
     (*(_type *)te_vec_get_safe(_te_vec, _index, sizeof(_type)))
@@ -234,8 +311,10 @@ te_vec_get_safe_mutable(te_vec *vec, size_t index, size_t element_size)
 /**
  * Append one element to the dynamic array
  *
+ * If @p element is @c NULL, the new element will be zeroed.
+ *
  * @param vec        Dymanic vector
- * @param element    Element for appending
+ * @param element    Element for appending (may be @c NULL)
  *
  * @return Status code (always 0).
  */
@@ -248,14 +327,18 @@ extern te_errno te_vec_append(te_vec *vec, const void *element);
  * @param other      Other dymanic vector
  *
  * @return Status code (always 0).
+ *
+ * @pre Both vectors must have a null element destructor.
  */
 extern te_errno te_vec_append_vec(te_vec *vec, const te_vec *other);
 
 /**
  * Append elements from C-like array to the dynamic array
  *
+ * If @p elements is @c NULL, the news element will be zeroed.
+ *
  * @param vec        Dymanic vector
- * @param elements   Elements of array
+ * @param elements   Elements of array (may be @c NULL)
  * @param count      Count of @p elements
  *
  * @return Status code (always 0).
@@ -275,11 +358,73 @@ extern te_errno te_vec_append_array(te_vec *vec, const void *elements,
 extern te_errno te_vec_append_str_fmt(te_vec *vec, const char *fmt, ...)
                                       __attribute__((format(printf, 2, 3)));
 
+
+/**
+ * Replace the content of @p index'th element of @p vec with @p new_val.
+ *
+ * If @p new_val is @c NULL, the content of the element is zeroed.
+ * A destructor function (if it is set) is called for the old content.
+ *
+ * If @p index is larger than the @p vec size, it is grown as needed.
+ *
+ * @param vec         Dynamic vector.
+ * @param index       Index to replace.
+ * @param new_val     New content (may be @c NULL).
+ *
+ * @return A pointer to the new contents of the element.
+ */
+extern void *te_vec_replace(te_vec *vec, size_t index, const void *new_val);
+
+/**
+ * Move the contents of a vector element to @p dest.
+ *
+ * This function is mostly useful for vectors with non-null destructors.
+ * Basically, it implements move semantics for vector elements.
+ *
+ * If @p dest is not @c NULL, the contents of @p index'th element is copied
+ * to @p dest; destructors are not called.
+ *
+ * If @p dest is @c NULL, the destructor is called on @p index'th element.
+ *
+ * In both cases the element is zeroed afterwards. This ensures that calling
+ * the destructor for the second time would not cause bugs like double-free.
+ *
+ * @param vec        Dynamic vector.
+ * @param index      Index to move.
+ * @param dest       Destination (may be @c NULL).
+ */
+extern void te_vec_transfer(te_vec *vec, size_t index, void *dest);
+
+/**
+ * Move at most @p count elements from @p vec to @p dest_vec.
+ *
+ * If @p dest_vec is not @c NULL, elements starting from @p start_index
+ * are appended to it and the elements are zeroed like with
+ * te_vec_transfer().
+ *
+ * If @p dest_vec is @c NULL, the destructor is called on the elements.
+ *
+ * If @p start_index + @p count is greater than the vector size, @p count
+ * is decreased as needed.
+ *
+ * @p dest_vec must either have a null element destructor or the same
+ * destructor as @p vec.
+ *
+ * @param vec           Source vector.
+ * @param start_index   Starting index.
+ * @param count         Number of elements.
+ * @param dest_vec      Destination vector (may be @c NULL).
+ *
+ * @return The number of actually transferred elements.
+ */
+extern size_t te_vec_transfer_append(te_vec *vec, size_t start_index,
+                                     size_t count, te_vec *dest_vec);
+
 /**
  * Remove elements from a vector
  *
- * @note If the elements of the vector are themselves pointers,
- *       they won't be automatically freed.
+ * If @p vec has a non-null element destructor,
+ * it will be called for each element.
  *
  * @param vec           Dynamic vector
  * @param start_index   Starting index of elements to remove
@@ -322,6 +467,8 @@ te_vec_append_array_safe(te_vec *vec, const void *elements,
 /**
  * Reset dynamic array (makes it empty), memory is not freed
  *
+ * A destructor function is called for each element if it is defined.
+ *
  * @param vec          Dynamic vector
  */
 extern void te_vec_reset(te_vec *vec);
@@ -329,17 +476,22 @@ extern void te_vec_reset(te_vec *vec);
 /**
  * Cleanup dynamic array and storage memory
  *
+ * A destructor function is called for each element if it is defined.
+ *
  * @param vec       Dynamic vector
  */
 extern void te_vec_free(te_vec *vec);
 
 /**
- * Free the dynamic array along with its elements which must be pointers
- * deallocatable by free()
+ * Free the dynamic array along with its elements.
+ *
+ * The function does exactly the same as te_vec_free() unless
+ * @p vec has a null destructor, in which case it treats elements
+ * as pointers to heap memory and free() them.
  *
  * @param vec        Dynamic vector of pointers
  *
- * @return Status code
+ * @deprecated Use te_vec_free() with a proper destructor.
  */
 extern void te_vec_deep_free(te_vec *vec);
 
@@ -374,8 +526,6 @@ te_vec_get_index(const te_vec *vec, const void *ptr)
  * Split a string into chunks separated by @p sep.
  *
  * The copies of the chunks are pushed into the @p strvec.
- * (the memory is owned by the vector, i.e. it must be later
- * freed by e.g. te_vec_deep_free()).
  *
  * @note The element size of @p strvec must be `sizeof(char *)`.
  *

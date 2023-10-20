@@ -85,7 +85,7 @@ check_split(const char *input, te_bool empty_is_none,
         }
     }
 
-    te_vec_deep_free(&strvec);
+    te_vec_free(&strvec);
 }
 
 int

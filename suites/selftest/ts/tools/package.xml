@@ -498,12 +498,26 @@
             <script name="uri"/>
         </run>
 
-        <run>
-            <script name="vector"/>
-        </run>
+        <run name="vectors">
+            <session>
+                <run>
+                    <script name="vector"/>
+                </run>
 
-        <run>
-            <script name="vector_search"/>
+                <run>
+                    <script name="vector_mem"/>
+                    <arg name="n_iterations">
+                        <value>10000</value>
+                    </arg>
+                    <arg name="max_elements">
+                        <value>100</value>
+                    </arg>
+                </run>
+
+                <run>
+                    <script name="vector_search"/>
+                </run>
+            </session>
         </run>
     </session>
 </package>

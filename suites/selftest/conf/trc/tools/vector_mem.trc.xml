@@ -1,0 +1,8 @@
+<test name="vector_mem" type="script">
+    <objective>Testing vector manipulating routines</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="n_iterations" />
+        <arg name="max_elements" />
+    </iter>
+</test>

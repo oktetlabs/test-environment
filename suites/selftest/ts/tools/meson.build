@@ -28,6 +28,7 @@ tests = [
     'units',
     'uri',
     'vector',
+    'vector_mem',
     'vector_search',
 ]
 
