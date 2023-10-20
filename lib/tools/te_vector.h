@@ -59,7 +59,8 @@ typedef struct te_vec {
 }
 
 /** Initialization from type only */
-#define TE_VEC_INIT(_type) TE_VEC_INIT_GROW_FACTOR(_type, 50)
+#define TE_VEC_INIT(_type) \
+    TE_VEC_INIT_GROW_FACTOR(_type, TE_DBUF_DEFAULT_GROW_FACTOR)
 
 /**
  * Access for element in array

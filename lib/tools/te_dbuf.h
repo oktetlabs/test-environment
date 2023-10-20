@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief API to deal with dynamic buffers
  *
@@ -8,29 +9,18 @@
  *
  * Definition of functions to work with dynamic buffers.
  *
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
- *
- *
- *
- *
- *
- *
  * Example of using:
  * @code
- * // Init the dynamic buffer with 100% overlength.
- * te_dbuf dbuf = TE_DBUF_INIT(100);
+ * // Init the dynamic buffer with the default growth parameters.
+ * te_dbuf dbuf = TE_DBUF_INIT(TE_DBUF_DEFAULT_GROW_FACTOR);
  * ...
  * // Put the "foo\0" into the dbuf
- * if (te_dbuf_append(&dbuf, "foo", 4) == -1) {
- *     ERROR("Memory allocation error");
- * }
+ * te_dbuf_append(&dbuf, "foo", 4);
  * ...
  * // Reserve 4 bytes into the dbuf
  * size_t pos = dbuf.len;   // Save current position in the buffer.
- * if (te_dbuf_append(&dbuf, NULL, 4) == -1) {
- *     ERROR("Memory allocation error");
- * }
+ * te_dbuf_append(&dbuf, NULL, 4);
+ *
  * (uint32_t *)&dbuf.ptr[pos] = 5;  // Put the number to reserved place.
  * ...
  * // Reset the buffer to start filling it from the beginning again.
@@ -52,26 +42,39 @@ extern "C" {
 #endif
 
 /**
+ * A grow factor is a percentage of extra memory
+ * to reserve for a dbuf when new data are appended to it.
+ *
+ * For example, with a grow factor of @c 100, the amount
+ * of reserved memory is doubled every time the buffer is
+ * reallocated.
+ *
+ * The purpose of grow factos is to optimize memory usage for
+ * different buffer grow scenario, however, most users should
+ * not bother with it and use the default factor.
+ */
+#define TE_DBUF_DEFAULT_GROW_FACTOR 50
+
+/**
  * Dynamically allocated buffer.
  */
 typedef struct te_dbuf {
     uint8_t *ptr;       /**< Pointer to the buffer. */
     size_t   size;      /**< Size of the buffer. */
     size_t   len;       /**< Length of actual data. */
-    uint8_t  grow_factor;   /**< Buffer extra size in percentages. I.e.
-                             size = required_size * (1+grow_factor/100.). */
+    uint8_t  grow_factor;   /**< See TE_DBUF_DEFAULT_GROW_FACTOR. */
 } te_dbuf;
 
 /**
  * On-stack te_dbuf initializer.
  *
- * @param _grow_factor  Buffer extra size in percentages.
+ * @param grow_factor_  see TE_DBUF_DEFAULT_GROW_FACTOR
  */
-#define TE_DBUF_INIT(_grow_factor) { \
+#define TE_DBUF_INIT(grow_factor_) { \
     .ptr = NULL,                     \
     .size = 0,                       \
     .len = 0,                        \
-    .grow_factor = _grow_factor      \
+    .grow_factor = (grow_factor_)    \
 }
 
 /**
