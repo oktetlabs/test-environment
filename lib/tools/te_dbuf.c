@@ -33,6 +33,8 @@ te_dbuf_append(te_dbuf *dbuf, const void *data, size_t data_len)
     }
     if (data != NULL)
         memcpy(&dbuf->ptr[dbuf->len], data, data_len);
+    else
+        memset(&dbuf->ptr[dbuf->len], 0, data_len);
     dbuf->len += data_len;
     return 0;
 }

@@ -92,8 +92,8 @@ te_dbuf_reset(te_dbuf *dbuf)
  *
  * @param dbuf          Dynamic buffer.
  * @param data          Data to append to the buffer pointed by @p dbuf.
- *                      May be @c NULL if needs only reserve the area
- *                      without placing any data.
+ *                      If @c NULL, then a block of @p data_len zeroes
+ *                      is appended.
  * @param data_len      Length of the data.
  *
  * @return Status code (always 0).
