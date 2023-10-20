@@ -126,6 +126,8 @@ te_vec_remove(te_vec *vec, size_t start_index, size_t count)
 {
     assert(vec != NULL);
 
+    te_alloc_adjust_extent(te_vec_size(vec), start_index, &count);
+
     vec_destroy_elements(vec, start_index, count);
     te_dbuf_cut(&vec->data, vec->element_size * start_index,
                 vec->element_size * count);

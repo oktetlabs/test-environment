@@ -162,6 +162,33 @@ check_remove(unsigned int max_elements)
 }
 
 static void
+check_remove_tail(unsigned int max_elements)
+{
+    unsigned int n = rand_range(1, max_elements);
+    unsigned int remove_idx = rand_range(0, n - 1);
+    te_vec vector = TE_VEC_INIT_DESTROY(int, count_destroy);
+
+    te_vec_append_array(&vector, NULL, n);
+    check_zeroes(&vector, 0, n);
+
+    destroy_cnt = 0;
+    te_vec_remove(&vector, remove_idx, SIZE_MAX);
+    if (te_vec_size(&vector) != remove_idx)
+    {
+        ERROR("Vector size after removel should be %u, but is %zu",
+              remove_idx, te_vec_size(&vector));
+        TEST_VERDICT("Improper number of removed elements");
+    }
+    if (destroy_cnt != n - remove_idx)
+    {
+        TEST_VERDICT("Destructor called %u times instead of %u",
+                     destroy_cnt, n - remove_idx);
+    }
+
+    te_vec_free(&vector);
+}
+
+static void
 check_transfer(unsigned int max_elements)
 {
     static const int value1 = 1;
@@ -256,6 +283,10 @@ main(int argc, char **argv)
     TEST_STEP("Checking element removal");
     for (i = 0; i < n_iterations; i++)
         check_remove(max_elements);
+
+    TEST_STEP("Checking tail removal");
+    for (i = 0; i < n_iterations; i++)
+        check_remove_tail(max_elements);
 
     TEST_STEP("Checking element transferral");
     for (i = 0; i < n_iterations; i++)

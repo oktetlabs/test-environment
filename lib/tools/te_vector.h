@@ -426,6 +426,9 @@ extern size_t te_vec_transfer_append(te_vec *vec, size_t start_index,
  * If @p vec has a non-null element destructor,
  * it will be called for each element.
  *
+ * If @p start_index + @p count is greater than the vector size,
+ * @p count is decreased as needed.
+ *
  * @param vec           Dynamic vector
  * @param start_index   Starting index of elements to remove
  * @param count         Number of elements to remove
