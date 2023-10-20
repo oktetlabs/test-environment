@@ -28,6 +28,26 @@
 #include "te_bufs.h"
 #include "te_alloc.h"
 
+static void
+check_adjust_extent(size_t buf_size, size_t offset, size_t length,
+                    te_bool exp_adjusted, size_t exp_length)
+{
+    te_bool adjusted = te_alloc_adjust_extent(buf_size, offset, &length);
+
+    if (exp_adjusted != adjusted)
+    {
+        TEST_VERDICT("Length %s when it %s",
+                     adjusted ? "adjusted" : "not adjusted",
+                     exp_adjusted ? "should" : "shouldn't");
+    }
+
+    if (length != exp_length)
+    {
+        TEST_VERDICT("Expected length %zu, actually %zu",
+                     exp_length, length);
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -138,6 +158,36 @@ main(int argc, char **argv)
                   nmemb + 1, size | high_bit);
             TEST_VERDICT("Check for overflow failed");
         }
+    }
+
+    TEST_STEP("Checking extent limiter");
+    TEST_SUBSTEP("no overflow, no adjustment");
+    for (i = 0; i < n_iterations; i++)
+    {
+        size_t buf_size = (size_t)rand_range(1, UINT16_MAX);
+        size_t start = (size_t)rand_range(0, buf_size - 1);
+        size_t length = (size_t)rand_range(0, buf_size - start);
+
+        check_adjust_extent(buf_size, start, length, FALSE, length);
+    }
+
+    TEST_SUBSTEP("no overflow, with adjustment");
+    for (i = 0; i < n_iterations; i++)
+    {
+        size_t buf_size = (size_t)rand_range(1, UINT16_MAX);
+        size_t start = (size_t)rand_range(0, buf_size - 1);
+        size_t length = buf_size - start + (size_t)rand_range(1, UINT16_MAX);
+
+        check_adjust_extent(buf_size, start, length, TRUE, buf_size - start);
+    }
+
+    TEST_SUBSTEP("overflow, with adjustment");
+    for (i = 0; i < n_iterations; i++)
+    {
+        size_t buf_size = (size_t)rand_range(1, UINT16_MAX);
+        size_t start = (size_t)rand_range(0, buf_size - 1);
+
+        check_adjust_extent(buf_size, start, SIZE_MAX, TRUE, buf_size - start);
     }
 
     TEST_SUCCESS;

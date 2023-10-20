@@ -23,6 +23,40 @@ extern "C" {
 #endif
 
 /**
+ * Ensure that @p offset + @p extent is not out of bounds.
+ *
+ * The function adjusts the value in @p extent so that a chunk
+ * starting at @p extent lie completely within a buffer of
+ * @p total_length bytes.
+ *
+ * The function handles unsigned overflows correctly, so e.g.
+ * @p extent may contain @c SIZE_MAX.
+ *
+ * @param[in]     total_length   Total length of a buffer.
+ * @param[in]     offset         Offset of a chunk within the buffer.
+ * @param[in,out] extent         Length of the chunk.
+ *
+ * @return @c TRUE if @p extent was reduced.
+ *
+ * @pre @p offset should be within @p total_length.
+ */
+static inline te_bool
+te_alloc_adjust_extent(size_t total_length, size_t offset, size_t *extent)
+{
+    te_bool adjusted = FALSE;
+
+    assert(offset < total_length);
+    if (offset + *extent > total_length ||
+        offset + *extent < offset)
+    {
+        *extent = total_length - offset;
+        adjusted = TRUE;
+    }
+
+    return adjusted;
+}
+
+/**
  * Allocate @p size bytes and optionally fill allocated memory with zeroes.
  *
  * This function should never be called directly,
