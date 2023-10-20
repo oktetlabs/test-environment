@@ -19,6 +19,7 @@ tests = [
     'lines',
     'make_bufs',
     'readlink',
+    'rings',
     'resolvepath',
     'scalar_types',
     'scandir',

@@ -123,6 +123,20 @@ typedef struct te_vec {
     TE_VEC_INIT_COMPLETE(type_, TE_DBUF_DEFAULT_GROW_FACTOR, destroy_)
 
 /*
+ * Initialize a vector with the same parameters as @p other_.
+ *
+ * Data are *not* copied.
+ *
+ * @param other_    A pointer to another vector.
+ */
+#define TE_VEC_INIT_LIKE(other_) \
+    (te_vec){                                             \
+        .data = TE_DBUF_INIT((other_)->data.grow_factor), \
+        .element_size = (other_)->element_size,           \
+        .destroy = (other_)->destroy,                     \
+    }
+
+/*
  * Set a vector element destructor with sanity checks.
  *
  * The following rules are used to minimize the risk of

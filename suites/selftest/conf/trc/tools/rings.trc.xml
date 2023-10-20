@@ -1,0 +1,8 @@
+<test name="rings" type="script">
+    <objective>Testing ring buffer functions.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="n_iterations" />
+        <arg name="max_ring_size" />
+    </iter>
+</test>

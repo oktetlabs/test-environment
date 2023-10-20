@@ -295,6 +295,16 @@
         </run>
 
         <run>
+            <script name="rings"/>
+            <arg name="n_iterations">
+                <value>10000</value>
+            </arg>
+            <arg name="max_ring_size">
+                <value>100</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="scalar_types"/>
             <arg name="src_type">
                 <value>te_bool</value>
