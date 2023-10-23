@@ -51,7 +51,9 @@ typedef struct te_ring {
 #define TE_RING_INIT(type_, destroy_, ring_size_) \
     {                                                       \
         .ring_size = (ring_size_),                          \
-        .data = TE_VEC_INIT_DESTROY(type_, destroy_)        \
+        .data = TE_VEC_INIT_DESTROY(type_, destroy_),       \
+        .rptr = 0,                                          \
+        .fill = 0,                                          \
     }
 
 /**
