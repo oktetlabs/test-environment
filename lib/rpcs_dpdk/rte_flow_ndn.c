@@ -3206,6 +3206,28 @@ TARPC_FUNC(rte_flow_tunnel_item_release, {},
     neg_errno_h2rpc(&out->retval);
 })
 
+TARPC_FUNC(rte_flow_pick_transfer_proxy,
+{
+    COPY_ARG(proxy_port_id);
+},
+{
+    uint16_t              *proxy_port_idp = NULL;
+    struct rte_flow_error  error = {};
+
+    CHECK_ARG_SINGLE_PTR(out, proxy_port_id);
+
+    if (out->proxy_port_id.proxy_port_id_len != 0)
+        proxy_port_idp = out->proxy_port_id.proxy_port_id_val;
+
+    MAKE_CALL(out->retval = func(in->port_id, proxy_port_idp, &error));
+
+    neg_errno_h2rpc(&out->retval);
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+done:
+    ;
+})
+
 TARPC_FUNC_STANDALONE(rte_flow_prepend_opaque_actions, {},
 {
     unsigned int             nb_united_actions;

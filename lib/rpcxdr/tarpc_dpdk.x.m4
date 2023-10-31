@@ -2258,6 +2258,22 @@ struct tarpc_rte_flow_release_united_items_in {
 typedef struct tarpc_void_out tarpc_rte_flow_release_united_items_out;
 
 
+/** rte_flow_pick_transfer_proxy() */
+struct tarpc_rte_flow_pick_transfer_proxy_in {
+    struct tarpc_in_arg          common;
+
+    uint16_t                     port_id;
+    uint16_t                     proxy_port_id<>;
+};
+
+struct tarpc_rte_flow_pick_transfer_proxy_out {
+    struct tarpc_out_arg         common;
+
+    tarpc_int                    retval;
+    uint16_t                     proxy_port_id<>;
+    struct tarpc_rte_flow_error  error;
+};
+
 /**
  * Handmade DPDK utility RPCs
  */
@@ -2464,6 +2480,7 @@ program dpdk
         RPC_DEF(rte_flow_release_united_actions)
         RPC_DEF(rte_flow_prepend_opaque_items)
         RPC_DEF(rte_flow_release_united_items)
+        RPC_DEF(rte_flow_pick_transfer_proxy)
 
         RPC_DEF(dpdk_eth_await_link_up)
         RPC_DEF(dpdk_get_version)
