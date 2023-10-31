@@ -182,6 +182,20 @@ extern int rpc_rte_flow_tunnel_item_release(
                                      uint32_t                      num_of_items,
                                      struct tarpc_rte_flow_error  *error);
 
+/**
+ * rte_flow_pick_transfer_proxy() RPC.
+ *
+ * @param[in]     port_id           Port number.
+ * @param[out]    proxy_port_id     Proxy port id number.
+ * @param[out]    error             Perform verbose error reporting if not @c NULL.
+ *
+ * @return @c 0 on success; jumps out in case of failure.
+ */
+extern int rpc_rte_flow_pick_transfer_proxy(
+                                     rcf_rpc_server *rpcs, uint16_t port_id,
+                                     uint16_t *proxy_port_id,
+                                     tarpc_rte_flow_error *error);
+
 /**@} <!-- END te_lib_rpc_rte_flow --> */
 
 #ifdef __cplusplus

@@ -842,3 +842,36 @@ rpc_rte_flow_release_united_items(rcf_rpc_server       *rpcs,
 
     RETVAL_VOID(rte_flow_release_united_items);
 }
+
+int
+rpc_rte_flow_pick_transfer_proxy(rcf_rpc_server *rpcs, uint16_t port_id,
+                                 uint16_t *proxy_port_id,
+                                 tarpc_rte_flow_error *error)
+{
+    tarpc_rte_flow_pick_transfer_proxy_in   in = {};
+    tarpc_rte_flow_pick_transfer_proxy_out  out = {};
+    te_log_buf                             *tlbp;
+
+    TAPI_RPC_SET_IN_ARG_IF_PTR_NOT_NULL(proxy_port_id);
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_flow_pick_transfer_proxy", &in, &out);
+
+    TAPI_RPC_CHECK_OUT_ARG_SINGLE_PTR(rte_flow_pick_transfer_proxy, proxy_port_id);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_flow_pick_transfer_proxy, out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_flow_pick_transfer_proxy,
+                 "port_id=%" PRIu16, "%s: %s", in.port_id,
+                 NEG_ERRNO_ARGS(out.retval), (out.error.type != 0) ?
+                 tarpc_rte_flow_error2str(tlbp, &out.error) : "");
+    te_log_buf_free(tlbp);
+
+    TAPI_RPC_COPY_OUT_ARG_IF_PTR_NOT_NULL(proxy_port_id);
+
+    tarpc_rte_flow_error_copy(error, &out.error);
+
+    RETVAL_ZERO_INT(rte_flow_pick_transfer_proxy, out.retval);
+}
