@@ -56,7 +56,7 @@ sources += files(
 
 conf = get_option('agent-unix-conf')
 if conf.contains('pam')
-    dep_pam = cc.find_library('pam')
+    dep_pam = cc.find_library('pam', required: false)
     if dep_pam.found() and cc.has_function('pam_start', args: te_cflags,
                                            dependencies: dep_pam)
         c_args += [ '-DHAVE_LIBPAM' ]
