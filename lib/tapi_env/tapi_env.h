@@ -37,6 +37,7 @@
 #include "tapi_cfg_net.h"
 #include "tapi_rpc.h"
 #include "tapi_sniffer.h"
+#include "tapi_sockaddr.h"
 
 
 /**
