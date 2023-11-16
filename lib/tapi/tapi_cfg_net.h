@@ -470,6 +470,22 @@ extern te_errno tapi_cfg_net_node_get_pci_oids(const cfg_net_node_t *node,
                                                unsigned int *n_pci,
                                                char ***pci_oids);
 
+/**
+ * Get network node interface name by PCI instance with or without netdev.
+ *
+ * Instances of the following CS objects are supported:
+ *  - /agent/hardware/pci/vendor/device/instance
+ *  - /agent/hardware/pci/vendor/device/instance/netdev
+ *  - /agent/interface
+ *
+ * @param[in]  node_value    network node value
+ * @param[out] iface_name    location for interface name
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_node_interface(const char *node_value,
+                                            char **iface_name);
+
 /**@} <!-- END tapi_conf_net --> */
 
 #ifdef __cplusplus

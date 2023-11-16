@@ -42,6 +42,10 @@
 #include "tapi_cfg_net.h"
 #include "tapi_host_ns.h"
 
+#define TAPI_CFG_NET_OID_INTERFACE \
+                "/agent/interface"
+#define TAPI_CFG_NET_OID_PCI_INSTANCE \
+                "/agent/hardware/pci/vendor/device/instance"
 #define TAPI_CFG_NET_OID_NETDEV \
                 "/agent/hardware/pci/vendor/device/instance/netdev"
 
@@ -68,12 +72,11 @@ tapi_cfg_net_get_node_rsrc_type(cfg_net_node_t *node)
 
     cfg_oid_inst2obj(inst_oid, obj_oid);
 
-    if (strcmp(obj_oid, "/agent/interface") == 0)
+    if (strcmp(obj_oid, TAPI_CFG_NET_OID_INTERFACE) == 0)
     {
         node->rsrc_type = NET_NODE_RSRC_TYPE_INTERFACE;
     }
-    else if (strcmp(obj_oid,
-                    "/agent/hardware/pci/vendor/device/instance") == 0)
+    else if (strcmp(obj_oid, TAPI_CFG_NET_OID_PCI_INSTANCE) == 0)
     {
         node->rsrc_type = NET_NODE_RSRC_TYPE_PCI_FN;
     }
@@ -1262,6 +1265,74 @@ tapi_cfg_net_bind_driver_by_node(enum net_node_type node_type,
     return tapi_cfg_net_foreach_node(tapi_cfg_net_node_bind_driver, &cfg);
 }
 
+te_errno
+tapi_cfg_net_node_interface(const char *node_value, char **iface_name)
+{
+    char node_value_obj[CFG_OID_MAX];
+    te_bool with_netdev = FALSE;
+    cfg_oid *node_value_oid = NULL;
+    char *pci_fn_oid_str = NULL;
+    te_errno rc = 0;
+
+    node_value_oid = cfg_convert_oid_str(node_value);
+    if (node_value_oid == NULL)
+    {
+        ERROR("Cannot parse '%s' as OID", node_value);
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    cfg_oid_inst2obj(node_value, node_value_obj);
+    if (strcmp(node_value_obj, TAPI_CFG_NET_OID_NETDEV) == 0)
+    {
+        char *pci_fn_node_value;
+
+        with_netdev = TRUE;
+        pci_fn_node_value =
+            make_pci_fn_oid_str_by_pci_fn_netdev_oid(node_value_oid);
+        rc = cfg_get_instance_str(NULL, &pci_fn_oid_str, pci_fn_node_value);
+        free(pci_fn_node_value);
+    }
+    else if (strcmp(node_value_obj, TAPI_CFG_NET_OID_PCI_INSTANCE) == 0)
+    {
+        rc = cfg_get_instance_str(NULL, &pci_fn_oid_str, node_value);
+    }
+    else if (strcmp(node_value_obj, TAPI_CFG_NET_OID_INTERFACE) == 0)
+    {
+        *iface_name = cfg_oid_get_inst_name(node_value_oid,
+                                            node_value_oid->len - 1);
+    }
+    else
+    {
+        ERROR("Unsupported resource: %s", node_value);
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    if (rc != 0)
+    {
+        ERROR("Failed to get PCI device path: %r", rc);
+        goto out;
+    }
+
+    if (with_netdev)
+    {
+        rc = tapi_cfg_pci_fn_netdev_get_net_if(pci_fn_oid_str,
+                CFG_OID_GET_INST_NAME(node_value_oid, node_value_oid->len - 1),
+                iface_name);
+    }
+    else
+    {
+        rc = tapi_cfg_pci_get_net_if(pci_fn_oid_str, iface_name);
+    }
+
+out:
+    free(pci_fn_oid_str);
+    free(node_value_oid);
+
+    return TE_RC(TE_TAPI, rc);
+}
+
 /**
  * Callback to switch network node specified using PCI function to
  * network interface.
@@ -1276,10 +1347,7 @@ switch_agent_pci_fn_to_interface(cfg_net_t *net, cfg_net_node_t *node,
     enum net_node_type *type = cookie;
     char *interface = NULL;
     const char *agent;
-    char *pci_path = NULL;
     te_errno rc = 0;
-    char obj_oid[CFG_OID_MAX];
-    te_bool pci_with_netdev = FALSE;
 
     UNUSED(net);
 
@@ -1293,44 +1361,11 @@ switch_agent_pci_fn_to_interface(cfg_net_t *net, cfg_net_node_t *node,
         goto out;
     }
 
-    cfg_oid_inst2obj(oid_str, obj_oid);
-    if (strcmp(obj_oid, TAPI_CFG_NET_OID_NETDEV) == 0)
-    {
-        char *pci_fn_oid_str;
-
-        pci_with_netdev = TRUE;
-        pci_fn_oid_str = make_pci_fn_oid_str_by_pci_fn_netdev_oid(oid);
-        rc = cfg_get_instance_str(NULL, &pci_path, pci_fn_oid_str);
-        free(pci_fn_oid_str);
-    }
-    else
-    {
-        rc = cfg_get_instance_str(NULL, &pci_path, oid_str);
-    }
-
-    if (rc != 0)
-    {
-        ERROR("Failed to get PCI device path: %r", rc);
-        goto out;
-    }
-
-    if (pci_with_netdev)
-    {
-        rc = tapi_cfg_pci_fn_netdev_get_net_if(pci_path,
-                    CFG_OID_GET_INST_NAME(oid, oid->len - 1), &interface);
-    }
-    else
-    {
-        rc = tapi_cfg_pci_get_net_if(pci_path, &interface);
-    }
-
+    rc = tapi_cfg_net_node_interface(oid_str, &interface);
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-        {
-            ERROR("No network interfaces provided by PCI function '%s'",
-                  pci_path);
-        }
+            ERROR("No network interfaces found by '%s'", oid_str);
         goto out;
     }
 
@@ -1357,7 +1392,6 @@ switch_agent_pci_fn_to_interface(cfg_net_t *net, cfg_net_node_t *node,
 
 out:
     free(interface);
-    free(pci_path);
 
     return TE_RC(TE_TAPI, rc);
 }
