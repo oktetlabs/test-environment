@@ -220,7 +220,8 @@ extern te_errno tapi_cfg_pci_get_devices(const char *pci_oid,
 /**
  * Get driver of a PCI device
  *
- * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device or
+ *                          /agent/hardware/pci/vendor/device/instance)
  * @param[out] driver       Driver name (must not be @c NULL)
  *
  * @return Status code
@@ -231,7 +232,8 @@ extern te_errno tapi_cfg_pci_get_driver(const char *pci_oid,
 /**
  * Bind driver to a PCI device
  *
- * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device or
+ *                          /agent/hardware/pci/vendor/device/instance)
  * @param[in]  driver       Driver name
  *
  * @return Status code

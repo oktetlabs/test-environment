@@ -555,31 +555,38 @@ tapi_cfg_pci_get_numa_node_id(const char *pci_oid, int *numa_node)
 te_errno
 tapi_cfg_pci_bind_driver(const char *pci_oid, const char *driver)
 {
+    char *pci_device = NULL;
     te_errno rc;
 
-    rc = cfg_set_instance_fmt(CFG_VAL(STRING, driver), "%s/driver:", pci_oid);
+    rc = tapi_cfg_pci_resolve_device_oid(&pci_device, "%s", pci_oid);
     if (rc != 0)
-    {
-        ERROR("Failed to bind driver %s on PCI device %s", driver, pci_oid);
         return rc;
-    }
 
-    return 0;
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, driver),
+                              "%s/driver:", pci_device);
+    if (rc != 0)
+        ERROR("Failed to bind driver %s on PCI device %s", driver, pci_device);
+
+    free(pci_device);
+    return rc;
 }
 
 te_errno
 tapi_cfg_pci_get_driver(const char *pci_oid, char **driver)
 {
+    char *pci_device = NULL;
     te_errno rc;
 
-    rc = cfg_get_string(driver, "%s/driver:", pci_oid);
+    rc = tapi_cfg_pci_resolve_device_oid(&pci_device, "%s", pci_oid);
     if (rc != 0)
-    {
-        ERROR("Failed to get current driver of PCI device %s", pci_oid);
         return rc;
-    }
 
-    return 0;
+    rc = cfg_get_string(driver, "%s/driver:", pci_device);
+    if (rc != 0)
+        ERROR("Failed to get current driver of PCI device %s", pci_device);
+
+    free(pci_device);
+    return rc;
 }
 
 te_errno
