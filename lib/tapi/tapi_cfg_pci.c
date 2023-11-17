@@ -35,18 +35,16 @@ tapi_cfg_pci_get_pci_vendor_device(const char *ta, const char *pci_addr,
     char *device_str;
     te_errno rc;
 
-    rc = cfg_get_instance_string_fmt(&device_str,
-                                     CFG_PCI_TA_DEVICE_FMT "/device_id:",
-                                     ta, pci_addr);
+    rc = cfg_get_string(&device_str, CFG_PCI_TA_DEVICE_FMT "/device_id:",
+                        ta, pci_addr);
     if (rc != 0)
     {
         ERROR("Failed to get device ID by PCI addr %s, %r", pci_addr, rc);
         return rc;
     }
 
-    rc = cfg_get_instance_string_fmt(&vendor_str,
-                                     CFG_PCI_TA_DEVICE_FMT "/vendor_id:",
-                                     ta, pci_addr);
+    rc = cfg_get_string(&vendor_str, CFG_PCI_TA_DEVICE_FMT "/vendor_id:",
+                        ta, pci_addr);
 
     if (rc != 0)
     {
@@ -137,7 +135,7 @@ tapi_cfg_pci_get_vfs_of_pf(const char *pf_oid, te_bool pci_device,
 
         if (pci_device)
         {
-            rc = cfg_get_instance_str(NULL, &vf_device, vf_instance);
+            rc = cfg_get_string(&vf_device, "%s", vf_instance);
             free(vf_instance);
             vf_instance = NULL;
             if (rc != 0)
@@ -415,8 +413,7 @@ tapi_cfg_pci_get_ta_driver(const char *ta,
             return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
-    rc = cfg_get_instance_fmt(NULL, &result, "/local:%s/%s_driver:",
-                              ta, driver_prefix);
+    rc = cfg_get_string(&result, "/local:%s/%s_driver:", ta, driver_prefix);
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
         ERROR("Failed to get PCI driver of agent %s", ta);
@@ -440,8 +437,8 @@ tapi_cfg_pci_get_net_if_gen(const char *pci_oid, const char *netdev,
 {
     te_errno rc;
 
-    rc = cfg_get_instance_string_fmt(interface, "%s/net:%s", pci_oid,
-                             te_str_is_null_or_empty(netdev) ? "" : netdev);
+    rc = cfg_get_string(interface, "%s/net:%s", pci_oid,
+                        te_str_is_null_or_empty(netdev) ? "" : netdev);
 
     if (rc != 0 && rc != TE_RC(TE_CS, TE_ENOENT))
     {
@@ -519,7 +516,7 @@ tapi_cfg_pci_get_numa_node(const char *pci_oid, char **numa_node)
 {
     te_errno rc;
 
-    rc = cfg_get_instance_string_fmt(numa_node, "%s/node:", pci_oid);
+    rc = cfg_get_string(numa_node, "%s/node:", pci_oid);
     if (rc != 0)
         ERROR("Failed to get the NUMA node of a PCI device: %r", rc);
 
@@ -575,7 +572,7 @@ tapi_cfg_pci_get_driver(const char *pci_oid, char **driver)
 {
     te_errno rc;
 
-    rc = cfg_get_instance_string_fmt(driver, "%s/driver:", pci_oid);
+    rc = cfg_get_string(driver, "%s/driver:", pci_oid);
     if (rc != 0)
     {
         ERROR("Failed to get current driver of PCI device %s", pci_oid);
@@ -683,9 +680,8 @@ pci_oid_copy(const char *pci_oid, const cfg_oid *parsed_oid, void *ctx)
 static te_errno
 pci_oid_do_resolve(const char *pci_oid, const cfg_oid *parsed_oid, void *ctx)
 {
-    cfg_val_type type = CVT_STRING;
     UNUSED(parsed_oid);
-    return cfg_get_instance_str(&type, ctx, pci_oid);
+    return cfg_get_string(ctx, "%s", pci_oid);
 }
 
 static cfg_oid_rule pci_oid_resolve_rules[] = {
@@ -741,9 +737,9 @@ tapi_cfg_pci_get_pcioid_by_vend_dev_inst(const char *ta, const char *vendor,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    rc = cfg_get_instance_string_fmt(&pci_oidstr,
-                                     CFG_PCI_TA_VEND_DEVICE_FMT "/instance:%d",
-                                     ta, vendor, device, instance);
+    rc = cfg_get_string(&pci_oidstr,
+                        CFG_PCI_TA_VEND_DEVICE_FMT "/instance:%d",
+                        ta, vendor, device, instance);
     if (rc != 0)
     {
         ERROR("Failed to get PCI oid by %s:%s:%d, %r", vendor, device,
@@ -822,7 +818,7 @@ out:
 te_errno
 tapi_cfg_pci_get_serialno(const char *pci_oid, char **serialno)
 {
-    return cfg_get_instance_string_fmt(serialno, "%s/serialno:", pci_oid);
+    return cfg_get_string(serialno, "%s/serialno:", pci_oid);
 }
 
 te_errno
@@ -838,7 +834,7 @@ tapi_cfg_pci_get_class(const char *pci_oid, unsigned int *class_id,
     if (rc != 0)
         return rc;
 
-    rc = cfg_get_instance_string_fmt(&class_str, "%s/class:", resolved_oid);
+    rc = cfg_get_string(&class_str, "%s/class:", resolved_oid);
     free(resolved_oid);
     if (rc != 0)
         return rc;
@@ -917,9 +913,8 @@ tapi_cfg_pci_get_param_str(const char *pci_oid,
                            tapi_cfg_pci_param_cmode cmode,
                            char **value)
 {
-    return cfg_get_instance_string_fmt(value, "%s/param:%s/value:%s",
-                                       pci_oid, param_name,
-                                       cmode_to_str(cmode));
+    return cfg_get_string(value, "%s/param:%s/value:%s",
+                          pci_oid, param_name, cmode_to_str(cmode));
 }
 
 /* See description in tapi_cfg_pci.h */
@@ -984,7 +979,7 @@ get_hex_prop(const char *pci_oid, const char *name,
     if (value == NULL)
         return 0;
 
-    rc = cfg_get_instance_string_fmt(&id, "%s/%s:", pci_oid, name);
+    rc = cfg_get_string(&id, "%s/%s:", pci_oid, name);
     if (rc != 0)
         return rc;
 
@@ -1047,8 +1042,8 @@ tapi_cfg_pci_get_spdk_config_filename(const char *pci_oid, const char *cfg_name,
         }
     }
 
-    rc = cfg_get_instance_string_fmt(filename, "%s/spdk_config:%s/filename:",
-                                     resolved_oid, cfg_name);
+    rc = cfg_get_string(filename, "%s/spdk_config:%s/filename:",
+                        resolved_oid, cfg_name);
     free(resolved_oid);
 
     return rc;
