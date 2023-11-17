@@ -191,6 +191,19 @@ extern te_errno tapi_cfg_pci_oid_by_addr(const char *ta, const char *pci_addr,
                                          char **pci_oid);
 
 /**
+ * Get PCI instance OID (used in network model resources) by PCI address.
+ *
+ * @param[in]  ta       test agent name
+ * @param[in]  pci_addr PCI device address (BDF notation)
+ * @param[out] pci_inst location for PCI instance OID
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_pci_instance_by_addr(const char *ta,
+                                              const char *pci_addr,
+                                              char **pci_inst);
+
+/**
  * Get PCI device driver assigned to a Test Agent
  *
  * @param[in]  ta           Test Agent name

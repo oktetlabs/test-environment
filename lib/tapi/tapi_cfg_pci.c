@@ -231,6 +231,65 @@ tapi_cfg_pci_oid_by_addr(const char *ta, const char *pci_addr,
 }
 
 te_errno
+tapi_cfg_pci_instance_by_addr(const char *ta, const char *pci_addr,
+                              char **pci_inst)
+{
+    cfg_handle *instances = NULL;
+    unsigned int n_instances = 0;
+    char *vendor = NULL;
+    char *device = NULL;
+    char *pci_oid = NULL;
+    unsigned int i;
+    te_errno rc;
+
+    rc = tapi_cfg_pci_get_pci_vendor_device(ta, pci_addr, &vendor, &device);
+    if (rc != 0)
+        goto out;
+
+    rc = cfg_find_pattern_fmt(&n_instances, &instances,
+                              CFG_PCI_TA_VEND_DEVICE_FMT "/instance:*",
+                              ta, vendor, device);
+    if (rc != 0)
+        goto out;
+
+    rc = tapi_cfg_pci_oid_by_addr(ta, pci_addr, &pci_oid);
+    if (rc != 0)
+        goto out;
+
+    for (i = 0; i < n_instances; ++i)
+    {
+        char *inst_value = NULL;
+
+        rc = cfg_get_instance(instances[i], NULL, &inst_value);
+        if (rc != 0)
+        {
+            ERROR("Failed to get PCI instance value: %r", rc);
+            goto out;
+        }
+        if (strcmp(inst_value, pci_oid) == 0)
+        {
+            free(inst_value);
+            rc = cfg_get_oid_str(instances[i], pci_inst);
+            break;
+        }
+        free(inst_value);
+    }
+    if (i == n_instances)
+    {
+        ERROR("Failed to get PCI instance by '%s' on '%s'", pci_addr, ta);
+        rc = TE_RC(TE_TAPI, TE_ENOENT);
+    }
+
+out:
+    free(pci_oid);
+    free(instances);
+    free(device);
+    free(vendor);
+
+    return rc;
+}
+
+te_errno
 tapi_cfg_pci_addr_by_oid_array(unsigned int n_devices, const cfg_oid **pci_devices,
                                char ***pci_addrs)
 {
