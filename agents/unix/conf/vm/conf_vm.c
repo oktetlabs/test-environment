@@ -4,7 +4,7 @@
  *
  * Unix TA virtual machines support
  *
- * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "TA unix VM"
@@ -26,6 +26,7 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_alloc.h"
+#include "te_kvpair.h"
 #include "te_sleep.h"
 #include "te_string.h"
 #include "te_shell_cmd.h"
@@ -49,6 +50,9 @@
 
 /** Default management network device */
 #define VM_MGMT_NET_DEVICE_DEFAULT  "virtio-net-pci"
+
+#define VM_NET_NETDEV_OPT "netdev_opt"
+#define VM_NET_DEVICE_OPT "device_opt"
 
 typedef struct vm_cpu {
     te_string       model;
@@ -85,6 +89,8 @@ struct vm_net_entry {
     char                       *type;
     char                       *type_spec;
     char                       *mac_addr;
+    te_kvpair_h                 netdev_opts;
+    te_kvpair_h                 device_opts;
 };
 
 struct vm_pci_pt_entry {
@@ -172,14 +178,19 @@ vm_is_running(struct vm_entry *vm)
 
 static te_errno
 vm_append_virtio_dev_cmd(te_string *cmd, const char *mac_addr,
-                         unsigned int interface_id)
+                         unsigned int interface_id, te_kvpair_h *kvp)
 {
     te_errno rc;
+    te_string opts = TE_STRING_INIT;
 
-    rc = te_string_append(cmd, "virtio-net-pci,netdev=netdev%u%s%s",
+    te_kvpair_to_str_gen(kvp, ",", &opts);
+    rc = te_string_append(cmd, "virtio-net-pci,netdev=netdev%u%s%s%s%s",
                           interface_id,
                           mac_addr == NULL ? "" : ",mac=",
-                          mac_addr == NULL ? "" : mac_addr);
+                          mac_addr == NULL ? "" : mac_addr,
+                          te_str_is_null_or_empty(opts.ptr) ? "" : ",",
+                          te_str_is_null_or_empty(opts.ptr) ? "" : opts.ptr);
+    te_string_free(&opts);
     if (rc != 0)
     {
         ERROR("Cannot compose VM device argument (line %u)", __LINE__);
@@ -195,20 +206,25 @@ vm_append_tap_interface_cmd(te_string *cmd, struct vm_net_entry *net,
 {
     te_string netdev = TE_STRING_INIT;
     te_string device = TE_STRING_INIT;
+    te_string opts = TE_STRING_INIT;
     te_errno rc = 0;
 
+    te_kvpair_to_str_gen(&net->netdev_opts, ",", &opts);
     rc = te_string_append(&netdev,
-            "tap,script=no,downscript=no,id=netdev%u%s%s%s",
+            "tap,script=no,downscript=no,id=netdev%u%s%s%s%s%s",
             interface_id, vhost ? ",vhost=on" : "",
             net->type_spec == NULL ? "" : ",ifname=",
-            net->type_spec == NULL ? "" : net->type_spec);
+            net->type_spec == NULL ? "" : net->type_spec,
+            te_str_is_null_or_empty(opts.ptr) ? "" : ",",
+            te_str_is_null_or_empty(opts.ptr) ? "" : opts.ptr);
     if (rc != 0)
     {
         ERROR("Cannot compose VM netdev argument (line %u)", __LINE__);
         goto exit;
     }
 
-    rc = vm_append_virtio_dev_cmd(&device, net->mac_addr, interface_id);
+    rc = vm_append_virtio_dev_cmd(&device, net->mac_addr, interface_id,
+                                  &net->device_opts);
     if (rc != 0)
         goto exit;
 
@@ -223,6 +239,7 @@ vm_append_tap_interface_cmd(te_string *cmd, struct vm_net_entry *net,
 exit:
     te_string_free(&netdev);
     te_string_free(&device);
+    te_string_free(&opts);
 
     return TE_RC(TE_TA_UNIX, rc);
 }
@@ -234,6 +251,7 @@ vm_append_vhost_user_interface_cmd(te_string *cmd, struct vm_net_entry *net,
 {
     te_string netdev = TE_STRING_INIT;
     te_string device = TE_STRING_INIT;
+    te_string opts = TE_STRING_INIT;
     struct vm_chardev_entry *chardev;
     te_errno rc = 0;
 
@@ -259,16 +277,20 @@ vm_append_vhost_user_interface_cmd(te_string *cmd, struct vm_net_entry *net,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
+    te_kvpair_to_str_gen(&net->netdev_opts, ",", &opts);
     rc = te_string_append(&netdev,
                           "type=vhost-user,id=netdev%u,chardev=%s,vhostforce",
-                          interface_id, net->type_spec);
+                          interface_id, net->type_spec,
+                          te_str_is_null_or_empty(opts.ptr) ? "" : ",",
+                          te_str_is_null_or_empty(opts.ptr) ? "" : opts.ptr);
     if (rc != 0)
     {
         ERROR("Cannot compose VM netdev argument: %r", rc);
         goto exit;
     }
 
-    rc = vm_append_virtio_dev_cmd(&device, net->mac_addr, interface_id);
+    rc = vm_append_virtio_dev_cmd(&device, net->mac_addr, interface_id,
+                                  &net->device_opts);
     if (rc != 0)
         goto exit;
 
@@ -283,6 +305,7 @@ vm_append_vhost_user_interface_cmd(te_string *cmd, struct vm_net_entry *net,
 exit:
     te_string_free(&netdev);
     te_string_free(&device);
+    te_string_free(&opts);
 
     return TE_RC(TE_TA_UNIX, rc);
 }
@@ -1809,6 +1832,9 @@ vm_net_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
+    te_kvpair_init(&net->netdev_opts);
+    te_kvpair_init(&net->device_opts);
+
     SLIST_INSERT_HEAD(&vm->nets, net, links);
 
     return 0;
@@ -1836,6 +1862,9 @@ vm_net_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_REMOVE(&vm->nets, net, vm_net_entry, links);
+
+    te_kvpair_fini(&net->netdev_opts);
+    te_kvpair_fini(&net->device_opts);
 
     vm_net_free(net);
 
@@ -1987,6 +2016,164 @@ exit:
     cfg_free_oid(coid);
 
     return result;
+}
+
+static te_kvpair_h *
+vm_net_opt_ptr_by_oid(struct vm_net_entry *net, const char *oid)
+{
+    cfg_oid *coid = cfg_convert_oid_str(oid);
+    te_kvpair_h *result = NULL;
+    char *opt_subid;
+
+    if (coid == NULL)
+        goto exit;
+
+    opt_subid = cfg_oid_inst_subid(coid, 4);
+    if (opt_subid == NULL)
+        goto exit;
+
+    if (strcmp(opt_subid, VM_NET_NETDEV_OPT) == 0)
+        result = &net->netdev_opts;
+    else if (strcmp(opt_subid, VM_NET_DEVICE_OPT) == 0)
+        result = &net->device_opts;
+
+exit:
+    cfg_free_oid(coid);
+
+    return result;
+}
+
+static te_errno
+vm_net_opt_add(unsigned int gid, const char *oid, char *value,
+               const char *vm_name, const char *net_name,
+               const char *opt_name)
+{
+    struct vm_entry *vm;
+    struct vm_net_entry *net;
+    te_kvpair_h *kvp;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    net = vm_net_find(vm, net_name);
+    if (net == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
+
+    kvp = vm_net_opt_ptr_by_oid(net, oid);
+    if (kvp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    rc = te_kvpair_add(kvp, opt_name, "%s", value);
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+vm_net_opt_del(unsigned int gid, const char *oid, char *value,
+               const char *vm_name, const char *net_name,
+               const char *opt_name)
+{
+    struct vm_entry *vm;
+    struct vm_net_entry *net;
+    te_kvpair_h *kvp;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    net = vm_net_find(vm, net_name);
+    if (net == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
+
+    kvp = vm_net_opt_ptr_by_oid(net, oid);
+    if (kvp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    rc = te_kvpairs_del(kvp, opt_name);
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+vm_net_opt_list(unsigned int gid, const char *oid, const char *sub_id,
+                 char **list, const char *vm_name, const char *net_name)
+{
+    struct vm_entry *vm;
+    struct vm_net_entry *net;
+    te_kvpair_h *kvp;
+    te_string str = TE_STRING_INIT;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    net = vm_net_find(vm, net_name);
+    if (net == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (strcmp(sub_id, VM_NET_NETDEV_OPT) == 0)
+        kvp = &net->netdev_opts;
+    else if (strcmp(sub_id, VM_NET_DEVICE_OPT) == 0)
+        kvp = &net->device_opts;
+    else
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    te_kvpair_keys_to_str(kvp, " ", &str);
+    *list = str.ptr;
+
+    return 0;
+}
+
+static te_errno
+vm_net_opt_get(unsigned int gid, const char *oid, char *value,
+                const char *vm_name, const char *net_name,
+                const char *opt_name)
+{
+    struct vm_entry *vm;
+    struct vm_net_entry *net;
+    te_kvpair_h *kvp;
+    const char *val;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    net = vm_net_find(vm, net_name);
+    if (net == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    kvp = vm_net_opt_ptr_by_oid(net, oid);
+    if (kvp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    val = te_kvpairs_get(kvp, opt_name);
+    if (val == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", val);
+
+    return 0;
 }
 
 static te_errno
@@ -3213,7 +3400,18 @@ RCF_PCH_CFG_NODE_RW(node_vm_kernel_dtb, "dtb", NULL, &node_vm_kernel_initrd,
 RCF_PCH_CFG_NODE_RW(node_vm_kernel, "kernel", &node_vm_kernel_dtb,
                     &node_vm_drive, vm_kernel_get, vm_kernel_set);
 
-RCF_PCH_CFG_NODE_RW(node_vm_net_mac_addr, "mac_addr", NULL, NULL,
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_net_device_opt, VM_NET_DEVICE_OPT,
+                               NULL, NULL,
+                               vm_net_opt_get, NULL, vm_net_opt_add,
+                               vm_net_opt_del, vm_net_opt_list, NULL);
+
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_net_netdev_opt, VM_NET_NETDEV_OPT,
+                               NULL, &node_vm_net_device_opt,
+                               vm_net_opt_get, NULL, vm_net_opt_add,
+                               vm_net_opt_del, vm_net_opt_list, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_vm_net_mac_addr, "mac_addr", NULL,
+                    &node_vm_net_netdev_opt,
                     vm_net_property_get, vm_net_property_set);
 
 RCF_PCH_CFG_NODE_RW(node_vm_net_type_spec, "type_spec", NULL,

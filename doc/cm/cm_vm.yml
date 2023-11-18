@@ -4,7 +4,7 @@
 - comment: |
     Virtual machines configuration and control.
 
-    Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+    Copyright (C) 2019-2023 OKTET Labs Ltd. All rights reserved.
 
 
 - register:
@@ -299,6 +299,24 @@
          MAC address assigned to the interface.
          Default is random (52:54:00:<TA>:<TA>:<xx>).
          Name: None
+
+    - oid: "/agent/vm/net/netdev_opt"
+      access: read_create
+      type: string
+      d: |
+         Option for argument netdev - full list of supported properties
+         you can find in `man qemu`.
+         Name: option name
+         Value: option value
+
+    - oid: "/agent/vm/net/device_opt"
+      access: read_create
+      type: string
+      d: |
+         Option for argument device - full list of supported properties
+         you can find in `man qemu`.
+         Name: option name
+         Value: option value
 
     - oid: "/agent/vm/pci_pt"
       access: read_create

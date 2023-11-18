@@ -324,6 +324,21 @@ extern te_errno te_kvpair_to_str_gen(const te_kvpair_h *head,
 extern te_errno te_kvpair_to_str(const te_kvpair_h *head, te_string *str);
 
 /**
+ * Convert a list of keys from kv_pairs to a string (i.e. key1<delim>key2).
+ *
+ * If there are multiple values for the same key, they all be represented
+ * as separate @c key.
+ *
+ * @param[in]  head     head of the list
+ * @param[in]  delim    delimiter to use (maybe @c NULL)
+ * @param[out] str      pointer to string
+ *
+ * @return          Status code.
+ */
+extern void te_kvpair_keys_to_str(const te_kvpair_h *head, const char *delim,
+                                  te_string *str);
+
+/**
  * Convert a list of kv pairs to a valid URI query string.
  *
  * If @p str is not empty, @c & separator is added, so that a query

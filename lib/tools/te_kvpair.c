@@ -407,3 +407,21 @@ te_kvpair_from_str(const char *str, te_kvpair_h *head)
     free(dup);
     return 0;
 }
+
+/* See the description in te_kvpair.h */
+void
+te_kvpair_keys_to_str(const te_kvpair_h *head, const char *delim, te_string *str)
+{
+    te_kvpair *p;
+
+    assert(head != NULL);
+    assert(str != NULL);
+
+    TAILQ_FOREACH_REVERSE(p, head, te_kvpair_h, links)
+    {
+        if (str->len > 0)
+            te_string_append(str, "%s", delim == NULL ? "" : delim);
+
+        te_string_append(str, "%s", p->key);
+    }
+}
