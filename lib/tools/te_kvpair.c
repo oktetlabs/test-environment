@@ -5,7 +5,7 @@
  * Implemetation of API for working with key-value pairs.
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "TE Key-value pairs"
@@ -331,7 +331,7 @@ te_kvpair_to_str(const te_kvpair_h *head, te_string *str)
 
     TAILQ_FOREACH_REVERSE(p, head, te_kvpair_h, links)
     {
-        te_string_append(str, "%s%s=%s", first ? "" : ":",
+        te_string_append(str, "%s%s=%s", first ? "" : TE_KVPAIR_STR_DELIMITER,
                          p->key, p->value);
         first = FALSE;
     }
