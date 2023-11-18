@@ -45,6 +45,14 @@
 
 #include "tester_serial_thread.h"
 
+/**
+ * Special exit code for the case when testing was interrupted.
+ * dispatcher.sh uses it to determine which run status should be
+ * saved in metadata.
+ * Update dispatcher.sh if you change this value.
+ */
+#define TESTER_INTR_RC 2
+
 /** User environment */
 extern char **environ;
 
@@ -1188,6 +1196,9 @@ main(int argc, char *argv[])
              */
             result = EXIT_SUCCESS;
 #endif
+            if (rc == TE_RC(TE_TESTER, TE_EINTR))
+                result = TESTER_INTR_RC;
+
             goto exit;
         }
     }
@@ -1202,6 +1213,9 @@ exit:
 
     (void)logic_expr_int_lex_destroy();
     (void)test_path_lex_destroy();
+
+    if (result == EXIT_SUCCESS && tester_sigint_received)
+        result = TESTER_INTR_RC;
 
     return result;
 }

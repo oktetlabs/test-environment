@@ -54,6 +54,11 @@ done
 
 TE_META_FINISHED=false
 
+TESTER_RC=0
+# Tester exit code when it was interrupted.
+# Should match the constant defined in engine/tester/tester.c
+TESTER_INTR_RC=2
+
 #####################################################
 # Finish metadata file.
 # Arguments:
@@ -81,7 +86,11 @@ finish_metadata() {
     if [[ "${ok}" != "0" ]] ; then
         te_meta_set RUN_STATUS ERROR
     else
-        te_meta_set RUN_STATUS DONE
+        if [[ "${TESTER_RC}" -eq "${TESTER_INTR_RC}" ]] ; then
+            te_meta_set RUN_STATUS ABORTED
+        else
+            te_meta_set RUN_STATUS DONE
+        fi
         te_meta_set RUN_OK true
     fi
 
@@ -132,7 +141,7 @@ if [[ "${TE_RUN_META}" = "yes" ]] ; then
 
     te_meta_export
 
-    trap "finish_metadata trap" EXIT ERR
+    trap "finish_metadata trap" EXIT
 fi
 
 usage()
@@ -1380,7 +1389,13 @@ if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
     else
         eval "te_tester ${TESTER_OPTS} \"${CONF_TESTER}\""
     fi
-    START_OK=$?
+    TESTER_RC=$?
+
+    if [[ "${TESTER_RC}" -eq "${TESTER_INTR_RC}" ]] ; then
+        START_OK=0
+    else
+        START_OK="${TESTER_RC}"
+    fi
 fi
 
 test "${START_OK}" -eq 1 && SHUTDOWN=yes
