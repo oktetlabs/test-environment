@@ -9,7 +9,7 @@
  * functions under `agent/<type>` subdirectory).
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_RCF_CH_API_H__
@@ -1099,6 +1099,8 @@ typedef struct rcf_pch_cfg_object {
  * @param _subid    subidentifier name (const char *)
  * @param _son      pointer to the first son node
  * @param _brother  pointer to the next brother node
+ * @param _f_get    get accessor
+ * @param _f_set    set accessor
  * @param _f_add    add accessor
  * @param _f_del    delete accessor
  * @param _f_list   list accessor
