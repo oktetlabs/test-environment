@@ -9,7 +9,7 @@
  * Definition of API for working with key-value pairs
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2004-2023 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TOOLS_KV_PAIRS_H__
@@ -290,6 +290,23 @@ extern te_errno te_kvpairs_foreach(const te_kvpair_h *head,
                                    te_kvpairs_iter_fn *callback,
                                    const char *key,
                                    void *user);
+
+/**
+ * Convert list of kv_pairs to string representation with delimiter
+ * (i.e. key1=val1<delim>key2=val2).
+ *
+ * If there are multiple values for the same key, they all be represented
+ * as separate @c key=value pairs.
+ *
+ * @param[in]  head     head of the list
+ * @param[in]  delim    delimiter to use
+ * @param[out] str      pointer to string
+ *
+ * @return          status code
+ */
+extern te_errno te_kvpair_to_str_gen(const te_kvpair_h *head,
+                                     const char *delim,
+                                     te_string *str);
 
 /**
  * Convert list of kv_pairs to string representation (i.e. key1=val1:key2=val2).

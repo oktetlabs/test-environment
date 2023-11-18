@@ -321,21 +321,29 @@ te_kvpair_add(te_kvpair_h *head, const char *key,
 
 /* See the description in te_kvpair.h */
 te_errno
-te_kvpair_to_str(const te_kvpair_h *head, te_string *str)
+te_kvpair_to_str_gen(const te_kvpair_h *head, const char *delim, te_string *str)
 {
     te_kvpair *p;
     te_bool    first = TRUE;
 
     assert(head != NULL);
+    assert(delim != NULL);
     assert(str != NULL);
 
     TAILQ_FOREACH_REVERSE(p, head, te_kvpair_h, links)
     {
-        te_string_append(str, "%s%s=%s", first ? "" : TE_KVPAIR_STR_DELIMITER,
+        te_string_append(str, "%s%s=%s", first ? "" : delim,
                          p->key, p->value);
         first = FALSE;
     }
     return 0;
+}
+
+/* See the description in te_kvpair.h */
+te_errno
+te_kvpair_to_str(const te_kvpair_h *head, te_string *str)
+{
+    return te_kvpair_to_str_gen(head, TE_KVPAIR_STR_DELIMITER, str);
 }
 
 /* See the description in te_kvpair.h */
