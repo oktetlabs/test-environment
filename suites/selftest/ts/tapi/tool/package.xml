@@ -7,6 +7,10 @@
 
     <session>
         <run>
+            <package name="haproxy"/>
+        </run>
+
+        <run>
             <package name="memcached"/>
         </run>
 

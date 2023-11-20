@@ -2,6 +2,7 @@
 # Copyright (C) 2020-2023 OKTET Labs Ltd. All rights reserved.
 
 packages = [
+    'haproxy',
     'memcached',
     'nptcp',
     'perf',

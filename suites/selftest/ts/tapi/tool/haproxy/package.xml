@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+
+    <description>Test Suite to test the usage of HAProxy TAPI implementation</description>
+
+    <author mailto="Alexander.Kuzminov@oktetlabs.ru"/>
+
+    <session>
+        <run>
+            <script name="haproxy"/>
+            <arg name="env">
+                <value>{{{'iut_rpcs':IUT},addr:'iut_addr':inet:unicast}}</value>
+            </arg>
+            <arg name="threads_num">
+                <value>2</value>
+            </arg>
+            <arg name="backends_num">
+                <value>3</value>
+            </arg>
+        </run>
+    </session>
+</package>

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. -->
+<test name="haproxy" type="package">
+    <objective>TAPI HAProxy implementation</objective>
+    <notes/>
+    <iter result="PASSED">
+        <test name="haproxy">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="threads_num"/>
+                <arg name="backends_num"/>
+            </iter>
+        </test>
+    </iter>
+</test>
