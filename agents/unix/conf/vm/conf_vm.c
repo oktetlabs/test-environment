@@ -202,7 +202,7 @@ vm_append_virtio_dev_cmd(te_string *cmd, const char *mac_addr,
 
 static te_errno
 vm_append_tap_interface_cmd(te_string *cmd, struct vm_net_entry *net,
-                            unsigned int interface_id, te_bool vhost)
+                            unsigned int interface_id)
 {
     te_string netdev = TE_STRING_INIT;
     te_string device = TE_STRING_INIT;
@@ -211,8 +211,7 @@ vm_append_tap_interface_cmd(te_string *cmd, struct vm_net_entry *net,
 
     te_kvpair_to_str_gen(&net->netdev_opts, ",", &opts);
     rc = te_string_append(&netdev,
-            "tap,script=no,downscript=no,id=netdev%u%s%s%s%s%s",
-            interface_id, vhost ? ",vhost=on" : "",
+            "tap,script=no,downscript=no,id=netdev%u%s%s%s%s", interface_id,
             net->type_spec == NULL ? "" : ",ifname=",
             net->type_spec == NULL ? "" : net->type_spec,
             te_str_is_null_or_empty(opts.ptr) ? "" : ",",
@@ -381,12 +380,7 @@ vm_append_net_interfaces_cmd(te_string *cmd, vm_net_list_t *nets,
         else if (strcmp(net->type, "tap") == 0)
         {
             rc = vm_append_tap_interface_cmd(&interface_args, net,
-                                             interface_id, FALSE);
-        }
-        else if (strcmp(net->type, "tap-vhost") == 0)
-        {
-            rc = vm_append_tap_interface_cmd(&interface_args, net,
-                                             interface_id, TRUE);
+                                             interface_id);
         }
         else if (strcmp(net->type, "vhost-user") == 0)
         {
