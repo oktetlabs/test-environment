@@ -20,13 +20,15 @@
 #############################
 function print_dir_entry()
 {
-    if test ! -e "$1" ; then
+    local entry="$1"
+
+    if test ! -e "${entry}" ; then
         icon="/icons/link.gif"
     else
         icon="/icons/folder.gif"
     fi
     printf "<img src=\"%s\" alt=\"[DIR]\"> " "$icon"
-    printf "<a href=\"%s/\">%-32s %10s\n" "$1" "$1/</a>" "&lt;DIR&gt;"
+    printf "<a href=\"%s/\">%-32s %10s\n" "${entry}" "${entry}/</a>" "&lt;DIR&gt;"
 }
 
 #############################
@@ -38,14 +40,16 @@ function print_dir_entry()
 #############################
 function print_file_entry()
 {
-    if test ! -e "$1" ; then
+    local entry="$1"
+
+    if test ! -e "${entry}" ; then
         icon="/icons/link.gif"
         size=""
     else
-        size="$(ls -1hs "$1" | awk '{print $1}')"
-        if file "$1" | grep -qw compressed ; then
+        size="$(ls -1hs "${entry}" | awk '{print $1}')"
+        if file "${entry}" | grep -qw compressed ; then
             icon="/icons/compressed.gif"
-        elif file "$1" | grep -qw text ; then
+        elif file "${entry}" | grep -qw text ; then
             icon="/icons/text.gif"
         else
             icon="/icons/unknown.gif"
@@ -53,7 +57,7 @@ function print_file_entry()
     fi
 
     printf "<img src=\"%s\" alt=\"[   ]\"> " "$icon"
-    printf "<a href=\"%s\">%-32s %10s\n" "$1" "$1</a>" "$size"
+    printf "<a href=\"%s\">%-32s %10s\n" "${entry}" "${entry}</a>" "$size"
 }
 
 printf "Content-Type: text/html\r\n\r\n"
