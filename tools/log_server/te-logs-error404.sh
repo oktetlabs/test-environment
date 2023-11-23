@@ -56,6 +56,8 @@ esac
 request_file="${REQUEST_URI/$root_dir_uri/$root_dir}"
 # Substitute %20->'space'
 request_file="${request_file//%20/ }"
+# Substitute %3A->':'
+request_file="${request_file//%3A/:}"
 
 get_item_cmd=()
 # It is recommended to run it under nice since really many requests

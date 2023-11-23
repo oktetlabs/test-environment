@@ -21,6 +21,7 @@
 function print_dir_entry()
 {
     local entry="$1"
+    local href="${entry//:/%3A}"
 
     if test ! -e "${entry}" ; then
         icon="/icons/link.gif"
@@ -28,7 +29,7 @@ function print_dir_entry()
         icon="/icons/folder.gif"
     fi
     printf "<img src=\"%s\" alt=\"[DIR]\"> " "$icon"
-    printf "<a href=\"%s/\">%-32s %10s\n" "${entry}" "${entry}/</a>" "&lt;DIR&gt;"
+    printf "<a href=\"%s/\">%-32s %10s\n" "${href}" "${entry}/</a>" "&lt;DIR&gt;"
 }
 
 #############################
@@ -41,6 +42,7 @@ function print_dir_entry()
 function print_file_entry()
 {
     local entry="$1"
+    local href="${entry//:/%3A}"
 
     if test ! -e "${entry}" ; then
         icon="/icons/link.gif"
@@ -57,13 +59,15 @@ function print_file_entry()
     fi
 
     printf "<img src=\"%s\" alt=\"[   ]\"> " "$icon"
-    printf "<a href=\"%s\">%-32s %10s\n" "${entry}" "${entry}</a>" "$size"
+    printf "<a href=\"%s\">%-32s %10s\n" "${href}" "${entry}</a>" "$size"
 }
 
 printf "Content-Type: text/html\r\n\r\n"
 
 # Substitute spaces in URI
 REQUEST_URI="${REQUEST_URI//%20/ }"
+# Substitute colons in URI path (nothing else is expected)
+REQUEST_URI="${REQUEST_URI//%3A/:}"
 
 directory="${REQUEST_URI/#${CONTEXT_PREFIX}/${CONTEXT_DOCUMENT_ROOT}}"
 cd "$directory"
