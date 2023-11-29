@@ -110,10 +110,13 @@ te_ta_ssh_args() {
 te_ta_list_get_used() {
     local ta
     local build_host
+    local ta_build
 
     for ta ; do
         build_host="${ta}_BUILD_HOST"
-        test -z "${!ta}" -a -z "${!build_host}" || echo "${ta}"
+        ta_build="${ta}_BUILD"
+        test -z "${!ta}" -a -z "${!build_host}" -a -z "${!ta_build}" \
+            || echo "${ta}"
     done
 }
 
