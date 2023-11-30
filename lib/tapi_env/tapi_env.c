@@ -886,7 +886,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         }
         if (n_ip_nets <= 0)
         {
-            ERROR("No IPv4 networks are assigned to net '%s'", net_oid);
+            INFO("No IPv4 networks are assigned to net '%s'", net_oid);
             free(net_oid);
             continue;
         }
