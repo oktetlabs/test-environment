@@ -842,3 +842,164 @@ rpc_rte_flow_release_united_items(rcf_rpc_server       *rpcs,
 
     RETVAL_VOID(rte_flow_release_united_items);
 }
+
+static const char *
+tarpc_rte_flow_indir_action_conf2str(
+    const struct tarpc_rte_flow_indir_action_conf *conf,
+    te_string *conf_str)
+{
+    if (conf_str == NULL)
+        return "{ NULL }";
+
+    te_string_reset(conf_str);
+    te_string_append(conf_str, "{ ingress: %s, egress: %s, transfer: %s }",
+                     (conf->ingress) ? "TRUE" : "FALSE",
+                     (conf->egress) ? "TRUE" : "FALSE",
+                     (conf->transfer) ? "TRUE" : "FALSE");
+
+    return conf_str->ptr;
+}
+
+rpc_rte_flow_action_handle_p
+rpc_rte_flow_action_handle_create(rcf_rpc_server *rpcs, uint16_t port_id,
+                                  tarpc_rte_flow_indir_action_conf *conf,
+                                  rpc_rte_flow_action_p action,
+                                  struct tarpc_rte_flow_error *error)
+{
+    tarpc_rte_flow_action_handle_create_in   in = {};
+    tarpc_rte_flow_action_handle_create_out  out = {};
+    te_string                                conf_str = TE_STRING_INIT;
+    te_log_buf                              *tlbp;
+
+    if (conf == NULL)
+    {
+        rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
+        RETVAL_RPC_PTR(rte_flow_action_handle_create, RPC_NULL);
+    }
+
+    in.port_id = port_id;
+    in.conf = *conf;
+    in.action = (tarpc_rte_flow_action)action;
+
+    rcf_rpc_call(rpcs, "rte_flow_action_handle_create", &in, &out);
+
+    CHECK_RETVAL_VAR_RPC_PTR(rte_flow_action_handle_create, out.handle);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_flow_action_handle_create,
+                 "port_id=%" PRIu16 ", conf=%s, "
+                 "action=" RPC_PTR_FMT, "handle=" RPC_PTR_FMT "%s",
+                 in.port_id,
+                 tarpc_rte_flow_indir_action_conf2str(conf, &conf_str),
+                 RPC_PTR_VAL(in.action),
+                 RPC_PTR_VAL(out.handle), (out.error.type != 0) ?
+                 tarpc_rte_flow_error2str(tlbp, &out.error) : "");
+    te_log_buf_free(tlbp);
+    te_string_free(&conf_str);
+
+    tarpc_rte_flow_error_copy(error, &out.error);
+
+    RETVAL_RPC_PTR(rte_flow_action_handle_create, out.handle);
+}
+
+int
+rpc_rte_flow_action_handle_destroy(rcf_rpc_server *rpcs, uint16_t port_id,
+                                   rpc_rte_flow_action_handle_p handle,
+                                   struct tarpc_rte_flow_error *error)
+{
+    tarpc_rte_flow_action_handle_destroy_in   in = {};
+    tarpc_rte_flow_action_handle_destroy_out  out = {};
+    te_log_buf                               *tlbp;
+
+    in.port_id = port_id;
+    in.handle = (tarpc_rte_flow_action_handle)handle;
+
+    rcf_rpc_call(rpcs, "rte_flow_action_handle_destroy", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_flow_action_handle_destroy,
+                                          out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_flow_action_handle_destroy,
+                 "port_id=%" PRIu16 ", handle=" RPC_PTR_FMT,
+                 NEG_ERRNO_FMT "%s", in.port_id, RPC_PTR_VAL(in.handle),
+                 NEG_ERRNO_ARGS(out.retval), (out.retval != 0) ?
+                 tarpc_rte_flow_error2str(tlbp, &out.error) : "");
+    te_log_buf_free(tlbp);
+
+    tarpc_rte_flow_error_copy(error, &out.error);
+
+    RETVAL_ZERO_INT(rte_flow_action_handle_destroy, out.retval);
+}
+
+int
+rpc_rte_flow_action_handle_update(rcf_rpc_server *rpcs, uint16_t port_id,
+                                  rpc_rte_flow_action_handle_p handle,
+                                  rpc_rte_flow_action_handle_update_p update,
+                                  tarpc_rte_flow_error *error)
+{
+    tarpc_rte_flow_action_handle_update_in   in = {};
+    tarpc_rte_flow_action_handle_update_out  out = {};
+    te_log_buf                              *tlbp;
+
+    in.port_id = port_id;
+    in.handle = (tarpc_rte_flow_action_handle)handle;
+    in.update = (tarpc_rte_flow_action_handle_update)update;
+
+    rcf_rpc_call(rpcs, "rte_flow_action_handle_update", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_flow_action_handle_update, out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_flow_action_handle_update,
+                 "port_id=%" PRIu16 ", handle=" RPC_PTR_FMT ", "
+                 "update=" RPC_PTR_FMT, NEG_ERRNO_FMT "%s",
+                 in.port_id, RPC_PTR_VAL(in.handle), RPC_PTR_VAL(in.update),
+                 NEG_ERRNO_ARGS(out.retval), (out.error.type != 0) ?
+                 tarpc_rte_flow_error2str(tlbp, &out.error) : "");
+    te_log_buf_free(tlbp);
+
+    tarpc_rte_flow_error_copy(error, &out.error);
+
+    RETVAL_ZERO_INT(rte_flow_action_handle_update, out.retval);
+}
+
+int
+rpc_rte_flow_action_handle_query(rcf_rpc_server *rpcs, uint16_t port_id,
+                                 rpc_rte_flow_action_handle_p handle,
+                                 tarpc_rte_flow_query_data *data,
+                                 tarpc_rte_flow_error *error)
+{
+    tarpc_rte_flow_action_handle_query_in   in = {};
+    tarpc_rte_flow_action_handle_query_out  out = {};
+    te_log_buf                             *tlbp_err;
+    te_log_buf                             *tlbp_data;
+
+    TAPI_RPC_SET_IN_ARG_IF_PTR_NOT_NULL(data);
+
+    in.port_id = port_id;
+    in.handle = (tarpc_rte_flow_action_handle)handle;
+
+    rcf_rpc_call(rpcs, "rte_flow_action_handle_query", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_flow_action_handle_query, out.retval);
+
+    tlbp_err = te_log_buf_alloc();
+    tlbp_data = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_flow_action_handle_query,
+                 "port_id=%" PRIu16 ", handle=" RPC_PTR_FMT,
+                 NEG_ERRNO_FMT "%s, %s", in.port_id, RPC_PTR_VAL(in.handle),
+                 NEG_ERRNO_ARGS(out.retval), (out.retval == 0) ? "" :
+                 tarpc_rte_flow_error2str(tlbp_err, &out.error),
+                 (data == NULL) ? "{ NULL }" :
+                 (out.data.data_len == 0 || out.data.data_val == NULL) ?
+                 "{ NULL }" : tarpc_rte_flow_query_data2str(
+                      tlbp_data, out.data.data_val));
+    te_log_buf_free(tlbp_data);
+    te_log_buf_free(tlbp_err);
+
+    tarpc_rte_flow_error_copy(error, &out.error);
+    TAPI_RPC_COPY_OUT_ARG_IF_PTR_NOT_NULL(data);
+
+    RETVAL_ZERO_INT(rte_flow_action_handle_query, out.retval);
+}

@@ -148,6 +148,17 @@ extern void tapi_rte_flow_add_ndn_action_dec_ttl(asn_value *ndn_actions,
                                                  int action_index);
 
 /**
+ * Add an INDIRECT action to an action list at specified index.
+ *
+ * @param[in,out] ndn_actions       Action list.
+ * @param[in]     action_index      Index at which the action is put to list.
+ * @param[in]     handle            Handle to indirect action.
+ */
+extern void tapi_rte_flow_add_ndn_action_indirect(asn_value *ndn_actions,
+                                                  int action_index,
+                                                  uint32_t handle);
+
+/**
  * Add an item of type PORT_REPRESENTOR / REPRESENTED_PORT to the item list.
  *
  * @param[in]     type            The item type
@@ -209,6 +220,27 @@ extern void tapi_rte_flow_make_attr(rcf_rpc_server *rpcs, uint32_t group,
  */
 extern void tapi_rte_flow_isolate(rcf_rpc_server *rpcs, uint16_t port_id,
                                   int set);
+
+/**
+ * Init indirect action object configuration.
+ *
+ * @param[in]   ingress    Ingress traffic.
+ * @param[in]   egress     Egress traffic.
+ * @param[in]   transfer   Transfer traffic.
+ * @param[out]  conf       Indirect action object configuration.
+ */
+static inline void
+tapi_rte_flow_inidir_action_conf_init(te_bool ingress, te_bool egress,
+                                      te_bool transfer,
+                                      tarpc_rte_flow_indir_action_conf *conf)
+{
+    if (conf != NULL)
+    {
+          conf->ingress = ingress;
+          conf->egress = egress;
+          conf->transfer = transfer;
+    }
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

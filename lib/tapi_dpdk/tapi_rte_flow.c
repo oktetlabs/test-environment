@@ -198,6 +198,21 @@ tapi_rte_flow_add_ndn_action_dec_ttl(asn_value *ndn_actions, int action_index)
 }
 
 void
+tapi_rte_flow_add_ndn_action_indirect(asn_value *ndn_actions,
+                                      int action_index,
+                                      uint32_t handle)
+{
+    asn_value *action;
+
+    CHECK_NOT_NULL(action = asn_init_value(ndn_rte_flow_action));
+    CHECK_RC(asn_write_int32(action, NDN_FLOW_ACTION_TYPE_INDIRECT, "type"));
+    CHECK_RC(asn_write_value_field_fmt(action, &handle, sizeof(handle),
+                                       "conf.#handle"));
+
+    CHECK_RC(asn_insert_indexed(ndn_actions, action, action_index, ""));
+}
+
+void
 tapi_rte_flow_add_ndn_item_port(ndn_rte_flow_item_type_t type,
                                 uint32_t ethdev_port_id,
                                 asn_value *items,
