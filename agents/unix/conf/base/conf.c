@@ -3175,10 +3175,10 @@ switchdev_name_get(unsigned int gid, const char *oid, char *value,
         netconf_list_free(links);
     }
 
+    ERROR("Failed to find rep for '%s/%s'", switch_id, port_name);
     free(switch_id);
     free(port_name);
 
-    ERROR("Failed to find rep for '%s/%s'", switch_id, port_name);
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #else
     value[0] = '\0';
