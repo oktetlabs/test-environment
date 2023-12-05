@@ -631,7 +631,7 @@ tapi_dpdk_add_dbells_params(te_kvpair_h *test_params, const char *q_num,
         }
     }
 
-    rc = te_kvpair_add(test_params, display_xstats_arg, dbells.ptr);
+    rc = te_kvpair_add(test_params, display_xstats_arg, "%s", dbells.ptr);
 
 out:
     te_string_free(&dbells);
