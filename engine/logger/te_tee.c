@@ -239,7 +239,7 @@ main (int argc, char *argv[])
                 break;
             }
 
-            te_string_append(&buffer_str, "%s", buffer);
+            te_string_append_buf(&buffer_str, buffer, len);
             te_string_process_lines(&buffer_str, TRUE, line_handler, &cur_msg);
 
             if (current_timeout < 0)
