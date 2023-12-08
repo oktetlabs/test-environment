@@ -244,6 +244,8 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
         if (*end_ptr) /* There are not two hexadecimal digits. */
         {
             *syms_parsed = pt - text;
+            ERROR("%s(): two hexadecimal digits are expected, but there is "
+                  "only one: \"%s\"", __func__, txt_buf);
             return TE_EASNTXTNOTOCTSTR;
         }
 
