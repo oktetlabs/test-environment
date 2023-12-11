@@ -41,6 +41,7 @@
 #include "tapi_env.h"
 #include "tapi_test.h"
 #include "tapi_tags.h"
+#include "tapi_sh_env.h"
 
 int
 main(int argc, char **argv)
@@ -56,6 +57,9 @@ main(int argc, char **argv)
     TEST_GET_PCO(iut_rpcs);
 
     TEST_STEP("Start prologue");
+
+    TEST_STEP("Expand PATH variable for all agents.");
+    CHECK_RC(tapi_expand_path_all_ta(NULL));
 
     TEST_STEP("Add TRC tag");
     CHECK_RC(tapi_tags_add_tag("tag_set_by_prologue", NULL));
