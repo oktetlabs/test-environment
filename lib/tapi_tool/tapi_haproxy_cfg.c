@@ -179,5 +179,5 @@ void
 tapi_haproxy_cfg_destroy(const char *ta, const char *cfg_file)
 {
     if (cfg_file != NULL)
-        tapi_file_ta_unlink_fmt(ta, cfg_file);
+        tapi_file_ta_unlink_fmt(ta, "%s", cfg_file);
 }
