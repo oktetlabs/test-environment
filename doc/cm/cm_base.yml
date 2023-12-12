@@ -113,18 +113,21 @@
     - oid: "/agent/interface/switch_id"
       access: read_only
       type: string
+      volatile: true
       d: |
         Switchdev switch ID
 
     - oid: "/agent/interface/port_id"
       access: read_only
       type: string
+      volatile: true
       d: |
         Switchdev port ID
 
     - oid: "/agent/interface/port_name"
       access: read_only
       type: string
+      volatile: true
       d: |
         Switchdev port name
 
