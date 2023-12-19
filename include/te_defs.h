@@ -265,11 +265,57 @@ typedef enum te_bool3 {
 #define TE_SIZEOF_FIELD(type, field) (sizeof(((type *)NULL)->field))
 
 /**
- * Number of elements in array.
+ * Get the number of elements in an array.
  *
- * @param _array    C name of an array
+ * @param array_  the array
+ *
+ * @return the number of elements in @p array_
+ *
+ * @warning This function does not barf when @p array_ is
+ *          not a real array but just a pointer, and silently
+ *          returns an incorrect value.
+ *          Always use TE_ARRAY_LEN() instead.
  */
-#define TE_ARRAY_LEN(_array)    (sizeof(_array) / sizeof(_array[0]))
+#define TE_ARRAY_LEN_UNSAFE(array_)    (sizeof(array_) / sizeof((array_)[0]))
+
+/**
+ * Asserts that the argument is a true array, not a pointer.
+ *
+ * @param obj_    an array
+ *
+ * @return @p obj_ unchanged
+ *
+ * @alg The black art behind this macro is as follows:
+ *      - the true type of an array is only compatible to itself;
+ *      - but we cannot use TE_TYPE_ASSERT() directly with
+ *        an array type due to an implicit lvalue-to-pointer conversion
+ *        (see ISO/IEC 9899:2017 6.3.2.1.3);
+ *      - however the said conversion does not happen under the address-of
+ *        operator.
+ *
+ *      Thus we construct the expect type of the address of the array
+ *      (note that it is *not* the same as the address of the fist element
+ *      of the array) with the help of TE_ARRAY_LEN_UNSAFE() and then we
+ *      assert it against the address of @p obj_. This requires that @p obj_
+ *      always be an lvalue, but since a true array is always an lvalue, it
+ *      is not really a limitation.
+ */
+#define TE_ASSERT_ARRAY(obj_) \
+    (*TE_TYPE_ASSERT(TE_TYPEOF(*(obj_))(*)[TE_ARRAY_LEN_UNSAFE(obj_)],  \
+                     &(obj_)))
+
+/**
+ * Get the number of elements in an array reliably.
+ *
+ * If @p array_ is not a real array but just a pointer to its
+ * first element, the macro raises a compile-time error (for compilers
+ * that support type dispatching).
+ *
+ * @param array_  the array (not just a pointer)
+ *
+ * @return the number of elements in @p array_
+ */
+#define TE_ARRAY_LEN(array_) TE_ARRAY_LEN_UNSAFE(TE_ASSERT_ARRAY(array_))
 
 /**
  * The size of @p _typeobj in bits.
