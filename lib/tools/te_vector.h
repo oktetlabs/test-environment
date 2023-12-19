@@ -84,7 +84,7 @@ typedef struct te_vec {
  * Complete initializer for a te_vec.
  *
  * @param type_         Element type.
- * @param grow_factor_  Grow factor (see TE_DBUF_DEFAULT_GROW_FACTOR).
+ * @param grow_factor_  Grow factor (see #TE_DBUF_DEFAULT_GROW_FACTOR).
  * @param destroy_      Element destructor (or @c NULL).
  */
 #define TE_VEC_INIT_COMPLETE(type_, grow_factor_, destroy_) \
@@ -97,16 +97,22 @@ typedef struct te_vec {
 /**
  * Vector initializer with a custom grow factor.
  *
- * @note Most users shall stick to TE_DBUF_DEFAULT_GROW_FACTOR.
+ * The element destructor may be later set with
+ * te_vec_set_destroy_fn_safe().
+ *
+ * @note Most users shall stick to #TE_DBUF_DEFAULT_GROW_FACTOR.
  *
  * @param type_          Element type.
- * @param grow_factor_   Grow factor (see TE_DBUF_DEFAULT_GROW_FACTOR).
+ * @param grow_factor_   Grow factor (see #TE_DBUF_DEFAULT_GROW_FACTOR).
  */
 #define TE_VEC_INIT_GROW_FACTOR(type_, grow_factor_) \
     TE_VEC_INIT_COMPLETE(type_, grow_factor_, NULL)
 
 /**
  * Vector initializer with the default grow factor.
+ *
+ * The element destructor may be later set with
+ * te_vec_set_destroy_fn_safe().
  *
  * @param type_          Element type.
  */
