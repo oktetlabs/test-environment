@@ -276,7 +276,7 @@ static void
 check_ring_heap_buf(unsigned int max_ring_size)
 {
     unsigned int ring_size = rand_range(1, max_ring_size);
-    te_ring ring = TE_RING_INIT(void *, te_vec_item_free_ptr, ring_size);
+    te_ring ring = TE_RING_INIT_AUTOPTR(void *, ring_size);
     unsigned int i;
 
     for (i = 0; i < ring_size; i++)

@@ -128,6 +128,21 @@ typedef struct te_vec {
 #define TE_VEC_INIT_DESTROY(type_, destroy_) \
     TE_VEC_INIT_COMPLETE(type_, TE_DBUF_DEFAULT_GROW_FACTOR, destroy_)
 
+
+/**
+ * Vector initializer for heap-allocated pointers.
+ *
+ * The destructor is set to te_vec_item_free_ptr().
+ * Additionally a check is made that @p type_ is at least
+ * the same size as a pointer type.
+ *
+ * @param type_     Element type (which must be a pointer type).
+ */
+#define TE_VEC_INIT_AUTOPTR(type_) \
+    TE_VEC_INIT_DESTROY(type_,                                          \
+                        TE_COMPILE_TIME_ASSERT_EXPR(sizeof(type_) ==    \
+                                                    sizeof(void *)) ?   \
+                        te_vec_item_free_ptr : NULL)
 /*
  * Initialize a vector with the same parameters as @p other_.
  *

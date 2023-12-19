@@ -56,6 +56,11 @@ typedef struct te_ring {
         .fill = 0,                                          \
     }
 
+#define TE_RING_INIT_AUTOPTR(type_, ring_size_) \
+    TE_RING_INIT(type_, TE_COMPILE_TIME_ASSERT_EXPR(sizeof(type_) ==   \
+                                                    sizeof(void *)) ?  \
+                 te_vec_item_free_ptr : NULL, ring_size)
+
 /**
  * Put the content of @p element into the @p ring.
  *

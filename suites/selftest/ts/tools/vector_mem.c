@@ -28,6 +28,7 @@
 #include "tapi_test.h"
 #include "te_vector.h"
 
+
 static te_vec_item_destroy_fn count_destroy;
 static unsigned int destroy_cnt;
 static void
@@ -260,6 +261,31 @@ check_transfer_append(unsigned int max_elements)
     te_vec_free(&dest_vec);
 }
 
+static void
+check_vector_heap_buf(unsigned int max_elements)
+{
+    unsigned int n = rand_range(1, max_elements);
+    te_vec vec = TE_VEC_INIT_AUTOPTR(void *);
+    unsigned int i;
+
+    for (i = 0; i < n; i++)
+    {
+        void *mem = TE_ALLOC(1);
+        void *mem1 = TE_ALLOC(1);
+        void *mem2 = TE_ALLOC(1);
+        void *mem3 = NULL;
+
+        TE_VEC_APPEND(&vec, mem);
+        te_vec_replace(&vec, i, &mem1);
+        te_vec_transfer(&vec, i, &mem3);
+        if (mem3 != mem1)
+            TEST_VERDICT("Unexpected contents after transfer");
+        te_vec_replace(&vec, i, &mem2);
+        free(mem1);
+    }
+
+    te_vec_free(&vec);
+}
 
 int
 main(int argc, char **argv)
@@ -295,6 +321,10 @@ main(int argc, char **argv)
     TEST_STEP("Checking element bulk transferral");
     for (i = 0; i < n_iterations; i++)
         check_transfer_append(max_elements);
+
+    TEST_STEP("Checking vector destructors with real heap buffers");
+    for (i = 0; i < n_iterations; i++)
+        check_vector_heap_buf(max_elements);
 
     TEST_SUCCESS;
 
