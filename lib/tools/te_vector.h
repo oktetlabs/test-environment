@@ -267,18 +267,9 @@ te_vec_size(const te_vec *vec)
  *
  * @return Pointer to the content of an element.
  */
-#if __STDC_VERSION__ >= 201112L
 #define te_vec_get(vec_, index_) \
-    (_Generic((vec_),                                               \
-              te_vec*: te_vec_get_mutable,                          \
-              const te_vec*: te_vec_get_immutable)(vec_, index_))
-#else
-#define te_vec_get(vec_, index_) \
-    (__builtin_choose_expr(                                             \
-        __builtin_types_compatible_p(TE_TYPEOF(vec_), const te_vec *), \
-        te_vec_get_immutable,                                           \
-        te_vec_get_mutable)(vec_, index_))
-#endif
+    (TE_TYPE_ALTERNATIVE(vec_, te_vec *, te_vec_get_mutable,            \
+                         const te_vec *, te_vec_get_immutable)(vec_, index_))
 
 static inline const void *
 te_vec_get_immutable(const te_vec *vec, size_t index)
@@ -305,20 +296,10 @@ te_vec_get_mutable(te_vec *vec, size_t index)
  *
  * @return Pointer to element.
  */
-#if __STDC_VERSION__ >= 201112L
 #define te_vec_get_safe(vec_, index_, element_size_) \
-    (_Generic((vec_),                                   \
-              te_vec*: te_vec_get_safe_mutable,         \
-              const te_vec*: te_vec_get_safe_immutable) \
+    (TE_TYPE_ALTERNATIVE(vec_, te_vec *, te_vec_get_safe_mutable,      \
+                         const te_vec *, te_vec_get_safe_immutable)    \
      (vec_, index_, element_size_))
-#else
-#define te_vec_get_safe(vec_, index_, element_size_) \
-    (__builtin_choose_expr(                                         \
-        __builtin_types_compatible_p(                               \
-            TE_TYPEOF(vec_), const te_vec *),                       \
-        te_vec_get_safe_immutable,                                  \
-        te_vec_get_safe_mutable)(vec_, index_, element_size_))
-#endif
 
 static inline const void *
 te_vec_get_safe_immutable(const te_vec *vec, size_t index, size_t element_size)

@@ -26,6 +26,22 @@
 #endif /* __GNUC__ */
 #endif
 
+#ifndef __has_builtin
+/*
+ * __has_attribute has been supported in GCC since 5.x
+ * and in clang since 2.9, so we may assume all modern
+ * GCC-compatible compilers support it, but since RHEL 7
+ * still use 4.x by default, we'd better support it as well.
+ */
+#ifndef __GNUC__
+#define __has_builtin(bi_) 0
+#else
+#define __has_builtin(bi_) __has_builtin_oldgcc_##bi_
+#define __has_builtin_oldgcc___builtin_types_compatible_p 1
+#define __has_builtin_oldgcc___builtin_choose_expr 1
+#endif /* __GNUC__ */
+#endif
+
 #if __has_attribute(format)
 /**
  * Declare that a function is similiar to @c printf, taking
@@ -135,5 +151,73 @@
  */
 #define TE_CAST_TYPEOF_PTR(obj_, src_) ((TE_TYPEOF(obj_) *)(src_))
 
+#if __STDC_VERSION__ >= 201112L
+/*
+ * Check that the type of @p obj_ is compatible with @p type_.
+ *
+ * Unlike a cast, both type and value of @p obj_ always remain
+ * unchanged, but a compile-time error is raised if @p obj_ is
+ * not compatible with @p type_.
+ *
+ * If generic type dispatching is not supported by the compiler,
+ * the macro is a no-op.
+ *
+ * @param type_   type to check
+ * @param obj_    some value
+ *
+ * @return @p obj_ unchanged.
+ */
+#define TE_TYPE_ASSERT(type_, obj_) _Generic((obj_), type_: (obj_))
+#elif __has_builtin(__builtin_types_compatible_p) && \
+    __has_builtin(__builtin_choose_expr)
+#define TE_TYPE_ASSERT(type_, obj_) \
+    __builtin_choose_expr(__builtin_types_compatible_p(TE_TYPEOF(obj_), \
+                                                       type_),          \
+                          (obj_), (void)0)
+#else
+#define TE_TYPE_ASSERT(type_, obj_) (obj_)
+#endif
+
+#if __STDC_VERSION__ >= 201112L
+/**
+ * Choose one of expressions depending on the type of @p obj_.
+ *
+ * If the type of @p obj_ is compatible with @p type1_, @p expr1_
+ * is returned, otherwise if the type is compatible with @p type2_,
+ * @p expr2_ is returned, otherwise a compilation error is raised.
+ *
+ * @p type1_ and @p type2_ must not be compatible with each other.
+ *
+ * @p obj_ is never evaluated, only its static type is considered
+ * and @p expr2_ is not evaluated if @p expr1_ is chosen and vice versa.
+ *
+ * If the compiler does not support type dispatching, @p expr1_ is
+ * tentatively returned.
+ *
+ * @param obj_    selector object
+ * @param type1_  first type
+ * @param expr1_  first alternative
+ * @param type2_  second type
+ * @param expr2_  second alternative
+ *
+ * @return @p expr1_ or @p expr2_ depending on the type of @p obj_.
+ */
+#define TE_TYPE_ALTERNATIVE(obj_, type1_, expr1_, type2_, expr2_)   \
+    _Generic((obj_), type1_: (expr1_), type2_: (expr2_))
+#elif __has_builtin(__builtin_types_compatible_p) &&    \
+    __has_builtin(__builtin_choose_expr)
+#define TE_TYPE_ALTERNATIVE(obj_, type1_, expr1_, type2_, expr2_) \
+    __builtin_choose_expr(__builtin_types_compatible_p(TE_TYPEOF(obj_), \
+                                                       type1_),         \
+                          (expr1_),                                     \
+                          __builtin_choose_expr(                        \
+                              __builtin_types_compatible_p(             \
+                                  TE_TYPEOF(obj_),                      \
+                                  type2_),                              \
+                              (expr2_),                                 \
+                              ((struct undefined *)NULL)))
+#else
+#define TE_TYPE_ALTERNATIVE(obj_, type1_, expr1_, type2_, expr2_) (expr1_)
+#endif
 
 #endif /* __TE_COMPILER_H__ */
