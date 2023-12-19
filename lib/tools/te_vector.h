@@ -275,7 +275,7 @@ te_vec_size(const te_vec *vec)
 #else
 #define te_vec_get(vec_, index_) \
     (__builtin_choose_expr(                                             \
-        __builtin_types_compatible_p(__typeof__(vec_), const te_vec *), \
+        __builtin_types_compatible_p(TE_TYPEOF(vec_), const te_vec *), \
         te_vec_get_immutable,                                           \
         te_vec_get_mutable)(vec_, index_))
 #endif
@@ -315,7 +315,7 @@ te_vec_get_mutable(te_vec *vec, size_t index)
 #define te_vec_get_safe(vec_, index_, element_size_) \
     (__builtin_choose_expr(                                         \
         __builtin_types_compatible_p(                               \
-            __typeof__(vec_), const te_vec *),                      \
+            TE_TYPEOF(vec_), const te_vec *),                       \
         te_vec_get_safe_immutable,                                  \
         te_vec_get_safe_mutable)(vec_, index_, element_size_))
 #endif

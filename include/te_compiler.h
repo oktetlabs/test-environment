@@ -81,4 +81,59 @@
 #define TE_DEPRECATED
 #endif
 
+/*
+ * typeof is supported by gcc and clang and clang defines __GNUC__,
+ * so a single check is sufficient.
+ */
+#ifdef __GNUC__
+/**
+ * A feature macro indicating whether @c typeof is supported.
+ *
+ * @todo Add a check for C23's @c typeof when it is standardized.
+ */
+#define TE_HAS_RELIABLE_TYPEOF 1
+#else
+#define TE_HAS_RELIABLE_TYPEOF 0
+#endif
+
+#if TE_HAS_RELIABLE_TYPEOF
+/**
+ * Get a type of @p obj_.
+ *
+ * If @c typeof is not supported on a given platform,
+ * it falls back to @c void which will certainly break
+ * all non-pointer cases, but at least `TE_TYPEOF(obj) *`
+ * would remain compilable.
+ *
+ * For better portability TE_CAST_TYPEOF() should be
+ * used instead of `(TE_TYPEOF(obj))(val)`.
+ */
+#define TE_TYPEOF(obj_) __typeof__(obj_)
+
+/**
+ * Cast @p src_ to the type of @p obj_.
+ *
+ * If @c typeof is not supported, it falls back to no-op.
+ *
+ * @param obj_   Object of target type.
+ * @param src_   Source object.
+ */
+#define TE_CAST_TYPEOF(obj_, src_) ((TE_TYPEOF(obj_))(src_))
+#else
+#define TE_TYPEOF(obj_) void
+#define TE_CAST_TYPEOF(obj_) (obj_)
+#endif
+
+/**
+ * Cast @p src_ to the type of pointer to @p obj_.
+ *
+ * If @c typeof is not supported, it falls back to
+ * a generic `void *`.
+ *
+ * @param obj_   Object of target type.
+ * @param src_   Source pointer.
+ */
+#define TE_CAST_TYPEOF_PTR(obj_, src_) ((TE_TYPEOF(obj_) *)(src_))
+
+
 #endif /* __TE_COMPILER_H__ */

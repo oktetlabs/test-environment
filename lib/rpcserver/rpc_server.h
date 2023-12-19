@@ -720,14 +720,14 @@ extern void tarpc_generic_service(deferred_call_list *list,
         TE_FUNC_CAST(api_func_ret_int64, func);
 
 #define TARPC_FUNC_DECL_SAFE(_func)                                     \
-    __typeof(_func) * const func =                                      \
-                  TE_FUNC_CAST(__typeof(_func) *, _call->func);         \
-    __typeof(_func) * const func_ptr = func;                            \
-    __typeof(_func) * const func_void =  func;                          \
-    __typeof(_func) * const func_ret_ptr = func;                        \
-    __typeof(_func) * const func_ptr_ret_ptr = func;                    \
-    __typeof(_func) * const func_void_ret_ptr = func;                   \
-    __typeof(_func) * const func_ret_int64 = func;
+    TE_TYPEOF(_func) * const func =                                     \
+        TE_FUNC_CAST(TE_TYPEOF(_func) *, _call->func);                  \
+    TE_TYPEOF(_func) * const func_ptr = func;                           \
+    TE_TYPEOF(_func) * const func_void =  func;                         \
+    TE_TYPEOF(_func) * const func_ret_ptr = func;                       \
+    TE_TYPEOF(_func) * const func_ptr_ret_ptr = func;                   \
+    TE_TYPEOF(_func) * const func_void_ret_ptr = func;                  \
+    TE_TYPEOF(_func) * const func_ret_int64 = func;
 
 #define TARPC_FUNC_DECL_STANDALONE(_func)
 

@@ -482,7 +482,8 @@ te_round_up_pow2(unsigned long long num)
 #define TE_ALIGN_MASK(_v, _m)       (((_v) + (_m)) & ~(_m))
 
 /** Align up a value to a power of two */
-#define TE_ALIGN(_v, _a)            TE_ALIGN_MASK((_v), (typeof(_v))(_a) - 1)
+#define TE_ALIGN(_v, _a) \
+    TE_ALIGN_MASK((_v), TE_TYPEOF_CAST(_v, _a) - 1)
 
 
 /**
@@ -540,7 +541,7 @@ te_round_up_pow2(unsigned long long num)
 #ifdef __GNUC__
 #define TE_CONST_PTR_CAST(_type, _ptr) \
     (TE_COMPILE_TIME_ASSERT_EXPR(                                        \
-        __builtin_types_compatible_p(__typeof__(_ptr), const _type *)) ? \
+        __builtin_types_compatible_p(TE_TYPEOF(_ptr), const _type *)) ? \
      ((_type *)(uintptr_t)(_ptr)) : NULL)
 #else
 #define TE_CONST_PTR_CAST(_type, _ptr) ((_type *)(uintptr_t)(_ptr))
