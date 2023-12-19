@@ -216,7 +216,7 @@ main(int argc, char **argv)
         .e3 = FALSE,
         .array_ptr = option_data.array,
     };
-    te_vec result_args = TE_VEC_INIT(char *);
+    te_vec result_args = TE_VEC_INIT_AUTOPTR(char *);
     static const char *expected_strs[] = {
         "sample",
         "--uint", "1",
@@ -278,7 +278,7 @@ main(int argc, char **argv)
     TEST_SUCCESS;
 
 cleanup:
-    te_vec_deep_free(&result_args);
+    te_vec_free(&result_args);
 
     TEST_END;
 }

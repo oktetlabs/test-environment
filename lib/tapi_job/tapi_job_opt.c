@@ -284,7 +284,7 @@ static te_errno
 tapi_job_opt_bind2str(const tapi_job_opt_bind *bind, const void *opt,
                        te_vec *args)
 {
-    te_vec arg_vec = TE_VEC_INIT(char *);
+    te_vec arg_vec = TE_VEC_INIT_AUTOPTR(char *);
     const uint8_t *ptr = (const uint8_t *)opt + bind->opt_offset;
     te_errno rc;
 
@@ -292,7 +292,7 @@ tapi_job_opt_bind2str(const tapi_job_opt_bind *bind, const void *opt,
 
     if (rc != 0)
     {
-        te_vec_deep_free(&arg_vec);
+        te_vec_free(&arg_vec);
 
         if (rc == TE_ENOENT)
             return 0;
@@ -301,7 +301,7 @@ tapi_job_opt_bind2str(const tapi_job_opt_bind *bind, const void *opt,
     }
 
     rc = tapi_job_opt_append_arg_with_affixes(bind, &arg_vec, args);
-    te_vec_deep_free(&arg_vec);
+    te_vec_free(&arg_vec);
     if (rc != 0)
         return rc;
 
@@ -329,7 +329,7 @@ te_errno
 tapi_job_opt_build_args(const char *path, const tapi_job_opt_bind *binds,
                          const void *opt, te_vec *tool_args)
 {
-    te_vec args = TE_VEC_INIT(char *);
+    te_vec args = TE_VEC_INIT_AUTOPTR(char *);
     te_errno rc;
 
     rc = te_vec_append_str_fmt(&args, "%s", path);
@@ -345,7 +345,7 @@ tapi_job_opt_build_args(const char *path, const tapi_job_opt_bind *binds,
 
 out:
     if (rc != 0)
-        te_vec_deep_free(&args);
+        te_vec_free(&args);
 
     *tool_args = args;
 
@@ -417,7 +417,7 @@ te_errno
 tapi_job_opt_create_embed_array(const void *value, const void *priv,
                                 te_vec *args)
 {
-    te_vec sub_args = TE_VEC_INIT(char *);
+    te_vec sub_args = TE_VEC_INIT_AUTOPTR(char *);
     te_string combined = TE_STRING_INIT;
     const tapi_job_opt_array *array = priv;
     te_errno rc;
@@ -425,7 +425,7 @@ tapi_job_opt_create_embed_array(const void *value, const void *priv,
     rc = tapi_job_opt_create_array(value, array, &sub_args);
     if (rc != 0)
     {
-        te_vec_deep_free(&sub_args);
+        te_vec_free(&sub_args);
         te_string_free(&combined);
         return rc;
     }
@@ -434,7 +434,7 @@ tapi_job_opt_create_embed_array(const void *value, const void *priv,
         return TE_ENOENT;
 
     rc = te_string_join_vec(&combined, &sub_args, array->sep);
-    te_vec_deep_free(&sub_args);
+    te_vec_free(&sub_args);
     if (rc != 0)
     {
         te_string_free(&combined);
@@ -455,7 +455,7 @@ tapi_job_opt_create_embed_array(const void *value, const void *priv,
 te_errno
 tapi_job_opt_create_struct(const void *value, const void *priv, te_vec *args)
 {
-    te_vec sub_args = TE_VEC_INIT(char *);
+    te_vec sub_args = TE_VEC_INIT_AUTOPTR(char *);
     te_string combined = TE_STRING_INIT;
 
     const tapi_job_opt_struct *data = priv;
@@ -468,14 +468,14 @@ tapi_job_opt_create_struct(const void *value, const void *priv, te_vec *args)
         rc = tapi_job_opt_bind2str(bind, value, &sub_args);
         if (rc != 0)
         {
-            te_vec_deep_free(&sub_args);
+            te_vec_free(&sub_args);
             te_string_free(&combined);
             return rc;
         }
     }
 
     rc = te_string_join_vec(&combined, &sub_args, data->sep);
-    te_vec_deep_free(&sub_args);
+    te_vec_free(&sub_args);
     if (rc != 0)
     {
         te_string_free(&combined);
