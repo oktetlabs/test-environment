@@ -42,7 +42,7 @@ extern "C" {
  */
 extern te_errno tapi_cfg_sys_get_int(const char *ta, int *val,
                                      const char *fmt, ...)
-                                  __attribute__((format(printf, 3, 4)));
+                                  TE_LIKE_PRINTF(3, 4);
 
 
 /**
@@ -58,7 +58,7 @@ extern te_errno tapi_cfg_sys_get_int(const char *ta, int *val,
  */
 extern te_errno tapi_cfg_sys_set_int(const char *ta, int val, int *old_val,
                                      const char *fmt, ...)
-                                  __attribute__((format(printf, 4, 5)));
+                                  TE_LIKE_PRINTF(4, 5);
 
 /**
  * Get value of uint64_t parameter in /sys: subtree.
@@ -72,7 +72,7 @@ extern te_errno tapi_cfg_sys_set_int(const char *ta, int val, int *old_val,
  */
 extern te_errno tapi_cfg_sys_get_uint64(const char *ta, uint64_t *val,
                                         const char *fmt, ...)
-                                  __attribute__((format(printf, 3, 4)));
+                                  TE_LIKE_PRINTF(3, 4);
 
 
 /**
@@ -89,7 +89,7 @@ extern te_errno tapi_cfg_sys_get_uint64(const char *ta, uint64_t *val,
 extern te_errno tapi_cfg_sys_set_uint64(const char *ta, uint64_t val,
                                         uint64_t *old_val,
                                         const char *fmt, ...)
-                                  __attribute__((format(printf, 4, 5)));
+                                  TE_LIKE_PRINTF(4, 5);
 
 /**
  * Get value of string parameter in /sys: subtree.
@@ -104,7 +104,7 @@ extern te_errno tapi_cfg_sys_set_uint64(const char *ta, uint64_t val,
  */
 extern te_errno tapi_cfg_sys_get_str(const char *ta, char **val,
                                      const char *fmt, ...)
-                                  __attribute__((format(printf, 3, 4)));
+                                  TE_LIKE_PRINTF(3, 4);
 
 /**
  * Set value of string parameter in /sys: subtree.
@@ -120,7 +120,7 @@ extern te_errno tapi_cfg_sys_get_str(const char *ta, char **val,
  */
 extern te_errno tapi_cfg_sys_set_str(const char *ta, const char *val,
                                      char **old_val, const char *fmt, ...)
-                                  __attribute__((format(printf, 4, 5)));
+                                  TE_LIKE_PRINTF(4, 5);
 
 
 /*
@@ -144,7 +144,7 @@ extern te_errno tapi_cfg_sys_set_str(const char *ta, const char *val,
  */
 extern te_errno tapi_cfg_sys_ns_get_int(const char *ta, int *val,
                                         const char *fmt, ...)
-                                        __attribute__((format(printf, 3, 4)));
+                                        TE_LIKE_PRINTF(3, 4);
 
 
 /**
@@ -161,7 +161,7 @@ extern te_errno tapi_cfg_sys_ns_get_int(const char *ta, int *val,
  */
 extern te_errno tapi_cfg_sys_ns_set_int(const char *ta, int val, int *old_val,
                                         const char *fmt, ...)
-                                        __attribute__((format(printf, 4, 5)));
+                                        TE_LIKE_PRINTF(4, 5);
 
 /**
  * The same as tapi_cfg_sys_get_uint64() but try to get the option value in
@@ -176,7 +176,7 @@ extern te_errno tapi_cfg_sys_ns_set_int(const char *ta, int val, int *old_val,
  */
 extern te_errno tapi_cfg_sys_ns_get_uint64(const char *ta, uint64_t *val,
                                            const char *fmt, ...)
-                                        __attribute__((format(printf, 3, 4)));
+                                        TE_LIKE_PRINTF(3, 4);
 
 
 /**
@@ -194,7 +194,7 @@ extern te_errno tapi_cfg_sys_ns_get_uint64(const char *ta, uint64_t *val,
 extern te_errno tapi_cfg_sys_ns_set_uint64(const char *ta, uint64_t val,
                                            uint64_t *old_val,
                                            const char *fmt, ...)
-                                        __attribute__((format(printf, 4, 5)));
+                                        TE_LIKE_PRINTF(4, 5);
 
 /**
  * The same as tapi_cfg_sys_get_str() but try to get the option value in
@@ -210,7 +210,7 @@ extern te_errno tapi_cfg_sys_ns_set_uint64(const char *ta, uint64_t val,
  */
 extern te_errno tapi_cfg_sys_ns_get_str(const char *ta, char **val,
                                         const char *fmt, ...)
-                                        __attribute__((format(printf, 3, 4)));
+                                        TE_LIKE_PRINTF(3, 4);
 
 /**
  * The same as tapi_cfg_sys_set_str() but try to set the option value in
@@ -227,7 +227,7 @@ extern te_errno tapi_cfg_sys_ns_get_str(const char *ta, char **val,
  */
 extern te_errno tapi_cfg_sys_ns_set_str(const char *ta, const char *val,
                                         char **old_val, const char *fmt, ...)
-                                        __attribute__((format(printf, 4, 5)));
+                                        TE_LIKE_PRINTF(4, 5);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -55,7 +55,7 @@ extern te_errno cfg_ipc_mk_find_str(cfg_find_msg *msg, size_t msg_buf_size,
  */
 extern te_errno cfg_ipc_mk_find_fmt(cfg_find_msg *msg, size_t msg_buf_size,
                                     const char *oid_fmt, ...)
-                                    __attribute__((format(printf, 3, 4)));
+                                    TE_LIKE_PRINTF(3, 4);
 
 /**
  * Prepare a cfg_set_instance message.

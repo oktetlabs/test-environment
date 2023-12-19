@@ -795,7 +795,7 @@ extern te_errno asn_free_subvalue(asn_value *value, const char *labels);
 extern te_errno asn_free_subvalue_fmt(asn_value  *container,
                                       const char *labels_fmt,
                                       ...)
-                                      __attribute__((format(printf, 2, 3)));
+                                      TE_LIKE_PRINTF(2, 3);
 
 /**
  * Free one-level subvalue of constraint ASN.1 value instance by tag.
@@ -878,7 +878,7 @@ extern te_errno asn_write_value_field_fmt(asn_value  *container,
                                           size_t      len,
                                           const char *labels_fmt,
                                           ...)
-                                          __attribute__((format(printf, 4, 5)));
+                                          TE_LIKE_PRINTF(4, 5);
 
 /**
  * Read data from primitive syntax leaf in specified ASN.1 value.
@@ -906,7 +906,7 @@ extern te_errno asn_read_value_field_fmt(const asn_value  *container,
                                          size_t           *len,
                                          const char       *labels_fmt,
                                          ...)
-                                         __attribute__((format(printf, 4, 5)));
+                                         TE_LIKE_PRINTF(4, 5);
 
 /**
  * Get primitive value of enumeration type from ASN.1 value.

@@ -136,8 +136,7 @@ extern char *tapi_file_resolve_ta_pathname(te_string *dest,
  * a static buffer, so it is inherently unreliable.
  * Use tapi_file_make_name() instead.
  */
-extern char *tapi_file_generate_name(void)
-    __attribute__((deprecated));
+extern char *tapi_file_generate_name(void) TE_DEPRECATED;
 
 /**
  * Generate unique pathname for file on the engine.
@@ -149,8 +148,7 @@ extern char *tapi_file_generate_name(void)
  * a static buffer, so it is inherently unreliable.
  * Use tapi_file_make_pathname() instead.
  */
-extern char *tapi_file_generate_pathname(void)
-    __attribute__((deprecated));
+extern char *tapi_file_generate_pathname(void) TE_DEPRECATED;
 
 /**
  * Create file in the TE temporary directory.
@@ -186,7 +184,7 @@ extern char *tapi_file_create(size_t len, char *buf, te_bool random);
  */
 extern te_errno tapi_file_create_ta(const char *ta, const char *filename,
                                     const char *fmt, ...)
-    __attribute__((format(printf, 3, 4)));
+    TE_LIKE_PRINTF(3, 4);
 
 /**
  * Create local file, copy it to TA, remove local file.
@@ -205,7 +203,7 @@ extern te_errno tapi_file_create_ta_r(const char *ta,
                                       const char *lfile,
                                       const char *rfile,
                                       const char *fmt, ...)
-    __attribute__((format(printf, 4, 5)));;
+    TE_LIKE_PRINTF(4, 5);;
 
 /**
  * Read file content from the TA.
@@ -233,7 +231,7 @@ extern te_errno tapi_file_read_ta(const char *ta, const char *filename,
  */
 extern te_errno tapi_file_append_ta(const char *ta, const char *filename,
                                     const char *fmt, ...)
-    __attribute__((format(printf, 3, 4)));
+    TE_LIKE_PRINTF(3, 4);
 
 
 
@@ -294,7 +292,7 @@ extern te_errno tapi_file_expand_kvpairs(const char *ta,
  */
 extern te_errno tapi_file_ta_unlink_fmt(const char *ta,
                                         const char *path_fmt, ...)
-    __attribute__((format(printf, 2, 3)));
+    TE_LIKE_PRINTF(2, 3);
 
 #ifdef __cplusplus
 } /* extern "C" */

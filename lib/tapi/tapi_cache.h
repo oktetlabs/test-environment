@@ -185,7 +185,7 @@ extern te_errno tapi_cache_register(const char *method, const char *area,
  */
 extern te_errno tapi_cache_actualize(const char *method, void *opaque,
                                      const char *area_ptrn, ...)
-                                     __attribute__((format(printf, 3, 4)));
+                                     TE_LIKE_PRINTF(3, 4);
 
 /**
  * Invalidate certain cache area instances.
@@ -203,7 +203,7 @@ extern te_errno tapi_cache_actualize(const char *method, void *opaque,
  */
 extern te_errno tapi_cache_invalidate(const char *method,
                                       const char *area_ptrn, ...)
-                                      __attribute__((format(printf, 2, 3)));
+                                      TE_LIKE_PRINTF(2, 3);
 
 /**
  * Add a new instance to cache area, add parent instances (with value
@@ -226,7 +226,7 @@ extern te_errno tapi_cache_invalidate(const char *method,
  */
 extern te_errno tapi_cache_add(cfg_val_type type, const void *value,
                                const char *area_inst, ...)
-                               __attribute__((format(printf, 3, 4)));
+                               TE_LIKE_PRINTF(3, 4);
 
 /**
  * Add a new string instance to cache area
@@ -241,7 +241,7 @@ extern te_errno tapi_cache_add(cfg_val_type type, const void *value,
  */
 extern te_errno tapi_cache_add_string(const char *value,
                                       const char *area_inst, ...)
-                                      __attribute__((format(printf, 2, 3)));
+                                      TE_LIKE_PRINTF(2, 3);
 
 /**
  * Add a new integer instance to cache area
@@ -255,7 +255,7 @@ extern te_errno tapi_cache_add_string(const char *value,
  * @sa tapi_cache_add
  */
 extern te_errno tapi_cache_add_int(int value, const char *area_inst, ...)
-                                   __attribute__((format(printf, 2, 3)));
+                                   TE_LIKE_PRINTF(2, 3);
 
 /**
  * Add a new network address instance to cache area
@@ -270,7 +270,7 @@ extern te_errno tapi_cache_add_int(int value, const char *area_inst, ...)
  */
 extern te_errno tapi_cache_add_addr(const struct sockaddr *addr,
                                     const char *area_inst, ...)
-                                    __attribute__((format(printf, 2, 3)));
+                                    TE_LIKE_PRINTF(2, 3);
 
 /**
  * Delete instance(s) of cache area by pattern
@@ -287,7 +287,7 @@ extern te_errno tapi_cache_add_addr(const struct sockaddr *addr,
  * @return Status code
  */
 extern te_errno tapi_cache_del(const char *area_ptrn, ...)
-                               __attribute__((format(printf, 1, 2)));
+                               TE_LIKE_PRINTF(1, 2);
 
 /**
  * Find all area instances matching a pattern and call @p cb_func for each of
@@ -306,7 +306,7 @@ extern te_errno tapi_cache_del(const char *area_ptrn, ...)
  */
 extern te_errno tapi_cache_find(cfg_handle_cb_func cb_func, void *opaque,
                                 const char *area_ptrn, ...)
-                                __attribute__((format(printf, 3, 4)));
+                                TE_LIKE_PRINTF(3, 4);
 
 /**
  * Get a value of certain instance of cache area
@@ -324,7 +324,7 @@ extern te_errno tapi_cache_find(cfg_handle_cb_func cb_func, void *opaque,
  */
 extern te_errno tapi_cache_get(cfg_val_type *type, void *value,
                                const char *area_inst, ...)
-                               __attribute__((format(printf, 3, 4)));
+                               TE_LIKE_PRINTF(3, 4);
 
 /**
  * Get a string value of certain instance of cache area
@@ -340,7 +340,7 @@ extern te_errno tapi_cache_get(cfg_val_type *type, void *value,
  * @sa tapi_cache_get
  */
 extern te_errno tapi_cache_get_string(char **value, const char *area_inst, ...)
-                                      __attribute__((format(printf, 2, 3)));
+                                      TE_LIKE_PRINTF(2, 3);
 
 /**
  * Get an integer value of certain instance of cache area
@@ -354,7 +354,7 @@ extern te_errno tapi_cache_get_string(char **value, const char *area_inst, ...)
  * @sa tapi_cache_get
  */
 extern te_errno tapi_cache_get_int(int *value, const char *area_inst, ...)
-                                   __attribute__((format(printf, 2, 3)));
+                                   TE_LIKE_PRINTF(2, 3);
 
 /**
  * Get a network address value of certain instance of cache area
@@ -371,7 +371,7 @@ extern te_errno tapi_cache_get_int(int *value, const char *area_inst, ...)
  */
 extern te_errno tapi_cache_get_addr(struct sockaddr **addr,
                                     const char *area_inst, ...)
-                                    __attribute__((format(printf, 2, 3)));
+                                    TE_LIKE_PRINTF(2, 3);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -329,7 +329,7 @@ extern void te_test_tester_message(te_test_msg_type type,
  * @param fmt     printf()-like format string w/o! TE extensions
  */
 extern void te_test_fail_state_update(const char *fmt, ...)
-    __attribute__((format(printf, 1, 2)));
+    TE_LIKE_PRINTF(1, 2);
 
 /**
  * Update substate of the test to be dumped in case of failure.
@@ -337,7 +337,7 @@ extern void te_test_fail_state_update(const char *fmt, ...)
  * @param fmt     printf()-like format string w/o! TE extensions
  */
 extern void te_test_fail_substate_update(const char *fmt, ...)
-    __attribute__((format(printf, 1, 2)));
+    TE_LIKE_PRINTF(1, 2);
 
 /**
  * Get the current test state string or @c NULL if it's not filled in.

@@ -157,7 +157,7 @@ extern te_errno cfg_register_object(const cfg_oid *oid,
 extern te_errno cfg_register_object_fmt(cfg_obj_descr *descr,
                                         cfg_handle *handle,
                                         const char *oid_fmt, ...)
-                                        __attribute__((format(printf, 3, 4)));
+                                        TE_LIKE_PRINTF(3, 4);
 
 
 /**
@@ -287,7 +287,7 @@ cfg_find_vfmt(cfg_handle *p_handle, const char *oid_fmt, va_list ap)
 
 /** The same function as cfg_find_str, but OID may be format string */
 extern te_errno cfg_find_fmt(cfg_handle *p_handle, const char *oid_fmt, ...)
-                             __attribute__((format(printf, 2, 3)));
+                             TE_LIKE_PRINTF(2, 3);
 
 
 /**
@@ -331,7 +331,7 @@ extern te_errno cfg_find_pattern(const char    *pattern,
 /** The same function as cfg_find_pattern, but OID may be format string */
 extern te_errno cfg_find_pattern_fmt(unsigned int *p_num, cfg_handle **p_set,
                                      const char *ptrn_fmt, ...)
-                                     __attribute__((format(printf, 3, 4)));
+                                     TE_LIKE_PRINTF(3, 4);
 
 /**
  * Type of callback function which can passed to cfg_find_pattern_iter_fmt().
@@ -356,7 +356,7 @@ typedef te_errno (*cfg_handle_cb_func)(cfg_handle handle, void *opaque);
 extern te_errno cfg_find_pattern_iter_fmt(cfg_handle_cb_func cb_func,
                                           void *opaque,
                                           const char *ptrn_fmt, ...)
-                                     __attribute__((format(printf, 3, 4)));
+                                     TE_LIKE_PRINTF(3, 4);
 
 /**
  * Get handle of the oldest son of the object or object instance.
@@ -436,7 +436,7 @@ extern te_errno cfg_add_instance_str(const char *oid, cfg_handle *p_handle,
  */
 extern te_errno cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
                                      const void *val, const char *oid_fmt, ...)
-                                     __attribute__((format(printf, 4, 5)));
+                                     TE_LIKE_PRINTF(4, 5);
 
 
 /**
@@ -487,7 +487,7 @@ extern te_errno cfg_add_instance_local_fmt(cfg_handle *p_handle,
                                            cfg_val_type type,
                                            const void *val,
                                            const char *oid_fmt, ...)
-                                        __attribute__((format(printf, 4, 5)));
+                                        TE_LIKE_PRINTF(4, 5);
 
 /**
  * Add instance with the first part of OID specified by handle and
@@ -507,7 +507,7 @@ extern te_errno cfg_add_instance_child_fmt(cfg_handle *p_handle,
                                            const void *val,
                                            cfg_handle parent,
                                            const char *suboid_fmt, ...)
-                                        __attribute__((format(printf, 5, 6)));
+                                        TE_LIKE_PRINTF(5, 6);
 
 /**
  * Delete an object instance.
@@ -522,7 +522,7 @@ extern te_errno cfg_del_instance(cfg_handle handle, te_bool with_children);
 /** Set instance by the OID. OID may be format string */
 extern te_errno cfg_del_instance_fmt(te_bool with_children,
                                      const char *oid_fmt, ...)
-                                     __attribute__((format(printf, 2, 3)));
+                                     TE_LIKE_PRINTF(2, 3);
 
 /**
  * Delete an object instance locally. Commit should be called to propagate
@@ -547,7 +547,7 @@ extern te_errno cfg_del_instance_local(cfg_handle handle,
  */
 extern te_errno cfg_del_instance_local_fmt(te_bool with_children,
                                            const char *oid_fmt, ...)
-                                     __attribute__((format(printf, 2, 3)));
+                                     TE_LIKE_PRINTF(2, 3);
 
 /**
  * Change object instance value.
@@ -571,7 +571,7 @@ extern te_errno cfg_set_instance(cfg_handle handle, cfg_val_type type, ...);
  */
 extern te_errno cfg_set_instance_fmt(cfg_val_type type, const void *val,
                                      const char *oid_fmt, ...)
-                                     __attribute__((format(printf, 3, 4)));
+                                     TE_LIKE_PRINTF(3, 4);
 
 /**
  * Set instance by the OID string.
@@ -607,7 +607,7 @@ extern te_errno cfg_set_instance_local(cfg_handle handle,
 /** Set instance by the OID. OID may be format string */
 extern te_errno cfg_set_instance_local_fmt(cfg_val_type type, const void *val,
                                            const char *oid_fmt, ...)
-                                        __attribute__((format(printf, 3, 4)));
+                                        TE_LIKE_PRINTF(3, 4);
 
 /**
  * Commit Configurator database changes to the Test Agent.
@@ -621,7 +621,7 @@ extern te_errno cfg_commit(const char *oid);
 
 /** The same function as cfg_commit, but OID may be format string */
 extern te_errno cfg_commit_fmt(const char *oid_fmt, ...)
-                               __attribute__((format(printf, 1, 2)));
+                               TE_LIKE_PRINTF(1, 2);
 
 /**
  * Obtain value of the object instance. Memory for strings and
@@ -642,7 +642,7 @@ extern te_errno cfg_get_instance(cfg_handle handle,
 /** Get instance by the OID. OID may be format string */
 extern te_errno cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
                                      const char *oid_fmt, ...)
-                                     __attribute__((format(printf, 3, 4)));
+                                     TE_LIKE_PRINTF(3, 4);
 
 /**
  * Type-safe version of cfg_get_instance_fmt() for values of int type.
@@ -651,62 +651,62 @@ extern te_errno cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
  * for backward compatibility.
  */
 extern te_errno cfg_get_int(int *val, const char *oid_fmt, ...)
-                            __attribute__((format(printf, 2, 3)));
+                            TE_LIKE_PRINTF(2, 3);
 
 /** Type-safe version of cfg_get_instance_fmt() for values of te_bool type */
 extern te_errno cfg_get_bool(te_bool *val,
                              const char *oid_fmt, ...)
-                             __attribute__((format(printf, 2, 3)));
+                             TE_LIKE_PRINTF(2, 3);
 
 /** Type-safe version of cfg_get_instance_fmt() for values of int8_t type */
 extern te_errno cfg_get_int8(int8_t *val,
                              const char *oid_fmt, ...)
-                             __attribute__((format(printf, 2, 3)));
+                             TE_LIKE_PRINTF(2, 3);
 
 /** Type-safe version of cfg_get_instance_fmt() for values of uint8_t type */
 extern te_errno cfg_get_uint8(uint8_t *val,
                               const char *oid_fmt, ...)
-                              __attribute__((format(printf, 2, 3)));
+                              TE_LIKE_PRINTF(2, 3);
 
 /** Type-safe version of cfg_get_instance_fmt() for values of int16_t type */
 extern te_errno cfg_get_int16(int16_t *val,
                               const char *oid_fmt, ...)
-                              __attribute__((format(printf, 2, 3)));
+                              TE_LIKE_PRINTF(2, 3);
 
 /** Type-safe version of cfg_get_instance_fmt() for values of uint16_t type */
 extern te_errno cfg_get_uint16(uint16_t *val,
                                const char *oid_fmt, ...)
-                               __attribute__((format(printf, 2, 3)));
+                               TE_LIKE_PRINTF(2, 3);
 
 /** Type-safe version of cfg_get_instance_fmt() for values of uint32_t type */
 extern te_errno cfg_get_uint32(uint32_t *val,
                                const char *oid_fmt, ...)
-                               __attribute__((format(printf, 2, 3)));
+                               TE_LIKE_PRINTF(2, 3);
 
 /** Type-safe version of cfg_get_instance_fmt() for values of int32_t type */
 extern te_errno cfg_get_int32(int32_t *val,
                               const char *oid_fmt, ...)
-                              __attribute__((format(printf, 2, 3)));
+                              TE_LIKE_PRINTF(2, 3);
 
 /** Type-safe version of cfg_get_instance_fmt() for values of int64_t type */
 extern te_errno cfg_get_int64(int64_t *val,
                               const char *oid_fmt, ...)
-                               __attribute__((format(printf, 2, 3)));
+                               TE_LIKE_PRINTF(2, 3);
 
 /** Type-safe version of cfg_get_instance_fmt() for values of uint64_t type */
 extern te_errno cfg_get_uint64(uint64_t *val,
                                const char *oid_fmt, ...)
-                               __attribute__((format(printf, 2, 3)));
+                               TE_LIKE_PRINTF(2, 3);
 
 /** Type-safe version of cfg_get_instance_fmt() for values of double type */
 extern te_errno cfg_get_double(double *val,
                                const char *oid_fmt, ...)
-                               __attribute__((format(printf, 2, 3)));
+                               TE_LIKE_PRINTF(2, 3);
 
 /** Type-safe version of cfg_get_instance_fmt() for string values */
 extern te_errno cfg_get_string(char **val,
                                const char *oid_fmt, ...)
-                               __attribute__((format(printf, 2, 3)));
+                               TE_LIKE_PRINTF(2, 3);
 
 /**
  * Type-safe version of cfg_get_instance_fmt() for values of
@@ -714,7 +714,7 @@ extern te_errno cfg_get_string(char **val,
  */
 extern te_errno cfg_get_addr(struct sockaddr **val,
                              const char *oid_fmt, ...)
-                             __attribute__((format(printf, 2, 3)));
+                             TE_LIKE_PRINTF(2, 3);
 
 /**
  * Get instance by the OID string.
@@ -748,7 +748,7 @@ extern te_errno cfg_get_instance_sync(cfg_handle handle,
 /** Get instance by the OID. OID may be format string */
 extern te_errno cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
                                           const char *oid_fmt, ...)
-                                          __attribute__((format(printf, 3, 4)));
+                                          TE_LIKE_PRINTF(3, 4);
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of int type.
@@ -758,82 +758,82 @@ extern te_errno cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
  */
 extern te_errno cfg_get_int_sync(int *val,
                                  const char *oid_fmt, ...)
-                                 __attribute__((format(printf, 2, 3)));
+                                 TE_LIKE_PRINTF(2, 3);
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of te_bool type
  */
 extern te_errno cfg_get_bool_sync(te_bool *val,
                                   const char *oid_fmt, ...)
-                                  __attribute__((format(printf, 2, 3)));
+                                  TE_LIKE_PRINTF(2, 3);
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of int8_t type
  */
 extern te_errno cfg_get_int8_sync(int8_t *val,
                                   const char *oid_fmt, ...)
-                                  __attribute__((format(printf, 2, 3)));
+                                  TE_LIKE_PRINTF(2, 3);
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of uint8_t type
  */
 extern te_errno cfg_get_uint8_sync(uint8_t *val,
                                    const char *oid_fmt, ...)
-                                   __attribute__((format(printf, 2, 3)));
+                                   TE_LIKE_PRINTF(2, 3);
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of int16_t type
  */
 extern te_errno cfg_get_int16_sync(int16_t *val,
                                    const char *oid_fmt, ...)
-                                   __attribute__((format(printf, 2, 3)));
+                                   TE_LIKE_PRINTF(2, 3);
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of uint16_t type
  */
 extern te_errno cfg_get_uint16_sync(uint16_t *val,
                                     const char *oid_fmt, ...)
-                                    __attribute__((format(printf, 2, 3)));
+                                    TE_LIKE_PRINTF(2, 3);
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of int32_t type
  */
 extern te_errno cfg_get_int32_sync(int32_t *val,
                                    const char *oid_fmt, ...)
-                                   __attribute__((format(printf, 2, 3)));
+                                   TE_LIKE_PRINTF(2, 3);
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of uint32_t type
  */
 extern te_errno cfg_get_uint32_sync(uint32_t *val,
                                     const char *oid_fmt, ...)
-                                    __attribute__((format(printf, 2, 3)));
+                                    TE_LIKE_PRINTF(2, 3);
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of int64_t type
  */
 extern te_errno cfg_get_int64_sync(int64_t *val,
                                    const char *oid_fmt, ...)
-                                   __attribute__((format(printf, 2, 3)));
+                                   TE_LIKE_PRINTF(2, 3);
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of uint64_t type
  */
 extern te_errno cfg_get_uint64_sync(uint64_t *val,
                                     const char *oid_fmt, ...)
-                                    __attribute__((format(printf, 2, 3)));
+                                    TE_LIKE_PRINTF(2, 3);
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of double type.
  */
 extern te_errno cfg_get_double_sync(double *val,
                                     const char *oid_fmt, ...)
-                                    __attribute__((format(printf, 2, 3)));
+                                    TE_LIKE_PRINTF(2, 3);
 
 /** Type-safe version of cfg_get_instance_sync_fmt() for string values */
 extern te_errno cfg_get_string_sync(char **val,
                                     const char *oid_fmt, ...)
-                                    __attribute__((format(printf, 2, 3)));
+                                    TE_LIKE_PRINTF(2, 3);
 
 /**
  * Type-safe version of cfg_get_instance_sync_fmt() for values of
@@ -841,7 +841,7 @@ extern te_errno cfg_get_string_sync(char **val,
  */
 extern te_errno cfg_get_addr_sync(struct sockaddr **val,
                                   const char *oid_fmt, ...)
-                                  __attribute__((format(printf, 2, 3)));
+                                  TE_LIKE_PRINTF(2, 3);
 
 /**@}*/
 
@@ -863,7 +863,7 @@ extern te_errno cfg_synchronize(const char *oid, te_bool subtree);
 
 /** The same function as cfg_synchronize, but OID may be format string */
 extern te_errno cfg_synchronize_fmt(te_bool subtree, const char *oid_fmt, ...)
-                                    __attribute__((format(printf, 2, 3)));
+                                    TE_LIKE_PRINTF(2, 3);
 
 /**@}*/
 
@@ -1067,7 +1067,7 @@ extern void cfg_api_cleanup(void);
 extern te_errno cfg_copy_subtree_fmt(const char *dst_oid,
                                      const char *src_oid_fmt,
                                      ...)
-                __attribute__((format(printf, 2, 3)));
+                TE_LIKE_PRINTF(2, 3);
 
 /**@}*/
 

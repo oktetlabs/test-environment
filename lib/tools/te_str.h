@@ -177,7 +177,7 @@ extern char *te_strlcpy_verbose(const char *id, char *dst, const char *src,
  */
 extern char *te_snprintf_verbose(const char *id, char *dst, size_t size,
                                  const char *fmt, ...)
-                                    __attribute__((format(printf, 4, 5)));
+                                    TE_LIKE_PRINTF(4, 5);
 
 /**
  * Fill a destination buffer according to a format string. It is a wrapper
@@ -229,7 +229,7 @@ extern te_errno te_vsnprintf(char *dst, size_t size,
  * it is called with a variable number of arguments instead of a va_list
  */
 extern te_errno te_snprintf(char *dst, size_t size, const char *fmt, ...)
-                                    __attribute__((format(printf, 3, 4)));
+                                    TE_LIKE_PRINTF(3, 4);
 
 /**
  * Take off heading and trailing spaces (all the symbols " \f\n\r\t\v").
@@ -611,7 +611,7 @@ extern te_errno te_str_find_index(const char *str, const char **str_array,
  * @return              A pointer to the newly allocated string array
  *                      with @c NULL as the last element.
  */
-extern char **te_str_make_array(const char *fst, ...) __attribute__((sentinel));
+extern char **te_str_make_array(const char *fst, ...) TE_REQUIRE_SENTINEL;
 
 /**
  * Free array of strings

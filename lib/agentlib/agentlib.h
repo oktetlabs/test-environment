@@ -108,10 +108,7 @@ extern int ta_system(const char *cmd);
  *
  * @sa ta_system
  */
-#ifdef __GNUC__
-__attribute__((format(printf, 1, 2)))
-#endif
-extern int ta_system_fmt(const char *fmt, ...);
+extern int ta_system_fmt(const char *fmt, ...) TE_LIKE_PRINTF(1, 2);
 
 /**
  * popen('r') analogue, with slightly modified parameters.
@@ -132,11 +129,8 @@ extern te_errno ta_popen_r(const char *cmd, pid_t *cmd_pid, FILE **f);
  *
  * @sa ta_popen_r, ta_pclose_r
  */
-#ifdef __GNUC__
-__attribute__((format(printf, 3, 4)))
-#endif
 extern te_errno ta_popen_r_fmt(pid_t *cmd_pid, FILE **f,
-                               const char *fmt, ...);
+                               const char *fmt, ...) TE_LIKE_PRINTF(3, 4);
 
 /**
  * Perform cleanup actions for ta_popen_r() function.

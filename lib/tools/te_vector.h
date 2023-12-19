@@ -386,7 +386,7 @@ extern te_errno te_vec_append_array(te_vec *vec, const void *elements,
  * @return Status code (always 0).
  */
 extern te_errno te_vec_append_str_fmt(te_vec *vec, const char *fmt, ...)
-                                      __attribute__((format(printf, 2, 3)));
+                                      TE_LIKE_PRINTF(2, 3);
 
 /**
  * Replace the content of @p index'th element of @p vec with @p new_val.

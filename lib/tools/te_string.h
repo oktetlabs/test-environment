@@ -265,7 +265,7 @@ extern te_errno te_string_append_buf(te_string *str, const char *buf,
  * @return 0 (see te_string_append() for explanation)
  */
 extern te_errno te_string_append_shell_args_as_is(te_string *str, ...)
-                    __attribute__((sentinel));
+                                                  TE_REQUIRE_SENTINEL;
 
 /**
  * Append a single argument with required shell escaping to avoid
@@ -483,7 +483,7 @@ extern char *te_string_fmt_va(const char *fmt,
  * @return Heap-allocated string.
  */
 extern char *te_string_fmt(const char *fmt,
-                           ...) __attribute__((format(printf, 1, 2)));
+                           ...) TE_LIKE_PRINTF(1, 2);
 
 /**
  * Cut from the string specified number of characters.

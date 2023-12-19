@@ -90,7 +90,7 @@ run_command_generic(rcf_rpc_server *rpcs, opts_t opts, const char *command)
 
 static int run_command(rcf_rpc_server *rpcs, opts_t opts,
                        const char *format_cmd, ...)
-                       __attribute__((format(printf, 3, 4)));
+                       TE_LIKE_PRINTF(3, 4);
 
 static int
 run_command(rcf_rpc_server *rpcs, opts_t opts, const char *format_cmd, ...)
@@ -108,7 +108,7 @@ run_command(rcf_rpc_server *rpcs, opts_t opts, const char *format_cmd, ...)
 static te_errno run_command_dump_output_rc(rcf_rpc_server *rpcs,
                                            unsigned int timeout,
                                            const char *format_cmd, ...)
-                                           __attribute__((format(printf, 3, 4)));
+                                           TE_LIKE_PRINTF(3, 4);
 
 static te_errno
 run_command_dump_output_rc(rcf_rpc_server *rpcs, unsigned int timeout,

@@ -138,7 +138,7 @@ typedef struct te_json_ctx_t {
  */
 extern void te_json_add_simple(te_json_ctx_t *ctx,
                                const char *fmt, ...)
-    __attribute__((format(printf, 2, 3)));
+                               TE_LIKE_PRINTF(2, 3);
 
 /**
  * Serialize JSON null.
@@ -209,7 +209,7 @@ te_json_add_float(te_json_ctx_t *ctx, double val, int precision)
  */
 extern void te_json_add_string(te_json_ctx_t *ctx,
                                const char *fmt, ...)
-    __attribute__((format(printf, 2, 3)));;
+                               TE_LIKE_PRINTF(2, 3);
 
 /**
  * Start serializing a JSON string.
@@ -238,7 +238,7 @@ extern void te_json_start_string(te_json_ctx_t *ctx);
  */
 extern void te_json_append_string(te_json_ctx_t *ctx,
                                   const char *fmt, ...)
-    __attribute__((format(printf, 2, 3)));
+                                  TE_LIKE_PRINTF(2, 3);
 
 /**
  * Same as te_json_append_string() but accepts va_list instead of

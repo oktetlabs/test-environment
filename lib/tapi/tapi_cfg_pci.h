@@ -62,7 +62,7 @@ extern te_errno tapi_cfg_pci_get_pci_vendor_device(const char *ta,
  */
 extern te_errno tapi_cfg_pci_resolve_device_oid(char **pci_dev_oid,
                                                 const char *pci_inst_fmt, ...)
-    __attribute__((format(printf, 2, 3)));
+    TE_LIKE_PRINTF(2, 3);
 
 /**
  * Get PCI addresses of PCI functions with specified vendor and device

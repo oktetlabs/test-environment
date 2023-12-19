@@ -64,7 +64,7 @@ extern void te_kvpair_fini(te_kvpair_h *head);
  */
 extern void te_kvpair_push(te_kvpair_h *head, const char *key,
                            const char *value_fmt, ...)
-                           __attribute__((format(printf, 3, 4)));
+                           TE_LIKE_PRINTF(3, 4);
 
 /**
  * Add key-value pair using variadic list.
@@ -78,7 +78,7 @@ extern void te_kvpair_push(te_kvpair_h *head, const char *key,
  */
 extern void te_kvpair_push_va(te_kvpair_h *head, const char *key,
                               const char *value_fmt, va_list ap)
-                              __attribute__((format(printf, 3, 0)));
+                              TE_LIKE_VPRINTF(3);
 
 
 /**
@@ -97,7 +97,7 @@ extern void te_kvpair_push_va(te_kvpair_h *head, const char *key,
  */
 extern te_errno te_kvpair_add(te_kvpair_h *head, const char *key,
                               const char *value_fmt, ...)
-                              __attribute__((format(printf, 3, 4)));
+                              TE_LIKE_PRINTF(3, 4);
 
 /**
  * Add key-value pair using variadic list.
@@ -115,7 +115,7 @@ extern te_errno te_kvpair_add(te_kvpair_h *head, const char *key,
  */
 extern te_errno te_kvpair_add_va(te_kvpair_h *head, const char *key,
                                  const char *value_fmt, va_list ap)
-                                 __attribute__((format(printf, 3, 0)));
+                                 TE_LIKE_VPRINTF(3);
 
 /**
  * Remove the most recently added key-value pair with

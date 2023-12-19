@@ -356,6 +356,7 @@ headers += [
     'tad_common.h',
     'te_bpf_common.h',
     'te_config.h',
+    'te_compiler.h',
     'te_defs.h',
     'te_errno.h',
     'te_ethernet.h',

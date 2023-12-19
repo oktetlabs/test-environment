@@ -81,7 +81,7 @@ extern te_errno rpcs_msghdr_tarpc2h(
                                struct msghdr *msg,
                                checked_arg_list *arglist,
                                const char *name_fmt, ...)
-                                  __attribute__((format(printf, 6, 7)));
+                                  TE_LIKE_PRINTF(6, 7);
 
 /**
  * Convert struct msghdr back to tarpc_msghdr (i.e. this function should

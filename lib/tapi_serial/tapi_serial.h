@@ -87,7 +87,7 @@ extern te_errno tapi_serial_spy(tapi_serial_handle handle);
  */
 extern te_errno tapi_serial_send_str(tapi_serial_handle handle,
                                      const char        *fmt, ...)
-                                     __attribute__((format(printf, 2, 3)));
+                                     TE_LIKE_PRINTF(2, 3);
 /**
  * Send command and "Enter" (LF) to the console.
  *
@@ -98,7 +98,7 @@ extern te_errno tapi_serial_send_str(tapi_serial_handle handle,
  */
 extern te_errno tapi_serial_send_cmd(tapi_serial_handle handle,
                                      const char        *fmt, ...)
-                                     __attribute__((format(printf, 2, 3)));
+                                     TE_LIKE_PRINTF(2, 3);
 
 /**
  * Send "Enter" (LF) to the console.
@@ -161,7 +161,7 @@ extern te_errno tapi_serial_read(tapi_serial_handle handle,
 extern te_errno tapi_serial_check_pattern(tapi_serial_handle handle,
                                           int               *offset,
                                           const char        *fmt, ...)
-                                          __attribute__((format(printf, 3, 4)));
+                                          TE_LIKE_PRINTF(3, 4);
 
 /**
  * Wait until data matching specified pattern (regular expression)
@@ -180,7 +180,7 @@ extern te_errno tapi_serial_wait_pattern(tapi_serial_handle handle,
                                          int               *offset,
                                          int                timeout_ms,
                                          const char        *fmt, ...)
-                                         __attribute__((format(printf, 4, 5)));
+                                         TE_LIKE_PRINTF(4, 5);
 
 
 #ifdef __cplusplus

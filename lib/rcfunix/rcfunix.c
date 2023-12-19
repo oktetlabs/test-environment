@@ -327,7 +327,7 @@ rcfunix_ta_free(unix_ta *ta)
  * @return TE_ETIMEDOUT    Command timed out
  */
 static te_errno
-__attribute__((format(printf, 3, 4)))
+TE_LIKE_PRINTF(3, 4)
 system_with_timeout(int timeout, te_string *out, const char *fmt, ...)
 {
     va_list         ap;

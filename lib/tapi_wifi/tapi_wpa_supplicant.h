@@ -162,7 +162,7 @@ extern te_errno tapi_wpa_supplicant_configure(
                         tapi_wpa_supplicant_security *security,
                         te_bool scan_ssid,
                         const char *opts_fmt, ...)
-                        __attribute__((format(printf, 7, 8)));
+                        TE_LIKE_PRINTF(7, 8);
 
 /**
  * Same as tapi_wpa_supplicant_configure() but operates with va_list

@@ -75,7 +75,7 @@ typedef struct te_mi_log_kvpair {
 extern void te_mi_logger_add_comment(te_mi_logger *logger, te_errno *retval,
                                      const char *name,
                                      const char *value_fmt, ...)
-                                     __attribute__((format(printf, 4, 5)));
+                                     TE_LIKE_PRINTF(4, 5);
 
 /**
  * Purge the logger's MI data. The data is lost completely.
@@ -419,7 +419,7 @@ extern void te_mi_logger_add_meas_vec(te_mi_logger *logger, te_errno *retval,
 extern void te_mi_logger_add_meas_key(te_mi_logger *logger, te_errno *retval,
                                       const char *key,
                                       const char *value_fmt, ...)
-                                      __attribute__((format(printf, 4, 5)));
+                                      TE_LIKE_PRINTF(4, 5);
 
 /** Types of MI measurement views */
 typedef enum te_mi_meas_view_type {

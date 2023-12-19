@@ -33,7 +33,7 @@ extern "C" {
  */
 extern te_errno tapi_nvme_internal_file_append(rcf_rpc_server *rpcs,
     unsigned int timeout_sec, const char *string, const char *fmt, ...)
-    __attribute__((format(printf, 4, 5)));
+    TE_LIKE_PRINTF(4, 5);
 
 /**
  * Read file in buffer
@@ -49,7 +49,7 @@ extern te_errno tapi_nvme_internal_file_append(rcf_rpc_server *rpcs,
  */
 extern int tapi_nvme_internal_file_read(rcf_rpc_server *rpcs,
     char *buffer, size_t size, const char *fmt, ...)
-    __attribute__((format(printf, 4, 5)));
+    TE_LIKE_PRINTF(4, 5);
 
 /**
  * Check that directory is exist
@@ -72,7 +72,7 @@ extern te_bool tapi_nvme_internal_isdir_exist(rcf_rpc_server *rpcs,
  * @return Success of creation
  */
 extern te_bool tapi_nvme_internal_mkdir(rcf_rpc_server *rpcs,
-    const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+    const char *fmt, ...) TE_LIKE_PRINTF(2, 3);
 
 /**
  * Remove directory
@@ -84,7 +84,7 @@ extern te_bool tapi_nvme_internal_mkdir(rcf_rpc_server *rpcs,
  * @return Success of creation
  */
 extern te_bool tapi_nvme_internal_rmdir(rcf_rpc_server *rpcs,
-    const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+    const char *fmt, ...) TE_LIKE_PRINTF(2, 3);
 
 /** Directory info */
 typedef struct tapi_nvme_internal_dirinfo {

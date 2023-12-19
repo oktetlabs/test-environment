@@ -49,7 +49,7 @@ extern char *te_basename(const char *pathname);
  *         or @c NULL if an error has occurred.
  */
 extern char *te_readlink_fmt(const char *path_fmt, ...)
-                            __attribute__((format(printf, 1, 2)));
+                            TE_LIKE_PRINTF(1, 2);
 
 /**
  * Get a dirname from @p pathname, and check if it is valid. Unlike system
@@ -133,7 +133,7 @@ extern int te_file_create_unique_fd_va(char **filename,
  */
 extern int te_file_create_unique_fd(char **filename, const char *prefix_format,
                                     const char *suffix, ...)
-                                        __attribute__((format(printf, 2, 4)));
+                                        TE_LIKE_PRINTF(2, 4);
 
 /**
  * Create a file of unique name, see details in description of
@@ -151,7 +151,7 @@ extern int te_file_create_unique_fd(char **filename, const char *prefix_format,
  */
 extern char *te_file_create_unique(const char *prefix_format,
                                    const char *suffix, ...)
-                                        __attribute__((format(printf, 1, 3)));
+                                        TE_LIKE_PRINTF(1, 3);
 
 /**
  * Call fopen() with a path specified by a format string and arguments.
@@ -163,7 +163,7 @@ extern char *te_file_create_unique(const char *prefix_format,
  * @return FILE pointer on success, @c NULL on failure.
  */
 extern FILE *te_fopen_fmt(const char *mode, const char *path_fmt, ...)
-                                      __attribute__((format(printf, 2, 3)));
+                                      TE_LIKE_PRINTF(2, 3);
 
 /**
  * Read process identifier from PID file
@@ -247,7 +247,7 @@ extern te_errno te_file_check_executable(const char *path);
  * @retval TE_ENOENT   The file or any of its parents does not exist
  */
 extern te_errno te_access_fmt(int mode, const char *fmt, ...)
-    __attribute__((format(printf, 2, 3)));
+    TE_LIKE_PRINTF(2, 3);
 
 /**
  * Delete a file.
@@ -261,7 +261,7 @@ extern te_errno te_access_fmt(int mode, const char *fmt, ...)
  * @retval TE_ENOENT   The file or any of its parents does not exist.
  */
 extern te_errno te_unlink_fmt(const char *fmt, ...)
-    __attribute__((format(printf, 1, 2)));
+    TE_LIKE_PRINTF(1, 2);
 
 /**
  * Read the contents of the file into a dynamic string @p dest.
@@ -293,7 +293,7 @@ extern te_errno te_unlink_fmt(const char *fmt, ...)
  */
 extern te_errno te_file_read_string(te_string *dest, te_bool binary,
                                     size_t maxsize, const char *path_fmt, ...)
-                                    __attribute__((format(printf, 4, 5)));
+                                    TE_LIKE_PRINTF(4, 5);
 
 /**
  * Write the contents of the file from a dynamic string @p src.
@@ -317,7 +317,7 @@ extern te_errno te_file_read_string(te_string *dest, te_bool binary,
 extern te_errno te_file_write_string(const te_string *src, size_t fitlen,
                                      int flags, mode_t mode,
                                      const char *path_fmt, ...)
-                                     __attribute__((format(printf, 5, 6)));
+                                     TE_LIKE_PRINTF(5, 6);
 
 /**
  * Read the contents of the file @p path into @p buffer.
@@ -383,7 +383,7 @@ extern te_errno te_file_scandir(const char *dirname,
                                 te_file_scandir_callback *callback,
                                 void *data,
                                 const char *pattern_fmt, ...)
-    __attribute__((format(printf, 4, 5)));
+    TE_LIKE_PRINTF(4, 5);
 
 /**
  * Extract a varying part of a @p filename matching @p pattern.
