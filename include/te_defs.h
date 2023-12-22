@@ -529,7 +529,7 @@ te_round_up_pow2(unsigned long long num)
 
 /** Align up a value to a power of two */
 #define TE_ALIGN(_v, _a) \
-    TE_ALIGN_MASK((_v), TE_TYPEOF_CAST(_v, _a) - 1)
+    TE_ALIGN_MASK((_v), TE_CAST_TYPEOF(_v, _a) - 1)
 
 
 /**
