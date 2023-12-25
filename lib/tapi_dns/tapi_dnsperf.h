@@ -40,6 +40,10 @@ typedef struct tapi_dnsperf_app {
     tapi_job_channel_t *flt_queries_completed;
     /** queries lost */
     tapi_job_channel_t *flt_queries_lost;
+    /** responses no-error */
+    tapi_job_channel_t *flt_resp_noerror;
+    /** response no-error in percent */
+    tapi_job_channel_t *flt_resp_noerror_percent;
     /** average request size */
     tapi_job_channel_t *flt_avg_request_size;
     /** average response size */
@@ -66,6 +70,12 @@ typedef struct tapi_dnsperf_report {
 
     /** queries lost (%) */
     double queries_lost_percent;
+
+    /** no-error responses */
+    unsigned int resp_noerror;
+
+    /** no-error responses (%) */
+    double resp_noerror_percent;
 
     /** average request packet size */
     double avg_request_size;

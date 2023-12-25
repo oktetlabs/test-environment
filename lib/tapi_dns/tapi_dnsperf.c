@@ -287,6 +287,20 @@ tapi_dnsperf_create(tapi_job_factory_t *factory,
                             {
                                 .use_stdout = TRUE,
                                 .readable = TRUE,
+                                .re = "Response codes:\\s*NOERROR\\s*([0-9.]+)\\s*\\(([0-9.]+)%\\).*",
+                                .extract = 1,
+                                .filter_var = &new_app->flt_resp_noerror,
+                            },
+                            {
+                                .use_stdout = TRUE,
+                                .readable = TRUE,
+                                .re = "Response codes:\\s*NOERROR\\s*([0-9.]+)\\s*\\(([0-9.]+)%\\).*",
+                                .extract = 2,
+                                .filter_var = &new_app->flt_resp_noerror_percent,
+                            },
+                            {
+                                .use_stdout = TRUE,
+                                .readable = TRUE,
                                 .re = "Average packet size:\\s*request\\s*([0-9.]+),\\s*response\\s*([0-9.]+)",
                                 .extract = 1,
                                 .filter_var = &new_app->flt_avg_request_size,
@@ -456,7 +470,7 @@ tapi_dnsperf_get_report(tapi_dnsperf_app *app, tapi_dnsperf_report *report)
     assert(app != NULL);
     assert(report != NULL);
 
-#define TAPI_DNS_PERF_READ_ONE_FILTER(val_, val_double_) \
+#define TAPI_DNS_PERF_READ_ONE_FILTER(val_, val_double_, optional_) \
     do {                                                                    \
         tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;                       \
         void *value = &report->val_;                                        \
@@ -468,27 +482,38 @@ tapi_dnsperf_get_report(tapi_dnsperf_app *app, tapi_dnsperf_report *report)
             ERROR("Failed to read data from filter '%s' (%r)", #val_, rc);  \
             return rc;                                                      \
         }                                                                   \
-        if (val_double_)                                                    \
-            rc = te_strtod(buf.data.ptr, value);                            \
-        else                                                                \
-            rc = te_strtoui(buf.data.ptr, 10, value);                       \
-        if (rc != 0)                                                        \
+        if (optional_ == TRUE && buf.data.len == 0)                         \
         {                                                                   \
-            ERROR("Failed to parse '%s' value '%s' (%r)",                   \
-                  #val_, buf.data.ptr, rc);                                 \
+            RING("%s(): no results found for the filter: flt_%s",           \
+                 __func__, #val_);                                          \
+            report->val_ = 0;                                               \
         }                                                                   \
-        te_string_free(&buf.data);                                          \
-        if (rc != 0)                                                        \
-            return rc;                                                      \
+        else                                                                \
+        {                                                                   \
+            if (val_double_)                                                \
+                rc = te_strtod(buf.data.ptr, value);                        \
+            else                                                            \
+                rc = te_strtoui(buf.data.ptr, 10, value);                   \
+            if (rc != 0)                                                    \
+            {                                                               \
+                ERROR("Failed to parse '%s' value '%s' (%r)",               \
+                      #val_, buf.data.ptr, rc);                             \
+            }                                                               \
+            te_string_free(&buf.data);                                      \
+            if (rc != 0)                                                    \
+                return rc;                                                  \
+        }                                                                   \
     } while(0)
 
-    TAPI_DNS_PERF_READ_ONE_FILTER(queries_sent, FALSE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(queries_completed, FALSE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(queries_lost, FALSE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(avg_request_size, TRUE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(avg_response_size, TRUE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(run_time, TRUE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(rps, TRUE);
+    TAPI_DNS_PERF_READ_ONE_FILTER(queries_sent, FALSE, FALSE);
+    TAPI_DNS_PERF_READ_ONE_FILTER(queries_completed, FALSE, FALSE);
+    TAPI_DNS_PERF_READ_ONE_FILTER(queries_lost, FALSE, FALSE);
+    TAPI_DNS_PERF_READ_ONE_FILTER(resp_noerror, FALSE, TRUE);
+    TAPI_DNS_PERF_READ_ONE_FILTER(resp_noerror_percent, TRUE, TRUE);
+    TAPI_DNS_PERF_READ_ONE_FILTER(avg_request_size, TRUE, FALSE);
+    TAPI_DNS_PERF_READ_ONE_FILTER(avg_response_size, TRUE, FALSE);
+    TAPI_DNS_PERF_READ_ONE_FILTER(run_time, TRUE, FALSE);
+    TAPI_DNS_PERF_READ_ONE_FILTER(rps, TRUE, FALSE);
 
     tapi_dnsperf_args2str(&app->cmd, &report->cmd);
 
