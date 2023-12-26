@@ -5,6 +5,7 @@ set -u
 TO_REVERT=""
 MESSAGE=""
 DO_EDIT=true
+CONFLICT_MODE=""
 
 if [[ -z "$(stg series -A 2>/dev/null)" ]]; then
     USE_STGIT=
@@ -33,6 +34,11 @@ conforming to TE Contributor Guidelines.
 --no-stgit       Do not use stgit even on stgit-enabled branches.
 
 --stgit          Use stgit even if it is not auto-detected.
+
+--abort          Abort a pending revert with conflicts.
+
+--continue       Finalize a pending revert after all conflicts
+                 have been resolved.
 EOF
 }
 
@@ -71,12 +77,19 @@ while [[ "$#" -gt 0 ]]; do
         --stgit)
             USE_STGIT=true
             ;;
+        --continue)
+            CONFLICT_MODE="continue"
+            ;;
+        --abort)
+            CONFLICT_MODE="abort"
+            ;;
         -*)
             echo "Unknown option $1" >&2
             show_usage
             exit 1
             ;;
         *)
+
             if [[ -n "${TO_REVERT}" ]]; then
                 echo "Only a single commit may be reverted" >&2
                 exit 1
@@ -87,10 +100,57 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-if [[ -z "${TO_REVERT}" ]]; then
-    echo "No commit to revert is specified" >&2
-    exit 1
-fi
+case "${CONFLICT_MODE}" in
+    "")
+        if [[ -z "${TO_REVERT}" ]]; then
+            echo "No commit to revert is specified" >&2
+            exit 1
+        fi
+
+        if [[ -f "$(git rev-parse --git-path REVERT_HEAD)" ]]; then
+            echo "Revert already in progress, use --continue or --abort to finish it" >&2
+            exit 1
+        fi
+        ;;
+
+    "abort")
+        if [[ -n "${TO_REVERT}" ]]; then
+            echo "Cannot specify a revert commit with --abort" >&2
+            exit 1
+        fi
+        if [[ ! -f "$(git rev-parse --git-path REVERT_HEAD)" ]]; then
+            echo "No revert in progress, nothing to abort" >&2
+            exit 1
+        fi
+        git revert --abort
+        if [[ -n "${USE_STGIT}" ]]; then
+            stg delete --top
+        fi
+        exit 0
+        ;;
+
+    "continue")
+        if [[ -n "${TO_REVERT}" ]]; then
+            echo "Cannot specify a revert commit with --continue" >&2
+            exit 1
+        fi
+        if [[ ! -f "$(git rev-parse --git-path REVERT_HEAD)" ]]; then
+            echo "No revert in progress, nothing to continue" >&2
+            exit 1
+        fi
+        if [[ -n "$(git ls-files --unmerged)" ]]; then
+            echo "There are still unmerged files, cannot proceed with the revert" >&2
+            exit 1
+        fi
+        TO_REVERT="$(< "$(git rev-parse --git-path REVERT_HEAD)")"
+
+        # That's right, here we quit the pending revert but the index
+        # is left in a proper state which allows us to do a revert
+        # commit manually
+        git revert --quit || exit 1
+        ;;
+esac
+
 
 subject="$(git log -1 --format='%s' "${TO_REVERT}")"
 revert_subject="revert: ${subject#*: }"
@@ -109,11 +169,15 @@ signed_off="$(git config user.name) <${author_email,,}>"
 full_message+="Signed-off-by: ${signed_off}"
 
 if [[ -n "${USE_STGIT}" ]]; then
-    stg new -m "${full_message}" || exit 1
-    git revert --no-commit "${TO_REVERT}" || exit 1
+    if [[ -z "${CONFLICT_MODE}" ]]; then
+        stg new -m "${full_message}" || exit 1
+        git revert --no-commit "${TO_REVERT}" || exit 1
+    fi
     stg refresh
     [[ -n "${DO_EDIT}" ]] && stg edit
 else
-    git revert --no-commit "${TO_REVERT}" || exit 1
+    if [[ -z "${CONFLICT_MODE}" ]]; then
+        git revert --no-commit "${TO_REVERT}" || exit 1
+    fi
     git commit --message="${full_message}" ${DO_EDIT:+--edit}
 fi
