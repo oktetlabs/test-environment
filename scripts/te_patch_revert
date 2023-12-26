@@ -94,7 +94,7 @@ fi
 
 subject="$(git log -1 --format='%s' "${TO_REVERT}")"
 revert_subject="revert: ${subject#*: }"
-fixes="Fixes: $(git log -1 --abbrev=12 --format='%h ("%s")')"
+fixes="Fixes: $(git log -1 --abbrev=12 --format='%h ("%s")' "${TO_REVERT}")"
 
 full_message="${revert_subject}"
 if [[ -n "${MESSAGE}" ]]; then
@@ -103,13 +103,17 @@ if [[ -n "${MESSAGE}" ]]; then
 fi
 full_message+=$'\n\n'
 full_message+="${fixes}"
+full_message+=$'\n'
+author_email="$(git config user.email)"
+signed_off="$(git config user.name) <${author_email,,}>"
+full_message+="Signed-off-by: ${signed_off}"
 
 if [[ -n "${USE_STGIT}" ]]; then
-    stg new --sign -m "${full_message}" || exit 1
+    stg new -m "${full_message}" || exit 1
     git revert --no-commit "${TO_REVERT}" || exit 1
     stg refresh
     [[ -n "${DO_EDIT}" ]] && stg edit
 else
     git revert --no-commit "${TO_REVERT}" || exit 1
-    git commit -s --message="${full_message}" ${DO_EDIT:+--edit}
+    git commit --message="${full_message}" ${DO_EDIT:+--edit}
 fi

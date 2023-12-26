@@ -762,10 +762,11 @@ function check_revert ()
     else
         subject="$(git log -1 --format='%s' "${rev}")"
         subject="${subject#revert: }"
-        fixes="${fixes#* }"
+        fixes="${fixes#*: }"
+        fixes="${fixes%\")}"
 
-        if [[ "(\"${subject}\")" != "${fixes}" ]]; then
-            serious_error 'subject and Fixes trailer mismatch in a revert commit'
+        if [[ "${subject}" != "${fixes}" ]]; then
+            serious_error "subject and Fixes trailer mismatch in a revert commit"
         fi
     fi
 }
