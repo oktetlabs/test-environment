@@ -982,17 +982,20 @@ TARPC_FUNC_STATIC(rte_eth_tx_prepare, {},
 
 TARPC_FUNC_STATIC(rte_eth_rx_burst, {},
 {
-    struct rte_mbuf **rx_pkts;
+    struct rte_mbuf **rx_pkts = NULL;
     uint16_t          nb_pkts_rx;
     uint16_t          i;
 
-    rx_pkts = (struct rte_mbuf **)TE_ALLOC(in->nb_pkts * sizeof(*rx_pkts));
+    if (in->nb_pkts != 0)
+        rx_pkts = (struct rte_mbuf **)TE_ALLOC(in->nb_pkts * sizeof(*rx_pkts));
 
     MAKE_CALL(nb_pkts_rx = func(in->port_id, in->queue_id,
                                 rx_pkts, in->nb_pkts));
     out->rx_pkts.rx_pkts_len = nb_pkts_rx;
 
-    out->rx_pkts.rx_pkts_val = TE_ALLOC(nb_pkts_rx * sizeof(tarpc_rte_mbuf));
+    if (nb_pkts_rx != 0)
+        out->rx_pkts.rx_pkts_val =
+            TE_ALLOC(nb_pkts_rx * sizeof(tarpc_rte_mbuf));
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
         for (i = 0; i < MIN(in->nb_pkts, nb_pkts_rx); i++)
@@ -1388,8 +1391,9 @@ TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
     if (reta_conf_p != NULL && out->retval == 0)
     {
         out->reta_conf.reta_conf_len = reta_conf_len;
-        out->reta_conf.reta_conf_val =
-            TE_ALLOC(reta_conf_len * sizeof(*out->reta_conf.reta_conf_val));
+        if (reta_conf_len != 0)
+            out->reta_conf.reta_conf_val =
+                TE_ALLOC(reta_conf_len * sizeof(*out->reta_conf.reta_conf_val));
 
         for (cur_group = 0;  cur_group < reta_conf_len; cur_group++)
             memcpy(&out->reta_conf.reta_conf_val[cur_group],
