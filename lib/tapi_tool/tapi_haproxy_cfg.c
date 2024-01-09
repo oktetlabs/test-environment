@@ -87,7 +87,7 @@ static const tapi_job_opt_bind haproxy_cfg_backends_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_DUMMY("balance static-rr"),
     TAPI_JOB_OPT_ARRAY_PTR(tapi_haproxy_cfg_opt,
         backend.n, backend.backends,
-        TAPI_JOB_OPT_STRUCT("backend ", TRUE, " ", NULL,
+        TAPI_JOB_OPT_STRUCT("server ", TRUE, " ", NULL,
             TAPI_JOB_OPT_STRING(NULL, FALSE,
                 tapi_haproxy_cfg_backend, name),
             TAPI_JOB_OPT_STRUCT(NULL, FALSE, ":", NULL,
