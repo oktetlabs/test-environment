@@ -101,6 +101,8 @@ typedef struct tapi_wrk_report {
     double req_per_sec;
     /** Bytes per second */
     double bps;
+    /** Non-2xx or 3xx responses */
+    unsigned int unexpected_resp;
     /** Wrk arguments used */
     char *arguments;
     /** Truncated wrk arguments */
@@ -123,6 +125,8 @@ typedef struct tapi_wrk_app {
     tapi_job_channel_t *req_filter;
     /** Latency distribution filter */
     tapi_job_channel_t *lat_distr_filter;
+    /** Non-2xx or 3xx responses filter */
+    tapi_job_channel_t *unexpected_resp_filter;
     /** Arguents that are used when running the tool */
     te_vec wrk_args;
 } tapi_wrk_app;

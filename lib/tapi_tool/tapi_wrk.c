@@ -21,6 +21,7 @@
 #include "te_units.h"
 #include "tapi_wrk.h"
 #include "conf_api.h"
+#include "te_str.h"
 
 #define TAPI_WRK_UNITS_MAX 16
 #define TAPI_WRK_RECEIVE_TIMEOUT_MS 1000
@@ -255,6 +256,12 @@ tapi_wrk_create(tapi_job_factory_t *factory, const tapi_wrk_opt *opt,
                                      .extract = 1,
                                      .filter_var = &result->lat_distr_filter,
                                     },
+                                    {.use_stdout = TRUE,
+                                     .readable = TRUE,
+                                     .re = "Non-2xx or 3xx responses:\\s*([0-9.]+).*",
+                                     .extract = 1,
+                                     .filter_var = &result->unexpected_resp_filter,
+                                    },
                                     {.use_stderr = TRUE,
                                      .log_level = TE_LL_ERROR,
                                      .readable = FALSE,
@@ -437,7 +444,8 @@ tapi_wrk_get_report(tapi_wrk_app *app, tapi_wrk_report *report)
                                                    app->req_total_filter,
                                                    app->lat_filter,
                                                    app->req_filter,
-                                                   app->lat_distr_filter),
+                                                   app->lat_distr_filter,
+                                                   app->unexpected_resp_filter),
                               TAPI_WRK_RECEIVE_TIMEOUT_MS, &buf);
 
 
@@ -479,6 +487,10 @@ tapi_wrk_get_report(tapi_wrk_app *app, tapi_wrk_report *report)
             rc = parse_latency_distr(buf.data.ptr,
                                      TE_ARRAY_LEN(result.lat_distr),
                                      result.lat_distr);
+        }
+        else if (buf.filter == app->unexpected_resp_filter)
+        {
+            rc = te_strtoui(buf.data.ptr, 10, &result.unexpected_resp);
         }
         else
         {
