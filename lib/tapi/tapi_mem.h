@@ -30,6 +30,16 @@ extern "C" {
 extern void *tapi_malloc(size_t size);
 
 /**
+ * @c malloc() wrapper which performs allocation status check internally.
+ *
+ * @param size          Size of memory to allocate.
+ *
+ * @return Pointer to an allocated memory or @c NULL if @p size is @c 0
+ *         and never @c NULL othewise.
+ */
+extern void *tapi_malloc_or_null(size_t size);
+
+/**
  * @b calloc() wrapper which performs allocation status check internally
  *
  * @param nmemb         Number of memory elements to allocate

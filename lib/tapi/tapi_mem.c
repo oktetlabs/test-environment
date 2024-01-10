@@ -24,6 +24,15 @@ tapi_malloc(size_t size)
 }
 
 void *
+tapi_malloc_or_null(size_t size)
+{
+    if (size == 0)
+        return NULL;
+
+    return tapi_malloc(size);
+}
+
+void *
 tapi_calloc(size_t nmemb, size_t size)
 {
     if (!te_is_valid_alloc(nmemb, size))
