@@ -137,6 +137,9 @@ find_cpu_generic(const char *pattern, const char *err_msg, size_t *n_indices,
             goto out;
         if ((rc = get_cpu_id_generic(oid, 6, &result[i].thread_id)) != 0)
             goto out;
+
+        cfg_free_oid(oid);
+        oid = NULL;
     }
 
     *n_indices = number_of_cpus;
