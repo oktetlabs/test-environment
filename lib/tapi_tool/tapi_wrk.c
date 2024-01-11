@@ -58,7 +58,11 @@ static const tapi_job_opt_bind wrk_binds[] = TAPI_JOB_OPT_SET(
                                            tapi_wrk_opt, headers[0])),
     TAPI_JOB_OPT_STRING("--script", FALSE, tapi_wrk_opt, script_path),
     TAPI_JOB_OPT_UINT_T("--rate", FALSE, NULL, tapi_wrk_opt, rate),
-    TAPI_JOB_OPT_STRING("--affinity", FALSE, tapi_wrk_opt, affinity)
+    TAPI_JOB_OPT_STRING("--affinity", FALSE, tapi_wrk_opt, affinity),
+    /* Note: script arguments must be after all other arguments */
+    TAPI_JOB_OPT_ARRAY(tapi_wrk_opt, n_script_args, script_args,
+                       TAPI_JOB_OPT_STRING(NULL, FALSE,
+                                           tapi_wrk_opt, script_args[0]))
 );
 
 /**

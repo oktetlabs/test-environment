@@ -30,6 +30,9 @@ extern "C" {
 /** Maximum number of headers that can be set in wrk options */
 #define TAPI_WRK_HEADERS_MAX 10
 
+/** Maximum number of arguments that can be passed to the Lua script */
+#define TAPI_WRK_SCRIPT_ARGS_MAX 16
+
 /** wrk tool specific command line options */
 typedef struct tapi_wrk_opt {
     /** Number of connections to keep open */
@@ -50,6 +53,11 @@ typedef struct tapi_wrk_opt {
      * the path is @c NULL AND script_content is not @c NULL.
      */
     const char *script_path;
+
+    /** Number of actual arguments in @a script_args. */
+    size_t n_script_args;
+    /** Script arguments. */
+    const char *script_args[TAPI_WRK_SCRIPT_ARGS_MAX];
 
     /** Number of actual headers in @a headers */
     size_t n_headers;
