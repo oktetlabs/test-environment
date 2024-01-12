@@ -91,6 +91,7 @@ te_agent_libs = [
     'rpcs_bpf',
     'rpcs_dpdk',
     'rpcs_job',
+    'rpcs_sai',
     'rpcs_serial',
     'upnp_cp',
 ]
