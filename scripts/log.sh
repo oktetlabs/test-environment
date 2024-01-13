@@ -88,7 +88,7 @@ process_opts()
             -p) ;&
             --sniff-log)
                 SNIFF_LOGS_INCLUDED=true
-                PROC_OPTS+=("$1")
+                PROC_OPTS+=("--sniff-log")
                 ;;
 
             -P) ;&
