@@ -99,6 +99,15 @@ option('agent-powerctl-symtbl', type: 'boolean', value: true,
 option('agent-powerctl-libs', type: 'array', value: [],
        description: 'Extra libraries to be linked to Power-ctl agent')
 
+option('agent-proxy-name', type: 'string', value: '',
+       description: 'Proxy Test Agent name')
+option('agent-proxy-platform', type: 'string', value: '',
+       description: 'Proxy Test Agent platform')
+option('agent-proxy-symtbl', type: 'boolean', value: true,
+       description: 'Generate and include symbol table in Proxy agent')
+option('agent-proxy-libs', type: 'array', value: [],
+       description: 'Extra libraries to be linked to Proxy agent')
+
 option('rgt-log-filter', type: 'boolean', value: true,
        description: 'Embed log fitering stuff in RGT core')
 
