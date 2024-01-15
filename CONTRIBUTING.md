@@ -150,6 +150,14 @@ git config alias.fixline "log -1 --abbrev=12 --format='Fixes: %h (\"%s\")'" # on
 git fixline <SHA>
 ```
 
+The changeset referenced by `Fixes` trailer must be accessible from the patch
+commit --- this ensures the trailer always refers to a publicly visible
+changeset. Sometimes this requirement may be too strong: it may be the case
+that a public patch fixes a changeset that only exists in a private fork and
+the contributor nevertheless believes this fact important enough to record.
+For such situations, a `Fixes-Private` trailer may be used, which has the same
+syntax as the `Fixes` trailer.
+
 Helper trailers may contain references to an internal issue tracker (e.g.
 Bugzilla, Redmine or Jira) which is not accessible outside. The
 patch author is fully responsible for correctness of the reference.
