@@ -120,6 +120,8 @@ EOF
 --fixes=REV         Add a properly formatted Fixes trailer for a given
                     Git revision REV. Implies --single.
 
+--fixes-private=REV Same as --fixes, but adds a Fixes-Private trailer.
+
 --guess-fixes       Try to guess required Fixes trailers for each revision.
                     Note that it does not always guess correctly, so manual
                     post-editing may still be needed.
@@ -498,6 +500,13 @@ for arg; do
                         "${arg#--fixes=}")" || exit $?
             TRAILER_ARGS+=("--where" "before" "--if-exists" "addIfDifferent"
                            "--trailer" "Fixes=${line}")
+            ;;
+        --fixes-private=*)
+            SINGLE=true
+            line="$(git log -1 --abbrev=12 --format='%h ("%s")' \
+                        "${arg#--fixes-private=}")" || exit $?
+            TRAILER_ARGS+=("--where" "before" "--if-exists" "addIfDifferent"
+                           "--trailer" "Fixes-Private=${line}")
             ;;
         --trailer=*:*)
             TRAILER_ARGS+=("--where" "end" "--if-exists" "add"

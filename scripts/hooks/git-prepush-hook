@@ -124,7 +124,7 @@ function get_parent ()
 KNOWN_TRAILERS=(Signed-off-by Co-developed-by Reviewed-by Acked-by \
                               Tested-by Suggested-by Reported-by OL-Redmine-Id \
                               GitHub-TE-Id AMD-Jira-Id \
-                              Fixes Breaks Link)
+                              Fixes Fixes-Private Breaks Link)
 
 function strip_known_trailers ()
 {
@@ -169,6 +169,7 @@ TRAILER_ORDER=(["OL-Redmine-Id"]=0
                ["AMD-Jira-Id"]=0
                ["Link"]=0
                ["Fixes"]=0
+               ["Fixes-Private"]=0
                ["Breaks"]=0
                ["Suggested-by"]=1
                ["Reported-by"]=1
@@ -426,7 +427,8 @@ function check_trailer_syntax ()
 }
 
 ### - the recommended order of trailer groups:
-###   + Fixes, Breaks, OL-Redmine-Id, GitHub-TE-Id, AMD-Jira-Id in any order;
+###   + Fixes, Fixes-Private, Breaks, OL-Redmine-Id,
+###     GitHub-TE-Id, AMD-Jira-Id in any order;
 ###   + Suggested-by and Reported-by;
 ###   + Signed-off-by and Co-developed-by;
 ###   + Reviewed-by, Acked-by, Tested-by;
@@ -465,9 +467,7 @@ function check_trailer_ordering ()
     fi
 }
 
-### - the correctness of Fixes trailers;
-###   in the maintainer mode only an invalid commit hash is reported
-###   as error;
+### - the correctness of Fixes and Fixes-Private trailers;
 ###
 function check_fixes ()
 {
@@ -489,6 +489,24 @@ function check_fixes ()
         fi
     done < <(git log -1 \
                  --format="%(trailers:key=Fixes,valueonly,unfold)" \
+                 "${rev}")
+
+    while read -r hash subject; do
+        [[ -z "${hash}" ]] && continue
+        if ! git rev-parse -q --verify "${hash}" >/dev/null 2>/dev/null; then
+            serious_error "invalid Fixes-Private commit ${hash}"
+        else
+            if git merge-base --is-ancestor "${hash}" "${rev}" 2>/dev/null; then
+                warning "Fixes-Private references a public changeset, consider using plain Fixes"
+            fi
+            subject0="$(git log -1 --abbrev=12 \
+                            --format='%h ("%s")' "${hash}")"
+            if [[ "${hash} ${subject}" != "${subject0}" ]]; then
+                nonmaintainer_error "malformatted Fixes-Private line"
+            fi
+        fi
+    done < <(git log -1 \
+                 --format="%(trailers:key=Fixes-Private,valueonly,unfold)" \
                  "${rev}")
 }
 
@@ -534,7 +552,7 @@ function check_summary ()
     esac
 }
 
-### - no lines longer than 72 characters except Fixes trailers (M);
+### - no lines longer than 72 characters except some trailers (M);
 ###
 function check_description ()
 {
