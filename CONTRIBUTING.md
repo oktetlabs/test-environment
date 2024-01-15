@@ -220,6 +220,48 @@ addition to overall design approval.
 `Tested-by:` means that the reviewer has tried the changeset or entire patch
 series, checked that it does the job and found no regressions.
 
+#### Patch priority (optional)
+
+A patch priority may be specified with the help of a special trailer.
+
+The purpose of it is fourfold:
+- to help reviewers in prioritizing their backlog;
+- to help maintainers in planning forthcoming releases;
+- to help testsuite authors in assessing the need to upgrade to a new release;
+- to provide a trackable way of pushing emergency patches,
+  bypassing the standard review procedure.
+
+The syntax and semantics of the trailer are modelled after the Debian's `Urgency`
+control field (see https://www.debian.org/doc/debian-policy/ch-controlfields.html#urgency):
+
+```
+Urgency: LEVEL (OPTIONAL EXPLANATION IN PARENTHESES)
+```
+
+The following levels are defined:
+
+- `low`: e.g. documentation changes, minor fixes, pure refactoring;
+- `medium`: this is the default, so generally it should not be explicitly used;
+- `high`: stuff that actually blocks the development of test suites would
+  normally be on that level;
+- `critical`: fixes for broken builds, other urgent bugfixes;
+- `emergency`: patches that need to be applied ASAP, e.g. rollbacks of disastrous
+  commits.
+
+In general, if a patch is tied to an issue in a tracker, the urgency level would
+correspond to a priority/severity of the associated issue.
+
+For example:
+
+```
+Urgency: emergency (the build is totally broken)
+```
+
+Patches with the urgency level of `emergency` and `critical` may bypass
+the normal review procedure and thus lack any of the review trailers
+(however, following the standard procedure is still recommended).
+In this case the explanation in `Urgency` trailer is **mandatory**.
+
 #### Breaking changes
 
 A change is breaking if testsuites using some part of TE need to be updated,
@@ -262,8 +304,8 @@ extent the development process of a patch. In particular:
 
  - the trailers that describe the substance of a patch must come first ---
    these are issue-referencing trailers (e.g. `OL-Redmine-Id`), `Link`,
-   `Fixes`, `Breaks`; the relative order of trailers within this group
-   is not specified;
+   `Fixes`, `Breaks`, `Urgency`;
+   the relative order of trailers within this group is not specified;
  - tribute trailers `Suggested-by` and `Reported-by`;
  - then `Signed-off-by` and `Co-developed-by` must come; the order of these
    trailers must reflect the history of contributions, that is, the most recent
@@ -345,6 +387,7 @@ Example of a rollback commit that would revert the first example above:
     It turned out the fix was worse than the bug itself.
 
     Fixes: 90dba6649d98 ("component: fix segmentation fault on invalid input")
+    Urgency: high
     OL-Redmine-Id: 12453
     Signed-off-by: Jane Doe <janed@example.com>
     Reviewed-by: John Doe <johnd@example.com>
