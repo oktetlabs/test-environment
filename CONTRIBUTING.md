@@ -220,6 +220,31 @@ addition to overall design approval.
 `Tested-by:` means that the reviewer has tried the changeset or entire patch
 series, checked that it does the job and found no regressions.
 
+#### Referencing other commits
+
+A commit message may reference other commits in the current repository or
+related repositories, for example, if the commit is motivated by a certain
+change in another project. The trailer `Ref` is used for that purpose:
+
+```
+Ref: [ROOT:ORGANIZATION/REPO@]HASH ("SUBJECT LINE")
+```
+
+The syntax is an extension of the syntax for `Fixes`, allowing cross-repository
+references.
+It is compatible with GitHub's [autolinking feature](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls#commit-shas).
+
+The `ROOT` component identifies the repository provider (so it is expected to be
+a domain name, eg. `github.com` or `git.oktetlabs.ru`). Full URLs are not used,
+because there is no standard syntax for commit-pointing Git URLs, they may vary
+depending on the Git server implementation.
+
+For example:
+
+```
+Ref: github.com:customer-org/device-driver@afaada7087af ("Extension API is implemented")
+```
+
 #### Patch priority (optional)
 
 A patch priority may be specified with the help of a special trailer.
