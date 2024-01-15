@@ -97,6 +97,18 @@ typedef struct tapi_wrk_latency_percentile {
     double latency;
 } tapi_wrk_latency_percentile;
 
+/** Statistics of socket errors */
+typedef struct tapi_wrk_socket_errors {
+    /** Amount of connect socket errors */
+    unsigned int connect;
+    /** Amount of read socket errors */
+    unsigned int read;
+    /** Amount of write socket errors */
+    unsigned int write;
+    /** Amount of timeout socket errors */
+    unsigned int timeout;
+} tapi_wrk_socket_errors;
+
 /** Statistics report of wrk */
 typedef struct tapi_wrk_report {
     /** Latency in microseconds (for each thread) */
@@ -111,6 +123,8 @@ typedef struct tapi_wrk_report {
     double bps;
     /** Non-2xx or 3xx responses */
     unsigned int unexpected_resp;
+    /** Socket errors */
+    tapi_wrk_socket_errors socket_errors;
     /** Wrk arguments used */
     char *arguments;
     /** Truncated wrk arguments */
@@ -135,6 +149,8 @@ typedef struct tapi_wrk_app {
     tapi_job_channel_t *lat_distr_filter;
     /** Non-2xx or 3xx responses filter */
     tapi_job_channel_t *unexpected_resp_filter;
+    /** Socket errors filter */
+    tapi_job_channel_t *socket_errors_filter;
     /** Arguents that are used when running the tool */
     te_vec wrk_args;
 } tapi_wrk_app;

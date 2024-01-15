@@ -266,6 +266,16 @@ tapi_wrk_create(tapi_job_factory_t *factory, const tapi_wrk_opt *opt,
                                      .extract = 1,
                                      .filter_var = &result->unexpected_resp_filter,
                                     },
+                                    {.use_stdout = TRUE,
+                                     .readable = TRUE,
+                                     .re = "Socket errors:\\s*("
+                                           "connect\\s*-?[0-9]+,\\s*"
+                                           "read\\s*-?[0-9]+,\\s*"
+                                           "write\\s*-?[0-9]+,\\s*"
+                                           "timeout\\s*-?[0-9]+)",
+                                     .extract = 1,
+                                     .filter_var = &result->socket_errors_filter,
+                                    },
                                     {.use_stderr = TRUE,
                                      .log_level = TE_LL_ERROR,
                                      .readable = FALSE,
@@ -430,6 +440,20 @@ parse_thread_stats(const char *str, tapi_wrk_thread_stats *stats,
     return 0;
 }
 
+static void
+parse_socket_errors(const char *str, tapi_wrk_socket_errors *socket_errors)
+{
+    /* The str content is captured by regexp, so it can't have incorrect form */
+    /*
+     * wrk has a bug: unsigned counters are printed using signed specifiers.
+     * %d in sscanf can handle both negative and large positive numbers. When
+     * wrk will be fixed, this sscanf call will still work.
+     */
+    sscanf(str, "connect %d, read %d, write %d, timeout %d",
+           (int *)&socket_errors->connect, (int *)&socket_errors->read,
+           (int *)&socket_errors->write, (int *)&socket_errors->timeout);
+}
+
 te_errno
 tapi_wrk_get_report(tapi_wrk_app *app, tapi_wrk_report *report)
 {
@@ -449,7 +473,8 @@ tapi_wrk_get_report(tapi_wrk_app *app, tapi_wrk_report *report)
                                                    app->lat_filter,
                                                    app->req_filter,
                                                    app->lat_distr_filter,
-                                                   app->unexpected_resp_filter),
+                                                   app->unexpected_resp_filter,
+                                                   app->socket_errors_filter),
                               TAPI_WRK_RECEIVE_TIMEOUT_MS, &buf);
 
 
@@ -495,6 +520,10 @@ tapi_wrk_get_report(tapi_wrk_app *app, tapi_wrk_report *report)
         else if (buf.filter == app->unexpected_resp_filter)
         {
             rc = te_strtoui(buf.data.ptr, 10, &result.unexpected_resp);
+        }
+        else if (buf.filter == app->socket_errors_filter)
+        {
+            parse_socket_errors(buf.data.ptr, &result.socket_errors);
         }
         else
         {
