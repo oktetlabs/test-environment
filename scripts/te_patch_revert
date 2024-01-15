@@ -185,10 +185,18 @@ if [[ -n "${USE_STGIT}" ]]; then
         git revert --no-commit "${TO_REVERT}" || exit 1
     fi
     stg refresh
-    [[ -n "${DO_EDIT}" ]] && stg edit
+    git revert --quit
+    if [[ -n "${DO_EDIT}" ]]; then
+        stg edit
+        if [[ -z "$(git log -1 --format='%s' HEAD)" ]]; then
+            echo "Empty commit message, aborting revert"
+            stg delete --top
+        fi
+    fi
 else
     if [[ -z "${CONFLICT_MODE}" ]]; then
         git revert --no-commit "${TO_REVERT}" || exit 1
     fi
-    git commit --message="${full_message}" ${DO_EDIT:+--edit}
+    git commit --message="${full_message}" ${DO_EDIT:+--edit} || \
+        git revert --abort
 fi
