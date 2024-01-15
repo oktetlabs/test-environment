@@ -137,6 +137,11 @@ EOF
 
     [[ -z "${full}" ]] && return 0
     cat <<EOF
+--urgency=LEVEL[:MESSAGE]
+                    Add an Urgency trailer with a given LEVEL and an optional
+                    explanatory MESSAGE. The level is one of:
+                        low, medium, high, emergency or critical.
+
 --breaks=TEXT       Adds a Breaks trailer with a given TEXT.
                     Implies --single.
 
@@ -485,6 +490,30 @@ for arg; do
             esac
             TRAILER_ARGS+=("--where" "before" "--if-exists" "addIfDifferent"
                            "--trailer" "Link=${arg##--link=}")
+            ;;
+        --urgency=*)
+            value="${arg#--urgency=}"
+            case "${value}" in
+                *:*)
+                    level="${value%%:*}"
+                    msg=" (${value#*:})"
+                    ;;
+                *)
+                    level="${value}"
+                    msg=""
+                    ;;
+            esac
+            case "${level}" in
+                low | medium | high | emergency | critical)
+                    ;;
+                *)
+                    echo "invalid urgency level '${level}', must be one of:" >&2
+                    echo "    low, medium, high, emergency, critical" >&2
+                    exit 1
+                    ;;
+            esac
+            TRAILER_ARGS+=("--where" "start" "--if-exists" "replace"
+                           "--trailer" "Urgency: ${level}${msg}")
             ;;
         --breaks=*)
             SINGLE=true

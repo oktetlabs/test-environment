@@ -6,6 +6,7 @@ TO_REVERT=""
 MESSAGE=""
 DO_EDIT=true
 CONFLICT_MODE=""
+EMERGENCY=""
 
 if [[ -z "$(stg series -A 2>/dev/null)" ]]; then
     USE_STGIT=
@@ -27,6 +28,9 @@ conforming to TE Contributor Guidelines.
 
 --file=MSGFILE   Read a commit description from MSGFILE.
 -F MSGFILE
+
+--emergency=MSG  Specify that a rollback commit is an emergency,
+                 providing MSG as a justification.
 
 --no-edit        Do not invoke interactive editor after making
                  the commit message draft.
@@ -67,6 +71,9 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --message=*)
             MESSAGE="${1#--message=}"
+            ;;
+        --emergency=*)
+            EMERGENCY="${1#--emergency=}"
             ;;
         --no-edit)
             DO_EDIT=
@@ -164,6 +171,10 @@ fi
 full_message+=$'\n\n'
 full_message+="${fixes}"
 full_message+=$'\n'
+if [[ -n "${EMERGENCY}" ]]; then
+    full_message+="Urgency: emergency (${EMERGENCY})"
+    full_message+=$'\n'
+fi
 author_email="$(git config user.email)"
 signed_off="$(git config user.name) <${author_email,,}>"
 full_message+="Signed-off-by: ${signed_off}"

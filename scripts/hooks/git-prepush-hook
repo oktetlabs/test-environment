@@ -124,7 +124,7 @@ function get_parent ()
 KNOWN_TRAILERS=(Signed-off-by Co-developed-by Reviewed-by Acked-by \
                               Tested-by Suggested-by Reported-by OL-Redmine-Id \
                               GitHub-TE-Id AMD-Jira-Id \
-                              Fixes Fixes-Private Breaks Link)
+                              Fixes Fixes-Private Breaks Urgency Link)
 
 function strip_known_trailers ()
 {
@@ -143,6 +143,7 @@ TRAILER_SYNTAX=(["OL-Redmine-Id"]="+([[:digit:]])"
                 ["GitHub-TE-Id"]="+([[:digit:]])"
                 ["AMD-Jira-Id"]="+([[:upper:]])-+([[:digit:]])"
                 ["Link"]="@(http|https|git)://+([[:alnum:]-])+(.+([[:alnum:]-]))*([^[:space:]{}])"
+                ["Urgency"]="@(low|medium|high|emergency|critical)?( (*))"
                 ["Signed-off-by"]="${EMAIL_SYNTAX}"
                 ["Co-developed-by"]="${EMAIL_SYNTAX}"
                 ["Reviewed-by"]="${EMAIL_SYNTAX}"
@@ -171,6 +172,7 @@ TRAILER_ORDER=(["OL-Redmine-Id"]=0
                ["Fixes"]=0
                ["Fixes-Private"]=0
                ["Breaks"]=0
+               ["Urgency"]=0
                ["Suggested-by"]=1
                ["Reported-by"]=1
                ["Signed-off-by"]=2
@@ -347,6 +349,7 @@ function check_reviewed_by ()
     local reviewed_by
     local acked_by
     local tested_by
+    local urgency
 
     if [[ -z "${PRIVATE_BRANCH}" ]]; then
         reviewed_by="$(get_trailer Reviewed-by "${rev}")"
@@ -354,7 +357,19 @@ function check_reviewed_by ()
         tested_by="$(get_trailer Tested-by "${rev}")"
 
         if [[ -z "${reviewed_by}${acked_by}${tested_by}" ]]; then
-            nonmaintainer_error 'no Reviewed-by, Acked-by or Tested-by'
+            urgency="$(get_trailer Urgency "${rev}")"
+
+            case "${urgency}" in
+                critical\ \(*\)|emergency\ \(*\))
+                    warning 'no Reviewed-by, Acked-by or Tested-by for a critical patch'
+                    ;;
+                critical|emergency)
+                    serious_error 'no explanation for the patch urgency'
+                    ;;
+                *)
+                    serious_error 'no Reviewed-by, Acked-by or Tested-by'
+                    ;;
+            esac
         fi
     fi
 }
@@ -404,6 +419,7 @@ function check_capitalization ()
 ###     e.g.: Reviewed-by: John R. Hacker <john.r.hacker@example.com>;
 ###   + OL-Redmine-Id and GitHub-TE-Id shall contain only numbers;
 ###   + AMD-Jira-Id shall be a Jira identifier (like XXX-9999);
+###   + Urgency shall have the form: LEVEL (OPTIONAL MESSAGE);
 ###   + Link shall be a HTTP(S) or Git URL; (M)
 ###
 function check_trailer_syntax ()
@@ -427,7 +443,7 @@ function check_trailer_syntax ()
 }
 
 ### - the recommended order of trailer groups:
-###   + Fixes, Fixes-Private, Breaks, OL-Redmine-Id,
+###   + Fixes, Fixes-Private, Breaks, Urgency, OL-Redmine-Id,
 ###     GitHub-TE-Id, AMD-Jira-Id in any order;
 ###   + Suggested-by and Reported-by;
 ###   + Signed-off-by and Co-developed-by;
