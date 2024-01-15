@@ -124,7 +124,7 @@ function get_parent ()
 KNOWN_TRAILERS=(Signed-off-by Co-developed-by Reviewed-by Acked-by \
                               Tested-by Suggested-by Reported-by OL-Redmine-Id \
                               GitHub-TE-Id AMD-Jira-Id \
-                              Fixes Fixes-Private Breaks Urgency Link)
+                              Fixes Fixes-Private Ref Breaks Urgency Link)
 
 function strip_known_trailers ()
 {
@@ -144,6 +144,7 @@ TRAILER_SYNTAX=(["OL-Redmine-Id"]="+([[:digit:]])"
                 ["AMD-Jira-Id"]="+([[:upper:]])-+([[:digit:]])"
                 ["Link"]="@(http|https|git)://+([[:alnum:]-])+(.+([[:alnum:]-]))*([^[:space:]{}])"
                 ["Urgency"]="@(low|medium|high|emergency|critical)?( (*))"
+                ["Ref"]="?(+([[:alnum:].-]):+([[:alnum:]_-])/+([[:alnum:]-])@)+([[:xdigit:]]) (\"*\")"
                 ["Signed-off-by"]="${EMAIL_SYNTAX}"
                 ["Co-developed-by"]="${EMAIL_SYNTAX}"
                 ["Reviewed-by"]="${EMAIL_SYNTAX}"
@@ -171,6 +172,7 @@ TRAILER_ORDER=(["OL-Redmine-Id"]=0
                ["Link"]=0
                ["Fixes"]=0
                ["Fixes-Private"]=0
+               ["Ref"]=0
                ["Breaks"]=0
                ["Urgency"]=0
                ["Suggested-by"]=1
@@ -420,6 +422,7 @@ function check_capitalization ()
 ###   + OL-Redmine-Id and GitHub-TE-Id shall contain only numbers;
 ###   + AMD-Jira-Id shall be a Jira identifier (like XXX-9999);
 ###   + Urgency shall have the form: LEVEL (OPTIONAL MESSAGE);
+###   + Ref shall have the form [ORGANIZATION/REPO@]HASH ("SUBJECT");
 ###   + Link shall be a HTTP(S) or Git URL; (M)
 ###
 function check_trailer_syntax ()
@@ -443,7 +446,7 @@ function check_trailer_syntax ()
 }
 
 ### - the recommended order of trailer groups:
-###   + Fixes, Fixes-Private, Breaks, Urgency, OL-Redmine-Id,
+###   + Fixes, Fixes-Private, Ref, Breaks, Urgency, OL-Redmine-Id,
 ###     GitHub-TE-Id, AMD-Jira-Id in any order;
 ###   + Suggested-by and Reported-by;
 ###   + Signed-off-by and Co-developed-by;
@@ -483,7 +486,7 @@ function check_trailer_ordering ()
     fi
 }
 
-### - the correctness of Fixes and Fixes-Private trailers;
+### - the correctness of Fixes, Fixes-Private and local Ref trailers;
 ###
 function check_fixes ()
 {
@@ -523,6 +526,21 @@ function check_fixes ()
         fi
     done < <(git log -1 \
                  --format="%(trailers:key=Fixes-Private,valueonly,unfold)" \
+                 "${rev}")
+
+    while read -r hash subject; do
+        [[ -z "${hash}" || "${hash}" == *@* ]] && continue
+        if ! git rev-parse -q --verify "${hash}" >/dev/null 2>/dev/null; then
+            serious_error "invalid local Ref commit ${hash}"
+        else
+            subject0="$(git log -1 --abbrev=12 \
+                            --format='%h ("%s")' "${hash}")"
+            if [[ "${hash} ${subject}" != "${subject0}" ]]; then
+                nonmaintainer_error "malformatted Ref line"
+            fi
+        fi
+    done < <(git log -1 \
+                 --format="%(trailers:key=Ref,valueonly,unfold)" \
                  "${rev}")
 }
 

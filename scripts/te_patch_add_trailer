@@ -142,6 +142,21 @@ EOF
                     explanatory MESSAGE. The level is one of:
                         low, medium, high, emergency or critical.
 
+--ref=REV           Add a Ref trailer to reference another commit, probably in
+                    another repository. Implies --single.
+
+                    The argument may take one of the two
+                    forms:
+                        - any form of local Git revision (as e.g. with --fixes);
+                          in this case a properly formatted trailer is
+                          automatically constructed;
+
+                        - an inter-repository reference of the form:
+                             ORGANIZATION/REPOSITORY@HASH ("SUBJECT LINE");
+                          in this case the complete trailer line shall be
+                          provided by the user, because the script has no way to
+                          infer it.
+
 --breaks=TEXT       Adds a Breaks trailer with a given TEXT.
                     Implies --single.
 
@@ -536,6 +551,21 @@ for arg; do
                         "${arg#--fixes-private=}")" || exit $?
             TRAILER_ARGS+=("--where" "before" "--if-exists" "addIfDifferent"
                            "--trailer" "Fixes-Private=${line}")
+            ;;
+        --ref=*)
+            SINGLE=true
+            commit="${arg#--ref=}"
+            case "${commit}" in
+                *:*/*@*\ \(\"*\"\))
+                    line="${commit}"
+                    ;;
+                *)
+                    line="$(git log -1 --abbrev=12 --format='%h ("%s")' \
+                                "${commit}")" || exit $?
+                    ;;
+            esac
+            TRAILER_ARGS+=("--where" "before" "--if-exists" "addIfDifferent"
+                           "--trailer" "Ref=${line}")
             ;;
         --trailer=*:*)
             TRAILER_ARGS+=("--where" "end" "--if-exists" "add"
