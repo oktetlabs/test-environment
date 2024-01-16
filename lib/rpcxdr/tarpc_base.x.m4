@@ -2974,6 +2974,28 @@ struct tarpc_epoll_pwait_out {
     struct tarpc_epoll_event events<>;
 };
 
+/* epoll_pwait2() */
+
+struct tarpc_epoll_pwait2_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int                epfd;
+    struct tarpc_epoll_event events<>;
+    tarpc_int                maxevents;
+    struct tarpc_timespec    timeout<>;
+    tarpc_sigset_t           sigmask;
+};
+
+struct tarpc_epoll_pwait2_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_int               retval;
+
+    struct tarpc_epoll_event events<>;
+
+    struct tarpc_timespec   timeout<>;
+};
+
 /*
  * Socket options
  */
@@ -4419,8 +4441,9 @@ enum iomux_func {
     FUNC_EPOLL = 5,
     FUNC_EPOLL_PWAIT = 6,
     /** Value 7 is reserved */
-    FUNC_DEFAULT_IOMUX = 8,
-    FUNC_NO_IOMUX = 9
+    FUNC_EPOLL_PWAIT2 = 8,
+    FUNC_DEFAULT_IOMUX = 9,
+    FUNC_NO_IOMUX = 10
 };
 
 
@@ -5659,6 +5682,7 @@ program tarpc
         RPC_DEF(epoll_ctl)
         RPC_DEF(epoll_wait)
         RPC_DEF(epoll_pwait)
+        RPC_DEF(epoll_pwait2)
 
         RPC_DEF(iomux_create_state)
         RPC_DEF(multiple_iomux_wait)

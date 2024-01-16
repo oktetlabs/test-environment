@@ -5985,6 +5985,88 @@ TARPC_FUNC(epoll_pwait,
     free(events);
 }
 )
+
+/*-------------- epoll_pwait2() -------------------------------*/
+
+TARPC_FUNC_STANDALONE(epoll_pwait2,
+{
+    if (in->events.events_len > RPC_POLL_NFDS_MAX)
+    {
+        ERROR("Too many events is passed to the epoll_pwait2()");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        return TRUE;
+    }
+    COPY_ARG(events);
+    COPY_ARG(timeout);
+},
+{
+    api_func func;
+    struct timespec tv;
+    struct epoll_event *events = NULL;
+    int len = out->events.events_len;
+    unsigned int i;
+
+    if ((tarpc_find_func(in->common.lib_flags, "epoll_pwait2", &func)) != 0)
+    {
+        ERROR("Failed to resolve posix_epoll_pwait2() function address");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+        return;
+    }
+
+    if (out->timeout.timeout_len > 0)
+    {
+        tv.tv_sec = out->timeout.timeout_val[0].tv_sec;
+        tv.tv_nsec = out->timeout.timeout_val[0].tv_nsec;
+    }
+
+    if (len)
+        events = calloc(len, sizeof(struct epoll_event));
+
+    if (out->timeout.timeout_len == 0)
+    {
+        VERB("epoll_pwait2(): call with epfd=%d, events=0x%lx,"
+             " maxevents=%d, timeout=(nil) sigmask=%p",
+             in->epfd, (unsigned long int)events, in->maxevents, in->sigmask);
+    }
+    else
+    {
+        VERB("epoll_pwait2(): call with epfd=%d, events=0x%lx,"
+             " maxevents=%d, timeout={%lld,%lld} sigmask=%p",
+             in->epfd, (unsigned long int)events, in->maxevents,
+             (long long)tv.tv_sec, (long long)tv.tv_nsec, in->sigmask);
+    }
+
+    /*
+     * The pointer may be a NULL and, therefore, contain uninitialized
+     * data, but we want to check that the data are unchanged even in
+     * this case.
+     */
+    INIT_CHECKED_ARG((char *)rcf_pch_mem_get(in->sigmask),
+                     sizeof(sigset_t), 0);
+
+    MAKE_CALL(out->retval = func(in->epfd, events, in->maxevents,
+                                 out->timeout.timeout_len == 0 ? NULL : &tv,
+                                 rcf_pch_mem_get(in->sigmask)));
+    VERB("epoll_pwait2(): retval=%d", out->retval);
+
+    for (i = 0; i < out->events.events_len; i++)
+    {
+        out->events.events_val[i].events =
+            epoll_event_h2rpc(events[i].events);
+        /* TODO: should be substituted by correct handling of union */
+        out->events.events_val[i].data.type = TARPC_ED_INT;
+        out->events.events_val[i].data.tarpc_epoll_data_u.fd =
+            events[i].data.fd;
+    }
+
+    if (out->timeout.timeout_len > 0)
+    {
+        out->timeout.timeout_val[0].tv_sec = tv.tv_sec;
+        out->timeout.timeout_val[0].tv_nsec = tv.tv_nsec;
+    }
+    free(events);
+}
+)
 #endif
 
 /**
@@ -12380,6 +12462,11 @@ TARPC_SYSCALL_WRAPPER(epoll_wait, int, (int a, struct epoll_event *b, int c,
 #ifdef SYS_epoll_pwait
 TARPC_SYSCALL_WRAPPER(epoll_pwait, int, (int a, struct epoll_event *b, int c,
                       int d, const sigset_t *e), a, b, c, d, e)
+#endif
+
+#ifdef SYS_epoll_pwait2
+TARPC_SYSCALL_WRAPPER(epoll_pwait2, int, (int a, struct epoll_event *b, int c,
+                      struct timespec *d, const sigset_t *e), a, b, c, d, e)
 #endif
 
 /**
