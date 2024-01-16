@@ -606,6 +606,36 @@ for arg; do
     esac
 done
 
+CHERRY_PICK_LINE_SEPARATOR='____'
+
+function transform_trailers ()
+{
+    local rev="$1"
+    local msg
+
+    msg="$(git log -1 --format='%B' "${rev}")"
+
+    # git interpret-trailer has an unfortunate and semi-documented feature,
+    # that the line '(cherry picked from commit ...)' is effectively treated
+    # as if it were a trailer line. This caused te_patch_add_trailer to add
+    # trailers to cherry-picked commits in a strange way.
+    # Therefore an artificial separator is added after a cherry-pick line,
+    # then trailers are processed and then the separator and all excessive
+    # blank lines are deleted.
+
+    msg="$(echo "${msg}" | \
+           sed "s/^(cherry picked from commit [[:xdigit:]]*)\$/&\\n\\n${CHERRY_PICK_LINE_SEPARATOR}/" |
+           git interpret-trailers "${TRAILER_ARGS[@]}" \
+                                  "${PATCH_TRAILER_ARGS[@]}" | \
+           sed "/^${CHERRY_PICK_LINE_SEPARATOR}\$/,\${ /^${CHERRY_PICK_LINE_SEPARATOR}\$/d; /^\$/d }")"
+
+    if [[ -n "${DO_REORDER}" ]]; then
+        echo "${msg}" | rank_commit_lines "${rev}"
+    else
+        echo "${msg}"
+    fi
+}
+
 if [[ "${USE_STGIT}" == "true" ]]; then
     if [[ -z "$(stg series -A 2>/dev/null)" ]]; then
         verbose "No stgit patches"
@@ -625,17 +655,7 @@ if [[ "${USE_STGIT}" == "true" ]]; then
         PATCH_TRAILER_ARGS=()
         add_guess_fixes "${rev}"
 
-        local sorted
-        if [[ -n "${DO_REORDER}" ]]; then
-            sorted="rank_commit_lines ${rev}"
-        else
-            sorted="cat"
-        fi
-        ${DRYRUN} stg edit -m "$(git log -1 --format='%B' "${rev}" | \
-                               git interpret-trailers "${TRAILER_ARGS[@]}" \
-                                   "${PATCH_TRAILER_ARGS[@]}" | \
-                                   ${sorted})" "${p}" ||
-            exit $?
+        ${DRYRUN} stg edit -m "$(transform_trailers "${rev}")" "${p}" || exit $?
     }
 
     if [[ -z "${PATCHES:+present}" ]]; then
@@ -691,16 +711,7 @@ else
         PATCH_TRAILER_ARGS=()
         add_guess_fixes "${rev}"
 
-        if [[ -n "${DO_REORDER}" ]]; then
-            sorted="rank_commit_lines ${rev}"
-        else
-            sorted="cat"
-        fi
-
-        ${DRYRUN} git commit --amend -m "$(git log -1 --format='%B' "${rev}" | \
-                               git interpret-trailers "${TRAILER_ARGS[@]}" \
-                                   "${PATCH_TRAILER_ARGS[@]}" | ${sorted})" ||
-            exit $?
+        ${DRYRUN} git commit --amend -m "$(transform_trailers "${rev}")" || exit $?
         lastrev="${rev}"
     done
     for skip in $(git rev-list --no-walk=sorted --reverse "${lastrev}..${headrev}" 2>/dev/null); do
