@@ -271,6 +271,9 @@ tapi_iomux_call_str2en(const char *iomux)
     if (strcmp(iomux, "reserved") == 0)
         return TAPI_IOMUX_RESERVED;
 
+    if (strcmp(iomux, "epoll_pwait2") == 0)
+        return TAPI_IOMUX_EPOLL_PWAIT2;
+
     return TAPI_IOMUX_UNKNOWN;
 }
 
@@ -280,15 +283,16 @@ tapi_iomux_call_en2str(tapi_iomux_type iomux_type)
 {
     switch(iomux_type)
     {
-        case TAPI_IOMUX_UNKNOWN:     return "(unknown)";
-        case TAPI_IOMUX_SELECT:      return "select";
-        case TAPI_IOMUX_PSELECT:     return "pselect";
-        case TAPI_IOMUX_POLL:        return "poll";
-        case TAPI_IOMUX_PPOLL:       return "ppoll";
-        case TAPI_IOMUX_EPOLL:       return "epoll";
-        case TAPI_IOMUX_EPOLL_PWAIT: return "epoll_pwait";
-        case TAPI_IOMUX_RESERVED:    return "reserved";
-        case TAPI_IOMUX_DEFAULT:     return "default iomux";
+        case TAPI_IOMUX_UNKNOWN:      return "(unknown)";
+        case TAPI_IOMUX_SELECT:       return "select";
+        case TAPI_IOMUX_PSELECT:      return "pselect";
+        case TAPI_IOMUX_POLL:         return "poll";
+        case TAPI_IOMUX_PPOLL:        return "ppoll";
+        case TAPI_IOMUX_EPOLL:        return "epoll";
+        case TAPI_IOMUX_EPOLL_PWAIT:  return "epoll_pwait";
+        case TAPI_IOMUX_RESERVED:     return "reserved";
+        case TAPI_IOMUX_EPOLL_PWAIT2: return "epoll_pwait2";
+        case TAPI_IOMUX_DEFAULT:      return "default iomux";
     }
 
     return NULL;
@@ -863,22 +867,41 @@ static int
 tapi_iomux_epoll_call(tapi_iomux_handle *iomux, int timeout,
                        tapi_iomux_evt_fd **revts)
 {
+    struct tarpc_timespec  tv;
+    struct tarpc_timespec *tv_ptr = &tv;
+
     int rc;
 
     if (iomux->rpcs->op != RCF_RPC_WAIT)
         iomux->epoll.events = tapi_calloc(iomux->fds_num,
                                           sizeof(*iomux->epoll.events));
 
-    if (iomux->type == TAPI_IOMUX_EPOLL)
+    switch (iomux->type)
     {
-        rc = rpc_epoll_wait(iomux->rpcs, iomux->epoll.epfd,
-                            iomux->epoll.events, iomux->fds_num, timeout);
-    }
-    else
-    {
-        rc = rpc_epoll_pwait(iomux->rpcs, iomux->epoll.epfd,
-                             iomux->epoll.events, iomux->fds_num, timeout,
-                             iomux->sigmask);
+        case TAPI_IOMUX_EPOLL:
+            rc = rpc_epoll_wait(iomux->rpcs, iomux->epoll.epfd,
+                                iomux->epoll.events, iomux->fds_num,
+                                timeout);
+            break;
+
+        case TAPI_IOMUX_EPOLL_PWAIT:
+            rc = rpc_epoll_pwait(iomux->rpcs, iomux->epoll.epfd,
+                                 iomux->epoll.events, iomux->fds_num,
+                                 timeout, iomux->sigmask);
+            break;
+
+        case TAPI_IOMUX_EPOLL_PWAIT2:
+            if (timeout < 0)
+                tv_ptr = NULL;
+            else
+                TE_NS2TS(TE_MS2NS(timeout), &tv);
+            rc = rpc_epoll_pwait2(iomux->rpcs, iomux->epoll.epfd,
+                                  iomux->epoll.events, iomux->fds_num,
+                                  tv_ptr, iomux->sigmask);
+            break;
+
+        default:
+            break;
     }
 
     if (iomux->rpcs->op == RCF_RPC_WAIT)
@@ -893,7 +916,7 @@ tapi_iomux_epoll_call(tapi_iomux_handle *iomux, int timeout,
 }
 
 /**
- * @c epoll_wait and @c epoll_pwait API methods.
+ * @c epoll_wait, @c epoll_pwait and @c epoll_pwait2 API methods.
  */
 static const tapi_iomux_methods tapi_iomux_methods_epoll =
     {
@@ -910,12 +933,13 @@ static const tapi_iomux_methods tapi_iomux_methods_epoll =
  */
 static const tapi_iomux_methods * tapi_iomux_methods_all[] =
     {
-        [TAPI_IOMUX_SELECT]      = &tapi_iomux_methods_select,
-        [TAPI_IOMUX_PSELECT]     = &tapi_iomux_methods_pselect,
-        [TAPI_IOMUX_POLL]        = &tapi_iomux_methods_poll,
-        [TAPI_IOMUX_PPOLL]       = &tapi_iomux_methods_ppoll,
-        [TAPI_IOMUX_EPOLL]       = &tapi_iomux_methods_epoll,
-        [TAPI_IOMUX_EPOLL_PWAIT] = &tapi_iomux_methods_epoll,
+        [TAPI_IOMUX_SELECT]       = &tapi_iomux_methods_select,
+        [TAPI_IOMUX_PSELECT]      = &tapi_iomux_methods_pselect,
+        [TAPI_IOMUX_POLL]         = &tapi_iomux_methods_poll,
+        [TAPI_IOMUX_PPOLL]        = &tapi_iomux_methods_ppoll,
+        [TAPI_IOMUX_EPOLL]        = &tapi_iomux_methods_epoll,
+        [TAPI_IOMUX_EPOLL_PWAIT]  = &tapi_iomux_methods_epoll,
+        [TAPI_IOMUX_EPOLL_PWAIT2] = &tapi_iomux_methods_epoll,
     };
 
 /* See the description in tapi_iomux.h. */

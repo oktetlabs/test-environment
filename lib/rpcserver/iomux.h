@@ -214,8 +214,11 @@ static inline void
 iomux_state_init_invalid(iomux_func iomux, iomux_state *state)
 {
 #if HAVE_STRUCT_EPOLL_EVENT
-    if (iomux == FUNC_EPOLL || iomux == FUNC_EPOLL_PWAIT)
+    if (iomux == FUNC_EPOLL || iomux == FUNC_EPOLL_PWAIT ||
+        iomux == FUNC_EPOLL_PWAIT2)
+    {
         state->epoll = -1;
+    }
 #endif
 }
 

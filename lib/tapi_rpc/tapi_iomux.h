@@ -41,26 +41,28 @@ typedef enum {
     TAPI_IOMUX_EPOLL            = 5,
     TAPI_IOMUX_EPOLL_PWAIT      = 6,
     TAPI_IOMUX_RESERVED         = 7,
-    TAPI_IOMUX_DEFAULT          = 8,
+    TAPI_IOMUX_EPOLL_PWAIT2     = 8,
+    TAPI_IOMUX_DEFAULT          = 9,
 } tapi_iomux_type;
 
 /** Minimum supported iomux type value.  */
 #define TAPI_IOMUX_MIN TAPI_IOMUX_SELECT
 
 /** Maximum supported iomux type value.  */
-#define TAPI_IOMUX_MAX TAPI_IOMUX_EPOLL_PWAIT
+#define TAPI_IOMUX_MAX TAPI_IOMUX_EPOLL_PWAIT2
 
 /**
  * The list of values allowed for test parameter
  * defining iomux function.
  */
 #define TAPI_IOMUX_MAPPING_LIST \
-    { "select",      TAPI_IOMUX_SELECT },      \
-    { "pselect",     TAPI_IOMUX_PSELECT },     \
-    { "poll",        TAPI_IOMUX_POLL },        \
-    { "ppoll",       TAPI_IOMUX_PPOLL },       \
-    { "epoll",       TAPI_IOMUX_EPOLL },       \
-    { "epoll_pwait", TAPI_IOMUX_EPOLL_PWAIT }
+    { "select",           TAPI_IOMUX_SELECT },      \
+    { "pselect",          TAPI_IOMUX_PSELECT },     \
+    { "poll",             TAPI_IOMUX_POLL },        \
+    { "ppoll",            TAPI_IOMUX_PPOLL },       \
+    { "epoll",            TAPI_IOMUX_EPOLL },       \
+    { "epoll_pwait",      TAPI_IOMUX_EPOLL_PWAIT }, \
+    { "epoll_pwait2",     TAPI_IOMUX_EPOLL_PWAIT2 }
 
 /**
  * Get the value of parameter defining iomux function.
@@ -375,8 +377,9 @@ extern void tapi_iomux_del(tapi_iomux_handle *iomux, int fd);
  * Specify a signal mask for a multiplexer.
  *
  * @note This call makes sense for iomux types @c TAPI_IOMUX_PSELECT,
- *       @c TAPI_IOMUX_PPOLL and @c TAPI_IOMUX_EPOLL_PWAIT, the signal mask
- *       is ignored by other muxers.
+ *       @c TAPI_IOMUX_PPOLL, @c TAPI_IOMUX_EPOLL_PWAIT and
+ *       @c TAPI_IOMUX_EPOLL_PWAIT2, the signal mask is ignored by other
+ *       muxers.
  *
  * @param iomux     The multiplexer handle.
  * @param sigmask   RPC pointer to the signal mask.
@@ -429,8 +432,8 @@ extern int tapi_iomux_pcall(tapi_iomux_handle *iomux, int timeout,
 extern void tapi_iomux_destroy(tapi_iomux_handle *iomux);
 
 /**
- * Process returned events by @c epoll_wait() or @c epoll_pwait() call,
- * convert and save them in the iomux context.
+ * Process returned events by @c epoll_wait(), @c epoll_pwait() or
+ * @c epoll_pwait2() call, convert and save them in the iomux context.
  *
  * @param iomux     The multiplexer handle.
  * @param events    Returned epoll events array.

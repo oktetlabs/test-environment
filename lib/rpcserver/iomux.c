@@ -64,11 +64,15 @@ iomux_find_func(tarpc_lib_flags lib_flags, iomux_func *iomux, iomux_funcs *funcs
 #if HAVE_STRUCT_EPOLL_EVENT
         case FUNC_EPOLL:
         case FUNC_EPOLL_PWAIT:
+        case FUNC_EPOLL_PWAIT2:
             if (*iomux == FUNC_EPOLL)
                 rc = tarpc_find_func(lib_flags, "epoll_wait",
                                      &funcs->epoll.wait);
-            else
+            else if (*iomux == FUNC_EPOLL_PWAIT)
                 rc = tarpc_find_func(lib_flags, "epoll_pwait",
+                                     &funcs->epoll.wait);
+            else
+                rc = tarpc_find_func(lib_flags, "epoll_pwait2",
                                      &funcs->epoll.wait);
             rc = rc ||
                  tarpc_find_func(lib_flags, "epoll_ctl",
@@ -111,6 +115,7 @@ iomux_create_state(iomux_func iomux, iomux_funcs *funcs,
 #if HAVE_STRUCT_EPOLL_EVENT
         case FUNC_EPOLL:
         case FUNC_EPOLL_PWAIT:
+        case FUNC_EPOLL_PWAIT2:
             state->epoll = funcs->epoll.create(IOMUX_MAX_POLLED_FDS);
             return (state->epoll >= 0) ? 0 : -1;
 #endif
@@ -198,6 +203,7 @@ do {                                                              \
 #if HAVE_STRUCT_EPOLL_EVENT
         case FUNC_EPOLL:
         case FUNC_EPOLL_PWAIT:
+        case FUNC_EPOLL_PWAIT2:
         {
             struct epoll_event ev;
             ev.events = events;
@@ -254,6 +260,7 @@ iomux_mod_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
 #if HAVE_STRUCT_EPOLL_EVENT
         case FUNC_EPOLL:
         case FUNC_EPOLL_PWAIT:
+        case FUNC_EPOLL_PWAIT2:
         {
             struct epoll_event ev;
             ev.events = events;
@@ -372,6 +379,25 @@ iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
             }
             break;
         }
+        case FUNC_EPOLL_PWAIT2:
+        {
+            struct timespec ts;
+            ts.tv_sec = timeout / 1000UL;
+            ts.tv_nsec = TE_MS2NS(timeout % 1000UL);
+            if (ret != NULL)
+            {
+                rc = funcs->epoll.wait(state->epoll, &ret->epoll.events[0],
+                                       IOMUX_MAX_POLLED_FDS, &ts, NULL);
+                ret->epoll.nevents = rc;
+            }
+            else
+            {
+                struct epoll_event ev[IOMUX_MAX_POLLED_FDS];
+                rc = funcs->epoll.wait(state->epoll, ev,
+                                       IOMUX_MAX_POLLED_FDS, &ts, NULL);
+            }
+            break;
+        }
 #endif
         case FUNC_NO_IOMUX:
             rc = 0;
@@ -446,6 +472,7 @@ iomux_return_iterate(iomux_func iomux, iomux_state *st, iomux_return *ret,
 #if HAVE_STRUCT_EPOLL_EVENT
         case FUNC_EPOLL:
         case FUNC_EPOLL_PWAIT:
+        case FUNC_EPOLL_PWAIT2:
             if (it >= ret->epoll.nevents)
             {
                 it = IOMUX_RETURN_ITERATOR_END;
@@ -470,7 +497,8 @@ int
 iomux_close(iomux_func iomux, iomux_funcs *funcs, iomux_state *state)
 {
 #if HAVE_STRUCT_EPOLL_EVENT
-    if (iomux == FUNC_EPOLL || iomux == FUNC_EPOLL_PWAIT)
+    if (iomux == FUNC_EPOLL || iomux == FUNC_EPOLL_PWAIT ||
+        iomux == FUNC_EPOLL_PWAIT2)
     {
         return tarpc_call_close_with_hooks(funcs->epoll.close,
                                            state->epoll);

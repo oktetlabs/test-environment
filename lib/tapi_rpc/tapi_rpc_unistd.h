@@ -779,6 +779,18 @@ rpc_epoll_pwait(rcf_rpc_server *rpcs, int epfd,
     return rpc_epoll_pwait_gen(rpcs, epfd, events, maxevents, maxevents,
                                timeout, sigmask);
 }
+extern int rpc_epoll_pwait2_gen(rcf_rpc_server *rpcs, int epfd,
+                                struct rpc_epoll_event *events, int rmaxev,
+                                int maxevents, struct tarpc_timespec *timeout,
+                                const rpc_sigset_p sigmask);
+static inline int
+rpc_epoll_pwait2(rcf_rpc_server *rpcs, int epfd, struct rpc_epoll_event *events,
+                 int maxevents, struct tarpc_timespec *timeout,
+                 const rpc_sigset_p sigmask)
+{
+    return rpc_epoll_pwait2_gen(rpcs, epfd, events, maxevents, maxevents,
+                                    timeout, sigmask);
+}
 
 /**
  * Provide a generic mechanism for reporting I/O conditions associated with

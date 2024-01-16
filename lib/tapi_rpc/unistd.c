@@ -1869,6 +1869,88 @@ rpc_epoll_pwait_gen(rcf_rpc_server *rpcs, int epfd,
 }
 
 int
+rpc_epoll_pwait2_gen(rcf_rpc_server *rpcs, int epfd,
+                         struct rpc_epoll_event *events, int rmaxev,
+                         int maxevents, struct tarpc_timespec *timeout,
+                         const rpc_sigset_p sigmask)
+{
+    tarpc_epoll_pwait2_in  in;
+    tarpc_epoll_pwait2_out out;
+    int i;
+    tarpc_epoll_event *evts;
+
+    evts = calloc(rmaxev, sizeof(tarpc_epoll_event));
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(epoll_pwait2, -1);
+    }
+
+    in.epfd = epfd;
+    in.maxevents = maxevents;
+    in.sigmask = (tarpc_sigset_t)sigmask;
+    for (i = 0; i < rmaxev; i++)
+    {
+        evts[i].events = events[i].events;
+        evts[i].data.type = TARPC_ED_INT;
+        evts[i].data.tarpc_epoll_data_u.fd = events[i].data.fd;
+    }
+    in.events.events_len = rmaxev;
+    in.events.events_val = (struct tarpc_epoll_event *)evts;
+
+    if (timeout != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        in.timeout.timeout_len = 1;
+        in.timeout.timeout_val = timeout;
+    }
+
+    if ((timeout != NULL) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
+    {
+        rpcs->timeout = TE_SEC2MS(timeout->tv_sec +
+                                  TAPI_RPC_TIMEOUT_EXTRA_SEC) +
+                        TE_NS2MS(timeout->tv_nsec);
+    }
+
+    rcf_rpc_call(rpcs, "epoll_pwait2", &in, &out);
+
+    if (rpcs->last_op != RCF_RPC_CALL && timeout != NULL &&
+        out.timeout.timeout_val != NULL && RPC_IS_CALL_OK(rpcs))
+    {
+        timeout->tv_sec = out.timeout.timeout_val[0].tv_sec;
+        timeout->tv_nsec = out.timeout.timeout_val[0].tv_nsec;
+    }
+
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        if (events != NULL && out.events.events_val != NULL)
+        {
+            for (i = 0; i < out.retval; i++)
+            {
+                events[i].events = out.events.events_val[i].events;
+                events[i].data.fd =
+                    out.events.events_val[i].data.tarpc_epoll_data_u.fd;
+            }
+        }
+        epollevt2str(events, MAX(out.retval, 0),
+                     str_buf_1, sizeof(str_buf_1));
+    }
+    else
+    {
+        *str_buf_1 = '\0';
+    }
+    free(evts);
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_pwait2, out.retval);
+    TAPI_RPC_LOG(rpcs, epoll_pwait2, "%d, %p, %d, %s, 0x%x", "%d %s",
+                 epfd, events, maxevents, tarpc_timespec2str(timeout),
+                 (unsigned)sigmask, out.retval, str_buf_1);
+    RETVAL_INT(epoll_pwait2, out.retval);
+}
+
+int
 rpc_open(rcf_rpc_server *rpcs,
          const char *path, rpc_fcntl_flags flags, rpc_file_mode_flags mode)
 {

@@ -98,6 +98,8 @@ iomux2str(iomux_func iomux)
             return "epoll";
         case FUNC_EPOLL_PWAIT:
             return "epoll_pwait";
+        case FUNC_EPOLL_PWAIT2:
+            return "epoll_pwait2";
         case FUNC_DEFAULT_IOMUX:
             return "default iomux";
         case FUNC_NO_IOMUX:
@@ -132,6 +134,8 @@ str2iomux(const char *iomux)
         return FUNC_EPOLL;
     else if (strcmp(iomux, "epoll_pwait") == 0)
         return FUNC_EPOLL_PWAIT;
+    else if (strcmp(iomux, "epoll_pwait2") == 0)
+        return FUNC_EPOLL_PWAIT2;
     else
         return 0;
 }
