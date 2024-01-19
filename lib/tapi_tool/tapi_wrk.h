@@ -117,6 +117,8 @@ typedef struct tapi_wrk_report {
     tapi_wrk_thread_stats thread_req_per_sec;
     /** Latency distribution */
     tapi_wrk_latency_percentile lat_distr[TAPI_WRK_LATENCY_DISTR_ENTRIES];
+    /** Total requests count */
+    unsigned int req_count;
     /** Requests per second */
     double req_per_sec;
     /** Bytes per second */
@@ -139,7 +141,9 @@ typedef struct tapi_wrk_app {
     tapi_job_channel_t *out_chs[2];
     /** Bytes per second filter */
     tapi_job_channel_t *bps_filter;
-    /** Total requests filter */
+    /** Requests count filter (total) */
+    tapi_job_channel_t *req_count_filter;
+    /** Total requests filter (per second) */
     tapi_job_channel_t *req_total_filter;
     /** Latency per thread filter */
     tapi_job_channel_t *lat_filter;

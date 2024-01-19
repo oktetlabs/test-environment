@@ -232,6 +232,12 @@ tapi_wrk_create(tapi_job_factory_t *factory, const tapi_wrk_opt *opt,
                                 .filters = TAPI_JOB_SIMPLE_FILTERS(
                                     {.use_stdout = TRUE,
                                      .readable = TRUE,
+                                     .re = "\\s*([0-9]+)\\s*requests in .*",
+                                     .extract = 1,
+                                     .filter_var = &result->req_count_filter,
+                                    },
+                                    {.use_stdout = TRUE,
+                                     .readable = TRUE,
                                      .re = "Transfer/sec:\\s*([^\\s]+)B",
                                      .extract = 1,
                                      .filter_var = &result->bps_filter,
@@ -469,6 +475,7 @@ tapi_wrk_get_report(tapi_wrk_app *app, tapi_wrk_report *report)
     for (reports_received = 0; reports_received < wrk_reports_max;)
     {
         rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(app->bps_filter,
+                                                   app->req_count_filter,
                                                    app->req_total_filter,
                                                    app->lat_filter,
                                                    app->req_filter,
@@ -496,6 +503,10 @@ tapi_wrk_get_report(tapi_wrk_app *app, tapi_wrk_report *report)
         if (buf.filter == app->bps_filter)
         {
             rc = parse_unit(buf.data.ptr, &binary_units, &result.bps);
+        }
+        else if (buf.filter == app->req_count_filter)
+        {
+            rc = te_strtoui(buf.data.ptr, 10, &result.req_count);
         }
         else if (buf.filter == app->req_total_filter)
         {
