@@ -39,6 +39,7 @@ te_common_libs = [
     'rpcxdr',
     'rpc_dpdk',
     'rpc_types',
+    'ovs_flow',
 ]
 
 # Test Engine libraries
@@ -75,6 +76,7 @@ te_engine_libs = [
     'tapi_media',
     'tapi_wifi',
     'tapi_dns',
+    'tapi_ovs',
 ]
 
 # Test Agent libraries
