@@ -284,6 +284,15 @@
          Name:  none
          Value: 0, 1
 
+    - oid: "/agent/ovs/bridge/next_flow_cookie"
+      access: read_write
+      type: uint64
+      d: |
+         Helper object that allows test code to track used flow cookie values.
+
+         Name:  none
+         Value: next flow cookie to be allocated
+
     - oid: "/agent/ovs/bridge/flow"
       access: read_create
       type: string
