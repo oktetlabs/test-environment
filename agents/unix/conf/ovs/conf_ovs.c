@@ -116,11 +116,14 @@ typedef struct port_entry {
 
 typedef SLIST_HEAD(port_list_t, port_entry) port_list_t;
 
+#define OVS_NEXT_COOKIE_INIT 1
+
 typedef struct bridge_entry {
     SLIST_ENTRY(bridge_entry)  links;
     char                      *datapath_type;
     interface_entry           *interface;
     port_list_t                ports;
+    uint64_t                   next_cookie;
 } bridge_entry;
 
 typedef SLIST_HEAD(bridge_list_t, bridge_entry) bridge_list_t;
@@ -1266,6 +1269,8 @@ ovs_bridge_alloc(const char      *datapath_type,
         ERROR("Failed to initialise the bridge local port list entry");
         goto fail;
     }
+
+    bridge->next_cookie = OVS_NEXT_COOKIE_INIT;
 
     SLIST_INSERT_HEAD(&bridge->ports, port, links);
 
@@ -4247,6 +4252,62 @@ ovs_bridge_flow_list(unsigned int  gid,
     return rc;
 }
 
+static te_errno
+ovs_bridge_flow_next_flow_cookie_get(unsigned int  gid,
+                                     const char   *oid,
+                                     char         *value,
+                                     const char   *ovs,
+                                     const char   *bridge_name)
+{
+    te_errno      rc;
+    bridge_entry *bridge;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ovs_bridge_pick(ovs, bridge_name, NULL, &bridge);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the bridge entry");
+        return rc;
+    }
+
+    te_snprintf(value, RCF_MAX_VAL, "%"PRIu64, bridge->next_cookie);
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_flow_next_flow_cookie_set(unsigned int  gid,
+                                     const char   *oid,
+                                     const char   *value,
+                                     const char   *ovs,
+                                     const char   *bridge_name)
+{
+    te_errno      rc;
+    bridge_entry *bridge;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ovs_bridge_pick(ovs, bridge_name, NULL, &bridge);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the bridge entry");
+        return rc;
+    }
+
+    rc = te_str_to_uint64(value, 10, &bridge->next_cookie);
+    if (rc != 0)
+    {
+        ERROR("Failed to parse next flow cookie value");
+        return rc;
+    }
+
+    return 0;
+}
+
+
 RCF_PCH_CFG_NODE_COLLECTION(node_ovs_bridge_port_vlan_trunks, "trunk",
                             NULL, NULL,
                             ovs_bridge_port_vlan_trunks_add,
@@ -4273,8 +4334,13 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_bridge_flow, "flow",
                                ovs_bridge_flow_add, ovs_bridge_flow_del,
                                ovs_bridge_flow_list, NULL);
 
+RCF_PCH_CFG_NODE_RW(node_ovs_bridge_next_flow_cookie, "next_flow_cookie",
+                               NULL, &node_ovs_bridge_flow,
+                               ovs_bridge_flow_next_flow_cookie_get,
+                               ovs_bridge_flow_next_flow_cookie_set);
+
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_bridge, "bridge",
-                               &node_ovs_bridge_flow, NULL,
+                               &node_ovs_bridge_next_flow_cookie, NULL,
                                ovs_bridge_get, NULL,
                                ovs_bridge_add, ovs_bridge_del,
                                ovs_bridge_list, NULL);
