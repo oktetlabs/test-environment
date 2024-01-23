@@ -32,6 +32,10 @@ ta_non_symtbl_libs = [
 ]
 
 foreach extra_lib : get_option('agent-proxy-libs')
+    if extra_lib == 'ta_restconf'
+        c_args += [ '-DWITH_LIBTA_RESTCONF' ]
+    endif
+
     if not ta_symtbl_libs.contains(extra_lib)
         ta_symtbl_libs += [ extra_lib ]
     endif

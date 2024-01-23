@@ -1,0 +1,72 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    RESTCONF configuration.
+
+    Copyright (C) 2024 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/restconf"
+      access: read_only
+      type: string
+      d: |
+         Root object of RESTCONF tree.
+         Name: empty
+
+    - oid: "/agent/restconf/config"
+      access: read_only
+      type: none
+      d: |
+         RESTCONF settings.
+         Name: empty
+
+    - oid: "/agent/restconf/config/server"
+      access: read_only
+      type: none
+      d: |
+         RESTCONF server settings.
+         Name: empty
+
+    - oid: "/agent/restconf/config/server/host"
+      access: read_write
+      type: string
+      d: |
+         RESTCONF server hostname or IPv4/6 address in human notation.
+         Name: empty
+         Value: Server IP address or hostname
+
+    - oid: "/agent/restconf/config/server/port"
+      access: read_write
+      type: uint16
+      d: |
+         RESTCONF server port.
+         Name: empty
+         Value: Port number
+
+    - oid: "/agent/restconf/config/server/https"
+      access: read_write
+      type: bool
+      d: |
+         Whether use https or http when connecting to server.
+         Name: empty
+         Value: 0 (false), 1 (true)
+         Default: 0
+
+    - oid: "/agent/restconf/config/server/username"
+      access: read_write
+      type: string
+      d: |
+         Username for RESTCONF server.
+         Name: empty
+         Value: any valid login, can be empty
+
+    - oid: "/agent/restconf/config/server/password"
+      access: read_write
+      type: string
+      d: |
+         Password for RESTCONF server.
+         Name: empty
+         Value: any valid password, can be empty

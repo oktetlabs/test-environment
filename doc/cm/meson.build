@@ -44,6 +44,7 @@ cm_files = files(
     'cm_process.yml',
     'cm_radius.yml',
     'cm_rcf.yml',
+    'cm_restconf.yml',
     'cm_rshd.yml',
     'cm_rss.yml',
     'cm_rx_rules.yml',

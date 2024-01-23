@@ -14,16 +14,24 @@
 #include "config.h"
 #endif
 
+#ifdef WITH_LIBTA_RESTCONF
+#include "ta_restconf.h"
+#endif
+
 #include "proxy_internal.h"
 
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_conf_init(void)
 {
-    /*
-     * We do not export/support any configuration object,
-     * so we do not register any subtree with rcf_pch_add_node().
-     */
+#ifdef WITH_LIBTA_RESTCONF
+    if (ta_restconf_conf_init() != 0)
+    {
+        ERROR("Failed to add RESTCONF configuration subtree");
+        return -1;
+    }
+#endif
+
     return 0;
 }
 

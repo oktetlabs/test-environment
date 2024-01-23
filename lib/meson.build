@@ -88,6 +88,7 @@ te_agent_libs = [
     'rcfpch',
     'tad',
     'ta_job',
+    'ta_restconf',
     'rpcs_bpf',
     'rpcs_dpdk',
     'rpcs_job',
