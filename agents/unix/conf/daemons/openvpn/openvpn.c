@@ -1602,8 +1602,7 @@ openvpn_write_config(te_openvpn_server *instance)
             /*
              * OpenVPN daemon deals with IP assignment itself.
              */
-            if (instance->pool_start != NULL && instance->pool_end != NULL &&
-                strlen(instance->pool_start) != 0 &&
+            if (strlen(instance->pool_start) != 0 &&
                 strlen(instance->pool_end) != 0)
             {
                 FPRINTF(f, "ifconfig-pool-persist %s\n", instance->pool_path);

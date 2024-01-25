@@ -2303,8 +2303,8 @@ l2tp_lns_range_add_routine(const char *lns_name, const char *option_name,
         memcpy(buf_ip, hyphen + 1, sizeof(buf_ip));
         if (inet_aton(buf_ip, NULL) == 0)
         {
-            free(l2tp_range);
             free(l2tp_range->start);
+            free(l2tp_range);
             rc = errno;
             ERROR("Second ip address in range is incorrect: %s", strerror(rc));
             return TE_OS_RC(TE_TA_UNIX, rc);
