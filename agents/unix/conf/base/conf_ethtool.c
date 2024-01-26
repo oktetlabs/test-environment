@@ -37,6 +37,9 @@
 
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
 
+/* The last failed Ethtool command number */
+static int TE_THREAD_LOCAL failed_ethtool_cmd = -1;
+
 /* Maximum length of object name */
 #define MAX_OBJ_NAME_LEN 1024
 
@@ -189,15 +192,23 @@ get_mode_info(ta_ethtool_link_mode mode)
     return result;
 }
 
-/**
- * Get string representation of ethtool command.
- *
- * @param cmd     Ethtool command number
- *
- * @return String representation.
- */
-static const char *
-ethtool_cmd2str(int cmd)
+/* See description in conf_ethtool.h */
+int
+ta_ethtool_failed_cmd(void)
+{
+    return failed_ethtool_cmd;
+}
+
+/* See description in conf_ethtool.h */
+void
+ta_ethtool_reset_failed_cmd(void)
+{
+    failed_ethtool_cmd = -1;
+}
+
+/* See description in conf_ethtool.h */
+const char *
+ta_ethtool_cmd2str(int cmd)
 {
 #define CASE_CMD(_cmd) \
     case _cmd:               \
@@ -273,19 +284,8 @@ call_ioctl(struct ifreq *ifr, const char *if_name, int cmd)
     rc = ioctl(cfg_socket, SIOCETHTOOL, ifr);
     if (rc < 0)
     {
+        failed_ethtool_cmd = cmd;
         te_err = te_rc_os2te(errno);
-
-        /*
-         * Avoid extra logs if this command is simply not supported
-         * for a given interface or requested entity is not
-         * present.
-         */
-        if (errno != EOPNOTSUPP && errno != ENOENT)
-        {
-            ERROR("%s(if_name=%s, cmd=%s): ioctl() failed, errno=%r",
-                  __FUNCTION__, if_name, ethtool_cmd2str(cmd), te_err);
-        }
-
         return TE_RC(TE_TA_UNIX, te_err);
     }
 

@@ -612,4 +612,28 @@ extern te_errno ta_ethtool_del_rx_cls_rule(const char *if_name,
 
 #endif /* ifdef ETHTOOL_GRXCLSRLALL */
 
+/**
+ * Get the failed Ethtool command.
+ *
+ * @return The last failed command number.
+ */
+extern int ta_ethtool_failed_cmd(void);
+
+/**
+ * Reset the failed Ethtool command number. Call this right
+ * before calling a function from this API which may fail due to
+ * ioctl(SIOCETHTOOL), if you are going to check
+ * ta_ethtool_failed_cmd() after that.
+ */
+extern void ta_ethtool_reset_failed_cmd(void);
+
+/**
+ * Get string representation of native ethtool command.
+ *
+ * @param cmd     Ethtool command number.
+ *
+ * @return String representation.
+ */
+extern const char *ta_ethtool_cmd2str(int cmd);
+
 #endif /* !__TE_AGENTS_UNIX_CONF_BASE_CONF_ETHTOOL_H_ */
