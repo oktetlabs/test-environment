@@ -23,6 +23,20 @@
          RESTCONF settings.
          Name: empty
 
+    - oid: "/agent/restconf/config/search"
+      access: read_create
+      type: none
+      d: |
+         Path in /restconf/data (data-resource-identifier).
+         Name: data-resource-identifier with '/' replaced by '%2F'
+
+    - oid: "/agent/restconf/config/search/child"
+      access: read_create
+      type: none
+      d: |
+         A list of first level subtrees of data-resource-identifier.
+         Name: any
+
     - oid: "/agent/restconf/config/server"
       access: read_only
       type: none

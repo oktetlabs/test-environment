@@ -37,5 +37,9 @@ ta_restconf_conf_init(void)
     if (rc != 0)
         return rc;
 
+    rc = ta_restconf_conf_search_init();
+    if (rc != 0)
+        return rc;
+
     return 0;
 }

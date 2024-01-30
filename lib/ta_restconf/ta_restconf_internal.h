@@ -42,6 +42,13 @@ extern restconf_settings restconf;
  */
 extern te_errno ta_restconf_conf_server_init(void);
 
+/**
+ * Initialize the RESTCONF agent /config/search configuration subtree.
+ *
+ * @return Status code.
+ */
+extern te_errno ta_restconf_conf_search_init(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

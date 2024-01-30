@@ -8,6 +8,7 @@ headers += files(
 sources += files(
     'ta_restconf.c',
     'conf_server.c',
+    'conf_search.c',
 )
 
 te_libs += [
