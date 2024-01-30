@@ -544,20 +544,44 @@ eth_priv_flags_list(unsigned int gid, const char *oid_str,
                     const char *if_name)
 {
     te_errno rc;
+    int failed_ethtool_cmd;
 
     UNUSED(oid_str);
     UNUSED(sub_id);
 
+    ta_ethtool_reset_failed_cmd();
     rc = ta_ethtool_get_strings_list(gid, if_name,
                                      ETH_SS_PRIV_FLAGS, list_out);
-    /*
-     * If private flags are not supported, let Configurator
-     * think they are not present to avoid error messages.
-     */
-    if (rc == TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP))
+    failed_ethtool_cmd = ta_ethtool_failed_cmd();
+
+    if (rc != 0)
     {
-        *list_out = NULL;
-        rc = 0;
+        if (failed_ethtool_cmd < 0)
+        {
+            ERROR("%s(): unexpected error %r occurred when "
+                  "trying to get list of private flags for %s",
+                  __FUNCTION__, rc, if_name);
+        }
+        else if ((rc != TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP) &&
+                  rc != TE_RC(TE_TA_UNIX, TE_EINVAL)) ||
+                 failed_ethtool_cmd != ETHTOOL_GSTRINGS)
+        {
+            ERROR("%s(): unexpected error %r occurred when "
+                  "trying to get list of private flags for %s; "
+                  "failed SIOCETHTOOL command is %d (%s)",
+                  __FUNCTION__, rc, if_name,
+                  failed_ethtool_cmd,
+                  ta_ethtool_cmd2str(failed_ethtool_cmd));
+        }
+        else
+        {
+            /*
+             * If private flags are not supported, let Configurator
+             * think they are not present to avoid error messages.
+             */
+            *list_out = NULL;
+            rc = 0;
+        }
     }
 
     return rc;
