@@ -482,6 +482,16 @@ extern size_t te_netaddr_get_size(int af);
 extern size_t te_netaddr_get_bitsize(int af);
 
 /**
+ * Append IPv4, IPv6 or MAC address to TE string.
+ *
+ * @param sa[in]    pointer to struct sockaddr
+ * @param str[out]  pointer to TE string
+ *
+ * @return Status code.
+ */
+extern te_errno te_netaddr2te_str(const struct sockaddr *sa, te_string *str);
+
+/**
  * Set multicast address part of XXX_mreq(n) structure
  *
  * @param af            Address family

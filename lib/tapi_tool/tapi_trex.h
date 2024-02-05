@@ -195,9 +195,15 @@ typedef struct tapi_trex_common_config {
     const char *payload;
     /** Interface to use. */
     tapi_trex_interface *interface;
-    /** Real IP address of interface (if @c NULL then @c "0.0.0.0"). */
+    /**
+     * Real IP (or MAC) address of interface,
+     * if @c NULL then @c "0.0.0.0".
+     */
     const struct sockaddr *ip;
-    /** Real gateway IP address of interface (if @c NULL then @c "0.0.0.0"). */
+    /**
+     * Real gateway IP (or MAC) address of interface,
+     * if @c NULL then @c "0.0.0.0".
+     */
     const struct sockaddr *gw;
 } tapi_trex_common_config;
 

@@ -63,7 +63,9 @@ static const char *default_trex_cfg =
 "  interfaces: [${IFACES[, ]}]\n"
 "  port_info:\n"
 "${PORTINFO_IP*    - ip${COLON} ${PORTINFO_IP[${}]}\n"
-"      default_gw${COLON} ${PORTINFO_DEFAULT_GW[${}]}\n}";
+"      default_gw${COLON} ${PORTINFO_DEFAULT_GW[${}]}\n}"
+"${PORTINFO_DST_MAC*    - dest_mac${COLON} ${PORTINFO_DST_MAC[${}]}\n"
+"      src_mac${COLON} ${PORTINFO_SRC_MAC[${}]}\n}";
 
 /** Mapping of possible values for tapi_trex_opt::verbose option. */
 static const te_enum_map tapi_trex_verbose_mapping[] = {
@@ -692,8 +694,8 @@ tapi_trex_interface_free(tapi_trex_interface *interface)
  * @param[in] ta        Name of the Test Agent.
  * @param[in] driver    Driver name to be bound to PCI.
  * @param[in] interface TRex interface name.
- * @param[in] ip        IP address of @p iface.
- * @param[in] gw        GW address of @p iface.
+ * @param[in] ip        IP address (or MAC) of @p iface.
+ * @param[in] gw        GW address (or MAC) of @p iface.
  * @param[in] kvpairs   Allocated kvpairs with list of interfaces.
  *
  * @return Status code.
@@ -710,9 +712,30 @@ tapi_trex_setup_port(const char *ta,
 
     const char *iface;
     te_bool need_to_bind;
+    te_string src = TE_STRING_INIT;
+    te_string dst = TE_STRING_INIT;
 
-    char *ip_addr = te_ip2str(ip);
-    char *gw_addr = te_ip2str(gw);
+    if (ip != NULL)
+    {
+        rc = te_netaddr2te_str(ip, &src);
+        if (rc != 0)
+        {
+            ERROR("%s:%d te_netaddr2te_str() returned unexpected result: %r",
+                  __FILE__, __LINE__, rc);
+            return rc;
+        }
+    }
+
+    if (gw != NULL)
+    {
+        rc = te_netaddr2te_str(gw, &dst);
+        if (rc != 0)
+        {
+            ERROR("%s:%d te_netaddr2te_str() returned unexpected result: %r",
+                  __FILE__, __LINE__, rc);
+            return rc;
+        }
+    }
 
     if (interface == NULL || te_str_is_null_or_empty(interface->if_name))
     {
@@ -731,13 +754,28 @@ tapi_trex_setup_port(const char *ta,
      * some interfaces without quotes.
      */
     te_kvpair_push(kvpairs, "IFACES", "'%s'", iface);
-    te_kvpair_push(kvpairs, "PORTINFO_IP", "%s",
-                   ip_addr != NULL ? ip_addr : "0.0.0.0");
-    te_kvpair_push(kvpairs, "PORTINFO_DEFAULT_GW", "%s",
-                   gw_addr != NULL ? gw_addr : "0.0.0.0");
+    if (ip == NULL || ip->sa_family != AF_LOCAL)
+    {
+        te_kvpair_push(kvpairs, "PORTINFO_IP", "%s",
+                       ip != NULL ? src.ptr : "0.0.0.0");
+    }
+    else
+    {
+        te_kvpair_push(kvpairs, "PORTINFO_SRC_MAC", "%s", src.ptr);
+    }
 
-    free(ip_addr);
-    free(gw_addr);
+    if (gw == NULL || gw->sa_family != AF_LOCAL)
+    {
+        te_kvpair_push(kvpairs, "PORTINFO_DEFAULT_GW", "%s",
+                       gw != NULL ? dst.ptr : "0.0.0.0");
+    }
+    else
+    {
+        te_kvpair_push(kvpairs, "PORTINFO_DST_MAC", "%s", dst.ptr);
+    }
+
+    te_string_free(&src);
+    te_string_free(&dst);
 
     if (need_to_bind)
     {

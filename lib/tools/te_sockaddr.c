@@ -331,6 +331,33 @@ te_netaddr_get_bitsize(int af)
 }
 
 /* See the description in te_sockaddr.h */
+te_errno
+te_netaddr2te_str(const struct sockaddr *sa, te_string *str)
+{
+    assert(sa != NULL);
+    assert(str != NULL);
+
+    switch (sa->sa_family)
+    {
+        case AF_INET:
+            return te_ip_addr2te_str(str, (const void *)&(SIN(sa)->sin_addr),
+                                     sa->sa_family);
+
+        case AF_INET6:
+            return te_ip_addr2te_str(str, (const void *)&(SIN6(sa)->sin6_addr),
+                                     sa->sa_family);
+
+        case AF_LOCAL:
+            return te_mac_addr2te_str(str, (const uint8_t *)sa->sa_data);
+
+        default:
+            ERROR("%s(): address family %d is not supported",
+                  __func__, (int)sa->sa_family);
+            return TE_EAFNOSUPPORT;
+    }
+}
+
+/* See the description in te_sockaddr.h */
 size_t
 te_sockaddr_get_size_by_af(int af)
 {
