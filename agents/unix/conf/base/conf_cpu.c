@@ -782,8 +782,8 @@ get_cache_dim(const char *cpu_name, const char *index_name,
 
     if (rc != 0)
     {
-        ERROR("Failed to read %s system file for cache %s of %s",
-              item_name, index_name, cpu_name);
+        TE_LOG_ONCE(WARN, "Failed to read %s system file for cache %s of %s",
+                    item_name, index_name, cpu_name);
         return rc;
     }
 
@@ -893,8 +893,8 @@ add_index_name(const char *pattern, const char *pathname, void *data)
     rc = get_cache_info(name, index_name, &cache);
     if (rc != 0)
     {
-        ERROR("Could not get information about cache %s for %s", index_name,
-              name);
+        TE_LOG_ONCE(WARN, "Could not get information about cache %s for %s",
+                    index_name, name);
         return 0;
     }
 
