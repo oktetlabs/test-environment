@@ -661,6 +661,7 @@ tapi_trex_interface_init_oid(te_bool use_kernel_interface,
         interface = TE_ALLOC(sizeof(tapi_trex_interface));
         *interface = (tapi_trex_interface){ .if_name = name,
                                             .need_to_bind = FALSE };
+        cfg_free_oid(oid_cfg);
     }
     else
     {
@@ -904,7 +905,7 @@ tapi_trex_create(tapi_job_factory_t *factory,
     te_vec args = TE_VEC_INIT(char *);
     tapi_trex_app *new_app;
 
-    const char *workdir;
+    char *workdir;
     char *yaml_config_path;
 
     if (factory == NULL)
@@ -1009,9 +1010,11 @@ tapi_trex_create(tapi_job_factory_t *factory,
         ERROR("Failed to set TRex working directory '%s': %r", workdir, rc);
         te_vec_deep_free(&args);
         free(yaml_config_path);
+        free(workdir);
         free(new_app);
         return rc;
     }
+    free(workdir);
 
     rc = tapi_trex_configure(tapi_job_factory_ta(factory), opt,
                              yaml_config_path);
