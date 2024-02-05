@@ -57,6 +57,7 @@ typedef struct tad_icmp4_proto_data {
     tad_bps_pkt_frag_def    redirect;
     tad_bps_pkt_frag_def    echo_info;
     tad_bps_pkt_frag_def    ts;
+    tad_bps_pkt_frag_def    du;
 } tad_icmp4_proto_data;
 
 /**
@@ -70,6 +71,7 @@ typedef struct tad_icmp4_proto_pdu_data {
     tad_bps_pkt_frag_data   redirect;
     tad_bps_pkt_frag_data   echo_info;
     tad_bps_pkt_frag_data   ts;
+    tad_bps_pkt_frag_data   du;
 } tad_icmp4_proto_pdu_data;
 
 
@@ -144,6 +146,16 @@ static const tad_bps_pkt_frag tad_icmp4_ts_bps_hdr[] =
       TAD_DU_I32, FALSE },
 };
 
+/**
+ * Definition of ICMPv4 Destination Unreachable message subheader.
+ */
+static const tad_bps_pkt_frag tad_icmp4_du_bps_hdr[] =
+{
+    { "unused",   16, BPS_FLD_CONST_DEF(NDN_TAG_ICMP4_UNUSED, 0),
+      TAD_DU_I32, FALSE },
+    { "nexthop-mtu", 16, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_NH_MTU),
+      TAD_DU_I32, FALSE },
+};
 
 /* See description tad_ipstack_impl.h */
 te_errno
@@ -195,6 +207,12 @@ tad_icmp4_init_cb(csap_p csap, unsigned int layer)
     if (rc != 0)
         return rc;
 
+    rc = tad_bps_pkt_frag_init(tad_icmp4_du_bps_hdr,
+                               TE_ARRAY_LEN(tad_icmp4_du_bps_hdr),
+                               NULL, &proto_data->du);
+    if (rc != 0)
+        return rc;
+
     return 0;
 }
 
@@ -213,6 +231,7 @@ tad_icmp4_destroy_cb(csap_p csap, unsigned int layer)
     tad_bps_pkt_frag_free(&proto_data->redirect);
     tad_bps_pkt_frag_free(&proto_data->echo_info);
     tad_bps_pkt_frag_free(&proto_data->ts);
+    tad_bps_pkt_frag_free(&proto_data->du);
 
     free(proto_data);
 
@@ -277,6 +296,11 @@ tad_icmp4_nds_to_pdu_data(csap_p csap, tad_icmp4_proto_data *proto_data,
     if (rc != 0)
         return rc;
 
+    rc = tad_bps_nds_to_data_units(&proto_data->du, layer_pdu,
+                                   &pdu_data->du);
+    if (rc != 0)
+        return rc;
+
     return 0;
 }
 
@@ -304,6 +328,8 @@ tad_icmp4_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
                                    &pdu_data->echo_info);
         tad_bps_free_pkt_frag_data(&proto_data->ts,
                                    &pdu_data->ts);
+        tad_bps_free_pkt_frag_data(&proto_data->du,
+                                   &pdu_data->du);
         free(pdu_data);
     }
 }
@@ -328,6 +354,9 @@ tad_icmp4_frag_structs_by_type(const unsigned int         type,
 #else
 #error Dont know type for ICMP destination unreachable message
 #endif
+            *def = &proto_data->du;
+            *data = &tmpl_data->du;
+            break;
 #ifdef ICMP_TIME_EXCEEDED
         case ICMP_TIME_EXCEEDED:
 #elif defined(ICMP_TIMXCEED)
@@ -587,6 +616,10 @@ tad_icmp4_match_pre_cb(csap_p              csap,
 
     rc = tad_bps_pkt_frag_match_pre(&proto_data->redirect,
                                     &pkt_data->redirect);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_pkt_frag_match_pre(&proto_data->du, &pkt_data->du);
     if (rc != 0)
         return rc;
 

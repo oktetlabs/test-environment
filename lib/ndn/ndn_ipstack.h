@@ -115,6 +115,7 @@ typedef enum {
     NDN_TAG_ICMP4_ORIG_TS,
     NDN_TAG_ICMP4_RX_TS,
     NDN_TAG_ICMP4_TX_TS,
+    NDN_TAG_ICMP4_NH_MTU,
 } ndn_icmp4_tags_t;
 
 typedef enum {

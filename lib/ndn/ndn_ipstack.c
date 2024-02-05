@@ -440,6 +440,8 @@ static asn_named_entry_t _ndn_icmp4_message_ne_array [] = {
       { PRIVATE, NDN_TAG_ICMP4_RX_TS } },
     { "tx-ts",          &ndn_data_unit_int32_s,
       { PRIVATE, NDN_TAG_ICMP4_TX_TS } },
+    { "nexthop-mtu",    &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_ICMP4_NH_MTU } },
 };
 
 asn_type ndn_icmp4_message_s = {
