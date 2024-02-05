@@ -268,13 +268,37 @@ tapi_cfg_module_param_add(const char *ta_name, const char *mod_name,
     if (rc != 0)
         return rc;
 
-    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, param_value),
-                              CFG_MODULE_PARAM_OID_FMT,
-                              ta_name, mod_name, param);
-    if (rc != 0)
-        te_log_stack_push("Addition of module '%s' param '%s' with "
-                          "value '%s' on TA %s failed",
-                          mod_name, ta_name, param, param_value);
+    rc = cfg_get_instance_fmt(NULL, NULL, CFG_MODULE_PARAM_OID_FMT, ta_name,
+                              mod_name, param);
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+    {
+        rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, param_value),
+                                  CFG_MODULE_PARAM_OID_FMT, ta_name, mod_name,
+                                  param);
+        if (rc != 0)
+        {
+            te_log_stack_push("Addition of module '%s' param '%s' with "
+                              "value '%s' on TA %s failed",
+                              mod_name, ta_name, param, param_value);
+        }
+    }
+    else if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
+    {
+        rc = cfg_set_instance_fmt(CFG_VAL(STRING, param_value),
+                                  CFG_MODULE_PARAM_OID_FMT, ta_name, mod_name,
+                                  param);
+        if (rc != 0)
+        {
+            te_log_stack_push("Setting of module '%s' param '%s' with "
+                              "value '%s' on TA %s failed",
+                              mod_name, ta_name, param, param_value);
+        }
+    }
+    else if (rc != 0)
+    {
+        te_log_stack_push("Check if there is module '%s' param '%s' on TA %s "
+                          "failed: %r", mod_name, ta_name, param, rc);
+    }
 
     EXIT("%r", rc);
 
