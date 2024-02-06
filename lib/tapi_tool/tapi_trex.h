@@ -178,6 +178,18 @@ typedef enum tapi_trex_verbose {
     TAPI_TREX_VERBOSE_MODE_MAX,
 } tapi_trex_verbose_t;
 
+/** Representation of possible values for tapi_trex_opt::iom option. */
+typedef enum tapi_trex_iom {
+    /** Option is omitted */
+    TAPI_TREX_IOM_NONE = TAPI_JOB_OPT_ENUM_UNDEF,
+    /** IO mode for server output: silent. */
+    TAPI_TREX_IOM_SILENT = 0,
+    /** IO mode for server output: normal. */
+    TAPI_TREX_IOM_NORMAL,
+    /** IO mode for server output: short. */
+    TAPI_TREX_IOM_SHORT,
+} tapi_trex_iom_t;
+
 /** TRex interface description. */
 typedef struct tapi_trex_interface tapi_trex_interface;
 
@@ -321,6 +333,8 @@ typedef struct tapi_trex_opt {
     te_bool use_sleep;
     /** The higher the value, print more debug information. */
     tapi_trex_verbose_t verbose;
+    /** IO mode for server output.*/
+    tapi_trex_iom_t iom;
     /** Wait a few seconds between init of interfaces and sending traffic. */
     tapi_job_opt_uint_t init_wait_sec;
     /**

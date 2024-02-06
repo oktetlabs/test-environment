@@ -74,6 +74,14 @@ static const te_enum_map tapi_trex_verbose_mapping[] = {
     TE_ENUM_MAP_END
 };
 
+/** Mapping of possible values for tapi_trex_opt::iom option. */
+static const te_enum_map tapi_trex_iom_mapping[] = {
+    {.name = "0", .value = TAPI_TREX_IOM_SILENT},
+    {.name = "1", .value = TAPI_TREX_IOM_NORMAL},
+    {.name = "2", .value = TAPI_TREX_IOM_SHORT},
+    TE_ENUM_MAP_END
+};
+
 /* Possible TRex command line arguments. */
 static const tapi_job_opt_bind trex_args_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_DUMMY("-f"),
@@ -98,6 +106,8 @@ static const tapi_job_opt_bind trex_args_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_BOOL("--sleeps", tapi_trex_opt, use_sleep),
     TAPI_JOB_OPT_ENUM("-v", FALSE, tapi_trex_opt, verbose,
                       tapi_trex_verbose_mapping),
+    TAPI_JOB_OPT_ENUM("--iom", FALSE, tapi_trex_opt, iom,
+                      tapi_trex_iom_mapping),
     TAPI_JOB_OPT_UINT_T("-w", FALSE, NULL, tapi_trex_opt, init_wait_sec),
     TAPI_JOB_OPT_STRING("--prefix", FALSE, tapi_trex_opt, instance_prefix)
 );
@@ -144,6 +154,7 @@ const tapi_trex_opt tapi_trex_default_opt = {
     .dont_resend_pkts = FALSE,
     .use_sleep = FALSE,
     .verbose  = TAPI_TREX_VERBOSE_NONE,
+    .iom = TAPI_TREX_IOM_NONE,
     .init_wait_sec = TAPI_JOB_OPT_UINT_UNDEF,
     .instance_prefix = NULL,
     .clients = NULL,
