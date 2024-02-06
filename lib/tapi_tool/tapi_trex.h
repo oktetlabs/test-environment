@@ -166,6 +166,10 @@ typedef struct tapi_trex_app {
     tapi_job_channel_t *total_rx_filter;
     /** Total-CPS filter. */
     tapi_job_channel_t *total_cps_filter;
+    /** Total-tx-pkt filter. */
+    tapi_job_channel_t *total_tx_pkt_filter;
+    /** Total-rx-pkt filter. */
+    tapi_job_channel_t *total_rx_pkt_filter;
 } tapi_trex_app;
 
 /** Representation of possible values for tapi_trex_opt::verbose option. */
@@ -524,6 +528,10 @@ typedef struct tapi_trex_report {
     double avg_rx;
     /** Average connections per second, cps. */
     double avg_cps;
+    /** Total tx packets. */
+    uint64_t tx_pkts;
+    /** Total rx packets. */
+    uint64_t rx_pkts;
 } tapi_trex_report;
 
 
