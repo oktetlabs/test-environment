@@ -61,7 +61,6 @@ static const char *default_trex_cfg =
 "- port_limit      : ${#IFACES}\n"
 "  version         : 2\n"
 "  interfaces: [${IFACES[, ]}]\n"
-"  low_end: true\n"
 "  port_info:\n"
 "${PORTINFO_IP*    - ip${COLON} ${PORTINFO_IP[${}]}\n"
 "      default_gw${COLON} ${PORTINFO_DEFAULT_GW[${}]}\n}";
