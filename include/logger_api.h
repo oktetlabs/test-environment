@@ -209,6 +209,23 @@
         }                                                       \
     } while (0)
 
+/**
+ * Log a message once at a given place.
+ *
+ * @param _log_fn   Name of a logging macro, e.g.
+ *                  @c ERROR, @c WARN, @c RING, etc.
+ * @param _fs       Format string and arguments.
+ */
+#define TE_LOG_ONCE(_log_fn, _fs...) \
+    do {                                            \
+        static __thread te_bool logged_ = FALSE;    \
+        if (!logged_)                               \
+        {                                           \
+            _log_fn(_fs);                           \
+            logged_ = TRUE;                         \
+        }                                           \
+    } while (0)
+
 /**@}*/
 
 /**
