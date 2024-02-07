@@ -284,7 +284,7 @@ cfg_dh_get_value_from_instance(xmlNodePtr node, te_kvpair_h *expand_vars)
 
     if (expand_vars != NULL)
     {
-        rc = te_kvpair_add(expand_vars, var_name, get_val_s);
+        rc = te_kvpair_add(expand_vars, var_name, "%s", get_val_s);
         if (rc != 0)
         {
             ERROR("Failed to add new entry in list of kvpairs: %r", rc);
