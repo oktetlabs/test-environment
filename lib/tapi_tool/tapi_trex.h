@@ -170,6 +170,10 @@ typedef struct tapi_trex_app {
     tapi_job_channel_t *total_tx_pkt_filter;
     /** Total-rx-pkt filter. */
     tapi_job_channel_t *total_rx_pkt_filter;
+    /** m_traffic_duration client filter. */
+    tapi_job_channel_t *m_traff_dur_cl_flt;
+    /** m_traffic_duration server filter. */
+    tapi_job_channel_t *m_traff_dur_srv_flt;
 } tapi_trex_app;
 
 /** Representation of possible values for tapi_trex_opt::verbose option. */
@@ -532,6 +536,10 @@ typedef struct tapi_trex_report {
     uint64_t tx_pkts;
     /** Total rx packets. */
     uint64_t rx_pkts;
+    /** Diration of client traffic, sec. */
+    double m_traff_dur_cl;
+    /** Diration of server traffic, sec. */
+    double m_traff_dur_srv;
 } tapi_trex_report;
 
 

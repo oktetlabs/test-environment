@@ -45,6 +45,11 @@
 /** TRex default timeout. */
 #define TAPI_TREX_TIMEOUT_MS 10000
 
+/** TRex m_traffic_duration filter for client (1) and server (2). */
+#define TAPI_TREX_M_TRAFF_DUR_FLT \
+    "\\s+m_traffic_duration\\s+\\|\\s+([0-9]+\\.[0-9]{2})\\s+sec\\s+\\|" \
+    "\\s+([0-9]+\\.[0-9]{2})\\s+sec\\s+\\|\\s+measured traffic duration"
+
 /** TRex interface description. */
 struct tapi_trex_interface {
     /**
@@ -1043,6 +1048,20 @@ tapi_trex_create(tapi_job_factory_t *factory,
                                     .filter_var = &new_app->total_rx_pkt_filter,
                                 },
                                 {
+                                    .use_stdout = TRUE,
+                                    .readable = TRUE,
+                                    .re = TAPI_TREX_M_TRAFF_DUR_FLT,
+                                    .extract = 1,
+                                    .filter_var = &new_app->m_traff_dur_cl_flt,
+                                },
+                                {
+                                    .use_stdout = TRUE,
+                                    .readable = TRUE,
+                                    .re = TAPI_TREX_M_TRAFF_DUR_FLT,
+                                    .extract = 2,
+                                    .filter_var = &new_app->m_traff_dur_srv_flt,
+                                },
+                                {
                                    .use_stdout  = TRUE,
                                    .readable    = FALSE,
                                    .log_level   = TE_LL_RING,
@@ -1328,6 +1347,29 @@ get_single_uint64(tapi_job_channel_t *filter, uint64_t *value)
     return rc;
 }
 
+/**
+ * Get a single double value.
+ *
+ * @param filter[in]    from where to read the message
+ * @param value[out]    where to save the value
+ *
+ * @return Status code.
+ */
+static te_errno
+get_single_double(tapi_job_channel_t *filter, double *value)
+{
+    te_errno rc;
+    te_string str = TE_STRING_INIT;
+
+    rc = get_single_str(filter, &str);
+
+    if (rc == 0)
+        rc = te_strtod(str.ptr, value);
+
+    te_string_free(&str);
+    return rc;
+}
+
 /* See description in tapi_trex.h */
 te_errno
 tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
@@ -1357,6 +1399,12 @@ tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
     rc = get_single_uint64(app->total_rx_pkt_filter, &report->rx_pkts);
     if (rc != 0)
         return rc;
+
+    rc = get_single_double(app->m_traff_dur_cl_flt, &report->m_traff_dur_cl);
+    if (rc != 0)
+        return rc;
+
+    rc = get_single_double(app->m_traff_dur_srv_flt, &report->m_traff_dur_srv);
 
     return rc;
 }
