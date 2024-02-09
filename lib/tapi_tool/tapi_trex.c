@@ -1283,12 +1283,56 @@ cleanup:
     return (total / num);
 }
 
+/**
+ * Get content of a single message.
+ *
+ * @param filter[in]    from where to read the message
+ * @param str[out]      where to save the content
+ *
+ * @return Status code.
+ */
+static te_errno
+get_single_str(tapi_job_channel_t *filter, te_string *str)
+{
+    te_errno rc;
+
+    rc = tapi_job_receive_single(filter, str, TAPI_TREX_TIMEOUT_MS);
+    if (rc != 0)
+    {
+        ERROR("%s:%d tapi_job_receive_single returned unexpected result: %r",
+              __FILE__, __LINE__, rc);
+    }
+    return rc;
+}
+
+/**
+ * Get a single unit64_t value.
+ *
+ * @param filter[in]    from where to read the message
+ * @param value[out]    where to save the value
+ *
+ * @return Status code.
+ */
+static te_errno
+get_single_uint64(tapi_job_channel_t *filter, uint64_t *value)
+{
+    te_errno rc;
+    te_string str = TE_STRING_INIT;
+
+    rc = get_single_str(filter, &str);
+
+    if (rc == 0)
+        rc = te_str_to_uint64(str.ptr, 10, value);
+
+    te_string_free(&str);
+    return rc;
+}
+
 /* See description in tapi_trex.h */
 te_errno
 tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
 {
     te_errno rc = 0;
-    te_string str = TE_STRING_INIT;
 
     if (app == NULL)
     {
@@ -1306,31 +1350,14 @@ tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
     report->avg_tx = get_avg_from_filter(app->total_rx_filter, &bin_units);
     report->avg_cps = get_avg_from_filter(app->total_cps_filter, &bin_units);
 
-    rc = tapi_job_receive_single(app->total_tx_pkt_filter,
-                                 &str, TAPI_TREX_TIMEOUT_MS);
+    rc = get_single_uint64(app->total_tx_pkt_filter, &report->tx_pkts);
     if (rc != 0)
-    {
-        ERROR("%s:%d tapi_job_receive_single returned unexpected result: %r",
-              __FILE__, __LINE__, rc);
-        goto out;
-    }
-    rc = te_str_to_uint64(str.ptr, 10, &report->tx_pkts);
-    if (rc != 0)
-        goto out;
+        return rc;
 
-    te_string_reset(&str);
-    rc = tapi_job_receive_single(app->total_rx_pkt_filter,
-                                 &str, TAPI_TREX_TIMEOUT_MS);
+    rc = get_single_uint64(app->total_rx_pkt_filter, &report->rx_pkts);
     if (rc != 0)
-    {
-        ERROR("%s:%d tapi_job_receive_single returned unexpected result: %r",
-              __FILE__, __LINE__, rc);
-        goto out;
-    }
-    rc = te_str_to_uint64(str.ptr, 10, &report->rx_pkts);
+        return rc;
 
-out:
-    te_string_free(&str);
     return rc;
 }
 
