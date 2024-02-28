@@ -169,6 +169,8 @@ struct tapi_rdma_perf_app {
     tapi_job_factory_t            *factory;
     /** Name of the test application. */
     char                           name[TAPI_RDMA_PERF_APP_NAME_LEN];
+    /** Arguments that are used when running the tool. */
+    te_vec                         args;
     /** Channel for Queue Pair Number retrieval. */
     tapi_job_channel_t            *qp;
 };
@@ -292,6 +294,19 @@ extern te_errno tapi_rdma_perf_app_start(tapi_rdma_perf_app *app);
  */
 extern te_errno tapi_rdma_perf_app_wait(tapi_rdma_perf_app *app,
                                         int timeout_s);
+
+/**
+ * Get CMD in string representation that will be used to run RDMA perf app.
+ *
+ * @param[in]  app             RDMA perf app context.
+ * @param[out] cmd             Resulting command line.
+ *
+ * @note It is expected that @p cmd is allocated.
+ *       Can be called only after @b tapi_rdma_perf_app_init().
+ *
+ * @return Status code.
+ */
+te_errno tapi_rdma_perf_get_cmd_str(tapi_rdma_perf_app *app, te_string *cmd);
 
 /**
  * Destroy structure to hold perftest results.
