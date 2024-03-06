@@ -69,6 +69,7 @@ te_engine_libs = [
     'tapi_tcp_states',
     'tapi_packetdrill',
     'tapi_performance',
+    'tapi_rdma',
     'tapi_tool',
     'trc',
     'rpcc_dpdk',
