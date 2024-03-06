@@ -1009,8 +1009,8 @@ if [[ "${TE_RUN_META}" = "yes" ]] ; then
     fi
 fi
 
-# Collect all environment variables starting from TE_
-te_env=$(env | grep '^TE_' | sort)
+# Collect all environment variables starting from TE_ (except for e-mail)
+te_env=$(env | grep '^TE_' | grep -v '^TE_EMAIL' | sort)
 
 if test -z "$TE_BASE" -a -n "$BUILDER" ; then
     echo "Cannot find TE sources for building - exiting." >&2
