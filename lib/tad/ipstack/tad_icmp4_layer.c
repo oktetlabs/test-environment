@@ -153,7 +153,7 @@ static const tad_bps_pkt_frag tad_icmp4_du_bps_hdr[] =
 {
     { "unused",   16, BPS_FLD_CONST_DEF(NDN_TAG_ICMP4_UNUSED, 0),
       TAD_DU_I32, FALSE },
-    { "nexthop-mtu", 16, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_NH_MTU),
+    { "nexthop-mtu", 16, BPS_FLD_CONST_DEF(NDN_TAG_ICMP4_NH_MTU, 0),
       TAD_DU_I32, FALSE },
 };
 
