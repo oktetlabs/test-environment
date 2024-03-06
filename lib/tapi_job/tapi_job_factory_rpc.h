@@ -28,7 +28,10 @@ struct tapi_job_factory_t;
  * @param rpcs          RPC server
  * @param[out] factory  Job factory handle
  *
- * @return              Status code
+ * @return 0
+ *
+ * @note The function never returns an error. Its return type is not void
+ *       for legacy reasons. New code should never check the return value.
  */
 extern te_errno tapi_job_factory_rpc_create(rcf_rpc_server *rpcs,
                                             struct tapi_job_factory_t **factory);

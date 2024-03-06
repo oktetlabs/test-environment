@@ -27,6 +27,11 @@ struct tapi_job_factory_t;
  *
  * @param[in]  ta              Test Agent
  * @param[out] factory         Job factory handle
+ *
+ * @return 0
+ *
+ * @note The function never returns an error. Its return type is not void
+ *       for legacy reasons. New code should never check the return value.
  */
 extern te_errno tapi_job_factory_cfg_create(
                                         const char *ta,
