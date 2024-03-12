@@ -545,9 +545,33 @@ eth_priv_flags_list(unsigned int gid, const char *oid_str,
 {
     te_errno rc;
     int failed_ethtool_cmd;
+    struct ethtool_value *pflags = NULL;
 
     UNUSED(oid_str);
     UNUSED(sub_id);
+
+    /*
+     * Check whether private flags values may be obtained.
+     * Unfortunately it is possible that list of private flags
+     * can be retrieved for an interface but their values cannot
+     * be obtained. In such case it's better not to list private
+     * flag names in configuration tree to avoid breaking tree
+     * synchronization.
+     */
+    rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_PFLAGS,
+                           (void **)&pflags);
+    if (rc == TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP))
+    {
+        *list_out = NULL;
+        return 0;
+    }
+    else if (rc != 0)
+    {
+        ERROR("%s(): unexpected error %r occurred when trying to "
+              "obtain values of private flags for %s", __FUNCTION__, rc,
+              if_name);
+        return rc;
+    }
 
     ta_ethtool_reset_failed_cmd();
     rc = ta_ethtool_get_strings_list(gid, if_name,
