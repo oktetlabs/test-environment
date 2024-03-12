@@ -52,7 +52,7 @@ typedef struct tapi_memaslap_app {
 typedef struct tapi_memaslap_report {
     /** Throughput, operations/second. */
     unsigned int            tps;
-    /** The rate of network. It's always in Mb/s. */
+    /** The rate of network. It's always in Mibit/s. */
     double                  net_rate;
     /** Command line used to start the memaslap job. */
     char                   *cmd;

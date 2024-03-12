@@ -534,6 +534,8 @@ tapi_memaslap_get_report(tapi_memaslap_app *app,
         ERROR("Failed read data from app->net_rate_filter: %r", rc);
         return rc;
     }
+    /* Convert from MiB/s to Mibit/s */
+    report->net_rate *= 8;
 
     rc = tapi_memaslap_args2str(&app->cmd, &report->cmd);
     if (rc != 0)
