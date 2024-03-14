@@ -696,6 +696,11 @@ TARPC_FUNC(rte_eth_stats_get, {},
     }
 })
 
+TARPC_FUNC(rte_eth_stats_reset,{},
+{
+    MAKE_CALL(func(in->port_id));
+})
+
 TARPC_FUNC(rte_eth_dev_configure, {},
 {
     struct rte_eth_conf eth_conf;

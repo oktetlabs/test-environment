@@ -793,6 +793,14 @@ struct tarpc_rte_eth_stats_get_out {
     tarpc_int                       retval;
 };
 
+/** rte_eth_stats_reset() */
+struct tarpc_rte_eth_stats_reset_in {
+    struct tarpc_in_arg                     common;
+    uint16_t                                port_id;
+};
+
+typedef struct tarpc_void_out tarpc_rte_eth_stats_reset_out;
+
 struct tarpc_rte_eth_dev_port_id_in {
     struct tarpc_in_arg             common;
     uint16_t                        port_id;
@@ -2445,6 +2453,7 @@ program dpdk
         RPC_DEF(rte_mbuf_match_tx_rx)
 
         RPC_DEF(rte_eth_stats_get)
+        RPC_DEF(rte_eth_stats_reset)
         RPC_DEF(rte_eth_xstats_get)
         RPC_DEF(rte_eth_xstats_get_names)
         RPC_DEF(rte_eth_xstats_reset)

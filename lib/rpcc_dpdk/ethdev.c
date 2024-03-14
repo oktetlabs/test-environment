@@ -70,6 +70,23 @@ rpc_rte_eth_stats_get(rcf_rpc_server             *rpcs,
     RETVAL_ZERO_INT(rte_eth_stats_get, out.retval);
 }
 
+void
+rpc_rte_eth_stats_reset(rcf_rpc_server *rpcs, uint16_t port_id)
+{
+    tarpc_rte_eth_stats_reset_in   in;
+    tarpc_rte_eth_stats_reset_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_stats_reset", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_stats_reset, "%hu", "", in.port_id);
+    RETVAL_VOID(rte_eth_stats_reset);
+}
+
 static const char *
 tarpc_rte_eth_rx_offloads2str(te_log_buf *tlbp, uint64_t rx_offloads)
 {

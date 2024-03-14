@@ -586,6 +586,11 @@ extern int rpc_rte_eth_stats_get(rcf_rpc_server             *rpcs,
                                  struct tarpc_rte_eth_stats *stats);
 
 /**
+ * @b rte_eth_stats_reset() RPC
+ */
+extern void rpc_rte_eth_stats_reset(rcf_rpc_server *rpcs, uint16_t port_id);
+
+/**
  * @b rte_eth_xstats_get_names() RPC.
  *
  * If failure is not expected, the function jumps out in the case of
