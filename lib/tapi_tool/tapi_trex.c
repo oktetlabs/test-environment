@@ -1388,8 +1388,8 @@ tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    report->avg_rx = get_avg_from_filter(app->total_tx_filter, &bin_units);
-    report->avg_tx = get_avg_from_filter(app->total_rx_filter, &bin_units);
+    report->avg_rx = get_avg_from_filter(app->total_rx_filter, &bin_units);
+    report->avg_tx = get_avg_from_filter(app->total_tx_filter, &bin_units);
     report->avg_cps = get_avg_from_filter(app->total_cps_filter, &bin_units);
 
     rc = get_single_uint64(app->total_tx_pkt_filter, &report->tx_pkts);
