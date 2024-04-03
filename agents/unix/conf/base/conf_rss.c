@@ -92,7 +92,7 @@ hash_key_get(unsigned int gid, const char *oid,
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
-    struct ethtool_rxfh *rxfh;
+    ta_ethtool_rxfh *rxfh;
     te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
     te_errno rc;
 
@@ -104,7 +104,9 @@ hash_key_get(unsigned int gid, const char *oid,
     if (rc != 0)
         return rc;
 
-    return te_str_hex_raw2str(RSS_HASH_KEY(rxfh), rxfh->key_size, &str_val);
+    return te_str_hex_raw2str(RSS_HASH_KEY(rxfh->rxfh),
+                              rxfh->rxfh->key_size,
+                              &str_val);
 #endif
 }
 
@@ -124,7 +126,7 @@ hash_key_set(unsigned int gid, const char *oid,
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
-    struct ethtool_rxfh *rxfh;
+    ta_ethtool_rxfh *rxfh;
     te_errno rc;
 
     UNUSED(oid);
@@ -135,7 +137,8 @@ hash_key_set(unsigned int gid, const char *oid,
     if (rc != 0)
         return rc;
 
-    return te_str_hex_str2raw(value, RSS_HASH_KEY(rxfh), rxfh->key_size);
+    return te_str_hex_str2raw(value, RSS_HASH_KEY(rxfh->rxfh),
+                              rxfh->rxfh->key_size);
 #endif
 }
 
@@ -201,7 +204,7 @@ hash_func_get(unsigned int gid, const char *oid,
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
-    struct ethtool_rxfh *rxfh;
+    ta_ethtool_rxfh *rxfh;
     const ta_ethtool_strings *func_names;
     te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
     unsigned int i;
@@ -226,7 +229,7 @@ hash_func_get(unsigned int gid, const char *oid,
     {
         if (strcmp(func_names->strings[i], func_name) == 0)
         {
-            result = ((rxfh->hfunc & (1 << i)) ? 1 : 0);
+            result = ((rxfh->rxfh->hfunc & (1 << i)) ? 1 : 0);
             break;
         }
     }
@@ -254,7 +257,7 @@ hash_func_set(unsigned int gid, const char *oid,
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
-    struct ethtool_rxfh *rxfh;
+    ta_ethtool_rxfh *rxfh;
     const ta_ethtool_strings *func_names;
     unsigned int i;
     unsigned int flag = 0;
@@ -298,9 +301,9 @@ hash_func_set(unsigned int gid, const char *oid,
     }
 
     if (parsed_val == 1)
-        rxfh->hfunc |= flag;
+        rxfh->rxfh->hfunc |= flag;
     else
-        rxfh->hfunc &= ~flag;
+        rxfh->rxfh->hfunc &= ~flag;
 
     return 0;
 #endif
@@ -325,7 +328,7 @@ indir_list(unsigned int gid, const char *oid,
     *list_out = NULL;
     return 0;
 #else
-    struct ethtool_rxfh *rxfh = NULL;
+    ta_ethtool_rxfh *rxfh = NULL;
     te_string str = TE_STRING_INIT;
     unsigned int i;
     te_errno rc;
@@ -346,7 +349,7 @@ indir_list(unsigned int gid, const char *oid,
         return rc;
     }
 
-    for (i = 0; i < rxfh->indir_size; i++)
+    for (i = 0; i < rxfh->rxfh->indir_size; i++)
     {
         rc = te_string_append(&str, "%u ", i);
         if (rc != 0)
@@ -381,7 +384,7 @@ indir_get(unsigned int gid, const char *oid,
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
     te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
-    struct ethtool_rxfh *rxfh;
+    ta_ethtool_rxfh *rxfh;
     unsigned int idx;
     te_errno rc;
 
@@ -397,13 +400,13 @@ indir_get(unsigned int gid, const char *oid,
     if (rc != 0)
         return rc;
 
-    if (idx >= rxfh->indir_size)
+    if (idx >= rxfh->rxfh->indir_size)
     {
         ERROR("%s(): too big index '%s'", __FUNCTION__, indir_name);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    return te_string_append(&str_val, "%u", rxfh->rss_config[idx]);
+    return te_string_append(&str_val, "%u", rxfh->rxfh->rss_config[idx]);
 #endif
 }
 
@@ -426,7 +429,7 @@ indir_set(unsigned int gid, const char *oid,
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
-    struct ethtool_rxfh *rxfh;
+    ta_ethtool_rxfh *rxfh;
     unsigned int idx;
     unsigned int value_int;
     te_errno rc;
@@ -447,13 +450,18 @@ indir_set(unsigned int gid, const char *oid,
     if (rc != 0)
         return rc;
 
-    if (idx >= rxfh->indir_size)
+    if (idx >= rxfh->rxfh->indir_size)
     {
         ERROR("%s(): too big index '%s'", __FUNCTION__, indir_name);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    rxfh->rss_config[idx] = value_int;
+    if (value_int != rxfh->rxfh->rss_config[idx])
+    {
+        rxfh->rxfh->rss_config[idx] = value_int;
+        rxfh->indir_change = TRUE;
+    }
+
     return 0;
 #endif
 }
@@ -474,7 +482,7 @@ indir_default_get(unsigned int gid, const char *oid,
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
-    struct ethtool_rxfh *rxfh;
+    ta_ethtool_rxfh *rxfh;
     unsigned int rss_ctx_id;
     te_errno rc;
 
@@ -514,7 +522,7 @@ indir_default_set(unsigned int gid, const char *oid,
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
-    struct ethtool_rxfh *rxfh;
+    ta_ethtool_rxfh *rxfh;
     unsigned int rss_ctx_id;
     unsigned int value_int;
     te_errno rc;
@@ -543,8 +551,7 @@ indir_default_set(unsigned int gid, const char *oid,
     if (rc != 0)
         return rc;
 
-    /* This causes reset to default for RSS indirection table */
-    rxfh->indir_size = 0;
+    rxfh->indir_reset = TRUE;
     return 0;
 #endif
 }
@@ -587,7 +594,7 @@ rss_ctx_list(unsigned int gid,
     return 0;
 #else
     te_string str = TE_STRING_INIT;
-    struct ethtool_rxfh *rxfh = NULL;
+    ta_ethtool_rxfh *rxfh = NULL;
     te_errno rc;
 
     UNUSED(oid);

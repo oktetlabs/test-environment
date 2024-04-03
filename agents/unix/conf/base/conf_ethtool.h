@@ -433,6 +433,20 @@ extern te_errno ta_ethtool_get_string_idx(unsigned int gid,
                                           unsigned int *idx);
 
 #ifdef ETHTOOL_GRSSH
+
+/** Data associated with ETHTOOL_GRSSH/ETHTOOL_SRSSH */
+typedef struct ta_ethtool_rxfh {
+    /** Pointer to ethtool structure passed to ioctl(). */
+    struct ethtool_rxfh *rxfh;
+    /**
+     * Should be set to TRUE if change of RSS indirection table
+     * is required.
+     */
+    te_bool indir_change;
+    /** If TRUE, reset indirection table to default values. */
+    te_bool indir_reset;
+} ta_ethtool_rxfh;
+
 /**
  * Get RX flow hash configuration via ETHTOOL_GRSSH.
  * This may return pointer to cached structure if it was already
@@ -449,7 +463,7 @@ extern te_errno ta_ethtool_get_string_idx(unsigned int gid,
  */
 extern te_errno ta_ethtool_get_rssh(unsigned int gid, const char *if_name,
                                     unsigned int rss_context,
-                                    struct ethtool_rxfh **rxfh);
+                                    ta_ethtool_rxfh **rxfh);
 
 #ifdef ETHTOOL_SRSSH
 /**

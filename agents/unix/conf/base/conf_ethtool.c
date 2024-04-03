@@ -835,15 +835,26 @@ rssh_object_name(te_string *str, const char *if_name,
                             if_name, rss_context);
 }
 
+/* Release memory allocated for ta_ethtool_rxfh structure */
+static void
+free_ta_ethtool_rxfh(void *data)
+{
+    ta_ethtool_rxfh *ta_rxfh = data;
+
+    free(ta_rxfh->rxfh);
+    free(ta_rxfh);
+}
+
 /* See description in conf_ethtool.h */
 te_errno
 ta_ethtool_get_rssh(unsigned int gid, const char *if_name,
                     unsigned int rss_context,
-                    struct ethtool_rxfh **rxfh)
+                    ta_ethtool_rxfh **rxfh)
 {
     te_errno rc;
     te_string obj_name = TE_STRING_INIT_STATIC(MAX_OBJ_NAME_LEN);
-    struct ethtool_rxfh *result = NULL;
+    ta_ethtool_rxfh *result = NULL;
+    struct ethtool_rxfh *got_rxfh = NULL;
     ta_cfg_obj_t *obj;
 
     rc = rssh_object_name(&obj_name, if_name, rss_context);
@@ -858,18 +869,23 @@ ta_ethtool_get_rssh(unsigned int gid, const char *if_name,
         return 0;
     }
 
-    rc = get_ethtool_rssh(if_name, rss_context, &result);
+    rc = get_ethtool_rssh(if_name, rss_context, &got_rxfh);
     if (rc != 0)
     {
-        free(result);
+        free(got_rxfh);
         return rc;
     }
 
+    result = TE_ALLOC(sizeof(*result));
+    result->rxfh = got_rxfh;
+    result->indir_change = FALSE;
+    result->indir_reset = FALSE;
+
     rc = ta_obj_add(TA_OBJ_TYPE_IF_RSSH, te_string_value(&obj_name),
-                    "", gid, result, &free, &obj);
+                    "", gid, result, &free_ta_ethtool_rxfh, &obj);
     if (rc != 0)
     {
-        free(result);
+        free_ta_ethtool_rxfh(result);
         return rc;
     }
 
@@ -885,6 +901,9 @@ ta_ethtool_commit_rssh(unsigned int gid, const char *if_name,
     te_errno rc;
     te_string obj_name = TE_STRING_INIT_STATIC(MAX_OBJ_NAME_LEN);
     ta_cfg_obj_t *obj;
+    ta_ethtool_rxfh *ta_rxfh;
+    te_bool remove_indir_data = FALSE;
+    uint32_t orig_indir_size;
 
     rc = rssh_object_name(&obj_name, if_name, rss_context);
     if (rc != 0)
@@ -899,7 +918,42 @@ ta_ethtool_commit_rssh(unsigned int gid, const char *if_name,
         return TE_ENOENT;
     }
 
-    rc = call_ethtool_ioctl(if_name, ETHTOOL_SRSSH, obj->user_data);
+    ta_rxfh = (ta_ethtool_rxfh *)(obj->user_data);
+    orig_indir_size = ta_rxfh->rxfh->indir_size;
+
+#ifdef ETH_RXFH_INDIR_NO_CHANGE
+    if (!ta_rxfh->indir_change)
+    {
+        ta_rxfh->rxfh->indir_size = ETH_RXFH_INDIR_NO_CHANGE;
+        remove_indir_data = TRUE;
+    }
+#endif
+    if (ta_rxfh->indir_reset)
+    {
+        ta_rxfh->rxfh->indir_size = 0;
+        remove_indir_data = TRUE;
+    }
+
+    if (remove_indir_data)
+    {
+        unsigned int i;
+        uint8_t *p = (uint8_t *)(ta_rxfh->rxfh->rss_config);
+        unsigned int offs = orig_indir_size * sizeof(uint32_t);
+
+        /*
+         * If RSS indirection table data should not be passed in set
+         * request (because the table is reset to default or is not
+         * changed), we should move hash key data to the beginning of
+         * rss_config.
+         */
+        if (offs > 0)
+        {
+            for (i = 0; i < ta_rxfh->rxfh->key_size; i++)
+                p[i] = p[i + offs];
+        }
+    }
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_SRSSH, ta_rxfh->rxfh);
     ta_obj_free(obj);
     return rc;
 }
