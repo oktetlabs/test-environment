@@ -159,6 +159,69 @@ extern const tapi_rdma_perf_read_opts tapi_rdma_perf_read_opts_def;
 /** Default values for options of RDMA perf tests with ATOMIC transactions. */
 extern const tapi_rdma_perf_atomic_opts tapi_rdma_perf_atomic_opts_def;
 
+/** Statistics for BW tests. */
+typedef struct tapi_rdma_perf_bw_stats {
+    /** BW peak in MB/sec.*/
+    double peak;
+    /** BW average in MB/sec. */
+    double average;
+    /** MsgRate in Mpps. */
+    double msg_rate;
+} tapi_rdma_perf_bw_stats;
+
+/** Statistics for LAT tests. */
+typedef struct tapi_rdma_perf_lat_stats {
+    float min_usec; /**< Minimal latency. */
+    float max_usec; /**< Maximum latency. */
+    float typical_usec; /**< Typical latency. */
+    float avg_usec; /**< Average latency. */
+    float stdev_usec; /**< Standard deviation. */
+    float percent_99_00; /**< 99.00 percentile. */
+    float percent_99_90; /**< 99.90 percentile. */
+} tapi_rdma_perf_lat_stats;
+
+/** Statistics for LAT tests when duration option is set. */
+typedef struct tapi_rdma_perf_lat_dur_stats {
+    float avg_usec; /**< Average latency. */
+    float avg_tps; /**< Average transactions per second. */
+} tapi_rdma_perf_lat_dur_stats;
+
+/** Common structure to hold perftest statistics. */
+typedef struct tapi_rdma_perf_stats
+{
+    /** Number of bytes that was sent per each iteration. */
+    unsigned long bytes;
+    /* Number of iterations that was performed. */
+    uint64_t iterations;
+    union {
+        /** BW-specific test stats. */
+        tapi_rdma_perf_bw_stats bw;
+        /** LAT-specific test stats. */
+        tapi_rdma_perf_lat_stats lat;
+        /** LAT test stats when duration option is set. */
+        tapi_rdma_perf_lat_dur_stats lat_dur;
+    };
+    /** Whether some error happened during the statistics parsing. */
+    bool parse_error;
+} tapi_rdma_perf_stats;
+
+/** Performance test results structure. */
+typedef struct tapi_rdma_perf_results {
+    tapi_rdma_perf_stats stats;        /**< Perftest stats report. */
+} tapi_rdma_perf_results;
+
+#define TAPI_RDMA_PERF_RESULTS_INIT { .stats = { 0 } }
+
+/** Type of perftest stats report. */
+typedef enum {
+    /** Report for BW tests. */
+    TAPI_RDMA_PERF_REPORT_BW,
+    /** Report for LAT tests. */
+    TAPI_RDMA_PERF_REPORT_LAT,
+    /** Report for LAT tests when duration option is set. */
+    TAPI_RDMA_PERF_REPORT_LAT_DUR,
+} tapi_rdma_perf_report_type_t;
+
 /** RDMA perf context */
 struct tapi_rdma_perf_app {
     /** Job instance. */
@@ -169,10 +232,15 @@ struct tapi_rdma_perf_app {
     tapi_job_factory_t            *factory;
     /** Name of the test application. */
     char                           name[TAPI_RDMA_PERF_APP_NAME_LEN];
+    /** Type of perftest stats report. */
+    tapi_rdma_perf_report_type_t   report_type;
     /** Arguments that are used when running the tool. */
     te_vec                         args;
     /** Channel for Queue Pair Number retrieval. */
     tapi_job_channel_t            *qp;
+    /** Channel to collect stats. */
+    tapi_job_channel_t            *stats;
+
 };
 typedef struct tapi_rdma_perf_app tapi_rdma_perf_app;
 
@@ -284,16 +352,18 @@ extern te_errno tapi_rdma_perf_app_start(tapi_rdma_perf_app *app);
 
 /**
  * Wait until RDMA perf client-specific app finishes its work.
- * Note, function jumps to cleanup when timeout expires.
  *
- * @param app             RDMA perf app context.
- * @param timeout_s       Time to wait for app results.
- *                        It MUST be big enough to finish client normally.
+ * If the timeout expires, kill the app and receive all available results.
+ *
+ * @param[in]  app             RDMA perf app context.
+ * @param[in]  timeout_s       Time to wait for app results.
+ * @param[out] results         Where app results should be stored.
  *
  * @return Status code.
  */
 extern te_errno tapi_rdma_perf_app_wait(tapi_rdma_perf_app *app,
-                                        int timeout_s);
+                                        int timeout_s,
+                                        tapi_rdma_perf_results *results);
 
 /**
  * Get CMD in string representation that will be used to run RDMA perf app.
