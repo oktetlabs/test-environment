@@ -53,6 +53,25 @@ extern te_errno tapi_cfg_if_rss_hash_key_get(const char *ta,
  * Set RSS hash key (change should be committed with
  * tapi_cfg_if_rss_hash_indir_commit()).
  *
+ * @param ta            Test Agent name.
+ * @param if_name       Network interface name.
+ * @param rss_context   RSS context.
+ * @param buf           Key to set.
+ * @param len           Length of the key in bytes (you can use
+ *                      tapi_cfg_if_rss_hash_key_get() to find out
+ *                      supported key length).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_rss_hash_key_set_local(
+                                             const char *ta,
+                                             const char *if_name,
+                                             unsigned int rss_context,
+                                             const uint8_t *buf, size_t len);
+
+/**
+ * Set RSS hash key.
+ *
  * @param ta            Test Agent name
  * @param if_name       Network interface name
  * @param rss_context   RSS context
@@ -61,7 +80,7 @@ extern te_errno tapi_cfg_if_rss_hash_key_get(const char *ta,
  *
  * @return Status code.
  */
-extern te_errno tapi_cfg_if_rss_hash_key_set_local(
+extern te_errno tapi_cfg_if_rss_hash_key_set(
                                              const char *ta,
                                              const char *if_name,
                                              unsigned int rss_context,

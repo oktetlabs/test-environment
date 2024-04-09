@@ -68,6 +68,42 @@ tapi_cfg_if_rss_hash_key_get(const char *ta,
     return rc;
 }
 
+/* Common code for hash key setting */
+static te_errno
+hash_key_set_common(te_bool local,
+                    const char *ta,
+                    const char *if_name,
+                    unsigned int rss_context,
+                    const uint8_t *buf, size_t len)
+{
+    te_string str = TE_STRING_INIT;
+    te_errno rc;
+    const char *path_fmt;
+
+    path_fmt = "/agent:%s/interface:%s/rss:/context:%u/hash_indir:/hash_key:";
+
+    rc = te_str_hex_raw2str(buf, len, &str);
+    if (rc != 0)
+        return rc;
+
+    if (local)
+    {
+        rc = cfg_set_instance_local_fmt(
+                CFG_VAL(STRING, te_string_value(&str)), path_fmt,
+                ta, if_name, rss_context);
+    }
+    else
+    {
+        rc = cfg_set_instance_fmt(
+                CFG_VAL(STRING, te_string_value(&str)), path_fmt,
+                ta, if_name, rss_context);
+    }
+
+    te_string_free(&str);
+    return rc;
+}
+
+
 /* See description in tapi_cfg_if_rss.h */
 te_errno
 tapi_cfg_if_rss_hash_key_set_local(
@@ -76,19 +112,18 @@ tapi_cfg_if_rss_hash_key_set_local(
                              unsigned int rss_context,
                              const uint8_t *buf, size_t len)
 {
-    te_string str = TE_STRING_INIT;
-    te_errno rc;
+    return hash_key_set_common(TRUE, ta, if_name, rss_context, buf, len);
+}
 
-    rc = te_str_hex_raw2str(buf, len, &str);
-    if (rc != 0)
-        return rc;
-
-    rc = cfg_set_instance_local_fmt(
-            CFG_VAL(STRING, te_string_value(&str)),
-            "/agent:%s/interface:%s/rss:/context:%u/hash_indir:/hash_key:",
-            ta, if_name, rss_context);
-    te_string_free(&str);
-    return rc;
+/* See description in tapi_cfg_if_rss.h */
+te_errno
+tapi_cfg_if_rss_hash_key_set(
+                             const char *ta,
+                             const char *if_name,
+                             unsigned int rss_context,
+                             const uint8_t *buf, size_t len)
+{
+    return hash_key_set_common(FALSE, ta, if_name, rss_context, buf, len);
 }
 
 /* See description in tapi_cfg_if_rss.h */
