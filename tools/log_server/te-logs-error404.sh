@@ -8,19 +8,17 @@
 # Uses the following CGI environment varialbes:
 #   - REQUEST_URI
 #
-
-# FIXME set path to built and installed Test Environment
-#TE_PATH="${TE_INSTALL}/default/bin/"
-
+# Uses the following environment variables:
+#   - TE_INSTALL (mandatory) to find TE log processing tools
+#   - SHARED_URL (optional) shared static files of HTML logs to speed up
+#   - TMPDIR (optoinal) location for temporarily unpacked log files
+#
 # Multi-page HTML logs have static part which is the same for instances.
 # It could be stored on logs server in one place and referenced from
 # all generated logs. It allows to use browser cache efficiently.
-# FIXME set URL to shared files
-#SHARED_URL="https://..."
-
-# FIXME Consider to set custom TMPDIR which is big enough for temporary
-# unpacked log files
-#export TMPDIR=/srv/tmp
+#
+# Required size for TMPDIR depends on size of your logs. Typically 10 Gb
+# is sufficient.
 
 #############################
 # Exit with "Not Found" message.
@@ -37,7 +35,9 @@ function not_found_exit() {
     exit 0
 }
 
-[[ -n "${TE_PATH}" ]] || not_found_exit "TE_PATH is not set"
+[[ -n "${TE_INSTALL}" ]] || not_found_exit "TE_INSTALL is not set"
+
+TE_PATH="${TE_INSTALL}/default/bin/"
 
 case "${REQUEST_URI}" in
     # FIXME Put your logs URL to location mapping here
