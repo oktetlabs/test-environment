@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2024 OKTET Labs Ltd. All rights reserved.
+#
+# Fragments of the sshd configuration to setup dedicated group for SFTP
+# only access to upload logs.
+#
+# Just put it to /etc/ssh/sshd_config.d/ directory.
+#
+# Dedicated users should:
+#  - have no login shell (/usr/sbin/nologin on Debian/Ubuntu)
+#  - be a member of te-logs-sftp
+#  - share incoming directory as home
+#  - have SSH autorized keys in per-user file in /etc/ssh/authorized_keys/
+#
+# Periodic cron job (publish-incoming-logs created from template by setup)
+# should be run on behalf of TE logs user to check incoming directory for
+# new files.
+#
+AuthorizedKeysFile /etc/ssh/authorized_keys/%u .ssh/authorized_keys
+Match Group te-logs-sftp
+	ChrootDirectory %h
+	ForceCommand internal-sftp -u 0737 -p realpath,open,write,close,lstat
+	AllowTcpForwarding no
+	X11Forwarding no
+	PasswordAuthentication no
