@@ -1,0 +1,18 @@
+#!/bin/bash -e
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2024 OKTET Labs Ltd. All rights reserved.
+#
+# Wrapper script for using publish-logs-unpack.sh script to
+# save and publish logs.
+
+BUBLIK_URL="@@BUBLIK_URL@@"
+LOGS_URL="@@LOGS_URL@@"
+LOGS_DIR="@@LOGS_DIR@@"
+LOGS_INCOMING="@@LOGS_INCOMING@@"
+LOGS_BAD="@@LOGS_BAD@@"
+
+tools_bin="@@TE_INSTALL@@/default/bin/"
+import_url="${BUBLIK_BASE_URL}/importruns/source/?url=${LOGS_URL}/"
+
+"${tools_bin}/publish-logs-unpack.sh" -s "${LOGS_DIR}" \
+    -b "${import_url}" -i "${LOGS_INCOMING}" -B "${LOGS_BAD}" "$@"

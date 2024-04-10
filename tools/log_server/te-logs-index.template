@@ -1,0 +1,9 @@
+#!/bin/bash -e
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2024 OKTET Labs Ltd. All rights reserved.
+#
+# CGI script to provide index of log storage directories.
+
+tools_bin="@@TE_INSTALL@@/default/bin/"
+
+"${tools_bin}/te-logs-index.sh" "$@"

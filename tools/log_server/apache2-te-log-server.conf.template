@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2024 OKTET Labs Ltd. All rights reserved.
+
+        ScriptAlias "/te-logs-cgi-bin/" "@@LOGS_CGI_BIN@@/"
+        <Directory @@LOGS_CGI_BIN@@>
+            AllowOverride None
+            Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
+            Require all granted
+        </Directory>
+        Alias "@@LOGS_URL_PATH@@" "@@LOGS_DIR@@"
+        <Directory "@@LOGS_DIR@@">
+            Require all granted
+            ErrorDocument 404 /te-logs-cgi-bin/te-logs-error404
+            DirectoryIndex index.html /te-logs-cgi-bin/te-logs-index
+        </Directory>
