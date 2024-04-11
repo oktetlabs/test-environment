@@ -31,8 +31,8 @@ The script must be run with superuser rights (under root or using sudo).
 Options:
     -h                  show usage
     -n                  dry run, log actions instead of execution
-    -u <user>           user to own logs
-    -H <user-home>      user home directory
+    -u <user>           new user to own logs
+    -H <user-home>      new user home directory
     -s <storage-dir>    logs storage directory
     -g <group>          Web server group
     -B <bublik-url>     Bublik root URL
