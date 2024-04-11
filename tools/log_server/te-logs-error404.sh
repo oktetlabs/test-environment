@@ -64,7 +64,7 @@ get_item_cmd=()
 # could be generated via Web server
 get_item_cmd+=(nice)
 get_item_cmd+=("${TE_PATH}"/rgt-log-get-item)
-[[ -n "${SHARED_URL}" ]] && get_item_cmd+=(--shared-url="${SHARED_URL}")
+[[ -n "${SHARED_URL}" ]] && get_item_cmd+=(--shared-url="${SHARED_URL}/")
 [[ -n "${docs_url}" ]] && get_item_cmd+=(--docs-url="${docs_url}")
 # Try to fix generated files permissions
 get_item_cmd+=(--fix-permissions)
