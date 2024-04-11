@@ -4,6 +4,6 @@
 #
 # CGI script to provide index of log storage directories.
 
-tools_bin="@@TE_INSTALL@@/default/bin/"
+tools_bin="@@TE_INSTALL@@/default/bin"
 
 "${tools_bin}/te-logs-index.sh" "$@"
