@@ -8,6 +8,6 @@
 export TE_INSTALL="@@TE_INSTALL@@"
 export SHARED_URL="@@LOGS_SHARED_URL@@"
 
-tools_bin=${TE_INSTALL}/default/bin/"
+tools_bin="${TE_INSTALL}/default/bin/"
 
 "${tools_bin}/te-logs-error404.sh" "$@"
