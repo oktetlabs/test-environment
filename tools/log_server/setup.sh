@@ -239,5 +239,16 @@ done
 "${USER_DO[@]}" chmod g+rws "${LOGS_INCOMING}" \
     || fail "Cannot tune incoming directory mode"
 
+if which apt >/dev/null ; then
+    "${DRY_RUN[@]}" apt install apache2 curl jq \
+        || fail "Cannot install packages"
+
+    "${DRY_RUN[@]}" a2enmod cgid \
+        || fail "Cannot enable Apache2 modules"
+else
+    echo "Install Apache2, curl and jq"
+    echo "Enable Apache2 module cgid"
+fi
+
 echo "SUCCESS"
 exit 0
