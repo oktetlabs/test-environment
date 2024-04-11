@@ -12,7 +12,7 @@ LOGS_INCOMING="@@LOGS_INCOMING@@"
 LOGS_BAD="@@LOGS_BAD@@"
 
 tools_bin="@@TE_INSTALL@@/default/bin/"
-import_url="${BUBLIK_BASE_URL}/importruns/source/?url=${LOGS_URL}/"
+import_url="${BUBLIK_URL}/importruns/source/?url=${LOGS_URL}/"
 
 "${tools_bin}/publish-logs-unpack.sh" -s "${LOGS_DIR}" \
     -b "${import_url}" -i "${LOGS_INCOMING}" -B "${LOGS_BAD}" "$@"
