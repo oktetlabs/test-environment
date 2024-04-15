@@ -87,6 +87,16 @@ static const te_enum_map tapi_trex_iom_mapping[] = {
     TE_ENUM_MAP_END
 };
 
+/** Mapping of possible values for tapi_trex_opt::*-so options. */
+static const te_enum_map tapi_trex_so_mapping[] = {
+    {.name = "--mlx4-so", .value = TAPI_TREX_SO_MLX4},
+    {.name = "--mlx5-so", .value = TAPI_TREX_SO_MLX5},
+    {.name = "--mlx4-so --mlx5-so", .value = TAPI_TREX_SO_MLX4_MLX5},
+    {.name = "--ntacc-so", .value = TAPI_TREX_SO_NTACC},
+    {.name = "--bnxt-so", .value = TAPI_TREX_SO_BNXT},
+    TE_ENUM_MAP_END
+};
+
 /* Possible TRex command line arguments. */
 static const tapi_job_opt_bind trex_args_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_DUMMY("-f"),
@@ -113,6 +123,7 @@ static const tapi_job_opt_bind trex_args_binds[] = TAPI_JOB_OPT_SET(
                       tapi_trex_verbose_mapping),
     TAPI_JOB_OPT_ENUM("--iom", FALSE, tapi_trex_opt, iom,
                       tapi_trex_iom_mapping),
+    TAPI_JOB_OPT_ENUM(NULL, FALSE, tapi_trex_opt, so, tapi_trex_so_mapping),
     TAPI_JOB_OPT_UINT_T("-w", FALSE, NULL, tapi_trex_opt, init_wait_sec),
     TAPI_JOB_OPT_STRING("--prefix", FALSE, tapi_trex_opt, instance_prefix)
 );
@@ -160,6 +171,7 @@ const tapi_trex_opt tapi_trex_default_opt = {
     .use_sleep = FALSE,
     .verbose  = TAPI_TREX_VERBOSE_NONE,
     .iom = TAPI_TREX_IOM_NONE,
+    .so = TAPI_TREX_SO_NONE,
     .init_wait_sec = TAPI_JOB_OPT_UINT_UNDEF,
     .instance_prefix = NULL,
     .clients = NULL,

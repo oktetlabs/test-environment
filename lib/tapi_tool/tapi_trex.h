@@ -198,6 +198,22 @@ typedef enum tapi_trex_iom {
     TAPI_TREX_IOM_SHORT,
 } tapi_trex_iom_t;
 
+/** Representation of possible values for tapi_trex_opt::*-so options. */
+typedef enum tapi_trex_so {
+    /** Option is omitted */
+    TAPI_TREX_SO_NONE = TAPI_JOB_OPT_ENUM_UNDEF,
+    /** mlx4 share object should be loaded. */
+    TAPI_TREX_SO_MLX4 = 0,
+    /** mlx5 share object should be loaded */
+    TAPI_TREX_SO_MLX5,
+    /** Both mlx4/mlx5 share object should be loaded. */
+    TAPI_TREX_SO_MLX4_MLX5,
+    /** Napatech 3GD should be running. */
+    TAPI_TREX_SO_NTACC,
+    /** bnxt share object should be loaded */
+    TAPI_TREX_SO_BNXT,
+} tapi_trex_so_t;
+
 /** TRex interface description. */
 typedef struct tapi_trex_interface tapi_trex_interface;
 
@@ -343,6 +359,8 @@ typedef struct tapi_trex_opt {
     tapi_trex_verbose_t verbose;
     /** IO mode for server output.*/
     tapi_trex_iom_t iom;
+    /** Activate one of the --*-so options.*/
+    tapi_trex_so_t so;
     /** Wait a few seconds between init of interfaces and sending traffic. */
     tapi_job_opt_uint_t init_wait_sec;
     /**
