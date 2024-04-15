@@ -178,6 +178,7 @@ const tapi_trex_opt tapi_trex_default_opt = {
     .servers = NULL,
     .astf_vars = NULL,
     .driver = NULL,
+    .cfg_template = NULL,
     .astf_template = NULL,
     .trex_exec = NULL
 };
@@ -833,6 +834,7 @@ tapi_trex_gen_yaml_config(const char *ta, const tapi_trex_opt *opt,
                           const char *yaml_config_path)
 {
     te_errno rc;
+    const char *cfg_templ;
 
     te_vec clients = TE_VEC_INIT(const tapi_trex_client_config *);
     te_vec servers = TE_VEC_INIT(const tapi_trex_server_config *);
@@ -888,8 +890,10 @@ tapi_trex_gen_yaml_config(const char *ta, const tapi_trex_opt *opt,
     te_vec_free(&clients);
     te_vec_free(&servers);
 
-    rc = tapi_file_expand_kvpairs(ta, default_trex_cfg, NULL,
+    cfg_templ = opt->cfg_template != NULL ? opt->cfg_template : default_trex_cfg;
+    rc = tapi_file_expand_kvpairs(ta, cfg_templ, NULL,
                                   &kvpairs, yaml_config_path);
+
     if (rc != 0)
         ERROR("Failed to create TRex config '%s'", yaml_config_path);
 

@@ -382,6 +382,25 @@ typedef struct tapi_trex_opt {
     tapi_trex_server_config **servers;
 
     /**
+     * TRex configuration template.
+     *
+     * If @c NULL, the template from this example will be used:
+     * @code{.yaml}
+     *
+     * - port_limit      : ${#IFACES}\n"
+     *   version         : 2\n"
+     *   interfaces: [${IFACES[, ]}]\n"
+     *   port_info:\n"
+     * ${PORTINFO_IP*    - ip${COLON} ${PORTINFO_IP[${}]}\n"
+     *       default_gw${COLON} ${PORTINFO_DEFAULT_GW[${}]}\n}"
+     * ${PORTINFO_DST_MAC*    - dest_mac${COLON} ${PORTINFO_DST_MAC[${}]}\n"
+     *       src_mac${COLON} ${PORTINFO_SRC_MAC[${}]}\n}";
+     *
+     * @endcode
+     */
+    const char *cfg_template;
+
+    /**
      * Extensions for @p tapi_trex_opt::astf_template.
      * You can replace some fields with TAPI TRex environment variables.
      *
