@@ -5,7 +5,7 @@
  * TA side Logger functionality for
  * forked TA processes and newly created threads, internal definitions.
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2004-2024 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_LIB_LOGFORK_INT_H__
@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 /** Maximum length of the logging message */
-#define LOGFORK_MAXLEN   4096
+#define LOGFORK_MAXLEN   16384
 
 /** Maximum length of the Logger user name or logfork user name */
 #define LOGFORK_MAXUSER  32
