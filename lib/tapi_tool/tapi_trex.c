@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. */
+/* Copyright (C) 2023-2024 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief TAPI to manage Cisco TRex
  *
@@ -49,6 +49,55 @@
 #define TAPI_TREX_M_TRAFF_DUR_FLT \
     "\\s+m_traffic_duration\\s+\\|\\s+([0-9]+\\.[0-9]{2})\\s+sec\\s+\\|" \
     "\\s+([0-9]+\\.[0-9]{2})\\s+sec\\s+\\|\\s+measured traffic duration"
+
+#define TAPI_TREX_PORT_STAT_ONE_COUNTER_FLT "\\s+\\|\\s+([0-9]+)"
+#define TAPI_TREX_PORT_STAT_TIME_FLT "\\s+:\\s+([0-9]+\\.[0-9]+)\\s+sec"
+
+typedef enum tapi_trex_val_type {
+    TAPI_TREX_VAL_TYPE_UINT64,
+    TAPI_TREX_VAL_TYPE_DOUBLE,
+} tapi_trex_val_type;
+
+typedef struct tapi_trex_port_stat_type {
+    const char *name;
+    tapi_trex_val_type type;
+    size_t offset;
+} tapi_trex_port_stat_type;
+
+static const tapi_trex_port_stat_type port_stat_types[] = {
+    [TAPI_TREX_PORT_STAT_OPKTS] = {
+        .name = "opackets",
+        .type = TAPI_TREX_VAL_TYPE_UINT64,
+        .offset = offsetof(struct tapi_trex_port_stat, opackets) },
+    [TAPI_TREX_PORT_STAT_OBYTES] = {
+        .name = "obytes",
+        .type = TAPI_TREX_VAL_TYPE_UINT64,
+        .offset = offsetof(struct tapi_trex_port_stat, obytes) },
+    [TAPI_TREX_PORT_STAT_IPKTS] = {
+        .name = "ipackets",
+        .type = TAPI_TREX_VAL_TYPE_UINT64,
+        .offset = offsetof(struct tapi_trex_port_stat, ipackets) },
+    [TAPI_TREX_PORT_STAT_IBYTES] = {
+        .name = "ibytes",
+        .type = TAPI_TREX_VAL_TYPE_UINT64,
+        .offset = offsetof(struct tapi_trex_port_stat, ibytes) },
+    [TAPI_TREX_PORT_STAT_IERRS] = {
+        .name = "ierrors",
+        .type = TAPI_TREX_VAL_TYPE_UINT64,
+        .offset = offsetof(struct tapi_trex_port_stat, ierrors) },
+    [TAPI_TREX_PORT_STAT_OERRS] = {
+        .name = "oerrors",
+        .type = TAPI_TREX_VAL_TYPE_UINT64,
+        .offset = offsetof(struct tapi_trex_port_stat, oerrors) },
+    [TAPI_TREX_PORT_STAT_CURRENT_TIME] = {
+        .name = "current time",
+        .type = TAPI_TREX_VAL_TYPE_DOUBLE,
+        .offset = offsetof(struct tapi_trex_port_stat, curr_time) },
+    [TAPI_TREX_PORT_STAT_TEST_DURATION] = {
+        .name = "test duration",
+        .type = TAPI_TREX_VAL_TYPE_DOUBLE,
+        .offset = offsetof(struct tapi_trex_port_stat, test_duration) },
+};
 
 /** TRex interface description. */
 struct tapi_trex_interface {
@@ -963,6 +1012,117 @@ tapi_trex_setup_yaml_config_path_setup(te_vec *args)
     return yaml_config_path;
 }
 
+/** Return the number of ports actually used by all clients and servers. */
+static unsigned int
+tapi_trex_ports_count(const tapi_trex_opt *opt)
+{
+    unsigned int count = 0;
+    tapi_trex_client_config **clt;
+    tapi_trex_server_config **srv;
+
+    for (clt = opt->clients; *clt != NULL; clt++)
+    {
+        if ((*clt)->common.interface != NULL)
+            count++;
+    }
+
+    for (srv = opt->servers; *srv != NULL; srv++)
+    {
+        if ((*srv)->common.interface != NULL)
+            count++;
+    }
+
+    return count;
+}
+
+/**
+ * Attach (dynamically) filters to capture per port statistics.
+ * It makes sense to do this when the '--iom 1' option is enabled.
+ */
+static te_errno
+tapi_trex_port_stat_flts_attach(tapi_trex_app *app, const tapi_trex_opt *opt)
+{
+    te_errno rc;
+    unsigned int i;
+    unsigned int j;
+    unsigned int n_flts;
+    unsigned int n_ports;
+    tapi_trex_port_stat_flt *flt;
+    tapi_trex_port_stat_flt **flts = NULL;
+    te_string buf = TE_STRING_INIT;
+    te_string int_flts = TE_STRING_INIT;
+
+    n_ports = tapi_trex_ports_count(opt);
+    /* The integer filters depend on the number of the ports used */
+    for (i = 0; i < n_ports; i++)
+        te_string_append(&int_flts, "%s", TAPI_TREX_PORT_STAT_ONE_COUNTER_FLT);
+
+    n_flts = TE_ARRAY_LEN(port_stat_types) * n_ports;
+    flts = TE_ALLOC(sizeof(*flts) * (n_flts + 1 /* NULL terminated */));
+
+    for (i = 0; i < TE_ARRAY_LEN(port_stat_types); i++)
+    {
+        for (j = 0; j < n_ports; j++)
+        {
+            flt = TE_ALLOC(sizeof(*flt));
+            flt->param = i;
+            flt->index = j;
+
+            te_string_reset(&buf);
+            te_string_append(&buf, "port %u %s", flt->index,
+                             port_stat_types[flt->param].name);
+            rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
+                                        buf.ptr, TRUE, 0, &flt->filter);
+            if (rc != 0)
+            {
+                ERROR("%s() failed to attach '%s' filter: %r", __func__,
+                      buf.ptr, rc);
+                goto cleanup;
+            }
+
+            te_string_reset(&buf);
+            switch (flt->param) {
+                case TAPI_TREX_PORT_STAT_CURRENT_TIME:
+                case TAPI_TREX_PORT_STAT_TEST_DURATION:
+                    te_string_append(&buf, "%s%s",
+                                     port_stat_types[flt->param].name,
+                                     TAPI_TREX_PORT_STAT_TIME_FLT);
+                    rc = tapi_job_filter_add_regexp(flt->filter,
+                                                    buf.ptr, 1);
+                    break;
+
+                default:
+                    te_string_append(&buf, "%s%s",
+                                     port_stat_types[flt->param].name,
+                                     int_flts.ptr);
+                    rc = tapi_job_filter_add_regexp(flt->filter,
+                                                    buf.ptr, flt->index + 1);
+                    break;
+            }
+            if (rc != 0)
+            {
+                ERROR("%s() failed to add regexp '%s': %r", __func__,
+                      buf.ptr, rc);
+                goto cleanup;
+            }
+            flts[i * n_ports + j] = flt;
+        }
+    }
+    app->per_port_stat_flts.flts = flts;
+    app->per_port_stat_flts.n_ports = n_ports;
+
+cleanup:
+    te_string_free(&buf);
+    te_string_free(&int_flts);
+    if (rc != 0 && flts != NULL)
+    {
+        for (i = 0; flts[i] != NULL; i++)
+            free(flts[i]);
+        free(flts);
+    }
+    return rc;
+}
+
 /* See description in tapi_trex.h */
 te_errno
 tapi_trex_create(tapi_job_factory_t *factory,
@@ -1098,6 +1258,18 @@ tapi_trex_create(tapi_job_factory_t *factory,
         free(yaml_config_path);
         free(new_app);
         return rc;
+    }
+
+    if (opt->iom == TAPI_TREX_IOM_NORMAL)
+    {
+        rc = tapi_trex_port_stat_flts_attach(new_app, opt);
+        if (rc != 0)
+        {
+            te_vec_deep_free(&args);
+            free(yaml_config_path);
+            free(new_app);
+            return rc;
+        }
     }
 
     workdir = te_dirname(opt->trex_exec);
@@ -1386,6 +1558,109 @@ get_single_double(tapi_job_channel_t *filter, double *value)
     return rc;
 }
 
+/** Convert a string to a number. */
+static te_errno
+tapi_trex_str_to_val(const char *str, tapi_trex_val_type type, void *val)
+{
+    switch (type) {
+        case TAPI_TREX_VAL_TYPE_UINT64:
+            return te_str_to_uint64(str, 10, val);
+            break;
+
+        case TAPI_TREX_VAL_TYPE_DOUBLE:
+            return te_strtod(str, val);
+            break;
+
+        default:
+            return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+}
+
+/** Fill in the report with port statistics data. */
+static te_errno
+tapi_trex_get_report_port_stat(tapi_trex_app *app, tapi_trex_report *report)
+{
+    te_errno rc = 0;
+    unsigned int i;
+    unsigned int res_len;
+    unsigned int n_bufs = 0;
+    unsigned int n_ports;
+    tapi_trex_port_stat_flt **flt;
+    tapi_job_buffer_t *bufs = NULL;
+    tapi_trex_port_stat **res = NULL;
+
+    n_ports = app->per_port_stat_flts.n_ports;
+
+    for (flt = app->per_port_stat_flts.flts; *flt != NULL; flt++)
+    {
+        rc = tapi_job_receive_many(TAPI_JOB_CHANNEL_SET((*flt)->filter),
+                                   TAPI_TREX_TIMEOUT_MS, &bufs, &n_bufs);
+        if (rc != 0)
+        {
+            ERROR("%() failed to read data from filter: %r", __func__, rc);
+            goto cleanup;
+        }
+
+        if (res == NULL)
+        {
+            /* the set of messages ends with eos. */
+            res_len = n_bufs;
+            if (res_len < 2)
+            {
+                ERROR("%s() there are no per port statistics", __func__);
+                goto cleanup;
+            }
+
+            res = TE_ALLOC(sizeof(*res) * res_len);
+            for (i = 0; i < (res_len - 1 /* NULL terminated */); i++)
+            {
+                res[i] = TE_ALLOC(sizeof(**res) * n_ports);
+            }
+        }
+
+        if (n_bufs != res_len)
+        {
+            ERROR("%s() unexpected len of buffers %u, expected %u",
+                  __func__, n_bufs, res_len);
+            rc = TE_RC(TE_TAPI, TE_ERANGE);
+            goto cleanup;
+        }
+        for (i = 0; i < n_bufs; i++)
+        {
+            if (i == n_bufs - 1)
+            {
+                if (!bufs[i].eos)
+                {
+                    ERROR("%s() the expected eos was not found (%s)",
+                          __func__, bufs[i].data.ptr);
+                    rc = TE_RC(TE_TAPI, TE_ERANGE);
+                    goto cleanup;
+                }
+                break;
+            }
+            else if (bufs[i].eos)
+            {
+                ERROR("%s() the unexpected eos was not found (%s)", __func__);
+                rc = TE_RC(TE_TAPI, TE_EINVAL);
+                goto cleanup;
+            }
+            rc = tapi_trex_str_to_val(bufs[i].data.ptr, port_stat_types[(*flt)->param].type,
+                                      (void *)&res[i][(*flt)->index] + port_stat_types[(*flt)->param].offset);
+            if (rc != 0)
+                goto cleanup;
+        }
+
+        tapi_job_buffers_free(bufs, n_bufs);
+        bufs = NULL;
+    }
+    report->per_port_stat.ports = res;
+    report->per_port_stat.n_ports = n_ports;
+
+cleanup:
+    tapi_job_buffers_free(bufs, n_bufs);
+    return rc;
+}
+
 /* See description in tapi_trex.h */
 te_errno
 tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
@@ -1421,6 +1696,11 @@ tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
         return rc;
 
     rc = get_single_double(app->m_traff_dur_srv_flt, &report->m_traff_dur_srv);
+    if (rc != 0)
+        return rc;
+
+    if (app->per_port_stat_flts.flts != NULL)
+        rc = tapi_trex_get_report_port_stat(app, report);
 
     return rc;
 }
@@ -1463,10 +1743,20 @@ tapi_trex_report_mi_log(const tapi_trex_report *report)
 te_errno
 tapi_trex_destroy_report(tapi_trex_report *report)
 {
+    tapi_trex_port_stat **it;
+
     if (report == NULL)
     {
         ERROR("TRex report to destroy can't be NULL");
         return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (report->per_port_stat.ports != NULL)
+    {
+        for (it = report->per_port_stat.ports; *it != NULL; it++)
+            free(*it);
+
+        free(report->per_port_stat.ports);
     }
 
     return 0;

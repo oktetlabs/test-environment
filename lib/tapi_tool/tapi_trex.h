@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. */
+/* Copyright (C) 2023-2024 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief TAPI to manage Cisco TRex
  *
@@ -151,6 +151,56 @@ extern "C" {
 
 /**@}*/
 
+/** List of parameters in per port statistics. */
+typedef enum tapi_trex_port_stat_enum {
+    TAPI_TREX_PORT_STAT_OPKTS = 0,
+    TAPI_TREX_PORT_STAT_OBYTES,
+    TAPI_TREX_PORT_STAT_IPKTS,
+    TAPI_TREX_PORT_STAT_IBYTES,
+    TAPI_TREX_PORT_STAT_IERRS,
+    TAPI_TREX_PORT_STAT_OERRS,
+    TAPI_TREX_PORT_STAT_CURRENT_TIME,
+    TAPI_TREX_PORT_STAT_TEST_DURATION,
+} tapi_trex_port_stat_enum;
+
+/** TRex port stat filter. */
+typedef struct tapi_trex_port_stat_flt {
+    /* Single port stat filter */
+    tapi_job_channel_t *filter;
+    /** Port stat param. */
+    tapi_trex_port_stat_enum param;
+    /** Index of the port. */
+    unsigned int index;
+} tapi_trex_port_stat_flt;
+
+/** TRex per port stat filters. */
+typedef struct tapi_trex_per_port_stat_flts {
+    /** List of port stat filters (@c NULL terminated). */
+    tapi_trex_port_stat_flt **flts;
+    /** Number of port used in filters. */
+    unsigned int n_ports;
+} tapi_trex_per_port_stat_flts;
+
+/** TRex statistics for a single port. */
+typedef struct tapi_trex_port_stat {
+    uint64_t opackets;
+    uint64_t obytes;
+    uint64_t ipackets;
+    uint64_t ibytes;
+    uint64_t ierrors;
+    uint64_t oerrors;
+    double curr_time;
+    double test_duration;
+} tapi_trex_port_stat;
+
+/** TRex per-port statistics. */
+typedef struct tapi_trex_per_port_stat {
+    /** Per port statistics (@c NULL terminated list). */
+    tapi_trex_port_stat **ports;
+    /** Number of ports in each item. */
+    unsigned int n_ports;
+} tapi_trex_per_port_stat;
+
 /** TRex tool information. */
 typedef struct tapi_trex_app {
     /** TAPI job handle. */
@@ -174,6 +224,8 @@ typedef struct tapi_trex_app {
     tapi_job_channel_t *m_traff_dur_cl_flt;
     /** m_traffic_duration server filter. */
     tapi_job_channel_t *m_traff_dur_srv_flt;
+    /** Per port stat filters */
+    tapi_trex_per_port_stat_flts per_port_stat_flts;
 } tapi_trex_app;
 
 /** Representation of possible values for tapi_trex_opt::verbose option. */
@@ -577,6 +629,8 @@ typedef struct tapi_trex_report {
     double m_traff_dur_cl;
     /** Diration of server traffic, sec. */
     double m_traff_dur_srv;
+    /** Per port statistics. */
+    tapi_trex_per_port_stat per_port_stat;
 } tapi_trex_report;
 
 
