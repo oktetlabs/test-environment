@@ -210,6 +210,8 @@ Generic options:
 
   --builder-debug               Be more verbose when build
 
+  --build-from-scratch          Build everything from scratch
+
   --build-only                  Build TE, do not run RCF and Configurator,
                                 build but do not run Test Suites
 
@@ -470,6 +472,7 @@ test -z "${TE_BUILD_COLORIZE:-}" && TE_BUILD_COLORIZE="no"
 CS_OPTS=
 # Building options
 BUILDER_DEBUG=
+BUILDER_FROM_SCRATCH=
 BUILD_MAKEFLAGS=
 PROFILE_BUILD=
 
@@ -807,6 +810,8 @@ process_opts()
             --cs-*) CS_OPTS="${CS_OPTS} --${1#--cs-}" ;;
 
             --builder-debug)    BUILDER_DEBUG=yes ;;
+
+            --build-from-scratch)   BUILDER_FROM_SCRATCH=yes ;;
 
             --build-only) RCF= ; CS=
                           TESTER_OPTS="${TESTER_OPTS} --no-run --no-cs" ;;
@@ -1188,6 +1193,7 @@ export TE_EXT_LIBS_FILE="${TE_BUILD}/te_ext_libs_files"
 touch "${TE_EXT_LIBS_FILE}"
 
 export BUILDER_DEBUG
+export BUILDER_FROM_SCRATCH
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 if test -n "$BUILDER" ; then
     if test -n "${QUIET}" ; then

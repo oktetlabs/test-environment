@@ -40,7 +40,7 @@ fi
 
 pushd "${SOURCES}" >/dev/null
 if ! ${MESON_BUILD} && test -e configure.ac ; then
-    if test ! -e configure ; then
+    if test ! -e configure -o -n "${BUILDER_FROM_SCRATCH}" ; then
         aclocal -I ${TE_BASE}/auxdir || exit 1 ;
         if cat configure.ac | grep -q AC_CONFIG_HEADER ; then
             autoheader || exit 1 ;
@@ -53,10 +53,22 @@ popd >/dev/null
 
 if test -n "${TE_BUILD}" ; then
     cd "${TE_BUILD}"
+    if test -n "${BUILDER_FROM_SCRATCH}" ; then
+        echo "Removing suites/${SUITE}"
+        rm -rf "suites/${SUITE}"
+    fi
     mkdir -p "suites/${SUITE}"
     cd "suites/${SUITE}"
 else
     cd "${SOURCES}"
+    if test -n "${BUILDER_FROM_SCRATCH}" ; then
+        if ${MESON_BUILD} ; then
+            rm -f meson.nv_args meson.args build.ninja
+        else
+            test -e Makefile && make clean >/dev/null
+            test -e configure && rm -f Makefile
+        fi
+    fi
 fi
 
 mkdir -p ${TE_INSTALL_SUITE}
