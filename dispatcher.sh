@@ -225,12 +225,6 @@ Generic options:
                                 Note that log colourising only works with
                                 Ninja 1.9 or later.
 
-  --build-ta-none               Don't build Test Agents.
-  --build-ta-missing            Build only new Test Agents.
-  --build-ta-all                Force build all Test Agents.
-  --build-ta-for=<hostname>     Rebuild agent (and all the libraries) used for <hostname>.
-  --build-ta-rm-lock            Remove lock from previous agent build even
-                                if it is still in progress.
   --profile-build=<logfile>     Gather timings for the build process into <logfile>
 
   --no-rcf-cc-simple            Do not execute simple RCF consistency checks.
@@ -497,8 +491,6 @@ TESTER=yes
 RCF=yes
 CS=yes
 LOGGER=yes
-BUILD_TA=all
-BUILD_TA_FOR=
 
 # Whether Test Suite should be built
 BUILD_TS=yes
@@ -658,7 +650,6 @@ process_opts()
 
             -q) QUIET=yes ;;
             -n) BUILDER= ; TESTER_OPTS="${TESTER_OPTS} --nobuild"
-                BUILD_TA= ; BUILD_TA_FOR=
                 ;;
             --live-log)  LIVE_LOG=yes ; TESTER_OPTS="-q ${TESTER_OPTS}" ;;
 
@@ -680,7 +671,7 @@ process_opts()
                          VG_LOGGER=yes
                          VG_TESTER=yes ;;
 
-            --no-builder) BUILDER= ; BUILD_TA= ; BUILD_TA_FOR= ;;
+            --no-builder) BUILDER= ;;
             --no-nuts-build) BUILD_NUTS= ;;
             --no-tester) TESTER= ;;
             --no-cs) CS= ;;
@@ -825,12 +816,6 @@ process_opts()
                 [ "${num}" = "$1" ] && num=
                 BUILD_MAKEFLAGS="-j${num}"
                 ;;
-
-            --build-ta-none)    BUILD_TA= ;;
-            --build-ta-missing) BUILD_TA=missing ;;
-            --build-ta-all)     BUILD_TA=all ;;
-            --build-ta-rm-lock) BUILD_TA_RM=yes ;;
-            --build-ta-for=*)   BUILD_TA_FOR="${BUILD_TA_FOR} ${1#--build-ta-for=}" ;;
 
             --profile-build=*)
                 PROFILE_BUILD=te_profile_build
@@ -1204,10 +1189,7 @@ touch "${TE_EXT_LIBS_FILE}"
 
 export BUILDER_DEBUG
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
-if test -n "$BUILDER" -o -n "$BUILD_TA" -o -n "$BUILD_TA_FOR" ; then
-    export BUILD_TA=$BUILD_TA
-    export BUILD_TA_FOR=$BUILD_TA_FOR
-    export BUILD_TA_RM=$BUILD_TA_RM
+if test -n "$BUILDER" ; then
     if test -n "${QUIET}" ; then
         $PROFILE_BUILD "${TE_BASE}"/engine/builder/te_meson_build \
             "${CONF_BUILDER}" >"${TE_BUILD_LOG}" || exit_with_log
