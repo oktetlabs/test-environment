@@ -23,6 +23,53 @@
     // root node.
     renderjson.set_show_to_level(1);
 
+    var yaxis_superscript_mapping = new Map([["0", "\u2070"],
+                                             ["1", "\u00B9"],
+                                             ["2", "\u00B2"],
+                                             ["3", "\u00B3"],
+                                             ["4", "\u2074"],
+                                             ["5", "\u2075"],
+                                             ["6", "\u2076"],
+                                             ["7", "\u2077"],
+                                             ["8", "\u2078"],
+                                             ["9", "\u2079"],
+                                             ["-", "\u207B"]]);
+
+
+    //
+    // A callback to label Y axis using proper engineering notation.
+    //
+    // Unlike Number.toExponential(), this function would produce
+    // exponent values that are multiple of three. Also the function
+    // converts the digits of the exponent to superscript forms.
+    //
+    // One deviation from the true engineering notation is that values
+    // in ranges (0.00001..0.0001] and [10000..100000) are represented
+    // as is, not as Nx10^3 or Nx10^-3 because the former seems to be
+    // easier to read than the latter.
+    //
+    // @param value    Numeric value of a label
+    // @param index    Ordinal index of a label (unused)
+    // @param values   Array of category labels (unused)
+    //
+    // @return A string in engineering
+    function graph_yaxis_label(value, index, values)
+    {
+        var absval = Math.abs(value)
+
+        if (absval == 0.0 || (absval < 1e5 && absval > 1e-5))
+            return absval.toString()
+        else
+        {
+            var exp = Math.trunc(Math.log10(absval) / 3) * 3
+            var mantissa = value / Math.pow(10, exp)
+
+            return mantissa.toString() + "\u00D710" +
+                [...exp.toString()].map(ch => yaxis_superscript_mapping.get(ch)).join("")
+        }
+    }
+
+
     //
     // Create a graph in which array of numbers is shown as
     // a line. Each element of array is represented as a point
@@ -111,7 +158,8 @@
                             }],
                             yAxes: [{
                                 ticks: {
-                                    fontSize: 15
+                                    fontSize: 15,
+                                    callback: graph_yaxis_label
                                 }
                             }],
                         },
