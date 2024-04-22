@@ -126,6 +126,7 @@ static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
     [TE_MI_MEAS_IOPS] = TE_MI_MEAS_BASE_UNIT_IOPS,
     [TE_MI_MEAS_LOADAVG] = TE_MI_MEAS_BASE_UNITLESS,
     [TE_MI_MEAS_PERCENTAGE] = TE_MI_MEAS_BASE_UNIT_PERCENTAGE,
+    [TE_MI_MEAS_TIME] = TE_MI_MEAS_BASE_UNIT_SECOND,
 };
 
 static const te_enum_map meas_base_unit_names[] = {
@@ -174,6 +175,7 @@ static const te_enum_map meas_type_names[] = {
     {.value = TE_MI_MEAS_IOPS, .name = "iops"},
     {.value = TE_MI_MEAS_LOADAVG, .name = "load-average"},
     {.value = TE_MI_MEAS_PERCENTAGE, .name = "%"},
+    {.value = TE_MI_MEAS_TIME, .name = "time"},
     TE_ENUM_MAP_END
 };
 
@@ -717,6 +719,9 @@ te_mi_meas_type2descr(te_mi_meas_type type)
 
         case TE_MI_MEAS_PERCENTAGE:
             return "Percentage value";
+
+        case TE_MI_MEAS_TIME:
+            return "Time in seconds";
 
         default:
             return "Unknown type";
