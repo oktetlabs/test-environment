@@ -25,6 +25,12 @@
             </arg>
         </run>
         <run>
+            <script name="mi_meas_multipliers"/>
+            <arg name="n_values">
+                <value>10</value>
+            </arg>
+        </run>
+        <run>
             <script name="env"/>
             <arg name="env">
                 <value>{{{'pco_iut':IUT},if:'iut_if'}}</value>

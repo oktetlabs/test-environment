@@ -19,6 +19,7 @@
 #include "te_raw_log.h"
 #include "te_dbuf.h"
 #include "te_string.h"
+#include "te_str.h"
 
 #include "capture.h"
 
@@ -781,13 +782,29 @@ print_mi_meas_param_vals_array(FILE *fd, te_rgt_mi_meas_param *param)
 
         if (value->defined && value->specified)
         {
+            double multiplier_value = 1.0;
+
             if (!first_val)
                 fprintf(fd, ", ");
 
-            fprintf(fd, "%f * %s", value->value,
-                    (value->multiplier != NULL &&
-                     *(value->multiplier) != '\0' ?
-                     value->multiplier : "1"));
+            /*
+             * The multiplier may be a hexadecimal float which
+             * is not understood by JavaScript, so here we re-parse
+             * it and always print as an ordinary float.
+             */
+            if (value->multiplier != NULL && *value->multiplier != '\0')
+            {
+                te_errno rc = te_strtod(value->multiplier, &multiplier_value);
+
+                if (rc != 0)
+                {
+                    fprintf(stderr, "Invalid multiplier value '%s'",
+                            value->multiplier);
+                    exit(1);
+                }
+            }
+
+            fprintf(fd, "%f * %f", value->value, multiplier_value);
             first_val = FALSE;
         }
     }

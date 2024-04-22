@@ -33,6 +33,14 @@
                 <notes/>
             </iter>
         </test>
+        <test name="mi_meas_multipliers" type="script">
+            <objective>Demo of using all possible measurement multipliers.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="n_values" />
+                <notes/>
+            </iter>
+        </test>
         <test name="verdict" type="script">
             <objective/>
             <notes/>

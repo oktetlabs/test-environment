@@ -7,6 +7,7 @@ tests = [
     'helloworld',
     'mi_meas_line_graph',
     'mi_meas_highrange',
+    'mi_meas_multipliers',
     'parameters',
     'verdict'
 ]
