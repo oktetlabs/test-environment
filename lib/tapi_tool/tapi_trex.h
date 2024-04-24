@@ -938,6 +938,60 @@ extern te_errno tapi_trex_report_mi_log(const tapi_trex_report *report);
  */
 extern te_errno tapi_trex_destroy_report(tapi_trex_report *report);
 
+/**
+ * Get all the values of a given parameter from the per port statistics.
+ *
+ * @param[in]  report           TRex report.
+ * @param[in]  param            Type of param.
+ * @param[in]  index            Port index.
+ * @param[in]  absolute_value   If @c TRUE - return parameter value, otherwise,
+ *                              return the differences in the values of each
+ *                              pair of consecutive parameters.
+ * @param[in]  by_time          If @c TRUE - the parameter value will be divided
+ *                              by the time interval between the current and
+ *                              previous parameter
+ * @param[out] vals             Array of values.
+ * @param[out] n_vals           Number of values.
+ */
+extern void tapi_trex_port_stat_param_series_get(tapi_trex_report *report,
+                            tapi_trex_port_stat_enum param, unsigned int index,
+                            te_bool absolute_value, te_bool by_time,
+                            double **vals, unsigned int *n_vals);
+
+
+/**
+ * Get time series from the per port statistics.
+ *
+ * @param[in]  report       TRex report.
+ * @param[out] vals         Array of values.
+ * @param[out] n_vals       Number of values.
+ */
+static inline void
+tapi_trex_port_stat_time_series_get(tapi_trex_report *report,
+                            double **vals, unsigned int *n_vals)
+{
+    tapi_trex_port_stat_param_series_get(report,
+                            TAPI_TREX_PORT_STAT_CURRENT_TIME, 0, TRUE, FALSE,
+                            vals, n_vals);
+}
+
+/**
+ * Get the value of the port statistics parameter change for each time interval.
+ *
+ * @param[in]  report       TRex report.
+ * @param[in]  param        Type of param.
+ * @param[in]  index        Port index.
+ * @param[out] vals         Array of values.
+ * @param[out] n_vals       Number of values.
+ */
+static inline void
+tapi_trex_port_stat_param_series_by_time_get(tapi_trex_report *report,
+                            tapi_trex_port_stat_enum param, unsigned int index,
+                            double **vals, unsigned int *n_vals)
+{
+    tapi_trex_port_stat_param_series_get(report,
+                            param, index, FALSE, TRUE, vals, n_vals);
+}
 /**@}*/
 
 #ifdef __cplusplus

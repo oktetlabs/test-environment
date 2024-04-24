@@ -1761,3 +1761,91 @@ tapi_trex_destroy_report(tapi_trex_report *report)
 
     return 0;
 }
+
+static void
+tapi_trex_val_to_double(void *ptr, tapi_trex_val_type type, double *out)
+{
+    switch (type) {
+        case TAPI_TREX_VAL_TYPE_UINT64:
+            *out = 1. * (*(uint64_t*)ptr);
+            break;
+
+        case TAPI_TREX_VAL_TYPE_DOUBLE:
+            *out = *(double*)ptr;
+            break;
+    }
+}
+
+/* See description in tapi_trex.h */
+void
+tapi_trex_port_stat_param_series_get(tapi_trex_report *report,
+                          tapi_trex_port_stat_enum param, unsigned int index,
+                          te_bool absolute_value, te_bool by_time,
+                          double **vals, unsigned int *n_vals)
+{
+    size_t offset;
+    unsigned int i;
+    unsigned int count = 0;
+    double *res = NULL;
+    tapi_trex_val_type val_type;
+    tapi_trex_port_stat **ports;
+    tapi_trex_port_stat **it;
+
+    assert(report != NULL);
+
+    offset = port_stat_types[param].offset;
+    val_type = port_stat_types[param].type;
+
+    ports = report->per_port_stat.ports;
+    if (ports == NULL)
+        goto out;
+
+    for (it = ports, count = 0; *it != NULL; it++)
+        count++;
+
+    res = TE_ALLOC(sizeof(*res) * count);
+
+    for (i = 0; i < count; i++)
+    {
+        void *pval1;
+        void *pval2;
+        double val1;
+        double val2;
+        double time_diff;
+
+        pval2 = (void *)&ports[i][index] + offset;
+        if (absolute_value)
+        {
+            tapi_trex_val_to_double(pval2, val_type, &res[i]);
+        }
+        else
+        {
+            tapi_trex_val_to_double(pval2, val_type, &val2);
+
+            if (i > 0)
+            {
+                pval1 = (void *)&ports[i - 1][index] + offset;
+                tapi_trex_val_to_double(pval1, val_type, &val1);
+                time_diff = ports[i][index].curr_time -
+                                    ports[i - 1][index].curr_time;
+            }
+            else
+            {
+                /*
+                 * When calculating the difference in values, assume
+                 * that the parameter values were originally zeros.
+                 */
+                val1 = 0;
+                time_diff = ports[i][index].curr_time;
+            }
+
+            res[i] = val2 - val1;
+            if (by_time)
+                res[i] /= time_diff;
+        }
+    }
+
+out:
+    *vals = res;
+    *n_vals = count;
+}
