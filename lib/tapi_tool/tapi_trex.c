@@ -1849,3 +1849,83 @@ out:
     *vals = res;
     *n_vals = count;
 }
+
+/* Callback function for qsort. */
+static int
+tapi_trex_compare_doubles_max(const void *a, const void *b)
+{
+    double *val1 = (double *)a;
+    double *val2 = (double *)b;
+
+    if (*val1 < *val2)
+        return 1;
+    else if (*val1 > *val2)
+        return -1;
+    else
+        return 0;
+}
+
+/* See description in tapi_trex.h */
+te_errno
+tapi_trex_port_stat_median_get(tapi_trex_report *report,
+                            tapi_trex_port_stat_enum param, unsigned int index,
+                            double time_start, double time_end, double *median)
+{
+    te_errno rc = 0;
+    double *vals;
+    double *meds;
+    unsigned int i;
+    unsigned int n_vals;
+    unsigned int n_meds;
+    unsigned int i_start = UINT_MAX;
+    unsigned int i_end = UINT_MAX;
+
+    tapi_trex_port_stat_time_series_get(report, &vals, &n_vals);
+    if (vals == NULL)
+    {
+        ERROR("%s() interface statistics do not contain data (is the --iom 1 "
+              "option used?)", __func__);
+        return TE_RC(TE_TAPI, TE_ENODATA);
+    }
+    assert(time_start < time_end);
+
+    for (i = 0; i < n_vals - 1; i++)
+    {
+        if (vals[i] < time_start && time_start < vals[i + 1])
+            i_start = i;
+
+        if (vals[i] < time_end && time_end < vals[i + 1])
+            i_end = i;
+    }
+
+    if (i_start == UINT_MAX)
+    {
+        rc = TE_RC(TE_TAPI, TE_ERANGE);
+        WARN("%s() cannot find start time -gt %f, using first element",
+             __func__, time_start);
+        i_start = 0;
+    }
+    if (i_end == UINT_MAX)
+    {
+        rc = TE_RC(TE_TAPI, TE_ERANGE);
+        WARN("%s() cannot find end time -gt %f, using last element",
+             __func__, time_end);
+        i_end = n_vals - 1;
+    }
+    free(vals);
+
+    n_meds = i_end - i_start + 1;
+    tapi_trex_port_stat_param_series_by_time_get(report, param, index,
+                                                 &vals, &n_vals);
+    assert(n_meds < n_vals);
+
+    meds = TE_ALLOC(sizeof(*meds) * n_meds);
+    memcpy(meds, &vals[i_start], sizeof(*meds) * n_meds);
+    free(vals);
+
+    qsort(meds, n_meds, sizeof(*meds), &tapi_trex_compare_doubles_max);
+    *median = meds[n_meds / 2];
+    free(meds);
+
+    return rc;
+}

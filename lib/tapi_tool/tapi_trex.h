@@ -992,6 +992,27 @@ tapi_trex_port_stat_param_series_by_time_get(tapi_trex_report *report,
     tapi_trex_port_stat_param_series_get(report,
                             param, index, FALSE, TRUE, vals, n_vals);
 }
+
+/**
+ * Get the median for a given parameter from the per-port statistics.
+ *
+ * @param[in]  report       TRex report.
+ * @param[in]  param        Type of param.
+ * @param[in]  index        Port index.
+ * @param[in]  time_start   Use values starting from the specified time
+ *                          (in seconds).
+ * @param[in]  time_end     Use values up to the specified time (in seconds).
+ * @param[out] median       Result.
+ *
+ * @return Status code.
+ * @retval TE_ENODATA       Per-port statistics do not contain data.
+ * @retval TE_ERANGE        The @p time_start is too long, or the @p time_end
+ *                          is too short in the interface statistics.
+ * @retval @c 0             The result is successful.
+ */
+extern te_errno tapi_trex_port_stat_median_get(tapi_trex_report *report,
+                            tapi_trex_port_stat_enum param, unsigned int index,
+                            double time_start, double time_end, double *median);
 /**@}*/
 
 #ifdef __cplusplus
