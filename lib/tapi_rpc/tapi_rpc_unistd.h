@@ -27,6 +27,7 @@
 
 #include "tapi_jmp.h"
 
+#include "te_alloc.h"
 #include "te_string.h"
 #include "te_dbuf.h"
 
@@ -1193,7 +1194,7 @@ extern uint64_t rpc_get_addr_by_id(rcf_rpc_server *rpcs, rpc_ptr id);
 static inline te_bool
 rpc_malloc_off(rcf_rpc_server *rpcs, size_t size, rpc_ptr_off **buf)
 {
-    rpc_ptr_off *ret = calloc(sizeof(rpc_ptr_off), 1);
+    rpc_ptr_off *ret = TE_ALLOC(sizeof(rpc_ptr_off));
 
     ret->base = rpc_malloc(rpcs, size);
     if (ret->base == RPC_NULL)
