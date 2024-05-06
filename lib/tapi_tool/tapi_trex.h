@@ -210,6 +210,10 @@ typedef struct tapi_trex_app {
     /** Command line used to start the TRex job. */
     te_vec cmd;
     /** Filters list: */
+    /** TRex stdout content. */
+    tapi_job_channel_t *std_out;
+    /** TRex stderr content. */
+    tapi_job_channel_t *std_err;
     /** Total-Tx filter. */
     tapi_job_channel_t *total_tx_filter;
     /** Total-Rx filter. */
@@ -351,6 +355,14 @@ typedef struct tapi_trex_opt {
      * @name TRex options
      * @{
      */
+    /**
+     * Standard output logging level (default is @c TE_LL_RING).
+     */
+    te_log_level stdout_log_level;
+    /**
+     * Standard error logging level (default is @c TE_LL_WARN).
+     */
+    te_log_level stderr_log_level;
     /**
      * If set, only server side ports (e.g. @c 1, @c 3 and etc.) are enabled
      * with ASTF service. Traffic won't be transmitted on clients ports.

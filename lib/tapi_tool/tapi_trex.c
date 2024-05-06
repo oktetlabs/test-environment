@@ -202,6 +202,8 @@ const struct tapi_trex_server_config tapi_trex_server_config_default = {
 
 /* Default values of TRex command line arguments. */
 const tapi_trex_opt tapi_trex_default_opt = {
+    .stdout_log_level = TE_LL_RING,
+    .stderr_log_level = TE_LL_WARN,
     .astf_server_only = FALSE,
     .n_threads = TAPI_JOB_OPT_UINT_UNDEF,
     .tso_disable = FALSE,
@@ -1239,15 +1241,17 @@ tapi_trex_create(tapi_job_factory_t *factory,
                                 },
                                 {
                                    .use_stdout  = TRUE,
-                                   .readable    = FALSE,
-                                   .log_level   = TE_LL_RING,
-                                   .filter_name = "TRex stdout"
+                                   .readable    = TRUE,
+                                   .log_level   = opt->stdout_log_level,
+                                   .filter_name = "TRex stdout",
+                                   .filter_var = &new_app->std_out,
                                 },
                                 {
                                    .use_stderr  = TRUE,
-                                   .readable    = FALSE,
-                                   .log_level   = TE_LL_WARN,
-                                   .filter_name = "TRex stderr"
+                                   .readable    = TRUE,
+                                   .log_level   = opt->stderr_log_level,
+                                   .filter_name = "TRex stderr",
+                                   .filter_var = &new_app->std_err,
                                 }
                             )
                         });
