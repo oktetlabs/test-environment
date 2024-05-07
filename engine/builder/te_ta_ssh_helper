@@ -451,3 +451,32 @@ te_ta_type_as_platform() {
 
     te_ta_to_platform "${ta}" "${!ta_type}"
 }
+
+#######################################
+# Prepare all the arguments and run them.
+# Arguments are prepared to be compatible with tcsh/csh. The function uses
+# code similar to te_eval_or_ssh().
+#
+# Arguments:
+#   - Test agent alias name (e.g. TE_IUT)
+#   - The command lines to be executed
+#
+#   see also te_ta_ssh_args()
+#######################################
+function te_ta_process_cmd() {
+    local ta="$1" ; shift
+
+    # Converts instructions to an one-line representation, replacing
+    # newlines with spaces, as a remote ssh command can run in /bin/csh,
+    # which cannot handle multi-line command arguments.
+    # See: https://github.com/tcsh-org/tcsh/blob/master/BUGS#L52
+    local cmd="${@//$'\n'/ }"
+
+    # Replace single quotes by '"'"' since /bin/bash already uses
+    # it in the command parameters
+    cmd="$(echo "${cmd}" | sed "s/'/\'\"\'\"\'/g")"
+
+    te_ta_ssh_args "${ta}" && ssh_args=("${TE_SSH_ARGS[@]}")
+
+    ${ssh_args:+ssh "${ssh_args[@]}"} "/bin/bash -c 'set -e; cd /tmp; $cmd'"
+}
