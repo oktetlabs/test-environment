@@ -1300,8 +1300,8 @@ tapi_trex_create(tapi_job_factory_t *factory,
         return rc;
     }
 
+    new_app->cmd = args;
     *app = new_app;
-    te_vec_deep_free(&args);
     free(yaml_config_path);
 
     return 0;
@@ -1419,6 +1419,7 @@ tapi_trex_destroy(const char *ta, tapi_trex_app *app, tapi_trex_opt *opt)
     if (rc != 0)
         ERROR("Failed to destroy TRex job: %r", rc);
 
+    te_vec_deep_free(&app->cmd);
     free(app);
 
     tapi_trex_destroy_clients(opt->clients);
