@@ -8,6 +8,7 @@
 
 #define TE_LGR_USER "TAPI CISCO TREX"
 
+#include <float.h>
 #include <signal.h>
 #include <regex.h>
 #include <netinet/in.h>
@@ -1896,11 +1897,17 @@ tapi_trex_port_stat_median_get(tapi_trex_report *report,
 
     for (i = 0; i < n_vals - 1; i++)
     {
-        if (vals[i] < time_start && time_start < vals[i + 1])
+        if (time_start - vals[i] > -DBL_EPSILON &&
+            vals[i + 1] - time_start > DBL_EPSILON)
+        {
             i_start = i;
+        }
 
-        if (vals[i] < time_end && time_end < vals[i + 1])
+        if (time_end - vals[i] > -DBL_EPSILON &&
+            vals[i + 1] - time_end > DBL_EPSILON)
+        {
             i_end = i;
+        }
     }
 
     if (i_start == UINT_MAX)
