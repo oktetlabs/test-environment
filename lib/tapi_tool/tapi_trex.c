@@ -1738,7 +1738,7 @@ tapi_trex_report_mi_log(const tapi_trex_report *report)
                           TE_MI_MEAS_AGGR_SINGLE, report->avg_rx,
                           TE_MI_MEAS_MULTIPLIER_PLAIN);
     te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_THROUGHPUT, "Average CPS",
-                          TE_MI_MEAS_AGGR_SINGLE, report->avg_rx,
+                          TE_MI_MEAS_AGGR_SINGLE, report->avg_cps,
                           TE_MI_MEAS_MULTIPLIER_PLAIN);
 
     te_mi_logger_destroy(logger);
