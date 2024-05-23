@@ -183,7 +183,7 @@ tarpc_rte_eth_dev_rss_types2str(te_log_buf *tlbp, uint64_t rss_flow_types)
 
         TARPC_RTE_ETH_RSS_TYPE2STR(LEVEL_OUTERMOST),
         TARPC_RTE_ETH_RSS_TYPE2STR(LEVEL_INNERMOST),
-#undef TARPC_RTE_ETH_FLOW_BIT2STR
+#undef TARPC_RTE_ETH_RSS_TYPE2STR
         { 0, NULL }
     };
 
