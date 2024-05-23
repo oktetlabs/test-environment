@@ -625,13 +625,14 @@ tarpc_rss_hash_protos2str(te_log_buf *tlbp, tarpc_rss_hash_protos_t protos)
 
 #define TARPC_RSS_HASH_PROTO2STR(_proto)                                     \
     do {                                                                     \
-        tarpc_rss_hash_protos_t proto = 1ULL << TARPC_RTE_ETH_FLOW_##_proto; \
+        tarpc_rss_hash_protos_t proto;                                       \
                                                                              \
+        proto = UINT64_C(1) << TARPC_RTE_ETH_RSS_##_proto;                   \
         if ((protos & proto) == proto)                                       \
         {                                                                    \
             te_log_buf_append(tlbp, "%s%s", added ? "|" : "", #_proto);      \
             added = TRUE;                                                    \
-            protos &= ~(1ULL << TARPC_RTE_ETH_FLOW_##_proto);                \
+            protos &= ~proto;                                                \
         }                                                                    \
     } while (0)
     TARPC_RSS_HASH_PROTO2STR(IPV4);
