@@ -12,6 +12,7 @@
 
 #include "conf_api.h"
 #include "log_bufs.h"
+#include "te_alloc.h"
 #include "tapi_mem.h"
 #include "tapi_test_log.h"
 
@@ -194,4 +195,50 @@ tapi_rpc_add_mac_as_octstring2kvpair(rcf_rpc_server *rpcs, uint16_t port_id,
                        mac_addr.addr_bytes[4], mac_addr.addr_bytes[5]);
 
     return rc;
+}
+
+/* See description in tapi_rpc_rte_ethdev.h */
+void
+tapi_rpc_rte_eth_dev_get_reg_info(rcf_rpc_server   *rpcs,
+                                  uint16_t          port_id,
+                                  uint32_t          offset,
+                                  uint32_t          length)
+{
+    struct tarpc_rte_dev_reg_info info;
+    int ret;
+
+    memset(&info, 0, sizeof(info));
+
+    if (length == 0)
+    {
+        RPC_AWAIT_IUT_ERROR(rpcs);
+        ret = rpc_rte_eth_dev_get_reg_info(rpcs, port_id, &info);
+        if (ret != 0)
+            return;
+
+        if (offset >= info.length)
+        {
+            ERROR("Registers offset %u is too big vs length %u",
+                  offset, info.length);
+            return;
+        }
+        length = info.length - offset;
+
+        if (info.width != 0 && offset % info.width != 0)
+        {
+            ERROR("Registers offset %u is not multiple of width %u",
+                  offset, info.width);
+            return;
+        }
+    }
+
+    info.offset = offset;
+    info.length = length;
+    info.data.data_len = length;
+    info.data.data_val = TE_ALLOC(info.data.data_len);
+
+    RPC_AWAIT_IUT_ERROR(rpcs);
+    rpc_rte_eth_dev_get_reg_info(rpcs, port_id, &info);
+
+    free(info.data.data_val);
 }

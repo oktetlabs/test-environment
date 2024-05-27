@@ -827,6 +827,20 @@ extern int rpc_rte_eth_fec_set(rcf_rpc_server *rpcs, uint16_t port_id,
 extern int rpc_rte_eth_dev_get_reg_info(rcf_rpc_server *rpcs, uint16_t port_id,
                                         struct tarpc_rte_dev_reg_info *info);
 
+
+/**
+ * Get device registers (just to be logged).
+ *
+ * @param rpcs          RPC server handle
+ * @param port_id       The port identifier of the device
+ * @param offset        Offset to start from
+ * @param length        Size of registers to get or 0 to get all
+ */
+extern void tapi_rpc_rte_eth_dev_get_reg_info(rcf_rpc_server   *rpcs,
+                                              uint16_t          port_id,
+                                              uint32_t          offset,
+                                              uint32_t          length);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus
