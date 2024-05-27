@@ -242,3 +242,20 @@ tapi_rpc_rte_eth_dev_get_reg_info(rcf_rpc_server   *rpcs,
 
     free(info.data.data_val);
 }
+
+/* See description in tapi_rpc_rte_ethdev.h */
+void
+tapi_rpc_rte_eth_dev_dump_reg_info(rcf_rpc_server   *rpcs,
+                                   uint16_t          port_id)
+{
+    if (getenv("TE_ENV_DPDK_DUMP_REGS") != NULL)
+        tapi_rpc_rte_eth_dev_get_reg_info(rpcs, port_id, 0, 0);
+}
+
+/* See description in tapi_rpc_rte_ethdev.h */
+void
+tapi_rpc_rte_eth_dev_stop(rcf_rpc_server *rpcs, uint16_t port_id)
+{
+    tapi_rpc_rte_eth_dev_dump_reg_info(rpcs, port_id);
+    rpc_rte_eth_dev_stop(rpcs, port_id);
+}

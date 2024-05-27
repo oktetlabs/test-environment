@@ -761,7 +761,7 @@ tapi_reuse_eal(tapi_env         *env,
         rc = rpc_rte_eth_dev_get_port_by_name(rpcs, dev_name, &port_id);
         if (rc == 0)
         {
-            rpc_rte_eth_dev_stop(rpcs, port_id);
+            tapi_rpc_rte_eth_dev_stop(rpcs, port_id);
             rpc_rte_eth_dev_close(rpcs, port_id);
         }
         else if (rc != -TE_RC(TE_RPC, TE_ENODEV))

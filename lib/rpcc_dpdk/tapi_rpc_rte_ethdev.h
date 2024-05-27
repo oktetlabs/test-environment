@@ -103,6 +103,11 @@ extern int rpc_rte_eth_dev_start(rcf_rpc_server *rpcs, uint16_t port_id);
 extern void rpc_rte_eth_dev_stop(rcf_rpc_server *rpcs, uint16_t port_id);
 
 /**
+ * Wrapper for @b rpc_rte_eth_dev_stop() to extra common actions.
+ */
+extern void tapi_rpc_rte_eth_dev_stop(rcf_rpc_server *rpcs, uint16_t port_id);
+
+/**
  * @b rte_eth_tx_queue_setup() RPC.
  *
  * If failure is not expected, the function jumps out in the case of
@@ -840,6 +845,16 @@ extern void tapi_rpc_rte_eth_dev_get_reg_info(rcf_rpc_server   *rpcs,
                                               uint16_t          port_id,
                                               uint32_t          offset,
                                               uint32_t          length);
+
+/**
+ * Dump device registers in logs if environment variable
+ * @c TE_ENV_DPDK_DUMP_REGS is set.
+ *
+ * @param rpcs          RPC server handle
+ * @param port_id       The port identifier of the device
+ */
+extern void tapi_rpc_rte_eth_dev_dump_reg_info(rcf_rpc_server   *rpcs,
+                                               uint16_t          port_id);
 
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
