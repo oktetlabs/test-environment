@@ -3610,3 +3610,116 @@ rpc_rte_eth_fec_set(rcf_rpc_server *rpcs,
 
     RETVAL_ZERO_INT(rte_eth_fec_set, out.retval);
 }
+
+/**
+ * Format device registers information for logging.
+ *
+ * @param tlbp          logging buffer
+ * @param info          device registers information
+ * @param log_data      log data content or just buffer length
+ *
+ * @return Pointer to string to be logged.
+ */
+static const char *
+tarpc_rte_dev_reg_info2str(te_log_buf                     *tlbp,
+                            struct tarpc_rte_dev_reg_info *info,
+                            te_bool                        log_data)
+{
+    if (info == NULL)
+    {
+        te_log_buf_append(tlbp, "NULL");
+        return te_log_buf_get(tlbp);
+    }
+
+    te_log_buf_append(tlbp,
+                      "{ offset=%u, length=%u, width=%u, version=%u, data=[",
+                      info->offset, info->length, info->width,
+                      info->info_version);
+
+    if (!log_data)
+    {
+        te_log_buf_append(tlbp, " len=%u", info->data.data_len);
+    }
+    else if (info->width == sizeof(uint32_t) || info->width == 0)
+    {
+        uint32_t *data_u32;
+        unsigned int i;
+
+        data_u32 = (uint32_t *)info->data.data_val;
+        for (i = 0;
+             i < MIN(info->length, info->data.data_len) / sizeof(*data_u32);
+             ++i)
+        {
+            te_log_buf_append(tlbp, " 0x%x=0x%08x",
+                              info->offset + i * sizeof(*data_u32),
+                              data_u32[i]);
+        }
+    }
+    else if (info->width == sizeof(uint64_t))
+    {
+        uint64_t *data_u64;
+        unsigned int i;
+
+        data_u64 = (uint64_t *)info->data.data_val;
+        for (i = 0;
+             i < MIN(info->length, info->data.data_len) / sizeof(*data_u64);
+             ++i)
+        {
+            te_log_buf_append(tlbp, " 0x%x=0x%016llx",
+                              info->offset + i * sizeof(*data_u64),
+                              data_u64[i]);
+        }
+    }
+    else
+    {
+        te_log_buf_append(tlbp, " NOT SUPPORTED WIDTH");
+    }
+
+    te_log_buf_append(tlbp, " ]}");
+
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_eth_dev_get_reg_info(rcf_rpc_server                *rpcs,
+                             uint16_t                       port_id,
+                             struct tarpc_rte_dev_reg_info *info)
+{
+    tarpc_rte_eth_dev_get_reg_info_in   in = {};
+    tarpc_rte_eth_dev_get_reg_info_out  out = {};
+    te_log_buf                         *tlbp_in;
+    te_log_buf                         *tlbp_out;
+
+    in.port_id = port_id;
+    if (info != 0)
+    {
+        in.info.info_len = 1;
+        in.info.info_val = info;
+    }
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_get_reg_info", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_get_reg_info,
+                                          out.retval);
+
+    tlbp_in = te_log_buf_alloc();
+    tlbp_out = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_get_reg_info,
+                 "%" PRIu16 ", %s",
+                 "info=%s, " NEG_ERRNO_FMT,
+                 in.port_id,
+                 tarpc_rte_dev_reg_info2str(tlbp_in, info, FALSE),
+                 tarpc_rte_dev_reg_info2str(tlbp_out, out.info.info_val,
+                                            TRUE),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp_out);
+    te_log_buf_free(tlbp_in);
+
+    if (out.info.info_val != NULL && info != NULL)
+    {
+        memcpy(info, out.info.info_val, sizeof(*info));
+        out.info.info_val->data.data_len = 0;
+        out.info.info_val->data.data_val = NULL;
+    }
+
+    RETVAL_ZERO_INT(rte_eth_dev_get_reg_info, out.retval);
+}

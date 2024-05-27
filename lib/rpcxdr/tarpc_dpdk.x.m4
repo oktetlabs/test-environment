@@ -2387,6 +2387,30 @@ struct tarpc_rte_eth_fec_set_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_fec_set_out;
 
+/** rte_eth_dev_get_reg_info() */
+
+struct tarpc_rte_dev_reg_info {
+    uint8_t                       data<>;
+    uint32_t                      offset;
+    uint32_t                      length;
+    uint32_t                      width;
+    uint32_t                      info_version;
+};
+
+struct tarpc_rte_eth_dev_get_reg_info_in {
+    struct tarpc_in_arg           common;
+
+    uint16_t                      port_id;
+    struct tarpc_rte_dev_reg_info info<>;
+};
+
+struct tarpc_rte_eth_dev_get_reg_info_out {
+    struct tarpc_out_arg          common;
+
+    tarpc_int                     retval;
+    struct tarpc_rte_dev_reg_info info<>;
+};
+
 program dpdk
 {
     version ver0
@@ -2524,6 +2548,7 @@ program dpdk
         RPC_DEF(rte_eth_fec_get_capability)
         RPC_DEF(rte_eth_fec_get)
         RPC_DEF(rte_eth_fec_set)
+        RPC_DEF(rte_eth_dev_get_reg_info)
 
         RPC_DEF(rte_mk_flow_rule_components)
         RPC_DEF(rte_insert_flow_rule_items)

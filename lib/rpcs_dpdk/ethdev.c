@@ -2428,3 +2428,42 @@ TARPC_FUNC(rte_eth_fec_set, {},
 done:
     ;
 })
+
+TARPC_FUNC(rte_eth_dev_get_reg_info,
+{
+    COPY_ARG(info);
+},
+{
+    struct rte_dev_reg_info *info = NULL;
+
+    if (out->info.info_len != 0)
+    {
+        info = calloc(out->info.info_len, sizeof(*info));
+        if (info == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
+        info->data = out->info.info_val->data.data_val;
+        info->offset = out->info.info_val->offset;
+        info->length = out->info.info_val->length;
+        info->width = out->info.info_val->width;
+        info->version = out->info.info_val->info_version;
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, info));
+
+    if (info != NULL)
+    {
+        out->info.info_val->offset = info->offset;
+        out->info.info_val->length = info->length;
+        out->info.info_val->width = info->width;
+        out->info.info_val->info_version = info->version;
+    }
+
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    free(info);
+})
