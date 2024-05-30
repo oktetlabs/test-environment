@@ -572,9 +572,9 @@ NGINX_SRV_PARAM_RW("/client:/header_timeout:", client_header_timeout,
                    unsigned int, INTEGER)
 NGINX_SRV_PARAM_RW("/client:/header_buffer_size:", client_header_buffer_size,
                    unsigned int, INTEGER)
-NGINX_SRV_PARAM_RW("/client:/large_header_buffer_num:",
+NGINX_SRV_PARAM_RW("/client:/large_header_buffer:/num:",
                    client_large_header_buffer_num, unsigned int, INTEGER)
-NGINX_SRV_PARAM_RW("/client:/large_header_buffer_size:",
+NGINX_SRV_PARAM_RW("/client:/large_header_buffer:/size:",
                    client_large_header_buffer_size, unsigned int, INTEGER)
 
 /*
