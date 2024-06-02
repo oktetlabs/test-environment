@@ -13,6 +13,7 @@ headers += files(
     'te_rpc_linux_net_tstamp.h',
     'te_rpc_net_if.h',
     'te_rpc_net_if_arp.h',
+    'te_rpc_netconf.h',
     'te_rpc_netdb.h',
     'te_rpc_pthread.h',
     'te_rpc_signal.h',
@@ -42,6 +43,7 @@ rpch_sources = [
     'linux_net_tstamp.c.rpch',
     'net_if.c.rpch',
     'net_if_arp.c.rpch',
+    'netconf.c.rpch',
     'netdb.c.rpch',
     'pthread.c.rpch',
     'signal.c.rpch',
@@ -78,6 +80,7 @@ check_headers = [
     'sys/epoll.h',
     'sys/mount.h',
     'dirent.h',
+    'nc_client.h',
 ]
 
 foreach h : check_headers

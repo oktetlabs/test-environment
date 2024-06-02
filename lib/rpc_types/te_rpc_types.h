@@ -60,6 +60,7 @@ typedef struct rpc_ptr_off {
 #include "te_rpc_dirent.h"
 #include "te_rpc_pthread.h"
 #include "te_rpc_uio.h"
+#include "te_rpc_netconf.h"
 
 #else
 

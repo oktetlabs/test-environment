@@ -1,0 +1,356 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2024 OKTET Labs Ltd. All rights reserved. */
+/** @file
+ * @brief RPC types definitions
+ *
+ * RPC analogues of definitions from libnetconf2/ headers
+ */
+
+#define TE_LGR_USER     "RPC types"
+
+#include "te_config.h"
+#include "config.h"
+#include "te_defs.h"
+#include "te_errno.h"
+#include "logger_api.h"
+#include "te_rpc_netconf.h"
+
+#ifdef HAVE_NC_CLIENT_H
+#include <nc_client.h>
+#endif
+
+/* See description in te_rpc_netconf.h */
+const char *
+nc_verb_level_rpc2str(rpc_nc_verb_level level)
+{
+    switch (level)
+    {
+        RPC2STR(LVL_SILENT);
+        RPC2STR(LVL_RARE_CONDS);
+        RPC2STR(LVL_API_ENTRY);
+        RPC2STR(LVL_PKTS);
+        RPC2STR(LVL_FUNCS);
+        default:
+            return "<INVALID>";
+    }
+}
+
+/* See description in te_rpc_netconf.h */
+const char *
+nc_wd_mode_rpc2str(RPC_NC_WD_MODE mode)
+{
+    switch (mode)
+    {
+        RPC2STR(NC_WD_UNKNOWN);
+        RPC2STR(NC_WD_ALL);
+        RPC2STR(NC_WD_ALL_TAG);
+        RPC2STR(NC_WD_TRIM);
+        RPC2STR(NC_WD_EXPLICIT);
+        default: return "<INVALID>";
+    }
+}
+
+#ifdef HAVE_NC_CLIENT_H
+
+/* See description in te_rpc_netconf.h */
+int
+nc_wd_mode_rpc2h(RPC_NC_WD_MODE mode)
+{
+    switch (mode)
+    {
+        RPC2H_CHECK(NC_WD_UNKNOWN);
+        RPC2H_CHECK(NC_WD_ALL);
+        RPC2H_CHECK(NC_WD_ALL_TAG);
+        RPC2H_CHECK(NC_WD_TRIM);
+        RPC2H_CHECK(NC_WD_EXPLICIT);
+        default:
+            WARN("%s is converted to NC_WD_UNKNOWN(%u)",
+                 nc_wd_mode_rpc2str(mode), NC_WD_UNKNOWN);
+            return NC_WD_UNKNOWN;
+    }
+}
+
+/* See description in te_rpc_netconf.h */
+RPC_NC_WD_MODE
+nc_wd_mode_h2rpc(int mode)
+{
+    switch (mode)
+    {
+        H2RPC_CHECK(NC_WD_UNKNOWN);
+        H2RPC_CHECK(NC_WD_ALL);
+        H2RPC_CHECK(NC_WD_ALL_TAG);
+        H2RPC_CHECK(NC_WD_TRIM);
+        H2RPC_CHECK(NC_WD_EXPLICIT);
+        default: return RPC_NC_WD_INVAL;
+    }
+}
+#endif /* HAVE_NC_CLIENT_H */
+
+/* See description in te_rpc_netconf.h */
+const char *
+nc_datastore_rpc2str(RPC_NC_DATASTORE datastore)
+{
+    switch (datastore)
+    {
+        RPC2STR(NC_DATASTORE_ERROR);
+        RPC2STR(NC_DATASTORE_CONFIG);
+        RPC2STR(NC_DATASTORE_URL);
+        RPC2STR(NC_DATASTORE_RUNNING);
+        RPC2STR(NC_DATASTORE_STARTUP);
+        RPC2STR(NC_DATASTORE_CANDIDATE);
+        default: return "<INVALID>";
+    }
+}
+
+#ifdef HAVE_NC_CLIENT_H
+
+/* See description in te_rpc_netconf.h */
+int
+nc_datastore_rpc2h(RPC_NC_DATASTORE datastore)
+{
+    switch (datastore)
+    {
+        RPC2H_CHECK(NC_DATASTORE_ERROR);
+        RPC2H_CHECK(NC_DATASTORE_CONFIG);
+        RPC2H_CHECK(NC_DATASTORE_URL);
+        RPC2H_CHECK(NC_DATASTORE_RUNNING);
+        RPC2H_CHECK(NC_DATASTORE_STARTUP);
+        RPC2H_CHECK(NC_DATASTORE_CANDIDATE);
+        default:
+            WARN("%s is converted to NC_DATASTORE_ERROR(%u)",
+                 nc_datastore_rpc2str(datastore), NC_DATASTORE_ERROR);
+            return NC_DATASTORE_ERROR;
+    }
+}
+
+/* See description in te_rpc_netconf.h */
+RPC_NC_DATASTORE
+nc_datastore_h2rpc(int datastore)
+{
+    switch (datastore)
+    {
+        H2RPC_CHECK(NC_DATASTORE_ERROR);
+        H2RPC_CHECK(NC_DATASTORE_CONFIG);
+        H2RPC_CHECK(NC_DATASTORE_URL);
+        H2RPC_CHECK(NC_DATASTORE_RUNNING);
+        H2RPC_CHECK(NC_DATASTORE_STARTUP);
+        H2RPC_CHECK(NC_DATASTORE_CANDIDATE);
+        default: return RPC_NC_DATASTORE_INVAL;
+    }
+}
+
+#endif /* HAVE_NC_CLIENT_H */
+
+/* See description in te_rpc_netconf.h */
+const char *
+nc_rpc_edit_dfltop_rpc2str(RPC_NC_RPC_EDIT_DFLTOP dfltop)
+{
+    switch (dfltop)
+    {
+        RPC2STR(NC_RPC_EDIT_DFLTOP_UNKNOWN);
+        RPC2STR(NC_RPC_EDIT_DFLTOP_MERGE);
+        RPC2STR(NC_RPC_EDIT_DFLTOP_REPLACE);
+        RPC2STR(NC_RPC_EDIT_DFLTOP_NONE);
+        default: return "<INVALID>";
+    }
+}
+
+#ifdef HAVE_NC_CLIENT_H
+
+/* See description in te_rpc_netconf.h */
+int
+nc_rpc_edit_dfltop_rpc2h(RPC_NC_RPC_EDIT_DFLTOP dfltop)
+{
+    switch (dfltop)
+    {
+        RPC2H_CHECK(NC_RPC_EDIT_DFLTOP_UNKNOWN);
+        RPC2H_CHECK(NC_RPC_EDIT_DFLTOP_MERGE);
+        RPC2H_CHECK(NC_RPC_EDIT_DFLTOP_REPLACE);
+        RPC2H_CHECK(NC_RPC_EDIT_DFLTOP_NONE);
+        default:
+            WARN("%s is converted to NC_RPC_EDIT_DFLTOP_UNKNOWN(%u)",
+                 nc_rpc_edit_dfltop_rpc2str(dfltop),
+                 NC_RPC_EDIT_DFLTOP_UNKNOWN);
+                 return NC_RPC_EDIT_DFLTOP_UNKNOWN;
+    }
+}
+
+/* See description in te_rpc_netconf.h */
+RPC_NC_RPC_EDIT_DFLTOP
+nc_rpc_edit_dfltop_h2rpc(int dfltop)
+{
+    switch (dfltop)
+    {
+        H2RPC_CHECK(NC_RPC_EDIT_DFLTOP_UNKNOWN);
+        H2RPC_CHECK(NC_RPC_EDIT_DFLTOP_MERGE);
+        H2RPC_CHECK(NC_RPC_EDIT_DFLTOP_REPLACE);
+        H2RPC_CHECK(NC_RPC_EDIT_DFLTOP_NONE);
+        default: return RPC_NC_RPC_EDIT_DFLTOP_INVAL;
+    }
+}
+
+#endif /* HAVE_NC_CLIENT_H */
+
+/* See description in te_rpc_netconf.h */
+const char *
+nc_rpc_edit_testopt_rpc2str(RPC_NC_RPC_EDIT_TESTOPT testopt)
+{
+    switch (testopt)
+    {
+        RPC2STR(NC_RPC_EDIT_TESTOPT_UNKNOWN);
+        RPC2STR(NC_RPC_EDIT_TESTOPT_TESTSET);
+        RPC2STR(NC_RPC_EDIT_TESTOPT_SET);
+        RPC2STR(NC_RPC_EDIT_TESTOPT_TEST);
+        default: return "<INVALID>";
+    }
+}
+
+#ifdef HAVE_NC_CLIENT_H
+
+/* See description in te_rpc_netconf.h */
+int
+nc_rpc_edit_testopt_rpc2h(RPC_NC_RPC_EDIT_TESTOPT testopt)
+{
+    switch (testopt)
+    {
+        RPC2H_CHECK(NC_RPC_EDIT_TESTOPT_UNKNOWN);
+        RPC2H_CHECK(NC_RPC_EDIT_TESTOPT_TESTSET);
+        RPC2H_CHECK(NC_RPC_EDIT_TESTOPT_SET);
+        RPC2H_CHECK(NC_RPC_EDIT_TESTOPT_TEST);
+        default:
+            WARN("%s is converted to NC_RPC_EDIT_TESTOPT_UNKNOWN(%u)",
+                 nc_rpc_edit_testopt_rpc2str(testopt),
+                 NC_RPC_EDIT_TESTOPT_UNKNOWN);
+        return NC_RPC_EDIT_TESTOPT_UNKNOWN;
+    }
+}
+
+/* See description in te_rpc_netconf.h */
+RPC_NC_RPC_EDIT_TESTOPT
+nc_rpc_edit_testopt_h2rpc(int testopt)
+{
+    switch (testopt)
+    {
+        H2RPC_CHECK(NC_RPC_EDIT_TESTOPT_UNKNOWN);
+        H2RPC_CHECK(NC_RPC_EDIT_TESTOPT_TESTSET);
+        H2RPC_CHECK(NC_RPC_EDIT_TESTOPT_SET);
+        H2RPC_CHECK(NC_RPC_EDIT_TESTOPT_TEST);
+        default: return RPC_NC_RPC_EDIT_TESTOPT_INVAL;
+    }
+}
+
+#endif /* HAVE_NC_CLIENT_H */
+
+/* See description in te_rpc_netconf.h */
+const char *
+nc_rpc_edit_erropt_rpc2str(RPC_NC_RPC_EDIT_ERROPT erropt)
+{
+    switch (erropt)
+    {
+        RPC2STR(NC_RPC_EDIT_ERROPT_UNKNOWN);
+        RPC2STR(NC_RPC_EDIT_ERROPT_STOP);
+        RPC2STR(NC_RPC_EDIT_ERROPT_CONTINUE);
+        RPC2STR(NC_RPC_EDIT_ERROPT_ROLLBACK);
+        default: return "<INVALID>";
+    }
+}
+
+#ifdef HAVE_NC_CLIENT_H
+
+/* See description in te_rpc_netconf.h */
+int
+nc_rpc_edit_erropt_rpc2h(RPC_NC_RPC_EDIT_ERROPT erropt)
+{
+    switch (erropt)
+    {
+        RPC2H_CHECK(NC_RPC_EDIT_ERROPT_UNKNOWN);
+        RPC2H_CHECK(NC_RPC_EDIT_ERROPT_STOP);
+        RPC2H_CHECK(NC_RPC_EDIT_ERROPT_CONTINUE);
+        RPC2H_CHECK(NC_RPC_EDIT_ERROPT_ROLLBACK);
+        default:
+            WARN("%s is converted to NC_RPC_EDIT_ERROPT_UNKNOWN(%u)",
+                 nc_rpc_edit_erropt_rpc2str(erropt),
+                 NC_RPC_EDIT_ERROPT_UNKNOWN);
+        return NC_RPC_EDIT_ERROPT_UNKNOWN;
+    }
+}
+
+/* See description in te_rpc_netconf.h */
+RPC_NC_RPC_EDIT_ERROPT
+nc_rpc_edit_erropt_h2rpc(int erropt)
+{
+    switch (erropt)
+    {
+        H2RPC_CHECK(NC_RPC_EDIT_ERROPT_UNKNOWN);
+        H2RPC_CHECK(NC_RPC_EDIT_ERROPT_STOP);
+        H2RPC_CHECK(NC_RPC_EDIT_ERROPT_CONTINUE);
+        H2RPC_CHECK(NC_RPC_EDIT_ERROPT_ROLLBACK);
+        default: return RPC_NC_RPC_EDIT_ERROPT_INVAL;
+    }
+}
+
+#endif /* HAVE_NC_CLIENT_H */
+
+/* See description in te_rpc_netconf.h */
+const char *
+nc_msg_type_rpc2str(RPC_NC_MSG_TYPE msg)
+{
+    switch (msg)
+    {
+        RPC2STR(NC_MSG_ERROR);
+        RPC2STR(NC_MSG_WOULDBLOCK);
+        RPC2STR(NC_MSG_NONE);
+        RPC2STR(NC_MSG_HELLO);
+        RPC2STR(NC_MSG_BAD_HELLO);
+        RPC2STR(NC_MSG_RPC);
+        RPC2STR(NC_MSG_REPLY);
+        RPC2STR(NC_MSG_REPLY_ERR_MSGID);
+        RPC2STR(NC_MSG_NOTIF);
+        default: return "<INVALID>";
+    }
+}
+
+#ifdef HAVE_NC_CLIENT_H
+
+/* See description in te_rpc_netconf.h */
+int
+nc_msg_type_rpc2h(RPC_NC_MSG_TYPE msg)
+{
+    switch (msg)
+    {
+        RPC2H_CHECK(NC_MSG_ERROR);
+        RPC2H_CHECK(NC_MSG_WOULDBLOCK);
+        RPC2H_CHECK(NC_MSG_NONE);
+        RPC2H_CHECK(NC_MSG_HELLO);
+        RPC2H_CHECK(NC_MSG_BAD_HELLO);
+        RPC2H_CHECK(NC_MSG_RPC);
+        RPC2H_CHECK(NC_MSG_REPLY);
+        RPC2H_CHECK(NC_MSG_REPLY_ERR_MSGID);
+        RPC2H_CHECK(NC_MSG_NOTIF);
+        default:
+            WARN("%s is converted to NC_MSG_ERROR(%u)",
+                 nc_msg_type_rpc2str(msg), NC_MSG_ERROR);
+            return NC_MSG_ERROR;
+    }
+}
+
+/* See description in te_rpc_netconf.h */
+RPC_NC_MSG_TYPE
+nc_msg_type_h2rpc(int msg)
+{
+    switch (msg)
+    {
+        H2RPC_CHECK(NC_MSG_ERROR);
+        H2RPC_CHECK(NC_MSG_WOULDBLOCK);
+        H2RPC_CHECK(NC_MSG_NONE);
+        H2RPC_CHECK(NC_MSG_HELLO);
+        H2RPC_CHECK(NC_MSG_BAD_HELLO);
+        H2RPC_CHECK(NC_MSG_RPC);
+        H2RPC_CHECK(NC_MSG_REPLY);
+        H2RPC_CHECK(NC_MSG_REPLY_ERR_MSGID);
+        H2RPC_CHECK(NC_MSG_NOTIF);
+        default: return RPC_NC_MSG_INVAL;
+    }
+}
+
+#endif /* HAVE_NC_CLIENT_H */
