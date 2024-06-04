@@ -51,6 +51,16 @@
     "\\s+m_traffic_duration\\s+\\|\\s+([0-9]+\\.[0-9]{2})\\s+sec\\s+\\|" \
     "\\s+([0-9]+\\.[0-9]{2})\\s+sec\\s+\\|\\s+measured traffic duration"
 
+/** TRex tcps_sndbyte filter for client (1) and server (2). */
+#define TAPI_TREX_TCPS_SNDBYTE \
+    "\\s+tcps_sndbyte\\s+\\|\\s+([0-9]+)\\s+\\|" \
+    "\\s+([0-9]+)\\s+\\|\\s+data bytes sent by application"
+
+/** TRex tcps_rcvbyte filter for client (1) and server (2). */
+#define TAPI_TREX_TCPS_RCVBYTE \
+    "\\s+tcps_rcvbyte\\s+\\|\\s+([0-9]+)\\s+\\|" \
+    "\\s+([0-9]+)\\s+\\|\\s+bytes received in sequence"
+
 #define TAPI_TREX_PORT_STAT_ONE_COUNTER_FLT "\\s+\\|\\s+([0-9]+)"
 #define TAPI_TREX_PORT_STAT_TIME_FLT "\\s+:\\s+([0-9]+\\.[0-9]+)\\s+sec"
 
@@ -1241,6 +1251,48 @@ tapi_trex_create(tapi_job_factory_t *factory,
                                     .filter_var = &new_app->m_traff_dur_srv_flt,
                                 },
                                 {
+                                    .use_stdout = TRUE,
+                                    .readable = TRUE,
+                                    .re = TAPI_TREX_TCPS_SNDBYTE,
+                                    .extract = 1,
+                                    .filter_var = &new_app->tcps_sndbyte_cl_flt,
+                                },
+                                {
+                                    .use_stdout = TRUE,
+                                    .readable = TRUE,
+                                    .re = TAPI_TREX_TCPS_SNDBYTE,
+                                    .extract = 2,
+                                    .filter_var = &new_app->tcps_sndbyte_srv_flt,
+                                },
+                                {
+                                    .use_stdout = TRUE,
+                                    .readable = TRUE,
+                                    .re = TAPI_TREX_TCPS_RCVBYTE,
+                                    .extract = 1,
+                                    .filter_var = &new_app->tcps_rcvbyte_cl_flt,
+                                },
+                                {
+                                    .use_stdout = TRUE,
+                                    .readable = TRUE,
+                                    .re = TAPI_TREX_TCPS_RCVBYTE,
+                                    .extract = 2,
+                                    .filter_var = &new_app->tcps_rcvbyte_srv_flt,
+                                },
+                                {
+                                    .use_stdout = TRUE,
+                                    .readable = TRUE,
+                                    .re = "Total-tx-bytes\\s+:\\s+([0-9]+)\\s+byte",
+                                    .extract = 1,
+                                    .filter_var = &new_app->total_tx_bytes_flt,
+                                },
+                                {
+                                    .use_stdout = TRUE,
+                                    .readable = TRUE,
+                                    .re = "Total-rx-bytes\\s+:\\s+([0-9]+)\\s+byte",
+                                    .extract = 1,
+                                    .filter_var = &new_app->total_rx_bytes_flt,
+                                },
+                                {
                                    .use_stdout  = TRUE,
                                    .readable    = TRUE,
                                    .log_level   = opt->stdout_log_level,
@@ -1702,6 +1754,30 @@ tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
         return rc;
 
     rc = get_single_double(app->m_traff_dur_srv_flt, &report->m_traff_dur_srv);
+    if (rc != 0)
+        return rc;
+
+    rc = get_single_uint64(app->tcps_sndbyte_cl_flt, &report->tcps_sndbyte_cl);
+    if (rc != 0)
+        return rc;
+
+    rc = get_single_uint64(app->tcps_sndbyte_srv_flt, &report->tcps_sndbyte_srv);
+    if (rc != 0)
+        return rc;
+
+    rc = get_single_uint64(app->tcps_rcvbyte_cl_flt, &report->tcps_rcvbyte_cl);
+    if (rc != 0)
+        return rc;
+
+    rc = get_single_uint64(app->tcps_rcvbyte_srv_flt, &report->tcps_rcvbyte_srv);
+    if (rc != 0)
+        return rc;
+
+    rc = get_single_uint64(app->total_tx_bytes_flt, &report->total_tx_bytes);
+    if (rc != 0)
+        return rc;
+
+    rc = get_single_uint64(app->total_rx_bytes_flt, &report->total_rx_bytes);
     if (rc != 0)
         return rc;
 

@@ -228,6 +228,21 @@ typedef struct tapi_trex_app {
     tapi_job_channel_t *m_traff_dur_cl_flt;
     /** m_traffic_duration server filter. */
     tapi_job_channel_t *m_traff_dur_srv_flt;
+
+    /** tcps_sndbyte client filter. */
+    tapi_job_channel_t *tcps_sndbyte_cl_flt;
+    /** tcps_sndbyte server filter. */
+    tapi_job_channel_t *tcps_sndbyte_srv_flt;
+    /** tcps_rcvbyte client filter. */
+    tapi_job_channel_t *tcps_rcvbyte_cl_flt;
+    /** tcps_rcvbyte server filter. */
+    tapi_job_channel_t *tcps_rcvbyte_srv_flt;
+
+    /** total-tx-bytes filter. */
+    tapi_job_channel_t *total_tx_bytes_flt;
+    /** total-rx-bytes filter. */
+    tapi_job_channel_t *total_rx_bytes_flt;
+
     /** Per port stat filters */
     tapi_trex_per_port_stat_flts per_port_stat_flts;
 } tapi_trex_app;
@@ -641,6 +656,21 @@ typedef struct tapi_trex_report {
     double m_traff_dur_cl;
     /** Diration of server traffic, sec. */
     double m_traff_dur_srv;
+
+    /** Data bytes sent by client. */
+    uint64_t tcps_sndbyte_cl;
+    /** Data bytes sent by server. */
+    uint64_t tcps_sndbyte_srv;
+    /** Data bytes received by client. */
+    uint64_t tcps_rcvbyte_cl;
+    /** Data bytes received by server. */
+    uint64_t tcps_rcvbyte_srv;
+
+    /** Total bytes sent. */
+    uint64_t total_tx_bytes;
+    /** Total bytes received. */
+    uint64_t total_rx_bytes;
+
     /** Per port statistics. */
     tapi_trex_per_port_stat per_port_stat;
 } tapi_trex_report;
