@@ -171,7 +171,16 @@ static const tad_bps_pkt_frag tad_802_1q_e_rif_bps_hdr[] =
  */
 static const tad_bps_pkt_frag tad_802_1ad_tpid_bps_hdr[] =
 {
-    { "tpid", 16, BPS_FLD_CONST(TAD_802_1ad_TAG_TYPE), TAD_DU_I32, FALSE },
+    {
+        .name = "tpid",
+        .len = 16,
+        .tag = NDN_TAG_VLAN_HEADER_TPID,
+        .tag_tx_def = ASN_TAG_CONST,
+        .tag_rx_def = ASN_TAG_USER,
+        .value = TAD_802_1ad_TAG_TYPE,
+        .plain_du = TAD_DU_I32,
+        .force_read = FALSE,
+    },
 };
 
 /**
@@ -1578,6 +1587,24 @@ tad_eth_match_do_cb(csap_p           csap,
                    "offset %u: %r", CSAP_LOG_ARGS(csap),
                    (unsigned)bitoff, rc);
             return rc;
+        }
+        if (ptrn_data->tpid_ad.dus[0].du_type == TAD_DU_UNDEF)
+        {
+            switch (pkt_data->tpid_ad.dus[0].val_i32)
+            {
+                case TAD_802_1ad_TAG_TYPE:
+                case TAD_802_1Q_TAG_TYPE:
+                case 0x9100: /* deprecated QinQ VLAN */
+                case 0x9200: /* deprecated QinQ VLAN */
+                case 0x9300: /* deprecated QinQ VLAN */
+                    break;
+
+                default:
+                    F_VERB(CSAP_LOG_FMT "Match PDU vs known outer TPIDs failed on bit offset %u: %r",
+                           CSAP_LOG_ARGS(csap), (unsigned)bitoff, rc);
+                    return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
+
+            }
         }
 
         rc = tad_bps_pkt_frag_match_do(&proto_data->tci_ad_outer,
