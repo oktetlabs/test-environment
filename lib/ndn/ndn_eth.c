@@ -37,6 +37,9 @@ NDN_DATA_UNIT_WITH_RANGE_TYPE(eth_address, ndn_eth_address_s, Ethernet-Address);
 
 
 static asn_named_entry_t _ndn_tag_header_ne_array[] = {
+    /** TPID field */
+    { "tpid", &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_VLAN_HEADER_TPID} },
 
     /* Tag Control Information (TCI) */
     /** TCI priority field */
