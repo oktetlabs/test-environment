@@ -1422,9 +1422,13 @@ tad_eth_match_post_cb(csap_p              csap,
                   CSAP_LOG_ARGS(csap), rc);
             return TE_RC(TE_TAD_CSAP, rc);
         }
-        /* Skip TPID */
-        bitoff += tad_bps_pkt_frag_data_bitlen(&proto_data->tpid,
-                                               &pkt_data->tpid);
+
+        rc = tad_bps_pkt_frag_match_post(&proto_data->tpid,
+                                         &pkt_data->tpid,
+                                         pkt, &bitoff, tmp);
+        if (rc != 0)
+            return rc;
+
         /* Fill in TCI */
         rc = tad_bps_pkt_frag_match_post(&proto_data->tci, &pkt_data->tci,
                                          pkt, &bitoff, tmp);
@@ -1442,9 +1446,11 @@ tad_eth_match_post_cb(csap_p              csap,
             return TE_RC(TE_TAD_CSAP, rc);
         }
 
-        /* Skip outer TPID */
-        bitoff += tad_bps_pkt_frag_data_bitlen(&proto_data->tpid_ad,
-                                               &pkt_data->tpid_ad);
+        rc = tad_bps_pkt_frag_match_post(&proto_data->tpid_ad,
+                                         &pkt_data->tpid_ad,
+                                         pkt, &bitoff, tmp);
+        if (rc != 0)
+            return rc;
 
         rc = tad_bps_pkt_frag_match_post(&proto_data->tci_ad_outer,
                                          &pkt_data->tci_ad_outer,
@@ -1461,9 +1467,11 @@ tad_eth_match_post_cb(csap_p              csap,
             return TE_RC(TE_TAD_CSAP, rc);
         }
 
-        /* Skip inner TPID */
-        bitoff += tad_bps_pkt_frag_data_bitlen(&proto_data->tpid,
-                                               &pkt_data->tpid);
+        rc = tad_bps_pkt_frag_match_post(&proto_data->tpid,
+                                         &pkt_data->tpid,
+                                         pkt, &bitoff, tmp);
+        if (rc != 0)
+            return rc;
 
         rc = tad_bps_pkt_frag_match_post(&proto_data->tci_ad_inner,
                                          &pkt_data->tci_ad_inner,
