@@ -1949,9 +1949,10 @@ tapi_trex_compare_doubles_max(const void *a, const void *b)
 
 /* See description in tapi_trex.h */
 te_errno
-tapi_trex_port_stat_median_get(tapi_trex_report *report,
-                            tapi_trex_port_stat_enum param, unsigned int index,
-                            double time_start, double time_end, double *median)
+tapi_trex_port_stat_data_get(tapi_trex_report *report,
+                             tapi_trex_port_stat_enum param, unsigned int index,
+                             double time_start, double time_end, double *min,
+                             double *avg, double *median, double *max)
 {
     te_errno rc = 0;
     double *vals;
@@ -2012,7 +2013,23 @@ tapi_trex_port_stat_median_get(tapi_trex_report *report,
     free(vals);
 
     qsort(meds, n_meds, sizeof(*meds), &tapi_trex_compare_doubles_max);
+    if (min != NULL)
+        *min = meds[n_meds - 1];
+
+    if (max != NULL)
+        *max = meds[0];
+
+    if (avg != NULL)
+    {
+        *avg = 0;
+        for (i = 0; i < n_meds; i++)
+            *avg += meds[i];
+
+        *avg = *avg / n_meds;
+    }
+
     *median = meds[n_meds / 2];
+
     free(meds);
 
     return rc;

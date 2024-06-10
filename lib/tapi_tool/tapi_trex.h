@@ -1036,7 +1036,7 @@ tapi_trex_port_stat_param_series_by_time_get(tapi_trex_report *report,
 }
 
 /**
- * Get the median for a given parameter from the per-port statistics.
+ * Get the statisctical data for a given parameter from the per-port statistics.
  *
  * @param[in]  report       TRex report.
  * @param[in]  param        Type of param.
@@ -1044,7 +1044,10 @@ tapi_trex_port_stat_param_series_by_time_get(tapi_trex_report *report,
  * @param[in]  time_start   Use values starting from the specified time
  *                          (in seconds).
  * @param[in]  time_end     Use values up to the specified time (in seconds).
- * @param[out] median       Result.
+ * @param[out] min          Minimal value (may be @c NULL).
+ * @param[out] avg          Average value (may be @c NULL).
+ * @param[out] median       Median value (may be @c NULL).
+ * @param[out] max          Maximum value (may be @c NULL).
  *
  * @return Status code.
  * @retval TE_ENODATA       Per-port statistics do not contain data.
@@ -1052,9 +1055,10 @@ tapi_trex_port_stat_param_series_by_time_get(tapi_trex_report *report,
  *                          is too short in the interface statistics.
  * @retval @c 0             The result is successful.
  */
-extern te_errno tapi_trex_port_stat_median_get(tapi_trex_report *report,
+extern te_errno tapi_trex_port_stat_data_get(tapi_trex_report *report,
                             tapi_trex_port_stat_enum param, unsigned int index,
-                            double time_start, double time_end, double *median);
+                            double time_start, double time_end, double *min,
+                            double *avg, double *median, double *max);
 /**@}*/
 
 #ifdef __cplusplus
