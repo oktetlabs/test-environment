@@ -398,6 +398,24 @@ rcf_ch_vwrite(struct rcf_comm_connection *handle,
     return -1;
 }
 
+/**
+ * Determine whether the given file is located in a special directory where
+ * stat() does not report the file size properly.
+ */
+static bool
+rcf_file_is_special(const char *filename)
+{
+    static char *special_dirs[] = { "/proc/", "/sys/" };
+    int i;
+
+    for (i = 0; i < TE_ARRAY_LEN(special_dirs); i++)
+    {
+        if (strncmp(special_dirs[i], filename, strlen(special_dirs[i])) == 0)
+            return true;
+    }
+    return false;
+}
+
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_file(struct rcf_comm_connection *handle,
@@ -413,22 +431,14 @@ rcf_ch_file(struct rcf_comm_connection *handle,
 #endif
 #define AUX_BUFFER_LEN       65536
 
-/** Prefix for file operations in /proc directory */
-#ifdef RCF_FILE_PROC_PREFIX
-#undef RCF_FILE_PROC_PREFIX
-#endif
-#define RCF_FILE_PROC_PREFIX  "/proc/"
-
     size_t     reply_buflen = buflen - answer_plen;
     int        rc;
     int        fd = -1;
     int8_t    *auxbuf = NULL;
     int8_t    *auxbuf_p = NULL;
-    size_t     procfile_len = 0;
+    size_t     file_len = 0;
 
-
-    if (strncmp(RCF_FILE_PROC_PREFIX, filename,
-                strlen(RCF_FILE_PROC_PREFIX)) == 0)
+    if (rcf_file_is_special(filename))
     {
         if ((auxbuf = malloc(AUX_BUFFER_LEN)) == NULL)
         {
@@ -437,10 +447,10 @@ rcf_ch_file(struct rcf_comm_connection *handle,
             goto reject;
         }
 
-        VERB("file operation in '/proc/'");
+        VERB("file operation in special directory");
         if (op != RCFOP_FGET)
         {
-            ERROR("Unsupported file operation in '/proc/': %d", op);
+            ERROR("Unsupported file operation in special directory: %d", op);
             rc = TE_RC(TE_RCF_PCH, TE_EPERM);
             goto reject;
         }
@@ -454,17 +464,16 @@ rcf_ch_file(struct rcf_comm_connection *handle,
         }
 
         /*
-         * We should read /proc/filename before replying to requester
-         * because we can not know the length of /proc/filename
-         * in advice. If the number of bytes returned by read()
-         * equal to AUX_BUFFER_LEN then possibly there was more bytes
-         * to read.
+         * We should read the file before replying to requester
+         * because we can not know the length of file in advice.
+         * If the number of bytes returned by read() equal to
+         * AUX_BUFFER_LEN then possibly there was more bytes to read.
          */
         rc = read(fd, auxbuf, AUX_BUFFER_LEN);
         if (rc < 0)
         {
             rc = TE_OS_RC(TE_RCF_PCH, errno);
-            ERROR("rcfpch", "read(/proc/...) failed %r", rc);
+            ERROR("rcfpch", "read(%s) failed %r", filename, rc);
             goto reject;
         }
         else if (rc == AUX_BUFFER_LEN)
@@ -472,10 +481,10 @@ rcf_ch_file(struct rcf_comm_connection *handle,
             WARN("Because of insufficient buffer length only part of "
                  "data retrieved from %s", filename);
         }
-        procfile_len = (size_t)rc;
+        file_len = (size_t)rc;
 
         if ((size_t)snprintf(cbuf + answer_plen, reply_buflen,
-                    "0 attach %u", (unsigned int)procfile_len)
+                    "0 attach %u", (unsigned int)file_len)
                 >= reply_buflen)
         {
             ERROR("Command buffer too small for reply");
@@ -487,11 +496,11 @@ rcf_ch_file(struct rcf_comm_connection *handle,
         rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);
 
         auxbuf_p = auxbuf;
-        while ((rc == 0) && (procfile_len > 0))
+        while ((rc == 0) && (file_len > 0))
         {
-            int len = (procfile_len > buflen) ? buflen : procfile_len;
+            int len = (file_len > buflen) ? buflen : file_len;
 
-            procfile_len -= len;
+            file_len -= len;
             memcpy(cbuf, auxbuf_p, len);
             auxbuf_p += len;
             rc = rcf_comm_agent_reply(handle, cbuf, len);
@@ -530,7 +539,6 @@ reject:
         return -1;
     }
 #undef AUX_BUFFER_LEN
-#undef RCF_FILE_PROC_PREFIX
 }
 
 
