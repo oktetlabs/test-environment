@@ -46,7 +46,7 @@ typedef enum te_json_compound {
 } te_json_compound;
 
 /** Maximum nesting level for JSON serialization */
-#define TE_JSON_MAX_NEST 16
+#define TE_JSON_MAX_NEST 32
 
 /** One level of JSON value nesting */
 typedef struct te_json_level_t {
