@@ -24,11 +24,16 @@ gtest_build_argv(tapi_gtest *gtest, te_vec *argv)
     const tapi_job_opt_bind opts_binds[] = TAPI_JOB_OPT_SET(
         TAPI_JOB_OPT_STRING("--gtest_filter=", TRUE, tapi_gtest_opts,
                             gtest_filter),
+        TAPI_JOB_OPT_STRING("--device_name=", TRUE, tapi_gtest_opts,
+                            dev_name),
         TAPI_JOB_OPT_BOOL("--gtest_also_run_disabled_tests", tapi_gtest_opts,
                           run_disabled),
+        TAPI_JOB_OPT_BOOL("--ipv4_only", tapi_gtest_opts, ipv4_only),
         TAPI_JOB_OPT_BOOL("--gtest_color=no", tapi_gtest_opts, no_col),
         TAPI_JOB_OPT_UINT_T("--gtest_random_seed=", TRUE, NULL,
                             tapi_gtest_opts, rand_seed),
+        TAPI_JOB_OPT_UINT_T("--verbs_mtu=", TRUE, NULL,
+                            tapi_gtest_opts, verbs_mtu)
     );
 
     rc = tapi_job_opt_build_args(gtest->bin, opts_binds, opts, argv);
