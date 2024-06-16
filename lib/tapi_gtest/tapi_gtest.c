@@ -16,54 +16,25 @@
 
 #include "tapi_gtest.h"
 
-static void
-gtest_args_free(te_vec *gtest_args)
-{
-    char **arg = NULL;
-
-    TE_VEC_FOREACH(gtest_args, arg)
-        free(*arg);
-
-    te_vec_free(gtest_args);
-}
-
 static te_errno
-gtest_build_command(tapi_gtest *gtest, te_vec *args)
+gtest_build_argv(tapi_gtest *gtest, te_vec *argv)
 {
-    te_errno rc;
-    te_vec result = TE_VEC_INIT(const char *);
-    const char *end_arg = NULL;
+    te_errno rc = 0;
+    tapi_gtest_opts *opts = &gtest->opts;
+    const tapi_job_opt_bind opts_binds[] = TAPI_JOB_OPT_SET(
+        TAPI_JOB_OPT_STRING("--gtest_filter=", TRUE, tapi_gtest_opts,
+                            gtest_filter),
+        TAPI_JOB_OPT_BOOL("--gtest_also_run_disabled_tests", tapi_gtest_opts,
+                          run_disabled),
+        TAPI_JOB_OPT_BOOL("--gtest_color=no", tapi_gtest_opts, no_col),
+        TAPI_JOB_OPT_UINT_T("--gtest_random_seed=", TRUE, NULL,
+                            tapi_gtest_opts, rand_seed),
+    );
 
-#define ADD_ARG(cmd_fmt...)                                             \
-    do {                                                                \
-        te_string buf = TE_STRING_INIT;                                 \
-                                                                        \
-        rc = te_string_append(&buf, cmd_fmt);                           \
-                                                                        \
-        if (rc != 0 || (rc = TE_VEC_APPEND(&result, buf.ptr)) != 0)     \
-        {                                                               \
-            te_string_free(&buf);                                       \
-            gtest_args_free(&result);                                   \
-            return rc;                                                  \
-        }                                                               \
-    } while(0)
-
-    ADD_ARG("%s", gtest->bin);
-    ADD_ARG("--gtest_filter=%s.%s", gtest->group, gtest->name);
-    ADD_ARG("--gtest_random_seed=%d", gtest->rand_seed);
-    ADD_ARG("--gtest_color=no");
-    if (gtest->run_disabled)
-        ADD_ARG("--gtest_also_run_disabled_tests");
-
-#undef ADD_ARG
-
-    if ((rc = TE_VEC_APPEND(&result, end_arg)) != 0)
-    {
-        gtest_args_free(&result);
+    rc = tapi_job_opt_build_args(gtest->bin, opts_binds, opts, argv);
+    if (rc != 0)
         return rc;
-    }
 
-    *args = result;
     return 0;
 }
 
@@ -72,8 +43,9 @@ te_errno
 tapi_gtest_init(tapi_gtest *gtest, tapi_job_factory_t *factory)
 {
     te_errno rc;
-    te_vec gtest_args = TE_VEC_INIT(const char *);
+    te_vec gtest_argv = TE_VEC_INIT(const char *);
     tapi_job_simple_desc_t desc;
+    te_string buf = TE_STRING_INIT;
 
     assert(gtest != NULL);
     assert(gtest->bin != NULL);
@@ -99,13 +71,18 @@ tapi_gtest_init(tapi_gtest *gtest, tapi_job_factory_t *factory)
         ),
     };
 
-    if ((rc = gtest_build_command(gtest, &gtest_args)) != 0)
+    te_string_append(&buf, "%s.%s", gtest->group, gtest->name);
+    gtest->opts.gtest_filter = buf.ptr;
+    if ((rc = gtest_build_argv(gtest, &gtest_argv)) != 0)
+    {
+        te_string_free(&buf);
         return rc;
+    }
 
-    desc.argv = (const char **) gtest_args.data.ptr;
+    desc.argv = (const char **) gtest_argv.data.ptr;
     rc = tapi_job_simple_create(factory, &desc);
 
-    gtest_args_free(&gtest_args);
+    te_vec_deep_free(&gtest_argv);
     return rc;
 }
 
