@@ -37,8 +37,12 @@ typedef struct tapi_gtest_impl {
 typedef struct tapi_gtest_opts {
     const char *gtest_filter;      /**< Concatenaion of Group and Test names */
     bool run_disabled;             /**< Force run disabled test */
+    bool ipv4_only;                /**< Force use of IPv4 */
     bool no_col;                   /**< Disable colours in GTest output */
     tapi_job_opt_uint_t rand_seed; /**< Random seed */
+
+    const char *dev_name;          /**< RDMA device name for GTest */
+    tapi_job_opt_uint_t verbs_mtu; /**< MTU for RDMA QP */
 } tapi_gtest_opts;
 
 /** GTest handler */
@@ -57,8 +61,11 @@ typedef struct tapi_gtest {
     .bin = NULL,                               \
     .group = NULL,                             \
     .name = NULL,                              \
+    .opts.dev_name = NULL,                     \
     .opts.run_disabled = false,                \
+    .opts.ipv4_only = false,                   \
     .opts.no_col = true,                       \
+    .opts.verbs_mtu = TAPI_JOB_OPT_UINT_UNDEF, \
     .opts.rand_seed = TAPI_JOB_OPT_UINT_UNDEF, \
     .impl = TAPI_GTEST_IMPL_DEFAULTS,          \
 }
@@ -69,8 +76,12 @@ typedef struct tapi_gtest {
     .bin = TEST_STRING_PARAM(_gtest##_bin),                               \
     .group = TEST_STRING_PARAM(_gtest##_group),                           \
     .name = TEST_STRING_PARAM(_gtest##_name),                             \
+    .opts.verbs_mtu = TAPI_JOB_OPT_UINT_UNDEF,                            \
     .opts.rand_seed = TE_OPTIONAL_UINT_VAL(TEST_INT_PARAM(te_rand_seed)), \
+    .opts.ipv4_only = false,                                              \
     .opts.run_disabled = false,                                           \
+    .opts.no_col = true,                                                  \
+    .opts.dev_name = NULL,                                                \
     .impl = TAPI_GTEST_IMPL_DEFAULTS,                                     \
 }
 
