@@ -612,6 +612,7 @@ rgt_parse_input_stream(void)
     char             chunk[RGT_CHUNK_SIZE + 1];
 
     memset(chunk, 0, RGT_CHUNK_SIZE + 1);
+    memset(&user_ctx, 0, sizeof(user_ctx));
     user_ctx.state = RGT_LOG_STATE_BASE;
 
     res = read(0, chunk, 4);
@@ -642,6 +643,7 @@ rgt_parse_pdml_file(const char *fname)
     xmlParserCtxtPtr xml_ctxt;
     rgt_user_ctx     user_ctx;
 
+    memset(&user_ctx, 0, sizeof(user_ctx));
     user_ctx.state = RGT_LOG_STATE_BASE;
 
     xml_ctxt = xmlCreateFileParserCtxt(fname);
