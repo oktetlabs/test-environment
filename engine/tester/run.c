@@ -2052,9 +2052,10 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     te_string   params_str = TE_STRING_INIT;
     char       *cmd = NULL;
     char        shell[256] = "";
-    char        postfix[32] = "";
     char        vg_filename[32] = "";
     pid_t       pid;
+
+    int fderr = -1;
 
     assert(status != NULL);
 
@@ -2103,13 +2104,11 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
             te_string_free(&params_str);
             return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
-        if (snprintf(postfix, sizeof(postfix), " 2>%s", vg_filename) >=
-                (int)sizeof(postfix))
+        fderr = open(vg_filename, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+        if (fderr < 0)
         {
-            ERROR("Too short buffer is reserved for test script "
-                  "command postfix");
-            te_string_free(&params_str);
-            return TE_RC(TE_TESTER, TE_ESMALLBUF);
+            ERROR("Failed to open valgrind output file %s", vg_filename);
+            return TE_OS_RC(TE_TESTER, errno);
         }
     }
 
@@ -2121,8 +2120,8 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         te_string_free(&params_str);
         return TE_OS_RC(TE_TESTER, errno);;
     }
-    if (snprintf(cmd, TESTER_CMD_BUF_SZ, "%s%s%s%s", shell, script->execute,
-                 PRINT_STRING(params_str.ptr), postfix) >= TESTER_CMD_BUF_SZ)
+    if (snprintf(cmd, TESTER_CMD_BUF_SZ, "%s%s%s", shell, script->execute,
+                 PRINT_STRING(params_str.ptr)) >= TESTER_CMD_BUF_SZ)
     {
         ERROR("Too short buffer is reserved for test script command "
               "line");
@@ -2146,6 +2145,16 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
 
         if (pid == 0)
         {
+            if (fderr >= 0)
+            {
+                ret = dup2(fderr, STDERR_FILENO);
+                if (ret != STDERR_FILENO)
+                {
+                    ERROR("valgrind: failed to duplicate %s fd to stderr",
+                          vg_filename);
+                    exit(1);
+                }
+            }
             ret = execvp("/bin/sh", argv);
             if (ret < 0)
             {
