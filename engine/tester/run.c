@@ -2042,11 +2042,17 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
                 const unsigned int n_args, const test_iter_arg *args,
                 const tester_flags flags, tester_test_status *status)
 {
-    int         ret;
-    te_string   params_str = TE_STRING_INIT;
-    char       *cmd = NULL;
-    char        shell[256] = "";
-    char        vg_filename[PATH_MAX] = "";
+#define TEST_MAX_PARAMS 128
+#define TEST_MAX_PRE_WORDS 32
+    int ret;
+    char vg_filename[PATH_MAX] = "";
+    char *cmd;
+    te_string params[TEST_MAX_PRE_WORDS + TEST_MAX_PARAMS];
+    char *argv[TEST_MAX_PRE_WORDS + TEST_MAX_PARAMS];
+    int i;
+    int start_id = TEST_MAX_PRE_WORDS;
+    int next_id = start_id;
+
     pid_t       pid;
 
     int fderr = -1;
@@ -2068,36 +2074,53 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         return 0;
     }
 
-    te_string_append(&params_str,
-                     " te_test_id=%u te_test_name=\"%s\" te_rand_seed=%d",
-                     exec_id, test_name, rand_seed);
+    for (i = 0; i < TE_ARRAY_LEN(params); i++)
+        params[i] = (te_string)TE_STRING_INIT;
 
-    test_params_to_te_string(&params_str, n_args, args);
+    cmd = script->execute;
+    te_string_append(&params[next_id++], "%s", script->execute);
+    te_string_append(&params[next_id++], "te_test_id=%u", exec_id);
+    te_string_append(&params[next_id++], "te_test_name=%s", test_name);
+    te_string_append(&params[next_id++], "te_rand_seed=%d", rand_seed);
 
+    for (i = 0; i < n_args; i++)
+    {
+        if (args[i].variable)
+            continue;
+        VERB("%s(): parameter %s=%s", __FUNCTION__,
+             args[i].name, args[i].value);
+        te_string_append(&params[next_id++], "%s=%s",
+                         args[i].name, args[i].value);
+        assert(next_id < TEST_MAX_PARAMS);
+    }
+
+    /*
+     * Add wrapper arguments in reverse order, using TEST_MAX_PRE_WORDS
+     * space.
+     */
     if (flags & TESTER_GDB)
     {
-        strncpy(shell, "gdb --args ", sizeof(shell));
-        shell[sizeof(shell) - 1] = '\0';
+        te_string_append(&params[--start_id], "--args");
+        te_string_append(&params[--start_id], "gdb");
+        cmd = "gdb";
     }
     else if (flags & TESTER_VALGRIND)
     {
-        te_string shell_str = TE_STRING_INIT;
-
-        te_string_append(&shell_str, "valgrind --num-callers=16 "
-                         "--leak-check=yes --show-reachable=yes "
-                         "--tool=memcheck ");
         if (flags & TESTER_FAIL_ON_LEAK)
-            te_string_append(&shell_str, "--error-exitcode=%d ", EXIT_FAILURE);
-
-        if (shell_str.len >= sizeof(shell))
         {
-            ERROR("Too short buffer is reserved for shell command prefix");
-            te_string_free(&params_str);
-            te_string_free(&shell_str);
-            return TE_RC(TE_TESTER, TE_ESMALLBUF);
+            te_string_append(&params[--start_id], "--error-exitcode=%d ",
+                             EXIT_FAILURE);
         }
-        strcpy(shell, shell_str.ptr);
-        te_string_free(&shell_str);
+
+        te_string_append(&params[--start_id], "--tool=memcheck");
+        te_string_append(&params[--start_id], "--show-reachable=yes");
+        te_string_append(&params[--start_id], "--leak-check=yes");
+        te_string_append(&params[--start_id], "--num-callers=16");
+        te_string_append(&params[--start_id], "valgrind");
+        cmd = "valgrind";
+
+        /* Assert that TEST_MAX_PRE_WORDS is big enough. */
+        assert(start_id >= 0);
 
         snprintf(vg_filename, sizeof(vg_filename),
                  TESTER_VG_FILENAME_FMT, exec_id);
@@ -2105,36 +2128,23 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         if (fderr < 0)
         {
             ERROR("Failed to open valgrind output file %s", vg_filename);
+
+            for (i = start_id; i < next_id; i++)
+                te_string_free(&params[i]);
+
             return TE_OS_RC(TE_TESTER, errno);
         }
     }
 
-    cmd = malloc(TESTER_CMD_BUF_SZ);
-    if (cmd == NULL)
     {
-        ERROR("%s():%u: malloc(%u) failed",
-              __FUNCTION__, __LINE__, TESTER_CMD_BUF_SZ);
-        te_string_free(&params_str);
-        return TE_OS_RC(TE_TESTER, errno);;
-    }
-    if (snprintf(cmd, TESTER_CMD_BUF_SZ, "%s%s%s", shell, script->execute,
-                 PRINT_STRING(params_str.ptr)) >= TESTER_CMD_BUF_SZ)
-    {
-        ERROR("Too short buffer is reserved for test script command "
-              "line");
-        free(cmd);
-        te_string_free(&params_str);
-        return TE_RC(TE_TESTER, TE_ESMALLBUF);
-    }
-    te_string_free(&params_str);
-
-    {
-        char *argv[] = {"sh", "-c", cmd, NULL};
+        for ( i = 0; i < next_id - start_id; i++)
+            argv[i] = params[i + start_id].ptr;
+        argv[i] = NULL;
 
         /* Initialize as INCOMPLETE before processing */
         *status = TESTER_TEST_INCOMPLETE;
 
-        VERB("ID=%d execvp(/bin/sh, %s)", exec_id, cmd);
+        VERB("ID=%d execvp(%s, ...)", exec_id, cmd);
         pid = fork();
 
         if (pid == 0)
@@ -2149,17 +2159,19 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
                     exit(1);
                 }
             }
-            ret = execvp("/bin/sh", argv);
+            ret = execvp(cmd, argv);
             if (ret < 0)
             {
-                ERROR("execvp(/bin/sh, %s) failed: %s", exec_id, cmd,
+                ERROR("ID=%d execvp(%s, ...) failed: %s", exec_id, cmd,
                       strerror(errno));
                 exit(1);
             }
             /* unreachable */
         }
 
-        free(cmd);
+        for (i = start_id; i < next_id; i++)
+            te_string_free(&params[i]);
+
         if (pid < 0)
             return TE_OS_RC(TE_TESTER, errno);
     }
