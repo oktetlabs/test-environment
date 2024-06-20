@@ -2087,7 +2087,6 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     te_string   params_str = TE_STRING_INIT;
     char       *cmd = NULL;
     char        shell[256] = "";
-    char        gdb_init[32] = "";
     char        postfix[32] = "";
     char        vg_filename[32] = "";
     pid_t       pid;
@@ -2107,40 +2106,8 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
 
     if (flags & TESTER_GDB)
     {
-        FILE *f;
-
-        if (snprintf(gdb_init, sizeof(gdb_init),
-                     TESTER_GDB_FILENAME_FMT, exec_id) >=
-                (int)sizeof(gdb_init))
-        {
-            ERROR("Too short buffer is reserved for GDB init file "
-                  "name");
-            te_string_free(&params_str);
-            return TE_RC(TE_TESTER, TE_ESMALLBUF);
-        }
-        f = fopen(gdb_init, "w");
-        if (f == NULL)
-        {
-            ERROR("Failed to create GDB init file: %s",
-                  strerror(errno));
-            te_string_free(&params_str);
-            return TE_OS_RC(TE_TESTER, errno);
-        }
-        fprintf(f, "set args %s\n", params_str.ptr);
-        te_string_free(&params_str);
-        if (fclose(f) != 0)
-        {
-            ERROR("fclose() failed");
-            return TE_OS_RC(TE_TESTER, errno);;
-        }
-        if (snprintf(shell, sizeof(shell),
-                     "gdb -x %s ", gdb_init) >=
-                (int)sizeof(shell))
-        {
-            ERROR("Too short buffer is reserved for shell command "
-                  "prefix");
-            return TE_RC(TE_TESTER, TE_ESMALLBUF);
-        }
+        strncpy(shell, "gdb --args ", sizeof(shell));
+        shell[sizeof(shell) - 1] = '\0';
     }
     else if (flags & TESTER_VALGRIND)
     {
@@ -2190,8 +2157,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         return TE_OS_RC(TE_TESTER, errno);;
     }
     if (snprintf(cmd, TESTER_CMD_BUF_SZ, "%s%s%s%s", shell, script->execute,
-                 (flags & TESTER_GDB) ? "" : PRINT_STRING(params_str.ptr),
-                 postfix) >= TESTER_CMD_BUF_SZ)
+                 PRINT_STRING(params_str.ptr), postfix) >= TESTER_CMD_BUF_SZ)
     {
         ERROR("Too short buffer is reserved for test script command "
               "line");
