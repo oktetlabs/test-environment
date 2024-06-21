@@ -54,14 +54,8 @@
 #include "tester.h"
 #include "tester_msg.h"
 
-/** Define it to enable support of timeouts in Tester */
-#undef TESTER_TIMEOUT_SUPPORT
-
 /** Format string for Valgrind output filename */
 #define TESTER_VG_FILENAME_FMT  "vg.test.%d"
-
-/** Format string for GDB init filename */
-#define TESTER_GDB_FILENAME_FMT "gdb.%d"
 
 /**
  * Log entry in a Tester configuration walking handler.
