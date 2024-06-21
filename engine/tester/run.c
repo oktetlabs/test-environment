@@ -2046,7 +2046,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     te_string   params_str = TE_STRING_INIT;
     char       *cmd = NULL;
     char        shell[256] = "";
-    char        vg_filename[32] = "";
+    char        vg_filename[PATH_MAX] = "";
     pid_t       pid;
 
     int fderr = -1;
@@ -2099,15 +2099,8 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         strcpy(shell, shell_str.ptr);
         te_string_free(&shell_str);
 
-        if (snprintf(vg_filename, sizeof(vg_filename),
-                     TESTER_VG_FILENAME_FMT, exec_id) >=
-                (int)sizeof(vg_filename))
-        {
-            ERROR("Too short buffer is reserved for Vagrind output "
-                  "filename");
-            te_string_free(&params_str);
-            return TE_RC(TE_TESTER, TE_ESMALLBUF);
-        }
+        snprintf(vg_filename, sizeof(vg_filename),
+                 TESTER_VG_FILENAME_FMT, exec_id);
         fderr = open(vg_filename, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
         if (fderr < 0)
         {
