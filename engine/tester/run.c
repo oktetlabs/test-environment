@@ -2056,6 +2056,8 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     pid_t       pid;
 
     int fderr = -1;
+    const char *test_name = run_name != NULL ? run_name : script->name;
+    int rand_seed = rand();
 
     assert(status != NULL);
 
@@ -2063,10 +2065,18 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
           TE_PRINTF_TESTER_FLAGS "x",
           script->name, exec_id, n_args, args, flags);
 
+    if (flags & TESTER_FAKE)
+    {
+        *status = TESTER_TEST_FAKED;
+        RING("Faked with te_test_id=%u te_test_name=\"%s\" te_rand_seed=%d",
+             exec_id, test_name, rand_seed);
+        EXIT("%u", *status);
+        return 0;
+    }
+
     te_string_append(&params_str,
                      " te_test_id=%u te_test_name=\"%s\" te_rand_seed=%d",
-                     exec_id, run_name != NULL ? run_name : script->name,
-                     rand());
+                     exec_id, test_name, rand_seed);
 
     test_params_to_te_string(&params_str, n_args, args);
 
@@ -2131,9 +2141,6 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     }
     te_string_free(&params_str);
 
-    if (flags & TESTER_FAKE)
-        *status = TESTER_TEST_FAKED;
-    else
     {
         char *argv[] = {"sh", "-c", cmd, NULL};
 
@@ -2164,105 +2171,102 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
             }
             /* unreachable */
         }
-        else if (pid < 0)
-        {
-            free(cmd);
-            return TE_OS_RC(TE_TESTER, errno);
-        }
 
-        tester_set_serial_pid(pid);
-        pid = waitpid(pid, &ret, 0);
-        tester_release_serial_pid();
+        free(cmd);
         if (pid < 0)
-        {
-            ERROR("waitpid failed: %s", strerror(errno));
-            free(cmd);
             return TE_OS_RC(TE_TESTER, errno);
-        }
+    }
+
+    tester_set_serial_pid(pid);
+    pid = waitpid(pid, &ret, 0);
+    tester_release_serial_pid();
+    if (pid < 0)
+    {
+        ERROR("waitpid failed: %s", strerror(errno));
+        return TE_OS_RC(TE_TESTER, errno);
+    }
 
 #ifdef WCOREDUMP
-        if (WCOREDUMP(ret))
-        {
-            ERROR("Command '%s' executed in shell dumped core", cmd);
-            *status = TESTER_TEST_CORED;
-        }
+    if (WCOREDUMP(ret))
+    {
+        ERROR("Test '%s' executed in shell dumped core", script->execute);
+        *status = TESTER_TEST_CORED;
+    }
 #endif
-        if (WIFSIGNALED(ret))
+    if (WIFSIGNALED(ret))
+    {
+        if (WTERMSIG(ret) == SIGINT)
         {
-            if (WTERMSIG(ret) == SIGINT)
-            {
-                *status = TESTER_TEST_STOPPED;
-                ERROR("ID=%d was interrupted by SIGINT, shut down",
-                      exec_id);
-            }
-            else
-            {
-                ERROR("ID=%d was killed by the signal %d : %s", exec_id,
-                      WTERMSIG(ret), strsignal(WTERMSIG(ret)));
-                /* TESTER_TEST_CORED may already be set */
-                if (*status == TESTER_TEST_INCOMPLETE)
-                    *status = TESTER_TEST_KILLED;
-            }
-        }
-        else if (!WIFEXITED(ret))
-        {
-            ERROR("ID=%d was abnormally terminated", exec_id);
-            /* TESTER_TEST_CORED may already be set */
-            if (*status == TESTER_TEST_INCOMPLETE)
-                *status = TESTER_TEST_FAILED;
+            *status = TESTER_TEST_STOPPED;
+            ERROR("ID=%d was interrupted by SIGINT, shut down",
+                  exec_id);
         }
         else
         {
-            if (*status != TESTER_TEST_INCOMPLETE)
-                ERROR("Unexpected return value of system() call");
-
-            switch (WEXITSTATUS(ret))
-            {
-                case EXIT_FAILURE:
-                    *status = TESTER_TEST_FAILED;
-                    break;
-
-                case EXIT_SUCCESS:
-                    *status = TESTER_TEST_PASSED;
-                    break;
-
-                case TE_EXIT_SIGUSR2:
-                case TE_EXIT_SIGINT:
-                    *status = TESTER_TEST_STOPPED;
-                    ERROR("ID=%d was interrupted by %s, shut down",
-                          exec_id,
-                          WEXITSTATUS(ret) == TE_EXIT_SIGINT ? "SIGINT" :
-                                                               "SIGUSR2");
-                    break;
-
-                case TE_EXIT_NOT_FOUND:
-                    *status = TESTER_TEST_SEARCH;
-                    ERROR("ID=%d was not run, executable not found",
-                          exec_id);
-                    break;
-                case TE_EXIT_ERROR:
-                    *status = TESTER_TEST_STOPPED;
-                    ERROR("Serious error occurred during execution of "
-                          "the test, shut down");
-                    break;
-
-                case TE_EXIT_SKIP:
-                    *status = TESTER_TEST_SKIPPED;
-                    break;
-
-                default:
-                    *status = TESTER_TEST_FAILED;
-            }
-        }
-        if (flags & TESTER_VALGRIND)
-        {
-            TE_LOG(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
-                   "Standard error output of the script with ID=%d:\n"
-                   "%Tf", exec_id, vg_filename);
+            ERROR("ID=%d was killed by the signal %d : %s", exec_id,
+                  WTERMSIG(ret), strsignal(WTERMSIG(ret)));
+            /* TESTER_TEST_CORED may already be set */
+            if (*status == TESTER_TEST_INCOMPLETE)
+                *status = TESTER_TEST_KILLED;
         }
     }
+    else if (!WIFEXITED(ret))
+    {
+        ERROR("ID=%d was abnormally terminated", exec_id);
+        /* TESTER_TEST_CORED may already be set */
+        if (*status == TESTER_TEST_INCOMPLETE)
+            *status = TESTER_TEST_FAILED;
+    }
+    else
+    {
+        if (*status != TESTER_TEST_INCOMPLETE)
+            ERROR("Unexpected return value of system() call");
 
-    free(cmd);
+        switch (WEXITSTATUS(ret))
+        {
+            case EXIT_FAILURE:
+                *status = TESTER_TEST_FAILED;
+                break;
+
+            case EXIT_SUCCESS:
+                *status = TESTER_TEST_PASSED;
+                break;
+
+            case TE_EXIT_SIGUSR2:
+            case TE_EXIT_SIGINT:
+                *status = TESTER_TEST_STOPPED;
+                ERROR("ID=%d was interrupted by %s, shut down",
+                      exec_id,
+                      WEXITSTATUS(ret) == TE_EXIT_SIGINT ? "SIGINT" :
+                                                           "SIGUSR2");
+                break;
+
+            case TE_EXIT_NOT_FOUND:
+                *status = TESTER_TEST_SEARCH;
+                ERROR("ID=%d was not run, executable not found",
+                      exec_id);
+                break;
+            case TE_EXIT_ERROR:
+                *status = TESTER_TEST_STOPPED;
+                ERROR("Serious error occurred during execution of "
+                      "the test, shut down");
+                break;
+
+            case TE_EXIT_SKIP:
+                *status = TESTER_TEST_SKIPPED;
+                break;
+
+            default:
+                *status = TESTER_TEST_FAILED;
+        }
+    }
+    if (flags & TESTER_VALGRIND)
+    {
+        TE_LOG(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
+               "Standard error output of the script with ID=%d:\n"
+               "%Tf", exec_id, vg_filename);
+    }
+
     if (tester_check_serial_stop() == TRUE)
         *status = TESTER_TEST_STOPPED;
 
