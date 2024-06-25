@@ -35,6 +35,8 @@
 #define TAPI_WRK_TRUNCATED_ARG_LEN 256
 
 const tapi_wrk_opt tapi_wrk_default_opt = {
+    .stdout_log_level = TE_LL_RING,
+    .stderr_log_level = TE_LL_ERROR,
     .connections = 1,
     .n_threads = 1,
     .duration_s = 1,
@@ -283,14 +285,16 @@ tapi_wrk_create(tapi_job_factory_t *factory, const tapi_wrk_opt *opt,
                                      .filter_var = &result->socket_errors_filter,
                                     },
                                     {.use_stderr = TRUE,
-                                     .log_level = TE_LL_ERROR,
-                                     .readable = FALSE,
-                                     .filter_name = "err",
+                                     .log_level = opt->stderr_log_level,
+                                     .readable = TRUE,
+                                     .filter_name = "wrk stderr",
+                                     .filter_var = &result->std_err,
                                     },
                                     {.use_stdout = TRUE,
-                                     .log_level = TE_LL_RING,
-                                     .readable = FALSE,
-                                     .filter_name = "out",
+                                     .log_level = opt->stdout_log_level,
+                                     .readable = TRUE,
+                                     .filter_name = "wrk stdout",
+                                     .filter_var = &result->std_out,
                                     }
                                  )
                           });

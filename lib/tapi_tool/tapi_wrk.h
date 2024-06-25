@@ -35,6 +35,10 @@ extern "C" {
 
 /** wrk tool specific command line options */
 typedef struct tapi_wrk_opt {
+    /** Standard output logging level (default is @c TE_LL_RING). */
+    te_log_level stdout_log_level;
+    /** Standard error logging level (default is @c TE_LL_ERROR). */
+    te_log_level stderr_log_level;
     /** Number of connections to keep open */
     unsigned int connections;
     /** Number of threads to use */
@@ -139,6 +143,10 @@ typedef struct tapi_wrk_app {
     tapi_job_t *job;
     /** Output channel handles */
     tapi_job_channel_t *out_chs[2];
+    /** wrk stdout content. */
+    tapi_job_channel_t *std_out;
+    /** wrk stderr content. */
+    tapi_job_channel_t *std_err;
     /** Bytes per second filter */
     tapi_job_channel_t *bps_filter;
     /** Requests count filter (total) */
